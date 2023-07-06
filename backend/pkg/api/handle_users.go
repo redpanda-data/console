@@ -75,13 +75,15 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 	}
 }
 
-type createUserRequest struct {
+// CreateUserRequest is the schema for the request body when creating a new user.
+type CreateUserRequest struct {
 	Username  string `json:"username"`
 	Password  string `json:"password"`
 	Mechanism string `json:"mechanism"`
 }
 
-func (c *createUserRequest) OK() error {
+// OK validates the create user request.
+func (c *CreateUserRequest) OK() error {
 	if c.Username == "" {
 		return fmt.Errorf("username must be set")
 	}
@@ -101,7 +103,7 @@ func (c *createUserRequest) OK() error {
 func (api *API) handleCreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
-		var req createUserRequest
+		var req CreateUserRequest
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)

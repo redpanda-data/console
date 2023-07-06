@@ -10,9 +10,9 @@
  */
 
 import { PlusIcon, TrashIcon } from '@primer/octicons-react';
-import { Button, Input } from 'antd';
 import { observer } from 'mobx-react';
 import './headersEditor.scss';
+import { Button, Input } from '@redpanda-data/ui';
 
 interface Header {
     key: string;
@@ -37,7 +37,7 @@ const HeadersEditor = observer((p: Props): JSX.Element => {
                 {p.items.map((h, i) => <HeaderComp key={String(i)} list={p.items} header={h} index={i} />)}
             </tbody>
         </table>
-        <Button block type="dashed" onClick={() => { p.items.push({ key: '', value: '' }) }}>
+        <Button variant="outline" width="100%" onClick={() => { p.items.push({ key: '', value: '' }) }}>
             <span style={{ opacity: 0.66 }}><PlusIcon size="small" /></span>
             Add Row
         </Button>
@@ -50,10 +50,10 @@ const HeaderComp = observer((p: { list: Header[], header: Header, index: number 
     const { key, value } = p.header;
     return <tr>
         <td className="index">{p.index + 1}</td>
-        <td className="name"><Input placeholder="Key" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
+        <td className="name"><Input placeholder="Key" borderRightRadius="0" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
         <td className="value"><Input placeholder="Value" spellCheck={false} value={value} onChange={e => p.header.value = e.target.value} /></td>
         <td className="actions">
-            <Button type="text"
+            <Button variant="ghost"
                 className="iconButton"
                 onClick={(event) => {
                     event.stopPropagation();

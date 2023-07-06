@@ -10,7 +10,7 @@
  */
 
 import { FilterOutlined } from '@ant-design/icons';
-import { AutoComplete, Button, Checkbox, Input, Modal, Popover } from 'antd';
+import { AutoComplete, Input, Modal, Popover } from 'antd';
 import { arrayMoveMutable } from 'array-move';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -25,6 +25,7 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from '@primer/octicons-react';
+import { Button, Checkbox } from '@redpanda-data/ui';
 
 
 const globHelp = <div>
@@ -178,7 +179,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                                     </Draggable>
                                 ))}
                                 {droppableProvided.placeholder}
-                                <Button onClick={() => {
+                                <Button variant="outline" onClick={() => {
                                     const newTag: PreviewTagV2 = {
                                         id: getFreeId(),
                                         isActive: true,
@@ -261,7 +262,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
             <span className="moveHandle"><ThreeBarsIcon /></span>
 
             {/* Enabled */}
-            <Checkbox checked={tag.isActive} onChange={e => tag.isActive = e.target.checked} />
+            <Checkbox isChecked={tag.isActive} onChange={e => tag.isActive = e.target.checked} />
 
             {/* Settings */}
             <Popover
@@ -280,8 +281,8 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                         />
                     </Label>
 
-                    <span><Checkbox checked={tag.searchInMessageKey} onChange={e => tag.searchInMessageKey = e.target.checked}>Search in message key</Checkbox></span>
-                    <span><Checkbox checked={tag.searchInMessageValue} onChange={e => tag.searchInMessageValue = e.target.checked}>Search in message value</Checkbox></span>
+                    <span><Checkbox isChecked={tag.searchInMessageKey} onChange={e => tag.searchInMessageKey = e.target.checked}>Search in message key</Checkbox></span>
+                    <span><Checkbox isChecked={tag.searchInMessageValue} onChange={e => tag.searchInMessageValue = e.target.checked}>Search in message value</Checkbox></span>
                 </div>}>
                 <span className="inlineButton" ><GearIcon /></span>
             </Popover>

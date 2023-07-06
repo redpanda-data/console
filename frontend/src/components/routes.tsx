@@ -318,8 +318,4 @@ export const APP_ROUTES: IRouteEntry[] = [
 ].filterNull();
 
 
-const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/overview'];
-export const embeddedAvailableRoutes = APP_ROUTES.filter((x) => x.icon != null)
-    .filter((x) => !ignoredRoutes.includes(x.path))
-
 

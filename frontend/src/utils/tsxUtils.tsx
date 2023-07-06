@@ -12,7 +12,8 @@
 import React, { useState, Component, CSSProperties, ReactNode } from 'react';
 import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton, Tooltip, Button as AntdButton, ButtonProps as AntdButtonProps } from 'antd';
+import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
+import { Button as RpButton, ButtonProps as RpButtonProps } from '@redpanda-data/ui';
 import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -514,10 +515,10 @@ export function LabelTooltip(p: { children?: React.ReactNode, width?: number, no
     </Tooltip>
 }
 
-export type ButtonProps = Omit<AntdButtonProps, 'disabled'> & { disabledReason?: string; };
+export type ButtonProps = Omit<RpButtonProps, 'disabled'> & { disabledReason?: string; };
 export function Button(p: ButtonProps) {
     if (!p.disabledReason)
-        return <AntdButton {...p} />;
+        return <RpButton {...p} />;
 
     const reason = p.disabledReason;
     const btnProps = { ...p };
@@ -528,9 +529,9 @@ export function Button(p: ButtonProps) {
         getPopupContainer={findPopupContainer}
         overlay={reason}
     >
-        <AntdButton
+        <RpButton
             {...btnProps}
-            disabled
+            isDisabled
             className={(p.className ?? '') + ' disabled'}
             onClick={undefined}
         />

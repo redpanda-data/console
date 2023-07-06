@@ -7,6 +7,8 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.9.0
 	github.com/cloudhut/connect-client v0.0.0-20230417124247-963e5bcdfee7
+	github.com/docker/docker v24.0.2+incompatible
+	github.com/docker/go-connections v0.4.0
 	github.com/dop251/goja v0.0.0-20230427124612-428fc442ff5f
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
@@ -27,10 +29,11 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230519052114-f355828dd427
 	github.com/stretchr/testify v1.8.3
+	github.com/testcontainers/testcontainers-go v0.20.2-0.20230601102656-bc15b1182459
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1
-	github.com/twmb/franz-go v1.13.4
+	github.com/twmb/franz-go v1.13.6
 	github.com/twmb/franz-go/pkg/kadm v1.8.2-0.20230503140309-bf5970577daf
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230508025141-88d5c46db15b
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230703040638-f324841a32b4
 	github.com/twmb/franz-go/pkg/kmsg v1.5.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/go-cache v1.0.0
@@ -39,7 +42,7 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/sync v0.2.0
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.10.0
 	google.golang.org/protobuf v1.30.0
 )
 
@@ -59,8 +62,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.2+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -111,17 +112,16 @@ require (
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/testcontainers/testcontainers-go v0.20.2-0.20230601102656-bc15b1182459 // indirect
 	github.com/twmb/tlscfg v1.2.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/grpc v1.55.0 // indirect

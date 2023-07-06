@@ -10,6 +10,7 @@
 package kafka
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -92,9 +93,18 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 
 		// OAuth Bearer
 		if cfg.SASL.Mechanism == config.SASLMechanismOAuthBearer {
-			mechanism := oauth.Auth{
-				Token: cfg.SASL.OAUth.Token,
-			}.AsMechanism()
+			var mechanism sasl.Mechanism
+			if cfg.SASL.OAUth.TokenEndpoint != "" {
+				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+					shortToken, err := cfg.SASL.OAUth.AcquireToken(ctx)
+					return oauth.Auth{Token: shortToken}, err
+				})
+			} else {
+				mechanism = oauth.Auth{
+					Token: cfg.SASL.OAUth.Token,
+				}.AsMechanism()
+			}
+
 			opts = append(opts, kgo.SASL(mechanism))
 		}
 

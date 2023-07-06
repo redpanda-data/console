@@ -17,11 +17,15 @@ import (
 // Console contains all configuration options for features that are generic,
 // such as documentation plumbing.
 type Console struct {
+	// Enabled should always be true unless you use your own
+	// implementation that satisfies the Console interface.
+	Enabled            bool                      `yaml:"enabled"`
 	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
+	c.Enabled = true
 	c.TopicDocumentation.SetDefaults()
 }
 

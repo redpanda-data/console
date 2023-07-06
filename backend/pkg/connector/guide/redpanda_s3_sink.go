@@ -45,7 +45,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"key.converter",
 							"key.converter.schemas.enable",
 							"value.converter",
@@ -57,6 +57,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 							"file.name.prefix",
 							"format.output.fields",
 							"format.output.fields.value.encoding",
+							"format.output.envelope",
 							"file.compression.type",
 							"file.max.records",
 							"file.flush.interval.ms",
@@ -66,7 +67,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 							"aws.s3.backoff.max.delay.ms",
 							"aws.s3.backoff.max.retries",
 							"errors.tolerance",
-						},
+						}, dlq()...),
 					},
 				},
 			},

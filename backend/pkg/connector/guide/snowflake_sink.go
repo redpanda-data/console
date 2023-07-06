@@ -46,7 +46,7 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"snowflake.ingestion.method",
 							"value.converter",
 							"snowflake.topic2table.map",
@@ -54,7 +54,7 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 							"buffer.flush.time",
 							"buffer.size.bytes",
 							"errors.tolerance",
-						},
+						}, dlq()...),
 					},
 				},
 			},

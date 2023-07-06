@@ -14,12 +14,12 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures } from '../utils/env';
+import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, TimeSince } from '../utils/utils';
+import { base64ToHexString, decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
     GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
@@ -99,9 +99,20 @@ async function handle401(res: Response) {
 
     // Save current location url
     // store.urlBeforeLogin = window.location.href;
+    // get current path
 
-    // Redirect to login
-    appGlobal.history.push(isEmbedded() ? '/unauthorized' : '/login');
+    if (isEmbedded()) {
+        const path = window.location.pathname.removePrefix(getBasePath() ?? '');
+        // get path you want to redirect to
+        const targetPath = `/clusters/${appConfig.clusterId}/unauthorized`;
+        // when is embedded redirect to the cloud-ui
+        if (path !== targetPath) {
+            window.location.replace(`/clusters/${appConfig.clusterId}/unauthorized`)
+        }
+    } else {
+        // Redirect to login
+        appGlobal.history.push('/login');
+    }
 }
 
 function processVersionInfo(headers: Headers) {
@@ -369,31 +380,18 @@ const apiStore = {
                 case 'message':
                     const m = msg.message as TopicMessage;
 
-                    const keyData = m.key.payload;
-                    if (keyData != null && keyData != undefined && keyData != '' && m.key.encoding == 'binary') {
-                        try {
-                            m.key.payload = decodeBase64(m.key.payload); // unpack base64 encoded key
-                        } catch (error) {
-                            // Empty
-                            // Only unpack if the key is base64 based
-                        }
+                    if (m.key.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
+                        m.keyBinHexPreview = base64ToHexString(m.key.payload);
+                        m.key.payload = decodeBase64(m.key.payload);
+                    }
+
+                    if (m.value.encoding == 'binary' || m.value.encoding == 'utf8WithControlChars') {
+                        m.valueBinHexPreview = base64ToHexString(m.value.payload);
+                        m.value.payload = decodeBase64(m.value.payload);
                     }
 
                     m.keyJson = JSON.stringify(m.key.payload);
                     m.valueJson = JSON.stringify(m.value.payload);
-
-                    if (m.key.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
-                        m.key.payload = decodeBase64(m.key.payload);
-                        m.keyBinHexPreview = this.base64ToHexString(m.key.payload);
-                    }
-
-                    if (m.value.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
-                        m.value.payload = decodeBase64(m.value.payload);
-                        m.valueBinHexPreview = this.base64ToHexString(m.value.payload);
-                    }
-
-
-                    //m = observable.object(m, undefined, { deep: false });
 
                     this.messages.push(m);
                     break;
@@ -402,24 +400,7 @@ const apiStore = {
         currentWS.onmessage = onMessageHandler;
     },
 
-    base64ToHexString(base64: string): string {
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
-        }
 
-        let hex = '';
-        for (let i = 0; i < bytes.length; i++) {
-            const b = bytes[i].toString(16);
-            hex += b.length === 1 ? '0' + b : b;
-
-            if (i < bytes.length - 1)
-                hex += ' ';
-        }
-
-        return hex;
-    },
 
     stopMessageSearch() {
         if (currentWS) {

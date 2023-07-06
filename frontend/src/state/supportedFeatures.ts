@@ -17,8 +17,7 @@
 // That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
 //
 
-import { computed, observable, when } from 'mobx';
-import { clone } from '../utils/jsonUtils';
+import { computed, observable } from 'mobx';
 import { api } from './backendApi';
 
 export interface FeatureEntry {
@@ -39,34 +38,6 @@ export class Feature {
     static readonly CreateUser: FeatureEntry = { endpoint: '/api/users', method: 'POST' };
     static readonly DeleteUser: FeatureEntry = { endpoint: '/api/users', method: 'DELETE' };
 }
-
-// As soon as the supported endpoints are available we should check if
-// the backend has returned a feature that we don't know of yet.
-setTimeout(() => {
-    when(() => api.endpointCompatibility != null, () => {
-        if (!api.endpointCompatibility) return;
-        // Copy features, then remove the ones we know, report any leftover features.
-        const features = clone(api.endpointCompatibility.endpoints);
-        const removeMatch = (f: FeatureEntry) => features.removeAll(x => x.method == f.method && x.endpoint == f.endpoint);
-
-        removeMatch(Feature.ClusterConfig);
-        removeMatch(Feature.ConsumerGroups);
-        removeMatch(Feature.GetReassignments);
-        removeMatch(Feature.PatchReassignments);
-        removeMatch(Feature.PatchGroup);
-        removeMatch(Feature.DeleteGroup);
-        removeMatch(Feature.DeleteGroupOffsets);
-        removeMatch(Feature.DeleteRecords);
-        removeMatch(Feature.GetQuotas)
-        removeMatch(Feature.CreateUser);
-        removeMatch(Feature.DeleteUser);
-
-        if (features.length > 0) {
-            const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join('');
-            console.warn('Backend reported new/unknown endpoints for endpointCompatibility:\n' + names);
-        }
-    });
-});
 
 export function isSupported(f: FeatureEntry): boolean {
     const c = api.endpointCompatibility;

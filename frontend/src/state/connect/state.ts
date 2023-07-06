@@ -389,6 +389,7 @@ export class ConnectorPropertiesStore {
     crud: 'create' | 'update' = 'create';
     secrets: SecretsStore | null = null;
     showAdvancedOptions = false;
+    viewMode: 'form' | 'json' = 'form';
     initPending = true;
     fallbackGroupName: string = '';
     reactionDisposers: IReactionDisposer[] = [];
@@ -396,8 +397,8 @@ export class ConnectorPropertiesStore {
     connectorStepDefinitions: ConnectorStep[] = [];
 
     constructor(
-        private clusterName: string,
-        private pluginClassName: string,
+        public clusterName: string,
+        public pluginClassName: string,
         public connectorType: 'sink' | 'source',
         private appliedConfig: Record<string, any> | undefined,
         features?: ConnectorClusterFeatures
@@ -438,6 +439,16 @@ export class ConnectorPropertiesStore {
             'connector.class': this.pluginClassName,
         } as any;
 
+        if (this.viewMode == 'json') {
+            let parsedConfig = {};
+            try {
+                parsedConfig = JSON.parse(this.jsonText);
+            } catch { }
+            Object.assign(config, parsedConfig);
+
+            return config;
+        }
+
         for (const g of this.allGroups)
             for (const p of g.properties) {
                 // Skip default values
@@ -470,7 +481,6 @@ export class ConnectorPropertiesStore {
 
         try {
             // Validate with empty object to get all properties initially
-
             const basicConfig = {
                 'connector.class': pluginClassName,
                 name: '',

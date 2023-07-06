@@ -1,12 +1,14 @@
-import { DashIcon, PlusIcon, XIcon } from '@primer/octicons-react';
-import { Button, Input, InputNumber, Select, Slider } from 'antd';
+import { PlusIcon, XIcon } from '@primer/octicons-react';
+import { InputNumber, Slider } from 'antd';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Component, MouseEvent, useEffect, useState } from 'react';
+import { Component, useEffect, useState } from 'react';
 import { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import './CreateTopicModal.scss';
+import { Box, Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select, isSingleValue } from '@redpanda-data/ui';
+import { SingleSelect } from '../../../misc/Select';
 
 
 type CreateTopicModalState = {
@@ -81,15 +83,15 @@ export class CreateTopicModalContent extends Component<Props> {
                     </Label>
                 </div>
 
-                <div style={{ display: 'flex', gap: '2em' }}>
+                <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
                     <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
-                        <Select options={[
-                            { value: 'delete' },
-                            { value: 'compact' },
+                        <SingleSelect<'delete' | 'compact'> options={[
+                            { value: 'delete', label: 'delete' },
+                            { value: 'compact', label: 'compact' },
                         ]}
-                            defaultValue={state.cleanupPolicy}
+                            value={state.cleanupPolicy}
                             onChange={e => state.cleanupPolicy = e}
-                            style={{ width: '100%' }} />
+                        />
                     </Label>
                     <Label text="Retention Time" style={{ flexBasis: '220px', flexGrow: 1 }}>
                         <RetentionTimeSelect
@@ -145,56 +147,52 @@ export function NumInput(p: {
         newValue = Math.round(newValue);
         commit(newValue);
     };
-    const increment = (e: MouseEvent) => { changeBy(+1); e.preventDefault(); }
-    const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
+    // InputLeftElement -> prefix
+    // InputLeftAddon   -> addonBefore
 
+    return <InputGroup>
 
-    return <Input
-        className={'numericInput ' + (p.className ?? '')}
-        style={{ minWidth: '120px', width: '100%' }}
-        spellCheck={false}
-        placeholder={p.placeholder}
-        disabled={p.disabled}
+        {p.addonBefore && <InputLeftAddon children={p.addonBefore} />}
 
-        value={(p.disabled && p.placeholder && p.value == null) ? undefined : editValue}
-        onChange={e => {
-            setEditValue(e.target.value);
-            const n = Number(e.target.value);
-            if (e.target.value != '' && !Number.isNaN(n))
-                p.onChange?.(n);
-            else
-                p.onChange?.(undefined);
-        }}
+        <Input
+            className={'numericInput ' + (p.className ?? '')}
+            style={{ minWidth: '120px', width: '100%' }}
+            spellCheck={false}
+            placeholder={p.placeholder}
+            disabled={p.disabled}
 
-        onWheel={e => changeBy(-Math.sign(e.deltaY))}
+            value={(p.disabled && p.placeholder && p.value == null) ? undefined : editValue}
+            onChange={e => {
+                setEditValue(e.target.value);
+                const n = Number(e.target.value);
+                if (e.target.value != '' && !Number.isNaN(n))
+                    p.onChange?.(n);
+                else
+                    p.onChange?.(undefined);
+            }}
 
-        suffix={!p.disabled &&
-            <span className="btnWrapper" style={{ userSelect: 'none' }}>
-                <span className="stepBtn dec" onMouseDownCapture={decrement}><DashIcon size={16} /></span>
-                <span className="stepBtn inc" onMouseDownCapture={increment}><PlusIcon size={16} /></span>
-            </span>
-        }
+            onWheel={e => changeBy(-Math.sign(e.deltaY))}
 
-        onBlur={() => {
-            const s = editValue;
-            if (s == undefined || s == '') {
-                // still a valid value, meaning "default"
-                commit(undefined);
-                return;
-            }
+            onBlur={() => {
+                const s = editValue;
+                if (s == undefined || s == '') {
+                    // still a valid value, meaning "default"
+                    commit(undefined);
+                    return;
+                }
 
-            const n = Number(s);
-            if (!Number.isFinite(n)) {
-                commit(undefined);
-                return;
-            }
-            commit(n);
-        }}
+                const n = Number(s);
+                if (!Number.isFinite(n)) {
+                    commit(undefined);
+                    return;
+                }
+                commit(n);
+            }}
+        />
 
-        addonBefore={p.addonBefore}
-        addonAfter={p.addonAfter}
-    />
+        {p.addonAfter && <InputRightAddon p="0" children={p.addonAfter} />}
+    </InputGroup>
 }
 
 
@@ -238,39 +236,47 @@ function RetentionTimeSelect(p: {
         placeholder={placeholder}
         disabled={numDisabled}
 
-        addonAfter={<Select
-            style={{ minWidth: '90px' }}
-            value={unit}
-            onChange={u => {
-                if (u == 'default') {
-                    // * -> default
-                    // save as milliseconds
-                    p.onChangeValue(value * timeFactors[unit]);
-                } else {
-                    // * -> real
-                    // convert to new unit
-                    const factor = unit == 'default' ? 1 : timeFactors[unit];
-                    const ms = value * factor;
-                    let newValue = ms / timeFactors[u];
-                    if (Number.isNaN(newValue))
-                        newValue = 0;
-                    if (/\.\d{4,}/.test(String(newValue)))
-                        newValue = Math.round(newValue);
-                    p.onChangeValue(newValue);
+        addonAfter={<Box minWidth="130px">
+            <Select<RetentionTimeUnit>
+                // style={{ minWidth: '90px', background: 'transparent' }}
+                // bordered={false}
+                value={{ value: unit }}
+                onChange={arg => {
+                    if (isSingleValue(arg) && arg && arg.value) {
+                        const u = arg.value;
+
+                        if (u == 'default') {
+                            // * -> default
+                            // save as milliseconds
+                            p.onChangeValue(value * timeFactors[unit]);
+                        } else {
+                            // * -> real
+                            // convert to new unit
+                            const factor = unit == 'default' ? 1 : timeFactors[unit];
+                            const ms = value * factor;
+                            let newValue = ms / timeFactors[u];
+                            if (Number.isNaN(newValue))
+                                newValue = 0;
+                            if (/\.\d{4,}/.test(String(newValue)))
+                                newValue = Math.round(newValue);
+                            p.onChangeValue(newValue);
+                        }
+                        p.onChangeUnit(u);
+                    }
+                }}
+                options={
+                    Object.entries(timeFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name as RetentionTimeUnit,
+                            label: isSpecial ? titleCase(name) : name,
+                            // style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
                 }
-                p.onChangeUnit(u);
-            }}
-            options={
-                Object.entries(timeFactors).map(([name]) => {
-                    const isSpecial = name == 'default' || name == 'infinite';
-                    return {
-                        value: name,
-                        label: isSpecial ? titleCase(name) : name,
-                        style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                    };
-                })
-            }
-        />}
+            />
+        </Box>
+        }
     />
 }
 
@@ -315,39 +321,47 @@ function RetentionSizeSelect(p: {
         placeholder={placeholder}
         disabled={numDisabled}
 
-        addonAfter={<Select
-            style={{ minWidth: '90px' }}
-            value={unit}
-            onChange={u => {
-                if (u == 'default') {
-                    // * -> default
-                    // save as milliseconds
-                    p.onChangeValue(value * sizeFactors[unit]);
-                } else {
-                    // * -> real
-                    // convert to new unit
-                    const factor = unit == 'default' ? 1 : sizeFactors[unit];
-                    const ms = value * factor;
-                    let newValue = ms / sizeFactors[u];
-                    if (Number.isNaN(newValue))
-                        newValue = 0;
-                    if (/\.\d{4,}/.test(String(newValue)))
-                        newValue = Math.round(newValue);
-                    p.onChangeValue(newValue);
+        addonAfter={<Box minWidth="130px">
+            <Select<RetentionSizeUnit>
+                // style={{ minWidth: '90px', background: 'transparent' }}
+                // bordered={false}
+                value={{ value: unit }}
+                onChange={arg => {
+                    if (isSingleValue(arg) && arg && arg.value) {
+                        const u = arg.value;
+
+                        if (u == 'default') {
+                            // * -> default
+                            // save as milliseconds
+                            p.onChangeValue(value * sizeFactors[unit]);
+                        } else {
+                            // * -> real
+                            // convert to new unit
+                            const factor = unit == 'default' ? 1 : sizeFactors[unit];
+                            const ms = value * factor;
+                            let newValue = ms / sizeFactors[u];
+                            if (Number.isNaN(newValue))
+                                newValue = 0;
+                            if (/\.\d{4,}/.test(String(newValue)))
+                                newValue = Math.round(newValue);
+                            p.onChangeValue(newValue);
+                        }
+                        p.onChangeUnit(u);
+                    }
+                }}
+                options={
+                    Object.entries(sizeFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name as RetentionSizeUnit,
+                            label: isSpecial ? titleCase(name) : name,
+                            // style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
                 }
-                p.onChangeUnit(u);
-            }}
-            options={
-                Object.entries(sizeFactors).map(([name]) => {
-                    const isSpecial = name == 'default' || name == 'infinite';
-                    return {
-                        value: name,
-                        label: isSpecial ? titleCase(name) : name,
-                        style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                    };
-                })
-            }
-        />}
+            />
+        </Box>
+        }
     />
 }
 
@@ -358,12 +372,12 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
         {p.entries.map((x, i) => <KeyValuePair key={String(i)} entries={p.entries} entry={x} />)}
 
         <Button
-            type="dashed"
+            variant="outline"
+            size="sm"
             className="addButton"
             onClick={() => { p.entries.push({ name: '', value: '' }) }}
         >
             <PlusIcon />
-
             Add Entry
         </Button>
     </div>
@@ -372,17 +386,17 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
 const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicConfigEntry }) => {
     const { entry } = p;
 
-    return <div className="inputGroup" style={{ width: '100%' }}>
+    return <Box className="inputGroup" width="100%" display="flex">
         <Input placeholder="Property Name..." style={{ flexBasis: '30%' }} spellCheck={false} value={entry.name} onChange={e => entry.name = e.target.value} />
         <Input placeholder="Property Value..." style={{ flexBasis: '60%' }} spellCheck={false} value={entry.value} onChange={e => p.entry.value = e.target.value} />
-        <Button className="iconButton deleteButton"
+        <Button variant="outline" className="iconButton deleteButton"
             onClick={(event) => {
                 event.stopPropagation();
                 p.entries.remove(p.entry);
             }}>
             <XIcon />
         </Button>
-    </div>
+    </Box>
 });
 
 export type { Props as CreateTopicModalProps };
@@ -471,9 +485,9 @@ const durationFactors = {
         const selectOptions = Object.entries(unitFactors).map(([name]) => {
             const isSpecial = name == 'infinite';
             return {
-                value: name,
+                value: name as UnitType,
                 label: isSpecial ? titleCase(name) : name,
-                style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                // style: isSpecial ? { fontStyle: 'italic' } : undefined,
             };
         });
 
@@ -497,24 +511,26 @@ const durationFactors = {
             placeholder={placeholder}
             disabled={numDisabled}
 
-            addonAfter={<Select
-                style={{ minWidth: '90px' }}
-                value={unit}
-                onChange={u => {
-                    const changedFromInfinite = this.unit == 'infinite' && u != 'infinite';
+            addonAfter={<Select<UnitType>
+                // style={{ minWidth: '90px' }}
+                value={{ value: unit }}
+                onChange={arg => {
+                    if (isSingleValue(arg) && arg) {
+                        const u = arg.value as UnitType;
+                        const changedFromInfinite = this.unit == 'infinite' && u != 'infinite';
 
-                    this.unit = u;
-                    if (this.unit == 'infinite')
-                        this.props.onChange(unitFactors[this.unit]);
+                        this.unit = u;
+                        if (this.unit == 'infinite')
+                            this.props.onChange(unitFactors[this.unit]);
 
-                    if (changedFromInfinite) {
-                        // Example: if new unit is "seconds", then we'd want 1000 ms
-                        // The "1*" is redundant of course, but left in to better clarify what
-                        // value we're trying to create and why
-                        const newValue = 1 * unitFactors[u];
-                        this.props.onChange(newValue);
+                        if (changedFromInfinite) {
+                            // Example: if new unit is "seconds", then we'd want 1000 ms
+                            // The "1*" is redundant of course, but left in to better clarify what
+                            // value we're trying to create and why
+                            const newValue = 1 * unitFactors[u];
+                            this.props.onChange(newValue);
+                        }
                     }
-
                 }}
                 options={selectOptions}
             />}

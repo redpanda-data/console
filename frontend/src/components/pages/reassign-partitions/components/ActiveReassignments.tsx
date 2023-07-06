@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Progress, Button, Modal, Popconfirm, Checkbox, Skeleton, message } from 'antd';
+import { Progress, Modal, Popconfirm, Skeleton, message } from 'antd';
 import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
@@ -24,6 +24,7 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
+import { Button, Checkbox } from '@redpanda-data/ui';
 
 
 @observer
@@ -86,7 +87,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
                 <span className="title">Current Reassignments</span>
 
-                <Button type="link" size="small" style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                <Button variant="link" size="sm" style={{ fontSize: 'smaller', padding: '0px 8px' }}
                     onClick={() => this.showThrottleDialog = true}
                 >{throttleText}</Button>
             </div>
@@ -114,7 +115,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             <ThrottleDialog visible={this.showThrottleDialog} lastKnownMinThrottle={minThrottle} onClose={() => this.showThrottleDialog = false} />
 
             {this.props.throttledTopics.length > 0 &&
-                <Button type="link" size="small" style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                <Button variant="link" size="sm" style={{ fontSize: 'smaller', padding: '0px 8px' }}
                     onClick={this.props.onRemoveThrottleFromTopics}
                 >
                     <span>There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix</span>
@@ -180,7 +181,8 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
             footer={<div style={{ display: 'flex' }}>
                 <Button
-                    danger
+                    variant="outline"
+                    colorScheme="red"
                     onClick={() => {
                         this.newThrottleValue = null;
                         this.applyBandwidthThrottle();
@@ -194,7 +196,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
                 <Button
                     disabled={noChange}
-                    type="primary"
+                    variant="solid"
                     onClick={() => this.applyBandwidthThrottle()}
                 >Apply</Button>
             </div>}
@@ -307,7 +309,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
                 {/* Throttle */}
                 <div style={{ display: 'flex', gap: '1em' }}>
-                    <Checkbox checked={this.shouldThrottle} onChange={e => this.shouldThrottle = e.target.checked}>
+                    <Checkbox isChecked={this.shouldThrottle} onChange={e => this.shouldThrottle = e.target.checked}>
                         <span>
                             <span>Throttle Reassignment</span><br />
                             <span style={{ fontSize: 'smaller', opacity: '0.6', marginLeft: '2em' }}>Using global throttle limit for all replication traffic</span>
@@ -319,7 +321,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
                     onConfirm={() => this.cancelReassignment()}
                 >
-                    <Button type="dashed" danger>Cancel Reassignment</Button>
+                    <Button variant="outline" colorScheme="red">Cancel Reassignment</Button>
                 </Popconfirm>
             </div>
         ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;

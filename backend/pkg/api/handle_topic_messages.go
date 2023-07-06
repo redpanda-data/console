@@ -128,8 +128,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
+		ctx, err = api.Hooks.Console.CheckWebsocketConnection(r, req)
+		if err != nil {
+			sendError(err.Error())
+			return
+		}
+
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(r.Context(), &req)
+		canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(ctx, &req)
 		if restErr != nil {
 			wsClient.writeJSON(restErr)
 			return
@@ -140,7 +146,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(r.Context(), &req)
+			canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(ctx, &req)
 			if restErr != nil {
 				sendError(restErr.Message)
 				return
@@ -169,6 +175,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == console.StartOffsetNewest {
 			duration = 30 * time.Minute
 		}
+
 		childCtx, cancel := context.WithTimeout(ctx, duration)
 		defer cancel()
 

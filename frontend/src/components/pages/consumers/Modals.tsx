@@ -13,7 +13,7 @@
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
 import { findPopupContainer, numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Button, Collapse, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
+import { Collapse, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -26,6 +26,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
+import { Button } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -390,9 +391,9 @@ export class EditOffsetsModal extends Component<{
         if (this.page == 0) return <div>
             <Button key="cancel" onClick={this.props.onClose} >Cancel</Button>
 
-            <Button key="next" type="primary" onClick={() => this.setPage(1)}
-                disabled={disableContinue || disableNav}
-                loading={this.isLoadingTimestamps}
+            <Button key="next" variant="solid" onClick={() => this.setPage(1)}
+                isDisabled={disableContinue || disableNav}
+                isLoading={this.isLoadingTimestamps}
             >
                 <span>Review</span>
                 <span><ChevronRightIcon /></span>
@@ -400,7 +401,7 @@ export class EditOffsetsModal extends Component<{
         </div>;
         else return <div style={{ display: 'flex' }}>
             <Button key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}
-                disabled={disableNav}
+                isDisabled={disableNav}
             >
                 <span><ChevronLeftIcon /></span>
                 <span>Back</span>
@@ -411,7 +412,7 @@ export class EditOffsetsModal extends Component<{
                 onClick={this.props.onClose}
             >Cancel</Button>
 
-            <Button key="next" type="primary" disabled={disableNav}
+            <Button key="next" variant="solid" isDisabled={disableNav}
                 onClick={() => this.onApplyEdit()}
             >
                 <span>Apply</span>

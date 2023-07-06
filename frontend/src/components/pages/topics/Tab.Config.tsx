@@ -11,7 +11,7 @@
 
 import { Component } from 'react';
 import { KafkaError, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
-import { Tooltip, Empty, Typography, Button, Result } from 'antd';
+import { Tooltip, Empty, Typography, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
@@ -24,6 +24,7 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
+import { Button } from '@redpanda-data/ui';
 
 
 const { Text } = Typography;
@@ -122,7 +123,7 @@ export class TopicConfiguration extends Component<{
                             {toJson(error, 4)}
                         </div>
                     </div>
-                    <Button type="primary" size="large" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }}>
+                    <Button variant="solid" size="lg" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }}>
                         Retry
                     </Button>
                 </div>

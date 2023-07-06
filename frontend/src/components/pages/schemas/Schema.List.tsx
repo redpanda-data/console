@@ -13,7 +13,7 @@ import React, { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Alert, Button, Empty, Row, Statistic } from 'antd';
+import { Empty, Row, Statistic } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -26,6 +26,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -36,7 +37,11 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
         <Section>
             <div className="SchemaList__error-card">
                 {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
-                    <Alert key={idx} type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
+                    <Alert key={idx} marginTop="1em" status="error">
+                        <AlertIcon />
+                        <div>{errorMessage}</div>
+                        <div>{requestDescription}</div>
+                    </Alert>
                 ))}
             </div>
         </Section>
@@ -60,7 +65,7 @@ function renderNotConfigured() {
 
                     {/* todo: fix link once we have a better guide */}
                     <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-                        <Button type="primary">Redpanda Console Config Documentation</Button>
+                        <Button variant="solid">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
             </Section>

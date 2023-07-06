@@ -46,7 +46,11 @@ kafka:
   #     realm:
   #     enableFast: true
   #   oauth:
-  #     token: # can be set via the --kafka.sasl.oauth.token flag as well
+  #     token: # can be set via the --kafka.sasl.oauth.token flag as well. Will be used as a long living token if no token-endpoint is specified
+  #     clientId: # can be set via the --kafka.sasl.oauth.clientId flag as well
+  #     clientSecret: # can be set via the --kafka.sasl.oauth.clientSecret flag as well
+  #     tokenEndpoint: # can be set via the --kafka.sasl.oauth.tokenEndpoint flag as well. Will be used to fetch a short living token if specified
+  #     scope: # can be set via the --kafka.sasl.oauth.scope flag as well
   #   awsMskIam:
   #     accessKey:
   #     secretKey: # can be set via the --kafka.sasl.aws-msk-iam.secret-key flag as well

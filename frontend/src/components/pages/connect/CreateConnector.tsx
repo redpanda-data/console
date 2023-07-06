@@ -574,7 +574,7 @@ function Review({
                         />
                     ) : null}
 
-                        <Heading as="h2" mt="4" fontSize="1.4em" fontWeight="500">Connector Properties</Heading>
+                    <Heading as="h2" mt="4" fontSize="1.4em" fontWeight="500">Connector Properties</Heading>
                     <div style={{ margin: '0 auto 1.5rem' }}>
                         <KowlEditor
                             language="json"

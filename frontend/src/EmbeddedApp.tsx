@@ -26,13 +26,11 @@ import './assets/fonts/kumbh-sans.css';
 
 import { appGlobal } from './state/appGlobal';
 
-import { SetConfigArguments, setup } from './config';
+import { SetConfigArguments, setup, embeddedAvailableRoutesObservable } from './config';
 import HistorySetter from './components/misc/HistorySetter';
-import EnsureAuth from './components/HandleAuthzEmbedded';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
-import { embeddedAvailableRoutes } from './components/routes';
 
 export interface EmbeddedProps extends SetConfigArguments {
     // This is the base url that is used:
@@ -54,7 +52,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
         const shellNavigationHandler = (event: Event) => {
             const pathname = (event as CustomEvent<string>).detail;
             const { pathname: currentPathname } = appGlobal.history.location;
-            if (currentPathname === pathname || !embeddedAvailableRoutes.some((r) => r.path === pathname)) {
+            if (currentPathname === pathname || !embeddedAvailableRoutesObservable.routes.some((r) => r.path === pathname)) {
                 return;
             }
 
@@ -74,9 +72,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
         <BrowserRouter basename={basePath}>
             <HistorySetter />
             <ChakraProvider theme={redpandaTheme}>
-                <EnsureAuth>
-                    <AppContent />
-                </EnsureAuth>
+                 <AppContent />
             </ChakraProvider>
         </BrowserRouter>
     );

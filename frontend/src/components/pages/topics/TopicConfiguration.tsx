@@ -1,8 +1,8 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline'
-import { Icon, SearchField } from '@redpanda-data/ui';
-import { Alert, Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
+import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -65,44 +65,49 @@ export default class ConfigurationEditor extends Component<{
             content: <Observer>{() => {
                 const isCustom = this.modalValueType == 'custom';
 
-                return <div>
-                    <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{this.props.targetTopic}</code>.</p>
-                    <div style={{
-                        padding: '1em',
-                        background: 'rgb(238, 238, 238)',
-                        color: 'hsl(0deg 0% 50%)',
-                        borderRadius: '8px',
-                        margin: '1em 0'
-                    }}>{configEntry.documentation}</div>
+                return(
+                    <ChakraProvider theme={redpandaTheme} disableGlobalStyle={true} disableEnvironment={true}>
+                        <div>
+                            <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{this.props.targetTopic}</code>.</p>
+                            <div style={{
+                                padding: '1em',
+                                background: 'rgb(238, 238, 238)',
+                                color: 'hsl(0deg 0% 50%)',
+                                borderRadius: '8px',
+                                margin: '1em 0'
+                            }}>{configEntry.documentation}</div>
 
-                    <div style={{ fontWeight: 'bold', marginBottom: '0.5em' }}>Value</div>
-                    <Radio.Group className="valueRadioGroup" value={this.modalValueType} onChange={e => this.modalValueType = e.target.value} >
-                        <Radio value="default">
-                            <span>Default: </span>
-                            <span style={{ fontWeight: 'bold' }}>{friendlyDefault}</span>
-                            <div className="subText">Inherited from {defaultSource}</div>
-                        </Radio>
-                        <Radio value="custom">
-                            <span>Custom</span>
-                            <div className="subText">Set at topic configuration</div>
-                            <div onClick={e => {
-                                if (isCustom) {
-                                    // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
-                                    // otherwise they will steal focus, closing any select/dropdowns
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                }
-                            }}>
-                                <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry} />
-                            </div>
-                        </Radio>
-                    </Radio.Group>
+                            <div style={{ fontWeight: 'bold', marginBottom: '0.5em' }}>Value</div>
+                            <Radio.Group className="valueRadioGroup" value={this.modalValueType} onChange={e => this.modalValueType = e.target.value} >
+                                <Radio value="default">
+                                    <span>Default: </span>
+                                    <span style={{ fontWeight: 'bold' }}>{friendlyDefault}</span>
+                                    <div className="subText">Inherited from {defaultSource}</div>
+                                </Radio>
+                                <Radio value="custom">
+                                    <span>Custom</span>
+                                    <div className="subText">Set at topic configuration</div>
+                                    <div style={{ position: 'relative', zIndex: 2 }}  onClick={e => {
+                                        if (isCustom) {
+                                            // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
+                                            // otherwise they will steal focus, closing any select/dropdowns
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                        }
+                                    }}>
+                                        <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry} />
+                                    </div>
+                                </Radio>
+                            </Radio.Group>
 
-                    {this.modalError && <Alert type="error" message={this.modalError} showIcon style={{ margin: '1em 0' }} />}
-
-                </div>
+                            {this.modalError && <Alert status="error" style={{ margin: '1em 0' }}>
+                                <AlertIcon />
+                                {this.modalError}
+                            </Alert>}
+                        </div>
+                    </ChakraProvider>
+                )
             }}</Observer>,
-
             onOk: async () => {
 
                 // When do we need to apply?
@@ -178,11 +183,10 @@ export default class ConfigurationEditor extends Component<{
 
         return <div style={{ paddingTop: '1em' }}>
             <div className="configGroupTable">
-                <SearchField 
-                    className="searchBar"
+                <SearchField
                     searchText={this.filter || ''}
                     placeholderText="Filter"
-                    setSearchText={value => this.filter = value} 
+                    setSearchText={value => this.filter = value}
                     icon="filter"
                 />
                 {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} canEdit={canEdit} />)}

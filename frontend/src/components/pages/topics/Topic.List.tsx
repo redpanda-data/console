@@ -10,8 +10,7 @@
  */
 
 import React from 'react';
-import { TrashIcon } from '@heroicons/react/outline';
-import { Alert, Button, Checkbox, Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
+import { Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -29,6 +28,9 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Button, Icon, Checkbox, Alert, AlertIcon } from '@redpanda-data/ui';
+import { HiOutlineTrash } from 'react-icons/hi';
+import { isServerless } from '../../../config';
 
 @observer
 class TopicList extends PageComponent {
@@ -88,7 +90,7 @@ class TopicList extends PageComponent {
         if (!api.topics) return DefaultSkeleton;
 
         let topics = api.topics;
-        if (uiSettings.topicList.hideInternalTopics) {
+        if (uiSettings.topicList.hideInternalTopics || isServerless()) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
 
@@ -142,19 +144,22 @@ class TopicList extends PageComponent {
                 <Section>
                     <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
                         <Button
-                            type={'primary'}
+                            variant="solid"
+                            colorScheme="brand"
                             onClick={() => this.showCreateTopicModal()}
                             style={{ minWidth: '160px', marginBottom: '12px' }}
                         >
                             Create Topic
                         </Button>
-                        <Checkbox
-                            checked={!uiSettings.topicList.hideInternalTopics}
-                            onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
-                            style={{ marginLeft: 'auto' }}
-                        >
-                            Show internal topics
-                        </Checkbox>
+
+                        {!isServerless() &&
+                            <Checkbox
+                                isChecked={!uiSettings.topicList.hideInternalTopics}
+                                onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
+                                style={{ marginLeft: 'auto' }}>
+                                Show internal topics
+                            </Checkbox>
+                        }
                         <this.CreateTopicModal />
                     </div>
                     <KowlTable
@@ -209,14 +214,14 @@ class TopicList extends PageComponent {
                                     <div style={{ display: 'flex', gap: '4px' }}>
                                         <DeleteDisabledTooltip topic={record}>
                                             <Button
-                                                type="text"
+                                                variant="ghost"
                                                 className="iconButton"
                                                 onClick={(event) => {
                                                     event.stopPropagation();
                                                     this.topicToDelete = record;
                                                 }}
                                             >
-                                                <TrashIcon />
+                                                <Icon as={HiOutlineTrash} fontSize="22px" />
                                             </Button>
                                         </DeleteDisabledTooltip>
                                     </div>
@@ -361,8 +366,14 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
             }}
         >
             <>
-                {error && <Alert type="error" message={`An error occurred: ${typeof error === 'string' ? error : error.message}`} />}
-                {topicToDelete?.isInternal && <Alert type="error" showIcon message="This is an internal topic, deleting it might have unintended side-effects!" />}
+                {error && <Alert status="error">
+                    <AlertIcon />
+                    {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
+                </Alert>}
+                {topicToDelete?.isInternal && <Alert status="error">
+                    <AlertIcon />
+                    This is an internal topic, deleting it might have unintended side-effects!
+                </Alert>}
                 <p>
                     Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
                     This action cannot be undone.

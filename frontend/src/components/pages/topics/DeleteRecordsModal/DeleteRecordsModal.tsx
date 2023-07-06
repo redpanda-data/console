@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Alert, Input, Modal, notification, Select, Slider, Spin } from 'antd';
+import { Input, Modal, notification, Select, Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,6 +20,7 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
+import { Spinner, Alert, AlertIcon } from '@redpanda-data/ui';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -242,20 +243,26 @@ const ManualOffsetContent = observer(
                     ) : null}
                 </>
             );
-            return <Alert type="error" message={message} />;
+            return <Alert status="error">
+                <AlertIcon />
+                {message}
+            </Alert>;
         }
 
         const partitions = api.topicPartitions?.get(topicName);
 
         if (!partitions) {
-            return <Spin />;
+            return <Spinner size="lg" />;
         }
 
         const [, partitionId] = partitionInfo;
         const partition = partitions.find((p) => p.id === partitionId);
 
         if (!partition) {
-            return <Alert type="error" message={`Partition of topic ${topicName} with ID ${partitionId} not found!`} />;
+            return <Alert status="error">
+                <AlertIcon />
+                {`Partition of topic ${topicName} with ID ${partitionId} not found!`}
+            </Alert>;
         }
 
         const { marks, min, max } = getMarks(partition);
@@ -462,18 +469,14 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             afterClose={afterClose}
         >
             {hasErrors && (
-                <Alert
-                    type="error"
-                    message={
-                        <>
-                            <p>
-                                Errors have occurred when processing your request. Please contact your Kafka
-                                Administrator.
-                            </p>
-                            <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
-                        </>
-                    }
-                />
+                <Alert status="error">
+                    <AlertIcon />
+                    <p>
+                        Errors have occurred when processing your request. Please contact your Kafka
+                        Administrator.
+                    </p>
+                    <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
+                </Alert>
             )}
             {!hasErrors && step === 1 && (
                 <SelectPartitionStep

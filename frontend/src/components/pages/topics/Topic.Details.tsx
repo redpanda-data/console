@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Button, Popover, Result, Tooltip, Typography } from 'antd';
+import { Popover, Result, Tooltip, Typography } from 'antd';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -36,6 +36,8 @@ import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Button } from '@redpanda-data/ui';
+import { isServerless } from '../../../config';
 
 const { Text } = Typography;
 
@@ -144,6 +146,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
             ]),
         ];
+
+        if (isServerless())
+            this.topicTabs.removeAll(x => x.id == 'documentation');
+
         makeObservable(this);
     }
 
@@ -262,6 +268,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     {/* Tabs:  Messages, Configuration */}
                     <Section>
                         <Tabs
+                            isFitted
                             tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
                                 key: id,
                                 disabled: isDisabled,
@@ -317,7 +324,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     </>
                 }
                 extra={
-                    <Button type="primary" onClick={() => appGlobal.history.goBack()}>
+                    <Button variant="solid" onClick={() => appGlobal.history.goBack()}>
                         Go Back
                     </Button>
                 }

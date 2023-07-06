@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Modal, Skeleton, Tooltip } from 'antd';
+import { Skeleton, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
@@ -86,38 +86,33 @@ const KafkaConnectorMain = observer(
             {/* [Pause] [Restart] [Delete] */}
             <Flex flexDirection="row" alignItems="center" gap="3">
 
-                {/* [View JSON Config] */}
-                <ViewConfigModalButton connector={connector} />
+                {/* [Pause/Resume] */}
+                {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
+                    <Tooltip
+                        placement="top"
+                        trigger={!canEdit ? 'hover' : 'none'}
+                        mouseLeaveDelay={0}
+                        getPopupContainer={findPopupContainer}
+                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                    >
+                        <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
+                            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
+                        </Button>
+                    </Tooltip>
+                ) : null}
 
-                {/* [Pause/Resume]  [Restart] */}
-                {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
-                    null
-                ) : (
-                    <>
-                        <Tooltip
-                            placement="top"
-                            trigger={!canEdit ? 'hover' : 'none'}
-                            mouseLeaveDelay={0}
-                            getPopupContainer={findPopupContainer}
-                            overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                        >
-                                <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
-                                {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
-                            </Button>
-                        </Tooltip>
-                        <Tooltip
-                            placement="top"
-                            trigger={!canEdit ? 'hover' : 'none'}
-                            mouseLeaveDelay={0}
-                            getPopupContainer={findPopupContainer}
-                            overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                        >
-                                <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
-                                Restart
-                            </Button>
-                        </Tooltip>
-                    </>
-                )}
+                {/* [Restart] */}
+                <Tooltip
+                    placement="top"
+                    trigger={!canEdit ? 'hover' : 'none'}
+                    mouseLeaveDelay={0}
+                    getPopupContainer={findPopupContainer}
+                    overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                >
+                    <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
+                        Restart
+                    </Button>
+                </Tooltip>
 
                 {/* [Delete] */}
                 <Tooltip
@@ -439,6 +434,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     }
 
     async refreshData(force: boolean): Promise<void> {
+        ConnectClusterStore.connectClusters.clear();
         await api.refreshConnectClusters(force);
     }
 
@@ -457,31 +453,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 }
 
 export default KafkaConnectorDetails;
-
-const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
-    const [showConfig, setShowConfig] = useState(false);
-
-    const closeConfigModal = () => setShowConfig(false);
-    const viewConfigModal = <Modal open={showConfig} onOk={closeConfigModal} onCancel={closeConfigModal} cancelButtonProps={{ style: { display: 'none' } }}
-        bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
-        centered
-        closable={false} maskClosable={true}
-        okText="Close" width="60%"
-    >
-        <>
-            <Flex alignItems="center" mb="8px">
-                <Box fontSize="medium" fontWeight={500}>Connector Config (JSON)</Box>
-            </Flex>
-
-            <CodeBlock codeString={p.connector.jsonConfig} language="json" showCopyButton />
-        </>
-    </Modal>;
-
-    return <>
-        <Button variant="outline" onClick={() => setShowConfig(true)}>View JSON Config</Button>
-        {viewConfigModal}
-    </>
-};
 
 const ConnectorDetails = observer((p: {
     clusterName: string,

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Row, Statistic, Tag, Input } from 'antd';
+import { Row, Statistic, Tag } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -29,6 +29,7 @@ import { ShortNum } from '../../misc/ShortNum';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { SearchField } from '@redpanda-data/ui';
 
 
 @observer
@@ -76,44 +77,44 @@ class GroupList extends PageComponent {
         const tableSettings = uiSettings.consumerGroupList ?? {};
 
         return (
-          <>
-            <PageContent>
-                <Section py={4}>
-                  <Row>
-                    <Statistic title="Total Groups" value={groups.length} />
-                    <div
-                      style={{
-                        width: '1px',
-                        background: '#8883',
-                        margin: '0 1.5rem',
-                        marginLeft: 0,
-                      }}
-                    />
-                    {stateGroups.map((g) => (
-                      <Statistic
-                        style={{ marginRight: '1.5rem' }}
-                        key={g.key}
-                        title={g.key}
-                        value={g.items.length}
-                      />
-                    ))}
-                  </Row>
-                </Section>
+            <>
+                <PageContent>
+                    <Section py={4}>
+                        <Row>
+                            <Statistic title="Total Groups" value={groups.length} />
+                            <div
+                                style={{
+                                    width: '1px',
+                                    background: '#8883',
+                                    margin: '0 1.5rem',
+                                    marginLeft: 0,
+                                }}
+                            />
+                            {stateGroups.map((g) => (
+                                <Statistic
+                                    style={{ marginRight: '1.5rem' }}
+                                    key={g.key}
+                                    title={g.key}
+                                    value={g.items.length}
+                                />
+                            ))}
+                        </Row>
+                    </Section>
 
-                <Section>
-                  {/* Searchbar */} {/* Filters */}
-                  <div
-                    style={{
-                      marginBottom: '.5rem',
-                      padding: '0',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2em',
-                    }}
-                  >
-                    <this.SearchBar />
-                    {/*
+                    <Section>
+                        {/* Searchbar */} {/* Filters */}
+                        <div
+                            style={{
+                                marginBottom: '.5rem',
+                                padding: '0',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '2em',
+                            }}
+                        >
+                            <this.SearchBar />
+                            {/*
                         <Checkbox
                             value={uiSettings.consumerGroupList.hideEmpty}
                             onChange={c => uiSettings.consumerGroupList.hideEmpty = c.target.checked}
@@ -121,73 +122,73 @@ class GroupList extends PageComponent {
                             Hide Empty
                         </Checkbox>
                         */}
-                  </div>
-                  {/* Content */}
-                  <KowlTable
-                    dataSource={groups}
-                    columns={[
-                      {
-                        title: 'State',
-                        dataIndex: 'state',
-                        width: '130px',
-                        sorter: sortField('state'),
-                        render: (t, r) => <GroupState group={r} />,
-                        filterType: { type: 'enum' },
-                      },
-                      {
-                        title: 'ID',
-                        dataIndex: 'groupId',
-                        sorter: sortField('groupId'),
-                        filteredValue: [tableSettings.quickSearch],
-                        onFilter: (filterValue, record: GroupDescription) =>
-                          !filterValue ||
-                          containsIgnoreCase(
-                            record.groupId,
-                            String(filterValue)
-                          ),
-                        render: (t, r) => <this.GroupId group={r} />,
-                        className: 'whiteSpaceDefault',
-                      },
-                      {
-                        title: 'Coordinator',
-                        dataIndex: 'coordinatorId',
-                        width: 1,
-                        render: (x: number) => <BrokerList brokerIds={[x]} />,
-                      },
-                      { title: 'Protocol', dataIndex: 'protocol', width: 1 },
-                      {
-                        title: 'Members',
-                        dataIndex: 'members',
-                        width: 1,
-                        render: (t: GroupMemberDescription[]) => t.length,
-                        sorter: (a, b) => a.members.length - b.members.length,
-                        defaultSortOrder: 'descend',
-                      },
-                      {
-                        title: 'Lag (Sum)',
-                        dataIndex: 'lagSum',
-                        render: (v) => ShortNum({ value: v }),
-                        sorter: (a, b) => a.lagSum - b.lagSum,
-                      },
-                    ]}
-                    observableSettings={tableSettings}
-                    rowKey={(x) => x.groupId}
-                    rowClassName="hoverLink"
-                    onRow={(record) => ({
-                      onClick: () =>
-                        appGlobal.history.push(`/groups/${encodeURIComponent(record.groupId)}`),
-                    })}
-                  />
-                </Section>
-            </PageContent>
-          </>
+                        </div>
+                        {/* Content */}
+                        <KowlTable
+                            dataSource={groups}
+                            columns={[
+                                {
+                                    title: 'State',
+                                    dataIndex: 'state',
+                                    width: '130px',
+                                    sorter: sortField('state'),
+                                    render: (t, r) => <GroupState group={r} />,
+                                    filterType: { type: 'enum' },
+                                },
+                                {
+                                    title: 'ID',
+                                    dataIndex: 'groupId',
+                                    sorter: sortField('groupId'),
+                                    filteredValue: [tableSettings.quickSearch],
+                                    onFilter: (filterValue, record: GroupDescription) =>
+                                        !filterValue ||
+                                        containsIgnoreCase(
+                                            record.groupId,
+                                            String(filterValue)
+                                        ),
+                                    render: (t, r) => <this.GroupId group={r} />,
+                                    className: 'whiteSpaceDefault',
+                                },
+                                {
+                                    title: 'Coordinator',
+                                    dataIndex: 'coordinatorId',
+                                    width: 1,
+                                    render: (x: number) => <BrokerList brokerIds={[x]} />,
+                                },
+                                { title: 'Protocol', dataIndex: 'protocol', width: 1 },
+                                {
+                                    title: 'Members',
+                                    dataIndex: 'members',
+                                    width: 1,
+                                    render: (t: GroupMemberDescription[]) => t.length,
+                                    sorter: (a, b) => a.members.length - b.members.length,
+                                    defaultSortOrder: 'descend',
+                                },
+                                {
+                                    title: 'Lag (Sum)',
+                                    dataIndex: 'lagSum',
+                                    render: (v) => ShortNum({ value: v }),
+                                    sorter: (a, b) => a.lagSum - b.lagSum,
+                                },
+                            ]}
+                            observableSettings={tableSettings}
+                            rowKey={(x) => x.groupId}
+                            rowClassName="hoverLink"
+                            onRow={(record) => ({
+                                onClick: () =>
+                                    appGlobal.history.push(`/groups/${encodeURIComponent(record.groupId)}`),
+                            })}
+                        />
+                    </Section>
+                </PageContent>
+            </>
         );
     }
 
     SearchBar = observer(() => {
-        return <Input allowClear={true} placeholder="Quick Search" size="large" style={{ width: '350px' }}
-            onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
-            value={uiSettings.consumerGroupList.quickSearch}
+        return <SearchField width="350px"
+            searchText={uiSettings.consumerGroupList.quickSearch}
+            setSearchText={x => uiSettings.consumerGroupList.quickSearch = x}
         />
     })
 
