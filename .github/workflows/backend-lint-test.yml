@@ -34,5 +34,5 @@ jobs:
           working-directory: backend
     
       - name: test
-        run: go test -race ./...
+        run: go test -race --tags=integration ./...
         working-directory: backend
