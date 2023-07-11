@@ -16,6 +16,10 @@
 - [FEATURE] Support AzureAD as identity provider
 - [BUGFIX] Report license expiry time correctly
 
+## v2.2.5 / 2023-07-11
+
+- [SECURITY] Build new Docker image running on latest 3.17 Alpine which addresses CVE-2023-28531
+  
 ## v2.2.4 / 2023-05-03
 
 - [ENHANCEMENT] Set `USER` instruction to `redpandaconsole` in Dockerfile.
