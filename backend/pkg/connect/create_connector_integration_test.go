@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	testSeedBroker   []string
-	testAdminAddress string
+	testSeedBroker      []string
+	testAdminAddress    string
+	redpandaContainerIP string
 )
 
 const (
@@ -122,14 +123,14 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 
 	req := testcontainers.ContainerRequest{
 		Name:         "redpanda-connect",
-		Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:1.0.0-dev-1d15b96",
-		ExposedPorts: []string{"8083"},
+		Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:v1.0.0-6955117",
+		ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
 		Env: map[string]string{
 			"CONNECT_CONFIGURATION":     CONNECT_CONFIGURATION,
 			"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
 			"CONNECT_GC_LOG_ENABLED":    "false",
 			"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
-			"CONNECT_LOG_LEVEL":         "info",
+			"CONNECT_LOG_LEVEL":         "debug",
 		},
 		Networks: []string{
 			network,
@@ -139,7 +140,7 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 		},
 		Hostname: "redpanda-connect",
 		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.NetworkMode = "local_default"
+			// hc.NetworkMode = "host"
 			hc.PortBindings = nat.PortMap{
 				nat.Port("8083/tcp"): []nat.PortBinding{
 					{
@@ -225,6 +226,7 @@ func WithExposedPorts() testcontainers.CustomizeRequestOption {
 			strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
 			strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
 			strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
+			strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
 			"29092",
 		}
 	}
@@ -232,6 +234,17 @@ func WithExposedPorts() testcontainers.CustomizeRequestOption {
 
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
+		provider, err := testcontainers.ProviderDocker.GetProvider()
+		if err != nil {
+			panic(err)
+		}
+		ip, err := provider.(*testcontainers.DockerProvider).GetGatewayIP(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("ip:", ip)
+
 		ctx := context.Background()
 
 		testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
@@ -239,6 +252,7 @@ func TestMain(m *testing.M) {
 			NetworkRequest: testcontainers.NetworkRequest{
 				Name:           CONNECT_TEST_NETWORK,
 				CheckDuplicate: true,
+				Attachable:     true,
 			},
 		})
 		if err != nil {
@@ -250,8 +264,7 @@ func TestMain(m *testing.M) {
 			WithNetwork(CONNECT_TEST_NETWORK, []string{"redpanda", "local-redpanda"}),
 			WithHostname("redpanda"),
 			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
-				hostConfig.NetworkMode = "local_default"
-
+				// hostConfig.NetworkMode = "host"
 				hostConfig.PortBindings = nat.PortMap{
 					nat.Port("9092/tcp"): []nat.PortBinding{
 						{
@@ -271,6 +284,12 @@ func TestMain(m *testing.M) {
 							HostPort: strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
 						},
 					},
+					nat.Port("8082/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
+						},
+					},
 					nat.Port("29092/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
@@ -284,6 +303,11 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			panic(err)
 		}
+
+		redpandaContainerIPs, _ := container.ContainerIPs(context.Background())
+		fmt.Println("container ips:", redpandaContainerIPs)
+		redpandaContainerIP, _ = container.ContainerIP(context.Background())
+		fmt.Println("container ips:", redpandaContainerIP)
 
 		rc, err := container.CopyFileFromContainer(ctx, "/etc/redpanda/redpanda.yaml")
 		if err != nil {
@@ -300,8 +324,8 @@ func TestMain(m *testing.M) {
 		port, err := container.MappedPort(ctx, nat.Port("9092/tcp"))
 		fmt.Println("port:", port, err)
 
-		duration := 10 * time.Second
-		container.Stop(ctx, &duration)
+		// duration := 10 * time.Second
+		// container.Stop(ctx, &duration)
 
 		container.CopyToContainer(ctx,
 			[]byte(redpandaCustomYaml),
@@ -309,10 +333,10 @@ func TestMain(m *testing.M) {
 			700,
 		)
 
-		err = container.Start(ctx)
-		if err != nil {
-			panic(err)
-		}
+		// err = container.Start(ctx)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		err = wait.ForLog("Successfully started Redpanda!").
 			WithPollInterval(100*time.Millisecond).
@@ -410,3 +434,42 @@ schema_registry_client:
     - address: localhost
       port: 9093
 `
+
+func runRedpanda() (testcontainers.Container, error) {
+	container := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			ExposedPorts: []string{
+				strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
+				strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
+				strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
+				strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
+				"29092",
+			},
+			Cmd: []string{
+				"redpanda start",
+				"--smp 1",
+				"--overprovisioned",
+				"--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092",
+				"--advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092",
+				"--pandaproxy-addr 0.0.0.0:8082",
+				"--advertise-pandaproxy-addr localhost:8082",
+			},
+		},
+		Started: true,
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	err = wait.ForLog("Successfully started Redpanda!").
+		WithPollInterval(100*time.Millisecond).
+		WaitUntilReady(ctx, container)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
+	}
+
+	return container, nil
+}
