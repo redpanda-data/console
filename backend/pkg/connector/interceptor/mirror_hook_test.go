@@ -14,34 +14,52 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 		want   map[string]any
 	}{
 		{
-			name: "Should not set truststore and keystore types if given",
+			name: "Should not set default props if given",
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "JKS",
 				"source.cluster.ssl.keystore.type":   "JKS",
+				"header.converter":                   "org.apache.kafka.connect.storage.StringConverter",
 			},
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "JKS",
 				"source.cluster.ssl.keystore.type":   "JKS",
+				"header.converter":                   "org.apache.kafka.connect.storage.StringConverter",
 			},
 		},
 		{
 			name: "Should set source.cluster.ssl.truststore.type if not given",
 			config: map[string]any{
 				"source.cluster.ssl.keystore.type": "JKS",
+				"header.converter":                 "org.apache.kafka.connect.storage.StringConverter",
 			},
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "JKS",
+				"header.converter":                   "org.apache.kafka.connect.storage.StringConverter",
 			},
 		},
 		{
 			name: "Should set source.cluster.ssl.keystore.type if not given",
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "JKS",
+				"header.converter":                   "org.apache.kafka.connect.storage.StringConverter",
 			},
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "JKS",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.storage.StringConverter",
+			},
+		},
+		{
+			name: "Should set header.converter if not given",
+			config: map[string]any{
+				"source.cluster.ssl.truststore.type": "JKS",
+				"source.cluster.ssl.keystore.type":   "JKS",
+			},
+			want: map[string]any{
+				"source.cluster.ssl.truststore.type": "JKS",
+				"source.cluster.ssl.keystore.type":   "JKS",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 			},
 		},
 		{
@@ -49,11 +67,13 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 			},
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_SSL",
 			},
@@ -63,12 +83,14 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_PLAINTEXT",
 			},
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_PLAINTEXT",
 			},
@@ -78,6 +100,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "PLAIN",
 				"source.cluster.sasl.username":       "user",
@@ -86,6 +109,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "PLAIN",
@@ -99,6 +123,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "SCRAM-SHA-256",
 				"source.cluster.sasl.username":       "user",
@@ -107,6 +132,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "SCRAM-SHA-256",
@@ -120,6 +146,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "PLAIN",
 				"source.cluster.sasl.username":       "user",
@@ -129,6 +156,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 			want: map[string]any{
 				"source.cluster.ssl.truststore.type": "PEM",
 				"source.cluster.ssl.keystore.type":   "PEM",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"source.cluster.security.protocol":   "SASL_SSL",
 				"security.protocol":                  "SASL_SSL",
 				"source.cluster.sasl.mechanism":      "PLAIN",
