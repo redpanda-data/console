@@ -13,6 +13,8 @@ import './TopicConfiguration.scss';
 import { ModalFunc } from 'antd/lib/modal/confirm';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
+import { isServerless } from '../../../config';
+import { isConfigEntryInValidRange } from './serverlessTopicConfigLimits';
 
 
 @observer
@@ -64,8 +66,11 @@ export default class ConfigurationEditor extends Component<{
 
             content: <Observer>{() => {
                 const isCustom = this.modalValueType == 'custom';
+                const rangeError = (configEntry.currentValue == null || this.modalValueType == 'default')
+                    ? undefined
+                    : isConfigEntryInValidRange(configEntry.name, configEntry.currentValue ?? 0);
 
-                return(
+                return (
                     <ChakraProvider theme={redpandaTheme} disableGlobalStyle={true} disableEnvironment={true}>
                         <div>
                             <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{this.props.targetTopic}</code>.</p>
@@ -87,7 +92,7 @@ export default class ConfigurationEditor extends Component<{
                                 <Radio value="custom">
                                     <span>Custom</span>
                                     <div className="subText">Set at topic configuration</div>
-                                    <div style={{ position: 'relative', zIndex: 2 }}  onClick={e => {
+                                    <div style={{ position: 'relative', zIndex: 2 }} onClick={e => {
                                         if (isCustom) {
                                             // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
                                             // otherwise they will steal focus, closing any select/dropdowns
@@ -103,6 +108,10 @@ export default class ConfigurationEditor extends Component<{
                             {this.modalError && <Alert status="error" style={{ margin: '1em 0' }}>
                                 <AlertIcon />
                                 {this.modalError}
+                            </Alert>}
+                            {rangeError && <Alert status="error" style={{ margin: '1em 0' }}>
+                                <AlertIcon />
+                                {rangeError}
                             </Alert>}
                         </div>
                     </ChakraProvider>
@@ -154,7 +163,7 @@ export default class ConfigurationEditor extends Component<{
 
     render() {
         const topic = this.props.targetTopic;
-        const canEdit = topic
+        const hasEditPermissions = topic
             ? api.topicPermissions.get(topic)?.canEditTopicConfig ?? true
             : true;
 
@@ -189,7 +198,7 @@ export default class ConfigurationEditor extends Component<{
                     setSearchText={value => this.filter = value}
                     icon="filter"
                 />
-                {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} canEdit={canEdit} />)}
+                {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} hasEditPermissions={hasEditPermissions} />)}
             </div>
         </div>
     }
@@ -200,21 +209,23 @@ const ConfigGroup = observer((p: {
     groupName?: string;
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entries: ConfigEntryExtended[],
-    canEdit: boolean,
+    hasEditPermissions: boolean,
 }) => {
 
     return <>
         <div className="configGroupSpacer" />
         {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
-        {p.entries.map(e => <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} canEdit={p.canEdit} />)}
+        {p.entries.map(e => <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions} />)}
     </>
 });
 
 const ConfigEntry = observer((p: {
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entry: ConfigEntryExtended;
-    canEdit: boolean;
+    hasEditPermissions: boolean;
 }) => {
+
+    const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(p.entry, p.hasEditPermissions);
 
     const entry = p.entry;
     const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
@@ -237,14 +248,14 @@ const ConfigEntry = observer((p: {
 
         <span className="configButtons">
             <Tooltip
-                trigger={p.canEdit ? [] : ['hover']}
-                overlay="You don't have permissions to change topic configuration entries"
+                trigger={canEdit ? [] : ['hover']}
+                overlay={nonEdittableReason}
                 placement="left"
             >
                 <span
-                    className={'btnEdit' + (p.canEdit ? '' : ' disabled')}
+                    className={'btnEdit' + (canEdit ? '' : ' disabled')}
                     onClick={() => {
-                        if (p.canEdit)
+                        if (canEdit)
                             p.onEditEntry(p.entry);
                     }}
                 >
@@ -273,6 +284,25 @@ const ConfigEntry = observer((p: {
         </span>
     </>
 });
+
+function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean): { canEdit: boolean, reason?: string } {
+
+    if (!hasEditPermissions)
+        return { canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries' };
+
+    if (isServerless()) {
+        const edittableEntries = ['retention.ms', 'retention.bytes'];
+
+        if (edittableEntries.includes(entry.name)) {
+            return { canEdit: true };
+        }
+
+        return { canEdit: false, reason: 'This configuration is not editable on Serverless clusters' };
+    }
+
+    return { canEdit: true };
+}
+
 
 export const ConfigEntryEditor = observer((p: {
     entry: ConfigEntryExtended;

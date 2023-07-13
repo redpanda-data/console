@@ -138,6 +138,7 @@ export function isEmbedded() {
 }
 
 export function isServerless() {
+    return true;
     return config.isServerless;
 }
 
@@ -158,7 +159,7 @@ const routesIgnoredInServerless = [
 ];
 
 export const embeddedAvailableRoutesObservable = observable({
-    
+
     get routes() {
         return APP_ROUTES
             .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly

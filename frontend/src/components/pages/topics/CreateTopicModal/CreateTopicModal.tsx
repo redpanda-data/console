@@ -10,6 +10,7 @@ import './CreateTopicModal.scss';
 import { Box, Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select, isSingleValue } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 import { api } from '../../../../state/backendApi';
+import { isServerless } from '../../../../config';
 
 
 type CreateTopicModalState = {
@@ -47,7 +48,6 @@ type Props = {
 @observer
 export class CreateTopicModalContent extends Component<Props> {
 
-
     render() {
         const state = this.props.state;
 
@@ -72,6 +72,7 @@ export class CreateTopicModalContent extends Component<Props> {
                             onChange={e => state.replicationFactor = e}
                             min={1}
                             placeholder={state.defaults.replicationFactor}
+                            disabled={isServerless()}
                         />
                     </Label>
 
@@ -88,15 +89,16 @@ export class CreateTopicModalContent extends Component<Props> {
                 </div>
 
                 <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
-                    <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
+                    {!isServerless() && <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
                         <SingleSelect<'delete' | 'compact'> options={[
                             { value: 'delete', label: 'delete' },
                             { value: 'compact', label: 'compact' },
                         ]}
+                            isReadOnly={isServerless()}
                             value={state.cleanupPolicy}
                             onChange={e => state.cleanupPolicy = e}
                         />
-                    </Label>
+                    </Label>}
                     <Label text="Retention Time" style={{ flexBasis: '220px', flexGrow: 1 }}>
                         <RetentionTimeSelect
                             value={state.retentionTimeMs} onChangeValue={x => state.retentionTimeMs = x}
@@ -113,10 +115,10 @@ export class CreateTopicModalContent extends Component<Props> {
                     </Label>
                 </div>
 
-                <div>
+                {!isServerless() && <div>
                     <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
                     <KeyValuePairEditor entries={state.additionalConfig} />
-                </div>
+                </div>}
             </div>
 
         </div>;
@@ -130,7 +132,7 @@ export function NumInput(p: {
     min?: number, max?: number,
     disabled?: boolean,
     addonBefore?: React.ReactNode; addonAfter?: React.ReactNode;
-    className?: string,
+    className?: string
 }) {
     // We need to keep track of intermediate values.
     // Otherwise, typing '2e' for example, would be rejected.
