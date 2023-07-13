@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,19 +17,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-)
-
-var testSeedBroker []string
-
-var (
-	exposedPlainKafkaPort int
-	exposedOutKafkaPort   int
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 const (
@@ -38,24 +33,85 @@ const (
 	CONNECT_TEST_NETWORK = "redpandaconnecttestnetwork"
 )
 
-func Test_CreateConnector(t *testing.T) {
-	fmt.Printf("TEST SEED BROKERS: %+v\n", testSeedBroker)
+type Connect struct {
+	testcontainers.Container
 
-	kafkaPort := strconv.FormatInt(int64(exposedPlainKafkaPort), 10)
+	connectPort nat.Port
+	connectHost string
+}
 
-	kc := startConnect(t, CONNECT_TEST_NETWORK, []string{"redpanda:" + kafkaPort})
-	fmt.Printf("\n%+v\n", kc)
+type ConnectIntegrationTestSuite struct {
+	suite.Suite
 
-	defer func() {
-		ctx := context.Background()
+	commonNetwork     testcontainers.Network
+	redpandaContainer testcontainers.Container
+	connectContainer  testcontainers.Container
+	httpBinContainer  testcontainers.Container
 
-		if err := kc.Terminate(ctx); err != nil {
-			panic(err)
-		}
-	}()
+	kafkaClient      *kgo.Client
+	kafkaAdminClient *kadm.Client
+
+	connectSvs *Service
+
+	testSeedBroker        string
+	exposedPlainKafkaPort int
+	exposedOutKafkaPort   int
+	connectPort           nat.Port
+	connectHost           string
+}
+
+func TestSuite(t *testing.T) {
+	suite.Run(t, &ConnectIntegrationTestSuite{})
+}
+
+func (s *ConnectIntegrationTestSuite) SetupSuite() {
+	t := s.T()
+	require := require.New(t)
+
+	ctx := context.Background()
+
+	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
+		ProviderType: testcontainers.ProviderDocker,
+		NetworkRequest: testcontainers.NetworkRequest{
+			Name:           CONNECT_TEST_NETWORK,
+			CheckDuplicate: true,
+			Attachable:     true,
+		},
+	})
+	require.NoError(err)
+
+	s.commonNetwork = testNetwork
+
+	s.exposedPlainKafkaPort = rand.Intn(60000) + 10000
+	s.exposedOutKafkaPort = rand.Intn(60000) + 10000
+	exposedKafkaAdminPort := rand.Intn(60000) + 10000
+	registryPort := rand.Intn(60000) + 10000
+
+	rpC, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, s.exposedPlainKafkaPort, s.exposedOutKafkaPort, exposedKafkaAdminPort, registryPort)
+	require.NoError(err)
+
+	s.redpandaContainer = rpC
+
+	seedBroker, err := getMappedHostPort(ctx, rpC, nat.Port(strconv.FormatInt(int64(s.exposedOutKafkaPort), 10)+"/tcp"))
+	require.NoError(err)
+
+	s.testSeedBroker = seedBroker
+
+	httpC, err := runHTTPBin(ctx, CONNECT_TEST_NETWORK)
+	require.NoError(err)
+
+	s.httpBinContainer = httpC
+
+	kc := startConnect(t, CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(s.exposedPlainKafkaPort), 10)})
+
+	s.connectContainer = kc.Container
+	s.connectHost = kc.connectHost
+	s.connectPort = kc.connectPort
+
+	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
 	log, err := zap.NewProduction()
-	require.NoError(t, err)
+	require.NoError(err)
 
 	// create
 	connectSvs, err := NewService(config.Connect{
@@ -68,11 +124,32 @@ func Test_CreateConnector(t *testing.T) {
 		},
 	}, log)
 
-	require.NoError(t, err)
+	require.NoError(err)
 
-	// test
+	s.connectSvs = connectSvs
+}
+
+func (s *ConnectIntegrationTestSuite) TearDownSuite() {
+	t := s.T()
+	assert := require.New(t)
+
+	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
+	assert.NoError(s.httpBinContainer.Terminate(context.Background()))
+	assert.NoError(s.connectContainer.Terminate(context.Background()))
+	assert.NoError(s.commonNetwork.Remove(context.Background()))
+
+	s.kafkaClient.Close()
+	s.kafkaAdminClient.Close()
+}
+
+func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
 	ctx := context.Background()
-	res, connectErr := connectSvs.CreateConnector(ctx, "redpanda_connect", connect.CreateConnectorRequest{
+
+	res, connectErr := s.connectSvs.CreateConnector(ctx, "redpanda_connect", connect.CreateConnectorRequest{
 		Name: "http_connect_input",
 		Config: map[string]interface{}{
 			"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -93,7 +170,7 @@ func Test_CreateConnector(t *testing.T) {
 	})
 
 	if connectErr != nil {
-		assert.NoError(t, connectErr.Err)
+		assert.NoError(connectErr.Err)
 	}
 
 	rj, _ := json.Marshal(res)
@@ -105,15 +182,15 @@ func Test_CreateConnector(t *testing.T) {
 	<-timer.C
 
 	duration := 10 * time.Second
-	err = kc.Container.Stop(ctx, &duration)
-	require.NoError(t, err)
+	err := s.connectContainer.Stop(ctx, &duration)
+	require.NoError(err)
 
 	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(testSeedBroker...),
+		kgo.SeedBrokers(s.testSeedBroker),
 		kgo.ConsumeTopics("httpbin-input"),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 	)
-	require.NoError(t, err)
+	require.NoError(err)
 
 	defer cl.Close()
 
@@ -145,7 +222,7 @@ func Test_CreateConnector(t *testing.T) {
 			break
 		}
 
-		require.Empty(t, errs)
+		require.Empty(errs)
 
 		fetches.EachRecord(func(record *kgo.Record) {
 			fmt.Println(string(record.Value), "from an iterator!")
@@ -156,18 +233,18 @@ func Test_CreateConnector(t *testing.T) {
 	for _, vd := range records {
 		rv := recordValue{}
 		err := json.Unmarshal(vd, &rv)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, rv.Value)
+		assert.NoError(err)
+		assert.NotEmpty(rv.Value)
 
 		uv := uuidValue{}
 		err = json.Unmarshal([]byte(rv.Value), &uv)
-		assert.NoError(t, err)
+		assert.NoError(err)
 
 		_, err = uuid.Parse(uv.Uuid)
-		assert.NoError(t, err)
+		assert.NoError(err)
 	}
 
-	assert.Len(t, records, 4)
+	assert.Len(records, 4)
 }
 
 const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -210,7 +287,6 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 		},
 		Hostname: "redpanda-connect",
 		HostConfigModifier: func(hc *container.HostConfig) {
-			// hc.NetworkMode = "host"
 			hc.PortBindings = nat.PortMap{
 				nat.Port("8083/tcp"): []nat.PortBinding{
 					{
@@ -248,127 +324,6 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 	return &kc
 }
 
-type Connect struct {
-	testcontainers.Container
-
-	connectPort nat.Port
-	connectHost string
-}
-
-func WithNetwork(network string, networkAlias []string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		if len(req.Networks) == 0 {
-			req.Networks = []string{}
-		}
-		req.Networks = append(req.Networks, network)
-
-		if len(networkAlias) > 0 {
-			if len(req.NetworkAliases) == 0 {
-				req.NetworkAliases = map[string][]string{}
-			}
-
-			req.NetworkAliases[network] = append(req.NetworkAliases[network], networkAlias...)
-		}
-	}
-}
-
-func WithHostname(hostname string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Hostname = hostname
-	}
-}
-
-func WithName(name string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Name = name
-	}
-}
-
-func WithStart(value bool) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Started = value
-	}
-}
-
-func WithExposedPorts() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.ExposedPorts = []string{
-			strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
-			strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
-			strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
-			strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
-			"29092",
-		}
-	}
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(func() int {
-		ctx := context.Background()
-
-		testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-			ProviderType: testcontainers.ProviderDocker,
-			NetworkRequest: testcontainers.NetworkRequest{
-				Name:           CONNECT_TEST_NETWORK,
-				CheckDuplicate: true,
-				Attachable:     true,
-			},
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		exposedPlainKafkaPort = rand.Intn(60000) + 10000
-		exposedOutKafkaPort = rand.Intn(60000) + 10000
-		exposedKafkaAdminPort := rand.Intn(60000) + 10000
-		registryPort := rand.Intn(60000) + 10000
-
-		container, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort, registryPort)
-		if err != nil {
-			panic(err)
-		}
-
-		httpC, err := runHTTPBin(ctx, CONNECT_TEST_NETWORK)
-		if err != nil {
-			panic(err)
-		}
-
-		defer func() {
-			if err := container.Terminate(ctx); err != nil {
-				panic(err)
-			}
-
-			if err := httpC.Terminate(ctx); err != nil {
-				panic(err)
-			}
-
-			if err := testNetwork.Remove(ctx); err != nil {
-				panic(err)
-			}
-		}()
-
-		seedBroker, err := getMappedHostPort(ctx, container, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("seedBroker:", seedBroker)
-		testSeedBroker = []string{seedBroker}
-
-		// create a long lived stock test topic
-		kafkaCl, err := kgo.NewClient(
-			kgo.SeedBrokers(seedBroker),
-		)
-		if err != nil {
-			panic(err)
-		}
-
-		kafkaCl.Close()
-
-		return m.Run()
-	}())
-}
-
 func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort, exposedRegistryPort int) (testcontainers.Container, error) {
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
@@ -394,8 +349,6 @@ func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsid
 				"--overprovisioned",
 				fmt.Sprintf("--kafka-addr PLAINTEXT://0.0.0.0:%s,OUTSIDE://0.0.0.0:%s", plainKafkaPort, outKafkaPort),
 				fmt.Sprintf("--advertise-kafka-addr PLAINTEXT://redpanda:%s,OUTSIDE://localhost:%s", plainKafkaPort, outKafkaPort),
-				// "--pandaproxy-addr 0.0.0.0:8082",
-				// "--advertise-pandaproxy-addr localhost:8082",
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
@@ -417,12 +370,6 @@ func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsid
 							HostPort: strconv.FormatInt(int64(nat.Port(registryPort+"/tcp").Int()), 10),
 						},
 					},
-					// nat.Port("8082/tcp"): []nat.PortBinding{
-					// 	{
-					// 		HostIP:   "",
-					// 		HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
-					// 	},
-					// },
 					nat.Port(plainKafkaPort + "/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
