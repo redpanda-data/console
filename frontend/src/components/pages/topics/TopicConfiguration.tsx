@@ -14,7 +14,6 @@ import { ModalFunc } from 'antd/lib/modal/confirm';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
-import { isConfigEntryInValidRange } from './serverlessTopicConfigLimits';
 
 
 @observer
@@ -66,9 +65,6 @@ export default class ConfigurationEditor extends Component<{
 
             content: <Observer>{() => {
                 const isCustom = this.modalValueType == 'custom';
-                const rangeError = (configEntry.currentValue == null || this.modalValueType == 'default')
-                    ? undefined
-                    : isConfigEntryInValidRange(configEntry.name, configEntry.currentValue ?? 0);
 
                 return (
                     <ChakraProvider theme={redpandaTheme} disableGlobalStyle={true} disableEnvironment={true}>
@@ -108,10 +104,6 @@ export default class ConfigurationEditor extends Component<{
                             {this.modalError && <Alert status="error" style={{ margin: '1em 0' }}>
                                 <AlertIcon />
                                 {this.modalError}
-                            </Alert>}
-                            {rangeError && <Alert status="error" style={{ margin: '1em 0' }}>
-                                <AlertIcon />
-                                {rangeError}
                             </Alert>}
                         </div>
                     </ChakraProvider>
