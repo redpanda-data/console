@@ -26,10 +26,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
-const (
-	CONNECT_TEST_NETWORK = "redpanda_connect_test_network"
-)
-
 type ConnectIntegrationTestSuite struct {
 	suite.Suite
 
@@ -53,11 +49,13 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
+	connectTestNetwork := "redpanda_connect_test_network"
+
 	// create one common network that all containers will share
 	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
 		ProviderType: testcontainers.ProviderDocker,
 		NetworkRequest: testcontainers.NetworkRequest{
-			Name:           CONNECT_TEST_NETWORK,
+			Name:           connectTestNetwork,
 			CheckDuplicate: true,
 			Attachable:     true,
 		},
@@ -67,11 +65,11 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 	s.commonNetwork = testNetwork
 
 	// Redpanda container
-	exposedPlainKafkaPort := rand.Intn(50000) + 10000
-	exposedOutKafkaPort := rand.Intn(50000) + 10000
-	exposedKafkaAdminPort := rand.Intn(50000) + 10000
+	exposedPlainKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
+	exposedOutKafkaPort := rand.Intn(50000) + 10000   //nolint:gosec // We can use weak random numbers for ports in tests.
+	exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
 
-	rpC, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
+	rpC, err := runRedpanda(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
 
 	s.redpandaContainer = rpC
@@ -82,13 +80,13 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 	s.testSeedBroker = seedBroker
 
 	// HTTPBin container
-	httpC, err := runHTTPBin(ctx, CONNECT_TEST_NETWORK)
+	httpC, err := runHTTPBin(ctx, connectTestNetwork)
 	require.NoError(err)
 
 	s.httpBinContainer = httpC
 
 	// Kafka Connect container
-	connectC, err := runConnect(CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
+	connectC, err := runConnect(connectTestNetwork, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
 	require.NoError(err)
 
 	s.connectContainer = connectC
@@ -108,7 +106,7 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 		Clusters: []config.ConnectCluster{
 			{
 				Name: "redpanda_connect",
-				URL:  "http://" + connectHost + ":" + string(connectPort.Port()),
+				URL:  "http://" + connectHost + ":" + connectPort.Port(),
 			},
 		},
 	}, log)
@@ -176,7 +174,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		defer cancel()
 
 		type uuidValue struct {
-			Uuid string `json:"uuid"`
+			UUID string `json:"uuid"`
 		}
 
 		type recordValue struct {
@@ -214,7 +212,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 			err = json.Unmarshal([]byte(rv.Value), &uv)
 			assert.NoError(err)
 
-			_, err = uuid.Parse(uv.Uuid)
+			_, err = uuid.Parse(uv.UUID)
 			assert.NoError(err)
 		}
 
@@ -222,7 +220,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 	})
 }
 
-const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+const testConnectConfig = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
 value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
 group.id=connectors-cluster
 offset.storage.topic=_internal_connectors_offsets
@@ -247,7 +245,7 @@ func runConnect(network string, bootstrapServers []string) (testcontainers.Conta
 			Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:v1.0.0-6955117",
 			ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
 			Env: map[string]string{
-				"CONNECT_CONFIGURATION":     CONNECT_CONFIGURATION,
+				"CONNECT_CONFIGURATION":     testConnectConfig,
 				"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
 				"CONNECT_GC_LOG_ENABLED":    "false",
 				"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
@@ -274,7 +272,7 @@ func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsid
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
 	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
-	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10)
+	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10) //nolint:gosec // We can use weak random numbers for ports in tests.
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
