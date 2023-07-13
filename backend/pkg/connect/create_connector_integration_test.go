@@ -29,6 +29,7 @@ var (
 	testSeedBroker      []string
 	testAdminAddress    string
 	redpandaContainerIP string
+	httpContainerIP     string
 )
 
 const (
@@ -73,7 +74,7 @@ func Test_CreateConnector(t *testing.T) {
 		Config: map[string]interface{}{
 			"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 			"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-			"http.request.url":                          "https://httpbin.org/uuid",
+			"http.request.url":                          httpContainerIP + "/uuid",
 			"http.timer.catchup.interval.millis":        "10000",
 			"http.timer.interval.millis":                "10000",
 			"kafka.topic":                               "httpbin-input",
@@ -163,7 +164,7 @@ func Test_CreateConnector(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	assert.Len(t, records, 3)
+	assert.Len(t, records, 4)
 }
 
 const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -319,8 +320,31 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 
+		httpC, err := runHTTPBin(ctx, CONNECT_TEST_NETWORK)
+		if err != nil {
+			panic(err)
+		}
+
+		httpIP, err := container.Host(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		httpMappedPort, err := httpC.MappedPort(ctx, "80")
+		if err != nil {
+			panic(err)
+		}
+
+		uri := fmt.Sprintf("http://%s:%s", httpIP, httpMappedPort.Port())
+		fmt.Println("!!! HTTP uri:", uri)
+		httpContainerIP = fmt.Sprintf("http://httpbin:%s", "80")
+
 		defer func() {
 			if err := container.Terminate(ctx); err != nil {
+				panic(err)
+			}
+
+			if err := httpC.Terminate(ctx); err != nil {
 				panic(err)
 			}
 
@@ -328,8 +352,6 @@ func TestMain(m *testing.M) {
 				panic(err)
 			}
 		}()
-
-		<-time.NewTimer(20 * time.Second).C
 
 		port, err := container.MappedPort(ctx, nat.Port("9092/tcp"))
 		fmt.Println("port:", port, err)
@@ -349,12 +371,6 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			panic(err)
 		}
-
-		// kafkaAdmCl := kadm.NewClient(kafkaCl)
-		// _, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, TEST_TOPIC_NAME)
-		// if err != nil {
-		// 	panic(err)
-		// }
 
 		kafkaCl.Close()
 
@@ -469,6 +485,28 @@ func runRedpanda(ctx context.Context, network string) (testcontainers.Container,
 		WaitUntilReady(ctx, container)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
+	}
+
+	return container, nil
+}
+
+func runHTTPBin(ctx context.Context, network string) (testcontainers.Container, error) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Name:           "local-httpbin",
+			Hostname:       "httpbin",
+			Networks:       []string{network},
+			NetworkAliases: map[string][]string{network: {"httpbin", "local-httpbin"}},
+			Image:          "kennethreitz/httpbin",
+			ExposedPorts:   []string{"80/tcp"},
+			WaitingFor:     wait.ForHTTP("/"),
+		},
+		Started: true,
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	return container, nil
