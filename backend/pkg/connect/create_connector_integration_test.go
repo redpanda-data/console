@@ -1,9 +1,9 @@
 package connect
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -14,10 +14,10 @@ import (
 	"github.com/cloudhut/connect-client"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -74,8 +74,8 @@ func Test_CreateConnector(t *testing.T) {
 			"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 			"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
 			"http.request.url":                          "https://httpbin.org/uuid",
-			"http.timer.catchup.interval.millis":        "30000",
-			"http.timer.interval.millis":                "600000",
+			"http.timer.catchup.interval.millis":        "10000",
+			"http.timer.interval.millis":                "10000",
 			"kafka.topic":                               "httpbin-input",
 			"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
 			"key.converter.schemas.enable":              "false",
@@ -97,7 +97,73 @@ func Test_CreateConnector(t *testing.T) {
 	fmt.Println(string(rj))
 	fmt.Println()
 
-	assert.Fail(t, "FASF")
+	timer := time.NewTimer(35 * time.Second)
+	<-timer.C
+
+	duration := 10 * time.Second
+	err = kc.Container.Stop(ctx, &duration)
+	require.NoError(t, err)
+
+	cl, err := kgo.NewClient(
+		kgo.SeedBrokers(testSeedBroker...),
+		kgo.ConsumeTopics("httpbin-input"),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+	)
+	require.NoError(t, err)
+
+	defer cl.Close()
+
+	const waitTimeout = 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
+	defer cancel()
+
+	type uuidValue struct {
+		Uuid string `json:"uuid"`
+	}
+
+	type recordValue struct {
+		Value string `json:"value"`
+		Key   string
+	}
+
+	records := make([][]byte, 0)
+
+	for {
+		fetches := cl.PollFetches(ctx)
+		if fetches.IsClientClosed() {
+			fmt.Println("client closed")
+			break
+		}
+
+		errs := fetches.Errors()
+		if len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled)) {
+			fmt.Println("deadline exceeded / canceled")
+			break
+		}
+
+		require.Empty(t, errs)
+
+		fetches.EachRecord(func(record *kgo.Record) {
+			fmt.Println(string(record.Value), "from an iterator!")
+			records = append(records, record.Value)
+		})
+	}
+
+	for _, vd := range records {
+		rv := recordValue{}
+		err := json.Unmarshal(vd, &rv)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, rv.Value)
+
+		uv := uuidValue{}
+		err = json.Unmarshal([]byte(rv.Value), &uv)
+		assert.NoError(t, err)
+
+		_, err = uuid.Parse(uv.Uuid)
+		assert.NoError(t, err)
+	}
+
+	assert.Len(t, records, 3)
 }
 
 const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -130,7 +196,7 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 			"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
 			"CONNECT_GC_LOG_ENABLED":    "false",
 			"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
-			"CONNECT_LOG_LEVEL":         "debug",
+			"CONNECT_LOG_LEVEL":         "info",
 		},
 		Networks: []string{
 			network,
@@ -151,7 +217,7 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 			}
 		},
 		WaitingFor: wait.ForAll(
-			wait.ForHTTP("/").WithPort("8083/tcp").
+			wait.ForLog("Kafka Connect started").
 				WithPollInterval(500 * time.Millisecond).
 				WithStartupTimeout(waitTimeout),
 		),
@@ -234,17 +300,6 @@ func WithExposedPorts() testcontainers.CustomizeRequestOption {
 
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
-		provider, err := testcontainers.ProviderDocker.GetProvider()
-		if err != nil {
-			panic(err)
-		}
-		ip, err := provider.(*testcontainers.DockerProvider).GetGatewayIP(context.Background())
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("ip:", ip)
-
 		ctx := context.Background()
 
 		testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
@@ -259,103 +314,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 
-		container, err := redpanda.RunContainer(ctx,
-			WithName("local-redpanda"),
-			WithNetwork(CONNECT_TEST_NETWORK, []string{"redpanda", "local-redpanda"}),
-			WithHostname("redpanda"),
-			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
-				// hostConfig.NetworkMode = "host"
-				hostConfig.PortBindings = nat.PortMap{
-					nat.Port("9092/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
-						},
-					},
-					nat.Port("9644/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
-						},
-					},
-					nat.Port("8081/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
-						},
-					},
-					nat.Port("8082/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
-						},
-					},
-					nat.Port("29092/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("29092/tcp").Int()), 10),
-						},
-					},
-				}
-			}),
-			WithExposedPorts(),
-		)
+		container, err := runRedpanda(ctx, CONNECT_TEST_NETWORK)
 		if err != nil {
 			panic(err)
 		}
-
-		redpandaContainerIPs, _ := container.ContainerIPs(context.Background())
-		fmt.Println("container ips:", redpandaContainerIPs)
-		redpandaContainerIP, _ = container.ContainerIP(context.Background())
-		fmt.Println("container ips:", redpandaContainerIP)
-
-		rc, err := container.CopyFileFromContainer(ctx, "/etc/redpanda/redpanda.yaml")
-		if err != nil {
-			panic(err)
-		}
-
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(rc)
-		s := buf.String()
-		fmt.Println("redpanda.yaml:")
-		fmt.Println(s)
-		fmt.Println()
-
-		port, err := container.MappedPort(ctx, nat.Port("9092/tcp"))
-		fmt.Println("port:", port, err)
-
-		// duration := 10 * time.Second
-		// container.Stop(ctx, &duration)
-
-		container.CopyToContainer(ctx,
-			[]byte(redpandaCustomYaml),
-			"/etc/redpanda/redpanda.yaml",
-			700,
-		)
-
-		// err = container.Start(ctx)
-		// if err != nil {
-		// 	panic(err)
-		// }
-
-		err = wait.ForLog("Successfully started Redpanda!").
-			WithPollInterval(100*time.Millisecond).
-			WaitUntilReady(ctx, container)
-		if err != nil {
-			panic(err)
-		}
-
-		rc, err = container.CopyFileFromContainer(ctx, "/etc/redpanda/redpanda.yaml")
-		if err != nil {
-			panic(err)
-		}
-
-		buf = new(bytes.Buffer)
-		buf.ReadFrom(rc)
-		s = buf.String()
-		fmt.Println("redpanda.yaml after:")
-		fmt.Println(s)
-		fmt.Println()
 
 		defer func() {
 			if err := container.Terminate(ctx); err != nil {
@@ -369,10 +331,10 @@ func TestMain(m *testing.M) {
 
 		<-time.NewTimer(20 * time.Second).C
 
-		port, err = container.MappedPort(ctx, nat.Port("9092/tcp"))
+		port, err := container.MappedPort(ctx, nat.Port("9092/tcp"))
 		fmt.Println("port:", port, err)
 
-		seedBroker, err := container.KafkaSeedBroker(ctx)
+		seedBroker, err := getMappedHostPort(ctx, container, nat.Port("9092/tcp"))
 		if err != nil {
 			panic(err)
 		}
@@ -435,10 +397,14 @@ schema_registry_client:
       port: 9093
 `
 
-func runRedpanda() (testcontainers.Container, error) {
-	container := testcontainers.GenericContainerRequest{
+func runRedpanda(ctx context.Context, network string) (testcontainers.Container, error) {
+	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Name:           "local-redpanda",
+			Hostname:       "redpanda",
+			Networks:       []string{network},
+			NetworkAliases: map[string][]string{network: {"redpanda", "local-redpanda"}},
+			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
 			ExposedPorts: []string{
 				strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
 				strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
@@ -454,6 +420,40 @@ func runRedpanda() (testcontainers.Container, error) {
 				"--advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092",
 				"--pandaproxy-addr 0.0.0.0:8082",
 				"--advertise-pandaproxy-addr localhost:8082",
+			},
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = nat.PortMap{
+					nat.Port("9092/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
+						},
+					},
+					nat.Port("9644/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
+						},
+					},
+					nat.Port("8081/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
+						},
+					},
+					nat.Port("8082/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
+						},
+					},
+					nat.Port("29092/tcp"): []nat.PortBinding{
+						{
+							HostIP:   "",
+							HostPort: strconv.FormatInt(int64(nat.Port("29092/tcp").Int()), 10),
+						},
+					},
+				}
 			},
 		},
 		Started: true,
@@ -472,4 +472,18 @@ func runRedpanda() (testcontainers.Container, error) {
 	}
 
 	return container, nil
+}
+
+func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
+	hostIP, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get hostIP: %w", err)
+	}
+
+	mappedPort, err := c.MappedPort(ctx, port)
+	if err != nil {
+		return "", fmt.Errorf("failed to get mapped port: %w", err)
+	}
+
+	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
 }
