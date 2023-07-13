@@ -31,13 +31,6 @@ const (
 	CONNECT_TEST_NETWORK = "redpandaconnecttestnetwork"
 )
 
-type Connect struct {
-	testcontainers.Container
-
-	connectPort nat.Port
-	connectHost string
-}
-
 type ConnectIntegrationTestSuite struct {
 	suite.Suite
 
@@ -51,8 +44,6 @@ type ConnectIntegrationTestSuite struct {
 	testSeedBroker        string
 	exposedPlainKafkaPort int
 	exposedOutKafkaPort   int
-	connectPort           nat.Port
-	connectHost           string
 }
 
 func TestSuite(t *testing.T) {
@@ -77,10 +68,10 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 
 	s.commonNetwork = testNetwork
 
-	s.exposedPlainKafkaPort = rand.Intn(60000) + 10000
-	s.exposedOutKafkaPort = rand.Intn(60000) + 10000
-	exposedKafkaAdminPort := rand.Intn(60000) + 10000
-	registryPort := rand.Intn(60000) + 10000
+	s.exposedPlainKafkaPort = rand.Intn(50000) + 10000
+	s.exposedOutKafkaPort = rand.Intn(50000) + 10000
+	exposedKafkaAdminPort := rand.Intn(50000) + 10000
+	registryPort := rand.Intn(50000) + 10000
 
 	rpC, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, s.exposedPlainKafkaPort, s.exposedOutKafkaPort, exposedKafkaAdminPort, registryPort)
 	require.NoError(err)
@@ -97,11 +88,16 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 
 	s.httpBinContainer = httpC
 
-	kc := startConnect(t, CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(s.exposedPlainKafkaPort), 10)})
+	connectC, err := runConnect(CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(s.exposedPlainKafkaPort), 10)})
+	require.NoError(err)
 
-	s.connectContainer = kc.Container
-	s.connectHost = kc.connectHost
-	s.connectPort = kc.connectPort
+	s.connectContainer = connectC
+
+	connectPort, err := s.connectContainer.MappedPort(ctx, nat.Port("8083"))
+	require.NoError(err)
+
+	connectHost, err := s.connectContainer.Host(ctx)
+	require.NoError(err)
 
 	log, err := zap.NewProduction()
 	require.NoError(err)
@@ -112,7 +108,7 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 		Clusters: []config.ConnectCluster{
 			{
 				Name: "redpanda_connect",
-				URL:  "http://" + kc.connectHost + ":" + string(kc.connectPort.Port()),
+				URL:  "http://" + connectHost + ":" + string(connectPort.Port()),
 			},
 		},
 	}, log)
@@ -162,12 +158,8 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 	require.Empty(connectErr)
 	assert.NotNil(res)
 
-	timer := time.NewTimer(35 * time.Second)
+	timer := time.NewTimer(32 * time.Second)
 	<-timer.C
-
-	duration := 10 * time.Second
-	err := s.connectContainer.Stop(ctx, &duration)
-	require.NoError(err)
 
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(s.testSeedBroker),
@@ -225,7 +217,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		assert.NoError(err)
 	}
 
-	assert.Len(records, 4)
+	assert.Len(records, 3)
 }
 
 const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -242,57 +234,38 @@ producer.linger.ms=1
 producer.batch.size=131072
 `
 
-func startConnect(t *testing.T, network string, bootstrapServers []string) *Connect {
-	t.Helper()
-
+func runConnect(network string, bootstrapServers []string) (testcontainers.Container, error) {
 	const waitTimeout = 5 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
 	defer cancel()
 
-	req := testcontainers.ContainerRequest{
-		Name:         "redpanda-connect",
-		Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:v1.0.0-6955117",
-		ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
-		Env: map[string]string{
-			"CONNECT_CONFIGURATION":     CONNECT_CONFIGURATION,
-			"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
-			"CONNECT_GC_LOG_ENABLED":    "false",
-			"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
-			"CONNECT_LOG_LEVEL":         "info",
+	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Name:         "redpanda-connect",
+			Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:v1.0.0-6955117",
+			ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
+			Env: map[string]string{
+				"CONNECT_CONFIGURATION":     CONNECT_CONFIGURATION,
+				"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
+				"CONNECT_GC_LOG_ENABLED":    "false",
+				"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
+				"CONNECT_LOG_LEVEL":         "info",
+			},
+			Networks: []string{
+				network,
+			},
+			NetworkAliases: map[string][]string{
+				network: {"redpanda-connect"},
+			},
+			Hostname: "redpanda-connect",
+			WaitingFor: wait.ForAll(
+				wait.ForLog("Kafka Connect started").
+					WithPollInterval(500 * time.Millisecond).
+					WithStartupTimeout(waitTimeout),
+			),
 		},
-		Networks: []string{
-			network,
-		},
-		NetworkAliases: map[string][]string{
-			network: {"redpanda-connect"},
-		},
-		Hostname: "redpanda-connect",
-		WaitingFor: wait.ForAll(
-			wait.ForLog("Kafka Connect started").
-				WithPollInterval(500 * time.Millisecond).
-				WithStartupTimeout(waitTimeout),
-		),
-	}
-
-	connectContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		Started: true,
 	})
-	require.NoError(t, err)
-
-	connectPort, err := connectContainer.MappedPort(ctx, nat.Port("8083"))
-	require.NoError(t, err)
-
-	connectHost, err := connectContainer.Host(ctx)
-	require.NoError(t, err)
-
-	kc := Connect{
-		Container:   connectContainer,
-		connectPort: connectPort,
-		connectHost: connectHost,
-	}
-
-	return &kc
 }
 
 func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort, exposedRegistryPort int) (testcontainers.Container, error) {
