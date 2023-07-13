@@ -236,10 +236,11 @@ func newAssertHooks(t *testing.T, returnValues map[string]map[string]assertCallR
 }
 
 // Router Hooks
-func (a *assertHooks) ConfigAPIRouter(_ chi.Router)      {}
-func (a *assertHooks) ConfigWsRouter(_ chi.Router)       {}
-func (a *assertHooks) ConfigInternalRouter(_ chi.Router) {}
-func (a *assertHooks) ConfigRouter(_ chi.Router)         {}
+func (a *assertHooks) ConfigAPIRouter(_ chi.Router)                 {}
+func (a *assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
+func (a *assertHooks) ConfigWsRouter(_ chi.Router)                  {}
+func (a *assertHooks) ConfigInternalRouter(_ chi.Router)            {}
+func (a *assertHooks) ConfigRouter(_ chi.Router)                    {}
 
 // Authorization Hooks
 func (a *assertHooks) CanSeeTopic(_ context.Context, topic string) (bool, *rest.Error) {
