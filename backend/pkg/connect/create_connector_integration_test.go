@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -25,11 +26,11 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+var testSeedBroker []string
+
 var (
-	testSeedBroker      []string
-	testAdminAddress    string
-	redpandaContainerIP string
-	httpContainerIP     string
+	exposedPlainKafkaPort int
+	exposedOutKafkaPort   int
 )
 
 const (
@@ -40,7 +41,9 @@ const (
 func Test_CreateConnector(t *testing.T) {
 	fmt.Printf("TEST SEED BROKERS: %+v\n", testSeedBroker)
 
-	kc := startConnect(t, CONNECT_TEST_NETWORK, []string{"redpanda:29092"})
+	kafkaPort := strconv.FormatInt(int64(exposedPlainKafkaPort), 10)
+
+	kc := startConnect(t, CONNECT_TEST_NETWORK, []string{"redpanda:" + kafkaPort})
 	fmt.Printf("\n%+v\n", kc)
 
 	defer func() {
@@ -74,7 +77,7 @@ func Test_CreateConnector(t *testing.T) {
 		Config: map[string]interface{}{
 			"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 			"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-			"http.request.url":                          httpContainerIP + "/uuid",
+			"http.request.url":                          "http://httpbin:80/uuid",
 			"http.timer.catchup.interval.millis":        "10000",
 			"http.timer.interval.millis":                "10000",
 			"kafka.topic":                               "httpbin-input",
@@ -315,7 +318,12 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 
-		container, err := runRedpanda(ctx, CONNECT_TEST_NETWORK)
+		exposedPlainKafkaPort = rand.Intn(60000) + 10000
+		exposedOutKafkaPort = rand.Intn(60000) + 10000
+		exposedKafkaAdminPort := rand.Intn(60000) + 10000
+		registryPort := rand.Intn(60000) + 10000
+
+		container, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort, registryPort)
 		if err != nil {
 			panic(err)
 		}
@@ -324,20 +332,6 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			panic(err)
 		}
-
-		httpIP, err := container.Host(ctx)
-		if err != nil {
-			panic(err)
-		}
-
-		httpMappedPort, err := httpC.MappedPort(ctx, "80")
-		if err != nil {
-			panic(err)
-		}
-
-		uri := fmt.Sprintf("http://%s:%s", httpIP, httpMappedPort.Port())
-		fmt.Println("!!! HTTP uri:", uri)
-		httpContainerIP = fmt.Sprintf("http://httpbin:%s", "80")
 
 		defer func() {
 			if err := container.Terminate(ctx); err != nil {
@@ -353,10 +347,7 @@ func TestMain(m *testing.M) {
 			}
 		}()
 
-		port, err := container.MappedPort(ctx, nat.Port("9092/tcp"))
-		fmt.Println("port:", port, err)
-
-		seedBroker, err := getMappedHostPort(ctx, container, nat.Port("9092/tcp"))
+		seedBroker, err := getMappedHostPort(ctx, container, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
 		if err != nil {
 			panic(err)
 		}
@@ -378,42 +369,12 @@ func TestMain(m *testing.M) {
 	}())
 }
 
-const redpandaCustomYaml = `
-redpanda:
-  admin:
-    address: 0.0.0.0
-    port: 9644
-  kafka_api:
-	- address: 0.0.0.0
-	  name: OUTSIDE
-	  port: 9092
-	- address: 0.0.0.0
-      port: 29092
-      name: PLAINTEXT
-  advertised_kafka_api:
-	- address: redpanda
-	  port: 29092
-	  name: PLAINTEXT
-	- address: localhost
-	  port: 9092
-	  name: OUTSIDE
-  developer_mode: true
-  auto_create_topics_enabled: true
+func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort, exposedRegistryPort int) (testcontainers.Container, error) {
+	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
+	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
+	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
+	registryPort := strconv.FormatInt(int64(exposedRegistryPort), 10)
 
-schema_registry:
-  schema_registry_api:
-  - address: "0.0.0.0"
-    name: main
-    port: 8081
-    authentication_method: {{ .SchemaRegistry.AuthenticationMethod }}
-
-schema_registry_client:
-  brokers:
-    - address: localhost
-      port: 9093
-`
-
-func runRedpanda(ctx context.Context, network string) (testcontainers.Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Name:           "local-redpanda",
@@ -422,51 +383,50 @@ func runRedpanda(ctx context.Context, network string) (testcontainers.Container,
 			NetworkAliases: map[string][]string{network: {"redpanda", "local-redpanda"}},
 			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
 			ExposedPorts: []string{
-				strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
-				strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
-				strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
-				strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
-				"29092",
+				plainKafkaPort,
+				outKafkaPort,
+				kafkaAdminPort,
+				registryPort,
 			},
 			Cmd: []string{
 				"redpanda start",
 				"--smp 1",
 				"--overprovisioned",
-				"--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092",
-				"--advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092",
-				"--pandaproxy-addr 0.0.0.0:8082",
-				"--advertise-pandaproxy-addr localhost:8082",
+				fmt.Sprintf("--kafka-addr PLAINTEXT://0.0.0.0:%s,OUTSIDE://0.0.0.0:%s", plainKafkaPort, outKafkaPort),
+				fmt.Sprintf("--advertise-kafka-addr PLAINTEXT://redpanda:%s,OUTSIDE://localhost:%s", plainKafkaPort, outKafkaPort),
+				// "--pandaproxy-addr 0.0.0.0:8082",
+				// "--advertise-pandaproxy-addr localhost:8082",
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
 				hostConfig.PortBindings = nat.PortMap{
-					nat.Port("9092/tcp"): []nat.PortBinding{
+					nat.Port(outKafkaPort + "/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("9092/tcp").Int()), 10),
+							HostPort: strconv.FormatInt(int64(nat.Port(outKafkaPort+"/tcp").Int()), 10),
 						},
 					},
-					nat.Port("9644/tcp"): []nat.PortBinding{
+					nat.Port(kafkaAdminPort + "/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("9644/tcp").Int()), 10),
+							HostPort: strconv.FormatInt(int64(nat.Port(kafkaAdminPort+"/tcp").Int()), 10),
 						},
 					},
-					nat.Port("8081/tcp"): []nat.PortBinding{
+					nat.Port(registryPort + "/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("8081/tcp").Int()), 10),
+							HostPort: strconv.FormatInt(int64(nat.Port(registryPort+"/tcp").Int()), 10),
 						},
 					},
-					nat.Port("8082/tcp"): []nat.PortBinding{
+					// nat.Port("8082/tcp"): []nat.PortBinding{
+					// 	{
+					// 		HostIP:   "",
+					// 		HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
+					// 	},
+					// },
+					nat.Port(plainKafkaPort + "/tcp"): []nat.PortBinding{
 						{
 							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("8082/tcp").Int()), 10),
-						},
-					},
-					nat.Port("29092/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port("29092/tcp").Int()), 10),
+							HostPort: strconv.FormatInt(int64(nat.Port(plainKafkaPort+"/tcp").Int()), 10),
 						},
 					},
 				}
