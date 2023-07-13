@@ -169,10 +169,6 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 
 		defer cl.Close()
 
-		const waitTimeout = 10 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
-		defer cancel()
-
 		type uuidValue struct {
 			UUID string `json:"uuid"`
 		}
@@ -183,6 +179,11 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		}
 
 		records := make([][]byte, 0)
+
+		// control polling end via context
+		const waitTimeout = 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
+		defer cancel()
 
 		for {
 			fetches := cl.PollFetches(ctx)
@@ -242,7 +243,7 @@ func runConnect(network string, bootstrapServers []string) (testcontainers.Conta
 	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Name:         "redpanda-connect",
-			Image:        "docker.cloudsmith.io/redpanda/cloudv2-dev/connectors:v1.0.0-6955117",
+			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-e80470f",
 			ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
 			Env: map[string]string{
 				"CONNECT_CONFIGURATION":     testConnectConfig,
