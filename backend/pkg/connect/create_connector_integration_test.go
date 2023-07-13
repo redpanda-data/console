@@ -20,12 +20,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 const (
@@ -47,9 +45,6 @@ type ConnectIntegrationTestSuite struct {
 	redpandaContainer testcontainers.Container
 	connectContainer  testcontainers.Container
 	httpBinContainer  testcontainers.Container
-
-	kafkaClient      *kgo.Client
-	kafkaAdminClient *kadm.Client
 
 	connectSvs *Service
 
@@ -108,8 +103,6 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 	s.connectHost = kc.connectHost
 	s.connectPort = kc.connectPort
 
-	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
-
 	log, err := zap.NewProduction()
 	require.NoError(err)
 
@@ -137,9 +130,6 @@ func (s *ConnectIntegrationTestSuite) TearDownSuite() {
 	assert.NoError(s.httpBinContainer.Terminate(context.Background()))
 	assert.NoError(s.connectContainer.Terminate(context.Background()))
 	assert.NoError(s.commonNetwork.Remove(context.Background()))
-
-	s.kafkaClient.Close()
-	s.kafkaAdminClient.Close()
 }
 
 func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
@@ -169,14 +159,8 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		},
 	})
 
-	if connectErr != nil {
-		assert.NoError(connectErr.Err)
-	}
-
-	rj, _ := json.Marshal(res)
-	fmt.Println("RES:")
-	fmt.Println(string(rj))
-	fmt.Println()
+	require.Empty(connectErr)
+	assert.NotNil(res)
 
 	timer := time.NewTimer(35 * time.Second)
 	<-timer.C
@@ -212,20 +196,17 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 	for {
 		fetches := cl.PollFetches(ctx)
 		if fetches.IsClientClosed() {
-			fmt.Println("client closed")
 			break
 		}
 
 		errs := fetches.Errors()
 		if len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled)) {
-			fmt.Println("deadline exceeded / canceled")
 			break
 		}
 
 		require.Empty(errs)
 
 		fetches.EachRecord(func(record *kgo.Record) {
-			fmt.Println(string(record.Value), "from an iterator!")
 			records = append(records, record.Value)
 		})
 	}
@@ -286,16 +267,6 @@ func startConnect(t *testing.T, network string, bootstrapServers []string) *Conn
 			network: {"redpanda-connect"},
 		},
 		Hostname: "redpanda-connect",
-		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.PortBindings = nat.PortMap{
-				nat.Port("8083/tcp"): []nat.PortBinding{
-					{
-						HostIP:   "",
-						HostPort: strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10),
-					},
-				},
-			}
-		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Kafka Connect started").
 				WithPollInterval(500 * time.Millisecond).
