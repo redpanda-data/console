@@ -78,15 +78,18 @@ func NewService(
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
 func (s *Service) Start() error {
-	if s.gitSvc == nil {
-		return nil
+	if s.gitSvc != nil {
+		err := s.gitSvc.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start git service: %w", err)
+		}
 	}
 
 	if err := s.kafkaSvc.Start(); err != nil {
 		return fmt.Errorf("failed to start kafka service: %w", err)
 	}
 
-	return s.gitSvc.Start()
+	return nil
 }
 
 // Stop stops running go routines and releases allocated resources.
