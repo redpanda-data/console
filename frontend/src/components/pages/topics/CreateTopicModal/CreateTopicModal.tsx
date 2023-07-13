@@ -9,6 +9,7 @@ import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/ut
 import './CreateTopicModal.scss';
 import { Box, Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select, isSingleValue } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
+import { api } from '../../../../state/backendApi';
 
 
 type CreateTopicModalState = {
@@ -73,14 +74,17 @@ export class CreateTopicModalContent extends Component<Props> {
                             placeholder={state.defaults.replicationFactor}
                         />
                     </Label>
-                    <Label text="Min In-Sync Replicas" style={{ flexBasis: '160px' }}>
-                        <NumInput
-                            value={state.minInSyncReplicas}
-                            onChange={e => state.minInSyncReplicas = e}
-                            min={1}
-                            placeholder={state.defaults.minInSyncReplicas}
-                        />
-                    </Label>
+
+                    {!api.isRedpanda &&
+                        <Label text="Min In-Sync Replicas" style={{ flexBasis: '160px' }}>
+                            <NumInput
+                                value={state.minInSyncReplicas}
+                                onChange={e => state.minInSyncReplicas = e}
+                                min={1}
+                                placeholder={state.defaults.minInSyncReplicas}
+                            />
+                        </Label>
+                    }
                 </div>
 
                 <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>

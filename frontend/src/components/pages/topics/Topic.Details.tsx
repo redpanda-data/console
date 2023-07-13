@@ -172,6 +172,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     refreshData(force: boolean) {
+        // must know what distribution we're working with; redpanda has some differences
+        api.refreshClusterOverview(force);
+
         // there is no single endpoint to refresh a single topic
         api.refreshTopics(force);
 

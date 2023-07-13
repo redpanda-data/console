@@ -719,6 +719,16 @@ const apiStore = {
             }, addError);
     },
 
+    get isRedpanda() {
+        const overview = this.clusterOverview;
+        if (!overview)
+            return false;
+        if (overview.kafka.distribution == 'REDPANDA')
+            return true;
+
+        return false;
+    },
+
     refreshBrokers(force?: boolean) {
         cachedApiRequest<BrokerWithConfigAndStorage[]>(`${appConfig.restBasePath}/brokers`, force)
             .then(v => {
