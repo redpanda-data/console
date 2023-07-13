@@ -27,8 +27,7 @@ import (
 )
 
 const (
-	TEST_TOPIC_NAME      = "test_redpanda_connect_topic"
-	CONNECT_TEST_NETWORK = "redpandaconnecttestnetwork"
+	CONNECT_TEST_NETWORK = "redpanda_connect_test_network"
 )
 
 type ConnectIntegrationTestSuite struct {
@@ -41,9 +40,7 @@ type ConnectIntegrationTestSuite struct {
 
 	connectSvs *Service
 
-	testSeedBroker        string
-	exposedPlainKafkaPort int
-	exposedOutKafkaPort   int
+	testSeedBroker string
 }
 
 func TestSuite(t *testing.T) {
@@ -56,6 +53,7 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
+	// create one common network that all containers will share
 	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
 		ProviderType: testcontainers.ProviderDocker,
 		NetworkRequest: testcontainers.NetworkRequest{
@@ -68,27 +66,29 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 
 	s.commonNetwork = testNetwork
 
-	s.exposedPlainKafkaPort = rand.Intn(50000) + 10000
-	s.exposedOutKafkaPort = rand.Intn(50000) + 10000
+	// Redpanda container
+	exposedPlainKafkaPort := rand.Intn(50000) + 10000
+	exposedOutKafkaPort := rand.Intn(50000) + 10000
 	exposedKafkaAdminPort := rand.Intn(50000) + 10000
-	registryPort := rand.Intn(50000) + 10000
 
-	rpC, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, s.exposedPlainKafkaPort, s.exposedOutKafkaPort, exposedKafkaAdminPort, registryPort)
+	rpC, err := runRedpanda(ctx, CONNECT_TEST_NETWORK, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
 
 	s.redpandaContainer = rpC
 
-	seedBroker, err := getMappedHostPort(ctx, rpC, nat.Port(strconv.FormatInt(int64(s.exposedOutKafkaPort), 10)+"/tcp"))
+	seedBroker, err := getMappedHostPort(ctx, rpC, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
 	require.NoError(err)
 
 	s.testSeedBroker = seedBroker
 
+	// HTTPBin container
 	httpC, err := runHTTPBin(ctx, CONNECT_TEST_NETWORK)
 	require.NoError(err)
 
 	s.httpBinContainer = httpC
 
-	connectC, err := runConnect(CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(s.exposedPlainKafkaPort), 10)})
+	// Kafka Connect container
+	connectC, err := runConnect(CONNECT_TEST_NETWORK, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
 	require.NoError(err)
 
 	s.connectContainer = connectC
@@ -99,10 +99,10 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 	connectHost, err := s.connectContainer.Host(ctx)
 	require.NoError(err)
 
+	// Connect service
 	log, err := zap.NewProduction()
 	require.NoError(err)
 
-	// create
 	connectSvs, err := NewService(config.Connect{
 		Enabled: true,
 		Clusters: []config.ConnectCluster{
@@ -135,89 +135,91 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 
 	ctx := context.Background()
 
-	res, connectErr := s.connectSvs.CreateConnector(ctx, "redpanda_connect", connect.CreateConnectorRequest{
-		Name: "http_connect_input",
-		Config: map[string]interface{}{
-			"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
-			"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-			"http.request.url":                          "http://httpbin:80/uuid",
-			"http.timer.catchup.interval.millis":        "10000",
-			"http.timer.interval.millis":                "10000",
-			"kafka.topic":                               "httpbin-input",
-			"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
-			"key.converter.schemas.enable":              "false",
-			"name":                                      "http_connect_input",
-			"topic.creation.default.partitions":         "1",
-			"topic.creation.default.replication.factor": "1",
-			"topic.creation.enable":                     "true",
-			"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
-			"value.converter.schemas.enable":            "false",
-		},
-	})
-
-	require.Empty(connectErr)
-	assert.NotNil(res)
-
-	timer := time.NewTimer(32 * time.Second)
-	<-timer.C
-
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(s.testSeedBroker),
-		kgo.ConsumeTopics("httpbin-input"),
-		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
-	)
-	require.NoError(err)
-
-	defer cl.Close()
-
-	const waitTimeout = 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
-	defer cancel()
-
-	type uuidValue struct {
-		Uuid string `json:"uuid"`
-	}
-
-	type recordValue struct {
-		Value string `json:"value"`
-		Key   string
-	}
-
-	records := make([][]byte, 0)
-
-	for {
-		fetches := cl.PollFetches(ctx)
-		if fetches.IsClientClosed() {
-			break
-		}
-
-		errs := fetches.Errors()
-		if len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled)) {
-			break
-		}
-
-		require.Empty(errs)
-
-		fetches.EachRecord(func(record *kgo.Record) {
-			records = append(records, record.Value)
+	t.Run("HTTP input happy path", func(t *testing.T) {
+		res, connectErr := s.connectSvs.CreateConnector(ctx, "redpanda_connect", connect.CreateConnectorRequest{
+			Name: "http_connect_input",
+			Config: map[string]interface{}{
+				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+				"http.request.url":                          "http://httpbin:80/uuid",
+				"http.timer.catchup.interval.millis":        "10000",
+				"http.timer.interval.millis":                "10000",
+				"kafka.topic":                               "httpbin-input",
+				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+				"key.converter.schemas.enable":              "false",
+				"name":                                      "http_connect_input",
+				"topic.creation.default.partitions":         "1",
+				"topic.creation.default.replication.factor": "1",
+				"topic.creation.enable":                     "true",
+				"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+				"value.converter.schemas.enable":            "false",
+			},
 		})
-	}
 
-	for _, vd := range records {
-		rv := recordValue{}
-		err := json.Unmarshal(vd, &rv)
-		assert.NoError(err)
-		assert.NotEmpty(rv.Value)
+		require.Empty(connectErr)
+		assert.NotNil(res)
 
-		uv := uuidValue{}
-		err = json.Unmarshal([]byte(rv.Value), &uv)
-		assert.NoError(err)
+		timer := time.NewTimer(32 * time.Second)
+		<-timer.C
 
-		_, err = uuid.Parse(uv.Uuid)
-		assert.NoError(err)
-	}
+		cl, err := kgo.NewClient(
+			kgo.SeedBrokers(s.testSeedBroker),
+			kgo.ConsumeTopics("httpbin-input"),
+			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		)
+		require.NoError(err)
 
-	assert.Len(records, 3)
+		defer cl.Close()
+
+		const waitTimeout = 10 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
+		defer cancel()
+
+		type uuidValue struct {
+			Uuid string `json:"uuid"`
+		}
+
+		type recordValue struct {
+			Value string `json:"value"`
+			Key   string
+		}
+
+		records := make([][]byte, 0)
+
+		for {
+			fetches := cl.PollFetches(ctx)
+			if fetches.IsClientClosed() {
+				break
+			}
+
+			errs := fetches.Errors()
+			if len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled)) {
+				break
+			}
+
+			require.Empty(errs)
+
+			fetches.EachRecord(func(record *kgo.Record) {
+				records = append(records, record.Value)
+			})
+		}
+
+		for _, vd := range records {
+			rv := recordValue{}
+			err := json.Unmarshal(vd, &rv)
+			assert.NoError(err)
+			assert.NotEmpty(rv.Value)
+
+			uv := uuidValue{}
+			err = json.Unmarshal([]byte(rv.Value), &uv)
+			assert.NoError(err)
+
+			_, err = uuid.Parse(uv.Uuid)
+			assert.NoError(err)
+		}
+
+		assert.Len(records, 3)
+	})
 }
 
 const CONNECT_CONFIGURATION = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -268,11 +270,11 @@ func runConnect(network string, bootstrapServers []string) (testcontainers.Conta
 	})
 }
 
-func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort, exposedRegistryPort int) (testcontainers.Container, error) {
+func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort int) (testcontainers.Container, error) {
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
 	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
-	registryPort := strconv.FormatInt(int64(exposedRegistryPort), 10)
+	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10)
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
