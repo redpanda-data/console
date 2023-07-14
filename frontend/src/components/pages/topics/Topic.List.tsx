@@ -79,6 +79,8 @@ class TopicList extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshTopics(force);
+        api.refreshClusterOverview(force);
+
     }
 
     isFilterMatch(filter: string, item: Topic): boolean {
