@@ -141,7 +141,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
 				"http.request.url":                          "http://httpbin:80/uuid",
 				"http.timer.catchup.interval.millis":        "10000",
-				"http.timer.interval.millis":                "3000",
+				"http.timer.interval.millis":                "1500",
 				"kafka.topic":                               "httpbin-input",
 				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
 				"key.converter.schemas.enable":              "false",
@@ -157,7 +157,7 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		require.Empty(connectErr)
 		assert.NotNil(res)
 
-		timer := time.NewTimer(10 * time.Second)
+		timer := time.NewTimer(4 * time.Second)
 		<-timer.C
 
 		cl, err := kgo.NewClient(
