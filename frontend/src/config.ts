@@ -138,7 +138,6 @@ export function isEmbedded() {
 }
 
 export function isServerless() {
-    return true;
     return config.isServerless;
 }
 
