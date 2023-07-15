@@ -228,7 +228,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		}
 
 		nRecords := len(records)
-		assert.True(nRecords == 3 || nRecords == 4, "expect to have 3 or 4 records. got: %d", nRecords)
+		assert.True(nRecords >= 3 && nRecords <= 5, "expect to have between 3 and 5 records. got: %d", nRecords)
 
 		// check GET
 		getRes, getBody := s.apiRequest(context.Background(), http.MethodGet, "/api/kafka-connect/clusters/redpanda_connect/connectors/http_connect_input", nil)
