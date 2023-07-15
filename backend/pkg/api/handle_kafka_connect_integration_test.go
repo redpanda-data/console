@@ -1,4 +1,15 @@
-package connect
+// Copyright 2022 Redpanda Data, Inc.
+//
+// Use of this software is governed by the Business Source License
+// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+//
+// As of the Change Date specified in that file, in accordance with
+// the Business Source License, use of this software will be governed
+// by the Apache License, Version 2.0
+
+//go:build integration
+
+package api
 
 import (
 	"context"
@@ -6,50 +17,37 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/cloudhut/connect-client"
+	con "github.com/cloudhut/connect-client"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/connect"
 )
 
-type ConnectIntegrationTestSuite struct {
-	suite.Suite
-
-	commonNetwork     testcontainers.Network
-	redpandaContainer testcontainers.Container
-	connectContainer  testcontainers.Container
-	httpBinContainer  testcontainers.Container
-
-	connectSvs *Service
-
-	testSeedBroker string
-}
-
-func TestSuite(t *testing.T) {
-	suite.Run(t, &ConnectIntegrationTestSuite{})
-}
-
-func (s *ConnectIntegrationTestSuite) SetupSuite() {
+func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	t := s.T()
-	require := require.New(t)
 
+	require := require.New(t)
+	assert := assert.New(t)
+
+	// setup
 	ctx := context.Background()
 
-	connectTestNetwork := "redpanda_connect_test_network"
+	connectTestNetwork := "api_integration_redpanda_connect_test_network"
 
 	// create one common network that all containers will share
 	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
@@ -62,86 +60,88 @@ func (s *ConnectIntegrationTestSuite) SetupSuite() {
 	})
 	require.NoError(err)
 
-	s.commonNetwork = testNetwork
+	commonNetwork := testNetwork
 
 	// Redpanda container
 	exposedPlainKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
 	exposedOutKafkaPort := rand.Intn(50000) + 10000   //nolint:gosec // We can use weak random numbers for ports in tests.
 	exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
 
-	rpC, err := runRedpanda(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
+	redpandaContainer, err := runRedpandaForConnect(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
 
-	s.redpandaContainer = rpC
-
-	seedBroker, err := getMappedHostPort(ctx, rpC, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
+	seedBroker, err := getMappedHostPort(ctx, redpandaContainer, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
 	require.NoError(err)
-
-	s.testSeedBroker = seedBroker
 
 	// HTTPBin container
 	httpC, err := runHTTPBin(ctx, connectTestNetwork)
 	require.NoError(err)
 
-	s.httpBinContainer = httpC
+	httpBinContainer := httpC
 
 	// Kafka Connect container
 	connectC, err := runConnect(connectTestNetwork, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
 	require.NoError(err)
 
-	s.connectContainer = connectC
+	connectContainer := connectC
 
-	connectPort, err := s.connectContainer.MappedPort(ctx, nat.Port("8083"))
+	connectPort, err := connectContainer.MappedPort(ctx, nat.Port("8083"))
 	require.NoError(err)
 
-	connectHost, err := s.connectContainer.Host(ctx)
+	connectHost, err := connectContainer.Host(ctx)
 	require.NoError(err)
 
-	// Connect service
+	// new connect service
 	log, err := zap.NewProduction()
 	require.NoError(err)
 
-	connectSvs, err := NewService(config.Connect{
-		Enabled: true,
-		Clusters: []config.ConnectCluster{
-			{
-				Name: "redpanda_connect",
-				URL:  "http://" + connectHost + ":" + connectPort.Port(),
-			},
+	connectCfg := config.Connect{}
+	connectCfg.SetDefaults()
+	connectCfg.Enabled = true
+	connectCfg.Clusters = []config.ConnectCluster{
+		{
+			Name: "redpanda_connect",
+			URL:  "http://" + connectHost + ":" + connectPort.Port(),
 		},
-	}, log)
+	}
 
-	require.NoError(err)
+	newConnectSvc, err := connect.NewService(connectCfg, log)
+	assert.NoError(err)
 
-	s.connectSvs = connectSvs
-}
+	// save old
+	oldConnectSvc := s.api.ConnectSvc
 
-func (s *ConnectIntegrationTestSuite) TearDownSuite() {
-	t := s.T()
-	assert := require.New(t)
+	// switch
+	s.api.ConnectSvc = newConnectSvc
 
-	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
-	assert.NoError(s.httpBinContainer.Terminate(context.Background()))
-	assert.NoError(s.connectContainer.Terminate(context.Background()))
-	assert.NoError(s.commonNetwork.Remove(context.Background()))
-}
+	// allow for connect service to establish connection to connect cluster
+	timer := time.NewTimer(200 * time.Millisecond)
+	<-timer.C
 
-func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
-	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
+	// reset connect service
+	defer func() {
+		s.api.ConnectSvc = oldConnectSvc
+	}()
 
-	ctx := context.Background()
+	t.Cleanup(func() {
+		assert.NoError(httpBinContainer.Terminate(context.Background()))
+		assert.NoError(connectContainer.Terminate(context.Background()))
+		assert.NoError(redpandaContainer.Terminate(context.Background()))
+		assert.NoError(commonNetwork.Remove(context.Background()))
+	})
 
-	t.Run("HTTP input happy path", func(t *testing.T) {
-		res, connectErr := s.connectSvs.CreateConnector(ctx, "redpanda_connect", connect.CreateConnectorRequest{
-			Name: "http_connect_input",
+	t.Run("happy path", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		input := &createConnectorRequest{
+			ConnectorName: "http_connect_input",
 			Config: map[string]interface{}{
 				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
 				"http.request.url":                          "http://httpbin:80/uuid",
 				"http.timer.catchup.interval.millis":        "10000",
-				"http.timer.interval.millis":                "1500",
+				"http.timer.interval.millis":                "1000",
 				"kafka.topic":                               "httpbin-input",
 				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
 				"key.converter.schemas.enable":              "false",
@@ -152,16 +152,26 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 				"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 				"value.converter.schemas.enable":            "false",
 			},
-		})
+		}
 
-		require.Empty(connectErr)
-		assert.NotNil(res)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/kafka-connect/clusters/redpanda_connect/connectors", input)
 
-		timer := time.NewTimer(4 * time.Second)
+		require.Equal(200, res.StatusCode)
+
+		createConnectRes := con.ConnectorInfo{}
+		err := json.Unmarshal(body, &createConnectRes)
+		assert.NoError(err)
+
+		assert.Equal("http_connect_input", createConnectRes.Name)
+		assert.Equal("httpbin-input", createConnectRes.Config["kafka.topic"])
+		assert.Equal("1000", createConnectRes.Config["http.timer.interval.millis"])
+
+		// timeout to allow for connect instance to perform few requests
+		timer := time.NewTimer(3500 * time.Millisecond)
 		<-timer.C
 
 		cl, err := kgo.NewClient(
-			kgo.SeedBrokers(s.testSeedBroker),
+			kgo.SeedBrokers(seedBroker),
 			kgo.ConsumeTopics("httpbin-input"),
 			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		)
@@ -181,12 +191,12 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 		records := make([][]byte, 0)
 
 		// control polling end via context
-		const waitTimeout = 5 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
-		defer cancel()
+		pollCtx, pollCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer pollCancel()
 
+		// check the data in the sink topic
 		for {
-			fetches := cl.PollFetches(ctx)
+			fetches := cl.PollFetches(pollCtx)
 			if fetches.IsClientClosed() {
 				break
 			}
@@ -217,7 +227,20 @@ func (s *ConnectIntegrationTestSuite) TestCreateConnector() {
 			assert.NoError(err)
 		}
 
-		assert.Len(records, 3)
+		nRecords := len(records)
+		assert.True(nRecords == 3 || nRecords == 4, "expect to have 3 or 4 records. got: %d", nRecords)
+
+		// check GET
+		getRes, getBody := s.apiRequest(context.Background(), http.MethodGet, "/api/kafka-connect/clusters/redpanda_connect/connectors/http_connect_input", nil)
+		require.Equal(200, getRes.StatusCode)
+
+		getConnectRes := connect.ClusterConnectorInfo{}
+		err = json.Unmarshal(getBody, &getConnectRes)
+		assert.NoError(err)
+
+		assert.Equal("http_connect_input", getConnectRes.Name)
+		assert.Equal("httpbin-input", getConnectRes.Config["kafka.topic"])
+		assert.Equal("1000", getConnectRes.Config["http.timer.interval.millis"])
 	})
 }
 
@@ -269,7 +292,7 @@ func runConnect(network string, bootstrapServers []string) (testcontainers.Conta
 	})
 }
 
-func runRedpanda(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort int) (testcontainers.Container, error) {
+func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPort, outsideKafkaPort, exposedKafkaAdminPort int) (testcontainers.Container, error) {
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
 	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
