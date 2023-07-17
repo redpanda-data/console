@@ -253,9 +253,6 @@ status.storage.topic=_internal_connectors_status
 config.storage.replication.factor=-1
 offset.storage.replication.factor=-1
 status.storage.replication.factor=-1
-offset.flush.interval.ms=1000
-producer.linger.ms=1
-producer.batch.size=131073
 `
 
 func runConnect(network string, bootstrapServers []string) (testcontainers.Container, error) {
