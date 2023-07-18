@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs as RpTabs } from '@redpanda-data/ui';
 
 export interface Tab {
@@ -30,11 +30,13 @@ interface TabsProps {
 
 
 export default function Tabs(props: TabsProps) {
-    const { tabs, selectedTabKey, onChange = () => undefined } = props;
+    const { tabs, selectedTabKey } = props;
 
-    const selectedIndex = selectedTabKey
-        ? tabs.findIndex(t => t.key == selectedTabKey)
-        : undefined;
+    const [selectedIndex, setSelectedIndex] = useState(() => {
+        return selectedTabKey
+            ? tabs.findIndex(t => t.key == selectedTabKey)
+            : undefined;
+    });
     const defaultIndex = props.defaultSelectedTabKey
         ? tabs.findIndex(t => t.key == props.defaultSelectedTabKey)
         : undefined;
@@ -44,8 +46,10 @@ export default function Tabs(props: TabsProps) {
             isFitted={props.isFitted}
             defaultIndex={defaultIndex}
             index={selectedIndex}
-            onChange={(_, key) => {
-                onChange(key);
+            onChange={(index, key) => {
+                setSelectedIndex(Number(index));
+                if (props.onChange)
+                    props.onChange(String(key));
             }}
             items={tabs.map(t => {
 
