@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package shop.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v1";
+
+message Order {
+    string id = 2;
+    google.protobuf.Timestamp created_at = 3;
+}
