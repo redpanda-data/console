@@ -554,6 +554,8 @@ github.com/twmb/franz-go/pkg/kmsg v1.5.0 h1:eqVJquFQLdBNLrRMWX03pPDPpngn6PTjGZLl
 github.com/twmb/franz-go/pkg/kmsg v1.5.0/go.mod h1:se9Mjdt0Nwzc9lnjJ0HyDtLyBnaBDAd7pCje47OhSyw=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 h1:alKdbddkPw3rDh+AwmUEwh6HNYgTvDSFIe/GWYRR9RM=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0/go.mod h1:k8BoBjyUbFj34f0rRbn+Ky12sZFAPbmShrg0karAIMo=
+github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074 h1:3tkKjTyaXZ8xcxUaqJv3YVgaI1GSKoli5ZK/wLpXfZM=
+github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074/go.mod h1:egX+kicq83hpztv3PRCXKLNO132Ol9JTAJOCRZcqUxI=
 github.com/twmb/go-cache v1.0.0 h1:X7tM+xZHNxYxxLZ5jW6spoDbQRxvZ8rgHI6k9G3tynE=
 github.com/twmb/go-cache v1.0.0/go.mod h1:1mAga/hGP9Lhki1NCnW3H8qjnaDrYxmFafW6tnakfAw=
 github.com/twmb/tlscfg v1.2.1 h1:IU2efmP9utQEIV2fufpZjPq7xgcZK4qu25viD51BB44=

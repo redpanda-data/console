@@ -15,7 +15,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/go-resty/resty/v2 v2.7.0
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
@@ -37,6 +36,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230703040638-f324841a32b4
 	github.com/twmb/franz-go/pkg/kmsg v1.5.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
+	github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074
 	github.com/twmb/go-cache v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
@@ -67,6 +67,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/pprof v0.0.0-20230510103437-eeec1cb781c3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
