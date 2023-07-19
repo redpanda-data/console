@@ -21,7 +21,7 @@ require (
 	github.com/hamba/avro/v2 v2.8.1
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jcmturner/gokrb5/v8 v8.4.4
-	github.com/jhump/protoreflect v1.15.1
+	github.com/jhump/protoreflect v1.14.1
 	github.com/knadh/koanf v1.5.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.15.1
