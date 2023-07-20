@@ -11,6 +11,7 @@ import (
 func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any {
 	setIfNotExists(config, "source.cluster.ssl.truststore.type", "PEM")
 	setIfNotExists(config, "source.cluster.ssl.keystore.type", "PEM")
+	setIfNotExists(config, "header.converter", "org.apache.kafka.connect.converters.ByteArrayConverter")
 
 	if _, exists := config["source.cluster.security.protocol"]; exists {
 		setIfNotExists(config, "security.protocol", config["source.cluster.security.protocol"])

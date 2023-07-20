@@ -14,7 +14,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
+	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 )
 
 // handleGetUsers returns a list of Kafka users. Via the Kafka API we can only return users if our
@@ -92,7 +92,7 @@ func (c *CreateUserRequest) OK() error {
 	}
 
 	switch c.Mechanism {
-	case admin.ScramSha256, admin.ScramSha512:
+	case adminapi.ScramSha256, adminapi.ScramSha512:
 	default:
 		return fmt.Errorf("mechanism must be either SCRAM-SHA-256 or SCRAM-SHA-512")
 	}
