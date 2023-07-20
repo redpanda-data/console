@@ -114,10 +114,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	// switch
 	s.api.ConnectSvc = newConnectSvc
 
-	// allow for connect service to establish connection to connect cluster
-	timer := time.NewTimer(200 * time.Millisecond)
-	<-timer.C
-
 	// reset connect service
 	defer func() {
 		s.api.ConnectSvc = oldConnectSvc
