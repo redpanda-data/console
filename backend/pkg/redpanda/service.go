@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
+	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/net"
 	"go.uber.org/zap"
 
@@ -24,7 +24,7 @@ import (
 
 // Service is the abstraction for communicating with a Redpanda cluster via the admin api.
 type Service struct {
-	adminClient *admin.AdminAPI
+	adminClient *adminapi.AdminAPI
 	logger      *zap.Logger
 }
 
@@ -36,7 +36,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	}
 
 	// Build admin client with provided credentials
-	basicCreds := admin.BasicCredentials{
+	basicCreds := adminapi.BasicAuth{
 		Username: cfg.AdminAPI.Username,
 		Password: cfg.AdminAPI.Password,
 	}
@@ -54,7 +54,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		tlsCfg = nil
 	}
 
-	adminClient, err := admin.NewAdminAPI(cfg.AdminAPI.URLs, basicCreds, tlsCfg)
+	adminClient, err := adminapi.NewAdminAPI(cfg.AdminAPI.URLs, &basicCreds, tlsCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
@@ -137,11 +137,11 @@ func (s *Service) GetLicense(ctx context.Context) License {
 
 // GetPartitionBalancerStatus retrieves the partition balancer status from Redpanda
 // via the Admin API.
-func (s *Service) GetPartitionBalancerStatus(ctx context.Context) (admin.PartitionBalancerStatus, error) {
+func (s *Service) GetPartitionBalancerStatus(ctx context.Context) (adminapi.PartitionBalancerStatus, error) {
 	return s.adminClient.GetPartitionStatus(ctx)
 }
 
-func licenseToRedpandaLicense(license admin.License) (License, error) {
+func licenseToRedpandaLicense(license adminapi.License) (License, error) {
 	if !license.Loaded {
 		return newOpenSourceCoreLicense(), nil
 	}
@@ -162,7 +162,7 @@ func licenseToRedpandaLicense(license admin.License) (License, error) {
 // ClusterVersionFromBrokerList returns the version of the Redpanda cluster. Since each broker
 // reports the version individually, we iterate through the list of brokers and
 // return the first reported version that contains a semVer.
-func ClusterVersionFromBrokerList(brokers []admin.Broker) string {
+func ClusterVersionFromBrokerList(brokers []adminapi.Broker) string {
 	version := "unknown"
 	for _, broker := range brokers {
 		if broker.Version != "" {
