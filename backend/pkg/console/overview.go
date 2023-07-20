@@ -13,7 +13,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
+	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -35,11 +35,11 @@ type Overview struct {
 // OverviewRedpanda contains information that can be received via Redpanda's
 // admin API.
 type OverviewRedpanda struct {
-	IsAdminAPIConfigured    bool                           `json:"isAdminApiConfigured"`
-	License                 *redpanda.License              `json:"license,omitempty"`
-	Version                 string                         `json:"version,omitempty"`
-	UserCount               *int                           `json:"userCount,omitempty"`
-	PartitionBalancerStatus *admin.PartitionBalancerStatus `json:"partitionBalancerStatus,omitempty"`
+	IsAdminAPIConfigured    bool                              `json:"isAdminApiConfigured"`
+	License                 *redpanda.License                 `json:"license,omitempty"`
+	Version                 string                            `json:"version,omitempty"`
+	UserCount               *int                              `json:"userCount,omitempty"`
+	PartitionBalancerStatus *adminapi.PartitionBalancerStatus `json:"partitionBalancerStatus,omitempty"`
 }
 
 // OverviewConsole contains information about Redpanda Console itself.
@@ -116,7 +116,7 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 		*userCount = len(users)
 	}
 
-	var partitionBalancerStatus *admin.PartitionBalancerStatus
+	var partitionBalancerStatus *adminapi.PartitionBalancerStatus
 	pbs, err := s.redpandaSvc.GetPartitionBalancerStatus(ctx)
 	if err != nil {
 		s.logger.Warn("failed to retrieve partition balancer status", zap.Error(err))
