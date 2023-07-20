@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package shop.v2;
+
+option go_package = "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2";
+
+import "google/protobuf/timestamp.proto";
+
+message Address {
+  int32 version = 1;
+  string id = 2;
+  message Customer {
+    string customer_id = 1;
+    string customer_type = 2;
+  }
+  Customer customer = 3;
+  string type = 4;
+  string first_name = 5;
+  string last_name = 6;
+  string state = 7;
+  string house_number = 8;
+  string city = 9;
+  string zip = 10;
+  float latitude = 11;
+  float longitude = 12;
+  string phone = 13;
+  string additional_address_info = 14;
+  google.protobuf.Timestamp created_at = 15;
+  int32 revision = 16;
+}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package shop.v2;
+
+option go_package = "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2";
+
+import "google/protobuf/timestamp.proto";
+import "shop/v2/address.proto";
+import "shop/v2/customer.proto";
+
+message Order {
+  int32 version = 1;
+  string id = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp last_updated_at = 4;
+  google.protobuf.Timestamp delivered_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+
+  Customer customer = 7;
+  int32 order_value = 8;
+
+  message LineItem {
+    string article_id = 1;
+    string name = 2;
+    int32 quantity = 3;
+    string quantity_unit = 4;
+    int32 unit_price = 5;
+    int32 total_price = 6;
+  }
+  repeated LineItem line_items = 9;
+
+  message Payment {
+    string payment_id = 1;
+    string method = 2;
+  }
+
+  Payment payment = 10;
+  Address delivery_address = 11;
+  int32 revision = 12;
+}

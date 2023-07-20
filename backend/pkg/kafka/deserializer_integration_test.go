@@ -40,6 +40,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v1"
+	shopv2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -318,8 +319,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		rcl, err := sr.NewClient(sr.URLs(registryURL))
 		require.NoError(err)
 
-		protoFilePath := "testdata/proto/shop/v1/order.proto"
-		protoFile, err := os.ReadFile(protoFilePath)
+		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 		require.NoError(err)
 
 		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
@@ -415,6 +415,278 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+	})
+
+	t.Run("schema protobuf references", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		// address
+		protoFile, err := os.ReadFile("testdata/proto/shop/v2/address.proto")
+		require.NoError(err)
+
+		ssAddress, err := rcl.CreateSchema(context.Background(), testTopicName+"-address-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ssAddress)
+
+		// customer
+		protoFile, err = os.ReadFile("testdata/proto/shop/v2/customer.proto")
+		require.NoError(err)
+
+		ssCustomer, err := rcl.CreateSchema(context.Background(), testTopicName+"-customer-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ssCustomer)
+
+		// order
+		protoFile, err = os.ReadFile("testdata/proto/shop/v2/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+			References: []sr.SchemaReference{
+				{
+					Name:    "shop/v2/address.proto",
+					Subject: ssAddress.Subject,
+					Version: ssAddress.Version,
+				},
+				{
+					Name:    "shop/v2/customer.proto",
+					Subject: ssCustomer.Subject,
+					Version: ssCustomer.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
+		cfg.Kafka.Schema.Enabled = true
+		cfg.Kafka.Schema.URLs = []string{registryURL}
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv2.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv2.Order))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*shopv2.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2023, time.July, 12, 13, 0, 0, 0, time.UTC)
+		orderUpdatedAt := time.Date(2023, time.July, 12, 14, 0, 0, 0, time.UTC)
+		orderDeliveredAt := time.Date(2023, time.July, 12, 15, 0, 0, 0, time.UTC)
+		orderCompletedAt := time.Date(2023, time.July, 12, 16, 0, 0, 0, time.UTC)
+
+		msg := shopv2.Order{
+			Version:       1,
+			Id:            "333",
+			CreatedAt:     timestamppb.New(orderCreatedAt),
+			LastUpdatedAt: timestamppb.New(orderUpdatedAt),
+			DeliveredAt:   timestamppb.New(orderDeliveredAt),
+			CompletedAt:   timestamppb.New(orderCompletedAt),
+			Customer: &shopv2.Customer{
+				Version:      1,
+				Id:           "customer_0123",
+				FirstName:    "Foo",
+				LastName:     "Bar",
+				CompanyName:  "Redpanda",
+				Email:        "foobar_test@redpanda.com",
+				CustomerType: shopv2.Customer_CUSTOMER_TYPE_BUSINESS,
+			},
+			OrderValue: 100,
+			LineItems: []*shopv2.Order_LineItem{
+				{
+					ArticleId:    "art0",
+					Name:         "line0",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   20,
+				},
+				{
+					ArticleId:    "art1",
+					Name:         "line1",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    25,
+					TotalPrice:   50,
+				},
+				{
+					ArticleId:    "art2",
+					Name:         "line2",
+					Quantity:     3,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   30,
+				},
+			},
+			Payment: &shopv2.Order_Payment{
+				PaymentId: "pay_0123",
+				Method:    "card",
+			},
+			DeliveryAddress: &shopv2.Address{
+				Version: 1,
+				Id:      "addr_0123",
+				Customer: &shopv2.Address_Customer{
+					CustomerId:   "customer_0123",
+					CustomerType: "business",
+				},
+				FirstName: "Foo",
+				LastName:  "Bar",
+				State:     "CA",
+				City:      "SomeCity",
+				Zip:       "xyzyz",
+				Phone:     "123-456-78990",
+				CreatedAt: timestamppb.New(orderCreatedAt),
+				Revision:  1,
+			},
+			Revision: 1,
+		}
+
+		msgData, err := serde.Encode(&msg)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: orderCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+		rOrder := shopv2.Order{}
+		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
+		assert.NoError(err)
+		assert.Equal("333", rOrder.GetId())
+		assert.Equal(int32(1), rOrder.GetVersion())
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderUpdatedAt).GetSeconds(), rOrder.GetLastUpdatedAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderDeliveredAt).GetSeconds(), rOrder.GetDeliveredAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderCompletedAt).GetSeconds(), rOrder.GetCompletedAt().GetSeconds())
+
+		orderCustomer := rOrder.GetCustomer()
+		assert.Equal(int32(1), orderCustomer.GetVersion())
+		assert.Equal("Foo", orderCustomer.GetFirstName())
+		assert.Equal("Bar", orderCustomer.GetLastName())
+		assert.Equal("Redpanda", orderCustomer.GetCompanyName())
+		assert.Equal("foobar_test@redpanda.com", orderCustomer.GetEmail())
+		assert.Equal(shopv2.Customer_CUSTOMER_TYPE_BUSINESS, orderCustomer.GetCustomerType())
+
+		assert.Equal(int32(100), rOrder.GetOrderValue())
+		lineItems := rOrder.GetLineItems()
+		assert.Len(lineItems, 3)
+		li := lineItems[0]
+		assert.Equal("art0", li.GetArticleId())
+		assert.Equal("line0", li.GetName())
+		assert.Equal(int32(2), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(10), li.GetUnitPrice())
+		assert.Equal(int32(20), li.GetTotalPrice())
+		li = lineItems[1]
+		assert.Equal("art1", li.GetArticleId())
+		assert.Equal("line1", li.GetName())
+		assert.Equal(int32(2), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(25), li.GetUnitPrice())
+		assert.Equal(int32(50), li.GetTotalPrice())
+		li = lineItems[2]
+		assert.Equal("art2", li.GetArticleId())
+		assert.Equal("line2", li.GetName())
+		assert.Equal(int32(3), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(10), li.GetUnitPrice())
+		assert.Equal(int32(30), li.GetTotalPrice())
+
+		orderPayment := rOrder.GetPayment()
+		assert.Equal("pay_0123", orderPayment.GetPaymentId())
+		assert.Equal("card", orderPayment.GetMethod())
+
+		deliveryAddress := rOrder.GetDeliveryAddress()
+		assert.Equal(int32(1), deliveryAddress.GetVersion())
+		assert.Equal("addr_0123", deliveryAddress.GetId())
+		assert.Equal("customer_0123", deliveryAddress.GetCustomer().GetCustomerId())
+		assert.Equal("business", deliveryAddress.GetCustomer().GetCustomerType())
+		assert.Equal("Foo", deliveryAddress.GetFirstName())
+		assert.Equal("Bar", deliveryAddress.GetLastName())
+		assert.Equal("CA", deliveryAddress.GetState())
+		assert.Equal("SomeCity", deliveryAddress.GetCity())
+		assert.Equal("xyzyz", deliveryAddress.GetZip())
+		assert.Equal("123-456-78990", deliveryAddress.GetPhone())
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), deliveryAddress.GetCreatedAt().GetSeconds())
+		assert.Equal(int32(1), deliveryAddress.GetRevision())
+
+		assert.Equal(int32(1), rOrder.GetRevision())
 	})
 }
 
