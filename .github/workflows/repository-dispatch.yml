@@ -15,16 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Repository Dispatch on Release
-        uses: peter-evans/repository-dispatch@11ba7d3f32dc7cc919d1c43f1fec1c05260c26b5
+        uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         with:
           token: ${{ secrets.VBOT_GITHUB_API_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: release
-          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}", "tag_name":, "${{ github.event.release.tag_name }}"}'
+          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}", "tag_name": "${{ github.event.release.tag_name }}"}'
 
       - name: Repository Dispatch on push
-        uses: peter-evans/repository-dispatch@11ba7d3f32dc7cc919d1c43f1fec1c05260c26b5
+        uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         with:
           token: ${{ secrets.VBOT_GITHUB_API_TOKEN }}

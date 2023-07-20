@@ -24,7 +24,12 @@ jobs:
 
       - uses: actions/setup-go@v4
         with:
-          go-version-file: 'backend/go.mod'
+          # go-version-file: 'backend/go.mod'
+          # for now pin the verify action to 1.20.5
+          # due to issue with testcontainers
+          # https://github.com/golang/go/issues/61431
+          # https://github.com/testcontainers/testcontainers-go/issues/1359
+          go-version: '1.20.5'
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
