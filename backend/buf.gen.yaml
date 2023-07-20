@@ -1,8 +1,4 @@
 version: v1
-# managed:
-#   enabled: true
-#   go_package_prefix:
-#     default: github.com/bufbuild/buf-tour/gen
 plugins:
   - plugin: buf.build/protocolbuffers/go
     out: pkg/kafka/testdata/proto/gen

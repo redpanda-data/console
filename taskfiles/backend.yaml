@@ -73,7 +73,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.19.0
+      BUF_VERSION: 1.25.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-{{ARCH}}
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
