@@ -660,7 +660,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto/shop/v2/customer.proto")
 		require.NoError(err)
 
-		ssCustomer, err := rcl.CreateSchema(context.Background(), testTopicName+"-customer-value", sr.Schema{
+		ssCustomer, err := rcl.CreateSchema(context.Background(), "shop/v2/customer.proto", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
