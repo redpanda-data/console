@@ -7,6 +7,8 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.10.0
 	github.com/cloudhut/connect-client v0.0.0-20230417124247-963e5bcdfee7
+	github.com/docker/docker v24.0.4+incompatible
+	github.com/docker/go-connections v0.4.0
 	github.com/dop251/goja v0.0.0-20230707174833-636fdf960de1
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/cors v1.2.1
@@ -27,12 +29,14 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230720095300-a50bd8d65b0d
 	github.com/stretchr/testify v1.8.4
+	github.com/testcontainers/testcontainers-go v0.21.0
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1
 	github.com/twmb/franz-go v1.14.2
 	github.com/twmb/franz-go/pkg/kadm v1.9.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230703040638-f324841a32b4
 	github.com/twmb/franz-go/pkg/kmsg v1.6.1
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
+	github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074
 	github.com/twmb/go-cache v1.2.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
@@ -53,14 +57,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
-	github.com/containerd/containerd v1.7.1 // indirect
+	github.com/containerd/containerd v1.7.2 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.4+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -115,12 +117,11 @@ require (
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sethgrid/pester v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/testcontainers/testcontainers-go v0.20.1 // indirect
 	github.com/twmb/tlscfg v1.2.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
