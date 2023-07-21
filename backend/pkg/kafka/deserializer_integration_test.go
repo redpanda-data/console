@@ -16,20 +16,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -84,30 +82,30 @@ func (s *KafkaIntegrationTestSuite) consumerClientForTopic(topicName string) *kg
 	return cl
 }
 
+func withImage(image string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Image = image
+	}
+}
+
 func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
 	ctx := context.Background()
 
-	// Redpanda container
-	exposedKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-	// externalKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-	// exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-	schemaRegistryPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-
-	redpandaContainer, err := runRedpandaForKafkaTests(ctx, exposedKafkaPort, schemaRegistryPort)
+	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.1.13"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
 
-	seedBroker, err := getMappedHostPort(ctx, redpandaContainer, nat.Port(strconv.FormatInt(int64(exposedKafkaPort), 10)+"/tcp"))
+	seedBroker, err := redpandaContainer.KafkaSeedBroker(ctx)
 	require.NoError(err)
 
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := getMappedHostPort(ctx, redpandaContainer, nat.Port(strconv.FormatInt(int64(schemaRegistryPort), 10)+"/tcp"))
+	registryAddr, err := getMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
 	require.NoError(err)
 	s.registryAddress = registryAddr
 
@@ -899,62 +897,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		assert.Equal(int32(1), rOrder.GetRevision())
 	})
-}
-
-func runRedpandaForKafkaTests(ctx context.Context, exposedKafkaPort, schemaRegistryPort int) (testcontainers.Container, error) {
-	kafkaPort := strconv.FormatInt(int64(exposedKafkaPort), 10)
-	registryPort := strconv.FormatInt(int64(schemaRegistryPort), 10)
-
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Name:     "local-redpanda",
-			Hostname: "redpanda",
-			Image:    "docker.redpanda.com/redpandadata/redpanda:v23.1.8",
-			ExposedPorts: []string{
-				kafkaPort,
-				registryPort,
-			},
-			Cmd: []string{
-				"redpanda start",
-				"--smp 1",
-				"--overprovisioned",
-				fmt.Sprintf("--kafka-addr 0.0.0.0:%s", kafkaPort),
-				fmt.Sprintf("--advertise-kafka-addr localhost:%s", kafkaPort),
-				fmt.Sprintf("--schema-registry-addr 0.0.0.0:%s", registryPort),
-			},
-			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					nat.Port(kafkaPort + "/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port(kafkaPort+"/tcp").Int()), 10),
-						},
-					},
-					nat.Port(registryPort + "/tcp"): []nat.PortBinding{
-						{
-							HostIP:   "",
-							HostPort: strconv.FormatInt(int64(nat.Port(registryPort+"/tcp").Int()), 10),
-						},
-					},
-				}
-			},
-		},
-		Started: true,
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = wait.ForLog("Successfully started Redpanda!").
-		WithPollInterval(100*time.Millisecond).
-		WaitUntilReady(ctx, container)
-	if err != nil {
-		return nil, fmt.Errorf("failed to wait for Redpanda readiness: %w", err)
-	}
-
-	return container, nil
 }
 
 func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
