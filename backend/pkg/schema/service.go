@@ -183,6 +183,10 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
+		if schemaRes.SchemaType != "AVRO" {
+			return nil, fmt.Errorf("schema type is not avro")
+		}
+
 		codec, err := s.ParseAvroSchemaWithReferences(schemaRes)
 		if err != nil {
 			s.logger.Warn("failed to parse avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
