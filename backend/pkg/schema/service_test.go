@@ -43,6 +43,7 @@ func TestService_GetAvroSchemaByID(t *testing.T) {
 					"subject": "referenced.schema",
 					"version": 1,
 				}},
+				"schemaType": "AVRO",
 			})
 		})
 
@@ -51,10 +52,11 @@ func TestService_GetAvroSchemaByID(t *testing.T) {
 	httpmock.RegisterResponder("GET", baseURL+"/subjects/referenced.schema/versions/1",
 		func(req *http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(http.StatusOK, map[string]interface{}{
-				"schema":  referencedSchemaStr,
-				"subject": "referenced.schema",
-				"version": 1,
-				"id":      1001,
+				"schema":     referencedSchemaStr,
+				"subject":    "referenced.schema",
+				"version":    1,
+				"schemaType": "AVRO",
+				"id":         1001,
 			})
 		})
 
