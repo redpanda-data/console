@@ -37,6 +37,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	indexv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/index/v1"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v1"
 	shopv2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -511,7 +512,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(int32(1), rOrder.GetRevision())
 	})
 
-	t.Run("schema protobuf", func(t *testing.T) {
+	t.Run("schema registry protobuf", func(t *testing.T) {
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -620,9 +621,292 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		// franz-go serde
+		rOrder = shopv1.Order{}
+		err = serde.Decode(record.Value, &rOrder)
+		assert.NoError(err)
+		assert.Equal("222", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 	})
 
-	t.Run("schema protobuf references", func(t *testing.T) {
+	t.Run("schema registry protobuf multi", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_multi")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&indexv1.Gadget{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*indexv1.Gadget))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*indexv1.Gadget))
+			}),
+			sr.Index(2),
+		)
+
+		msg := indexv1.Gadget{
+			Identity: "gadget_0",
+			Gizmo: &indexv1.Gadget_Gizmo{
+				Size: 10,
+				Item: &indexv1.Item{
+					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
+					Name:     "item_0",
+				},
+			},
+			Widgets: []*indexv1.Widget{
+				{
+					Id: "wid_0",
+				},
+				{
+					Id: "wid_1",
+				},
+			},
+		}
+
+		msgData, err := serde.Encode(&msg)
+
+		r := &kgo.Record{
+			Key:   []byte(msg.GetIdentity()),
+			Value: msgData,
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+		rObject := indexv1.Gadget{}
+		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
+		assert.NoError(err)
+		assert.Equal("gadget_0", rObject.GetIdentity())
+		assert.Equal(int32(10), rObject.GetGizmo().GetSize())
+		assert.Equal("item_0", rObject.GetGizmo().GetItem().GetName())
+		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject.GetGizmo().GetItem().GetItemType())
+		widgets := rObject.GetWidgets()
+
+		require.Len(widgets, 2)
+		assert.Equal("wid_0", widgets[0].GetId())
+		assert.Equal("wid_1", widgets[1].GetId())
+
+		// franz-go serde
+		rObject = indexv1.Gadget{}
+		err = serde.Decode(record.Value, &rObject)
+		assert.NoError(err)
+		assert.Equal("gadget_0", rObject.GetIdentity())
+		assert.Equal(int32(10), rObject.GetGizmo().GetSize())
+		assert.Equal("item_0", rObject.GetGizmo().GetItem().GetName())
+		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject.GetGizmo().GetItem().GetItemType())
+		widgets = rObject.GetWidgets()
+
+		require.Len(widgets, 2)
+		assert.Equal("wid_0", widgets[0].GetId())
+		assert.Equal("wid_1", widgets[1].GetId())
+	})
+
+	t.Run("schema registry protobuf nested", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_nest")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&indexv1.Gadget_Gizmo{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.Index(2, 0),
+		)
+
+		msg := indexv1.Gadget{
+			Identity: "gadget_0",
+			Gizmo: &indexv1.Gadget_Gizmo{
+				Size: 10,
+				Item: &indexv1.Item{
+					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
+					Name:     "item_0",
+				},
+			},
+			Widgets: []*indexv1.Widget{
+				{
+					Id: "wid_0",
+				},
+				{
+					Id: "wid_1",
+				},
+			},
+		}
+
+		msgData, err := serde.Encode(msg.GetGizmo())
+
+		r := &kgo.Record{
+			// Key:   []byte(msg.GetIdentity()),
+			Value: msgData,
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+		rObject := indexv1.Gadget_Gizmo{}
+		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
+		assert.NoError(err)
+		assert.Equal(int32(10), rObject.GetSize())
+		assert.Equal("item_0", rObject.GetItem().GetName())
+		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject.GetItem().GetItemType())
+
+		// franz-go serde
+		rObject2 := indexv1.Gadget_Gizmo{}
+		err = serde.Decode(record.Value, &rObject2)
+		assert.NoError(err)
+		assert.Equal(int32(10), rObject2.GetSize())
+		assert.Equal("item_0", rObject2.GetItem().GetName())
+		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject2.GetItem().GetItemType())
+	})
+
+	t.Run("schema registry protobuf references", func(t *testing.T) {
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -640,10 +924,11 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		// address
-		protoFile, err := os.ReadFile("testdata/proto/shop/v2/address.proto")
+		addressProto := "shop/v2/address.proto"
+		protoFile, err := os.ReadFile("testdata/proto/" + addressProto)
 		require.NoError(err)
 
-		ssAddress, err := rcl.CreateSchema(context.Background(), "shop/v2/address.proto", sr.Schema{
+		ssAddress, err := rcl.CreateSchema(context.Background(), addressProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -651,10 +936,11 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ssAddress)
 
 		// customer
-		protoFile, err = os.ReadFile("testdata/proto/shop/v2/customer.proto")
+		customerProto := "shop/v2/customer.proto"
+		protoFile, err = os.ReadFile("testdata/proto/" + customerProto)
 		require.NoError(err)
 
-		ssCustomer, err := rcl.CreateSchema(context.Background(), "shop/v2/customer.proto", sr.Schema{
+		ssCustomer, err := rcl.CreateSchema(context.Background(), customerProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -670,12 +956,12 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Type:   sr.TypeProtobuf,
 			References: []sr.SchemaReference{
 				{
-					Name:    "shop/v2/address.proto",
+					Name:    addressProto,
 					Subject: ssAddress.Subject,
 					Version: ssAddress.Version,
 				},
 				{
-					Name:    "shop/v2/customer.proto",
+					Name:    customerProto,
 					Subject: ssCustomer.Subject,
 					Version: ssCustomer.Version,
 				},
