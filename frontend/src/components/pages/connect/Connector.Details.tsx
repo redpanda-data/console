@@ -397,6 +397,8 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
         ? 'error'
         : 'warning';
 
+    const hasConnectorLogs = api.topics?.any(x => x.topicName == '_internal_connectors_logs');
+
     return <>
         <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
             <AlertIcon />
@@ -413,6 +415,10 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                     <CodeBlock language="json" codeString={p.error.content} showScroll={false} />
                 </ModalBody>
                 <ModalFooter>
+                    {hasConnectorLogs &&
+                        <Button onClick={() => appGlobal.history.push('/topics/_internal_connectors_logs')} mr="auto">
+                            Show Logs
+                        </Button>}
                     <Button onClick={onClose}>Close</Button>
                 </ModalFooter>
             </ModalContent>
@@ -436,6 +442,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     async refreshData(force: boolean): Promise<void> {
         ConnectClusterStore.connectClusters.clear();
         await api.refreshConnectClusters(force);
+
+        // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
+        api.refreshTopics(force);
     }
 
     render() {
