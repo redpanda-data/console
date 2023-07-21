@@ -64,6 +64,10 @@ func (s *KafkaIntegrationTestSuite) createBaseConfig() config.Config {
 	cfg.SetDefaults()
 	cfg.MetricsNamespace = testutil.MetricNameForTest("deserializer")
 	cfg.Kafka.Brokers = []string{s.seedBroker}
+	cfg.Kafka.Protobuf.Enabled = true
+	cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
+	cfg.Kafka.Schema.Enabled = true
+	cfg.Kafka.Schema.URLs = []string{"http://" + s.registryAddress}
 
 	return cfg
 }
@@ -143,10 +147,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}()
 
 		cfg := s.createBaseConfig()
-		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-		cfg.Kafka.Schema.Enabled = true
-		cfg.Kafka.Schema.URLs = []string{"http://" + s.registryAddress}
 
 		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
 
@@ -540,10 +540,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		// test
 		cfg := s.createBaseConfig()
-		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-		cfg.Kafka.Schema.Enabled = true
-		cfg.Kafka.Schema.URLs = []string{registryURL}
 
 		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
 
@@ -690,10 +686,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		// test
 		cfg := s.createBaseConfig()
-		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-		cfg.Kafka.Schema.Enabled = true
-		cfg.Kafka.Schema.URLs = []string{registryURL}
 
 		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
 
