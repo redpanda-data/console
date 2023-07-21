@@ -116,7 +116,6 @@ tasks:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         GOBIN={{ .BUILD_ROOT }}/bin/go go generate ./...
-      - task: 'fmt'
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         {{ .BUILD_ROOT }}/bin/buf format -w pkg/kafka/testdata/proto
@@ -126,6 +125,7 @@ tasks:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         {{ .BUILD_ROOT }}/bin/buf generate pkg/kafka/testdata/proto
+      - task: 'fmt'
 
   test-unit:
     dir: "{{.BACKEND_ROOT}}"
