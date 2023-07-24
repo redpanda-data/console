@@ -548,8 +548,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/testcontainers/testcontainers-go v0.20.2-0.20230601102656-bc15b1182459 h1:0m4p/otuislPXQ34QppnFFHmbLq74Sx/eR+N85SFuqU=
-github.com/testcontainers/testcontainers-go v0.20.2-0.20230601102656-bc15b1182459/go.mod h1:K533TM5DrZWLiI8pOPFo4X7iEkXtZg2AmpPaUNCrqOQ=
+github.com/testcontainers/testcontainers-go v0.21.0 h1:syePAxdeTzfkap+RrJaQZpJQ/s/fsUgn11xIvHrOE9U=
+github.com/testcontainers/testcontainers-go v0.21.0/go.mod h1:c1ez3WVRHq7T/Aj+X3TIipFBwkBaNT5iNCY8+1b83Ng=
 github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1 h1:jpusx5aUllS9VLSD35P7xcuiWZvShDP7wJ3wE7gEKek=
 github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1/go.mod h1:KdZfXFN+z6dsuuAt+Gd1CXWoEn4WfzYHe/9n2ILbFDM=
 github.com/twmb/franz-go v1.7.0/go.mod h1:PMze0jNfNghhih2XHbkmTFykbMF5sJqmNJB31DOOzro=
@@ -564,6 +564,8 @@ github.com/twmb/franz-go/pkg/kmsg v1.6.1 h1:tm6hXPv5antMHLasTfKv9R+X03AjHSkSkXhQ
 github.com/twmb/franz-go/pkg/kmsg v1.6.1/go.mod h1:se9Mjdt0Nwzc9lnjJ0HyDtLyBnaBDAd7pCje47OhSyw=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 h1:alKdbddkPw3rDh+AwmUEwh6HNYgTvDSFIe/GWYRR9RM=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0/go.mod h1:k8BoBjyUbFj34f0rRbn+Ky12sZFAPbmShrg0karAIMo=
+github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074 h1:3tkKjTyaXZ8xcxUaqJv3YVgaI1GSKoli5ZK/wLpXfZM=
+github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074/go.mod h1:egX+kicq83hpztv3PRCXKLNO132Ol9JTAJOCRZcqUxI=
 github.com/twmb/go-cache v1.2.0 h1:VEA/7Arb/yCAzqBiNrN2Q1L6IJrm8+tNonaZ3OsLcgk=
 github.com/twmb/go-cache v1.2.0/go.mod h1:lArg9KhCl+GTFMikitLGhIBh/i11OK0lhSveqlMbbrY=
 github.com/twmb/tlscfg v1.2.1 h1:IU2efmP9utQEIV2fufpZjPq7xgcZK4qu25viD51BB44=

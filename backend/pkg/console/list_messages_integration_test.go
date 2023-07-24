@@ -13,6 +13,7 @@ package console
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -119,7 +120,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -147,11 +148,11 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("11")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("12")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("13")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("14")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("11")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("12")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("13")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("14")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -179,7 +180,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("19")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("19")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -208,11 +209,11 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("11")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("12")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("13")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("14")).Times(1)
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("15")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("11")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("12")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("13")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("14")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("15")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -278,7 +279,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -436,7 +437,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("16")).Times(1)
+		mockProgress.EXPECT().OnMessage(MatchesOrder("16")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -509,4 +510,40 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	assert.NoError(t, err)
 
 	return svc
+}
+
+// Matches implements the Matcher interface for OrderMatcher
+func (o *OrderMatcher) Matches(x interface{}) bool {
+	if m, ok := x.(*kafka.TopicMessage); ok {
+		order := testutil.Order{}
+		err := json.Unmarshal(m.Value.Payload.Payload, &order)
+		if err != nil {
+			o.err = fmt.Sprintf("marshal error: %s", err.Error())
+			return false
+		}
+
+		o.actualID = order.ID
+
+		return order.ID == o.expectedID
+	}
+
+	o.err = "value is not a TopicMessage"
+	return false
+}
+
+// String implements the Stringer interface for OrderMatcher
+func (o *OrderMatcher) String() string {
+	return fmt.Sprintf("has order ID %s expected order ID %s. err: %s", o.actualID, o.expectedID, o.err)
+}
+
+// MatchesOrder creates the Matcher
+func MatchesOrder(id string) gomock.Matcher {
+	return &OrderMatcher{expectedID: id}
+}
+
+// OrderMatcher can be used in expect functions to assert on Order ID
+type OrderMatcher struct {
+	expectedID string
+	actualID   string
+	err        string
 }

@@ -36,9 +36,14 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	}
 
 	// Build admin client with provided credentials
-	basicCreds := adminapi.BasicAuth{
-		Username: cfg.AdminAPI.Username,
-		Password: cfg.AdminAPI.Password,
+	var auth adminapi.Auth
+	if cfg.AdminAPI.Username != "" {
+		auth = &adminapi.BasicAuth{
+			Username: cfg.AdminAPI.Username,
+			Password: cfg.AdminAPI.Password,
+		}
+	} else {
+		auth = &adminapi.NopAuth{}
 	}
 	tlsCfg, err := cfg.AdminAPI.TLS.BuildTLSConfig()
 	if err != nil {
@@ -54,7 +59,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		tlsCfg = nil
 	}
 
-	adminClient, err := adminapi.NewAdminAPI(cfg.AdminAPI.URLs, &basicCreds, tlsCfg)
+	adminClient, err := adminapi.NewAdminAPI(cfg.AdminAPI.URLs, auth, tlsCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
