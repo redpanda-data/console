@@ -397,7 +397,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
         ? 'error'
         : 'warning';
 
-    const hasConnectorLogs = api.topics?.any(x => x.topicName == '_internal_connectors_logs');
+    const hasConnectorLogs = api.topics?.any(x => x.topicName == '__redpanda.connectors_logs');
 
     return <>
         <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
@@ -416,7 +416,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                 </ModalBody>
                 <ModalFooter>
                     {hasConnectorLogs &&
-                        <Button onClick={() => appGlobal.history.push('/topics/_internal_connectors_logs')} mr="auto">
+                        <Button onClick={() => appGlobal.history.push('/topics/__redpanda.connectors_logs')} mr="auto">
                             Show Logs
                         </Button>}
                     <Button onClick={onClose}>Close</Button>
