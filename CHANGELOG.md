@@ -1,6 +1,8 @@
 # Changelog
 
-## v2.3.0 / To be released
+## Master / to be released
+
+## v2.3.0 / 2023-07-21
 
 - [FEATURE] New Kafka connect setup & edit experience
 - [ENHANCEMENT] Support for serving Console on HTTPS / TLS Termination
