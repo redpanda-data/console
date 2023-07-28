@@ -121,7 +121,6 @@ func newClient(cfg config.Schema) (*Client, error) {
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
 	Schema     string      `json:"schema"`
-	SchemaType string      `json:"schemaType,omitempty"`
 	References []Reference `json:"references,omitempty"`
 }
 
