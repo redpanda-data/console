@@ -130,6 +130,18 @@ kafka:
   #   maxRetryInterval 60s
   #   backoffMultiplier: 2
 
+# redpanda:
+#   adminApi:
+#     enabled: false
+#     urls: []
+#     username: ""
+#     password: ""
+#     tls:
+#       enabled: false
+#       caFilepath: ""
+#       certFilepath: ""
+#       keyFilepath: ""
+
 # connect:
 #   enabled: false
 #   # An empty array for clusters is the default, but you have to specify at least one cluster, as soon as
