@@ -75,9 +75,9 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		getRes := response{}
 
 		err := json.Unmarshal(body, &getRes)
-		assert.NoError(err)
+		require.NoError(err)
 
-		assert.Len(getRes.Topics, 3)
+		require.Len(getRes.Topics, 3)
 		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_1"), getRes.Topics[1].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
@@ -122,9 +122,9 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		getRes := response{}
 
 		err := json.Unmarshal(body, &getRes)
-		assert.NoError(err)
+		require.NoError(err)
 
-		assert.Len(getRes.Topics, 2)
+		require.Len(getRes.Topics, 2)
 		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[1].TopicName)
 	})
@@ -168,7 +168,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		apiErr := restAPIError{}
 
 		err = json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(`public error from test`, apiErr.Message)
 
@@ -178,7 +178,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	t.Run("get metadata fail", func(t *testing.T) {
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
-		assert.NoError(err)
+		require.NoError(err)
 
 		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
@@ -203,7 +203,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// new console service
 		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
-		assert.NoError(err)
+		require.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
@@ -219,7 +219,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 			case *kmsg.ApiVersionsRequest:
 				return nil, nil, false
 			case *kmsg.MetadataRequest:
-				assert.Len(v.Topics, 0)
+				require.Len(v.Topics, 0)
 
 				ctRes := v.ResponseKind().(*kmsg.MetadataResponse)
 				ctRes.Topics = make([]kmsg.MetadataResponseTopic, 3)
@@ -260,7 +260,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		apiErr := restAPIError{}
 
 		err = json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(`Could not list topics from Kafka cluster`, apiErr.Message)
 
@@ -270,7 +270,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	t.Run("describe configs fail", func(t *testing.T) {
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
-		assert.NoError(err)
+		require.NoError(err)
 
 		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
@@ -298,7 +298,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// new console service
 		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
-		assert.NoError(err)
+		require.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
@@ -321,7 +321,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 					return a.ResourceName < b.ResourceName
 				})
 
-				assert.Len(v.Resources, 3)
+				require.Len(v.Resources, 3)
 				assert.Equal(kmsg.ConfigResourceTypeTopic, v.Resources[0].ResourceType)
 				assert.Equal(testutil.TopicNameForTest("get_topics_0"), v.Resources[0].ResourceName)
 				assert.Equal([]string{"cleanup.policy"}, v.Resources[0].ConfigNames)
@@ -373,9 +373,9 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		getRes := response{}
 
 		err = json.Unmarshal(body, &getRes)
-		assert.NoError(err)
+		require.NoError(err)
 
-		assert.Len(getRes.Topics, 3)
+		require.Len(getRes.Topics, 3)
 		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_1"), getRes.Topics[1].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)

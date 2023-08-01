@@ -156,7 +156,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 
 		createConnectRes := con.ConnectorInfo{}
 		err := json.Unmarshal(body, &createConnectRes)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal("http_connect_input", createConnectRes.Name)
 		assert.Equal("httpbin-input", createConnectRes.Config["kafka.topic"])
@@ -212,12 +212,12 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		for _, vd := range records {
 			rv := recordValue{}
 			err := json.Unmarshal(vd, &rv)
-			assert.NoError(err)
+			require.NoError(err)
 			assert.NotEmpty(rv.Value)
 
 			uv := uuidValue{}
 			err = json.Unmarshal([]byte(rv.Value), &uv)
-			assert.NoError(err)
+			require.NoError(err)
 
 			_, err = uuid.Parse(uv.UUID)
 			assert.NoError(err)
@@ -232,7 +232,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 
 		getConnectRes := connect.ClusterConnectorInfo{}
 		err = json.Unmarshal(getBody, &getConnectRes)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal("http_connect_input", getConnectRes.Name)
 		assert.Equal("httpbin-input", getConnectRes.Config["kafka.topic"])

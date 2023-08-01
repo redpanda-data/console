@@ -295,7 +295,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			case *kmsg.MetadataRequest:
 				mdCalls.Add(1)
 
-				assert.Len(v.Topics, 1)
+				require.Len(v.Topics, 1)
 				assert.Equal(testTopicName, *(v.Topics[0].Topic))
 
 				return nil, nil, false
@@ -303,10 +303,10 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				loReq, ok := req.(*kmsg.ListOffsetsRequest)
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
-				assert.Len(loReq.Topics, 1)
+				require.Len(loReq.Topics, 1)
 				assert.Equal(testTopicName, loReq.Topics[0].Topic)
 
-				assert.Len(loReq.Topics[0].Partitions, 1)
+				require.Len(loReq.Topics[0].Partitions, 1)
 				assert.Equal(int32(1), loReq.Topics[0].Partitions[0].MaxNumOffsets)
 
 				return nil, nil, false
@@ -314,18 +314,18 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				fetchReq, ok := req.(*kmsg.FetchRequest)
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
-				assert.Len(fetchReq.Topics, 1)
+				require.Len(fetchReq.Topics, 1)
 				assert.Equal(testTopicName, fetchReq.Topics[0].Topic)
 
 				if atomic.LoadInt32(&fetchCalls) == 0 {
 					atomic.StoreInt32(&fetchCalls, 1)
 
-					assert.Len(fetchReq.Topics[0].Partitions, 1)
+					require.Len(fetchReq.Topics[0].Partitions, 1)
 					assert.Equal(int64(10), fetchReq.Topics[0].Partitions[0].FetchOffset)
 				} else if atomic.LoadInt32(&fetchCalls) == 1 {
 					atomic.StoreInt32(&fetchCalls, 2)
 
-					assert.Len(fetchReq.Topics[0].Partitions, 1)
+					require.Len(fetchReq.Topics[0].Partitions, 1)
 					assert.Equal(int64(20), fetchReq.Topics[0].Partitions[0].FetchOffset)
 				} else {
 					assert.Fail("unexpected call to fake fetch request")
@@ -376,7 +376,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			case *kmsg.ApiVersionsRequest:
 				return nil, nil, false
 			case *kmsg.MetadataRequest:
-				assert.Len(v.Topics, 1)
+				require.Len(v.Topics, 1)
 				assert.Equal(testTopicName, *(v.Topics[0].Topic))
 
 				mdRes := v.ResponseKind().(*kmsg.MetadataResponse)
@@ -448,7 +448,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			case *kmsg.ApiVersionsRequest:
 				return nil, nil, false
 			case *kmsg.MetadataRequest:
-				assert.Len(v.Topics, 1)
+				require.Len(v.Topics, 1)
 				assert.Equal(testTopicName, *(v.Topics[0].Topic))
 
 				return nil, nil, false
@@ -457,10 +457,10 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				loReq, ok := req.(*kmsg.ListOffsetsRequest)
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
-				assert.Len(loReq.Topics, 1)
+				require.Len(loReq.Topics, 1)
 				assert.Equal(testTopicName, loReq.Topics[0].Topic)
 
-				assert.Len(loReq.Topics[0].Partitions, 1)
+				require.Len(loReq.Topics[0].Partitions, 1)
 				assert.Equal(int32(1), loReq.Topics[0].Partitions[0].MaxNumOffsets)
 
 				loRes := v.ResponseKind().(*kmsg.ListOffsetsResponse)
@@ -507,7 +507,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	cfg.Kafka.Brokers = []string{seedBrokers}
 
 	svc, err := NewService(&cfg, log, nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	return svc
 }

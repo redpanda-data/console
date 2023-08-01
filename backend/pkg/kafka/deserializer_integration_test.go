@@ -208,7 +208,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rOrder := testutil.Order{}
 		err = json.Unmarshal(dr.Value.Payload.Payload, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("123", rOrder.ID)
 	})
 
@@ -296,7 +296,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rOrder := shopv1.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("111", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 	})
@@ -450,7 +450,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("444", rOrder.GetId())
 		assert.Equal(int32(1), rOrder.GetVersion())
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
@@ -468,7 +468,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		assert.Equal(int32(100), rOrder.GetOrderValue())
 		lineItems := rOrder.GetLineItems()
-		assert.Len(lineItems, 3)
+		require.Len(lineItems, 3)
 		li := lineItems[0]
 		assert.Equal("art_0", li.GetArticleId())
 		assert.Equal("line_0", li.GetName())
@@ -618,14 +618,14 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rOrder := shopv1.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
 		// franz-go serde
 		rOrder = shopv1.Order{}
 		err = serde.Decode(record.Value, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 	})
@@ -748,7 +748,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rObject := indexv1.Gadget{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("gadget_0", rObject.GetIdentity())
 		assert.Equal(int32(10), rObject.GetGizmo().GetSize())
 		assert.Equal("item_0", rObject.GetGizmo().GetItem().GetName())
@@ -762,7 +762,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		// franz-go serde
 		rObject = indexv1.Gadget{}
 		err = serde.Decode(record.Value, &rObject)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("gadget_0", rObject.GetIdentity())
 		assert.Equal(int32(10), rObject.GetGizmo().GetSize())
 		assert.Equal("item_0", rObject.GetGizmo().GetItem().GetName())
@@ -892,7 +892,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rObject := indexv1.Gadget_Gizmo{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal(int32(10), rObject.GetSize())
 		assert.Equal("item_0", rObject.GetItem().GetName())
 		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject.GetItem().GetItemType())
@@ -900,7 +900,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		// franz-go serde
 		rObject2 := indexv1.Gadget_Gizmo{}
 		err = serde.Decode(record.Value, &rObject2)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal(int32(10), rObject2.GetSize())
 		assert.Equal("item_0", rObject2.GetItem().GetName())
 		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject2.GetItem().GetItemType())
@@ -1114,7 +1114,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal("333", rOrder.GetId())
 		assert.Equal(int32(1), rOrder.GetVersion())
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
@@ -1132,7 +1132,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		assert.Equal(int32(100), rOrder.GetOrderValue())
 		lineItems := rOrder.GetLineItems()
-		assert.Len(lineItems, 3)
+		require.Len(lineItems, 3)
 		li := lineItems[0]
 		assert.Equal("art0", li.GetArticleId())
 		assert.Equal("line0", li.GetName())

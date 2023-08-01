@@ -68,19 +68,19 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		createTopicRes := console.CreateTopicResponse{}
 
 		err := json.Unmarshal(body, &createTopicRes)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal(topicName, createTopicRes.TopicName)
 		assert.Greater(len(createTopicRes.CreateTopicResponseConfigs), 0)
 
 		mdRes, err := s.kafkaAdminClient.Metadata(ctx, topicName)
-		assert.NoError(err)
-		assert.Len(mdRes.Topics, 1)
+		require.NoError(err)
+		require.Len(mdRes.Topics, 1)
 
 		assert.NotEmpty(mdRes.Topics[topicName])
 
 		topic := mdRes.Topics[topicName]
 
-		assert.Len(topic.Partitions, 1)
+		require.Len(topic.Partitions, 1)
 		assert.NotEmpty(topic.Partitions[0])
 		assert.Len(topic.Partitions[0].Replicas, 1)
 		assert.Empty(topic.Err)
@@ -88,7 +88,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		dtRes, err := s.kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
 		assert.NoError(err)
 
-		assert.Len(dtRes, 1)
+		require.Len(dtRes, 1)
 
 		assert.NoError(dtRes[0].Err)
 		assert.True(len(dtRes[0].Configs) > 0)
@@ -118,19 +118,19 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		createTopicRes := console.CreateTopicResponse{}
 
 		err := json.Unmarshal(body, &createTopicRes)
-		assert.NoError(err)
+		require.NoError(err)
 		assert.Equal(topicName, createTopicRes.TopicName)
 		assert.Greater(len(createTopicRes.CreateTopicResponseConfigs), 0)
 
 		mdRes, err := s.kafkaAdminClient.Metadata(ctx, topicName)
-		assert.NoError(err)
-		assert.Len(mdRes.Topics, 1)
+		require.NoError(err)
+		require.Len(mdRes.Topics, 1)
 
 		assert.NotEmpty(mdRes.Topics[topicName])
 
 		topic := mdRes.Topics[topicName]
 
-		assert.Len(topic.Partitions, 2)
+		require.Len(topic.Partitions, 2)
 		assert.NotEmpty(topic.Partitions[0])
 		assert.Len(topic.Partitions[0].Replicas, 1)
 		assert.NotEmpty(topic.Partitions[1], 1)
@@ -140,7 +140,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		dtRes, err := s.kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
 		assert.NoError(err)
 
-		assert.Len(dtRes, 1)
+		require.Len(dtRes, 1)
 
 		assert.NoError(dtRes[0].Err)
 		assert.Greater(len(dtRes[0].Configs), 0)
@@ -164,7 +164,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		apiErr := restAPIError{}
 
 		err := json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(
 			"validating the decoded object failed: you must create a topic with at least one partition",
@@ -190,7 +190,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		apiErr := restAPIError{}
 
 		err := json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(
 			"validating the decoded object failed: replication factor must be 1 or more",
@@ -216,7 +216,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		apiErr := restAPIError{}
 
 		err := json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(
 			`validating the decoded object failed: valid characters for Kafka topics are the ASCII alphanumeric characters and '.', '_', '-'`,
@@ -261,7 +261,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		apiErr := restAPIError{}
 
 		err := json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(`You don't have permissions to create this topic.`, apiErr.Message)
 
@@ -271,7 +271,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	t.Run("create topic fail", func(t *testing.T) {
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
-		assert.NoError(err)
+		require.NoError(err)
 
 		newConfig := s.copyConfig()
 
@@ -280,7 +280,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		// new console service
 		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
-		assert.NoError(err)
+		require.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
@@ -298,7 +298,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			case *kmsg.MetadataRequest:
 				return nil, nil, false
 			case *kmsg.CreateTopicsRequest:
-				assert.Len(v.Topics, 1)
+				require.Len(v.Topics, 1)
 				assert.Equal(testutil.TopicNameForTest("create_topic_fail"), v.Topics[0].Topic)
 
 				ctRes := v.ResponseKind().(*kmsg.CreateTopicsResponse)
@@ -343,7 +343,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		apiErr := restAPIError{}
 
 		err = json.Unmarshal(body, &apiErr)
-		assert.NoError(err)
+		require.NoError(err)
 
 		assert.Equal(`Failed to create topic, kafka responded with the following error: POLICY_VIOLATION: Request parameters do not satisfy the configured policy.`, apiErr.Message)
 
