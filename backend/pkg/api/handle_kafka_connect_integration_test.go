@@ -258,8 +258,7 @@ func runConnect(network string, bootstrapServers []string) (testcontainers.Conta
 
 	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Name:         "redpanda-connect",
-			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-e80470f",
+			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-3d7ab4d",
 			ExposedPorts: []string{strconv.FormatInt(int64(nat.Port("8083/tcp").Int()), 10)},
 			Env: map[string]string{
 				"CONNECT_CONFIGURATION":     testConnectConfig,
@@ -293,7 +292,6 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Name:           "local-redpanda",
 			Hostname:       "redpanda",
 			Networks:       []string{network},
 			NetworkAliases: map[string][]string{network: {"redpanda", "local-redpanda"}},
@@ -361,7 +359,6 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 func runHTTPBin(ctx context.Context, network string) (testcontainers.Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Name:           "local-httpbin",
 			Hostname:       "httpbin",
 			Networks:       []string{network},
 			NetworkAliases: map[string][]string{network: {"httpbin", "local-httpbin"}},
