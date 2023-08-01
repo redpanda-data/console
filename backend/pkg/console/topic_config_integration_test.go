@@ -31,7 +31,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	log, err := logCfg.Build()
-	assert.NoError(err)
+	require.NoError(err)
 
 	testSeedBroker := s.testSeedBroker
 	topicName := testutil.TopicNameForTest("get_topic_configs")
@@ -46,7 +46,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	svc, err := NewService(&cfg, log, nil, nil)
-	assert.NoError(err)
+	require.NoError(err)
 
 	defer svc.Stop()
 

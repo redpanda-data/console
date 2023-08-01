@@ -16,6 +16,7 @@ import (
 	"net"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -25,12 +26,13 @@ import (
 func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
 	t := s.T()
 	assert := assert.New(t)
+	require := require.New(t)
 
 	ctx := context.Background()
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	log, err := logCfg.Build()
-	assert.NoError(err)
+	require.NoError(err)
 
 	testSeedBroker := s.testSeedBroker
 
@@ -40,21 +42,21 @@ func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	svc, err := NewService(&cfg, log, nil, nil)
-	assert.NoError(err)
+	require.NoError(err)
 	defer svc.Stop()
 
 	info, err := svc.GetClusterInfo(ctx)
-	assert.NoError(err)
-	assert.NotNil(info)
+	require.NoError(err)
+	require.NotNil(info)
 
-	assert.Len(info.Brokers, 1)
+	require.Len(info.Brokers, 1)
 	assert.NotEmpty(info.Brokers[0])
 
 	expectedAddr, expectedPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(err)
+	require.NoError(err)
 
 	actualAddr, actualPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(err)
+	require.NoError(err)
 
 	assert.Equal(expectedAddr, actualAddr)
 	assert.Equal(expectedPort, actualPort)
