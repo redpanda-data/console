@@ -2,6 +2,10 @@
 
 ## Master / to be released
 
+## v2.3.1 / 2023-08-01
+
+- [BUGFIX] Fix regression with Avro deserialization
+
 ## v2.3.0 / 2023-07-21
 
 - [FEATURE] New Kafka connect setup & edit experience
