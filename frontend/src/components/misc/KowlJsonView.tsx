@@ -15,7 +15,6 @@ import React, { useEffect } from 'react';
 import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
 import { uiSettings } from '../../state/ui';
 import { Tooltip, useDisclosure } from '@redpanda-data/ui';
-import styles from './KowlJsonView.module.scss';
 const { setTimeout } = window;
 
 let ctrlDown = false;

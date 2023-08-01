@@ -12,7 +12,6 @@
 import { Component } from 'react';
 import React from 'react';
 import { message } from 'antd';
-import { findPopupContainer } from '../../utils/tsxUtils';
 import { EyeClosedIcon } from '@primer/octicons-react';
 import { Tooltip } from '@redpanda-data/ui';
 export class HideStatisticsBarButton extends Component<{ onClick: () => void }> {
