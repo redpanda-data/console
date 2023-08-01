@@ -21,6 +21,7 @@ import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
 import MongoDBLogo from '../../../assets/connectors/mongodb.png';
+import IcebergLogo from '../../../assets/connectors/iceberg.png';
 import DebeziumLogo from '../../../assets/connectors/debezium.png';
 import ConfluentLogo from '../../../assets/connectors/confluent.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -250,6 +251,16 @@ const connectorMetadata: ConnectorMetadata[] = [
         friendlyName: 'MongoDB',
         description: 'Exports messages to MongoDB collections',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mongodb-sink-connector/'
+    } as const,
+
+    // Iceberg Connectors
+    {
+        classNamePrefix: 'io.tabular.iceberg.connect.IcebergSinkConnector',
+        logo: <img src={IcebergLogo} alt="Iceberg logo" className="connectorLogo" />,
+        author: 'Tabular',
+        friendlyName: 'Iceberg',
+        description: 'Exports messages to Iceberg tables',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
     // Community Connector
