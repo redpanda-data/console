@@ -71,7 +71,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType payloadType
 		rp, err := serde.DeserializePayload(record, payloadType)
 		if err != nil {
 			troubleshooting = append(troubleshooting, TroubleshootingReport{
-				SerdeName: serde.Name(),
+				SerdeName: string(serde.Name()),
 				Message:   err.Error(),
 			})
 		} else {

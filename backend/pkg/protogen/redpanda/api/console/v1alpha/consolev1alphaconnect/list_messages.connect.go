@@ -7,10 +7,12 @@ package consolev1alphaconnect
 import (
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
-	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	http "net/http"
 	strings "strings"
+
+	connect_go "github.com/bufbuild/connect-go"
+
+	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
