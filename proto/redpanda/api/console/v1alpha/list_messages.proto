@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha;
+
+message ListMessagesRequest {
+  string topic = 1;
+}
+
+message ListMessagesResponse {
+  KafkaRecordPayload key = 1;
+  KafkaRecordPayload value = 2;
+}
+
+message KafkaRecordPayload {
+  bytes original_payload = 1;
+  int32 payload_size = 2;
+  bytes deserialized_payload = 3;
+  bool is_payload_too_large = 4;
+}
+
+service ConsoleService {
+  rpc ListMessages(ListMessagesRequest) returns (stream ListMessagesResponse) {}
+}

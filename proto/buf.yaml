@@ -1,0 +1,12 @@
+version: v1
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/bufbuild/protovalidate
+breaking:
+  use:
+    - FILE
+    - WIRE
+    - WIRE_JSON
+lint:
+  use:
+    - DEFAULT
