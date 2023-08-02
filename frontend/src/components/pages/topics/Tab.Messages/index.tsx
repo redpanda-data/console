@@ -11,7 +11,7 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Select, Table, Tooltip, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
@@ -35,7 +35,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, findPopupContainer, Label, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { Ellipsis, Label, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
@@ -46,7 +46,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, SearchField, Tag, TagCloseButton, TagLabel, Box } from '@redpanda-data/ui';
+import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -193,124 +193,97 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.EndMinusResults, label: 'Newest - ' + String(searchParams.maxResults) },
             { value: PartitionOffsetOrigin.Start, label: 'Oldest' },
             { value: PartitionOffsetOrigin.Custom, label: 'Custom' },
-            { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' },
+            { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
-        return <React.Fragment>
-            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
-                {/* Search Settings*/}
-                <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
-                    <SingleSelect<number>
-                        value={searchParams.partitionID}
-                        onChange={c => searchParams.partitionID = c}
-                        // style={{ width: '9em' }}
-                        options={[
-                            { value: -1, label: 'All' }
-                        ].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
-                    />
-                </Label>
-                <Label text="Start Offset" style={{ ...spaceStyle }}>
-                    <InputGroup>
-                        <SingleSelect<PartitionOffsetOrigin>
-                            value={searchParams.offsetOrigin}
-                            onChange={e => searchParams.offsetOrigin = e}
-                            options={startOffsetOptions}
+        return (
+            <React.Fragment>
+                <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
+                    {/* Search Settings*/}
+                    <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
+                        <SingleSelect<number>
+                            value={searchParams.partitionID}
+                            onChange={c => (searchParams.partitionID = c)}
+                            // style={{ width: '9em' }}
+                            options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
                         />
-                        {
-                            searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
-                            <Input style={{ width: '7.5em' }} maxLength={20}
-                                value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />
-                        }
-                        {
-                            searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp &&
-                            <StartOffsetDateTimePicker />
-                        }
-                    </InputGroup>
-                </Label>
-                <Label text="Max Results" style={{ ...spaceStyle, minWidth: '9em' }}>
-                    <SingleSelect<number>
-                        value={searchParams.maxResults}
-                        onChange={c => searchParams.maxResults = c}
-                        options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))}
-                    />
-                </Label>
+                    </Label>
+                    <Label text="Start Offset" style={{ ...spaceStyle }}>
+                        <InputGroup>
+                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => (searchParams.offsetOrigin = e)} options={startOffsetOptions} />
+                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
+                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+                        </InputGroup>
+                    </Label>
+                    <Label text="Max Results" style={{ ...spaceStyle, minWidth: '9em' }}>
+                        <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
+                    </Label>
 
-                {!isServerless() &&
-                    <Label text="Filter" style={{ ...spaceStyle }}>
-                        <div style={{ height: '32px', paddingTop: '4px' }}>
-                            <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
-                                <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v.target.checked} isDisabled={!canUseFilters} />
-                            </Tooltip>
+                    {!isServerless() && (
+                        <Label text="Filter" style={{ ...spaceStyle }}>
+                            <div style={{ height: '32px', paddingTop: '4px' }}>
+                                <Tooltip label="You don't have permissions to use search filters in this topic" isDisabled={canUseFilters} placement="top" hasArrow>
+                                    <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters} onChange={v => (searchParams.filtersEnabled = v.target.checked)} isDisabled={!canUseFilters} />
+                                </Tooltip>
+                            </div>
+                        </Label>
+                    )}
+
+                    {/* Refresh Button */}
+                    <Label text="" style={{ ...spaceStyle }}>
+                        <div style={{ display: 'flex' }}>
+                            <AnimatePresence>
+                                {api.messageSearchPhase == null && (
+                                    <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
+                                        <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                            <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                                <SyncIcon size={16} />
+                                            </Button>
+                                        </Tooltip>
+                                    </MotionSpan>
+                                )}
+                                {api.messageSearchPhase != null && (
+                                    <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
+                                        <Tooltip label="Stop searching" placement="top" hasArrow>
+                                            <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
+                                                <XCircleIcon size={20} />
+                                            </Button>
+                                        </Tooltip>
+                                    </MotionSpan>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </Label>
-                }
 
-                {/* Refresh Button */}
-                <Label text="" style={{ ...spaceStyle }}>
-                    <div style={{ display: 'flex' }}>
-
-                        <AnimatePresence>
-                            {api.messageSearchPhase == null &&
-                                <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title="Repeat current search" getPopupContainer={findPopupContainer}>
-                                        <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                            <SyncIcon size={16} />
-                                        </Button>
-                                    </Tooltip>
-                                </MotionSpan>
+                    {/* Topic Actions */}
+                    <div className={styles.topicActionsWrapper}>
+                        <Dropdown
+                            trigger={['click']}
+                            overlay={
+                                <Menu>
+                                    <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
+                                        Publish Message
+                                    </Menu.Item>
+                                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                                </Menu>
                             }
-                            {api.messageSearchPhase != null &&
-                                <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title="Stop searching" getPopupContainer={findPopupContainer}>
-                                        <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                            <XCircleIcon size={20} />
-                                        </Button>
-                                    </Tooltip>
-                                </MotionSpan>
-                            }
-                        </AnimatePresence>
+                        >
+                            <Button variant="outline" minWidth="120px" gap="2" className="topicActionsButton">
+                                Actions
+                                <MdExpandMore size="1.5rem" />
+                            </Button>
+                        </Dropdown>
                     </div>
-                </Label>
 
-                {/* Topic Actions */}
-                <div className={styles.topicActionsWrapper}>
-                    <Dropdown trigger={['click']} overlay={<Menu>
-                        <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
-                            Publish Message
-                        </Menu.Item>
-                        {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
-                    </Menu>}>
-                        <Button variant="outline" minWidth="120px" gap="2" className="topicActionsButton">Actions<MdExpandMore size="1.5rem" /></Button>
-                    </Dropdown>
+                    {/* Quick Search */}
+                    <Box>
+                        <SearchField width="230px" marginLeft="6" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
+                    </Box>
 
-                </div>
+                    {/* Search Progress Indicator: "Consuming Messages 30/30" */}
+                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) && <StatusIndicator identityKey="messageSearch" fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults} statusText={api.messageSearchPhase!} progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`} bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined} messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined} />}
 
-                {/* Quick Search */}
-                <Box>
-                    <SearchField
-                        width="230px"
-                        marginLeft="6"
-                        searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''}
-                        setSearchText={x => uiState.topicSettings.quickSearch = x}
-                    />
-                </Box>
-
-                {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                {
-                    Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
-                    <StatusIndicator
-                        identityKey="messageSearch"
-                        fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.messageSearchPhase!}
-                        progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
-                    />
-
-                }
-
-                {/*
+                    {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
                     <StatusIndicator
                         identityKey='messageSearch'
@@ -320,21 +293,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
                         messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
                     />
-                    */
-                }
+                    */}
 
-                {/* Filter Tags */}
-                {searchParams.filtersEnabled && <div style={{ paddingTop: '1em', width: '100%' }}>
-                    <MessageSearchFilterBar />
-                </div>}
-
-            </div>
-
-        </React.Fragment>;
+                    {/* Filter Tags */}
+                    {searchParams.filtersEnabled && (
+                        <div style={{ paddingTop: '1em', width: '100%' }}>
+                            <MessageSearchFilterBar />
+                        </div>
+                    )}
+                </div>
+            </React.Fragment>
+        );
     });
 
     searchFunc = (source: 'auto' | 'manual') => {
-
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
         const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
@@ -435,23 +407,30 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />,
+                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
             {
-                width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
+                width: 1,
+                title: ' ',
+                key: 'action',
+                className: 'msgTableActionColumn',
                 filters: [],
                 filterDropdownVisible: false,
-                onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
-                filterIcon: (_) => {
-                    return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: 'hsl(255 15% 65%)' } : { color: '#a092a0' }} />
-                    </Tooltip>;
+                onFilterDropdownVisibleChange: _ => (this.showColumnSettings = true),
+                filterIcon: _ => {
+                    return (
+                        <Tooltip label="Column Settings" placement="left" openDelay={1} gutter={16} hasArrow>
+                            <SettingFilled style={IsColumnSettingsEnabled ? { color: 'hsl(255 15% 65%)' } : { color: '#a092a0' }} />
+                        </Tooltip>
+                    );
                 },
                 render: (_text, record) => (
                     <NoClipboardPopover placement="left">
-                        <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                        <div>
+                            {' '}
+                            {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                             <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
                                 <Button className="iconButton" style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} variant="link">
                                     <EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />
@@ -1481,34 +1460,41 @@ class MessageSearchFilterBar extends Component {
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = 'Empty';
-    return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>;
+    return (
+        <Tooltip label={tooltipText} openDelay={1} placement="top" hasArrow>
+            <span style={{ opacity: 0.66, marginLeft: '2px' }}>
+                <SkipIcon />
+            </span>
+        </Tooltip>
+    );
 }
 
 function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
     return allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
-function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions: Array<TopicAction>, onClick: () => void,) {
+function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions: Array<TopicAction>, onClick: () => void) {
     const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
     let errorText: string | undefined;
-    if (isCompacted)
-        errorText = 'Records on Topics with the \'compact\' cleanup policy cannot be deleted.';
-    else if (!hasDeleteRecordsPrivilege(allowedActions))
-        errorText = 'You\'re not permitted to delete records on this topic.';
-    else if (!isSupported(Feature.DeleteRecords))
-        errorText = 'The cluster doesn\'t support deleting records.';
-
+    if (isCompacted) errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
+    else if (!hasDeleteRecordsPrivilege(allowedActions)) errorText = "You're not permitted to delete records on this topic.";
+    else if (!isSupported(Feature.DeleteRecords)) errorText = "The cluster doesn't support deleting records.";
 
     let content: JSX.Element | string = 'Delete Records';
     if (errorText)
-        content = <Tooltip placement="top" title={errorText}>{content}</Tooltip>;
+        content = (
+            <Tooltip label={errorText} placement="top" hasArrow>
+                {content}
+            </Tooltip>
+        );
 
-    return <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>{content}</Menu.Item>;
+    return (
+        <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>
+            {content}
+        </Menu.Item>
+    );
 }
-
-
-
 
 // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
 function copyMessage(record: TopicMessage, field: 'jsonKey' | 'jsonValue' | 'timestamp') {
