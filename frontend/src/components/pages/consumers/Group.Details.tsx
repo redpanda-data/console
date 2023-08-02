@@ -21,7 +21,7 @@ import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from 'antd/lib/table';
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
+import { OptionGroup, QuickTable, DefaultSkeleton, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
