@@ -18,9 +18,11 @@ import (
 	"sync"
 	"time"
 
+	connect_go "github.com/bufbuild/connect-go"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
+	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 )
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
@@ -195,4 +197,9 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			progress.OnError(err.Error())
 		}
 	}
+}
+
+// ListMessages consumes a Kafka topic and streams the Kafka records back.
+func (api *API) ListMessages(context.Context, *connect_go.Request[v1alpha.ListMessagesRequest], *connect_go.ServerStream[v1alpha.ListMessagesResponse]) error {
+	return fmt.Errorf("not implemented yet")
 }

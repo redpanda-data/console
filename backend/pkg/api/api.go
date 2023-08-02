@@ -16,7 +16,9 @@ package api
 import (
 	"io/fs"
 	"math"
+	"net/http"
 
+	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
@@ -26,6 +28,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/embed"
 	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
@@ -118,8 +121,20 @@ func (api *API) Start() {
 		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
 
+	// Connect-go setup to mount connect web endpoints
+	connectHandlers := make(map[string]http.Handler)
+	addHandler := func(route string, handler http.Handler) {
+		connectHandlers[route] = handler
+	}
+	addHandler(consolev1alphaconnect.NewConsoleServiceHandler(api))
+	// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
+	// handlers and print the responses without a copy of the proto schema.
+	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
+	addHandler(grpcreflect.NewHandlerV1(reflector))
+	addHandler(grpcreflect.NewHandlerV1Alpha(reflector))
+
 	// Server
-	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
+	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes(connectHandlers))
 	if err != nil {
 		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
 	}
