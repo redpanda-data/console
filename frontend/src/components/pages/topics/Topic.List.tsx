@@ -18,7 +18,7 @@ import { api } from '../../../state/backendApi';
 import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
