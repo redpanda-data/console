@@ -80,7 +80,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 	case "aws.s3.bucket.name":
 		d.SetDocumentation("")
 	case "aws.s3.region":
-		d.SetRecommendedValues(awsRegions)
+		d.SetRecommendedValues(AwsRegions)
 		d.SetDocumentation("")
 	case name:
 		d.SetDefaultValue("s3-connector-" + strings.ToLower(random.String(4)))
