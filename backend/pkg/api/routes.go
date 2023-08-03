@@ -24,7 +24,7 @@ import (
 )
 
 // All the routes for the application are defined in one place.
-func (api *API) routes(additionalHandlers map[string]http.Handler) *chi.Mux {
+func (api *API) routes() *chi.Mux {
 	baseRouter := chi.NewRouter()
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
@@ -153,11 +153,6 @@ func (api *API) routes(additionalHandlers map[string]http.Handler) *chi.Mux {
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
-
-			// Register additional handlers (e.g. buf connect APIs)
-			for route, handler := range additionalHandlers {
-				baseRouter.Handle(route, handler)
-			}
 
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})

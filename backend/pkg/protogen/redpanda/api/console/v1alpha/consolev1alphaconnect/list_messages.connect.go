@@ -5,14 +5,12 @@
 package consolev1alphaconnect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	http "net/http"
 	strings "strings"
-
-	connect_go "github.com/bufbuild/connect-go"
-
-	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -20,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion0_1_0
 
 const (
 	// ConsoleServiceName is the fully-qualified name of the ConsoleService service.
@@ -42,7 +40,7 @@ const (
 
 // ConsoleServiceClient is a client for the redpanda.api.console.v1alpha.ConsoleService service.
 type ConsoleServiceClient interface {
-	ListMessages(context.Context, *connect_go.Request[v1alpha.ListMessagesRequest]) (*connect_go.ServerStreamForClient[v1alpha.ListMessagesResponse], error)
+	ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest]) (*connect.ServerStreamForClient[v1alpha.ListMessagesResponse], error)
 }
 
 // NewConsoleServiceClient constructs a client for the redpanda.api.console.v1alpha.ConsoleService
@@ -52,10 +50,10 @@ type ConsoleServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewConsoleServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ConsoleServiceClient {
+func NewConsoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ConsoleServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &consoleServiceClient{
-		listMessages: connect_go.NewClient[v1alpha.ListMessagesRequest, v1alpha.ListMessagesResponse](
+		listMessages: connect.NewClient[v1alpha.ListMessagesRequest, v1alpha.ListMessagesResponse](
 			httpClient,
 			baseURL+ConsoleServiceListMessagesProcedure,
 			opts...,
@@ -65,18 +63,18 @@ func NewConsoleServiceClient(httpClient connect_go.HTTPClient, baseURL string, o
 
 // consoleServiceClient implements ConsoleServiceClient.
 type consoleServiceClient struct {
-	listMessages *connect_go.Client[v1alpha.ListMessagesRequest, v1alpha.ListMessagesResponse]
+	listMessages *connect.Client[v1alpha.ListMessagesRequest, v1alpha.ListMessagesResponse]
 }
 
 // ListMessages calls redpanda.api.console.v1alpha.ConsoleService.ListMessages.
-func (c *consoleServiceClient) ListMessages(ctx context.Context, req *connect_go.Request[v1alpha.ListMessagesRequest]) (*connect_go.ServerStreamForClient[v1alpha.ListMessagesResponse], error) {
+func (c *consoleServiceClient) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest]) (*connect.ServerStreamForClient[v1alpha.ListMessagesResponse], error) {
 	return c.listMessages.CallServerStream(ctx, req)
 }
 
 // ConsoleServiceHandler is an implementation of the redpanda.api.console.v1alpha.ConsoleService
 // service.
 type ConsoleServiceHandler interface {
-	ListMessages(context.Context, *connect_go.Request[v1alpha.ListMessagesRequest], *connect_go.ServerStream[v1alpha.ListMessagesResponse]) error
+	ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest], *connect.ServerStream[v1alpha.ListMessagesResponse]) error
 }
 
 // NewConsoleServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -84,8 +82,8 @@ type ConsoleServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	consoleServiceListMessagesHandler := connect_go.NewServerStreamHandler(
+func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	consoleServiceListMessagesHandler := connect.NewServerStreamHandler(
 		ConsoleServiceListMessagesProcedure,
 		svc.ListMessages,
 		opts...,
@@ -103,6 +101,6 @@ func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect_go.Hand
 // UnimplementedConsoleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedConsoleServiceHandler struct{}
 
-func (UnimplementedConsoleServiceHandler) ListMessages(context.Context, *connect_go.Request[v1alpha.ListMessagesRequest], *connect_go.ServerStream[v1alpha.ListMessagesResponse]) error {
-	return connect_go.NewError(connect_go.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha.ConsoleService.ListMessages is not implemented"))
+func (UnimplementedConsoleServiceHandler) ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest], *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha.ConsoleService.ListMessages is not implemented"))
 }

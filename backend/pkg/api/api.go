@@ -16,12 +16,13 @@ package api
 import (
 	"io/fs"
 	"math"
-	"net/http"
 
-	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
+	"connectrpc.com/grpcreflect"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -121,23 +122,24 @@ func (api *API) Start() {
 		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
 
-	// Connect-go setup to mount connect web endpoints
-	connectHandlers := make(map[string]http.Handler)
-	addHandler := func(route string, handler http.Handler) {
-		connectHandlers[route] = handler
-	}
-	addHandler(consolev1alphaconnect.NewConsoleServiceHandler(api))
-	// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
-	// handlers and print the responses without a copy of the proto schema.
+	mux := api.routes()
+
+	// Connect service(s)
+	mux.Mount(consolev1alphaconnect.NewConsoleServiceHandler(api))
+
+	// Connect reflection
 	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
-	addHandler(grpcreflect.NewHandlerV1(reflector))
-	addHandler(grpcreflect.NewHandlerV1Alpha(reflector))
+	mux.Mount(grpcreflect.NewHandlerV1(reflector))
+	mux.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
 
 	// Server
-	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes(connectHandlers))
+	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, mux)
 	if err != nil {
 		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
 	}
+
+	// need this to make gRPC protocol work
+	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{})
 
 	err = api.server.Start()
 	if err != nil {

@@ -3,6 +3,8 @@ module github.com/redpanda-data/console/backend
 go 1.20
 
 require (
+	connectrpc.com/connect v1.11.0
+	connectrpc.com/grpcreflect v1.2.0
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.10.0
@@ -42,6 +44,7 @@ require (
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
+	golang.org/x/net v0.12.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/text v0.11.0
 	google.golang.org/protobuf v1.31.0
@@ -54,8 +57,6 @@ require (
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bufbuild/connect-go v1.10.0 // indirect
-	github.com/bufbuild/connect-grpcreflect-go v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
@@ -131,7 +132,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/tools v0.11.0 // indirect

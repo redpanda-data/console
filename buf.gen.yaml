@@ -12,7 +12,7 @@ plugins:
     opt: paths=source_relative
     out: backend/pkg/protogen
 
-  - plugin: buf.build/bufbuild/connect-go
+  - plugin: buf.build/connectrpc/go
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false

@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	connect_go "github.com/bufbuild/connect-go"
+	"connectrpc.com/connect"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -200,6 +200,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 }
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
-func (api *API) ListMessages(context.Context, *connect_go.Request[v1alpha.ListMessagesRequest], *connect_go.ServerStream[v1alpha.ListMessagesResponse]) error {
+func (api *API) ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest], *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
+	api.Logger.Info("ListMessages handler")
 	return fmt.Errorf("not implemented yet")
 }
