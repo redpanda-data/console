@@ -121,10 +121,10 @@ tasks:
         {{ .BUILD_ROOT }}/bin/buf format -w pkg/kafka/testdata/proto
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf lint --config buf.yaml pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf lint --config pkg/kafka/testdata/proto/buf.yaml pkg/kafka/testdata/proto
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf generate pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf generate --template pkg/kafka/testdata/proto/buf.gen.yaml pkg/kafka/testdata/proto
       - task: 'fmt'
 
   test-unit:

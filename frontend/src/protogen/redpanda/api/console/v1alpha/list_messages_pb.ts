@@ -4,16 +4,62 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 
 /**
+ * ListMessagesRequest is the request for ListMessages call.
+ *
  * @generated from message redpanda.api.console.v1alpha.ListMessagesRequest
  */
 export class ListMessagesRequest extends Message<ListMessagesRequest> {
   /**
+   * Topic name.
+   *
    * @generated from field: string topic = 1;
    */
   topic = "";
+
+  /**
+   * Start offset. -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp.
+   *
+   * @generated from field: sint64 start_offset = 2;
+   */
+  startOffset = protoInt64.zero;
+
+  /**
+   * Start offset by unix timestamp in ms (only considered if start offset is set to -4).
+   *
+   * @generated from field: int64 start_timestamp = 3;
+   */
+  startTimestamp = protoInt64.zero;
+
+  /**
+   * -1 for all partition ids
+   *
+   * @generated from field: int32 partition_id = 4;
+   */
+  partitionId = 0;
+
+  /**
+   * Maximum number of results
+   *
+   * @generated from field: int32 max_results = 5;
+   */
+  maxResults = 0;
+
+  /**
+   * Base64 encoded code
+   *
+   * @generated from field: string filter_interpreter_code = 6;
+   */
+  filterInterpreterCode = "";
+
+  /**
+   * Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred.
+   *
+   * @generated from field: bytes enterprise = 7;
+   */
+  enterprise = new Uint8Array(0);
 
   constructor(data?: PartialMessage<ListMessagesRequest>) {
     super();
@@ -24,6 +70,12 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
   static readonly typeName = "redpanda.api.console.v1alpha.ListMessagesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "start_offset", kind: "scalar", T: 18 /* ScalarType.SINT64 */ },
+    { no: 3, name: "start_timestamp", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "partition_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "max_results", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "filter_interpreter_code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "enterprise", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesRequest {
@@ -44,6 +96,8 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
 }
 
 /**
+ * ListMessagesResponse is the response for ListMessages call.
+ *
  * @generated from message redpanda.api.console.v1alpha.ListMessagesResponse
  */
 export class ListMessagesResponse extends Message<ListMessagesResponse> {
@@ -87,6 +141,8 @@ export class ListMessagesResponse extends Message<ListMessagesResponse> {
 }
 
 /**
+ * KafkaRecordPayload is record payload representation.
+ *
  * @generated from message redpanda.api.console.v1alpha.KafkaRecordPayload
  */
 export class KafkaRecordPayload extends Message<KafkaRecordPayload> {

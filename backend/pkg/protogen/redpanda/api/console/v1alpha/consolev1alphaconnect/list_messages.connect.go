@@ -5,12 +5,14 @@
 package consolev1alphaconnect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -40,6 +42,7 @@ const (
 
 // ConsoleServiceClient is a client for the redpanda.api.console.v1alpha.ConsoleService service.
 type ConsoleServiceClient interface {
+	// ListMessages lists the messages according to the requested query.
 	ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest]) (*connect.ServerStreamForClient[v1alpha.ListMessagesResponse], error)
 }
 
@@ -74,6 +77,7 @@ func (c *consoleServiceClient) ListMessages(ctx context.Context, req *connect.Re
 // ConsoleServiceHandler is an implementation of the redpanda.api.console.v1alpha.ConsoleService
 // service.
 type ConsoleServiceHandler interface {
+	// ListMessages lists the messages according to the requested query.
 	ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest], *connect.ServerStream[v1alpha.ListMessagesResponse]) error
 }
 

@@ -200,7 +200,69 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 }
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
-func (api *API) ListMessages(context.Context, *connect.Request[v1alpha.ListMessagesRequest], *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
-	api.Logger.Info("ListMessages handler")
-	return fmt.Errorf("not implemented yet")
+func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest], stream *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
+	logger := api.Logger
+
+	logger.Info("ListMessages handler")
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	lmq := ListMessagesRequest{
+		TopicName:             req.Msg.GetTopic(),
+		StartOffset:           req.Msg.GetStartOffset(),
+		StartTimestamp:        req.Msg.GetStartTimestamp(),
+		PartitionID:           req.Msg.GetPartitionId(),
+		MaxResults:            int(req.Msg.GetMaxResults()),
+		FilterInterpreterCode: req.Msg.GetFilterInterpreterCode(),
+		Enterprise:            req.Msg.GetEnterprise(),
+	}
+
+	// Check if logged in user is allowed to list messages for the given request
+	canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(ctx, &lmq)
+	if restErr != nil || !canViewMessages {
+		return connect.NewError(connect.CodePermissionDenied, restErr.Err)
+	}
+
+	if len(lmq.FilterInterpreterCode) > 0 {
+		canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(ctx, &lmq)
+		if restErr != nil || !canUseMessageSearchFilters {
+			return connect.NewError(connect.CodePermissionDenied, restErr.Err)
+		}
+	}
+
+	interpreterCode, _ := lmq.DecodeInterpreterCode() // Error has been checked in validation function
+
+	// Request messages from kafka and return them once we got all the messages or the context is done
+	listReq := console.ListMessageRequest{
+		TopicName:             lmq.TopicName,
+		PartitionID:           lmq.PartitionID,
+		StartOffset:           lmq.StartOffset,
+		StartTimestamp:        lmq.StartTimestamp,
+		MessageCount:          lmq.MaxResults,
+		FilterInterpreterCode: interpreterCode,
+	}
+	// api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
+
+	// Use 30min duration if we want to search a whole topic or forward messages as they arrive
+	duration := 45 * time.Second
+	if listReq.FilterInterpreterCode != "" || listReq.StartOffset == console.StartOffsetNewest {
+		duration = 30 * time.Minute
+	}
+
+	childCtx, cancel := context.WithTimeout(ctx, duration)
+	defer cancel()
+
+	progress := &streamProgressReporter{
+		ctx:              childCtx,
+		logger:           api.Logger,
+		request:          &listReq,
+		stream:           stream,
+		statsMutex:       &sync.RWMutex{},
+		messagesConsumed: 0,
+		bytesConsumed:    0,
+	}
+	progress.Start()
+
+	return api.ConsoleSvc.ListMessages(childCtx, listReq, progress)
 }

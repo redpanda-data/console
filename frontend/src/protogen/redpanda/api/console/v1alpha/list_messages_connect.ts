@@ -7,12 +7,16 @@ import { ListMessagesRequest, ListMessagesResponse } from "./list_messages_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
+ * ConsoleService represents the Console API service.
+ *
  * @generated from service redpanda.api.console.v1alpha.ConsoleService
  */
 export const ConsoleService = {
   typeName: "redpanda.api.console.v1alpha.ConsoleService",
   methods: {
     /**
+     * ListMessages lists the messages according to the requested query.
+     *
      * @generated from rpc redpanda.api.console.v1alpha.ConsoleService.ListMessages
      */
     listMessages: {

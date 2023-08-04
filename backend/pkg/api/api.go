@@ -14,15 +14,20 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"io/fs"
 	"math"
 
+	connect_go "connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -124,8 +129,21 @@ func (api *API) Start() {
 
 	mux := api.routes()
 
+	v, err := protovalidate.New()
+	if err != nil {
+		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+	}
+
+	interceptors := []connect_go.Interceptor{}
+
+	// we want the actual request validation after all authorization and permission checks
+	interceptors = append(interceptors, NewRequestValidationInterceptor(api.Logger, v))
+
 	// Connect service(s)
-	mux.Mount(consolev1alphaconnect.NewConsoleServiceHandler(api))
+	mux.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
+		api,
+		connect_go.WithInterceptors(interceptors...),
+	))
 
 	// Connect reflection
 	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
@@ -145,4 +163,27 @@ func (api *API) Start() {
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
 	}
+}
+
+func NewRequestValidationInterceptor(logger *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
+	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
+		return connect_go.UnaryFunc(func(
+			ctx context.Context,
+			req connect_go.AnyRequest,
+		) (connect_go.AnyResponse, error) {
+			msg, ok := req.Any().(protoreflect.ProtoMessage)
+			if !ok {
+				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, errors.New("request is not a protocol buffer message"))
+			}
+
+			err := validator.Validate(msg)
+			if err != nil {
+				return nil, err
+			}
+
+			return next(ctx, req)
+		})
+	}
+
+	return connect_go.UnaryInterceptorFunc(interceptor)
 }
