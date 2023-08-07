@@ -195,8 +195,8 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 }
 
 // GetSubjects returns a list of all deployed schemas.
-func (s *Service) GetSubjects() (*SubjectsResponse, error) {
-	return s.registryClient.GetSubjects()
+func (s *Service) GetSubjects(showSoftDeleted bool) (*SubjectsResponse, error) {
+	return s.registryClient.GetSubjects(showSoftDeleted)
 }
 
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)

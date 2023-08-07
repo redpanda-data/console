@@ -209,8 +209,12 @@ type SubjectsResponse struct {
 }
 
 // GetSubjects returns a list of registered subjects.
-func (c *Client) GetSubjects() (*SubjectsResponse, error) {
-	res, err := c.client.R().SetResult([]string{}).Get("/subjects")
+func (c *Client) GetSubjects(showSoftDeleted bool) (*SubjectsResponse, error) {
+	path := "/subjects"
+	if showSoftDeleted {
+		path += "?deleted=true"
+	}
+	res, err := c.client.R().SetResult([]string{}).Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("get subjects request failed: %w", err)
 	}
@@ -407,7 +411,7 @@ func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
 // GetSchemasIndividually returns all schemas by describing all schemas one by one. This may be used against
 // schema registry that don't support the /schemas endpoint that returns a list of all registered schemas.
 func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
-	subjectsRes, err := c.GetSubjects()
+	subjectsRes, err := c.GetSubjects(false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
 	}

@@ -152,7 +152,7 @@ func (s *Service) getSchemaRegistryOverview() OverviewSchemaRegistry {
 		Status: StatusTypeHealthy,
 	}
 	registeredSubjects := 0
-	subjects, err := s.kafkaSvc.SchemaService.GetSubjects()
+	subjects, err := s.kafkaSvc.SchemaService.GetSubjects(false)
 	if err != nil {
 		status.SetStatus(StatusTypeUnhealthy, fmt.Sprintf("Could not fetch subjects from schema registry %q", err.Error()))
 	} else {
