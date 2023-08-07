@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -42,6 +43,84 @@ type SchemaSubject struct {
 	VersionsCount int    `json:"versionsCount"`
 	LatestVersion string `json:"latestVersion"`
 	RequestError  string `json:"requestError"`
+}
+
+// SchemaRegistryMode returns the schema registry mode.
+type SchemaRegistryMode struct {
+	Mode string `json:"mode"`
+}
+
+// SchemaRegistryConfig returns the global schema registry config.
+type SchemaRegistryConfig struct {
+	Compatibility string `json:"compatibility"`
+}
+
+type SchemaRegistrySubject struct {
+	Name          string `json:"name"`
+	IsSoftDeleted bool   `json:"isSoftDeleted"`
+}
+
+// GetSchemaRegistryMode retrieves the schema registry mode.
+func (s *Service) GetSchemaRegistryMode(_ context.Context) (*SchemaRegistryMode, error) {
+	mode, err := s.kafkaSvc.SchemaService.GetMode()
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistryMode{Mode: mode.Mode}, nil
+}
+
+func (s *Service) GetSchemaRegistryConfig(_ context.Context) (*SchemaRegistryConfig, error) {
+	config, err := s.kafkaSvc.SchemaService.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
+}
+
+func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error) {
+	subjects := make(map[string]struct{})
+	subjectsWithDeleted := make(map[string]struct{})
+
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		res, err := s.kafkaSvc.SchemaService.GetSubjects(false)
+		if err != nil {
+			return err
+		}
+		for _, subject := range res.Subjects {
+			subjects[subject] = struct{}{}
+		}
+		return nil
+	})
+	grp.Go(func() error {
+		res, err := s.kafkaSvc.SchemaService.GetSubjects(true)
+		if err != nil {
+			return err
+		}
+		for _, subject := range res.Subjects {
+			subjectsWithDeleted[subject] = struct{}{}
+		}
+		return nil
+	})
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+
+	result := make([]SchemaRegistrySubject, 0, len(subjectsWithDeleted))
+	for subj := range subjectsWithDeleted {
+		_, exists := subjects[subj]
+		result = append(result, SchemaRegistrySubject{
+			Name:          subj,
+			IsSoftDeleted: !exists,
+		})
+	}
+
+	// Sort for stable results in UI
+	slices.SortFunc(result, func(a, b SchemaRegistrySubject) bool {
+		return a.Name < b.Name
+	})
+
+	return result, nil
 }
 
 // GetSchemaOverview returns a list of all registered subjects in the schema registry.
@@ -91,7 +170,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	})
 
 	g.Go(func() error {
-		res, err := s.kafkaSvc.SchemaService.GetSubjects()
+		res, err := s.kafkaSvc.SchemaService.GetSubjects(false)
 		if err != nil {
 			return fmt.Errorf("failed to get subjects: %w", err)
 		}
