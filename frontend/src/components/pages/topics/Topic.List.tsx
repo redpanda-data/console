@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
+import { Modal, notification, Popover, Tooltip } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -28,9 +28,10 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Checkbox, Alert, AlertIcon } from '@redpanda-data/ui';
+import { Button, Icon, Checkbox, Alert, AlertIcon, Flex } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
+import { Statistic } from '../../misc/Statistic';
 
 @observer
 class TopicList extends PageComponent {
@@ -115,7 +116,7 @@ class TopicList extends PageComponent {
         return (
             <PageContent>
                 <Section py={4}>
-                    <Row>
+                    <Flex>
                         <Statistic title="Total Topics" value={topics.length} />
                         <Popover
                             title="Partition Details"
@@ -140,7 +141,7 @@ class TopicList extends PageComponent {
                                 />
                             </div>
                         </Popover>
-                    </Row>
+                    </Flex>
                 </Section>
 
                 <Section>

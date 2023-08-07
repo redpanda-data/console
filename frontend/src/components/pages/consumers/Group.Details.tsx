@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Row, Statistic, Tag, Collapse, Tooltip, Popover, Empty } from 'antd';
+import { Table, Collapse, Tooltip, Popover, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -29,9 +29,10 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Section, Tabs } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
+import { Statistic } from '../../misc/Statistic';
 
 
 @observer
@@ -133,7 +134,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {uiSettings.consumerGroupDetails.showStatisticsBar && (
                     <Section py={4}>
                         <div className="statisticsBar">
-                            <Row>
+                            <Flex gap="2rem">
                                 <HideStatisticsBarButton
                                     onClick={() =>
                                     (uiSettings.consumerGroupDetails.showStatisticsBar =
@@ -142,7 +143,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                                 />
                                 <Statistic
                                     title="State"
-                                    valueRender={() => <GroupState group={group} />}
+                                    value={<GroupState group={group} />}
                                 />
                                 <Statistic
                                     title="Assigned Partitions"
@@ -155,7 +156,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                                     value={group.coordinatorId}
                                 />
                                 <Statistic title="Total Lag" value={group.lagSum} />
-                            </Row>
+                            </Flex>
                         </div>
                     </Section>
                 )}
@@ -310,11 +311,11 @@ class GroupByTopics extends Component<{
                         {/* InfoTags */}
                         <Tooltip placement="top" title="Summed lag of all partitions of the topic" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="rgb(225, 66, 38)">lag: {numberToThousandsString(totalLagAll)}</Tag>
+                            <Tag ml="2">lag: {numberToThousandsString(totalLagAll)}</Tag>
                         </Tooltip>
                         <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
-                            <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
+                            <Tag>assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                         <Button
                             variant="outline"
@@ -444,18 +445,18 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
 
                 return <Collapse.Panel key={m.id} forceRender={false}
                     header={
-                        <div>
+                        <Flex alignItems="baseline" gap="2">
                             <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
                             <Tooltip placement="top" title="Host of the member" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag style={{ marginLeft: '1em' }} color="blue">host: {m.clientHost}</Tag>
+                                <Tag>host: {m.clientHost}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="rgb(225, 66, 38)">partitions: {totalPartitions}</Tag>
+                                <Tag>partitions: {totalPartitions}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Summed lag over all assigned partitions of all topics" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="rgb(225, 66, 38)">lag: {totalLag}</Tag>
+                                <Tag>lag: {totalLag}</Tag>
                             </Tooltip>
-                        </div>
+                        </Flex>
                     }>
 
                     <Table

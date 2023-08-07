@@ -11,7 +11,6 @@
 
 import { Component } from 'react';
 import { observer } from 'mobx-react';
-import { Row, Space, Statistic } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -23,6 +22,8 @@ import { ConfigList } from '../../misc/ConfigList';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { prettyBytesOrNA } from '../../../utils/utils';
+import { Statistic } from '../../misc/Statistic';
+import { Flex } from '@redpanda-data/ui';
 
 
 @observer
@@ -78,12 +79,12 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
         return <>
             <PageContent>
                 <Section py={4}>
-                    <Row>
+                    <Flex>
                         <Statistic title="Broker ID" value={this.id} />
                         <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
                         <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
                         {broker.rack && <Statistic title="Rack" value={broker.rack} />}
-                    </Row>
+                    </Flex>
                 </Section>
                 <Section py={4} >
                     <BrokerConfigView entries={brokerConfigs} />
@@ -127,9 +128,7 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
 
 const DetailsDisplaySettings = observer(() =>
     <div style={{ marginLeft: '1px', marginBottom: '1em' }} className="brokerConfigViewSettings">
-        <Row>
-            <Space size="middle">
-
+        <Flex gap="2rem">
                 <OptionGroup label="Formatting"
                     options={{
                         'Friendly': 'friendly',
@@ -137,8 +136,7 @@ const DetailsDisplaySettings = observer(() =>
                     }}
                     value={uiSettings.brokerList.valueDisplay}
                     onChange={s => uiSettings.brokerList.valueDisplay = s}
-                />
-
+            />
                 <OptionGroup label="Sort"
                     options={{
                         'Changed First': 'changedFirst',
@@ -148,6 +146,5 @@ const DetailsDisplaySettings = observer(() =>
                     value={uiSettings.brokerList.propsOrder}
                     onChange={s => uiSettings.brokerList.propsOrder = s}
                 />
-            </Space>
-        </Row>
+        </Flex>
     </div>);

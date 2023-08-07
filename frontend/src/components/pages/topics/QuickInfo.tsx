@@ -10,12 +10,13 @@
  */
 
 import { ConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Row, Statistic } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
+import { Flex } from '@redpanda-data/ui';
+import { Statistic } from '../../misc/Statistic';
 
 const StatsSeparator = () => <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
 
@@ -72,7 +73,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
         statsAr.push(...configStats);
     }
 
-    return <Row>{statsAr}</Row>
+    return <Flex>{statsAr}</Flex>
 })
 
 function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntry[] | null | undefined {
