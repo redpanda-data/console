@@ -11,7 +11,7 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Row, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Select, Table, Tooltip, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
@@ -46,7 +46,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField } from '@redpanda-data/ui';
+import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, SearchField, Tag, TagCloseButton, TagLabel, Box } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -156,14 +156,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </div>
                 </Alert>
                 : <>
-                    <Row align="middle" style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
-                        {/*
-                            todo: move this below the table (aligned left)
-                            This requires more work becasue we'd have to remove the pagination controls from the table and provide our own
-                         */}
-                        {/* <this.SearchQueryAdditionalInfo /> */}
-                    </Row>
-
                     <this.MessageTable />
                 </>
             }
@@ -643,53 +635,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }
         });
 
-    }
-
-    /*
-        SearchQueryAdditionalInfo = observer(() => {
-            if (!api.MessageResponse) return null;
-            if (api.MessageResponse.fetchedMessages === undefined) return null;
-            const formatTime = (ms: number) => !!ms && ms > 0
-                ? prettyMilliseconds(api.MessageResponse.elapsedMs, { secondsDecimalDigits: 2 })
-                : "undefined";
-
-            const warningDisplay = () => <>
-                <Icon type="warning" theme="twoTone" twoToneColor="orange" style={{ fontSize: '150%', marginRight: '0.2em' }} />
-                <Text type='warning' strong>
-                    Backend aborted the search after <b>{formatTime(api.MessageResponse.elapsedMs)}</b> (fetched {api.MessageResponse.fetchedMessages} messages)
-                </Text>
-            </>
-
-            const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t)).filter(t => t != null);
-
-            const normalDisplay = () => <>
-                <Text type='secondary'>
-                    <b>{api.MessageResponse.fetchedMessages}</b> messages (in <b>{formatTime(api.MessageResponse.elapsedMs)}</b>)
-                </Text>
-                <Divider type='vertical' />
-                {typeTags}
-            </>
-
-            return <MotionAlways>
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                    <Divider type='vertical' />
-                    {api.MessageResponse.isCancelled === true ? warningDisplay() : normalDisplay()}
-                </span>
-            </MotionAlways>
-        })
-    */
-
-    formatTypeToTag(type: string) {
-        type = String(type);
-        switch (type) {
-            case 'json': return <Tag key={1} color="orange">JSON</Tag>;
-            case 'xml': return <Tag key={2} color="green">XML</Tag>;
-            case 'avro': return <Tag key={3} color="blue">Avro</Tag>;
-            case 'binary': return <Tag key={4} color="red">Binary</Tag>;
-            case 'text': return <Tag key={5} color="gold">Text</Tag>;
-            case '': return null;
-        }
-        return <Tag key={6} color="black">Unknown: {type}</Tag>;
     }
 
     empty = () => {
@@ -1238,7 +1183,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
-                <Space size="large">
+                <Box>
                     <OptionGroup label="Timestamp" options={{
                         'Local DateTime': 'default',
                         'Unix DateTime': 'unixTimestamp',
@@ -1250,7 +1195,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
                         value={uiState.topicSettings.previewTimestamps}
                         onChange={e => uiState.topicSettings.previewTimestamps = e}
                     />
-                </Space>
+                </Box>
             </div>
         </>;
 
@@ -1387,8 +1332,6 @@ class MessageSearchFilterBar extends Component {
                         style={{ userSelect: 'none' }}
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                         key={e.id}
-                        closable
-                        onClose={() => settings.filters.remove(e)}
                     >
                         <SettingOutlined
                             className="settingIconFilter"
@@ -1399,9 +1342,20 @@ class MessageSearchFilterBar extends Component {
                                 this.hasChanges = false;
                             }}
                         />
-                        <span className={`filterName ${styles.filterName}`} onClick={() => e.isActive = !e.isActive}>
+                        <TagLabel onClick={() => e.isActive = !e.isActive}
+                            mx="2"
+                            height="100%"
+                            display="inline-flex"
+                            alignItems="center"
+                            border="0px solid hsl(0 0% 85% / 1)"
+                            borderWidth="0px 1px"
+                            px="6px"
+                            textDecoration={e.isActive ? '' : 'line-through'}
+                            opacity={e.isActive ? 1 : 0.5}
+                        >
                             {e.name ? e.name : (e.code ? e.code : 'New Filter')}
-                        </span>
+                        </TagLabel>
+                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" />
                     </Tag>
                 )}
 
@@ -1413,7 +1367,7 @@ class MessageSearchFilterBar extends Component {
                     this.hasChanges = false;
                     settings.filters.push(this.currentFilter);
                 })}>
-                    <span className={styles.addFilter}> {/* marginRight: '4px' */}
+                    <span style={{ cursor: 'pointer' }}>
                         <PlusIcon size="small" />
                     </span>
                     {/* <span>New Filter</span> */}

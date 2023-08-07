@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Tag, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
+import { Empty, Input, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Button, Icon, SearchField } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Badge, Button, Icon, SearchField } from '@redpanda-data/ui';
 
 @observer
 class AclList extends PageComponent {
@@ -46,7 +46,7 @@ class AclList extends PageComponent {
                     ? 'User Group'
                     : record.principalType;
                 return <>
-                    <Tag>{principalType}</Tag>
+                    <Badge variant="subtle" mr="2">{principalType}</Badge>
                     <span>{record.principalName}</span>
                     {showWarning && <Tooltip overlay="User / ServiceAccount does not exist">
                         <span style={{ marginLeft: '4px' }}>
@@ -59,7 +59,7 @@ class AclList extends PageComponent {
         },
         {
             width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
-            render: v => (!v || v == '*') ? <Tag>Any</Tag> : v
+            render: v => (!v || v == '*') ? <Badge variant="subtle">Any</Badge> : v
         },
         {
             width: '60px', title: '',

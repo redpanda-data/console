@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Statistic, Row, Tooltip, Skeleton } from 'antd';
+import { Tooltip, Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -25,10 +25,11 @@ import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Heading, Icon, Link, Button } from '@redpanda-data/ui';
+import { Heading, Icon, Link, Button, Flex } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
+import { Statistic } from '../../misc/Statistic';
 
 
 @observer
@@ -161,14 +162,14 @@ class Overview extends PageComponent {
                     </Section>
                      */}
                     <Section py={5} gridArea="health">
-                        <Row>
+                        <Flex>
                             <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
                             <Statistic title="Cluster Storage Size" value={brokerSize} />
                             <Statistic title="Cluster Version" value={version} />
                             <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
                             <Statistic title="Topics" value={overview.kafka.topicsCount} />
                             <Statistic title="Replicas" value={overview.kafka.replicasCount} />
-                        </Row>
+                        </Flex>
                     </Section>
 
                     <Section py={4} gridArea="broker">

@@ -11,7 +11,7 @@
 
 
 
-import { Alert, Empty, message, Modal, Popover, Statistic } from 'antd';
+import { Alert, Empty, message, Modal, Popover } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
@@ -45,6 +45,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
 import { Button } from '@redpanda-data/ui';
+import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match

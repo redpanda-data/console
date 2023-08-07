@@ -11,7 +11,7 @@
 
 import React, { } from 'react';
 import { observer } from 'mobx-react';
-import { Statistic, Row, Steps, message, notification, Modal } from 'antd';
+import { Steps, message, notification, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -37,7 +37,8 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button } from '@redpanda-data/ui';
+import { Button, Flex } from '@redpanda-data/ui';
+import { Statistic } from '../../misc/Statistic';
 
 
 const { Step } = Steps;
@@ -185,14 +186,14 @@ class ReassignPartitions extends PageComponent {
             <PageContent>
                 {/* Statistics */}
                 <Section py={4}>
-                    <Row>
+                        <Flex>
                         <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
                         <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
                         <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
                         <Statistic title="Total Partitions" value={(partitionCountLeaders != null && partitionCountOnlyReplicated != null)
                             ? (partitionCountLeaders + partitionCountOnlyReplicated)
                             : '...'} />
-                    </Row>
+                        </Flex>
                 </Section>
 
 

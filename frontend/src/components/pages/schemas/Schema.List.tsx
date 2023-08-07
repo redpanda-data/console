@@ -13,7 +13,7 @@ import React, { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Empty, Row, Statistic } from 'antd';
+import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -26,7 +26,8 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Flex } from '@redpanda-data/ui';
+import { Statistic } from '../../misc/Statistic';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -107,10 +108,10 @@ class SchemaList extends PageComponent<{}> {
         return (
             <PageContent key="b">
                 <Section py={4}>
-                    <Row>
+                    <Flex>
                         <Statistic title="Mode" value={mode}></Statistic>
                         <Statistic title="Compatibility Level" value={compatibilityLevel}></Statistic>
-                    </Row>
+                    </Flex>
                 </Section>
 
                 {renderRequestErrors(requestErrors)}
