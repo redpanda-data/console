@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Popover, Result, Tooltip, Typography } from 'antd';
+import { Popover, Result, Typography } from 'antd';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -36,7 +36,7 @@ import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button } from '@redpanda-data/ui';
+import { Button, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 
 const { Text } = Typography;
@@ -113,9 +113,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         const topic = () => this.topic;
 
-        const mkDocuTip = (text: string, icon?: JSX.Element) => <Tooltip overlay={text} placement="left"><span>{icon ?? null}Documentation</span></Tooltip>
-        const warnIcon = <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}><WarningOutlined color="hsl(22deg 29% 85%)" /></span>;
-
+        const mkDocuTip = (text: string, icon?: JSX.Element) => (
+            <Tooltip label={text} placement="left" hasArrow>
+                <span>{icon ?? null}Documentation</span>
+            </Tooltip>
+        );
+        const warnIcon = (
+            <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
+                <WarningOutlined color="hsl(22deg 29% 85%)" />
+            </span>
+        );
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
