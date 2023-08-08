@@ -24,8 +24,44 @@ message ListMessagesRequest {
 
 // ListMessagesResponse is the response for ListMessages call.
 message ListMessagesResponse {
-  KafkaRecordPayload key = 1;
-  KafkaRecordPayload value = 2;
+  // Data control message.
+  message DataMessage {
+    KafkaRecordPayload key = 1; // Kafka key of the payload record.
+    KafkaRecordPayload value = 2; // Kafka value of the payload record.
+  }
+
+  // Phase control message.
+  message PhaseMessage {
+    string phase = 1; // The current phase.
+  }
+
+  // Progress control message.
+  message ProgressMessage {
+    int64 messages_consumed = 1;  // Currently consumed messages.
+    int64 bytes_consumed = 2; // Currently consumed bytes.
+  }
+
+  // Stream completed control message.
+  message StreamCompletedMessage {
+    int64 elapsed_ms = 1;  // Total elapsed time in milliseconds.
+    bool is_cancelled = 2; // Whether the call was cancelled.
+    int64 messages_consumed = 3; // Total consumed messages.
+    int64 bytes_consumed = 4; // Total consumed bytes.
+  }
+
+  // Error control message.
+  message ErrorMessage {
+    string message = 1; // The error message.
+  }
+
+  // The control message as we consume messages.
+  oneof control_message {
+    DataMessage data = 1;
+    PhaseMessage phase = 2;
+    ProgressMessage progress = 3;
+    StreamCompletedMessage done = 4;
+    ErrorMessage error = 5;
+  }
 }
 
 // KafkaRecordPayload is record payload representation.

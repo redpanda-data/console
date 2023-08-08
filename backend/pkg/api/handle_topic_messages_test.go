@@ -13,7 +13,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -26,8 +25,6 @@ import (
 )
 
 func (s *APIIntegrationTestSuite) TestListMessages() {
-	fmt.Println("!!! TestListMessages")
-
 	t := s.T()
 
 	require := require.New(t)
@@ -55,11 +52,46 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	require.NoError(err)
 
 	keys := make([]string, 0, 20)
+	phaseCount := 0
+	doneCount := 0
+	progressCount := 0
+	errorCount := 0
 	for stream.Receive() {
 		msg := stream.Msg()
-		key := string(msg.GetKey().DeserializedPayload)
-		keys = append(keys, key)
-		fmt.Println("key:", key)
+		switch cm := msg.GetControlMessage().(type) {
+		case *v1pb.ListMessagesResponse_Data:
+			key := string(cm.Data.GetKey().DeserializedPayload)
+			keys = append(keys, key)
+
+			assert.NotEmpty(cm.Data.GetValue())
+			assert.NotEmpty(cm.Data.GetValue().GetDeserializedPayload())
+			assert.NotEmpty(cm.Data.GetValue().GetOriginalPayload())
+			assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
+			assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
+		case *v1pb.ListMessagesResponse_Done:
+			doneCount++
+
+			assert.NotEmpty(cm.Done.GetBytesConsumed())
+			assert.NotEmpty(cm.Done.GetMessagesConsumed())
+			assert.NotEmpty(cm.Done.GetElapsedMs())
+			assert.False(cm.Done.GetIsCancelled())
+		case *v1pb.ListMessagesResponse_Phase:
+			if phaseCount == 0 {
+				assert.Equal("Get Partitions", cm.Phase.GetPhase())
+			} else if phaseCount == 1 {
+				assert.Equal("Get Watermarks and calculate consuming requests", cm.Phase.GetPhase())
+			} else if phaseCount == 2 {
+				assert.Equal("Consuming messages", cm.Phase.GetPhase())
+			} else {
+				assert.Fail("Unknown phase.")
+			}
+
+			phaseCount++
+		case *v1pb.ListMessagesResponse_Progress:
+			progressCount++
+		case *v1pb.ListMessagesResponse_Error:
+			errorCount++
+		}
 	}
 
 	assert.Nil(stream.Err())
@@ -67,8 +99,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	assert.Equal(
 		[]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"},
 		keys)
-
-	fmt.Println("!!! TestListMessages DONE !!!")
-	fmt.Println("keys:", keys)
-	assert.Fail("asdf")
+	assert.Equal(3, phaseCount)
+	assert.Equal(0, errorCount)
+	assert.GreaterOrEqual(progressCount, 0)
 }

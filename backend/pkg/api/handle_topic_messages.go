@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect"
@@ -258,9 +259,8 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 		logger:           api.Logger,
 		request:          &listReq,
 		stream:           stream,
-		statsMutex:       &sync.RWMutex{},
-		messagesConsumed: 0,
-		bytesConsumed:    0,
+		messagesConsumed: atomic.Int64{},
+		bytesConsumed:    atomic.Int64{},
 	}
 	progress.Start()
 

@@ -11,7 +11,7 @@ package api
 
 import (
 	"context"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect"
@@ -29,9 +29,8 @@ type streamProgressReporter struct {
 	request *console.ListMessageRequest
 	stream  *connect.ServerStream[v1alpha.ListMessagesResponse]
 
-	statsMutex       *sync.RWMutex
-	messagesConsumed int64
-	bytesConsumed    int64
+	messagesConsumed atomic.Int64
+	bytesConsumed    atomic.Int64
 }
 
 func (p *streamProgressReporter) Start() {
@@ -58,16 +57,37 @@ func (p *streamProgressReporter) Start() {
 }
 
 func (p *streamProgressReporter) reportProgress() {
+	msg := &v1alpha.ListMessagesResponse_ProgressMessage{
+		MessagesConsumed: p.messagesConsumed.Load(),
+		BytesConsumed:    p.bytesConsumed.Load(),
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Progress{
+			Progress: msg,
+		},
+	})
 }
 
 func (p *streamProgressReporter) OnPhase(name string) {
+	msg := &v1alpha.ListMessagesResponse_PhaseMessage{
+		Phase: name,
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Phase{
+			Phase: msg,
+		},
+	})
 }
 
 func (p *streamProgressReporter) OnMessageConsumed(size int64) {
+	p.messagesConsumed.Add(1)
+	p.bytesConsumed.Add(size)
 }
 
 func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	data := &v1alpha.ListMessagesResponse_DataMessage{
 		Value: &v1alpha.KafkaRecordPayload{
 			OriginalPayload:     message.Value.Payload.Payload,
 			PayloadSize:         int32(message.Value.Size),
@@ -80,11 +100,38 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 			DeserializedPayload: message.Key.Payload.Payload,
 			IsPayloadTooLarge:   false, // TODO check for size
 		},
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Data{
+			Data: data,
+		},
 	})
 }
 
 func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
+	msg := &v1alpha.ListMessagesResponse_StreamCompletedMessage{
+		ElapsedMs:        elapsedMs,
+		IsCancelled:      isCancelled,
+		MessagesConsumed: p.messagesConsumed.Load(),
+		BytesConsumed:    p.bytesConsumed.Load(),
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Done{
+			Done: msg,
+		},
+	})
 }
 
 func (p *streamProgressReporter) OnError(message string) {
+	msg := &v1alpha.ListMessagesResponse_ErrorMessage{
+		Message: message,
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Error{
+			Error: msg,
+		},
+	})
 }
