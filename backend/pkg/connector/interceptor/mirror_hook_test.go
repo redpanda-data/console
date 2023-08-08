@@ -256,7 +256,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "topics.exclude",
 							Type:          "LIST",
-							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Topics exclude",
@@ -264,7 +264,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						},
 						Value: model.ConfigDefinitionValue{
 							Name:              "topics.exclude",
-							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							RecommendedValues: []string{},
 							Visible:           true,
 							Errors:            []string{},
@@ -609,7 +609,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "topics.exclude",
 							Type:          "LIST",
-							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Topics exclude",
@@ -617,7 +617,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						},
 						Value: model.ConfigDefinitionValue{
 							Name:              "topics.exclude",
-							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							RecommendedValues: []string{},
 							Visible:           true,
 							Errors:            []string{},
@@ -922,7 +922,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "topics.exclude",
 							Type:          "LIST",
-							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Topics exclude",
@@ -930,7 +930,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						},
 						Value: model.ConfigDefinitionValue{
 							Name:              "topics.exclude",
-							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+							Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 							RecommendedValues: []string{},
 							Visible:           true,
 							Errors:            []string{},
