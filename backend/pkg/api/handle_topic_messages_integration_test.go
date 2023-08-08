@@ -43,6 +43,10 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
 		topicName)
 
+	defer func() {
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
+	}()
+
 	stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
 		Topic:       topicName,
 		StartOffset: -2,
