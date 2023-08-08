@@ -136,7 +136,7 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/schema-registry/mode", api.handleGetSchemaRegistryMode())
 				r.Get("/schema-registry/config", api.handleGetSchemaRegistryConfig())
 				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())
-				r.Get("/schema-registry/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
+				r.Get("/schema-registry/subjects/{subject}/versions/{version}", api.handleGetSchemaSubjectDetails())
 
 				// Kafka Connect
 				r.Get("/kafka-connect/connectors", api.handleGetConnectors())

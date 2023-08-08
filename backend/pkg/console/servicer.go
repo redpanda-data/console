@@ -39,8 +39,6 @@ type Servicer interface {
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
 	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionType int8) ProduceRecordsResponse
-	GetSchemaDetails(_ context.Context, subject string, version string) (*SchemaDetails, error)
-	GetSchemaOverview(ctx context.Context) (*SchemaOverview, error)
 	Start() error
 	Stop()
 	IsHealthy(ctx context.Context) error
@@ -54,4 +52,5 @@ type Servicer interface {
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
 	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
 	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
+	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 }

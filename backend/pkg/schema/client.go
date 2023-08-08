@@ -245,10 +245,14 @@ type SubjectVersionsResponse struct {
 }
 
 // GetSubjectVersions returns a schema subject's registered versions.
-func (c *Client) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
+func (c *Client) GetSubjectVersions(subject string, showSoftDeleted bool) (*SubjectVersionsResponse, error) {
+	path := "/subjects/{subject}/versions"
+	if showSoftDeleted {
+		path += "?deleted=true"
+	}
 	res, err := c.client.R().SetResult([]int{}).
 		SetPathParam("subject", subject).
-		Get("/subjects/{subject}/versions")
+		Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("get subject versions request failed: %w", err)
 	}

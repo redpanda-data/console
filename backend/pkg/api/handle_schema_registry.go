@@ -12,8 +12,11 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/go-chi/chi/v5"
 )
 
 func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
@@ -73,6 +76,59 @@ func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		res, err := api.ConsoleSvc.GetSchemaRegistrySubjects(r.Context())
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve subjects from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse subject name parameter and unescape
+		subjectNameStr := chi.URLParam(r, "subject")
+		subjectName, err := url.PathUnescape(subjectNameStr)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("failed to unescape subject name %q: %w", subjectNameStr, err),
+				Status:   http.StatusBadRequest,
+				Message:  fmt.Sprintf("Failed to unescape subject name %q: %v", subjectNameStr, err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+
+		// TODO: Validate input, either "latest", "all" or a positive integer
+		version := chi.URLParam(r, "version")
+		switch version {
+		case "latest", "all":
+			break
+		default:
+			// Must be number or it's invalid input
+			_, err := strconv.Atoi(version)
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      fmt.Errorf("version is not a valid number %q: %w", version, err),
+					Status:   http.StatusBadRequest,
+					Message:  fmt.Sprintf("version is not a valid number %q: %v", version, err.Error()),
+					IsSilent: false,
+				})
+				return
+			}
+		}
+
+		// 2. Get all subjects' details
+		res, err := api.ConsoleSvc.GetSchemaRegistrySubjectDetails(r.Context(), subjectName, version)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,

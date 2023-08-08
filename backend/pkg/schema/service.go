@@ -205,8 +205,8 @@ func (s *Service) GetSchemaTypes() ([]string, error) {
 }
 
 // GetSubjectVersions returns a schema subject's registered versions.
-func (s *Service) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
-	return s.registryClient.GetSubjectVersions(subject)
+func (s *Service) GetSubjectVersions(subject string, showSoftDeleted bool) (*SubjectVersionsResponse, error) {
+	return s.registryClient.GetSubjectVersions(subject, showSoftDeleted)
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject.
