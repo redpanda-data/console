@@ -89,6 +89,10 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 			phaseCount++
 		case *v1pb.ListMessagesResponse_Progress:
 			progressCount++
+
+			assert.NotEmpty(cm.Progress)
+			assert.NotEmpty(cm.Progress.GetBytesConsumed())
+			assert.NotEmpty(cm.Progress.GetMessagesConsumed())
 		case *v1pb.ListMessagesResponse_Error:
 			errorCount++
 		}
