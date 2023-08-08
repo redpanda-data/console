@@ -10,7 +10,7 @@
  */
 
 import { EditorProps, Monaco } from '@monaco-editor/react';
-import { Select, Tooltip } from 'antd';
+import { Select } from 'antd';
 import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
@@ -20,7 +20,7 @@ import { Label } from '../../../../utils/tsxUtils';
 import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 import Tabs, { Tab } from '../../../misc/tabs/Tabs';
 import HeadersEditor from './Headers';
-import { Box } from '@redpanda-data/ui';
+import { Box, Tooltip } from '@redpanda-data/ui';
 
 type Props = {
     state: {
@@ -54,65 +54,66 @@ const encodingOptions: EncodingOption[] = [
     { value: 'json', label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as raw' }
 ];
 
-
 @observer
 export class PublishMessagesModalContent extends Component<Props> {
     availableCompressionTypes = Object.entries(CompressionType).map(([label, value]) => ({ label, value })).filter(t => t.value != CompressionType.Unknown);
 
     render() {
-        return <div className="publishMessagesModal" >
+        return (
+            <div className="publishMessagesModal">
+                <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
+                    <Label text="Topics">
+                        <Select
+                            style={{ minWidth: '300px' }}
+                            mode="multiple"
+                            allowClear
+                            showArrow
+                            showSearch
+                            options={this.availableTopics}
+                            value={this.props.state.topics}
+                            onChange={action((v: string[]) => {
+                                this.props.state.topics = v;
+                                if (this.availablePartitions.length == 2)
+                                    // auto + one partition
+                                    this.props.state.partition = 0; // partition 0
+                                if (this.availablePartitions.length == 1) this.props.state.partition = -1; // auto
+                            })}
+                        />
+                    </Label>
 
-            <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
-                <Label text="Topics">
-                    <Select style={{ minWidth: '300px' }}
-                        mode="multiple"
-                        allowClear showArrow showSearch
-                        options={this.availableTopics}
-                        value={this.props.state.topics}
-                        onChange={action((v: string[]) => {
-                            this.props.state.topics = v;
-                            if (this.availablePartitions.length == 2) // auto + one partition
-                                this.props.state.partition = 0; // partition 0
-                            if (this.availablePartitions.length == 1)
-                                this.props.state.partition = -1; // auto
-                        })}
-                    />
-                </Label>
+                    <Label text="Partition">
+                        <Select
+                            style={{ minWidth: '140px' }}
+                            disabled={this.availablePartitions.length <= 1}
+                            options={this.availablePartitions}
+                            value={this.props.state.partition}
+                            onChange={(v, d) => {
+                                this.props.state.partition = v;
+                                console.log('selected partition change: ', { v: v, d: d });
+                            }}
+                        />
+                    </Label>
 
-                <Label text="Partition">
-                    <Select style={{ minWidth: '140px' }}
-                        disabled={this.availablePartitions.length <= 1}
-                        options={this.availablePartitions}
-                        value={this.props.state.partition}
-                        onChange={(v, d) => {
-                            this.props.state.partition = v;
-                            console.log('selected partition change: ', { v: v, d: d });
-                        }}
-                    />
-                </Label>
+                    <Label text="Compression Type">
+                        <Select style={{ minWidth: '160px' }} options={this.availableCompressionTypes} value={this.props.state.compressionType} onChange={(v, _d) => (this.props.state.compressionType = v)} />
+                    </Label>
 
-                <Label text="Compression Type">
-                    <Select style={{ minWidth: '160px' }}
-                        options={this.availableCompressionTypes}
-                        value={this.props.state.compressionType}
-                        onChange={(v, _d) => this.props.state.compressionType = v}
-                    />
-                </Label>
+                    <Label text="Type">
+                        <Select<EncodingType> value={this.props.state.encodingType} onChange={e => (this.props.state.encodingType = e)} style={{ minWidth: '150px' }} virtual={false}>
+                            {encodingOptions.map(x => (
+                                <Select.Option key={x.value} value={x.value}>
+                                    <Tooltip label={x.tooltip} placement="right" hasArrow>
+                                        <div>{x.label}</div>
+                                    </Tooltip>
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </Label>
+                </div>
 
-                <Label text="Type">
-                    <Select<EncodingType> value={this.props.state.encodingType} onChange={e => this.props.state.encodingType = e} style={{ minWidth: '150px' }} virtual={false}>
-                        {encodingOptions.map(x =>
-                            <Select.Option key={x.value} value={x.value}>
-                                <Tooltip overlay={x.tooltip} mouseEnterDelay={0} mouseLeaveDelay={0} placement="right">
-                                    <div>{x.label}</div>
-                                </Tooltip>
-                            </Select.Option>)}
-                    </Select>
-                </Label>
+                <Tabs tabs={this.tabs} defaultSelectedTabKey="value" />
             </div>
-
-            <Tabs tabs={this.tabs} defaultSelectedTabKey="value" />
-        </div>;
+        );
     }
 
     @computed get availableTopics() {
