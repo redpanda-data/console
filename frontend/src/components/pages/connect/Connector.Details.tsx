@@ -18,7 +18,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { Code, findPopupContainer } from '../../../utils/tsxUtils';
+import { Code } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
