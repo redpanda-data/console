@@ -21,7 +21,16 @@ type Service struct {
 func NewService() *Service {
 	return &Service{
 		SerDes: []Serde{
+			NoneSerde{},
 			JsonSerde{},
+			// TODO: JSON Schema
+			XMLSerde{},
+			// TODO: Avro
+			// TODO: Protobuf
+			// TODO: MessagePack
+			SmileSerde{},
+			UTF8Serde{},
+			TextSerde{},
 		},
 	}
 }

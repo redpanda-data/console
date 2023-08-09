@@ -47,21 +47,4 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType payloadType
 		ParsedPayload: obj,
 		Encoding:      payloadEncodingSmile,
 	}, nil
-
-	// obj, err := smile.DecodeToObject(payload)
-	// if err == nil {
-	// 	jsonBytes, err := json.Marshal(obj)
-	// 	if err == nil {
-	// 		return &deserializedPayload{
-	// 			Payload: normalizedPayload{
-	// 				Payload:            jsonBytes,
-	// 				RecognizedEncoding: messageEncodingSmile,
-	// 			},
-	// 			IsPayloadNull:      payload == nil,
-	// 			Object:             obj,
-	// 			RecognizedEncoding: messageEncodingSmile,
-	// 			Size:               len(payload),
-	// 		}
-	// 	}
-	// }
 }
