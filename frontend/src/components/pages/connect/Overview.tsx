@@ -56,10 +56,7 @@ class KafkaConnectOverview extends PageComponent {
                 <OverviewStatisticsCard />
 
                 <Section>
-                    <Tabs tabs={connectTabs}
-                        onChange={() => settings.selectedTab}
-                        selectedTabKey={settings.selectedTab}
-                    />
+                    <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
                 </Section>
             </PageContent>
         );
@@ -68,68 +65,74 @@ class KafkaConnectOverview extends PageComponent {
 
 export default KafkaConnectOverview;
 
-
 @observer
 class TabClusters extends Component {
-
     render() {
         const clusters = api.connectConnectors?.clusters;
         if (clusters == null) return null;
 
-        return (<>
-          <KowlTable<ClusterConnectors>
-            dataSource={clusters}
-            columns={[
-                {
-                    title: 'Cluster', dataIndex: 'clusterName',
-                    render: (_, r) => {
+        return (
+            <>
+                <KowlTable<ClusterConnectors>
+                    dataSource={clusters}
+                    columns={[
+                        {
+                            title: 'Cluster',
+                            dataIndex: 'clusterName',
+                            render: (_, r) => {
+                                if (r.error) {
                                     return (
                                         <Tooltip label={r.error} placement="top" hasArrow={true}>
                                             <span style={mr05}>{errIcon}</span>
                                             {r.clusterName}
                                         </Tooltip>
                                     );
+                                }
 
-                        if (r.error) {
+                                return (
+                                    <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}>
+                                        {r.clusterName}
+                                    </span>
+                                );
+                            },
+                            sorter: sortField('clusterName'),
+                            defaultSortOrder: 'ascend'
+                        },
+                        {
+                            dataIndex: 'clusterAddress',
+                            title: 'Version',
+                            render: (_, r) => r.clusterInfo.version,
+                            sorter: sortField('clusterAddress'),
+                            filterType: { type: 'enum' }
+                        },
+                        {
+                            dataIndex: 'connectors',
+                            width: 150,
+                            title: 'Connectors',
+                            render: (_, r) => <ConnectorsColumn observable={r} />
+                        },
+                        {
+                            dataIndex: 'connectors',
+                            width: 150,
+                            title: 'Tasks',
+                            render: (_, r) => <TasksColumn observable={r} />
                         }
-
-                        return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                            onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}>
-                            {r.clusterName}
-                        </span>
-                    },
-                    sorter: sortField('clusterName'), defaultSortOrder: 'ascend',
-                },
-                {
-                    dataIndex: 'clusterAddress',
-                    title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress'),
-                    filterType: { type: 'enum' },
-                },
-                {
-                    dataIndex: 'connectors',
-                    width: 150,
-                    title: 'Connectors', render: (_, r) => <ConnectorsColumn observable={r} />
-                },
-                {
-                    dataIndex: 'connectors',
-                    width: 150,
-                    title: 'Tasks', render: (_, r) => <TasksColumn observable={r} />
-                },
-            ]}
-            search={{
-                searchColumnIndex: 0,
-                isRowMatch: (row, regex) => {
-                    const isMatch = regex.test(row.clusterName) || regex.test(row.clusterInfo.version);
-                    return isMatch;
-                },
-            }}
-            observableSettings={uiSettings.kafkaConnect.clusters}
-            pagination={{
-                defaultPageSize: 10,
-            }}
-            rowKey="clusterName"
-          />
-        </>)
+                    ]}
+                    search={{
+                        searchColumnIndex: 0,
+                        isRowMatch: (row, regex) => {
+                            const isMatch = regex.test(row.clusterName) || regex.test(row.clusterInfo.version);
+                            return isMatch;
+                        }
+                    }}
+                    observableSettings={uiSettings.kafkaConnect.clusters}
+                    pagination={{
+                        defaultPageSize: 10
+                    }}
+                    rowKey="clusterName"
+                />
+            </>
+        );
     }
 }
 
@@ -139,67 +142,69 @@ class TabConnectors extends Component {
         const clusters = api.connectConnectors!.clusters;
         const allConnectors = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
 
-        return <KowlTable
-            dataSource={allConnectors}
-            columns={[
-                {
-                    title: 'Connector', dataIndex: 'name',
-                    width: '35%',
-                    render: (_, r) => (
-                    ),
-                    sorter: sortField('name'), defaultSortOrder: 'ascend'
-                },
-                {
-                    title: 'Class', dataIndex: 'class',
-                    render: (_, r) => <ConnectorClass observable={r} />,
-                    sorter: sortField('class')
-                },
-                {
-                    width: 100,
-                    title: 'Type', dataIndex: 'type',
-                    className: 'capitalize',
-                    sorter: sortField('type'),
-                    filterType: { type: 'enum', optionClassName: 'capitalize' },
-
-                },
-                {
-                    width: 120,
-                    title: 'State', dataIndex: 'state',
-                    render: (_, r) => <TaskState observable={r} />,
-                    sorter: sortField('state'),
-                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => x ? String(x).toLowerCase() : '' },
-                },
-                {
-                    width: 120,
-                    title: 'Tasks', render: (_, c) => <TasksColumn observable={c} />
-                },
-                {
-                    title: 'Cluster',
-                    render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>,
-                    sorter: (a, b) => String(a.cluster.clusterName).localeCompare(String(b.cluster.clusterName))
-                },
-            ]}
-            search={{
-                searchColumnIndex: 0,
-                isRowMatch: (row, regex) => regex.test(row.name)
-                    || regex.test(row.class)
-                    || regex.test(row.type)
-                    || regex.test(row.state)
-                    || regex.test(row.cluster.clusterName),
-            }}
-            rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name}
-
-            observableSettings={uiSettings.kafkaConnect.connectors}
-            pagination={{
-                defaultPageSize: 10,
-            }}
-            className="connectorsTable"
-        />
+        return (
+            <KowlTable
+                dataSource={allConnectors}
+                columns={[
+                    {
+                        title: 'Connector',
+                        dataIndex: 'name',
+                        width: '35%',
+                        render: (_, r) => (
                             <Tooltip placement="top" label={r.name} hasArrow={true}>
                                 <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.name)}`)}>
                                     {r.name}
                                 </span>
                             </Tooltip>
+                        ),
+                        sorter: sortField('name'),
+                        defaultSortOrder: 'ascend'
+                    },
+                    {
+                        title: 'Class',
+                        dataIndex: 'class',
+                        render: (_, r) => <ConnectorClass observable={r} />,
+                        sorter: sortField('class')
+                    },
+                    {
+                        width: 100,
+                        title: 'Type',
+                        dataIndex: 'type',
+                        className: 'capitalize',
+                        sorter: sortField('type'),
+                        filterType: { type: 'enum', optionClassName: 'capitalize' }
+                    },
+                    {
+                        width: 120,
+                        title: 'State',
+                        dataIndex: 'state',
+                        render: (_, r) => <TaskState observable={r} />,
+                        sorter: sortField('state'),
+                        filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => (x ? String(x).toLowerCase() : '') }
+                    },
+                    {
+                        width: 120,
+                        title: 'Tasks',
+                        render: (_, c) => <TasksColumn observable={c} />
+                    },
+                    {
+                        title: 'Cluster',
+                        render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>,
+                        sorter: (a, b) => String(a.cluster.clusterName).localeCompare(String(b.cluster.clusterName))
+                    }
+                ]}
+                search={{
+                    searchColumnIndex: 0,
+                    isRowMatch: (row, regex) => regex.test(row.name) || regex.test(row.class) || regex.test(row.type) || regex.test(row.state) || regex.test(row.cluster.clusterName)
+                }}
+                rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name}
+                observableSettings={uiSettings.kafkaConnect.connectors}
+                pagination={{
+                    defaultPageSize: 10
+                }}
+                className="connectorsTable"
+            />
+        );
     }
 }
 
@@ -208,65 +213,70 @@ class TabTasks extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
         const allConnectors = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
-        const allTasks = allConnectors?.flatMap(con => con.tasks.map(task => {
-            return {
-                ...task,
-                connector: con,
-                cluster: con.cluster,
+        const allTasks = allConnectors?.flatMap(con =>
+            con.tasks.map(task => {
+                return {
+                    ...task,
+                    connector: con,
+                    cluster: con.cluster,
 
-                connectorName: con.name,
-            };
-        }));
+                    connectorName: con.name
+                };
+            })
+        );
 
-        return <KowlTable
-            dataSource={allTasks}
-            columns={[
-                {
-                    title: 'Connector', dataIndex: 'name',
-                    width: '35%',
-                    sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
-                    render: (_, r) => (
-                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.connectorName)}`)}>
-                            {r.connectorName}
-                        </span>
-                    )
-                },
-                {
-                    title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId'),
-                    width: 50,
-                },
-                {
-                    title: 'State', dataIndex: 'state',
-                    render: (_, r) => <TaskState observable={r} />,
-                    sorter: sortField('state'),
-                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
-                },
-                {
-                    title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
-                    filterType: { type: 'enum' },
-                },
-                {
-                    title: 'Cluster',
-                    render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>
-                },
-            ]}
-            rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.connectorName + r.taskId}
-
-            search={{
-                searchColumnIndex: 0,
-                isRowMatch: (row, regex) => regex.test(row.connectorName)
-                    || regex.test(String(row.taskId))
-                    || regex.test(row.state)
-                    || regex.test(row.workerId)
-                    || regex.test(row.cluster.clusterName)
-            }}
-
-            observableSettings={uiSettings.kafkaConnect.tasks}
-            pagination={{
-                defaultPageSize: 10,
-            }}
-            className="tasksTable"
-        />
+        return (
+            <KowlTable
+                dataSource={allTasks}
+                columns={[
+                    {
+                        title: 'Connector',
+                        dataIndex: 'name',
+                        width: '35%',
+                        sorter: sortField('connectorName'),
+                        defaultSortOrder: 'ascend',
+                        render: (_, r) => (
+                            <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.connectorName)}`)}>
+                                {r.connectorName}
+                            </span>
+                        )
+                    },
+                    {
+                        title: 'Task ID',
+                        dataIndex: 'taskId',
+                        sorter: sortField('taskId'),
+                        width: 50
+                    },
+                    {
+                        title: 'State',
+                        dataIndex: 'state',
+                        render: (_, r) => <TaskState observable={r} />,
+                        sorter: sortField('state'),
+                        filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() }
+                    },
+                    {
+                        title: 'Worker',
+                        dataIndex: 'workerId',
+                        sorter: sortField('workerId'),
+                        filterType: { type: 'enum' }
+                    },
+                    {
+                        title: 'Cluster',
+                        render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>
+                    }
+                ]}
+                rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.connectorName + r.taskId}
+                search={{
+                    searchColumnIndex: 0,
+                    isRowMatch: (row, regex) => regex.test(row.connectorName) || regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId) || regex.test(row.cluster.clusterName)
+                }}
+                observableSettings={uiSettings.kafkaConnect.tasks}
+                pagination={{
+                    defaultPageSize: 10
+                }}
+                className="tasksTable"
+            />
+        );
     }
 }
 
@@ -274,6 +284,5 @@ export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 const connectTabs: Tab[] = [
     { key: 'clusters', title: 'Clusters', content: <TabClusters /> },
     { key: 'connectors', title: 'Connectors', content: <TabConnectors /> },
-    { key: 'tasks', title: 'Tasks', content: <TabTasks /> },
+    { key: 'tasks', title: 'Tasks', content: <TabTasks /> }
 ];
-
