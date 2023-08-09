@@ -34,7 +34,7 @@
         "array-move": "^4",
         "framer-motion": "^7",
         "js-base64": "^3.7.5",
-        "mobx": "^6.9",
+        "mobx": "^6.10.0",
         "mobx-react": "^7.6",
         "moment": "^2.29.4",
         "monaco-editor": "^0.40",
