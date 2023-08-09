@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Modal, notification, Popover, Row, Statistic } from 'antd';
+import { Modal, notification, Popover } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';

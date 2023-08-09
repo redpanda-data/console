@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Statistic, Row, Skeleton } from 'antd';
+import { Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
