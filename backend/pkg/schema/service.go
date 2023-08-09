@@ -210,8 +210,8 @@ func (s *Service) GetSubjectVersions(subject string, showSoftDeleted bool) (*Sub
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject.
-func (s *Service) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
-	return s.registryClient.GetSchemaBySubject(subject, version)
+func (s *Service) GetSchemaBySubject(subject, version string, showSoftDeleted bool) (*SchemaVersionedResponse, error) {
+	return s.registryClient.GetSchemaBySubject(subject, version, showSoftDeleted)
 }
 
 // GetMode returns the current mode for Schema Registry at a global level.
@@ -266,7 +266,7 @@ func (s *Service) ParseAvroSchemaWithReferences(schema *SchemaResponse) (avro.Sc
 func (s *Service) GetSchemaBySubjectAndVersion(subject string, version string) (*SchemaVersionedResponse, error) {
 	cacheKey := subject + "v" + version
 	cachedSchema, err, _ := s.schemaBySubjectVersion.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
-		schema, err := s.registryClient.GetSchemaBySubject(subject, version)
+		schema, err := s.registryClient.GetSchemaBySubject(subject, version, false)
 		if err != nil {
 			return nil, fmt.Errorf("get schema by subject failed: %w", err)
 		}

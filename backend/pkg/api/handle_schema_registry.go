@@ -17,6 +17,8 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
@@ -108,26 +110,27 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 			return
 		}
 
-		// TODO: Validate input, either "latest", "all" or a positive integer
+		// 2. Parse and validate version input
 		version := chi.URLParam(r, "version")
 		switch version {
-		case "latest", "all":
+		case console.SchemaVersionsAll, console.SchemaVersionsLatest:
 			break
 		default:
 			// Must be number or it's invalid input
 			_, err := strconv.Atoi(version)
 			if err != nil {
+				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q, %q or a positive integer", version, console.SchemaVersionsLatest, console.SchemaVersionsAll)
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
-					Err:      fmt.Errorf("version is not a valid number %q: %w", version, err),
+					Err:      descriptiveErr,
 					Status:   http.StatusBadRequest,
-					Message:  fmt.Sprintf("version is not a valid number %q: %v", version, err.Error()),
+					Message:  descriptiveErr.Error(),
 					IsSilent: false,
 				})
 				return
 			}
 		}
 
-		// 2. Get all subjects' details
+		// 3. Get all subjects' details
 		res, err := api.ConsoleSvc.GetSchemaRegistrySubjectDetails(r.Context(), subjectName, version)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{

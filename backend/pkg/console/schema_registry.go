@@ -11,6 +11,8 @@ package console
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -26,6 +28,8 @@ type SchemaRegistryConfig struct {
 	Compatibility string `json:"compatibility"`
 }
 
+// SchemaRegistrySubject is the subject name along with a bool that
+// indicates whether the subject is active or soft-deleted.
 type SchemaRegistrySubject struct {
 	Name          string `json:"name"`
 	IsSoftDeleted bool   `json:"isSoftDeleted"`
@@ -40,6 +44,8 @@ func (s *Service) GetSchemaRegistryMode(_ context.Context) (*SchemaRegistryMode,
 	return &SchemaRegistryMode{Mode: mode.Mode}, nil
 }
 
+// GetSchemaRegistryConfig returns the schema registry config which currently
+// only contains the global compatibility config (e.g. "BACKWARD").
 func (s *Service) GetSchemaRegistryConfig(_ context.Context) (*SchemaRegistryConfig, error) {
 	config, err := s.kafkaSvc.SchemaService.GetConfig()
 	if err != nil {
@@ -48,6 +54,8 @@ func (s *Service) GetSchemaRegistryConfig(_ context.Context) (*SchemaRegistryCon
 	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
 }
 
+// GetSchemaRegistrySubjects returns a list of all register subjects. The list includes
+// soft-deleted subjects.
 func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error) {
 	subjects := make(map[string]struct{})
 	subjectsWithDeleted := make(map[string]struct{})
@@ -94,53 +102,166 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 	return result, nil
 }
 
+// SchemaRegistrySubjectDetails represents a schema registry subject along
+// with other information such as the registered versions that belong to it,
+// or the full schema information that's part of the subject.
 type SchemaRegistrySubjectDetails struct {
-	Name               string                           `json:"name"`
-	Type               string                           `json:"type"`
-	Compatibility      string                           `json:"compatibility"`
-	RegisteredVersions []int                            `json:"totalVersions"`
-	LatestVersion      int                              `json:"latestVersion"`
-	Schemas            []*SchemaRegistryVersionedSchema `json:"schemas"`
+	Name                string                                `json:"name"`
+	Type                string                                `json:"type"`
+	Compatibility       string                                `json:"compatibility"`
+	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
+	LatestActiveVersion int                                   `json:"latestActiveVersion"`
+	Schemas             []*SchemaRegistryVersionedSchema      `json:"schemas"`
 }
+
+const (
+	SchemaVersionsAll    string = "all"
+	SchemaVersionsLatest string = "latest"
+)
 
 // GetSchemaRegistrySubjectDetails retrieves the schema details for the given subject, version tuple.
 // Use version = 'latest' to retrieve the latest schema.
 // Use version = 'all' to retrieve all schemas for this subject.
 // Use version = 3 to retrieve the specific version for the given subject
-func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error) {
-	versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, true)
+func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName, version string) (*SchemaRegistrySubjectDetails, error) {
+	// 1. Retrieve all schema versions registered for the given subject
+	versions, err := s.getSchemaRegistrySchemaVersions(ctx, subjectName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve subject versions: %w", err)
+	}
+	latestActiveVersion := -1
+	softDeletedVersions := make(map[int]bool)
+	for _, v := range versions {
+		if v.IsSoftDeleted {
+			softDeletedVersions[v.Version] = true
+			continue
+		}
+		if v.Version > latestActiveVersion {
+			latestActiveVersion = v.Version
+		}
 	}
 
+	// 2. Retrieve subject config (subject compatibility level)
 	configRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subjectName)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Handle version all
-	latestSchema, err := s.GetSchemaRegistrySchema(ctx, subjectName, version)
+	// 3. If version 'all' request schemas for all versions individually
+	versionsToRetrieve := []string{version}
+	if version == SchemaVersionsAll {
+		versionsToRetrieve = make([]string, len(versions))
+		for i, v := range versions {
+			versionsToRetrieve[i] = strconv.Itoa(v.Version)
+		}
+	}
+
+	// Send requests to retrieve schemas
+	schemas := make([]*SchemaRegistryVersionedSchema, 0)
+	for _, v := range versionsToRetrieve {
+		schema, err := s.GetSchemaRegistrySchema(ctx, subjectName, v, true)
+		if err != nil {
+			return nil, err
+		}
+
+		// To avoid making further requests to figure out whether this is a soft-deleted
+		// schema or not we are looking this piece of information up in our existing
+		// versions map.
+		schema.IsSoftDeleted = softDeletedVersions[schema.Version]
+
+		schemas = append(schemas, schema)
+	}
+
+	schemaType := "unknown"
+	if len(schemas) > 0 {
+		schemaType = schemas[len(schemas)-1].Type
+	}
+
+	return &SchemaRegistrySubjectDetails{
+		Name:                subjectName,
+		Type:                schemaType,
+		Compatibility:       configRes.Compatibility,
+		RegisteredVersions:  versions,
+		LatestActiveVersion: latestActiveVersion,
+		Schemas:             schemas,
+	}, nil
+}
+
+// SchemaRegistrySubjectDetailsVersion represents a schema version and if it's
+// soft-deleted or not.
+type SchemaRegistrySubjectDetailsVersion struct {
+	Version       int  `json:"version"`
+	IsSoftDeleted bool `json:"isSoftDeleted"`
+}
+
+// getSchemaRegistrySchemaVersions fetches the versions that exist for a given subject.
+// This will submit two versions requests where one includes softDeletedVersions.
+// This is done to retrieve a list with all versions including a flag whether it's
+// a soft-deleted or active version.
+func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
+	activeVersions := make(map[int]struct{})
+	versionsWithSoftDeleted := make(map[int]struct{})
+
+	g, _ := errgroup.WithContext(ctx)
+
+	// 1. Get versions without soft-deleted
+	g.Go(func() error {
+		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, false)
+		if err != nil {
+			// It's expected to get an error here if the targetted subject
+			// is soft-deleted (Subject not found / errcode 40401).
+			// TODO: We should check for the error code and only treat certain error codes as expected
+			return nil
+		}
+
+		for _, v := range versionsRes.Versions {
+			activeVersions[v] = struct{}{}
+		}
+		return nil
+	})
+
+	// 2. Get versions with soft-deleted
+	g.Go(func() error {
+		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, true)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve subject activeVersions with softDeleted: %w", err)
+		}
+
+		for _, v := range versionsRes.Versions {
+			versionsWithSoftDeleted[v] = struct{}{}
+		}
+		return nil
+	})
+
+	err := g.Wait()
 	if err != nil {
 		return nil, err
 	}
 
-	return &SchemaRegistrySubjectDetails{
-		Name:               subjectName,
-		Type:               latestSchema.Type,
-		Compatibility:      configRes.Compatibility,
-		RegisteredVersions: versionsRes.Versions,
-		LatestVersion:      versionsRes.Versions[len(versionsRes.Versions)-1],
-		Schemas:            []*SchemaRegistryVersionedSchema{latestSchema},
-	}, nil
+	// 3. Construct response where we can tell what activeVersions are soft-deleted and which aren't
+	response := make([]SchemaRegistrySubjectDetailsVersion, 0, len(versionsWithSoftDeleted))
+	for v := range versionsWithSoftDeleted {
+		_, exists := activeVersions[v]
+		response = append(response, SchemaRegistrySubjectDetailsVersion{
+			Version:       v,
+			IsSoftDeleted: !exists,
+		})
+	}
+	slices.SortFunc(response, func(a, b SchemaRegistrySubjectDetailsVersion) bool {
+		return a.Version < b.Version
+	})
+
+	return response, nil
 }
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID         int         `json:"id"`
-	Version    int         `json:"version"`
-	Type       string      `json:"type"`
-	Schema     string      `json:"schema"`
-	References []Reference `json:"references"`
+	ID            int         `json:"id"`
+	Version       int         `json:"version"`
+	IsSoftDeleted bool        `json:"isSoftDeleted"`
+	Type          string      `json:"type"`
+	Schema        string      `json:"schema"`
+	References    []Reference `json:"references"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
@@ -152,8 +273,8 @@ type Reference struct {
 
 // GetSchemaRegistrySchema retrieves a schema for a given subject, version tuple from the
 // schema registry.
-func (s *Service) GetSchemaRegistrySchema(_ context.Context, subjectName, version string) (*SchemaRegistryVersionedSchema, error) {
-	latestSchema, err := s.kafkaSvc.SchemaService.GetSchemaBySubject(subjectName, version)
+func (s *Service) GetSchemaRegistrySchema(_ context.Context, subjectName, version string, showSoftDeleted bool) (*SchemaRegistryVersionedSchema, error) {
+	latestSchema, err := s.kafkaSvc.SchemaService.GetSchemaBySubject(subjectName, version, showSoftDeleted)
 	if err != nil {
 		return nil, err
 	}

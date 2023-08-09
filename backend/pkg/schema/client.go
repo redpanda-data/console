@@ -175,11 +175,15 @@ type SchemaVersionedResponse struct {
 //
 //	the string “latest”, which returns the last registered schema under the specified subject.
 //	Note that there may be a new latest schema that gets registered right after this request is served.
-func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
+func (c *Client) GetSchemaBySubject(subject, version string, showSoftDeleted bool) (*SchemaVersionedResponse, error) {
+	path := "/subjects/{subjects}/versions/{version}"
+	if showSoftDeleted {
+		path += "?deleted=true"
+	}
 	res, err := c.client.R().SetResult(&SchemaVersionedResponse{}).SetPathParams(map[string]string{
 		"subjects": subject,
 		"version":  version,
-	}).Get("/subjects/{subjects}/versions/{version}")
+	}).Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("get schema by subject request failed: %w", err)
 	}
@@ -429,7 +433,7 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
 		go func(s string) {
-			r, err := c.GetSchemaBySubject(s, "latest")
+			r, err := c.GetSchemaBySubject(s, "latest", false)
 			ch <- chRes{
 				schemaRes: r,
 				err:       err,
