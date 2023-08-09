@@ -11,11 +11,14 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // SchemaRegistryMode returns the schema registry mode.
@@ -208,10 +211,13 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 	g.Go(func() error {
 		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, false)
 		if err != nil {
-			// It's expected to get an error here if the targetted subject
-			// is soft-deleted (Subject not found / errcode 40401).
-			// TODO: We should check for the error code and only treat certain error codes as expected
-			return nil
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				// It's expected to get an error here if the targetted subject
+				// is soft-deleted (Subject not found / errcode 40401).
+				return nil
+			}
+			return fmt.Errorf("failed to retrieve subject versions (without soft-deleted): %w", err)
 		}
 
 		for _, v := range versionsRes.Versions {
@@ -224,7 +230,7 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 	g.Go(func() error {
 		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, true)
 		if err != nil {
-			return fmt.Errorf("failed to retrieve subject activeVersions with softDeleted: %w", err)
+			return fmt.Errorf("failed to retrieve subject versions (with soft-deleted): %w", err)
 		}
 
 		for _, v := range versionsRes.Versions {

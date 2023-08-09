@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
@@ -133,6 +135,17 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		// 3. Get all subjects' details
 		res, err := api.ConsoleSvc.GetSchemaRegistrySubjectDetails(r.Context(), subjectName, version)
 		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  fmt.Sprintf("Requested subject does not exist"),
+					IsSilent: false,
+				})
+				return
+			}
+
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadGateway,
