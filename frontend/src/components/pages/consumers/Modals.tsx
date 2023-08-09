@@ -146,17 +146,17 @@ export class EditOffsetsModal extends Component<{
                     {
                         value: 'startOffset',
                         title: 'Start Offset',
-                        subTitle: "Set all offsets to the oldest partition's offset."
+                        subTitle: 'Set all offsets to the oldest partition\'s offset.'
                     },
                     {
                         value: 'endOffset',
                         title: 'End Offset',
-                        subTitle: "Set all offsets to the newest partition's offset."
+                        subTitle: 'Set all offsets to the newest partition\'s offset.'
                     },
                     {
                         value: 'time',
                         title: 'Specific Time',
-                        subTitle: "Choose a timestamp to which all partition's offsets will be set.",
+                        subTitle: 'Choose a timestamp to which all partition\'s offsets will be set.',
                         content: (
                             <div
                                 style={{

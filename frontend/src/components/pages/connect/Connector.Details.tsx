@@ -88,7 +88,7 @@ const KafkaConnectorMain = observer(
 
                 {/* [Pause/Resume] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
-                    <Tooltip placement="top" isDisabled={canEdit !== true} label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"} hasArrow={true}>
+                    <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                         <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                             {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                         </Button>
@@ -96,14 +96,14 @@ const KafkaConnectorMain = observer(
                 ) : null}
 
                 {/* [Restart] */}
-                <Tooltip placement="top" isDisabled={canEdit !== true} label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"} hasArrow={true}>
+                <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                     <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                         Restart
                     </Button>
                 </Tooltip>
 
                 {/* [Delete] */}
-                <Tooltip placement="top" isDisabled={canEdit !== true} label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"} hasArrow={true}>
+                <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                     <Button variant="outline" colorScheme="red" disabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
                         Delete
                     </Button>
@@ -131,7 +131,7 @@ const KafkaConnectorMain = observer(
                             {/* Update Config Button */}
                             <div style={{ marginTop: '1em' }}>
                                 <div style={{ display: 'flex', margin: '1em 0', marginBottom: '1.5em' }}>
-                                        <Tooltip placement="top" isDisabled={canEdit !== true} label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"} hasArrow={true}>
+                                        <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                                             <Button
                                                 variant="outline"
                                                 style={{ width: '200px' }}

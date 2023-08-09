@@ -262,7 +262,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
 });
 
 function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean): { canEdit: boolean; reason?: string } {
-    if (!hasEditPermissions) return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
+    if (!hasEditPermissions) return { canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries' };
 
     if (isServerless()) {
         const edittableEntries = ['retention.ms', 'retention.bytes'];

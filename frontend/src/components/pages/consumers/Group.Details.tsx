@@ -534,7 +534,7 @@ const makeStateEntry = (iconName: string, displayName: string, description: stri
     </div>
 ];
 
-const consumerGroupStateTable = QuickTable([makeStateEntry('stable', 'Stable', 'Consumer group has members which have been assigned partitions'), makeStateEntry('completingrebalance', 'Completing Rebalance', 'Kafka is assigning partitions to group members'), makeStateEntry('preparingrebalance', 'Preparing Rebalance', 'A reassignment of partitions is required, members have been asked to stop consuming'), makeStateEntry('empty', 'Empty', 'Consumer group exists, but does not have any members'), makeStateEntry('dead', 'Dead', "Consumer group does not have any members and it's metadata has been removed"), makeStateEntry('unknown', 'Unknown', 'Group state is not known')], {
+const consumerGroupStateTable = QuickTable([makeStateEntry('stable', 'Stable', 'Consumer group has members which have been assigned partitions'), makeStateEntry('completingrebalance', 'Completing Rebalance', 'Kafka is assigning partitions to group members'), makeStateEntry('preparingrebalance', 'Preparing Rebalance', 'A reassignment of partitions is required, members have been asked to stop consuming'), makeStateEntry('empty', 'Empty', 'Consumer group exists, but does not have any members'), makeStateEntry('dead', 'Dead', 'Consumer group does not have any members and it\'s metadata has been removed'), makeStateEntry('unknown', 'Unknown', 'Group state is not known')], {
     gapHeight: '.5em',
     gapWidth: '.5em',
     keyStyle: { verticalAlign: 'top' }
@@ -561,19 +561,19 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 };
 
 function cannotEditGroupReason(group: GroupDescription): string | undefined {
-    if (group.noEditPerms) return "You don't have 'editConsumerGroup' permissions for this group";
+    if (group.noEditPerms) return 'You don\'t have \'editConsumerGroup\' permissions for this group';
     if (group.isInUse) return 'Consumer groups with active members cannot be edited';
     if (!Features.patchGroup) return 'This cluster does not support editting group offsets';
 }
 
 function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
-    if (group.noDeletePerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
+    if (group.noDeletePerms) return 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
     if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
     if (!Features.deleteGroup) return 'This cluster does not support deleting groups';
 }
 
 function cannotDeleteGroupOffsetsReason(group: GroupDescription): string | undefined {
-    if (group.noEditPerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
+    if (group.noEditPerms) return 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
     if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
     if (!Features.deleteGroupOffsets) return 'This cluster does not support deleting group offsets';
 }
