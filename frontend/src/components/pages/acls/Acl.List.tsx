@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Tag, message, Dropdown, Menu, Modal } from 'antd';
+import { Empty, Input, message, Dropdown, Menu, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';

@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Row, Statistic, Tag, Collapse, Popover, Empty } from 'antd';
+import { Table, Tag, Collapse, Popover, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
