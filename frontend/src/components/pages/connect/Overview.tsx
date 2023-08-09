@@ -15,7 +15,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectors } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { Code, DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
