@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -24,12 +23,10 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-
-
+import { Tooltip } from '@redpanda-data/ui';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
-
     initPage(p: PageInitHelper): void {
         p.title = 'Overview';
         p.addBreadcrumb('Connectors', '/connect-clusters');
@@ -86,12 +83,14 @@ class TabClusters extends Component {
                 {
                     title: 'Cluster', dataIndex: 'clusterName',
                     render: (_, r) => {
+                                    return (
+                                        <Tooltip label={r.error} placement="top" hasArrow={true}>
+                                            <span style={mr05}>{errIcon}</span>
+                                            {r.clusterName}
+                                        </Tooltip>
+                                    );
 
                         if (r.error) {
-                            return <Tooltip overlay={r.error} getPopupContainer={findPopupContainer}>
-                                <span style={mr05}>{errIcon}</span>
-                                {r.clusterName}
-                            </Tooltip>
                         }
 
                         return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
@@ -147,12 +146,6 @@ class TabConnectors extends Component {
                     title: 'Connector', dataIndex: 'name',
                     width: '35%',
                     render: (_, r) => (
-                        <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
-                            <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.name)}`)}>
-                                {r.name}
-                            </span>
-                        </Tooltip>
                     ),
                     sorter: sortField('name'), defaultSortOrder: 'ascend'
                 },
@@ -202,6 +195,11 @@ class TabConnectors extends Component {
             }}
             className="connectorsTable"
         />
+                            <Tooltip placement="top" label={r.name} hasArrow={true}>
+                                <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.name)}`)}>
+                                    {r.name}
+                                </span>
+                            </Tooltip>
     }
 }
 
