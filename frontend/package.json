@@ -24,7 +24,7 @@
     "dependencies": {
         "@ant-design/icons": "^4.7",
         "@chakra-ui/icons": "^2.0.19",
-        "@chakra-ui/react-use-disclosure": "^2.0.8",
+        "@chakra-ui/react-use-disclosure": "^2.1.0",
         "@heroicons/react": "^1.0.6",
         "@monaco-editor/react": "^4.5",
         "@primer/octicons-react": "^17",
