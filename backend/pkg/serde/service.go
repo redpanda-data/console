@@ -27,7 +27,7 @@ func NewService(srService *schema.Service, msgPackService *msgpack.Service) *Ser
 		SerDes: []Serde{
 			NoneSerde{},
 			JsonSerde{},
-			// TODO: JSON Schema
+			JsonSchemaSerde{},
 			XMLSerde{},
 			AvroSerde{SchemaService: srService},
 			// TODO: Protobuf

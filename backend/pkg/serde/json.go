@@ -29,6 +29,12 @@ func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType payloadType)
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
+	return jsonDeserializePayload(trimmed)
+}
+
+func jsonDeserializePayload(payload []byte) (RecordPayload, error) {
+	trimmed := bytes.TrimLeft(payload, " \t\r\n")
+
 	if len(trimmed) == 0 {
 		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there was no character left")
 	}
