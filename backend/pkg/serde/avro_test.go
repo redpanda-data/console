@@ -17,13 +17,14 @@ import (
 	"testing"
 
 	"github.com/hamba/avro/v2"
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 func TestAvroSerde_DeserializePayload(t *testing.T) {
@@ -83,7 +84,6 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		sr.DecodeFn(func(b []byte, v any) error {
 			return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
 		}),
-		sr.Index(0),
 	)
 
 	in := SimpleRecord{A: 27, B: "foo"}
@@ -122,8 +122,6 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, payloadEncodingAvro, payload.Encoding)
 
-				// fmt.Printf("%+T\n", payload.ParsedPayload)
-				// fmt.Printf("%#v\n", payload.ParsedPayload)
 				obj, ok := (payload.ParsedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
 
@@ -135,7 +133,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 
 				fmt.Printf("%+v\n", out)
-				assert.Equal(t, 27, out.A)
+				assert.Equal(t, int64(27), out.A)
 				assert.Equal(t, "foo", out.B)
 			},
 		},

@@ -14,8 +14,9 @@ import (
 	"fmt"
 
 	"github.com/hamba/avro/v2"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*AvroSerde)(nil)
