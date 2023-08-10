@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -43,8 +44,13 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType payloadType
 		return RecordPayload{}, fmt.Errorf("failed to decode Smile payload: %w", err)
 	}
 
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return RecordPayload{}, fmt.Errorf("failed to serialize Smile payload to json: %w", err)
+	}
+
 	return RecordPayload{
-		ParsedPayload: obj,
+		ParsedPayload: jsonBytes,
 		Encoding:      payloadEncodingSmile,
 	}, nil
 }

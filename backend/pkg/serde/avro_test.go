@@ -136,18 +136,10 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, payloadEncodingAvro, payload.Encoding)
 
-				obj, ok := (payload.ParsedPayload).(map[string]any)
-				require.Truef(t, ok, "parsed payload is not of type map[string]any")
+				obj, ok := (payload.ParsedPayload).([]byte)
+				require.Truef(t, ok, "parsed payload is not of type string")
 
-				data, err := avro.Marshal(avroSchema, obj)
-				require.NoError(t, err)
-
-				out := SimpleRecord{}
-				err = avro.Unmarshal(avroSchema, data, &out)
-				require.NoError(t, err)
-
-				assert.Equal(t, int64(27), out.A)
-				assert.Equal(t, "foo", out.B)
+				assert.Equal(t, `{"a":27,"b":"foo"}`, string(obj))
 			},
 		},
 		{

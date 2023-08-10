@@ -11,6 +11,7 @@ package serde
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hamba/avro/v2"
@@ -56,8 +57,13 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadTyp
 		return RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
 
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
+	}
+
 	return RecordPayload{
-		ParsedPayload: obj,
+		ParsedPayload: jsonBytes,
 		Encoding:      payloadEncodingAvro,
 	}, nil
 }

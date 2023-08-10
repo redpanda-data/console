@@ -171,7 +171,7 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 		return nil, schemaID, err
 	}
 
-	jsonBytes, err := s.deserializeProtobufMessageToJSON(cleanPayload, md)
+	jsonBytes, err := s.DeserializeProtobufMessageToJSON(cleanPayload, md)
 	if err != nil {
 		return nil, schemaID, err
 	}
@@ -179,7 +179,7 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 	return jsonBytes, schemaID, nil
 }
 
-func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
+func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
 	msg := dynamic.NewMessage(md)
 	err := msg.Unmarshal(payload)
 	if err != nil {
@@ -209,12 +209,12 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	}
 
 	// 2. Now let's check if we have static mappings
-	messageDescriptor, err := s.getMessageDescriptor(topicName, property)
+	messageDescriptor, err := s.GetMessageDescriptor(topicName, property)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get message descriptor for payload: %w", err)
 	}
 
-	jsonBytes, err := s.deserializeProtobufMessageToJSON(payload, messageDescriptor)
+	jsonBytes, err := s.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -252,8 +252,8 @@ func (s *Service) getMessageDescriptorFromConfluentMessage(wrapper *confluentEnv
 	return msgType, wrapper.ProtoPayload, nil
 }
 
-// getMessageDescriptor tries to find the apr
-func (s *Service) getMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
+// GetMessageDescriptor tries to find the apr
+func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
 	mapping, exists := s.mappingsByTopic[topicName]
 	if !exists {
