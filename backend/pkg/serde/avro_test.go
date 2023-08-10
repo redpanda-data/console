@@ -11,7 +11,6 @@ package serde
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,8 +85,23 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		}),
 	)
 
+	var srSerde2 sr.Serde
+	srSerde2.Register(
+		1001,
+		&SimpleRecord{},
+		sr.EncodeFn(func(v any) ([]byte, error) {
+			return avro.Marshal(avroSchema, v.(*SimpleRecord))
+		}),
+		sr.DecodeFn(func(b []byte, v any) error {
+			return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+		}),
+	)
+
 	in := SimpleRecord{A: 27, B: "foo"}
 	msgData, err := srSerde.Encode(&in)
+	require.NoError(t, err)
+
+	msgData2, err := srSerde2.Encode(&in)
 	require.NoError(t, err)
 
 	// setup schema service
@@ -132,9 +146,41 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 				err = avro.Unmarshal(avroSchema, data, &out)
 				require.NoError(t, err)
 
-				fmt.Printf("%+v\n", out)
 				assert.Equal(t, int64(27), out.A)
 				assert.Equal(t, "foo", out.B)
+			},
+		},
+		{
+			name: "payload too small",
+			record: &kgo.Record{
+				Value: []byte{0, 1, 2, 3},
+			},
+			payloadType: payloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "payload size is < 5", err.Error())
+			},
+		},
+		{
+			name: "missing magic byte",
+			record: &kgo.Record{
+				Value: []byte{1, 2, 3, 4, 5, 6, 7},
+			},
+			payloadType: payloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				assert.Error(t, err)
+				assert.Equal(t, "incorrect magic byte", err.Error())
+			},
+		},
+		{
+			name: "missing schema",
+			record: &kgo.Record{
+				Value: msgData2,
+			},
+			payloadType: payloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "getting avro schema from registry: failed to get schema from registry: get schema by id request failed")
 			},
 		},
 	}
