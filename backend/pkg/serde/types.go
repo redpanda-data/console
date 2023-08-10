@@ -21,7 +21,7 @@ const (
 	payloadEncodingUtf8WithControlChars PayloadEncoding = "utf8WithControlChars"
 	payloadEncodingConsumerOffsets      PayloadEncoding = "consumerOffsets"
 	payloadEncodingBinary               PayloadEncoding = "binary"
-	payloadEncodingMsgP                 PayloadEncoding = "msgpack"
+	payloadEncodingMsgPack              PayloadEncoding = "msgpack"
 	payloadEncodingSmile                PayloadEncoding = "smile"
 )
 

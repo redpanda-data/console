@@ -9,25 +9,29 @@
 
 package serde
 
-import "github.com/twmb/franz-go/pkg/kgo"
+import (
+	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/schema"
+)
 
 // Service is the struct that holds all dependencies that are required to deserialize
 // a record.
 type Service struct {
 	SerDes []Serde
-	// SchemaRegistry etc..
 }
 
-func NewService() *Service {
+func NewService(srService *schema.Service, msgPackService *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NoneSerde{},
 			JsonSerde{},
 			// TODO: JSON Schema
 			XMLSerde{},
-			// TODO: Avro
+			AvroSerde{SchemaService: srService},
 			// TODO: Protobuf
-			// TODO: MessagePack
+			MsgPackSerde{MsgPackService: msgPackService},
 			SmileSerde{},
 			UTF8Serde{},
 			TextSerde{},
