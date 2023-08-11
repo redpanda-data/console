@@ -178,7 +178,7 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 // contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
 func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (avro.Schema, error) {
 	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
-		schemaRes, err := s.registryClient.GetSchemaByID(ctx, schemaID, false)
+		schemaRes, err := s.registryClient.GetSchemaByID(ctx, schemaID)
 		if err != nil {
 			s.logger.Warn("failed to fetch avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)

@@ -135,17 +135,13 @@ type Reference struct {
 
 // GetSchemaByID returns the schema string identified by the input ID.
 // id (int) – the globally unique identifier of the schema
-func (c *Client) GetSchemaByID(ctx context.Context, id uint32, showSoftDeleted bool) (*SchemaResponse, error) {
+func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse, error) {
 	url := fmt.Sprintf("/schemas/ids/%d", id)
 	req := c.client.R().
 		SetContext(ctx).
 		SetResult(&SchemaResponse{})
 
-	if showSoftDeleted {
-		req.SetQueryParam("deleted", "true")
-	}
-
-	res, err := c.client.R().SetResult(&SchemaResponse{}).Get(url)
+	res, err := req.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("get schema by id request failed: %w", err)
 	}
@@ -369,7 +365,6 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 		SetResult(&ConfigResponse{}).
 		SetPathParams(params).
 		Get(url)
-
 	if err != nil {
 		return nil, fmt.Errorf("get config for subject failed: %w", err)
 	}

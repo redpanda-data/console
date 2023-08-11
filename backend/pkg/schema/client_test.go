@@ -10,6 +10,7 @@
 package schema
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 		})
 
 	expected := &SchemaResponse{Schema: schemaStr}
-	actual, err := c.GetSchemaByID(1000)
+	actual, err := c.GetSchemaByID(context.Background(), 1000)
 	assert.NoError(t, err, "expected no error when fetching schema by id")
 	assert.Equal(t, expected, actual)
 }
@@ -66,7 +67,7 @@ func TestClient_GetSubjects(t *testing.T) {
 		})
 
 	expected := &SubjectsResponse{Subjects: subjects}
-	actual, err := c.GetSubjects(false)
+	actual, err := c.GetSubjects(context.Background(), false)
 	assert.NoError(t, err, "expected no error when fetching subjects")
 	assert.Equal(t, expected, actual)
 }
@@ -88,7 +89,7 @@ func TestClient_GetSubjectVersions(t *testing.T) {
 		})
 
 	expected := &SubjectVersionsResponse{Versions: versions}
-	actual, err := c.GetSubjectVersions("orders", false)
+	actual, err := c.GetSubjectVersions(context.Background(), "orders", false)
 	assert.NoError(t, err, "expected no error when fetching subject versions")
 	assert.Equal(t, expected, actual)
 }
