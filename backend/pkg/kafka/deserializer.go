@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -230,7 +231,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		if payload[0] == byte(0) {
 			schemaID := binary.BigEndian.Uint32(payload[1:5])
 
-			schema, err := d.SchemaService.GetAvroSchemaByID(schemaID)
+			schema, err := d.SchemaService.GetAvroSchemaByID(context.Background(), schemaID)
 			if err == nil {
 				var obj interface{}
 				if err := avro.Unmarshal(schema, payload[5:], &obj); err == nil {

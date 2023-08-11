@@ -39,8 +39,8 @@ type SchemaRegistrySubject struct {
 }
 
 // GetSchemaRegistryMode retrieves the schema registry mode.
-func (s *Service) GetSchemaRegistryMode(_ context.Context) (*SchemaRegistryMode, error) {
-	mode, err := s.kafkaSvc.SchemaService.GetMode()
+func (s *Service) GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error) {
+	mode, err := s.kafkaSvc.SchemaService.GetMode(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +49,8 @@ func (s *Service) GetSchemaRegistryMode(_ context.Context) (*SchemaRegistryMode,
 
 // GetSchemaRegistryConfig returns the schema registry config which currently
 // only contains the global compatibility config (e.g. "BACKWARD").
-func (s *Service) GetSchemaRegistryConfig(_ context.Context) (*SchemaRegistryConfig, error) {
-	config, err := s.kafkaSvc.SchemaService.GetConfig()
+func (s *Service) GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error) {
+	config, err := s.kafkaSvc.SchemaService.GetConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +63,9 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 	subjects := make(map[string]struct{})
 	subjectsWithDeleted := make(map[string]struct{})
 
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, _ := errgroup.WithContext(ctx)
 	grp.Go(func() error {
-		res, err := s.kafkaSvc.SchemaService.GetSubjects(false)
+		res, err := s.kafkaSvc.SchemaService.GetSubjects(ctx, false)
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 		return nil
 	})
 	grp.Go(func() error {
-		res, err := s.kafkaSvc.SchemaService.GetSubjects(true)
+		res, err := s.kafkaSvc.SchemaService.GetSubjects(ctx, true)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,9 @@ type SchemaRegistrySubjectDetails struct {
 }
 
 const (
-	SchemaVersionsAll    string = "all"
+	// SchemaVersionsAll can be specified as version to retrieve all schema versions.
+	SchemaVersionsAll string = "all"
+	// SchemaVersionsLatest can be specified as version to retrieve the latest active schema.
 	SchemaVersionsLatest string = "latest"
 )
 
@@ -145,7 +147,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	}
 
 	// 2. Retrieve subject config (subject compatibility level)
-	configRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subjectName)
+	configRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(ctx, subjectName)
 	if err != nil {
 		return nil, err
 	}
@@ -209,11 +211,11 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 
 	// 1. Get versions without soft-deleted
 	g.Go(func() error {
-		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, false)
+		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(ctx, subjectName, false)
 		if err != nil {
 			var schemaError *schema.RestError
 			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
-				// It's expected to get an error here if the targetted subject
+				// It's expected to get an error here if the targeted subject
 				// is soft-deleted (Subject not found / errcode 40401).
 				return nil
 			}
@@ -228,7 +230,7 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 
 	// 2. Get versions with soft-deleted
 	g.Go(func() error {
-		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subjectName, true)
+		versionsRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(ctx, subjectName, true)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve subject versions (with soft-deleted): %w", err)
 		}
@@ -279,8 +281,8 @@ type Reference struct {
 
 // GetSchemaRegistrySchema retrieves a schema for a given subject, version tuple from the
 // schema registry.
-func (s *Service) GetSchemaRegistrySchema(_ context.Context, subjectName, version string, showSoftDeleted bool) (*SchemaRegistryVersionedSchema, error) {
-	latestSchema, err := s.kafkaSvc.SchemaService.GetSchemaBySubject(subjectName, version, showSoftDeleted)
+func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName, version string, showSoftDeleted bool) (*SchemaRegistryVersionedSchema, error) {
+	latestSchema, err := s.kafkaSvc.SchemaService.GetSchemaBySubject(ctx, subjectName, version, showSoftDeleted)
 	if err != nil {
 		return nil, err
 	}

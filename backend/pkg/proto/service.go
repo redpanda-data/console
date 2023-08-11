@@ -11,6 +11,7 @@ package proto
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -90,7 +91,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		}
 
 		// Ensure that Protobuf is supported
-		supportedTypes, err := schemaSvc.GetSchemaTypes()
+		supportedTypes, err := schemaSvc.GetSchemaTypes(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get supported schema types from registry. Ensure Protobuf is supported: %w", err)
 		}
@@ -149,7 +150,7 @@ func (s *Service) Start() error {
 		go triggerRefresh(s.cfg.SchemaRegistry.RefreshInterval, s.tryCreateProtoRegistry)
 	}
 
-	err := s.createProtoRegistry()
+	err := s.createProtoRegistry(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to create proto registry: %w", err)
 	}
@@ -367,13 +368,13 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 }
 
 func (s *Service) tryCreateProtoRegistry() {
-	err := s.createProtoRegistry()
+	err := s.createProtoRegistry(context.Background())
 	if err != nil {
 		s.logger.Error("failed to update proto registry", zap.Error(err))
 	}
 }
 
-func (s *Service) createProtoRegistry() error {
+func (s *Service) createProtoRegistry(ctx context.Context) error {
 	files := make(map[string]filesystem.File)
 
 	if s.gitSvc != nil {
@@ -398,7 +399,7 @@ func (s *Service) createProtoRegistry() error {
 
 	// Merge proto descriptors from schema registry into the existing proto descriptors
 	if s.schemaSvc != nil {
-		descriptors, err := s.schemaSvc.GetProtoDescriptors()
+		descriptors, err := s.schemaSvc.GetProtoDescriptors(ctx)
 		if err != nil {
 			s.logger.Error("failed to get proto descriptors from schema registry", zap.Error(err))
 		}

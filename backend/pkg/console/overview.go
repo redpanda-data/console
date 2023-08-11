@@ -93,7 +93,7 @@ func (s *Service) GetOverview(ctx context.Context) Overview {
 		Redpanda:       s.getRedpandaOverview(ctx),
 		Console:        s.getConsoleOverview(),
 		KafkaConnect:   s.getConnectOverview(ctx),
-		SchemaRegistry: s.getSchemaRegistryOverview(),
+		SchemaRegistry: s.getSchemaRegistryOverview(ctx),
 	}
 }
 
@@ -141,7 +141,7 @@ func (*Service) getConsoleOverview() OverviewConsole {
 	}
 }
 
-func (s *Service) getSchemaRegistryOverview() OverviewSchemaRegistry {
+func (s *Service) getSchemaRegistryOverview(ctx context.Context) OverviewSchemaRegistry {
 	if s.kafkaSvc.SchemaService == nil {
 		return OverviewSchemaRegistry{
 			IsConfigured: false,
@@ -152,7 +152,7 @@ func (s *Service) getSchemaRegistryOverview() OverviewSchemaRegistry {
 		Status: StatusTypeHealthy,
 	}
 	registeredSubjects := 0
-	subjects, err := s.kafkaSvc.SchemaService.GetSubjects(false)
+	subjects, err := s.kafkaSvc.SchemaService.GetSubjects(ctx, false)
 	if err != nil {
 		status.SetStatus(StatusTypeUnhealthy, fmt.Sprintf("Could not fetch subjects from schema registry %q", err.Error()))
 	} else {

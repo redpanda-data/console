@@ -116,7 +116,6 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		version := chi.URLParam(r, "version")
 		switch version {
 		case console.SchemaVersionsAll, console.SchemaVersionsLatest:
-			break
 		default:
 			// Must be number or it's invalid input
 			_, err := strconv.Atoi(version)
@@ -140,7 +139,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
-					Message:  fmt.Sprintf("Requested subject does not exist"),
+					Message:  "Requested subject does not exist",
 					IsSilent: false,
 				})
 				return

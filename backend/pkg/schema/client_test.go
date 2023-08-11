@@ -66,7 +66,7 @@ func TestClient_GetSubjects(t *testing.T) {
 		})
 
 	expected := &SubjectsResponse{Subjects: subjects}
-	actual, err := c.GetSubjects()
+	actual, err := c.GetSubjects(false)
 	assert.NoError(t, err, "expected no error when fetching subjects")
 	assert.Equal(t, expected, actual)
 }
@@ -88,7 +88,7 @@ func TestClient_GetSubjectVersions(t *testing.T) {
 		})
 
 	expected := &SubjectVersionsResponse{Versions: versions}
-	actual, err := c.GetSubjectVersions("orders")
+	actual, err := c.GetSubjectVersions("orders", false)
 	assert.NoError(t, err, "expected no error when fetching subject versions")
 	assert.Equal(t, expected, actual)
 }

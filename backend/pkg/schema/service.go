@@ -10,6 +10,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -57,18 +58,18 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 }
 
 // CheckConnectivity to schema registry. Returns no error if connectivity is fine.
-func (s *Service) CheckConnectivity() error {
-	return s.registryClient.CheckConnectivity()
+func (s *Service) CheckConnectivity(ctx context.Context) error {
+	return s.registryClient.CheckConnectivity(ctx)
 }
 
 // GetProtoDescriptors returns all file descriptors in a map where the key is the schema id.
 // The value is a set of file descriptors because each schema may references / imported proto schemas.
-func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
+func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDescriptor, error) {
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
 	v, err, _ := s.requestGroup.Do(key, func() (interface{}, error) {
-		schemasRes, err := s.registryClient.GetSchemas()
+		schemasRes, err := s.registryClient.GetSchemas(ctx, false)
 		if err != nil {
 			// If schema registry returns an error we want to retry it next time, so let's forget the key
 			s.requestGroup.Forget(key)
@@ -175,15 +176,15 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 
 // GetAvroSchemaByID loads the schema by the given schemaID and tries to parse the schema
 // contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
-func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
+func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (avro.Schema, error) {
 	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
-		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
+		schemaRes, err := s.registryClient.GetSchemaByID(ctx, schemaID, false)
 		if err != nil {
 			s.logger.Warn("failed to fetch avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		codec, err := s.ParseAvroSchemaWithReferences(schemaRes)
+		codec, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
 		}
@@ -195,45 +196,45 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 }
 
 // GetSubjects returns a list of all deployed schemas.
-func (s *Service) GetSubjects(showSoftDeleted bool) (*SubjectsResponse, error) {
-	return s.registryClient.GetSubjects(showSoftDeleted)
+func (s *Service) GetSubjects(ctx context.Context, showSoftDeleted bool) (*SubjectsResponse, error) {
+	return s.registryClient.GetSubjects(ctx, showSoftDeleted)
 }
 
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)
-func (s *Service) GetSchemaTypes() ([]string, error) {
-	return s.registryClient.GetSchemaTypes()
+func (s *Service) GetSchemaTypes(ctx context.Context) ([]string, error) {
+	return s.registryClient.GetSchemaTypes(ctx)
 }
 
 // GetSubjectVersions returns a schema subject's registered versions.
-func (s *Service) GetSubjectVersions(subject string, showSoftDeleted bool) (*SubjectVersionsResponse, error) {
-	return s.registryClient.GetSubjectVersions(subject, showSoftDeleted)
+func (s *Service) GetSubjectVersions(ctx context.Context, subject string, showSoftDeleted bool) (*SubjectVersionsResponse, error) {
+	return s.registryClient.GetSubjectVersions(ctx, subject, showSoftDeleted)
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject.
-func (s *Service) GetSchemaBySubject(subject, version string, showSoftDeleted bool) (*SchemaVersionedResponse, error) {
-	return s.registryClient.GetSchemaBySubject(subject, version, showSoftDeleted)
+func (s *Service) GetSchemaBySubject(ctx context.Context, subject, version string, showSoftDeleted bool) (*SchemaVersionedResponse, error) {
+	return s.registryClient.GetSchemaBySubject(ctx, subject, version, showSoftDeleted)
 }
 
 // GetMode returns the current mode for Schema Registry at a global level.
-func (s *Service) GetMode() (*ModeResponse, error) {
-	return s.registryClient.GetMode()
+func (s *Service) GetMode(ctx context.Context) (*ModeResponse, error) {
+	return s.registryClient.GetMode(ctx)
 }
 
 // GetConfig gets global compatibility level.
-func (s *Service) GetConfig() (*ConfigResponse, error) {
-	return s.registryClient.GetConfig()
+func (s *Service) GetConfig(ctx context.Context) (*ConfigResponse, error) {
+	return s.registryClient.GetConfig(ctx)
 }
 
 // GetSubjectConfig gets compatibility level for a given subject.
-func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
-	return s.registryClient.GetSubjectConfig(subject)
+func (s *Service) GetSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
+	return s.registryClient.GetSubjectConfig(ctx, subject)
 }
 
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
 // error will be returned.
-func (s *Service) ParseAvroSchemaWithReferences(schema *SchemaResponse) (avro.Schema, error) {
+func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse) (avro.Schema, error) {
 	if len(schema.References) == 0 {
 		return avro.Parse(schema.Schema)
 	}
@@ -241,12 +242,12 @@ func (s *Service) ParseAvroSchemaWithReferences(schema *SchemaResponse) (avro.Sc
 	// Fetch and parse all schema references recursively. All schemas that have
 	// been parsed successfully will be cached by the avro library.
 	for _, reference := range schema.References {
-		schemaRef, err := s.GetSchemaBySubjectAndVersion(reference.Subject, strconv.Itoa(reference.Version))
+		schemaRef, err := s.GetSchemaBySubjectAndVersion(ctx, reference.Subject, strconv.Itoa(reference.Version))
 		if err != nil {
 			return nil, err
 		}
 
-		if _, err := s.ParseAvroSchemaWithReferences(&SchemaResponse{
+		if _, err := s.ParseAvroSchemaWithReferences(ctx, &SchemaResponse{
 			Schema:     schemaRef.Schema,
 			References: schemaRef.References,
 		}); err != nil {
@@ -263,10 +264,10 @@ func (s *Service) ParseAvroSchemaWithReferences(schema *SchemaResponse) (avro.Sc
 
 // GetSchemaBySubjectAndVersion retrieves a schema from the schema registry
 // by a given <subject, version> tuple.
-func (s *Service) GetSchemaBySubjectAndVersion(subject string, version string) (*SchemaVersionedResponse, error) {
+func (s *Service) GetSchemaBySubjectAndVersion(ctx context.Context, subject string, version string) (*SchemaVersionedResponse, error) {
 	cacheKey := subject + "v" + version
 	cachedSchema, err, _ := s.schemaBySubjectVersion.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
-		schema, err := s.registryClient.GetSchemaBySubject(subject, version, false)
+		schema, err := s.registryClient.GetSchemaBySubject(ctx, subject, version, false)
 		if err != nil {
 			return nil, fmt.Errorf("get schema by subject failed: %w", err)
 		}
