@@ -235,6 +235,11 @@ func (s *Service) DeleteSubject(ctx context.Context, subject string, deletePerma
 	return s.registryClient.DeleteSubject(ctx, subject, deletePermanently)
 }
 
+// DeleteSubjectVersion deletes a specific version for a schema registry subject.
+func (s *Service) DeleteSubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*DeleteSubjectVersionResponse, error) {
+	return s.registryClient.DeleteSubjectVersion(ctx, subject, version, deletePermanently)
+}
+
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an

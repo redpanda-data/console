@@ -318,3 +318,17 @@ func (s *Service) DeleteSchemaRegistrySubject(ctx context.Context, subjectName s
 	}
 	return &SchemaRegistryDeleteSubjectResponse{DeletedVersions: res.Versions}, nil
 }
+
+// SchemaRegistryDeleteSubjectVersionResponse is the response to deleting a subject version.
+type SchemaRegistryDeleteSubjectVersionResponse struct {
+	DeletedVersion int `json:"deletedVersion"`
+}
+
+// DeleteSchemaRegistrySubjectVersion deletes a schema registry subject version.
+func (s *Service) DeleteSchemaRegistrySubjectVersion(ctx context.Context, subjectName, version string, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error) {
+	res, err := s.kafkaSvc.SchemaService.DeleteSubjectVersion(ctx, subjectName, version, deletePermanently)
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistryDeleteSubjectVersionResponse{DeletedVersion: res.Version}, nil
+}

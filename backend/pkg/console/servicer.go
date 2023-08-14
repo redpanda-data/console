@@ -49,9 +49,11 @@ type Servicer interface {
 	GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error)
 	GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error)
 	GetTopicDetails(ctx context.Context, topicNames []string) ([]TopicDetails, *rest.Error)
+
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
 	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
 	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
 	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
+	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
 }

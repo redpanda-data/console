@@ -13,6 +13,11 @@ const (
 	// CodeSubjectNotFound is the returned error code when the requested subject
 	// does not exist.
 	CodeSubjectNotFound = 40401
+
+	// CodeVersionNotFound is the returned error code when the requested version
+	// does not exist.
+	CodeVersionNotFound = 40402
+
 	// CodeSchemaNotFound is the returned error code when the requested schema
 	// does not exist.
 	CodeSchemaNotFound = 40403

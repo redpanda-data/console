@@ -415,12 +415,44 @@ func (c *Client) DeleteSubject(ctx context.Context, subject string, deletePerman
 	if res.IsError() {
 		restErr, ok := res.Error().(*RestError)
 		if !ok {
-			return nil, fmt.Errorf("get config for subject failed: Status code %d", res.StatusCode())
+			return nil, fmt.Errorf("delete subject failed: Status code %d", res.StatusCode())
 		}
 		return nil, restErr
 	}
 
 	return &DeleteSubjectResponse{deletedVersions}, nil
+}
+
+// DeleteSubjectVersionResponse describes the response to deleting a subject version.
+type DeleteSubjectVersionResponse struct {
+	Version int
+}
+
+// DeleteSubjectVersion deletes a specific version of the subject. Unless you delete permanently,
+// this only deletes the version, leaving the schema ID intact and making it still possible to
+// decode data using the schema ID.
+func (c *Client) DeleteSubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*DeleteSubjectVersionResponse, error) {
+	var deletedVersion int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&deletedVersion).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		SetQueryParam("permanent", strconv.FormatBool(deletePermanently)).
+		Delete("/subjects/{subject}/versions/{version}")
+	if err != nil {
+		return nil, fmt.Errorf("delete subject version failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("delete subject version failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &DeleteSubjectVersionResponse{deletedVersion}, nil
 }
 
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)

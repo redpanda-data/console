@@ -156,6 +156,24 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := rest.GetURLParam(r, "subject")
 
+		version := rest.GetURLParam(r, "version")
+		switch version {
+		case console.SchemaVersionsAll, console.SchemaVersionsLatest:
+		default:
+			// Must be number or it's invalid input
+			_, err := strconv.Atoi(version)
+			if err != nil {
+				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q, %q or a positive integer", version, console.SchemaVersionsLatest, console.SchemaVersionsAll)
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      descriptiveErr,
+					Status:   http.StatusBadRequest,
+					Message:  descriptiveErr.Error(),
+					IsSilent: false,
+				})
+				return
+			}
+		}
+
 		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
 		if deletePermanentlyStr == "" {
 			deletePermanentlyStr = "false"
@@ -191,6 +209,88 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 				Message:      fmt.Sprintf("Failed to delete schema registry subject: %v", err.Error()),
 				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
 				IsSilent:     false,
+			})
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		version := rest.GetURLParam(r, "version")
+		switch version {
+		case console.SchemaVersionsLatest:
+		default:
+			// Must be number or it's invalid input
+			_, err := strconv.Atoi(version)
+			if err != nil {
+				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      descriptiveErr,
+					Status:   http.StatusBadRequest,
+					Message:  descriptiveErr.Error(),
+					IsSilent: false,
+				})
+				return
+			}
+		}
+
+		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
+		if deletePermanentlyStr == "" {
+			deletePermanentlyStr = "false"
+		}
+		deletePermanently, err := strconv.ParseBool(deletePermanentlyStr)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("failed to parse deletePermanently query param %q: %w", deletePermanentlyStr, err),
+				Status:   http.StatusBadRequest,
+				Message:  fmt.Sprintf("Failed to parse 'permanent' query param with value %q: %v", deletePermanentlyStr, err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+
+		// 2. Send delete request
+		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectVersion(r.Context(), subjectName, version, deletePermanently)
+		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeVersionNotFound {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested version does not exist on the given subject",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:     err,
+				Status:  http.StatusServiceUnavailable,
+				Message: fmt.Sprintf("Failed to delete schema registry subject version: %v", err.Error()),
+				InternalLogs: []zapcore.Field{
+					zap.String("subject_name", subjectName),
+					zap.String("version", version),
+				},
+				IsSilent: false,
 			})
 			return
 		}
