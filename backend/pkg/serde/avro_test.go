@@ -105,11 +105,10 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 	require.NoError(t, err)
 
 	// setup schema service
-	baseURL := ts.URL
 	logger, _ := zap.NewProduction()
 	s, err := schema.NewService(config.Schema{
 		Enabled: true,
-		URLs:    []string{baseURL},
+		URLs:    []string{ts.URL},
 	}, logger)
 	require.NoError(t, err)
 
