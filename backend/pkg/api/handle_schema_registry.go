@@ -125,7 +125,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		res, err := api.ConsoleSvc.GetSchemaRegistrySubjectDetails(r.Context(), subjectName, version)
 		if err != nil {
 			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -175,7 +175,7 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubject(r.Context(), subjectName, deletePermanently)
 		if err != nil {
 			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
