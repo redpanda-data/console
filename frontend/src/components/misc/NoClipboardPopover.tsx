@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Popover } from 'antd';
 import React, { FunctionComponent, ReactElement } from 'react';
 import { isClipboardAvailable } from '../../utils/featureDetection';
+import { Popover, PopoverContent, Portal, PopoverArrow, PopoverTrigger, PopoverBody, PopoverHeader } from '@redpanda-data/ui';
 
 const popoverContent = (
     <>
@@ -22,12 +22,19 @@ const popoverContent = (
 
 export const NoClipboardPopover: FunctionComponent<{
     children: ReactElement;
-    placement?: 'left'|'top'
+    placement?: 'left' | 'top';
 }> = ({ children, placement = 'top' }) =>
     isClipboardAvailable ? (
         <>{children}</>
     ) : (
-        <Popover title="Clipboard unavailable" content={popoverContent} arrowPointAtCenter={true} placement={placement}>
-            {children}
+        <Popover placement={placement} trigger="hover">
+            <PopoverTrigger>{children}</PopoverTrigger>
+            <Portal>
+                <PopoverContent>
+                    <PopoverArrow />
+                    <PopoverHeader>Clipboard unavailable</PopoverHeader>
+                    <PopoverBody>{popoverContent}</PopoverBody>
+                </PopoverContent>
+            </Portal>
         </Popover>
     );
