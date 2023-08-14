@@ -222,12 +222,16 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	return jsonBytes, 0, nil
 }
 
+func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
+	return s.cfg.SchemaRegistry.Enabled
+}
+
 // getMessageDescriptorFromConfluentMessage try to find the right message descriptor of a message that has been serialized
 // according to Confluent's ProtobufSerializer. If successful it will return the found message descriptor along with
 // the protobuf payload (without the bytes that carry the metadata such as schema id), so that this can be used
 // for deserializing the content.
 func (s *Service) getMessageDescriptorFromConfluentMessage(wrapper *confluentEnvelope, topicName string) (*desc.MessageDescriptor, []byte, error) {
-	fd, exists := s.getFileDescriptorBySchemaID(int(wrapper.SchemaID))
+	fd, exists := s.GetFileDescriptorBySchemaID(int(wrapper.SchemaID))
 	if !exists {
 		return nil, nil, fmt.Errorf("could not find a file descriptor that matches the decoded schema id '%v'", wrapper.SchemaID)
 	}
@@ -520,7 +524,7 @@ func (s *Service) setFileDescriptorsBySchemaID(descriptors map[int]*desc.FileDes
 	s.fileDescriptorsBySchemaID = descriptors
 }
 
-func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
+func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
 	s.fileDescriptorsBySchemaIDMutex.Lock()
 	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
 

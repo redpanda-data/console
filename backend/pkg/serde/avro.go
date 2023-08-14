@@ -23,7 +23,7 @@ import (
 var _ Serde = (*AvroSerde)(nil)
 
 type AvroSerde struct {
-	SchemaService *schema.Service
+	SchemaSvc *schema.Service
 }
 
 func (AvroSerde) Name() PayloadEncoding {
@@ -31,7 +31,7 @@ func (AvroSerde) Name() PayloadEncoding {
 }
 
 func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
-	if d.SchemaService == nil {
+	if d.SchemaSvc == nil {
 		return RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
 
@@ -46,7 +46,7 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadTyp
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
-	schema, err := d.SchemaService.GetAvroSchemaByID(schemaID)
+	schema, err := d.SchemaSvc.GetAvroSchemaByID(schemaID)
 	if err != nil {
 		return RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}

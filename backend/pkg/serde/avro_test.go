@@ -114,7 +114,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 
 	// serde
 	serde := AvroSerde{
-		SchemaService: s,
+		SchemaSvc: s,
 	}
 
 	tests := []struct {

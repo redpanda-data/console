@@ -13,6 +13,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
@@ -22,15 +23,16 @@ type Service struct {
 	SerDes []Serde
 }
 
-func NewService(srService *schema.Service, msgPackService *msgpack.Service) *Service {
+func NewService(srService *schema.Service, protSvc *proto.Service, msgPackService *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NoneSerde{},
 			JsonSerde{},
 			JsonSchemaSerde{},
 			XMLSerde{},
-			AvroSerde{SchemaService: srService},
-			// TODO: Protobuf
+			AvroSerde{SchemaSvc: srService},
+			ProtobufSerde{ProtoSvc: protSvc},
+			ProtobufSchemaSerde{ProtoSvc: protSvc},
 			MsgPackSerde{MsgPackService: msgPackService},
 			SmileSerde{},
 			UTF8Serde{},

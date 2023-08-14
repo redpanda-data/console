@@ -15,9 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
-	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -25,11 +22,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
+	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
 
 func TestProtobufSerde_DeserializePayload(t *testing.T) {
-
 	// NO OP schema registry API server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -40,7 +39,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	require.NoError(t, err)
 
 	schemaSvc, err := schema.NewService(config.Schema{
-		Enabled: true,
+		Enabled: false,
 		URLs:    []string{ts.URL},
 	}, logger)
 	require.NoError(t, err)
@@ -75,7 +74,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 
 	// serde
 	serde := ProtobufSerde{
-		ProtoService: protoSvc,
+		ProtoSvc: protoSvc,
 	}
 
 	orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
@@ -112,7 +111,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingAvro, payload.Encoding)
+				assert.Equal(t, payloadEncodingProtobuf, payload.Encoding)
 
 				obj, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
@@ -132,7 +131,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingAvro, payload.Encoding)
+				assert.Equal(t, payloadEncodingProtobuf, payload.Encoding)
 
 				obj, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")

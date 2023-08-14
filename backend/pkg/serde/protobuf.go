@@ -20,15 +20,15 @@ import (
 var _ Serde = (*ProtobufSerde)(nil)
 
 type ProtobufSerde struct {
-	ProtoService *proto.Service
+	ProtoSvc *proto.Service
 }
 
 func (ProtobufSerde) Name() PayloadEncoding {
-	return payloadEncodingAvro
+	return payloadEncodingProtobuf
 }
 
 func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
-	if d.ProtoService == nil {
+	if d.ProtoSvc == nil {
 		return RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
 	}
 
@@ -37,20 +37,20 @@ func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType payloa
 		property = proto.RecordKey
 	}
 
-	messageDescriptor, err := d.ProtoService.GetMessageDescriptor(record.Topic, property)
+	messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(record.Topic, property)
 	if err != nil {
 		return RecordPayload{}, fmt.Errorf("failed to get message descriptor for payload: %w", err)
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
-	jsonBytes, err := d.ProtoService.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
+	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
 		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
 	}
 
 	return RecordPayload{
 		ParsedPayload: jsonBytes,
-		Encoding:      payloadEncodingAvro,
+		Encoding:      payloadEncodingProtobuf,
 	}, nil
 }
