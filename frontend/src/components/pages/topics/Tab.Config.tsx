@@ -11,12 +11,12 @@
 
 import { Component } from 'react';
 import { KafkaError, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
-import { Tooltip, Empty, Typography, Result } from 'antd';
+import { Empty, Typography, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
 import { HighlightTwoTone } from '@ant-design/icons';
-import { DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
@@ -24,8 +24,7 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
-import { Button } from '@redpanda-data/ui';
-
+import { Button, Tooltip } from '@redpanda-data/ui';
 
 const { Text } = Typography;
 
@@ -132,7 +131,6 @@ export class TopicConfiguration extends Component<{
     }
 }
 
-
 const markerIcon = <HighlightTwoTone twoToneColor={colors.brandOrange} style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
@@ -141,7 +139,7 @@ export function DataValue(name: string, value: string, isDefault: boolean, forma
     if (isDefault) return <code>{value}</code>;
 
     return (
-        <Tooltip title="Value is different from the default" getPopupContainer={findPopupContainer}>
+        <Tooltip label="Value is different from the default">
             <div>
                 {markerIcon}
                 <code>{value}</code>

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Modal, notification, Popover, Tooltip } from 'antd';
+import { Modal, notification, Popover } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -18,7 +18,7 @@ import { api } from '../../../state/backendApi';
 import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -28,7 +28,7 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Checkbox, Alert, AlertIcon, Flex } from '@redpanda-data/ui';
+import { Button, Icon, Checkbox, Alert, AlertIcon, Flex, Tooltip } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
@@ -391,11 +391,11 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
     const deleteButton = props.children;
 
     const wrap = (button: JSX.Element, message: string) => (
-        <Tooltip placement="top" trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} overlay={message}>
+        <Tooltip placement="left" label={message} hasArrow>
             {React.cloneElement(button, {
                 disabled: true,
                 className: (button.props.className ?? '') + ' disabled',
-                onClick: undefined,
+                onClick: undefined
             })}
         </Tooltip>
     );

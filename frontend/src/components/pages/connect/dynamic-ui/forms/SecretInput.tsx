@@ -10,7 +10,7 @@ export interface SecretInputProps {
 }
 
 const EditButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
-    <Tooltip label="Edit secret value">
+    <Tooltip label="Edit secret value" placement="top" hasArrow={true}>
         <Button onClick={onClick} variant="link">
             Edit
         </Button>

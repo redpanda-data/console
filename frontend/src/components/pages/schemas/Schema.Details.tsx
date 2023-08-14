@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { message, Select, Table, Tooltip } from 'antd';
+import { message, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -25,7 +25,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Button, Flex, Icon, Tag } from '@redpanda-data/ui';
+import { Button, Flex, Icon, Tag, Tooltip } from '@redpanda-data/ui';
 import { AiOutlineCopy } from 'react-icons/ai';
 import { Statistic } from '../../misc/Statistic';
 
@@ -224,8 +224,10 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                         />
 
                         <NoClipboardPopover placement="top">
-                            <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                                <Tooltip overlay="Copy raw JSON to clipboard">
+                            <div>
+                                {' '}
+                                {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                                <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true}>
                                     <Button
                                         isDisabled={!isClipboardAvailable}
                                         onClick={() => {

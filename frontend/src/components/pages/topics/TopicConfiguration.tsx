@@ -1,8 +1,8 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
-import { AdjustmentsIcon } from '@heroicons/react/outline'
-import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
-import { Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
+import { AdjustmentsIcon } from '@heroicons/react/outline';
+import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme, Tooltip } from '@redpanda-data/ui';
+import { Input, message, Modal, Popover, Radio, Select } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -178,109 +178,91 @@ export default class ConfigurationEditor extends Component<{
         });
 
         const categories = entries.groupInto(x => x.category);
-        for (const e of categories)
-            if (!e.key)
-                e.key = 'Other';
+        for (const e of categories) if (!e.key) e.key = 'Other';
 
-        return <div style={{ paddingTop: '1em' }}>
-            <div className="configGroupTable">
-                <SearchField
-                    searchText={this.filter || ''}
-                    placeholderText="Filter"
-                    setSearchText={value => this.filter = value}
-                    icon="filter"
-                />
-                {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} hasEditPermissions={hasEditPermissions} />)}
+        return (
+            <div style={{ paddingTop: '1em' }}>
+                <div className="configGroupTable">
+                    <SearchField searchText={this.filter || ''} placeholderText="Filter" setSearchText={value => (this.filter = value)} icon="filter" />
+                    {categories.map(x => (
+                        <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} hasEditPermissions={hasEditPermissions} />
+                    ))}
+                </div>
             </div>
-        </div>
+        );
     }
-
 }
 
-const ConfigGroup = observer((p: {
-    groupName?: string;
-    onEditEntry: (configEntry: ConfigEntryExtended) => void;
-    entries: ConfigEntryExtended[],
-    hasEditPermissions: boolean,
-}) => {
-
-    return <>
-        <div className="configGroupSpacer" />
-        {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
-        {p.entries.map(e => <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions} />)}
-    </>
+const ConfigGroup = observer((p: { groupName?: string; onEditEntry: (configEntry: ConfigEntryExtended) => void; entries: ConfigEntryExtended[]; hasEditPermissions: boolean }) => {
+    return (
+        <>
+            <div className="configGroupSpacer" />
+            {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+            {p.entries.map(e => (
+                <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions} />
+            ))}
+        </>
+    );
 });
 
-const ConfigEntry = observer((p: {
-    onEditEntry: (configEntry: ConfigEntryExtended) => void;
-    entry: ConfigEntryExtended;
-    hasEditPermissions: boolean;
-}) => {
-
+const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtended) => void; entry: ConfigEntryExtended; hasEditPermissions: boolean }) => {
     const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(p.entry, p.hasEditPermissions);
 
     const entry = p.entry;
     const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
 
-    return <>
-        <span className="configName">
-            {p.entry.name}
-        </span>
+    return (
+        <>
+            <span className="configName">{p.entry.name}</span>
 
-        <span className="configValue">
-            {friendlyValue}
-        </span>
+            <span className="configValue">{friendlyValue}</span>
 
-        <span className="isEditted" >
-            {entry.isExplicitlySet && 'Custom'}
-        </span>
+            <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
 
-        <span className="spacer">
-        </span>
+            <span className="spacer"></span>
 
-        <span className="configButtons">
-            <Tooltip
-                trigger={canEdit ? [] : ['hover']}
-                overlay={nonEdittableReason}
-                placement="left"
-            >
-                <span
-                    className={'btnEdit' + (canEdit ? '' : ' disabled')}
-                    onClick={() => {
-                        if (canEdit)
-                            p.onEditEntry(p.entry);
-                    }}
-                >
-                    <Icon as={PencilIcon} />
-                </span>
-            </Tooltip>
-            {entry.documentation &&
-                <Popover overlayClassName="configDocumentationTooltip" content={
-                    <div style={{ maxWidth: '400px' }}>
-                        <div className="configDocuTitle">{entry.name}</div>
-                        <div className="configDocuBody">{entry.documentation}</div>
-                        <div className="configDocuSource">
-                            <span className="title">Value</span>
-                            <span>{friendlyValue}</span>
-                            <span className="title">Source</span>
-                            <div>
-                                <div><code>{entry.source}</code></div>
-                                <div className="configSourceExplanation">{getConfigSourceExplanation(entry.source)}</div>
+            <span className="configButtons">
+                <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
+                    <span
+                        className={'btnEdit' + (canEdit ? '' : ' disabled')}
+                        onClick={() => {
+                            if (canEdit) p.onEditEntry(p.entry);
+                        }}
+                    >
+                        <Icon as={PencilIcon} />
+                    </span>
+                </Tooltip>
+                {entry.documentation && (
+                    <Popover
+                        overlayClassName="configDocumentationTooltip"
+                        content={
+                            <div style={{ maxWidth: '400px' }}>
+                                <div className="configDocuTitle">{entry.name}</div>
+                                <div className="configDocuBody">{entry.documentation}</div>
+                                <div className="configDocuSource">
+                                    <span className="title">Value</span>
+                                    <span>{friendlyValue}</span>
+                                    <span className="title">Source</span>
+                                    <div>
+                                        <div>
+                                            <code>{entry.source}</code>
+                                        </div>
+                                        <div className="configSourceExplanation">{getConfigSourceExplanation(entry.source)}</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                }>
-                    <Icon as={InfoCircleOutlined} />
-                </Popover>
-            }
-        </span>
-    </>
+                        }
+                    >
+                        <Icon as={InfoCircleOutlined} />
+                    </Popover>
+                )}
+            </span>
+        </>
+    );
 });
 
-function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean): { canEdit: boolean, reason?: string } {
-
-    if (!hasEditPermissions)
-        return { canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries' };
+function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean): { canEdit: boolean; reason?: string } {
+    if (!hasEditPermissions) return { canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries' };
 
     if (isServerless()) {
         const edittableEntries = ['retention.ms', 'retention.bytes'];

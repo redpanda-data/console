@@ -12,8 +12,8 @@
 import React, { useState, Component, CSSProperties, ReactNode } from 'react';
 import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
-import { Button as RpButton, ButtonProps as RpButtonProps } from '@redpanda-data/ui';
+import { Radio, message, Progress, Skeleton } from 'antd';
+import { Button as RpButton, ButtonProps as RpButtonProps, Tooltip, PlacementWithLogical } from '@redpanda-data/ui';
 import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -22,10 +22,8 @@ import { motion } from 'framer-motion';
 import { AnimatePresence, animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
 import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
-import { TooltipPlacement } from 'antd/lib/tooltip';
 import { InfoIcon } from '@primer/octicons-react';
 import colors from '../colors';
-
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -203,27 +201,25 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
 
         container = p;
     }
-
 }
 
 export const InfoText = (p: {
-    tooltip: React.ReactNode,
-    children?: React.ReactNode
-    tooltipOverText?: boolean,
+    tooltip: React.ReactNode;
+    children?: React.ReactNode;
+    tooltipOverText?: boolean;
 
-    iconColor?: string,
-    iconSize?: string,
-    icon?: React.ReactNode,
+    iconColor?: string;
+    iconSize?: string;
+    icon?: React.ReactNode;
 
-    maxWidth?: string,
-    align?: 'center' | 'left',
-    placement?: TooltipPlacement
+    maxWidth?: string;
+    align?: 'center' | 'left';
+    placement?: PlacementWithLogical;
 
-    gap?: string,
-    transform?: string
+    gap?: string;
+    transform?: string;
 }) => {
-
-    const overlay = (p.maxWidth || p.align) ? <div style={{ maxWidth: p.maxWidth, textAlign: p.align }}>{p.tooltip}</div> : p.tooltip;
+    const overlay = p.maxWidth || p.align ? <div style={{ maxWidth: p.maxWidth, textAlign: p.align }}>{p.tooltip}</div> : p.tooltip;
 
     const size = p.iconSize ?? '14px';
     const gap = p.gap ?? '4px';
@@ -231,88 +227,90 @@ export const InfoText = (p: {
     const gray = 'hsl(0deg, 0%, 50%)';
     // const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
+    const placement = p.placement ?? 'top';
 
-    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, height: size, marginLeft: gap, transform: p.transform }}>{p.icon ?? <InfoIcon />}</span>
+    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, height: size, marginLeft: gap, transform: p.transform }}>{p.icon ?? <InfoIcon />}</span>;
 
     if (p.tooltipOverText === true)
-        return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
-            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                {p.children}
-                {icon}
-            </span>
-        </Tooltip>
+        return (
+            <Tooltip label={overlay} placement={placement} hasArrow>
+                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    {p.children}
+                    {icon}
+                </span>
+            </Tooltip>
+        );
 
-    return <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-        {p.children}
-        <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
-            {icon}
-        </Tooltip>
-    </span>
-}
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+            {p.children}
+            <Tooltip label={overlay} placement={placement} hasArrow>
+                {icon}
+            </Tooltip>
+        </span>
+    );
+};
 
 export class OptionGroup<T> extends Component<{
-    label?: string,
-    options: { [key: string]: any },
-    value: T, onChange: (value: T) => void,
-    children?: never,
-    size?: SizeType,
-    style?: CSSProperties
+    label?: string;
+    options: { [key: string]: any };
+    value: T;
+    onChange: (value: T) => void;
+    children?: never;
+    size?: SizeType;
+    style?: CSSProperties;
 }> {
-
     render() {
         const p = this.props;
 
         const radioGroup = (
             <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)} size={p.size ?? 'middle'} style={p.style}>
-                {ObjToKv(p.options).map(kv =>
-                    <Radio.Button key={kv.key} value={kv.value}>{kv.key}</Radio.Button>
-                )}
+                {ObjToKv(p.options).map(kv => (
+                    <Radio.Button key={kv.key} value={kv.value}>
+                        {kv.key}
+                    </Radio.Button>
+                ))}
             </Radio.Group>
         );
 
         if (!p.label) return radioGroup;
 
-        return <Label text={p.label}>
-            {radioGroup}
-        </Label>
+        return <Label text={p.label}>{radioGroup}</Label>;
     }
 }
 
 export class RadioOptionGroup<T> extends Component<{
     options: {
-        key?: any,
-        value: T,
-        title: string,
-        subTitle: string,
-        content?: ReactNode,
-    }[],
-    value?: T, onChange: (value: T) => void,
-    showContent?: 'always' | 'onlyWhenSelected',
-    disabled?: boolean,
-    children?: never
+        key?: any;
+        value: T;
+        title: string;
+        subTitle: string;
+        content?: ReactNode;
+    }[];
+    value?: T;
+    onChange: (value: T) => void;
+    showContent?: 'always' | 'onlyWhenSelected';
+    disabled?: boolean;
+    children?: never;
 }> {
-
     render() {
         const p = this.props;
 
         const radioGroup = (
             <Radio.Group className="radioOptionGroup" value={p.value} onChange={e => p.onChange(e.target.value)}>
-                {p.options.map(kv =>
+                {p.options.map(kv => (
                     <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
                         <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
                         <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
                         <AnimatePresence>
-
-                            {kv.content && (p.showContent == 'always' || (p.value == kv.value)) &&
-
+                            {kv.content && (p.showContent == 'always' || p.value == kv.value) && (
                                 <MotionDiv animProps={animProps_radioOptionGroup} key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
-                                    <div >{kv.content}</div>
+                                    <div>{kv.content}</div>
                                 </MotionDiv>
-
-                            }
+                            )}
                         </AnimatePresence>
                     </Radio>
-                )}
+                ))}
             </Radio.Group>
         );
 
@@ -478,86 +476,69 @@ const ellipsisSpanStyle: CSSProperties = {
     maxWidth: '100%',
     verticalAlign: 'text-bottom'
 };
-export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) => {
-    return <span className={p.className} style={ellipsisSpanStyle}>{p.children}</span>
-}
+export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => {
+    return (
+        <span className={p.className} style={ellipsisSpanStyle}>
+            {p.children}
+        </span>
+    );
+};
 
-export const Code = (p: { children?: React.ReactNode, nowrap?: boolean }) => {
+export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
     const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';
-    return <span className={className}>{p.children}</span>
-}
+    return <span className={className}>{p.children}</span>;
+};
 
-
-export function LabelTooltip(p: { children?: React.ReactNode, width?: number, nowrap?: boolean, left?: boolean }) {
+export function LabelTooltip(p: { children?: React.ReactNode; width?: number; maxW?: number; nowrap?: boolean; left?: boolean }) {
     const style: CSSProperties = {};
 
-    if (typeof p.width == 'number')
-        style.width = p.width + 'px';
-    if (p.nowrap === true)
-        style.whiteSpace = 'nowrap';
-    if (p.left === true)
-        style.textAlign = 'left';
+    if (typeof p.width == 'number') style.width = p.width + 'px';
+    if (p.nowrap === true) style.whiteSpace = 'nowrap';
+    if (p.left === true) style.textAlign = 'left';
 
-    const content = <div style={style}>
-        {p.children}
-    </div>
+    const content = <div style={style}>{p.children}</div>;
 
-    return <Tooltip
-        overlay={content}
-        trigger="hover"
-        getPopupContainer={findPopupContainer}>
-        <QuestionCircleOutlined style={{
-            color: 'hsl(0deg 0% 66%)',
-            fontSize: '13px',
-            transform: 'translateY(1px)',
-            marginLeft: '3px'
-        }} />
-    </Tooltip>
+    return (
+        <Tooltip label={content} placement="top" hasArrow maxW={p.maxW}>
+            <QuestionCircleOutlined
+                style={{
+                    color: 'hsl(0deg 0% 66%)',
+                    fontSize: '13px',
+                    transform: 'translateY(1px)',
+                    marginLeft: '3px'
+                }}
+            />
+        </Tooltip>
+    );
 }
 
-export type ButtonProps = Omit<RpButtonProps, 'disabled'> & { disabledReason?: string; };
+export type ButtonProps = Omit<RpButtonProps, 'disabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
-    if (!p.disabledReason)
-        return <RpButton {...p} />;
+    if (!p.disabledReason) return <RpButton {...p} />;
 
     const reason = p.disabledReason;
     const btnProps = { ...p };
     delete btnProps.disabledReason;
 
-    return <Tooltip
-        placement="top" trigger="hover" mouseLeaveDelay={0}
-        getPopupContainer={findPopupContainer}
-        overlay={reason}
-    >
-        <RpButton
-            {...btnProps}
-            isDisabled
-            className={(p.className ?? '') + ' disabled'}
-            onClick={undefined}
-        />
-    </Tooltip>
+    return (
+        <Tooltip placement="top" label={reason} hasArrow>
+            <RpButton {...btnProps} isDisabled className={(p.className ?? '') + ' disabled'} onClick={undefined} />
+        </Tooltip>
+    );
 }
 
-
-export function IconButton(p: {
-    onClick?: React.MouseEventHandler<HTMLElement>,
-    children?: React.ReactNode,
-    disabledReason?: string,
-}) {
+export function IconButton(p: { onClick?: React.MouseEventHandler<HTMLElement>; children?: React.ReactNode; disabledReason?: string }) {
     if (!p.disabledReason) {
-        return <span className="iconButton" onClick={p.onClick}>
-            {p.children}
-        </span>
+        return (
+            <span className="iconButton" onClick={p.onClick}>
+                {p.children}
+            </span>
+        );
     }
 
-    return <Tooltip
-        placement="top" trigger="hover" mouseLeaveDelay={0}
-        getPopupContainer={findPopupContainer}
-        overlay={p.disabledReason}
-    >
-        <span className="iconButton disabled">
-            {p.children}
-        </span>
-    </Tooltip>
-
+    return (
+        <Tooltip placement="top" label={p.disabledReason} hasArrow>
+            <span className="iconButton disabled">{p.children}</span>
+        </Tooltip>
+    );
 }

@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Skeleton, Tooltip } from 'antd';
+import { Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
@@ -18,7 +18,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { Code, findPopupContainer } from '../../../utils/tsxUtils';
+import { Code } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -28,7 +28,7 @@ import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
@@ -88,13 +88,7 @@ const KafkaConnectorMain = observer(
 
                 {/* [Pause/Resume] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
-                    <Tooltip
-                        placement="top"
-                        trigger={!canEdit ? 'hover' : 'none'}
-                        mouseLeaveDelay={0}
-                        getPopupContainer={findPopupContainer}
-                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                    >
+                    <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                         <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                             {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                         </Button>
@@ -102,33 +96,15 @@ const KafkaConnectorMain = observer(
                 ) : null}
 
                 {/* [Restart] */}
-                <Tooltip
-                    placement="top"
-                    trigger={!canEdit ? 'hover' : 'none'}
-                    mouseLeaveDelay={0}
-                    getPopupContainer={findPopupContainer}
-                    overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                >
+                <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                     <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                         Restart
                     </Button>
                 </Tooltip>
 
                 {/* [Delete] */}
-                <Tooltip
-                    placement="top"
-                    trigger={!canEdit ? 'hover' : 'none'}
-                    mouseLeaveDelay={0}
-                    getPopupContainer={findPopupContainer}
-                    overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                >
-                    <Button
-                        variant="outline"
-                        colorScheme="red"
-                        disabled={!canEdit}
-                        onClick={() => ($state.deletingConnector = connectorName)}
-                        minWidth="32"
-                    >
+                <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
+                    <Button variant="outline" colorScheme="red" disabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
                         Delete
                     </Button>
                 </Tooltip>
@@ -155,28 +131,22 @@ const KafkaConnectorMain = observer(
                             {/* Update Config Button */}
                             <div style={{ marginTop: '1em' }}>
                                 <div style={{ display: 'flex', margin: '1em 0', marginBottom: '1.5em' }}>
-                                    <Tooltip
-                                        placement="top"
-                                        trigger={!canEdit ? 'hover' : 'none'}
-                                        mouseLeaveDelay={0}
-                                        getPopupContainer={findPopupContainer}
-                                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                                    >
-                                        <Button
-                                            variant="outline"
-                                            style={{ width: '200px' }}
-                                            disabled={(() => {
-                                                if (!canEdit) return true;
-                                                if (!connector) return true;
-                                                if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
-                                            })()}
-                                            onClick={() => {
-                                                $state.updatingConnector = { clusterName, connectorName };
-                                            }}
-                                        >
-                                            Update Config
-                                        </Button>
-                                    </Tooltip>
+                                        <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
+                                            <Button
+                                                variant="outline"
+                                                style={{ width: '200px' }}
+                                                disabled={(() => {
+                                                    if (!canEdit) return true;
+                                                    if (!connector) return true;
+                                                    if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
+                                                })()}
+                                                onClick={() => {
+                                                    $state.updatingConnector = { clusterName, connectorName };
+                                                }}
+                                            >
+                                                Update Config
+                                            </Button>
+                                        </Tooltip>
                                 </div>
                             </div>
                         </Box>
