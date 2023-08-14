@@ -26,7 +26,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button, Flex } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Checkbox, Flex } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
@@ -87,7 +87,7 @@ class SchemaList extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        this.refreshData(false);
+        //this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
@@ -100,38 +100,80 @@ class SchemaList extends PageComponent<{}> {
     }
 
     render() {
-        if (api.schemaOverview === undefined) return DefaultSkeleton; // request in progress
-        if (api.schemaOverview === null || api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
+        const configRes = {compatibility:'BACKWARD'};
+        const modeRes = {mode:'READWRITE'};
 
-        const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
+        const compatibility = configRes.compatibility;
+        const mode = modeRes.mode;
+        const subjects = [
+            {
+                name: 'com.shop.v1.avro.Address',
+                isSoftDeleted: false
+            },
+            {
+                name: 'com.shop.v1.avro.Customer',
+                isSoftDeleted: false
+            },
+            {
+                name: 'customer-value',
+                isSoftDeleted: true
+            },
+            {
+                name: 'owlshop-orders-protobuf-sr-value',
+                isSoftDeleted: true
+            },
+            {
+                name: 'shop/v1/address.proto',
+                isSoftDeleted: false
+            },
+            {
+                name: 'shop/v1/customer.proto',
+                isSoftDeleted: false
+            }
+        ]
+
+        if (subjects === undefined) return DefaultSkeleton; // request in progress
+        if (false) return renderNotConfigured();
+        // if (api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
+
+        // const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
         return (
             <PageContent key="b">
                 <Section py={4}>
                     <Flex>
                         <Statistic title="Mode" value={mode}></Statistic>
-                        <Statistic title="Compatibility Level" value={compatibilityLevel}></Statistic>
+                        <Statistic title="Compatibility Level" value={compatibility}></Statistic>
                     </Flex>
                 </Section>
 
-                {renderRequestErrors(requestErrors)}
+                {renderRequestErrors()}
+
+                <SearchBar<{ name: string }>
+                    dataSource={() => (subjects || []).map(str => ({ name: str.name }))}
+                    isFilterMatch={this.isFilterMatch}
+                    filterText={uiSettings.schemaList.quickSearch}
+                    onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
+                    onFilteredDataChanged={data => this.filteredSchemaSubjects = data}
+                />
 
                 <Section>
-                    <SearchBar<{ name: string }>
-                        dataSource={() => (api.schemaOverview?.subjects || []).map(str => ({ name: str }))}
-                        isFilterMatch={this.isFilterMatch}
-                        filterText={uiSettings.schemaList.quickSearch}
-                        onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
-                        onFilteredDataChanged={data => this.filteredSchemaSubjects = data}
-                    />
+                    <Flex justifyContent={'space-between'} pb={3}>
+                        <Button>Create new schema</Button>
+                        <Checkbox
+                            isChecked={uiSettings.schemaList.showSoftDeleted}
+                            onChange={(e) => {
+                                uiSettings.schemaList.showSoftDeleted = e.target.checked
+                            }}
+                        >
+                            Show soft-deleted
+                        </Checkbox>
+                    </Flex>
 
                     <KowlTable
                         dataSource={this.filteredSchemaSubjects ?? []}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            // { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
-                            // { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
-                            // { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                         ]}
 
                         observableSettings={uiSettings.schemaList}
@@ -139,7 +181,7 @@ class SchemaList extends PageComponent<{}> {
                         rowClassName={() => 'hoverLink'}
                         rowKey="name"
                         onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${encodeURIComponent(name)}`),
+                            onClick: () => appGlobal.history.push(`/schema-registry/subjects/${encodeURIComponent(name)}/versions/latest`),
                         })}
                     />
                 </Section>
