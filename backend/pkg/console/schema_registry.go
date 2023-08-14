@@ -332,3 +332,17 @@ func (s *Service) DeleteSchemaRegistrySubjectVersion(ctx context.Context, subjec
 	}
 	return &SchemaRegistryDeleteSubjectVersionResponse{DeletedVersion: res.Version}, nil
 }
+
+// SchemaRegistrySchemaTypes describe the schema types that are supported by the schema registry.
+type SchemaRegistrySchemaTypes struct {
+	SchemaTypes []string `json:"schemaTypes"`
+}
+
+// GetSchemaRegistrySchemaTypes returns the supported schema types.
+func (s *Service) GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error) {
+	res, err := s.kafkaSvc.SchemaService.GetSchemaTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistrySchemaTypes{SchemaTypes: res}, nil
+}

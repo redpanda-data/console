@@ -53,6 +53,26 @@ func (api *API) handleGetSchemaRegistryMode() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetSchemaRegistrySchemaTypes() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		res, err := api.ConsoleSvc.GetSchemaRegistrySchemaTypes(r.Context())
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schema registry types from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 	if !api.Cfg.Kafka.Schema.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
@@ -64,7 +84,7 @@ func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadGateway,
-				Message:  fmt.Sprintf("Failed to retrieve schema registry config from the schema registry: %v", err.Error()),
+				Message:  fmt.Sprintf("Failed to retrieve schema registry types from the schema registry: %v", err.Error()),
 				IsSilent: false,
 			})
 			return
