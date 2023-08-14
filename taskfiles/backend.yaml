@@ -119,12 +119,15 @@ tasks:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         {{ .BUILD_ROOT }}/bin/buf format -w pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf format -w pkg/serde/testdata/proto
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         {{ .BUILD_ROOT }}/bin/buf lint --config pkg/kafka/testdata/proto/buf.yaml pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf lint --config pkg/serde/testdata/proto/buf.yaml pkg/serde/testdata/proto
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         {{ .BUILD_ROOT }}/bin/buf generate --template pkg/kafka/testdata/proto/buf.gen.yaml pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf generate --template pkg/serde/testdata/proto/buf.gen.yaml pkg/serde/testdata/proto
       - task: 'fmt'
 
   test-unit:

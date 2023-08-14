@@ -1,0 +1,5 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: pkg/serde/testdata/proto/gen
+    opt: paths=source_relative
