@@ -391,6 +391,7 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 	return parsed, nil
 }
 
+// DeleteSubjectResponse describes the response to deleting a whole subject.
 type DeleteSubjectResponse struct {
 	Versions []int
 }
