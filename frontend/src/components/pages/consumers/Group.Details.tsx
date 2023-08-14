@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Tag, Collapse, Popover, Empty } from 'antd';
+import { Table, Collapse, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -29,7 +29,7 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tooltip } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag, Tooltip, Popover, PopoverArrow, PopoverTrigger, PopoverContent, PopoverBody, Portal } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
@@ -545,11 +545,19 @@ export const GroupState = (p: { group: GroupDescription }) => {
     const icon = stateIcons.get(state);
 
     return (
-        <Popover content={consumerGroupStateTable} placement="right">
-            <span>
-                {icon}
-                <span> {p.group.state}</span>
-            </span>
+        <Popover trigger="hover" size="xl" placement="right">
+            <PopoverTrigger>
+                <span>
+                    {icon}
+                    <span> {p.group.state}</span>
+                </span>
+            </PopoverTrigger>
+            <Portal>
+                <PopoverContent minW={{ base: '100%', lg: 'max-content' }}>
+                    <PopoverArrow />
+                    <PopoverBody>{consumerGroupStateTable}</PopoverBody>
+                </PopoverContent>
+            </Portal>
         </Popover>
     );
 };
