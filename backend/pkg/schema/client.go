@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -358,13 +359,12 @@ func (c *Client) GetConfig(ctx context.Context) (*ConfigResponse, error) {
 // error code. For example, if you run the same command for the subject Kafka-value, for which you have not set
 // subject-specific compatibility, you get: {"error_code":40401,"message":"Subject 'Kafka-value' not found."}
 func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
-	url := fmt.Sprintf("/config/%s", subject)
-	params := map[string]string{"defaultToGlobal": "true"}
 	res, err := c.client.R().
 		SetContext(ctx).
 		SetResult(&ConfigResponse{}).
-		SetPathParams(params).
-		Get(url)
+		SetPathParam("subject", subject).
+		SetPathParam("defaultToGlobal", "true").
+		Get("/config/{subject}")
 	if err != nil {
 		return nil, fmt.Errorf("get config for subject failed: %w", err)
 	}
@@ -389,6 +389,37 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 	}
 
 	return parsed, nil
+}
+
+type DeleteSubjectResponse struct {
+	Versions []int
+}
+
+// DeleteSubject deletes the specified subject and its associated compatibility level if registered.
+// If deletePermanently is set to true, a hard delete will be sent which removes all the associated
+// metadata including the schema ids that belong to this subject. To perform a hard-delete you must
+// soft-delete the subject first.
+func (c *Client) DeleteSubject(ctx context.Context, subject string, deletePermanently bool) (*DeleteSubjectResponse, error) {
+	var deletedVersions []int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&deletedVersions).
+		SetPathParam("subject", subject).
+		SetQueryParam("permanent", strconv.FormatBool(deletePermanently)).
+		Delete("/subjects/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("delete subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get config for subject failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &DeleteSubjectResponse{deletedVersions}, nil
 }
 
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)

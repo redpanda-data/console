@@ -304,3 +304,17 @@ func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName, vers
 		References: references,
 	}, nil
 }
+
+// SchemaRegistryDeleteSubjectResponse is the response to deleting a whole schema registry subject.
+type SchemaRegistryDeleteSubjectResponse struct {
+	DeletedVersions []int `json:"deletedVersions"`
+}
+
+// DeleteSchemaRegistrySubject deletes a schema registry subject along with all it's associated schemas.
+func (s *Service) DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error) {
+	res, err := s.kafkaSvc.SchemaService.DeleteSubject(ctx, subjectName, deletePermanently)
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistryDeleteSubjectResponse{DeletedVersions: res.Versions}, nil
+}

@@ -230,6 +230,10 @@ func (s *Service) GetSubjectConfig(ctx context.Context, subject string) (*Config
 	return s.registryClient.GetSubjectConfig(ctx, subject)
 }
 
+func (s *Service) DeleteSubject(ctx context.Context, subject string, deletePermanently bool) (*DeleteSubjectResponse, error) {
+	return s.registryClient.DeleteSubject(ctx, subject, deletePermanently)
+}
+
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an

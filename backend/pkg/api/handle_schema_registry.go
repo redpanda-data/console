@@ -13,11 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -99,21 +99,11 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Parse subject name parameter and unescape
-		subjectNameStr := chi.URLParam(r, "subject")
-		subjectName, err := url.PathUnescape(subjectNameStr)
-		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("failed to unescape subject name %q: %w", subjectNameStr, err),
-				Status:   http.StatusBadRequest,
-				Message:  fmt.Sprintf("Failed to unescape subject name %q: %v", subjectNameStr, err.Error()),
-				IsSilent: false,
-			})
-			return
-		}
+		// 1. Parse request params
+		subjectName := rest.GetURLParam(r, "subject")
 
 		// 2. Parse and validate version input
-		version := chi.URLParam(r, "version")
+		version := rest.GetURLParam(r, "version")
 		switch version {
 		case console.SchemaVersionsAll, console.SchemaVersionsLatest:
 		default:
@@ -153,6 +143,58 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 			})
 			return
 		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleDeleteSubject() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
+		if deletePermanentlyStr == "" {
+			deletePermanentlyStr = "false"
+		}
+		deletePermanently, err := strconv.ParseBool(deletePermanentlyStr)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("failed to parse deletePermanently query param %q: %w", deletePermanentlyStr, err),
+				Status:   http.StatusBadRequest,
+				Message:  fmt.Sprintf("Failed to parse 'permanent' query param with value %q: %v", deletePermanentlyStr, err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+
+		// 2. Send delete request
+		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubject(r.Context(), subjectName, deletePermanently)
+		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          err,
+				Status:       http.StatusServiceUnavailable,
+				Message:      fmt.Sprintf("Failed to delete schema registry subject: %v", err.Error()),
+				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
