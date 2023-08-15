@@ -16,15 +16,21 @@ import (
 
 // SchemaType as an enum representing schema types. The default schema type
 // is avro.
+//
+//nolint:revive // Just Type as name would be too generic.
 type SchemaType int
 
 const (
+	// TypeAvro represents the type for Avro schemas.
 	TypeAvro SchemaType = iota
+	// TypeProtobuf represents the type for Protobuf schemas.
 	TypeProtobuf
+	// TypeJSON represents the type for JSON schemas.
 	TypeJSON
 )
 
-// String presentation of schema type.
+// String presentation of schema type. The strings must not be changed as they are used
+// for unmarshalling as well as comparisons.
 func (t SchemaType) String() string {
 	switch t {
 	case TypeAvro:
@@ -52,11 +58,11 @@ func (t *SchemaType) UnmarshalText(text []byte) error {
 	switch s := strings.ToUpper(string(text)); s {
 	default:
 		return fmt.Errorf("unknown schema type %q", s)
-	case "", "AVRO":
+	case "", TypeAvro.String():
 		*t = TypeAvro
-	case "PROTOBUF":
+	case TypeProtobuf.String():
 		*t = TypeProtobuf
-	case "JSON":
+	case TypeJSON.String():
 		*t = TypeJSON
 	}
 	return nil

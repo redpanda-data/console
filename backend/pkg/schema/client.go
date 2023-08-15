@@ -212,7 +212,7 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 		return nil, fmt.Errorf("failed to parse schema by subject response")
 	}
 	if parsed.Type == "" {
-		parsed.Type = "AVRO"
+		parsed.Type = TypeAvro.String()
 	}
 
 	return parsed, nil
@@ -531,6 +531,8 @@ type Schema struct {
 //
 //	https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#schema-references
 //	https://docs.confluent.io/platform/current/schema-registry/develop/api.html
+//
+//nolint:revive // The name reference would be too generic in this case.
 type SchemaReference struct {
 	Name    string `json:"name"`
 	Subject string `json:"subject"`

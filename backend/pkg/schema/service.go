@@ -79,7 +79,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		// 1. Index all returned schemas by their respective subject name and version as stored in the schema registry
 		schemasBySubjectAndVersion := make(map[string]map[int]SchemaVersionedResponse)
 		for _, schema := range schemasRes {
-			if schema.Type != "PROTOBUF" {
+			if schema.Type != TypeProtobuf.String() {
 				continue
 			}
 			_, exists := schemasBySubjectAndVersion[schema.Subject]
@@ -93,7 +93,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		// registered in their own proto registry.
 		fdBySchemaID := make(map[int]*desc.FileDescriptor)
 		for _, schema := range schemasRes {
-			if schema.Type != "PROTOBUF" {
+			if schema.Type != TypeProtobuf.String() {
 				continue
 			}
 
