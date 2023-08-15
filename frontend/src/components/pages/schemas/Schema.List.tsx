@@ -87,12 +87,15 @@ class SchemaList extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        //this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
     refreshData(force?: boolean) {
-        api.refreshSchemaOverview(force);
+        api.refreshSchemaConfig(force);
+        api.refreshSchemaMode(force);
+        api.refreshSchemaSubjects(force);
+        api.refreshSchemaTypes(force);
     }
 
     isFilterMatch(filterString: string, subject: { name: string }) {
@@ -100,45 +103,13 @@ class SchemaList extends PageComponent<{}> {
     }
 
     render() {
-        const configRes = {compatibility:'BACKWARD'};
-        const modeRes = {mode:'READWRITE'};
-
-        const compatibility = configRes.compatibility;
-        const mode = modeRes.mode;
-        const subjects = [
-            {
-                name: 'com.shop.v1.avro.Address',
-                isSoftDeleted: false
-            },
-            {
-                name: 'com.shop.v1.avro.Customer',
-                isSoftDeleted: false
-            },
-            {
-                name: 'customer-value',
-                isSoftDeleted: true
-            },
-            {
-                name: 'owlshop-orders-protobuf-sr-value',
-                isSoftDeleted: true
-            },
-            {
-                name: 'shop/v1/address.proto',
-                isSoftDeleted: false
-            },
-            {
-                name: 'shop/v1/customer.proto',
-                isSoftDeleted: false
-            }
-        ]
-
-        if (subjects === undefined) return DefaultSkeleton; // request in progress
-        if (false) return renderNotConfigured();
+        if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
+        if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
         // if (api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
 
         // const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
-        const filteredSubjects = subjects
+        const filteredSubjects = api.schemaSubjects
             .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
             .filter(x => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()));
 
@@ -146,15 +117,15 @@ class SchemaList extends PageComponent<{}> {
             <PageContent key="b">
                 <Section py={4}>
                     <Flex>
-                        <Statistic title="Mode" value={mode}></Statistic>
-                        <Statistic title="Compatibility Level" value={compatibility}></Statistic>
+                        <Statistic title="Mode" value={api.schemaMode}></Statistic>
+                        <Statistic title="Compatibility Level" value={api.schemaConfig}></Statistic>
                     </Flex>
                 </Section>
 
                 {renderRequestErrors()}
 
                 <SearchBar<{ name: string }>
-                    dataSource={() => (subjects || []).map(str => ({ name: str.name }))}
+                    dataSource={() => (api.schemaSubjects || []).map(str => ({ name: str.name }))}
                     isFilterMatch={this.isFilterMatch}
                     filterText={uiSettings.schemaList.quickSearch}
                     onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
@@ -177,7 +148,7 @@ class SchemaList extends PageComponent<{}> {
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
                             { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name}/> },
-                            
+
                         ]}
 
                         observableSettings={uiSettings.schemaList}
@@ -194,31 +165,11 @@ class SchemaList extends PageComponent<{}> {
     }
 }
 
-type SchemaDetails = {
-    name: string,
-    type: 'AVRO' | 'PROTOBUF' | 'JSON',
-    compatibility: string,
-    versions: unknown,
-    latestActiveVersion: number,
-};
-
-const schemaDetails = observable(new Map<string, SchemaDetails>([
-    [
-        'com.shop.v1.avro.Address', {
-            name: 'com.shop.v1.avro.Address',
-            type: 'AVRO',
-            compatibility: 'DEFAULT',
-            versions: {},
-            latestActiveVersion: 3
-        }
-    ]
-]));
-
 const SchemaTypeColumn = observer((p: {name: string}) => {
-    const details = schemaDetails.get(p.name);
+    const details = api.schemaDetails.get(p.name);
     if (!details) {
-        // Trigger loading of details for this name
-        return <>loading</>;
+        api.refreshSchemaDetails(p.name, 'latest');
+        return <>loading...</>;
     }
 
     return <>{details.type}</>;

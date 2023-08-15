@@ -1566,3 +1566,54 @@ export type OverviewNewsEntry = {
     intendedAudience: 'all' | 'apache' | 'redpanda';
     badge?: 'new';
 };
+
+
+// GET /schema-registry/mode
+export type SchemaRegistryModeResponse = {
+    mode: string;
+};
+
+// GET /schema-registry/config
+export type SchemaRegistryConfigResponse = {
+    compatibility: string;
+};
+
+// GET /schema-registry/subjects
+export type SchemaRegistrySubject = {
+    name: string;
+    isSoftDeleted: boolean;
+};
+
+// GET /schema-registry/schemas/types
+export type SchemaRegistrySchemaTypesResponse = {
+    schemaTypes: string[];
+};
+
+// GET /schema-registry/subjects/{subject}/versions/{version}
+// version can be 'all' or 'latest'
+export type SchemaRegistrySubjectDetails = {
+    name: string;
+    type: SchemaType;
+    compatibility: string;
+    versions: SchemaRegistrySubjectDetailsVersion[];
+    latestActiveVersion: number;
+    schemas: SchemaRegistryVersionedSchema[];
+};
+
+export type SchemaRegistrySubjectDetailsVersion = {
+    version: number;
+    isSoftDeleted: boolean;
+};
+
+export type SchemaRegistryVersionedSchema = {
+    id: number;
+    version: number;
+    isSoftDeleted: boolean;
+    type: string;
+    schema: string;
+    references: {
+        name: string;
+        subject: string;
+        version: number;
+    }[];
+};

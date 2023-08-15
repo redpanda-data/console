@@ -46,7 +46,12 @@ import {
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
-    OverviewNewsEntry
+    OverviewNewsEntry,
+    SchemaRegistrySubject,
+    SchemaRegistrySubjectDetails,
+    SchemaRegistryModeResponse,
+    SchemaRegistryConfigResponse,
+    SchemaRegistrySchemaTypesResponse
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -231,9 +236,13 @@ const apiStore = {
 
     adminInfo: undefined as (AdminInfo | undefined | null),
 
-    schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
-    schemaDetails: null as (SchemaDetails | null),
+
+    schemaMode: undefined as string | null | undefined,  // undefined = not yet known, null = got not configured response
+    schemaConfig: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
+    schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
+    schemaTypes: undefined as string[] | undefined,
+    schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
 
     topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
@@ -913,32 +922,64 @@ const apiStore = {
             }, addError);
     },
 
-    refreshSchemaOverview(force?: boolean) {
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas`, force) as Promise<SchemaOverviewResponse>;
+    refreshSchemaMode(force?: boolean) {
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/mode`, force) as Promise<SchemaRegistryModeResponse>;
         return rq
-            .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
+            .then(r => {
+                if (typeof r.mode == 'undefined') {
+                    this.schemaOverviewIsConfigured = false;
+                    this.schemaMode = null;
+                } else {
+                    this.schemaOverviewIsConfigured = true;
+                    this.schemaMode = r.mode;
+                }
+            })
             .catch(addError);
+    },
+
+    refreshSchemaConfig(force?: boolean) {
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/config`, force) as Promise<SchemaRegistryConfigResponse>;
+        return rq
+            .then(r => {
+                if (typeof r.compatibility == 'undefined') {
+                    this.schemaOverviewIsConfigured = false;
+                    this.schemaConfig = null;
+                } else {
+                    this.schemaOverviewIsConfigured = true;
+                    this.schemaConfig = r.compatibility;
+                }
+            })
+            .catch(addError);
+    },
+
+    refreshSchemaSubjects(force?: boolean) {
+        cachedApiRequest<SchemaRegistrySubject[]>(`${appConfig.restBasePath}/schema-registry/subjects`, force)
+            .then(subjects => {
+                // could also be a "not configured" response
+                if (Array.isArray(subjects)) {
+                    this.schemaSubjects = subjects;
+                }
+            }, addError);
+    },
+
+    refreshSchemaTypes(force?: boolean) {
+        cachedApiRequest<SchemaRegistrySchemaTypesResponse>(`${appConfig.restBasePath}/schema-registry/schemas/types`, force)
+            .then(types => {
+                // could also be a "not configured" response
+                if (types.schemaTypes) {
+                    this.schemaTypes = types.schemaTypes;
+                }
+            }, addError);
     },
 
     refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
         if (version == null) version = 'latest';
 
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaRegistrySubjectDetails>;
 
         return rq
-            .then(({ schemaDetails }) => {
-                if (schemaDetails && typeof schemaDetails.schema === 'string' && schemaDetails.type != SchemaType.PROTOBUF) {
-                    schemaDetails.schema = JSON.parse(schemaDetails.schema);
-                }
-
-                if (schemaDetails && schemaDetails.schema) {
-                    if (typeof schemaDetails.schema === 'string')
-                        schemaDetails.rawSchema = schemaDetails.schema;
-                    else
-                        schemaDetails.rawSchema = JSON.stringify(schemaDetails.schema);
-                }
-
-                this.schemaDetails = schemaDetails;
+            .then(details => {
+                this.schemaDetails.set(subjectName, details);
             })
             .catch(addError);
     },
