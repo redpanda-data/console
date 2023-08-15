@@ -318,3 +318,46 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
+
+func (api *API) handleCreateSchema() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		var payload schema.Schema
+		restErr := rest.Decode(w, r, &payload)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if payload.Schema == "" {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("payload validation failed for creating schema"),
+				Status:       http.StatusBadRequest,
+				Message:      "You must set the schema field when creating a new schema",
+				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		// 2. Send create request
+		res, err := api.ConsoleSvc.CreateSchemaRegistrySchema(r.Context(), subjectName, payload)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          err,
+				Status:       http.StatusServiceUnavailable,
+				Message:      fmt.Sprintf("Failed to create schema: %v", err.Error()),
+				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}

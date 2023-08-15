@@ -8,6 +8,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
@@ -57,4 +58,5 @@ type Servicer interface {
 	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
 	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
 	GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error)
+	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema schema.Schema) (*CreateSchemaResponse, error)
 }

@@ -511,6 +511,62 @@ func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]Schema
 	return schemas, nil
 }
 
+// Schema is the object form of a schema for the HTTP API.
+type Schema struct {
+	// Schema is the actual unescaped text of a schema.
+	Schema string `json:"schema"`
+
+	// Type is the type of a schema. The default type is avro.
+	Type SchemaType `json:"schemaType,omitempty"`
+
+	// References declares other schemas this schema references. See the
+	// docs on SchemaReference for more details.
+	References []SchemaReference `json:"references,omitempty"`
+}
+
+// SchemaReference is a way for a one schema to reference another. The details
+// for how referencing is done are type specific; for example, JSON objects
+// that use the key "$ref" can refer to another schema via URL. For more details
+// on references, see the following link:
+//
+//	https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#schema-references
+//	https://docs.confluent.io/platform/current/schema-registry/develop/api.html
+type SchemaReference struct {
+	Name    string `json:"name"`
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// CreateSchemaResponse is the response to creating a schema.
+type CreateSchemaResponse struct {
+	ID int `json:"id"`
+}
+
+// CreateSchema registers a new schema under the specified subject.
+func (c *Client) CreateSchema(ctx context.Context, subjectName string, schema Schema) (*CreateSchemaResponse, error) {
+	var createSchemaRes CreateSchemaResponse
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&createSchemaRes).
+		SetPathParam("subject", subjectName).
+		SetQueryParam("normalize", "true").
+		SetBody(&schema).
+		Post("/subjects/{subject}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("create schema failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("create schema failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &createSchemaRes, nil
+}
+
 // GetSchemasIndividually returns all schemas by describing all schemas one by one. This may be used against
 // schema registry that don't support the /schemas endpoint that returns a list of all registered schemas.
 func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {

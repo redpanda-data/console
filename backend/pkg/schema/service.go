@@ -287,3 +287,8 @@ func (s *Service) GetSchemaBySubjectAndVersion(ctx context.Context, subject stri
 
 	return cachedSchema, err
 }
+
+// CreateSchema registers a new schema for the given subject.
+func (s *Service) CreateSchema(ctx context.Context, subject string, schema Schema) (*CreateSchemaResponse, error) {
+	return s.registryClient.CreateSchema(ctx, subject, schema)
+}

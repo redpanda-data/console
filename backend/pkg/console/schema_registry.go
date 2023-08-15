@@ -346,3 +346,18 @@ func (s *Service) GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegi
 	}
 	return &SchemaRegistrySchemaTypes{SchemaTypes: res}, nil
 }
+
+// CreateSchemaResponse is the response to creating a new schema.
+type CreateSchemaResponse struct {
+	ID int `json:"id"`
+}
+
+// CreateSchemaRegistrySchema registers a new schema for the given subject in the schema registry.
+func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema schema.Schema) (*CreateSchemaResponse, error) {
+	res, err := s.kafkaSvc.SchemaService.CreateSchema(ctx, subjectName, schema)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateSchemaResponse{ID: res.ID}, nil
+}
