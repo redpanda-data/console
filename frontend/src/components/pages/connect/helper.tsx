@@ -11,7 +11,7 @@
 
 
 
-import { Alert, Empty, message, Modal, Popover } from 'antd';
+import { Alert, Empty, message, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
@@ -45,7 +45,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button, Popover as RPPopover } from '@redpanda-data/ui';
+import { Button, Popover } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -369,9 +369,9 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
                 </span>
             )}
 
-            <RPPopover placement="right" size="stretch" hideCloseButton={true} content={<div style={{ maxWidth: "500px", minWidth: "max-content", whiteSpace: "pre-wrap" }}>{c}</div>}>
+            <Popover placement="right" size="stretch" hideCloseButton={true} content={<div style={{ maxWidth: "500px", minWidth: "max-content", whiteSpace: "pre-wrap" }}>{c}</div>}>
                 {displayName}
-            </RPPopover>
+            </Popover>
         </div>
     );
 });
