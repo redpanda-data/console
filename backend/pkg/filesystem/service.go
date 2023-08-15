@@ -124,6 +124,7 @@ func (c *Service) readFiles() (map[string]File, error) {
 					return filepath.SkipDir
 				}
 
+				// skip the file
 				return nil
 			}
 
