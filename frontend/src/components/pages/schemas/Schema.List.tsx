@@ -138,6 +138,10 @@ class SchemaList extends PageComponent<{}> {
 
         // const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
+        const filteredSubjects = subjects
+            .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
+            .filter(x => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()));
+
         return (
             <PageContent key="b">
                 <Section py={4}>
@@ -162,18 +166,18 @@ class SchemaList extends PageComponent<{}> {
                         <Button>Create new schema</Button>
                         <Checkbox
                             isChecked={uiSettings.schemaList.showSoftDeleted}
-                            onChange={(e) => {
-                                uiSettings.schemaList.showSoftDeleted = e.target.checked
-                            }}
+                            onChange={e => uiSettings.schemaList.showSoftDeleted = e.target.checked}
                         >
                             Show soft-deleted
                         </Checkbox>
                     </Flex>
 
                     <KowlTable
-                        dataSource={this.filteredSchemaSubjects ?? []}
+                        dataSource={filteredSubjects}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
+                            { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name}/> },
+                            
                         ]}
 
                         observableSettings={uiSettings.schemaList}
@@ -189,5 +193,35 @@ class SchemaList extends PageComponent<{}> {
         );
     }
 }
+
+type SchemaDetails = {
+    name: string,
+    type: 'AVRO' | 'PROTOBUF' | 'JSON',
+    compatibility: string,
+    versions: unknown,
+    latestActiveVersion: number,
+};
+
+const schemaDetails = observable(new Map<string, SchemaDetails>([
+    [
+        'com.shop.v1.avro.Address', {
+            name: 'com.shop.v1.avro.Address',
+            type: 'AVRO',
+            compatibility: 'DEFAULT',
+            versions: {},
+            latestActiveVersion: 3
+        }
+    ]
+]));
+
+const SchemaTypeColumn = observer((p: {name: string}) => {
+    const details = schemaDetails.get(p.name);
+    if (!details) {
+        // Trigger loading of details for this name
+        return <>loading</>;
+    }
+
+    return <>{details.type}</>;
+});
 
 export default SchemaList;
