@@ -106,7 +106,7 @@ export const DataRefreshButton = observer(() => {
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div className={styles.dataRefreshButton}>
-        <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="right" showCloseButton={false}>
+        <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="right" hideCloseButton={true}>
             <Button
                 display="inline-flex" justifyContent="center" alignItems="center"
                 width="35px" borderRadius="100px"
@@ -121,7 +121,7 @@ export const DataRefreshButton = observer(() => {
         {
             (api.activeRequests.length == 0)
                 ? <>
-                    <Popover title="Force Refresh" content={refreshTextFunc} placement="right" showCloseButton={false}>
+                    <Popover title="Force Refresh" content={refreshTextFunc} placement="right" hideCloseButton={true}>
                         <Button
                             className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`}
                             borderRadius="100px" width="35px"
