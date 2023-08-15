@@ -122,6 +122,10 @@ func (c *Service) readFiles() (map[string]File, error) {
 				return nil
 			}
 
+			if c.shouldSkipFile(currentPath) {
+				return nil
+			}
+
 			foundFiles++
 			isValid, trimmedFileName := c.isValidFileExtension(currentPath)
 			if !isValid {
