@@ -149,7 +149,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 			payloadType: payloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "failed to get message descriptor for payload: no prototype found for the given topic. Check your configured protobuf mappings", err.Error())
+				assert.Equal(t, "failed to get message descriptor for payload: no prototype found for the given topic 'protobuf_serde_test_orders_123'. Check your configured protobuf mappings", err.Error())
 			},
 		},
 	}

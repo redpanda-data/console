@@ -261,7 +261,7 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
 	mapping, exists := s.mappingsByTopic[topicName]
 	if !exists {
-		return nil, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
+		return nil, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
 	}
 
 	protoTypeURL := ""

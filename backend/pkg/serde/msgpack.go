@@ -25,7 +25,7 @@ type MsgPackSerde struct {
 }
 
 func (MsgPackSerde) Name() PayloadEncoding {
-	return payloadEncodingAvro
+	return payloadEncodingMsgPack
 }
 
 func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {

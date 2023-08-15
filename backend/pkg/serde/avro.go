@@ -35,6 +35,10 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadTyp
 		return RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
 
+	if !d.SchemaSvc.IsEnabled() {
+		return RecordPayload{}, fmt.Errorf("schema registry configuration disabled")
+	}
+
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {

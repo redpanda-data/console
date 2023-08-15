@@ -43,7 +43,7 @@ func NewService(srService *schema.Service, protSvc *proto.Service, msgPackServic
 
 // DeserializeRecord tries to deserialize a Kafka record into a struct that
 // can be processed by the Frontend.
-func (s *Service) DeserializeRecord(record *kgo.Record, opts deserializationOptions) *Record {
+func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOptions) *Record {
 	// 1. Test if it's a known binary Format
 	if record.Topic == "__consumer_offsets" {
 		rec, err := s.deserializeConsumerOffset(record)
@@ -112,9 +112,9 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType payloadType
 	}
 }
 
-// deserializationOptions that can be provided by the requester to influence
+// DeserializationOptions that can be provided by the requester to influence
 // the deserialization.
-type deserializationOptions struct {
+type DeserializationOptions struct {
 	// KeyEncoding may be specified by the frontend to indicate that this
 	// encoding type shall be used to deserialize the key. This is helpful,
 	// if the requester knows that a primitive type like int16 is used, which couldn't

@@ -173,6 +173,10 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 	return descriptors[0], nil
 }
 
+func (s *Service) IsEnabled() bool {
+	return s.cfg.Enabled
+}
+
 // GetAvroSchemaByID loads the schema by the given schemaID and tries to parse the schema
 // contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
 func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
