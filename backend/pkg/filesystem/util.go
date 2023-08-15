@@ -21,13 +21,6 @@ func isStringInSlice(item string, arr []string) bool {
 	return false
 }
 
-// isHiddenFile returns true if the filename refers to a file that is hidden, i.e.
-// - either the file belongs to a hidden folder (tmp/..hiddenFolder/file)
-// - or the file itself is a hidden file (tmp/data/.hiddenFile)
-func (c *Service) isHiddenFile(filename string) bool {
-	return strings.Contains(filepath, "/.")
-}
-
 // isValidFileExtension returns:
 // 1. a bool which indicates whether the given filename has one of the allowed file extensions
 // 2. a string that is the filename with the trimmed extension suffix (e.g. "readme" instead of "readme.md")
@@ -49,9 +42,9 @@ func (c *Service) isValidFileExtension(filename string) (bool, string) {
 	return false, trimmedFilename
 }
 
-// shouldSkipFile returns true if the given file needs to be skipped
-func (c *Service) shouldSkipFile(filename string) bool {
-	if c.Cfg.SkipHiddenFiles && isHiddenFile(filename) {
+// shouldSkip returns true if the given file or directory needs to be skipped
+func (c *Service) shouldSkip(filename string) bool {
+	if c.Cfg.SkipHiddenFiles && isHidden(filename) {
 		return true
 	}
 

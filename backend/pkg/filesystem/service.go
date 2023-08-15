@@ -118,11 +118,16 @@ func (c *Service) readFiles() (map[string]File, error) {
 				return err
 			}
 
-			if info.IsDir() {
+			if c.shouldSkip(currentPath) {
+				if info.IsDir() {
+					// skip the entire directory
+					return filepath.SkipDir
+				}
+
 				return nil
 			}
 
-			if c.shouldSkipFile(currentPath) {
+			if info.IsDir() {
 				return nil
 			}
 
