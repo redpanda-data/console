@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -38,6 +40,7 @@ import (
 	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
+	shopv2 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v2"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -367,10 +370,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len(pbData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
-		ts, _ := json.Marshal(dr.Value.Troubleshooting)
-		fmt.Println("value ts:")
-		fmt.Println(string(ts))
-
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 5)
 		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
@@ -421,6 +420,473 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
 		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[7].Message)
+		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
+		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+	})
+
+	t.Run("plain protobuf reference", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+			{
+				TopicName:      testTopicName,
+				ValueProtoType: "shop.v2.Order",
+			},
+		}
+		cfg.Kafka.Protobuf.FileSystem.Enabled = true
+		cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+		cfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		require.NoError(err)
+
+		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
+		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
+		orderDeliveredAt := time.Date(2023, time.July, 15, 12, 0, 0, 0, time.UTC)
+		orderCompletedAt := time.Date(2023, time.July, 15, 13, 0, 0, 0, time.UTC)
+
+		msg := shopv2.Order{
+			Version:       1,
+			Id:            "444",
+			CreatedAt:     timestamppb.New(orderCreatedAt),
+			LastUpdatedAt: timestamppb.New(orderUpdatedAt),
+			DeliveredAt:   timestamppb.New(orderDeliveredAt),
+			CompletedAt:   timestamppb.New(orderCompletedAt),
+			Customer: &shopv2.Customer{
+				Version:      1,
+				Id:           "customer_012345",
+				FirstName:    "Zig",
+				LastName:     "Zag",
+				CompanyName:  "Redpanda",
+				Email:        "zigzag_test@redpanda.com",
+				CustomerType: shopv2.Customer_CUSTOMER_TYPE_BUSINESS,
+			},
+			OrderValue: 100,
+			LineItems: []*shopv2.Order_LineItem{
+				{
+					ArticleId:    "art_0",
+					Name:         "line_0",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   20,
+				},
+				{
+					ArticleId:    "art_1",
+					Name:         "line_1",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    25,
+					TotalPrice:   50,
+				},
+				{
+					ArticleId:    "art_2",
+					Name:         "line_2",
+					Quantity:     3,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   30,
+				},
+			},
+			Payment: &shopv2.Order_Payment{
+				PaymentId: "pay_01234",
+				Method:    "card",
+			},
+			DeliveryAddress: &shopv2.Address{
+				Version: 1,
+				Id:      "addr_01234",
+				Customer: &shopv2.Address_Customer{
+					CustomerId:   "customer_012345",
+					CustomerType: "business",
+				},
+				FirstName: "Zig",
+				LastName:  "Zag",
+				State:     "CA",
+				City:      "SomeCity",
+				Zip:       "zzyzx",
+				Phone:     "123-456-78990",
+				CreatedAt: timestamppb.New(orderCreatedAt),
+				Revision:  1,
+			},
+			Revision: 1,
+		}
+
+		pbData, err := proto.Marshal(&msg)
+		require.NoError(err)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     pbData,
+			Topic:     testTopicName,
+			Timestamp: orderCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		require.NotNil(dr)
+
+		// check value
+		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(false, dr.Value.IsPayloadNull)
+		assert.Equal(false, dr.Value.IsPayloadTooLarge)
+		assert.Equal(pbData, dr.Value.OriginalPayload)
+		assert.Equal(len(pbData), dr.Value.PayloadSizeBytes)
+		assert.Empty(dr.Value.SchemaID)
+
+		// value troubleshooting
+		require.Len(dr.Value.Troubleshooting, 5)
+		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal("incorrect magic byte for json schema", dr.Value.Troubleshooting[2].Message)
+		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
+		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal("incorrect magic byte", dr.Value.Troubleshooting[4].Message)
+
+		rOrder := shopv2.Order{}
+		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
+		assert.True(ok)
+		err = protojson.Unmarshal(valueBytes, &rOrder)
+		require.NoError(err)
+		assert.Equal("444", rOrder.GetId())
+		assert.Equal(int32(1), rOrder.GetVersion())
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderUpdatedAt).GetSeconds(), rOrder.GetLastUpdatedAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderDeliveredAt).GetSeconds(), rOrder.GetDeliveredAt().GetSeconds())
+		assert.Equal(timestamppb.New(orderCompletedAt).GetSeconds(), rOrder.GetCompletedAt().GetSeconds())
+
+		orderCustomer := rOrder.GetCustomer()
+		assert.Equal(int32(1), orderCustomer.GetVersion())
+		assert.Equal("Zig", orderCustomer.GetFirstName())
+		assert.Equal("Zag", orderCustomer.GetLastName())
+		assert.Equal("Redpanda", orderCustomer.GetCompanyName())
+		assert.Equal("zigzag_test@redpanda.com", orderCustomer.GetEmail())
+		assert.Equal(shopv2.Customer_CUSTOMER_TYPE_BUSINESS, orderCustomer.GetCustomerType())
+
+		assert.Equal(int32(100), rOrder.GetOrderValue())
+		lineItems := rOrder.GetLineItems()
+		require.Len(lineItems, 3)
+		li := lineItems[0]
+		assert.Equal("art_0", li.GetArticleId())
+		assert.Equal("line_0", li.GetName())
+		assert.Equal(int32(2), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(10), li.GetUnitPrice())
+		assert.Equal(int32(20), li.GetTotalPrice())
+		li = lineItems[1]
+		assert.Equal("art_1", li.GetArticleId())
+		assert.Equal("line_1", li.GetName())
+		assert.Equal(int32(2), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(25), li.GetUnitPrice())
+		assert.Equal(int32(50), li.GetTotalPrice())
+		li = lineItems[2]
+		assert.Equal("art_2", li.GetArticleId())
+		assert.Equal("line_2", li.GetName())
+		assert.Equal(int32(3), li.GetQuantity())
+		assert.Equal("usd", li.GetQuantityUnit())
+		assert.Equal(int32(10), li.GetUnitPrice())
+		assert.Equal(int32(30), li.GetTotalPrice())
+
+		orderPayment := rOrder.GetPayment()
+		assert.Equal("pay_01234", orderPayment.GetPaymentId())
+		assert.Equal("card", orderPayment.GetMethod())
+
+		deliveryAddress := rOrder.GetDeliveryAddress()
+		assert.Equal(int32(1), deliveryAddress.GetVersion())
+		assert.Equal("addr_01234", deliveryAddress.GetId())
+		assert.Equal("customer_012345", deliveryAddress.GetCustomer().GetCustomerId())
+		assert.Equal("business", deliveryAddress.GetCustomer().GetCustomerType())
+		assert.Equal("Zig", deliveryAddress.GetFirstName())
+		assert.Equal("Zag", deliveryAddress.GetLastName())
+		assert.Equal("CA", deliveryAddress.GetState())
+		assert.Equal("SomeCity", deliveryAddress.GetCity())
+		assert.Equal("zzyzx", deliveryAddress.GetZip())
+		assert.Equal("123-456-78990", deliveryAddress.GetPhone())
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), deliveryAddress.GetCreatedAt().GetSeconds())
+		assert.Equal(int32(1), deliveryAddress.GetRevision())
+
+		assert.Equal(int32(1), rOrder.GetRevision())
+
+		// check key
+		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(false, dr.Key.IsPayloadNull)
+		assert.Equal(false, dr.Key.IsPayloadTooLarge)
+		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
+		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
+		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		require.Truef(ok, "parsed payload is not of type []byte")
+		assert.Equal("444", string(keyObj))
+		assert.Empty(dr.Key.SchemaID)
+
+		// key troubleshooting
+		require.Len(dr.Key.Troubleshooting, 10)
+		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
+		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
+		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal("failed to get message descriptor for payload: no prototype mapping found for the record key of topic 'test.redpanda.console.serde_plain_protobuf_ref'", dr.Key.Troubleshooting[5].Message)
+		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
+		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[7].Message)
+		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
+		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+	})
+
+	t.Run("schema registry protobuf", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		require.NoError(err)
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv1.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv1.Order))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*shopv1.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2023, time.July, 11, 13, 0, 0, 0, time.UTC)
+		msg := shopv1.Order{
+			Id:        "222",
+			CreatedAt: timestamppb.New(orderCreatedAt),
+		}
+
+		msgData, err := serde.Encode(&msg)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: orderCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		require.NotNil(dr)
+
+		// check value
+		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(false, dr.Value.IsPayloadNull)
+		assert.Equal(false, dr.Value.IsPayloadTooLarge)
+		assert.Equal(msgData, dr.Value.OriginalPayload)
+		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
+		assert.Empty(dr.Value.SchemaID)
+
+		ts, _ := json.Marshal(dr.Value.Troubleshooting)
+		fmt.Println("value ts:")
+		fmt.Println(string(ts))
+
+		// value troubleshooting
+		require.Len(dr.Value.Troubleshooting, 6)
+		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
+		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
+		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
+		assert.Equal(string(payloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
+		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
+
+		rOrder := shopv1.Order{}
+		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
+		assert.True(ok)
+		err = protojson.Unmarshal(valueBytes, &rOrder)
+		require.NoError(err)
+		assert.Equal("222", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		// franz-go serde
+		rOrder = shopv1.Order{}
+		err = serde.Decode(record.Value, &rOrder)
+		require.NoError(err)
+		assert.Equal("222", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		// check key
+		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(false, dr.Key.IsPayloadNull)
+		assert.Equal(false, dr.Key.IsPayloadTooLarge)
+		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
+		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
+		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		require.Truef(ok, "parsed payload is not of type []byte")
+		assert.Equal("222", string(keyObj))
+		assert.Empty(dr.Key.SchemaID)
+
+		// key troubleshooting
+		require.Len(dr.Key.Troubleshooting, 10)
+		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
+		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
+		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
+		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
+		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
+		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
 		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
