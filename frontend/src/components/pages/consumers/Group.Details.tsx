@@ -33,7 +33,6 @@ import { Flex, Section, Tabs, Tag, Tooltip, Popover, PopoverArrow, PopoverTrigge
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
-
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
@@ -552,12 +551,10 @@ export const GroupState = (p: { group: GroupDescription }) => {
                     <span> {p.group.state}</span>
                 </span>
             </PopoverTrigger>
-            <Portal>
-                <PopoverContent minW={{ base: '100%', lg: 'max-content' }}>
-                    <PopoverArrow />
-                    <PopoverBody>{consumerGroupStateTable}</PopoverBody>
-                </PopoverContent>
-            </Portal>
+            <PopoverContent minW={{ base: '100%', lg: 'max-content' }}>
+                <PopoverArrow />
+                <PopoverBody>{consumerGroupStateTable}</PopoverBody>
+            </PopoverContent>
         </Popover>
     );
 };

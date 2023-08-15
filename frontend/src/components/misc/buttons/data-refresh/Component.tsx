@@ -10,7 +10,6 @@
  */
 import { SyncIcon } from '@primer/octicons-react';
 import { MdPause, MdPlayCircleOutline } from 'react-icons/md';
-import { Popover } from 'antd';
 import { Button, Icon } from '@redpanda-data/ui';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -20,6 +19,7 @@ import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 import styles from '../buttons.module.scss';
+import { Popover } from '@redpanda-data/ui';
 
 
 const autoRefresh = observable({
@@ -106,7 +106,7 @@ export const DataRefreshButton = observer(() => {
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div className={styles.dataRefreshButton}>
-        <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+        <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="right" showCloseButton={false}>
             <Button
                 display="inline-flex" justifyContent="center" alignItems="center"
                 width="35px" borderRadius="100px"
@@ -121,7 +121,7 @@ export const DataRefreshButton = observer(() => {
         {
             (api.activeRequests.length == 0)
                 ? <>
-                    <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+                    <Popover title="Force Refresh" content={refreshTextFunc} placement="right" showCloseButton={false}>
                         <Button
                             className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`}
                             borderRadius="100px" width="35px"
