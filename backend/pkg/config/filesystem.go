@@ -33,6 +33,9 @@ type Filesystem struct {
 
 	// Paths whose files shall be watched. Subdirectories and their files will be included.
 	Paths []string `yaml:"paths"`
+
+	// SkipHiddenFiles specifies whether or not hidden files should be watched or not
+	SkipHiddenFiles bool
 }
 
 // Validate all root and child config structs
@@ -52,4 +55,5 @@ func (c *Filesystem) SetDefaults() {
 	c.MaxFileSize = 500 * 1000 // 500KB
 	c.IndexByFullFilepath = false
 	c.RefreshInterval = 5 * time.Minute
+	c.SkipHiddenFiles = false
 }
