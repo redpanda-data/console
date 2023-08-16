@@ -19,6 +19,6 @@ import (
 // isHidden returns true if the path refers to a file that is hidden, i.e.
 // - either the file belongs to a hidden folder
 // - or the file itself is a hidden file
-func (c *Service) isHidden(path string) bool {
+func isHidden(path string) bool {
 	return strings.HasPrefix(filepath.Base(path), ".")
 }

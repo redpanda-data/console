@@ -18,7 +18,7 @@ import (
 // isHidden returns true if the path refers to a file that is hidden, i.e.
 // - either the file belongs to a hidden folder
 // - or the file itself is a hidden file
-func (c *Service) isHiddenFile(path string) bool {
+func isHidden(path string) bool {
 	// Appending `\\?\` to the absolute path helps with preventing 'Path Not Specified Error'
 	// when accessing long paths and filenames
 	// https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd
@@ -32,7 +32,7 @@ func (c *Service) isHiddenFile(path string) bool {
 		return false
 	}
 
-	if attributes & syscall.FILE_ATTRIBUTE_HIDDEN != 0 {
+	if attributes&syscall.FILE_ATTRIBUTE_HIDDEN != 0 {
 		return true
 	}
 
