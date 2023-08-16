@@ -21,4 +21,8 @@ const (
 	// CodeSchemaNotFound is the returned error code when the requested schema
 	// does not exist.
 	CodeSchemaNotFound = 40403
+
+	// CodeSubjectCompatibilityNotConfigured is returned when retrieving a subject's
+	// compatibility level, and it's not set.
+	CodeSubjectCompatibilityNotConfigured = 40408
 )

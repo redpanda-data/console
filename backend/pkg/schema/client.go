@@ -414,7 +414,7 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 			return nil, fmt.Errorf("get config for subject failed: Status code %d", res.StatusCode())
 		}
 
-		if restErr.ErrorCode == CodeSubjectNotFound {
+		if restErr.ErrorCode == CodeSubjectNotFound || restErr.ErrorCode == CodeSubjectCompatibilityNotConfigured {
 			return &ConfigResponse{
 				Compatibility: CompatDefault,
 			}, nil

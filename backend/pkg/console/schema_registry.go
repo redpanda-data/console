@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
@@ -154,13 +155,23 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		}
 	}
 
-	// 2. Retrieve subject config (subject compatibility level)
-	configRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(ctx, subjectName)
-	if err != nil {
-		return nil, err
-	}
+	// 2. Retrieve schemas and compat level concurrently
+	var compatLevel schema.CompatibilityLevel
 
-	// 3. If version 'all' request schemas for all versions individually
+	grp, grpCtx := errgroup.WithContext(ctx)
+
+	grp.Go(func() error {
+		// 2. Retrieve subject config (subject compatibility level)
+		configRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(grpCtx, subjectName)
+		if err != nil {
+			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
+			return nil
+		}
+		compatLevel = configRes.Compatibility
+		return nil
+	})
+
+	// If version 'all' request schemas for all versions individually
 	versionsToRetrieve := []string{version}
 	if version == SchemaVersionsAll {
 		versionsToRetrieve = make([]string, len(versions))
@@ -169,20 +180,32 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		}
 	}
 
+	schemasCh := make(chan *SchemaRegistryVersionedSchema, len(versionsToRetrieve))
+	for _, v := range versionsToRetrieve {
+		copiedVersion := v
+		grp.Go(func() error {
+			schemaRes, err := s.GetSchemaRegistrySchema(ctx, subjectName, copiedVersion, true)
+			if err != nil {
+				return fmt.Errorf("failed to retrieve version %q", copiedVersion)
+			}
+			// To avoid making further requests to figure out whether this is a soft-deleted
+			// schema or not we are looking up this piece of information in our existing
+			// versions map.
+			schemaRes.IsSoftDeleted = softDeletedVersions[schemaRes.Version]
+			schemasCh <- schemaRes
+			return nil
+		})
+	}
+
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+	close(schemasCh)
+
 	// Send requests to retrieve schemas
 	schemas := make([]*SchemaRegistryVersionedSchema, 0)
-	for _, v := range versionsToRetrieve {
-		schema, err := s.GetSchemaRegistrySchema(ctx, subjectName, v, true)
-		if err != nil {
-			return nil, err
-		}
-
-		// To avoid making further requests to figure out whether this is a soft-deleted
-		// schema or not we are looking this piece of information up in our existing
-		// versions map.
-		schema.IsSoftDeleted = softDeletedVersions[schema.Version]
-
-		schemas = append(schemas, schema)
+	for schemaRes := range schemasCh {
+		schemas = append(schemas, schemaRes)
 	}
 
 	schemaType := "unknown"
@@ -193,7 +216,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	return &SchemaRegistrySubjectDetails{
 		Name:                subjectName,
 		Type:                schemaType,
-		Compatibility:       configRes.Compatibility,
+		Compatibility:       compatLevel,
 		RegisteredVersions:  versions,
 		LatestActiveVersion: latestActiveVersion,
 		Schemas:             schemas,
