@@ -26,7 +26,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button, Checkbox, Flex } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Checkbox, Flex, Skeleton } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
@@ -105,9 +105,6 @@ class SchemaList extends PageComponent<{}> {
     render() {
         if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
-        // if (api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
-
-        // const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
         const filteredSubjects = api.schemaSubjects
             .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
@@ -134,7 +131,7 @@ class SchemaList extends PageComponent<{}> {
 
                 <Section>
                     <Flex justifyContent={'space-between'} pb={3}>
-                        <Button>Create new schema</Button>
+                        <Button colorScheme="brand">Create new schema</Button>
                         <Checkbox
                             isChecked={uiSettings.schemaList.showSoftDeleted}
                             onChange={e => uiSettings.schemaList.showSoftDeleted = e.target.checked}
@@ -148,7 +145,7 @@ class SchemaList extends PageComponent<{}> {
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
                             { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name}/> },
-
+                            { title: 'Latest Version', render: (_, r) => <LatestVersionColumn name={r.name}/> },
                         ]}
 
                         observableSettings={uiSettings.schemaList}
@@ -169,10 +166,20 @@ const SchemaTypeColumn = observer((p: {name: string}) => {
     const details = api.schemaDetails.get(p.name);
     if (!details) {
         api.refreshSchemaDetails(p.name, 'latest');
-        return <>loading...</>;
+        return <Skeleton height="15px"/>;
     }
 
     return <>{details.type}</>;
+});
+
+const LatestVersionColumn = observer((p: {name: string}) => {
+    const details = api.schemaDetails.get(p.name);
+    if (!details) {
+        api.refreshSchemaDetails(p.name, 'latest');
+        return <Skeleton height="15px"/>;
+    }
+
+    return <>{details.latestActiveVersion}</>;
 });
 
 export default SchemaList;
