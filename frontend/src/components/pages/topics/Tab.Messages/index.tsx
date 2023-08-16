@@ -11,7 +11,7 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Select, Table, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
@@ -46,7 +46,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip } from '@redpanda-data/ui';
+import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip, Popover } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -1238,11 +1238,11 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
     };
 }
 
-
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger="click" title={popTitle} content={content} overlayClassName="noArrow" overlayStyle={{ maxWidth: '600px' }}
-    >
-        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>{title}</Button>
+    <Popover key={title} trigger="click" hideCloseButton title={popTitle} content={<Box maxW="600px">{content}</Box>} size="auto">
+        <Button variant="link" size="small" style={{ fontSize: "1.2em" }}>
+            {title}
+        </Button>
     </Popover>
 );
 
