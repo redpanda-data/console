@@ -12,16 +12,16 @@
 import { Component } from 'react';
 import React from 'react';
 import { Partition, Topic, } from '../../../state/restInterfaces';
-import { Table, Popover, } from 'antd';
+import { Table } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField, makePaginationConfig } from '../../misc/common';
 import '../../../utils/arrayExtensions';
 import { uiState } from '../../../state/uiState';
-import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { numberToThousandsString, DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { WarningTwoTone } from '@ant-design/icons';
-import { Alert, AlertIcon } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Popover } from '@redpanda-data/ui';
 
 
 @observer
@@ -100,8 +100,9 @@ function renderPartitionError(partition: Partition) {
 
     return <Popover
         title="Partition Error"
-        placement="rightTop" overlayClassName="popoverSmall"
-        getPopupContainer={findPopupContainer}
+        placement="right-start" 
+        size="auto"
+        hideCloseButton
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             {txt}
         </div>
