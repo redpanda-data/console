@@ -225,6 +225,11 @@ func (s *Service) GetConfig(ctx context.Context) (*ConfigResponse, error) {
 	return s.registryClient.GetConfig(ctx)
 }
 
+// PutConfig sets the global compatibility level.
+func (s *Service) PutConfig(ctx context.Context, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	return s.registryClient.PutConfig(ctx, compatLevel)
+}
+
 // GetSubjectConfig gets compatibility level for a given subject.
 func (s *Service) GetSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
 	return s.registryClient.GetSubjectConfig(ctx, subject)

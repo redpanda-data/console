@@ -325,7 +325,7 @@ func (c *Client) GetMode(ctx context.Context) (*ModeResponse, error) {
 type ConfigResponse struct {
 	// Global compatibility level. Will be one of:
 	// BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE, DEFAULT (only for subject configs)
-	Compatibility string `json:"compatibilityLevel"`
+	Compatibility CompatibilityLevel `json:"compatibilityLevel"`
 }
 
 // GetConfig gets global compatibility level.
@@ -354,6 +354,45 @@ func (c *Client) GetConfig(ctx context.Context) (*ConfigResponse, error) {
 	return parsed, nil
 }
 
+// PutConfigResponse is almost identical to ConfigResponse, but they use different
+// keys for compatibility in the JSON response.
+type PutConfigResponse struct {
+	// Compatibility after setting the compat level.
+	Compatibility CompatibilityLevel `json:"compatibility"`
+}
+
+// PutConfig sets the global compatibility level.
+func (c *Client) PutConfig(ctx context.Context, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	type requestPayload struct {
+		Compatibility CompatibilityLevel `json:"compatibility"`
+	}
+	payload := requestPayload{Compatibility: compatLevel}
+
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&PutConfigResponse{}).
+		SetBody(&payload).
+		Put("/config")
+	if err != nil {
+		return nil, fmt.Errorf("put config failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("put config failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*PutConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
 // GetSubjectConfig gets compatibility level for a given subject.
 // If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
 // error code. For example, if you run the same command for the subject Kafka-value, for which you have not set
@@ -377,7 +416,7 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 
 		if restErr.ErrorCode == CodeSubjectNotFound {
 			return &ConfigResponse{
-				Compatibility: "DEFAULT",
+				Compatibility: CompatDefault,
 			}, nil
 		}
 		return nil, restErr

@@ -28,7 +28,7 @@ type SchemaRegistryMode struct {
 
 // SchemaRegistryConfig returns the global schema registry config.
 type SchemaRegistryConfig struct {
-	Compatibility string `json:"compatibility"`
+	Compatibility schema.CompatibilityLevel `json:"compatibility"`
 }
 
 // SchemaRegistrySubject is the subject name along with a bool that
@@ -51,6 +51,14 @@ func (s *Service) GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMod
 // only contains the global compatibility config (e.g. "BACKWARD").
 func (s *Service) GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error) {
 	config, err := s.kafkaSvc.SchemaService.GetConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
+}
+
+func (s *Service) PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error) {
+	config, err := s.kafkaSvc.SchemaService.PutConfig(ctx, compatLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +119,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
 	Type                string                                `json:"type"`
-	Compatibility       string                                `json:"compatibility"`
+	Compatibility       schema.CompatibilityLevel             `json:"compatibility"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
 	Schemas             []*SchemaRegistryVersionedSchema      `json:"schemas"`

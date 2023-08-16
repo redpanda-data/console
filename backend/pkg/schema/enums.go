@@ -67,3 +67,84 @@ func (t *SchemaType) UnmarshalText(text []byte) error {
 	}
 	return nil
 }
+
+// CompatibilityLevel as an enum representing config compatibility levels.
+type CompatibilityLevel int
+
+const (
+	// CompatDefault is the compatibility that is returned if no compatibility is set.
+	// This can only be set for subjects.
+	CompatDefault CompatibilityLevel = iota + 1
+	// CompatNone represents compatibility "NONE".
+	CompatNone
+	// CompatBackward represents compatibility "BACKWARD".
+	CompatBackward
+	// CompatBackwardTransitive represents compatibility "BACKWARD_TRANSITIVE".
+	CompatBackwardTransitive
+	// CompatForward represents compatibility "FORWARD".
+	CompatForward
+	// CompatForwardTransitive represents compatibility "FORWARD_TRANSITIVE".
+	CompatForwardTransitive
+	// CompatFull represents compatibility "FULL".
+	CompatFull
+	// CompatFullTransitive represents compatibility "FULL_TRANSITIVE".
+	CompatFullTransitive
+)
+
+// String presentation of the compatibility level.
+func (l CompatibilityLevel) String() string {
+	switch l {
+	case CompatDefault:
+		return "DEFAULT"
+	case CompatNone:
+		return "NONE"
+	case CompatBackward:
+		return "BACKWARD"
+	case CompatBackwardTransitive:
+		return "BACKWARD_TRANSITIVE"
+	case CompatForward:
+		return "FORWARD"
+	case CompatForwardTransitive:
+		return "FORWARD_TRANSITIVE"
+	case CompatFull:
+		return "FULL"
+	case CompatFullTransitive:
+		return "FULL_TRANSITIVE"
+	default:
+		return ""
+	}
+}
+
+// MarshalText marshals the compatibility level.
+func (l CompatibilityLevel) MarshalText() ([]byte, error) {
+	s := l.String()
+	if s == "" {
+		return nil, fmt.Errorf("unknown compatibility level %d", l)
+	}
+	return []byte(s), nil
+}
+
+// UnmarshalText unmarshals the compatibility level.
+func (l *CompatibilityLevel) UnmarshalText(text []byte) error {
+	switch s := strings.ToUpper(string(text)); s {
+	default:
+		return fmt.Errorf("unknown compatibility level %q", s)
+	case "DEFAULT":
+		*l = CompatDefault
+	case "NONE":
+		*l = CompatNone
+	case "BACKWARD":
+		*l = CompatBackward
+	case "BACKWARD_TRANSITIVE":
+		*l = CompatBackwardTransitive
+	case "FORWARD":
+		*l = CompatForward
+	case "FORWARD_TRANSITIVE":
+		*l = CompatForwardTransitive
+	case "FULL":
+		*l = CompatFull
+	case "FULL_TRANSITIVE":
+		*l = CompatFullTransitive
+	}
+	return nil
+}

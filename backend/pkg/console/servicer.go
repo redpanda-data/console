@@ -53,6 +53,7 @@ type Servicer interface {
 
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
 	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
+	PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
 	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
 	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)

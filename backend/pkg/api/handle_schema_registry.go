@@ -93,6 +93,37 @@ func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 	}
 }
 
+func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	type request struct {
+		Compatibility schema.CompatibilityLevel `json:"compatibility"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := request{}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res, err := api.ConsoleSvc.PutSchemaRegistryConfig(r.Context(), req.Compatibility)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schema registry types from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 	if !api.Cfg.Kafka.Schema.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
