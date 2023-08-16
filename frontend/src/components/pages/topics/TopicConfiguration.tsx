@@ -1,8 +1,8 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme, Tooltip } from '@redpanda-data/ui';
-import { Input, message, Modal, Popover, Radio, Select } from 'antd';
+import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme, Tooltip, Popover, Grid, GridItem, Text } from '@redpanda-data/ui';
+import { Input, message, Modal, Radio, Select } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -234,23 +234,35 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                 </Tooltip>
                 {entry.documentation && (
                     <Popover
-                        overlayClassName="configDocumentationTooltip"
+                        hideCloseButton
+                        size={"lg"}
                         content={
-                            <div style={{ maxWidth: '400px' }}>
-                                <div className="configDocuTitle">{entry.name}</div>
-                                <div className="configDocuBody">{entry.documentation}</div>
-                                <div className="configDocuSource">
-                                    <span className="title">Value</span>
-                                    <span>{friendlyValue}</span>
-                                    <span className="title">Source</span>
-                                    <div>
-                                        <div>
-                                            <code>{entry.source}</code>
-                                        </div>
-                                        <div className="configSourceExplanation">{getConfigSourceExplanation(entry.source)}</div>
-                                    </div>
-                                </div>
-                            </div>
+                            <Grid templateColumns='1fr' gap={4} w={"fit-content"}>
+                                <GridItem>
+                                    <strong>{entry.name}</strong>
+                                    <br />
+                                    {entry.documentation}
+                                </GridItem>
+                                <GridItem>
+                                    <Grid templateColumns='25% 1fr' gap={2}>
+                                        <GridItem >
+                                            <strong>Value</strong>
+                                        </GridItem>
+                                        <GridItem >
+                                            <span>{friendlyValue}</span>
+                                        </GridItem>
+                                        <GridItem >
+                                            <strong>Source</strong>
+                                        </GridItem>
+                                        <GridItem >
+                                            <div>
+                                                <code>{entry.source}</code>
+                                            </div>
+                                            <Text fontSize='sm'>{getConfigSourceExplanation(entry.source)}</Text>
+                                        </GridItem>
+                                    </Grid>
+                                </GridItem>
+                            </Grid>
                         }
                     >
                         <Icon as={InfoCircleOutlined} />
