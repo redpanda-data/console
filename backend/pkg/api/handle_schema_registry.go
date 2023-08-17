@@ -207,24 +207,6 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := rest.GetURLParam(r, "subject")
 
-		version := rest.GetURLParam(r, "version")
-		switch version {
-		case console.SchemaVersionsAll, console.SchemaVersionsLatest:
-		default:
-			// Must be number or it's invalid input
-			_, err := strconv.Atoi(version)
-			if err != nil {
-				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q, %q or a positive integer", version, console.SchemaVersionsLatest, console.SchemaVersionsAll)
-				rest.SendRESTError(w, r, api.Logger, &rest.Error{
-					Err:      descriptiveErr,
-					Status:   http.StatusBadRequest,
-					Message:  descriptiveErr.Error(),
-					IsSilent: false,
-				})
-				return
-			}
-		}
-
 		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
 		if deletePermanentlyStr == "" {
 			deletePermanentlyStr = "false"
