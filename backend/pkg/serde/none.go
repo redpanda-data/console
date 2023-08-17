@@ -31,7 +31,8 @@ func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}
 
 	return RecordPayload{
-		ParsedPayload: payload,
-		Encoding:      PayloadEncodingNone,
+		NormalizedPayload:   []byte("{}"),
+		DeserializedPayload: payload,
+		Encoding:            PayloadEncodingNone,
 	}, nil
 }

@@ -11,12 +11,17 @@ message ListMessagesRequest {
     (buf.validate.field).string.max_len = 128
   ]; // Topic name.
 
-  sint64 start_offset = 2 [
-    (buf.validate.field).sint32 = { in: [-1, -2, -3, -4] }
-  ]; // Start offset. -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp.
+  sint64 start_offset = 2 [(buf.validate.field).sint32 = {
+    in: [
+      -1,
+      -2,
+      -3,
+      -4
+    ]
+  }]; // Start offset. -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp.
 
   int64 start_timestamp = 3; // Start offset by unix timestamp in ms (only considered if start offset is set to -4).
-  int32 partition_id = 4 [(buf.validate.field).sint32 = { gte: -1 }]; // -1 for all partition ids
+  int32 partition_id = 4 [(buf.validate.field).sint32 = {gte: -1}]; // -1 for all partition ids
   int32 max_results = 5; // Maximum number of results
   string filter_interpreter_code = 6; // Base64 encoded code
   bytes enterprise = 7; // Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred.
@@ -37,13 +42,13 @@ message ListMessagesResponse {
 
   // Progress control message.
   message ProgressMessage {
-    int64 messages_consumed = 1;  // Currently consumed messages.
+    int64 messages_consumed = 1; // Currently consumed messages.
     int64 bytes_consumed = 2; // Currently consumed bytes.
   }
 
   // Stream completed control message.
   message StreamCompletedMessage {
-    int64 elapsed_ms = 1;  // Total elapsed time in milliseconds.
+    int64 elapsed_ms = 1; // Total elapsed time in milliseconds.
     bool is_cancelled = 2; // Whether the call was cancelled.
     int64 messages_consumed = 3; // Total consumed messages.
     int64 bytes_consumed = 4; // Total consumed bytes.
@@ -68,8 +73,24 @@ message ListMessagesResponse {
 message KafkaRecordPayload {
   bytes original_payload = 1;
   int32 payload_size = 2;
-  bytes deserialized_payload = 3;
-  bool is_payload_too_large = 4;
+  PayloadEncoding encoding = 3;
+  bytes normalized_payload = 4;
+  bool is_payload_too_large = 5;
+}
+
+enum PayloadEncoding {
+  PAYLOAD_ENCODING_UNSPECIFIED = 0;
+  PAYLOAD_ENCODING_NONE = 1;
+  PAYLOAD_ENCODING_AVRO = 2;
+  PAYLOAD_ENCODING_PROTOBUF = 3;
+  PAYLOAD_ENCODING_JSON = 4;
+  PAYLOAD_ENCODING_XML = 5;
+  PAYLOAD_ENCODING_TEXT = 6;
+  PAYLOAD_ENCODING_UTF8 = 7;
+  PAYLOAD_ENCODING_MESSAGE_PACK = 8;
+  PAYLOAD_ENCODING_SMILE = 9;
+  PAYLOAD_ENCODING_BINARY = 10;
+  PAYLOAD_ENCODING_CONSUMER_OFFSETS = 11;
 }
 
 // ConsoleService represents the Console API service.

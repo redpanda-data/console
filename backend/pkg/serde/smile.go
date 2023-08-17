@@ -50,7 +50,8 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 	}
 
 	return RecordPayload{
-		ParsedPayload: jsonBytes,
-		Encoding:      PayloadEncodingSmile,
+		DeserializedPayload: obj,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingSmile,
 	}, nil
 }

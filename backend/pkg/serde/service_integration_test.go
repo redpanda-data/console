@@ -219,11 +219,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		assert.IsType(map[string]any{}, dr.Value.ParsedPayload)
+		assert.IsType(map[string]any{}, dr.Value.DeserializedPayload)
 
-		obj, ok := (dr.Value.ParsedPayload).(map[string]any)
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("123", obj["ID"])
+
+		assert.Equal(`{"ID":"123"}`, string(dr.Value.NormalizedPayload))
 
 		// check value properties
 		assert.Equal(PayloadEncodingJSON, dr.Value.Encoding)
@@ -239,7 +241,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("123", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)
@@ -368,12 +370,17 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// check value
 		rOrder := shopv1.Order{}
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
-		err = protojson.Unmarshal(valueBytes, &rOrder)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
 		require.NoError(err)
 		assert.Equal("111", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		assert.Equal(`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(dr.Value.NormalizedPayload))
+
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+
+		assert.Equal(`111`, obj["id"])
 
 		// check value properties
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
@@ -397,7 +404,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("111", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)
@@ -590,10 +597,15 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+
+		assert.Equal(`444`, obj["id"])
+		assert.Equal(100.0, obj["orderValue"])
+		assert.Equal(1.0, obj["version"])
+
 		rOrder := shopv2.Order{}
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
-		err = protojson.Unmarshal(valueBytes, &rOrder)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
 		require.NoError(err)
 		assert.Equal("444", rOrder.GetId())
 		assert.Equal(int32(1), rOrder.GetVersion())
@@ -677,7 +689,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("444", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)
@@ -828,12 +840,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// check value
 		rOrder := shopv1.Order{}
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
-		err = protojson.Unmarshal(valueBytes, &rOrder)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
 		require.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal("222", obj["id"])
 
 		// franz-go serde
 		rOrder = shopv1.Order{}
@@ -866,7 +880,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("222", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)
@@ -1028,10 +1042,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal("gadget_0", obj["identity"])
+		assert.NotEmpty(obj["gizmo"])
+		assert.NotEmpty(obj["widgets"])
+
 		rObject := indexv1.Gadget{}
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
-		err = protojson.Unmarshal(valueBytes, &rObject)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rObject)
 		require.NoError(err)
 		assert.Equal("gadget_0", rObject.GetIdentity())
 		assert.Equal(int32(10), rObject.GetGizmo().GetSize())
@@ -1081,7 +1099,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("gadget_0", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)
@@ -1243,11 +1261,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal(10.0, obj["size"])
+		assert.NotEmpty(obj["item"])
 
 		rObject := indexv1.Gadget_Gizmo{}
-		err = protojson.Unmarshal(valueBytes, &rObject)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rObject)
 		require.NoError(err)
 		assert.Equal(int32(10), rObject.GetSize())
 		assert.Equal("item_0", rObject.GetItem().GetName())
@@ -1510,11 +1530,15 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		valueBytes, ok := dr.Value.ParsedPayload.([]byte)
-		assert.True(ok)
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal("123456789", obj["id"])
+		assert.Equal(1.0, obj["version"])
+		assert.Equal(100.0, obj["orderValue"])
+		assert.NotEmpty(obj["customer"])
 
 		rOrder := shopv2.Order{}
-		err = protojson.Unmarshal(valueBytes, &rOrder)
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
 		require.NoError(err)
 		assert.Equal("123456789", rOrder.GetId())
 		assert.Equal(int32(1), rOrder.GetVersion())
@@ -1600,7 +1624,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.ParsedPayload).([]byte)
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
 		require.Truef(ok, "parsed payload is not of type []byte")
 		assert.Equal("123456789", string(keyObj))
 		assert.Empty(dr.Key.SchemaID)

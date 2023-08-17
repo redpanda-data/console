@@ -37,10 +37,10 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		if err == nil {
 			// TODO: Check if the parsedPayload will actually be encoded as JSON when it's sent to the frontend
 			deserializedKey = &RecordPayload{
-				OriginalPayload:  record.Key,
-				PayloadSizeBytes: len(record.Key),
-				ParsedPayload:    offsetCommitKey,
-				Encoding:         PayloadEncodingConsumerOffsets,
+				OriginalPayload:     record.Key,
+				PayloadSizeBytes:    len(record.Key),
+				DeserializedPayload: offsetCommitKey,
+				Encoding:            PayloadEncodingConsumerOffsets,
 			}
 		}
 
@@ -51,10 +51,10 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		err = offsetCommitValue.ReadFrom(record.Value)
 		if err == nil {
 			deserializedVal = &RecordPayload{
-				OriginalPayload:  record.Value,
-				PayloadSizeBytes: len(record.Value),
-				ParsedPayload:    offsetCommitValue,
-				Encoding:         PayloadEncodingConsumerOffsets,
+				OriginalPayload:     record.Value,
+				PayloadSizeBytes:    len(record.Value),
+				DeserializedPayload: offsetCommitValue,
+				Encoding:            PayloadEncodingConsumerOffsets,
 			}
 		}
 	case 2:
@@ -63,10 +63,10 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		err := metadataKey.ReadFrom(record.Key)
 		if err == nil {
 			deserializedKey = &RecordPayload{
-				OriginalPayload:  record.Key,
-				PayloadSizeBytes: len(record.Key),
-				ParsedPayload:    metadataKey,
-				Encoding:         PayloadEncodingConsumerOffsets,
+				OriginalPayload:     record.Key,
+				PayloadSizeBytes:    len(record.Key),
+				DeserializedPayload: metadataKey,
+				Encoding:            PayloadEncodingConsumerOffsets,
 			}
 		}
 

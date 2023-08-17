@@ -27,13 +27,17 @@ type RecordPayload struct {
 	// unless this is specifically requested.
 	PayloadSizeBytes int `json:"payloadSizeBytes"`
 
-	// ParsedPayload is the human-readable and parsed version of the payload.
+	// NormalizedPayload is the human-readable and parsed version of the payload.
 	// An avro or protobuf record will be parsed into an object that shall
 	// be JSON serialized when sending to the frontend whereas binary
 	// content shall be presented as a hex-encoded string. This requires
-	// a custom marshaller. This property will be passed to the JavaScript
-	// interpreter that is used for push-down filters.
-	ParsedPayload any `json:"humanReadablePayload"`
+	// a custom marshaller.
+	NormalizedPayload []byte `json:"humanReadablePayload"`
+
+	// DeserializedPayload is the deserialized representation of the record payload.
+	// This property will be passed to the JavaScript interpreter
+	// that is used for push-down filters.
+	DeserializedPayload any `json:"-"`
 
 	// IsPayloadTooLarge will be true if the payload is too large to be processed
 	// by the frontend. If this is true, all payload fields will be nil and the frontend

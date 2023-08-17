@@ -10,6 +10,8 @@
 package serde
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -45,8 +47,15 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType Payload
 		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
 
+	b64 := base64.StdEncoding.EncodeToString(payload)
+	jsonBytes, err := json.Marshal(b64)
+	if err != nil {
+		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
+	}
+
 	return RecordPayload{
-		ParsedPayload: obj,
-		Encoding:      PayloadEncodingMsgPack,
+		NormalizedPayload:   jsonBytes,
+		DeserializedPayload: obj,
+		Encoding:            PayloadEncodingMsgPack,
 	}, nil
 }

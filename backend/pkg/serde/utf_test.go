@@ -39,7 +39,9 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingUtf8WithControlChars, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				assert.Equal(t, `"SGVsbG8sIOS4lueVjA=="`, string(payload.NormalizedPayload))
+
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, "Hello, 世界", string(val))
 			},
@@ -56,7 +58,9 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingUtf8WithControlChars, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				assert.Equal(t, `"aW5pdPCQgIA="`, string(payload.NormalizedPayload))
+
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, "init𐀀", string(val))
 			},

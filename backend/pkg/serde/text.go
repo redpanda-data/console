@@ -32,8 +32,9 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 
 	if len(trimmed) == 0 {
 		return RecordPayload{
-			ParsedPayload: payload,
-			Encoding:      PayloadEncodingText,
+			NormalizedPayload:   payload,
+			DeserializedPayload: payload,
+			Encoding:            PayloadEncodingText,
 		}, nil
 	}
 
@@ -47,7 +48,8 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}
 
 	return RecordPayload{
-		ParsedPayload: payload,
-		Encoding:      PayloadEncodingText,
+		NormalizedPayload:   payload,
+		DeserializedPayload: payload,
+		Encoding:            PayloadEncodingText,
 	}, nil
 }

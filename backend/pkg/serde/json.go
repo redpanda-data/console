@@ -51,7 +51,8 @@ func jsonDeserializePayload(payload []byte) (RecordPayload, error) {
 	}
 
 	return RecordPayload{
-		ParsedPayload: obj,
-		Encoding:      PayloadEncodingJSON,
+		NormalizedPayload:   payload,
+		DeserializedPayload: obj,
+		Encoding:            PayloadEncodingJSON,
 	}, nil
 }

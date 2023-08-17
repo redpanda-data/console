@@ -10,7 +10,6 @@
 package serde
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,9 +61,9 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingMsgPack, payload.Encoding)
 
-				fmt.Printf("%+T\n", payload.ParsedPayload)
-				fmt.Printf("%+v\n", payload.ParsedPayload)
-				obj, ok := (payload.ParsedPayload).(map[string]any)
+				assert.Equal(t, `"gaNGb2+jYmFy"`, string(payload.NormalizedPayload))
+
+				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
 				assert.Equal(t, "bar", obj["Foo"])
 			},

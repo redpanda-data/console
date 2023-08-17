@@ -7,6 +7,86 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 
 /**
+ * @generated from enum redpanda.api.console.v1alpha.PayloadEncoding
+ */
+export enum PayloadEncoding {
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_AVRO = 2;
+   */
+  AVRO = 2,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_PROTOBUF = 3;
+   */
+  PROTOBUF = 3,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_JSON = 4;
+   */
+  JSON = 4,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_XML = 5;
+   */
+  XML = 5,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_TEXT = 6;
+   */
+  TEXT = 6,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_UTF8 = 7;
+   */
+  UTF8 = 7,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_MESSAGE_PACK = 8;
+   */
+  MESSAGE_PACK = 8,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_SMILE = 9;
+   */
+  SMILE = 9,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_BINARY = 10;
+   */
+  BINARY = 10,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 11;
+   */
+  CONSUMER_OFFSETS = 11,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PayloadEncoding)
+proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha.PayloadEncoding", [
+  { no: 0, name: "PAYLOAD_ENCODING_UNSPECIFIED" },
+  { no: 1, name: "PAYLOAD_ENCODING_NONE" },
+  { no: 2, name: "PAYLOAD_ENCODING_AVRO" },
+  { no: 3, name: "PAYLOAD_ENCODING_PROTOBUF" },
+  { no: 4, name: "PAYLOAD_ENCODING_JSON" },
+  { no: 5, name: "PAYLOAD_ENCODING_XML" },
+  { no: 6, name: "PAYLOAD_ENCODING_TEXT" },
+  { no: 7, name: "PAYLOAD_ENCODING_UTF8" },
+  { no: 8, name: "PAYLOAD_ENCODING_MESSAGE_PACK" },
+  { no: 9, name: "PAYLOAD_ENCODING_SMILE" },
+  { no: 10, name: "PAYLOAD_ENCODING_BINARY" },
+  { no: 11, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
+]);
+
+/**
  * ListMessagesRequest is the request for ListMessages call.
  *
  * @generated from message redpanda.api.console.v1alpha.ListMessagesRequest
@@ -432,12 +512,17 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   payloadSize = 0;
 
   /**
-   * @generated from field: bytes deserialized_payload = 3;
+   * @generated from field: redpanda.api.console.v1alpha.PayloadEncoding encoding = 3;
    */
-  deserializedPayload = new Uint8Array(0);
+  encoding = PayloadEncoding.UNSPECIFIED;
 
   /**
-   * @generated from field: bool is_payload_too_large = 4;
+   * @generated from field: bytes normalized_payload = 4;
+   */
+  normalizedPayload = new Uint8Array(0);
+
+  /**
+   * @generated from field: bool is_payload_too_large = 5;
    */
   isPayloadTooLarge = false;
 
@@ -451,8 +536,9 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "original_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 2, name: "payload_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "deserialized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 4, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "encoding", kind: "enum", T: proto3.getEnumType(PayloadEncoding) },
+    { no: 4, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 5, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): KafkaRecordPayload {

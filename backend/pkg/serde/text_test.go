@@ -38,9 +38,11 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, "\n", string(val))
+
+				assert.Equal(t, "\n", string(payload.NormalizedPayload))
 			},
 		},
 		{
@@ -55,9 +57,11 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, " [^[:cntrl:]]*$", string(val))
+
+				assert.Equal(t, " [^[:cntrl:]]*$", string(payload.NormalizedPayload))
 			},
 		},
 		{
@@ -72,9 +76,11 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, " [^[:cntrl:]]*$", string(val))
+
+				assert.Equal(t, " [^[:cntrl:]]*$", string(payload.NormalizedPayload))
 			},
 		},
 		{

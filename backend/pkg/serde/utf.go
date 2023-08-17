@@ -11,6 +11,8 @@ package serde
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"unicode/utf8"
 
@@ -42,9 +44,16 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 		return RecordPayload{}, fmt.Errorf("payload does not contain UTF8 control characters")
 	}
 
+	b64 := base64.StdEncoding.EncodeToString(payload)
+	jsonBytes, err := json.Marshal(b64)
+	if err != nil {
+		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
+	}
+
 	return RecordPayload{
-		ParsedPayload: payload,
-		Encoding:      PayloadEncodingUtf8WithControlChars,
+		NormalizedPayload:   jsonBytes,
+		DeserializedPayload: payload,
+		Encoding:            PayloadEncodingUtf8WithControlChars,
 	}, nil
 }
 

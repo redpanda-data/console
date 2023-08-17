@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/jhump/protoreflect/desc"
@@ -79,8 +80,15 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
 	}
 
+	var native interface{}
+	err = json.Unmarshal(jsonBytes, &native)
+	if err != nil {
+		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
+	}
+
 	return RecordPayload{
-		ParsedPayload: jsonBytes,
-		Encoding:      PayloadEncodingProtobuf,
+		DeserializedPayload: native,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingProtobuf,
 	}, nil
 }

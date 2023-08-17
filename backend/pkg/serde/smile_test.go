@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -43,10 +44,15 @@ func TestSmileSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingSmile, payload.Encoding)
 
-				obj, ok := (payload.ParsedPayload).([]byte)
-				require.Truef(t, ok, "parsed payload is not of type string")
+				assert.Equal(t, `{"\"abKey\"":3,"foo":false}`, string(payload.NormalizedPayload))
 
-				assert.Equal(t, `{"\"abKey\"":3,"foo":false}`, string(obj))
+				jsonBytes, err := json.Marshal(payload.DeserializedPayload)
+				require.NoError(t, err)
+				assert.Equal(t, `{"\"abKey\"":3,"foo":false}`, string(jsonBytes))
+
+				obj, ok := (payload.DeserializedPayload).(map[string]any)
+				require.Truef(t, ok, "parsed payload is not of type map[string]any")
+				assert.Equal(t, false, obj["foo"])
 			},
 		},
 		{

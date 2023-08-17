@@ -53,7 +53,8 @@ func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) 
 	}
 
 	return RecordPayload{
-		ParsedPayload: obj,
-		Encoding:      PayloadEncodingXML,
+		NormalizedPayload:   jsonPayload.Bytes(),
+		DeserializedPayload: obj,
+		Encoding:            PayloadEncodingXML,
 	}, nil
 }

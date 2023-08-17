@@ -38,7 +38,9 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingXML, payload.Encoding)
 
-				obj, ok := (payload.ParsedPayload).(map[string]any)
+				assert.Equal(t, `{"name": "John", "age": "30"}`+"\n", string(payload.NormalizedPayload))
+
+				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
 				assert.Equal(t, "John", obj["name"])
 				assert.EqualValues(t, "30", obj["age"])

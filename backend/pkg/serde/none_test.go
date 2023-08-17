@@ -38,7 +38,9 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingNone, payload.Encoding)
 
-				val, ok := (payload.ParsedPayload).([]byte)
+				assert.Equal(t, `{}`, string(payload.NormalizedPayload))
+
+				val, ok := (payload.DeserializedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
 				assert.Equal(t, "", string(val))
 			},
