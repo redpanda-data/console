@@ -13,7 +13,7 @@
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
 import { numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Collapse, Modal, Popover, Radio, Select, Table } from 'antd';
+import { Collapse, Modal, Radio, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -26,7 +26,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Button, Tooltip } from '@redpanda-data/ui';
+import { Button, Tooltip, Popover } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -297,7 +297,7 @@ export class EditOffsetsModal extends Component<{
             </p>
         </div>;
 
-        return <Popover trigger="click" content={content}>
+        return <Popover trigger="click" content={content} size="auto">
             <WarningOutlined />
         </Popover>;
     }
