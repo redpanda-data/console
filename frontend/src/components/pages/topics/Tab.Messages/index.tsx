@@ -1240,7 +1240,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
 
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
     <Popover key={title} trigger="click" hideCloseButton title={popTitle} content={<Box maxW="600px">{content}</Box>} size="auto">
-        <Button variant="link" size="small" style={{ fontSize: "1.2em" }}>
+        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>
             {title}
         </Button>
     </Popover>

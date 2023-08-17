@@ -235,16 +235,16 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                 {entry.documentation && (
                     <Popover
                         hideCloseButton
-                        size={"lg"}
+                        size="lg"
                         content={
-                            <Grid templateColumns='1fr' gap={4} w={"fit-content"}>
+                            <Grid templateColumns="1fr" gap={4} w="fit-content">
                                 <GridItem>
                                     <strong>{entry.name}</strong>
                                     <br />
                                     {entry.documentation}
                                 </GridItem>
                                 <GridItem>
-                                    <Grid templateColumns='25% 1fr' gap={2}>
+                                    <Grid templateColumns="25% 1fr" gap={2}>
                                         <GridItem >
                                             <strong>Value</strong>
                                         </GridItem>
@@ -258,7 +258,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                                             <div>
                                                 <code>{entry.source}</code>
                                             </div>
-                                            <Text fontSize='sm'>{getConfigSourceExplanation(entry.source)}</Text>
+                                            <Text fontSize="sm">{getConfigSourceExplanation(entry.source)}</Text>
                                         </GridItem>
                                     </Grid>
                                 </GridItem>

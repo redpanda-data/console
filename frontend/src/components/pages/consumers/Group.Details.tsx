@@ -29,7 +29,7 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tag, Tooltip, Popover, PopoverArrow, PopoverTrigger, PopoverContent, PopoverBody, Portal } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag, Tooltip, Popover } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';

@@ -11,7 +11,7 @@
 
 import React, { FunctionComponent, ReactElement } from 'react';
 import { isClipboardAvailable } from '../../utils/featureDetection';
-import { Popover, PopoverContent, Portal, PopoverArrow, PopoverTrigger, PopoverBody, PopoverHeader } from '@redpanda-data/ui';
+import { Popover } from '@redpanda-data/ui';
 
 const popoverContent = (
     <>
