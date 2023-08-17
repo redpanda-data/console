@@ -297,7 +297,7 @@ export class EditOffsetsModal extends Component<{
             </p>
         </div>;
 
-        return <Popover trigger="click" content={content} size="auto">
+        return <Popover trigger="click" content={content} size="auto" hideCloseButton>
             <WarningOutlined />
         </Popover>;
     }
