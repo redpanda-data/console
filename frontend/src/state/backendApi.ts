@@ -55,7 +55,9 @@ import {
     SchemaRegistryCreateSchemaResponse,
     SchemaRegistryCreateSchema,
     SchemaRegistryDeleteSubjectVersionResponse,
-    SchemaRegistryDeleteSubjectResponse
+    SchemaRegistryDeleteSubjectResponse,
+    SchemaRegistryCompatabilityMode,
+    SchemaRegistrySetCompatabilityModeRequest
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -986,6 +988,17 @@ const apiStore = {
                 this.schemaDetails.set(subjectName, details);
             })
             .catch(addError);
+    },
+
+    async setSchemaRegistryCompatabilityMode(mode: SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatabilityModeRequest),
+        });
+        return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
     },
 
     async createSchema(subjectName: string, request: SchemaRegistryCreateSchema): Promise<SchemaRegistryCreateSchemaResponse> {

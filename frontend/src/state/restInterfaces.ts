@@ -1574,9 +1574,15 @@ export type SchemaRegistryModeResponse = {
 };
 
 // GET /schema-registry/config
+export type SchemaRegistryCompatabilityMode = 'NONE' | 'BACKWARD' | 'BACKWARD_TRANSITIVE' | 'FORWARD' | 'FORWARD_TRANSITIVE' | 'FULL' | 'FULL_TRANSITIVE';
 export type SchemaRegistryConfigResponse = {
-    compatibility: string;
+    compatibility: SchemaRegistryCompatabilityMode;
 };
+
+// PUT /schema-registry/config
+export type SchemaRegistrySetCompatabilityModeRequest = {
+    compatibility: SchemaRegistryCompatabilityMode;
+}
 
 // GET /schema-registry/subjects
 export type SchemaRegistrySubject = {
@@ -1594,7 +1600,7 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
     name: string;
     type: SchemaType;
-    compatibility: string;
+    compatibility: SchemaRegistryCompatabilityMode;
     versions: SchemaRegistrySubjectDetailsVersion[];
     latestActiveVersion: number;
     schemas: SchemaRegistryVersionedSchema[];
