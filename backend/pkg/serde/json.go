@@ -22,10 +22,10 @@ var _ Serde = (*JsonSerde)(nil)
 type JsonSerde struct{}
 
 func (JsonSerde) Name() PayloadEncoding {
-	return payloadEncodingJSON
+	return PayloadEncodingJSON
 }
 
-func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -52,6 +52,6 @@ func jsonDeserializePayload(payload []byte) (RecordPayload, error) {
 
 	return RecordPayload{
 		ParsedPayload: obj,
-		Encoding:      payloadEncodingJSON,
+		Encoding:      PayloadEncodingJSON,
 	}, nil
 }

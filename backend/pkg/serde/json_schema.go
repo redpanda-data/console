@@ -20,10 +20,10 @@ var _ Serde = (*JsonSchemaSerde)(nil)
 type JsonSchemaSerde struct{}
 
 func (JsonSchemaSerde) Name() PayloadEncoding {
-	return payloadEncodingJSON
+	return PayloadEncodingJSON
 }
 
-func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {

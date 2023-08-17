@@ -19,11 +19,11 @@ import (
 func recordHeaders(record *kgo.Record) []RecordHeader {
 	headers := make([]RecordHeader, len(record.Headers))
 	for i := 0; i < len(record.Headers); i++ {
-		encoding := headerEncodingNone
+		encoding := HeaderEncodingNone
 		if utf8.Valid(record.Headers[i].Value) {
-			encoding = headerEncodingUTF8
+			encoding = HeaderEncodingUTF8
 		} else if record.Headers[i].Value != nil {
-			encoding = headerEncodingBinary
+			encoding = HeaderEncodingBinary
 		}
 
 		headers[i] = RecordHeader{

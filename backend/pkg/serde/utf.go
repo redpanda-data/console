@@ -22,10 +22,10 @@ var _ Serde = (*UTF8Serde)(nil)
 type UTF8Serde struct{}
 
 func (UTF8Serde) Name() PayloadEncoding {
-	return payloadEncodingUtf8WithControlChars
+	return PayloadEncodingUtf8WithControlChars
 }
 
-func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -44,7 +44,7 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType payloadType)
 
 	return RecordPayload{
 		ParsedPayload: payload,
-		Encoding:      payloadEncodingUtf8WithControlChars,
+		Encoding:      PayloadEncodingUtf8WithControlChars,
 	}, nil
 }
 

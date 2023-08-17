@@ -66,7 +66,7 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 
 // deserializePayload deserializes either the key or value of a Kafka record by trying
 // the pre-defined deserialization strategies.
-func (s *Service) deserializePayload(record *kgo.Record, payloadType payloadType) RecordPayload {
+func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType) RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
 	// Check if payload is empty
@@ -75,7 +75,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType payloadType
 			OriginalPayload:  payload,
 			IsPayloadNull:    payload == nil,
 			PayloadSizeBytes: 0,
-			Encoding:         payloadEncodingNone,
+			Encoding:         PayloadEncodingNone,
 		}
 	}
 
@@ -108,7 +108,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType payloadType
 		IsPayloadNull:     payload == nil,
 		IsPayloadTooLarge: false,           // TODO: Set to true if too large
 		Troubleshooting:   troubleshooting, // TODO: Only if troubleshooting is enabled in request opts
-		Encoding:          payloadEncodingBinary,
+		Encoding:          PayloadEncodingBinary,
 	}
 }
 
@@ -136,7 +136,7 @@ type DeserializationOptions struct {
 	Troubleshoot bool
 }
 
-func payloadFromRecord(record *kgo.Record, payloadType payloadType) []byte {
+func payloadFromRecord(record *kgo.Record, payloadType PayloadType) []byte {
 	if payloadType == payloadTypeValue {
 		return record.Value
 	}

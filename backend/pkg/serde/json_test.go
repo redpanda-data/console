@@ -23,7 +23,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 	tests := []struct {
 		name           string
 		record         *kgo.Record
-		payloadType    payloadType
+		payloadType    PayloadType
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
@@ -36,7 +36,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingJSON, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 
 				obj, ok := (payload.ParsedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -54,7 +54,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingJSON, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 			payloadType: payloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
-				assert.Equal(t, payloadEncodingJSON, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 			},
 		},
 		{

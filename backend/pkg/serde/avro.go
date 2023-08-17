@@ -27,10 +27,10 @@ type AvroSerde struct {
 }
 
 func (AvroSerde) Name() PayloadEncoding {
-	return payloadEncodingAvro
+	return PayloadEncodingAvro
 }
 
-func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	if d.SchemaSvc == nil {
 		return RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
@@ -68,6 +68,6 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType payloadTyp
 
 	return RecordPayload{
 		ParsedPayload: jsonBytes,
-		Encoding:      payloadEncodingAvro,
+		Encoding:      PayloadEncodingAvro,
 	}, nil
 }

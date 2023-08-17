@@ -180,7 +180,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	tests := []struct {
 		name           string
 		record         *kgo.Record
-		payloadType    payloadType
+		payloadType    PayloadType
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
@@ -193,7 +193,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingProtobuf, payload.Encoding)
+				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
 				obj, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")

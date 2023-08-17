@@ -40,7 +40,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 				OriginalPayload:  record.Key,
 				PayloadSizeBytes: len(record.Key),
 				ParsedPayload:    offsetCommitKey,
-				Encoding:         payloadEncodingConsumerOffsets,
+				Encoding:         PayloadEncodingConsumerOffsets,
 			}
 		}
 
@@ -54,7 +54,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 				OriginalPayload:  record.Value,
 				PayloadSizeBytes: len(record.Value),
 				ParsedPayload:    offsetCommitValue,
-				Encoding:         payloadEncodingConsumerOffsets,
+				Encoding:         PayloadEncodingConsumerOffsets,
 			}
 		}
 	case 2:
@@ -66,7 +66,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 				OriginalPayload:  record.Key,
 				PayloadSizeBytes: len(record.Key),
 				ParsedPayload:    metadataKey,
-				Encoding:         payloadEncodingConsumerOffsets,
+				Encoding:         PayloadEncodingConsumerOffsets,
 			}
 		}
 
@@ -90,7 +90,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		deserializedKey = &RecordPayload{
 			OriginalPayload:  record.Key,
 			PayloadSizeBytes: len(record.Key),
-			Encoding:         payloadEncodingNone,
+			Encoding:         PayloadEncodingNone,
 		}
 	}
 	if deserializedVal == nil {
@@ -98,7 +98,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		deserializedVal = &RecordPayload{
 			OriginalPayload:  record.Value,
 			PayloadSizeBytes: len(record.Value),
-			Encoding:         payloadEncodingNone,
+			Encoding:         PayloadEncodingNone,
 		}
 	}
 

@@ -23,10 +23,10 @@ var _ Serde = (*SmileSerde)(nil)
 type SmileSerde struct{}
 
 func (SmileSerde) Name() PayloadEncoding {
-	return payloadEncodingSmile
+	return PayloadEncodingSmile
 }
 
-func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -51,6 +51,6 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType payloadType
 
 	return RecordPayload{
 		ParsedPayload: jsonBytes,
-		Encoding:      payloadEncodingSmile,
+		Encoding:      PayloadEncodingSmile,
 	}, nil
 }

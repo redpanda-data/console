@@ -226,7 +226,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("123", obj["ID"])
 
 		// check value properties
-		assert.Equal(payloadEncodingJSON, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingJSON, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(serializedOrder, dr.Value.OriginalPayload)
@@ -235,7 +235,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 1)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 
 		// check key
@@ -245,7 +245,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// check key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(order.ID), dr.Key.OriginalPayload)
@@ -253,25 +253,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_plain_json'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 
@@ -376,7 +376,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
 		// check value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(pbData, dr.Value.OriginalPayload)
@@ -385,15 +385,15 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 5)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("incorrect magic byte for json schema", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Value.Troubleshooting[4].Message)
 
 		// check key
@@ -403,7 +403,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
@@ -411,25 +411,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype mapping found for the record key of topic 'test.redpanda.console.serde_plain_protobuf'", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 
@@ -656,7 +656,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(int32(1), rOrder.GetRevision())
 
 		// value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(pbData, dr.Value.OriginalPayload)
@@ -665,15 +665,15 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 5)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("incorrect magic byte for json schema", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Value.Troubleshooting[4].Message)
 
 		// check key
@@ -683,7 +683,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
@@ -691,25 +691,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype mapping found for the record key of topic 'test.redpanda.console.serde_plain_protobuf_ref'", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 
@@ -843,7 +843,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
 		// value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(msgData, dr.Value.OriginalPayload)
@@ -852,17 +852,17 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
-		assert.Equal(string(payloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
@@ -872,7 +872,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
@@ -880,25 +880,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("payload size is < 5 for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 
@@ -1058,7 +1058,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("wid_1", widgets[1].GetId())
 
 		// value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(msgData, dr.Value.OriginalPayload)
@@ -1067,17 +1067,17 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
-		assert.Equal(string(payloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
@@ -1087,7 +1087,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte("gadget_0"), dr.Key.OriginalPayload)
@@ -1095,25 +1095,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("incorrect magic byte for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_multi", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 
@@ -1262,7 +1262,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject2.GetItem().GetItemType())
 
 		// value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(msgData, dr.Value.OriginalPayload)
@@ -1271,21 +1271,21 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
-		assert.Equal(string(payloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_nest'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		assert.Equal(payloadEncodingNone, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingNone, dr.Key.Encoding)
 		assert.Equal(true, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(nil), dr.Key.OriginalPayload)
@@ -1577,7 +1577,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(int32(1), rOrder.GetRevision())
 
 		// value properties
-		assert.Equal(payloadEncodingProtobuf, dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(msgData, dr.Value.OriginalPayload)
@@ -1586,17 +1586,17 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(payloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
 		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: failed to parse schema reference")
-		assert.Equal(string(payloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
@@ -1606,7 +1606,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
-		assert.Equal(payloadEncodingText, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte("123456789"), dr.Key.OriginalPayload)
@@ -1614,25 +1614,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(payloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
-		assert.Equal(string(payloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
 		assert.Equal("incorrect magic byte for json schema", dr.Key.Troubleshooting[2].Message)
-		assert.Equal(string(payloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
-		assert.Equal(string(payloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Key.Troubleshooting[4].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
-		assert.Equal(string(payloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
 		assert.Equal("incorrect magic byte", dr.Key.Troubleshooting[6].Message)
-		assert.Equal(string(payloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_ref", dr.Key.Troubleshooting[7].Message)
-		assert.Equal(string(payloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(payloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 }

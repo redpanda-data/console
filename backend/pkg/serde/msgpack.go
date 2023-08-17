@@ -25,10 +25,10 @@ type MsgPackSerde struct {
 }
 
 func (MsgPackSerde) Name() PayloadEncoding {
-	return payloadEncodingMsgPack
+	return PayloadEncodingMsgPack
 }
 
-func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	if d.MsgPackService == nil {
 		return RecordPayload{}, fmt.Errorf("no message pack service configured")
 	}
@@ -47,6 +47,6 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType payload
 
 	return RecordPayload{
 		ParsedPayload: obj,
-		Encoding:      payloadEncodingMsgPack,
+		Encoding:      PayloadEncodingMsgPack,
 	}, nil
 }

@@ -87,7 +87,7 @@ type RecordHeader struct {
 	IsValueTooLarge bool `json:"isValueTooLarge"`
 
 	// Encoding is the encoding that has been recognized for the value.
-	Encoding headerEncoding `json:"encoding"`
+	Encoding HeaderEncoding `json:"encoding"`
 }
 
 // TroubleshootingReport contains troubleshooting information why a Serde has failed

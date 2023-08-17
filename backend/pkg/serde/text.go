@@ -22,10 +22,10 @@ var _ Serde = (*TextSerde)(nil)
 type TextSerde struct{}
 
 func (TextSerde) Name() PayloadEncoding {
-	return payloadEncodingText
+	return PayloadEncodingText
 }
 
-func (TextSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -33,7 +33,7 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType payloadType)
 	if len(trimmed) == 0 {
 		return RecordPayload{
 			ParsedPayload: payload,
-			Encoding:      payloadEncodingText,
+			Encoding:      PayloadEncodingText,
 		}, nil
 	}
 
@@ -48,6 +48,6 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType payloadType)
 
 	return RecordPayload{
 		ParsedPayload: payload,
-		Encoding:      payloadEncodingText,
+		Encoding:      PayloadEncodingText,
 	}, nil
 }

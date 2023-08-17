@@ -20,10 +20,10 @@ var _ Serde = (*NoneSerde)(nil)
 type NoneSerde struct{}
 
 func (NoneSerde) Name() PayloadEncoding {
-	return payloadEncodingNone
+	return PayloadEncodingNone
 }
 
-func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) != 0 {
@@ -32,6 +32,6 @@ func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType payloadType)
 
 	return RecordPayload{
 		ParsedPayload: payload,
-		Encoding:      payloadEncodingNone,
+		Encoding:      PayloadEncodingNone,
 	}, nil
 }

@@ -24,7 +24,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 	tests := []struct {
 		name           string
 		record         *kgo.Record
-		payloadType    payloadType
+		payloadType    PayloadType
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
@@ -37,7 +37,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingUtf8WithControlChars, payload.Encoding)
+				assert.Equal(t, PayloadEncodingUtf8WithControlChars, payload.Encoding)
 
 				val, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
@@ -54,7 +54,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingUtf8WithControlChars, payload.Encoding)
+				assert.Equal(t, PayloadEncodingUtf8WithControlChars, payload.Encoding)
 
 				val, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")

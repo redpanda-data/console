@@ -12,31 +12,31 @@ package serde
 type PayloadEncoding string
 
 const (
-	payloadEncodingNone                 PayloadEncoding = "none"
-	payloadEncodingAvro                 PayloadEncoding = "avro"
-	payloadEncodingProtobuf             PayloadEncoding = "protobuf"
-	payloadEncodingJSON                 PayloadEncoding = "json"
-	payloadEncodingXML                  PayloadEncoding = "xml"
-	payloadEncodingText                 PayloadEncoding = "text"
-	payloadEncodingUtf8WithControlChars PayloadEncoding = "utf8WithControlChars"
-	payloadEncodingConsumerOffsets      PayloadEncoding = "consumerOffsets"
-	payloadEncodingBinary               PayloadEncoding = "binary"
-	payloadEncodingMsgPack              PayloadEncoding = "msgpack"
-	payloadEncodingSmile                PayloadEncoding = "smile"
+	PayloadEncodingNone                 PayloadEncoding = "none"
+	PayloadEncodingAvro                 PayloadEncoding = "avro"
+	PayloadEncodingProtobuf             PayloadEncoding = "protobuf"
+	PayloadEncodingJSON                 PayloadEncoding = "json"
+	PayloadEncodingXML                  PayloadEncoding = "xml"
+	PayloadEncodingText                 PayloadEncoding = "text"
+	PayloadEncodingUtf8WithControlChars PayloadEncoding = "utf8WithControlChars"
+	PayloadEncodingConsumerOffsets      PayloadEncoding = "consumerOffsets"
+	PayloadEncodingBinary               PayloadEncoding = "binary"
+	PayloadEncodingMsgPack              PayloadEncoding = "msgpack"
+	PayloadEncodingSmile                PayloadEncoding = "smile"
 )
 
-type headerEncoding string
+type HeaderEncoding string
 
 const (
-	headerEncodingNone   headerEncoding = "none"
-	headerEncodingUTF8   headerEncoding = "text"
-	headerEncodingBinary headerEncoding = "binary"
+	HeaderEncodingNone   HeaderEncoding = "none"
+	HeaderEncodingUTF8   HeaderEncoding = "text"
+	HeaderEncodingBinary HeaderEncoding = "binary"
 )
 
-// payloadType indicates whether we want to deserialize the Key or Value of a given Record.
-type payloadType int
+// PayloadType indicates whether we want to deserialize the Key or Value of a given Record.
+type PayloadType int
 
 const (
-	payloadTypeKey payloadType = iota
+	payloadTypeKey PayloadType = iota
 	payloadTypeValue
 )

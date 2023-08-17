@@ -26,10 +26,10 @@ type ProtobufSchemaSerde struct {
 }
 
 func (ProtobufSchemaSerde) Name() PayloadEncoding {
-	return payloadEncodingProtobuf
+	return PayloadEncodingProtobuf
 }
 
-func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	if d.ProtoSvc == nil {
 		return RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
 	}
@@ -81,6 +81,6 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 
 	return RecordPayload{
 		ParsedPayload: jsonBytes,
-		Encoding:      payloadEncodingProtobuf,
+		Encoding:      PayloadEncodingProtobuf,
 	}, nil
 }

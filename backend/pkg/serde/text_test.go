@@ -23,7 +23,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 	tests := []struct {
 		name           string
 		record         *kgo.Record
-		payloadType    payloadType
+		payloadType    PayloadType
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
@@ -36,7 +36,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingText, payload.Encoding)
+				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
 				val, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
@@ -53,7 +53,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingText, payload.Encoding)
+				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
 				val, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")
@@ -70,7 +70,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, payloadEncodingText, payload.Encoding)
+				assert.Equal(t, PayloadEncodingText, payload.Encoding)
 
 				val, ok := (payload.ParsedPayload).([]byte)
 				require.Truef(t, ok, "parsed payload is not of type string")

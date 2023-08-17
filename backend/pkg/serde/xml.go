@@ -24,10 +24,10 @@ var _ Serde = (*XMLSerde)(nil)
 type XMLSerde struct{}
 
 func (XMLSerde) Name() PayloadEncoding {
-	return payloadEncodingXML
+	return PayloadEncodingXML
 }
 
-func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) (RecordPayload, error) {
+func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -54,6 +54,6 @@ func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType payloadType) 
 
 	return RecordPayload{
 		ParsedPayload: obj,
-		Encoding:      payloadEncodingXML,
+		Encoding:      PayloadEncodingXML,
 	}, nil
 }
