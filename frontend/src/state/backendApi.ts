@@ -51,7 +51,11 @@ import {
     SchemaRegistrySubjectDetails,
     SchemaRegistryModeResponse,
     SchemaRegistryConfigResponse,
-    SchemaRegistrySchemaTypesResponse
+    SchemaRegistrySchemaTypesResponse,
+    SchemaRegistryCreateSchemaResponse,
+    SchemaRegistryCreateSchema,
+    SchemaRegistryDeleteSubjectVersionResponse,
+    SchemaRegistryDeleteSubjectResponse
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -982,6 +986,37 @@ const apiStore = {
                 this.schemaDetails.set(subjectName, details);
             })
             .catch(addError);
+    },
+
+    async createSchema(subjectName: string, request: SchemaRegistryCreateSchema): Promise<SchemaRegistryCreateSchemaResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
+    },
+
+    async deleteSchemaSubject(subjectName: string, permanent: boolean): Promise<SchemaRegistryDeleteSubjectResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}?permanent=${permanent ? 'true' : 'false'}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
+    },
+
+    async deleteSchemaSubjectVersion(subjectName: string, version: 'latest' | number, permanent: boolean): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
     },
 
     refreshPartitionReassignments(force?: boolean): Promise<void> {

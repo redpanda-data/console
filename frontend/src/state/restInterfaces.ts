@@ -1611,9 +1611,33 @@ export type SchemaRegistryVersionedSchema = {
     isSoftDeleted: boolean;
     type: string;
     schema: string;
-    references: {
-        name: string;
-        subject: string;
-        version: number;
-    }[];
+    references: SchemaReference[];
 };
+
+export type SchemaReference = {
+    name: string;
+    subject: string;
+    version: number;
+};
+
+// DELETE /schema-registry/subjects/{subject}/versions/{version}
+export type SchemaRegistryDeleteSubjectVersionResponse = {
+    deletedVersion: number;
+}
+
+// DELETE /schema-registry/subjects/{subject}?permanent=false
+export type SchemaRegistryDeleteSubjectResponse = {
+    deletedVersions: number[];
+}
+
+
+// POST /schema-registry/subjects/{subject}/versions
+export type SchemaRegistryCreateSchema = {
+    schema: string;
+    schemaType: SchemaType;
+    references: SchemaReference[];
+};
+
+export type SchemaRegistryCreateSchemaResponse = {
+    id: number;
+}
