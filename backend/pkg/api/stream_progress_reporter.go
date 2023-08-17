@@ -87,18 +87,26 @@ func (p *streamProgressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
+	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
+
+	// TODO set encoding on output
+	// switch message.Value.RecognizedEncoding {
+
+	// }
 	data := &v1alpha.ListMessagesResponse_DataMessage{
 		Value: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:     message.Value.Payload.Payload,
-			PayloadSize:         int32(message.Value.Size),
-			DeserializedPayload: message.Value.Payload.Payload,
-			IsPayloadTooLarge:   false, // TODO check for size
+			OriginalPayload:   message.Value.Payload.Payload,
+			PayloadSize:       int32(message.Value.Size),
+			NormalizedPayload: message.Value.Payload.Payload,
+			IsPayloadTooLarge: false, // TODO check for size
+			Encoding:          encoding,
 		},
 		Key: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:     message.Key.Payload.Payload,
-			PayloadSize:         int32(message.Key.Size),
-			DeserializedPayload: message.Key.Payload.Payload,
-			IsPayloadTooLarge:   false, // TODO check for size
+			OriginalPayload:   message.Key.Payload.Payload,
+			PayloadSize:       int32(message.Key.Size),
+			NormalizedPayload: message.Key.Payload.Payload,
+			IsPayloadTooLarge: false, // TODO check for size
+			Encoding:          encoding,
 		},
 	}
 

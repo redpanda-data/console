@@ -64,13 +64,14 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		msg := stream.Msg()
 		switch cm := msg.GetControlMessage().(type) {
 		case *v1pb.ListMessagesResponse_Data:
-			key := string(cm.Data.GetKey().DeserializedPayload)
+			key := string(cm.Data.GetKey().GetNormalizedPayload())
 			keys = append(keys, key)
 
 			assert.NotEmpty(cm.Data.GetValue())
-			assert.NotEmpty(cm.Data.GetValue().GetDeserializedPayload())
+			assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
 			assert.NotEmpty(cm.Data.GetValue().GetOriginalPayload())
 			assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
+			assert.NotEmpty(cm.Data.GetValue().GetEncoding())
 			assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
 		case *v1pb.ListMessagesResponse_Done:
 			doneCount++
