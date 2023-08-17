@@ -95,16 +95,16 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 	// }
 	data := &v1alpha.ListMessagesResponse_DataMessage{
 		Value: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Value.Payload.Payload,
-			PayloadSize:       int32(message.Value.Size),
-			NormalizedPayload: message.Value.Payload.Payload,
+			OriginalPayload:   message.Value.OriginalPayload,
+			PayloadSize:       int32(message.Value.PayloadSizeBytes),
+			NormalizedPayload: message.Value.NormalizedPayload,
 			IsPayloadTooLarge: false, // TODO check for size
 			Encoding:          encoding,
 		},
 		Key: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Key.Payload.Payload,
-			PayloadSize:       int32(message.Key.Size),
-			NormalizedPayload: message.Key.Payload.Payload,
+			OriginalPayload:   message.Key.OriginalPayload,
+			PayloadSize:       int32(message.Key.PayloadSizeBytes),
+			NormalizedPayload: message.Key.NormalizedPayload,
 			IsPayloadTooLarge: false, // TODO check for size
 			Encoding:          encoding,
 		},

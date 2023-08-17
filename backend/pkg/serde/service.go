@@ -23,17 +23,17 @@ type Service struct {
 	SerDes []Serde
 }
 
-func NewService(srService *schema.Service, protSvc *proto.Service, msgPackService *msgpack.Service) *Service {
+func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NoneSerde{},
 			JsonSerde{},
 			JsonSchemaSerde{},
 			XMLSerde{},
-			AvroSerde{SchemaSvc: srService},
-			ProtobufSerde{ProtoSvc: protSvc},
-			ProtobufSchemaSerde{ProtoSvc: protSvc},
-			MsgPackSerde{MsgPackService: msgPackService},
+			AvroSerde{SchemaSvc: schemaService},
+			ProtobufSerde{ProtoSvc: protoSvc},
+			ProtobufSchemaSerde{ProtoSvc: protoSvc},
+			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
 			UTF8Serde{},
 			TextSerde{},

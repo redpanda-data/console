@@ -516,7 +516,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 func (o *OrderMatcher) Matches(x interface{}) bool {
 	if m, ok := x.(*kafka.TopicMessage); ok {
 		order := testutil.Order{}
-		err := json.Unmarshal(m.Value.Payload.Payload, &order)
+		err := json.Unmarshal(m.Value.NormalizedPayload, &order)
 		if err != nil {
 			o.err = fmt.Sprintf("marshal error: %s", err.Error())
 			return false

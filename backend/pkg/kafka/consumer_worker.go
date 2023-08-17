@@ -17,6 +17,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
@@ -50,15 +52,16 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		}
 
 		// Run Interpreter filter and check if message passes the filter
-		deserializedRec := s.Deserializer.DeserializeRecord(record)
+		// deserializedRec := s.Deserializer.DeserializeRecord(record)
+		deserializedRec := s.SerdeService.DeserializeRecord(record, serde.DeserializationOptions{})
 
-		headersByKey := make(map[string]interface{}, len(deserializedRec.Headers))
+		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))
 		headers := make([]MessageHeader, 0)
-		for key, header := range deserializedRec.Headers {
-			headersByKey[key] = header.Object
+		for _, header := range deserializedRec.Headers {
+			headersByKey[header.Key] = header.Value
 			headers = append(headers, MessageHeader{
-				Key:   key,
-				Value: header,
+				Key:   header.Key,
+				Value: &header,
 			})
 		}
 
@@ -67,8 +70,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			PartitionID:  record.Partition,
 			Offset:       record.Offset,
 			Timestamp:    record.Timestamp,
-			Key:          deserializedRec.Key.Object,
-			Value:        deserializedRec.Value.Object,
+			Key:          deserializedRec.Key, // TODO should this be deserialized payload / like an object?
+			Value:        deserializedRec.Value.DeserializedPayload,
 			HeadersByKey: headersByKey,
 		}
 
@@ -86,8 +89,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			Headers:         headers,
 			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
 			IsTransactional: record.Attrs.IsTransactional(),
-			Key:             deserializedRec.Key,
-			Value:           deserializedRec.Value,
+			Key:             &deserializedRec.Key,
+			Value:           &deserializedRec.Value,
 			IsMessageOk:     isOK,
 			ErrorMessage:    errMessage,
 			MessageSize:     int64(len(record.Key) + len(record.Value)),

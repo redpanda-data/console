@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,13 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingXML, payload.Encoding)
 
-				assert.Equal(t, `{"name": "John", "age": "30"}`+"\n", string(payload.NormalizedPayload))
+				// serialization can be non-deterministic in order of properties
+				// so lets check general format of string
+				normalizedPayload := string(payload.NormalizedPayload)
+				assert.True(t, strings.HasPrefix(normalizedPayload, "{"))
+				assert.True(t, strings.HasSuffix(normalizedPayload, "}\n"))
+				assert.Contains(t, normalizedPayload, `"name": "John"`)
+				assert.Contains(t, normalizedPayload, `"age": "30"`)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")

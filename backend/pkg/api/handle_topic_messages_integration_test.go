@@ -13,6 +13,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -73,6 +74,8 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 			assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
 			assert.NotEmpty(cm.Data.GetValue().GetEncoding())
 			assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
+
+			assert.Equal(fmt.Sprintf(`{"ID":"%s"}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
 		case *v1pb.ListMessagesResponse_Done:
 			doneCount++
 

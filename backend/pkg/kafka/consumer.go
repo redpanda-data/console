@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/interpreter"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 //go:generate mockgen -destination=./mocks/kafka.go -package=mocks github.com/redpanda-data/console/backend/pkg/kafka IListMessagesProgress
@@ -44,8 +45,8 @@ type TopicMessage struct {
 	IsTransactional bool   `json:"isTransactional"`
 
 	Headers []MessageHeader      `json:"headers"`
-	Key     *deserializedPayload `json:"key"`
-	Value   *deserializedPayload `json:"value"`
+	Key     *serde.RecordPayload `json:"key"`
+	Value   *serde.RecordPayload `json:"value"`
 
 	// Below properties are used for the internal communication via Go channels
 	IsMessageOk  bool   `json:"-"`
@@ -56,8 +57,8 @@ type TopicMessage struct {
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
 // a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
 type MessageHeader struct {
-	Key   string               `json:"key"`
-	Value *deserializedPayload `json:"value"`
+	Key   string              `json:"key"`
+	Value *serde.RecordHeader `json:"value"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -87,7 +88,7 @@ type interpreterArguments struct {
 	Timestamp    time.Time
 	Key          interface{}
 	Value        interface{}
-	HeadersByKey map[string]interface{}
+	HeadersByKey map[string][]byte
 }
 
 // FetchMessages is in charge of fulfilling the topic consume request. This is tricky

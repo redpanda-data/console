@@ -11,7 +11,6 @@ package serde
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -38,8 +37,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 
 	// NO OP schema registry API server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("!!! request %+v %+v\n", r.Method, r.URL.String())
-
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
