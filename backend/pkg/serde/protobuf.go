@@ -135,7 +135,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 
 		b, err := d.serializeJSON([]byte(trimmed), payloadType, so.topic)
 		if err != nil {
-			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
+			return nil, fmt.Errorf("failed to serialize string protobuf payload: %w", err)
 		}
 
 		binData = b
@@ -148,7 +148,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 
 			b, err := d.serializeJSON(trimmed, payloadType, so.topic)
 			if err != nil {
-				return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
+				return nil, fmt.Errorf("failed to serialize json protobuf payload: %w", err)
 			}
 			binData = b
 		} else {

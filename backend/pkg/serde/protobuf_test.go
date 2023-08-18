@@ -343,7 +343,7 @@ func TestProtobufSerde_SerializePayload(t *testing.T) {
 			data := `{"id":"543"}`
 			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize dynamic protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
+			assert.Equal(t, "failed to serialize string protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
 			assert.Nil(t, actualData)
 		})
 
@@ -392,7 +392,7 @@ func TestProtobufSerde_SerializePayload(t *testing.T) {
 			data := []byte(`{"id":"543"}`)
 			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize dynamic protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
+			assert.Equal(t, "failed to serialize json protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
 			assert.Nil(t, actualData)
 		})
 	})

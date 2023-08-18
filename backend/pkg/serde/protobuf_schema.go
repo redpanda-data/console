@@ -10,13 +10,19 @@
 package serde
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
+	v1proto "github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	v2proto "google.golang.org/protobuf/proto"
 
 	"github.com/redpanda-data/console/backend/pkg/proto"
 )
@@ -94,6 +100,135 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 	}, nil
 }
 
-func (ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	var binData []byte
+	switch v := obj.(type) {
+	case *dynamic.Message:
+		b, err := v.Marshal()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
+		}
+		binData = b
+	case v1proto.Message:
+		b, err := v1proto.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize v1 protobuf payload: %w", err)
+		}
+		binData = b
+	case v2proto.Message:
+		b, err := v2proto.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize v2 protobuf payload: %w", err)
+		}
+		binData = b
+	case map[string]any:
+		if !so.schemaIDSet {
+			return nil, errors.New("no schema id specified")
+		}
+
+		jsonBytes, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize protobuf payload to json: %w", err)
+		}
+
+		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(jsonBytes, int(so.schemaId), so.index)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize native protobuf payload: %w", err)
+		}
+
+		binData = b
+	case string:
+		if !so.schemaIDSet {
+			return nil, errors.New("no schema id specified")
+		}
+
+		trimmed := strings.TrimLeft(v, " \t\r\n")
+
+		if len(trimmed) == 0 {
+			return nil, errors.New("string payload is empty")
+		}
+
+		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+		if !startsWithJSON {
+			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		}
+
+		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage([]byte(trimmed), int(so.schemaId), so.index)
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize string protobuf payload: %w", err)
+		}
+
+		binData = b
+	case []byte:
+		trimmed := bytes.TrimLeft(v, " \t\r\n")
+		if len(trimmed) != 0 && trimmed[0] == '[' || trimmed[0] == '{' {
+			if !so.schemaIDSet {
+				return nil, errors.New("no schema id specified")
+			}
+
+			b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(trimmed, int(so.schemaId), so.index)
+			if err != nil {
+				return nil, fmt.Errorf("failed to serialize json protobuf payload: %w", err)
+			}
+			binData = b
+		} else {
+			if !so.schemaIDSet {
+				return nil, errors.New("no schema id specified")
+			}
+
+			index := so.index
+			if len(index) == 0 {
+				index = []int{0}
+			}
+
+			_, err := d.ProtoSvc.GetMessageDescriptorForSchema(int(so.schemaId), index)
+			if err != nil {
+				return nil, fmt.Errorf("failed to serialize binary protobuf payload: %w", err)
+			}
+
+			header, err := appendEncode(nil, int(so.schemaId), index)
+			if err != nil {
+				return nil, fmt.Errorf("failed encode binary protobuf payload: %w", err)
+			}
+
+			binData = append(header, v...)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+	}
+
+	return binData, nil
+}
+
+// from franz-go
+
+// AppendEncode appends an encoded header to b according to the Confluent wire
+// format and returns it. Error is always nil.
+func appendEncode(b []byte, id int, index []int) ([]byte, error) {
+	b = append(
+		b,
+		0,
+		byte(id>>24),
+		byte(id>>16),
+		byte(id>>8),
+		byte(id>>0),
+	)
+
+	if len(index) > 0 {
+		if len(index) == 1 && index[0] == 0 {
+			b = append(b, 0) // first-index shortcut (one type in the protobuf)
+		} else {
+			b = binary.AppendVarint(b, int64(len(index)))
+			for _, idx := range index {
+				b = binary.AppendVarint(b, int64(idx))
+			}
+		}
+	}
+
+	return b, nil
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/runtime/protoiface"
 
@@ -208,6 +209,62 @@ func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDe
 	}
 
 	return msg.Marshal()
+}
+
+// TODO consolidate this with getMessageDescriptorFromConfluentMessage
+func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*desc.MessageDescriptor, error) {
+	fd, exists := s.GetFileDescriptorBySchemaID(schemaID)
+	if !exists {
+		return nil, fmt.Errorf("schema ID %+v not found", schemaID)
+	}
+
+	messageTypes := fd.GetMessageTypes()
+	var messageDescriptor *desc.MessageDescriptor
+	for _, idx := range index {
+		if idx > len(messageTypes) {
+			return nil, fmt.Errorf("message index is larger than the message types array length")
+		}
+		messageDescriptor = messageTypes[idx]
+		messageTypes = messageDescriptor.GetNestedMessageTypes()
+	}
+
+	if messageDescriptor == nil {
+		return nil, fmt.Errorf("protobuf message descriptor for schema id '%+v' and index '%+v' not found", schemaID, index)
+	}
+
+	return messageDescriptor, nil
+}
+
+func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID int, index []int) ([]byte, error) {
+	if len(index) == 0 {
+		index = []int{0}
+	}
+
+	messageDescriptor, err := s.GetMessageDescriptorForSchema(schemaID, index)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := dynamic.NewMessage(messageDescriptor)
+	err = msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
+		AnyResolver:        &anyResolver{s.registry},
+		AllowUnknownFields: true,
+	}, json)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+	}
+
+	var srSerde sr.Serde
+	srSerde.Register(
+		schemaID,
+		&dynamic.Message{},
+		sr.EncodeFn(func(v any) ([]byte, error) {
+			return v.(*dynamic.Message).Marshal()
+		}),
+		sr.Index(index...),
+	)
+
+	return srSerde.Encode(msg)
 }
 
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
