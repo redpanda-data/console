@@ -1,0 +1,9 @@
+kafka:
+  protobuf:
+    enabled: true
+    git:
+      enabled: true
+      repository:
+        url: https://github.com/redpanda-data/console.git
+        branch: release-1.0
+        maxDepth: 3
