@@ -977,7 +977,7 @@ const apiStore = {
             }, addError);
     },
 
-    refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
+    refreshSchemaDetails(subjectName: string, version: number | 'latest' | 'all', force?: boolean) {
         if (version == null) version = 'latest';
 
         const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaRegistrySubjectDetails>;

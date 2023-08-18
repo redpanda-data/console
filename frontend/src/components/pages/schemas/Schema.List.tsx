@@ -151,7 +151,7 @@ class SchemaList extends PageComponent<{}> {
                         rowClassName={() => 'hoverLink'}
                         rowKey="name"
                         onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/subjects/${encodeURIComponent(name)}/versions/latest`),
+                            onClick: () => appGlobal.history.push(`/schema-registry/subjects/${encodeURIComponent(name)}?version=latest`),
                         })}
                     />
                 </Section>

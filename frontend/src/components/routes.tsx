@@ -282,7 +282,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
-    MakeRoute<{ subjectName: string }>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
+    MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', FilterIcon, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
