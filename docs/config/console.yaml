@@ -104,6 +104,7 @@ kafka:
   #       url:
   #       branch: (defaults to primary/default branch)
   #       baseDirectory: (defaults to the root directory of the repo/branch above)
+  #       maxDepth: (defaults to 15)
   #     # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
   #     refreshInterval: 1m
   #     # Basic Auth
@@ -111,15 +112,15 @@ kafka:
   #     basicAuth:
   #       enabled: true
   #       username: token
-  #       password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
+  #       password: #  This can be set via the --owl.topic-documentation.git.basic-auth.password flag as well
   #     # SSH Auth
   #     # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
   #     ssh:
   #       enabled: false
   #       username:
-  #       privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
+  #       privateKey: # This can be set via the --owl.topic-documentation.git.ssh.private-key flag as well
   #       privateKeyFilepath:
-  #       passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
+  #       passphrase: # This can be set via the --owl.topic-documentation.git.ssh.passphrase flag as well
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
@@ -158,8 +159,8 @@ kafka:
 #         # keyFilepath:
 #         # insecureSkipTlsVerify: false
 #       username:
-#       password: # This can be set via the via the --connect.clusters.i.password flag as well (i to be replaced with the array index)
-#       token: # This can be set via the via the --connect.clusters.i.token flag as well (i to be replaced with the array index)
+#       password: # This can be set via the --connect.clusters.i.password flag as well (i to be replaced with the array index)
+#       token: # This can be set via the --connect.clusters.i.token flag as well (i to be replaced with the array index)
 #   connectTimeout: 15s # used to test cluster connectivity
 #   readTimeout: 60s    # overall REST timeout
 #   requestTimeout: 6s  # timeout for REST requests
@@ -175,6 +176,7 @@ kafka:
 #         url:
 #         branch: (defaults to primary/default branch)
 #         baseDirectory: .
+#         maxDepth: (defaults to 15)
 #       # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
 #       refreshInterval: 1m
 #       # Basic Auth
@@ -182,15 +184,15 @@ kafka:
 #       basicAuth:
 #         enabled: true
 #         username: token
-#         password: #  This can be set via the via the --console.topic-documentation.git.basic-auth.password flag as well
+#         password: #  This can be set via the --console.topic-documentation.git.basic-auth.password flag as well
 #       # SSH Auth
 #       # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
 #       ssh:
 #         enabled: false
 #         username:
-#         privateKey: # This can be set via the via the --console.topic-documentation.git.ssh.private-key flag as well
+#         privateKey: # This can be set via the --console.topic-documentation.git.ssh.private-key flag as well
 #         privateKeyFilepath:
-#         passphrase: # This can be set via the via the --console.topic-documentation.git.ssh.passphrase flag as well
+#         passphrase: # This can be set via the --console.topic-documentation.git.ssh.passphrase flag as well
 
 # analytics configures the telemetry service that sends anonymized usage statistics to Redpanda.
 # Redpanda uses these statistics to evaluate feature usage.
