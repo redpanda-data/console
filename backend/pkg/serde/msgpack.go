@@ -12,6 +12,7 @@ package serde
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -58,4 +59,8 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType Payload
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingMsgPack,
 	}, nil
+}
+
+func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

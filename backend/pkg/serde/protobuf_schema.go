@@ -11,6 +11,7 @@ package serde
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jhump/protoreflect/desc"
@@ -20,7 +21,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/proto"
 )
 
-var _ Serde = (*ProtobufSerde)(nil)
+var _ Serde = (*ProtobufSchemaSerde)(nil)
 
 type ProtobufSchemaSerde struct {
 	ProtoSvc *proto.Service
@@ -91,4 +92,8 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,
 	}, nil
+}
+
+func (ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

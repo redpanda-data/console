@@ -12,6 +12,7 @@ package serde
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/hamba/avro/v2"
@@ -71,4 +72,8 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingAvro,
 	}, nil
+}
+
+func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

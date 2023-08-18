@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -30,6 +31,10 @@ func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	return jsonDeserializePayload(trimmed)
+}
+
+func (JsonSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }
 
 func jsonDeserializePayload(payload []byte) (RecordPayload, error) {

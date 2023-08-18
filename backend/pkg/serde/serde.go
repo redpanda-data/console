@@ -11,6 +11,44 @@ package serde
 
 import "github.com/twmb/franz-go/pkg/kgo"
 
+type serdeCfg struct {
+	schemaId    uint32
+	schemaIDSet bool
+
+	schemaPath string
+
+	index    []int
+	indexSet bool
+
+	topic string
+}
+
+type (
+	// SerdeOpt is an option to configure a Serde.
+	SerdeOpt interface{ apply(*serdeCfg) }
+	serdeOpt struct{ fn func(*serdeCfg) }
+)
+
+func (o serdeOpt) apply(t *serdeCfg) { o.fn(t) }
+
+func WithIndex(index ...int) SerdeOpt {
+	return serdeOpt{func(t *serdeCfg) {
+		t.index = index
+		t.indexSet = true
+	}}
+}
+
+func WithSchemaID(id uint32) SerdeOpt {
+	return serdeOpt{func(t *serdeCfg) {
+		t.schemaId = id
+		t.schemaIDSet = true
+	}}
+}
+
+func WithSchemaPath(path string) SerdeOpt {
+	return serdeOpt{func(t *serdeCfg) { t.schemaPath = path }}
+}
+
 type Serde interface {
 	// Name returns the serde's display name. The name may be displayed in the frontend
 	// for example when troubleshooting is enabled.
@@ -26,5 +64,5 @@ type Serde interface {
 	// records via Console. This may be a little trickier to define as the common
 	// requirements across all strategies for serializing records are less known. For example
 	// some serializers may want to write metadata in Record Headers
-	// SerializeObject(obj any)
+	SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error)
 }

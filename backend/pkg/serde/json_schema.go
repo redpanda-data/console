@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -38,4 +39,8 @@ func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 	// schema and based on the response we can check the schema type (avro, json, ..)
 
 	return jsonDeserializePayload(payload[5:])
+}
+
+func (JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

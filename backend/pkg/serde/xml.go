@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -57,4 +58,8 @@ func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) 
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingXML,
 	}, nil
+}
+
+func (XMLSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

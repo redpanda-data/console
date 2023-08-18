@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"unicode/utf8"
 
@@ -55,6 +56,10 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 		DeserializedPayload: payload,
 		Encoding:            PayloadEncodingUtf8WithControlChars,
 	}, nil
+}
+
+func (UTF8Serde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }
 
 func containsControlChars(b []byte) bool {

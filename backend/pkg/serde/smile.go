@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -54,4 +55,8 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingSmile,
 	}, nil
+}
+
+func (SmileSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }
