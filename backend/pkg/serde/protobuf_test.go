@@ -106,7 +106,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				Value: msgData,
 				Topic: "protobuf_serde_test_orders",
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -128,7 +128,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				Value: msgData,
 				Topic: "protobuf_serde_test_orders_2",
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -150,7 +150,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				Value: msgData2,
 				Topic: "protobuf_serde_test_orders_123",
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.Error(t, err)
 				assert.Equal(t, "failed to get message descriptor for payload: no prototype found for the given topic 'protobuf_serde_test_orders_123'. Check your configured protobuf mappings", err.Error())

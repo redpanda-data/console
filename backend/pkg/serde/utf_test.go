@@ -32,7 +32,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte("Hello, 世界"),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -51,7 +51,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Key: utf8.AppendRune([]byte("init"), 0x10000),
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -70,7 +70,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte("\n"),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 			},
@@ -80,7 +80,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(" [^[:cntrl:]]*$"),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "payload does not contain UTF8 control characters", err.Error())
@@ -91,7 +91,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte{0xff, 0xfe, 0xfd},
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "payload is not UTF8", err.Error())

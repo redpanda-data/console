@@ -54,7 +54,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: msgData,
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -73,7 +73,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Key: msgData,
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -86,7 +86,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`[10, 20, 30, 40, 50, 60, 70, 80, 90]`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte for json schema", err.Error())
@@ -97,7 +97,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`this is no valid JSON`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte for json schema", err.Error())

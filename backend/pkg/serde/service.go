@@ -53,8 +53,8 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 	}
 
 	// 2. Deserialize key & value separately
-	key := s.deserializePayload(record, payloadTypeKey)
-	val := s.deserializePayload(record, payloadTypeValue)
+	key := s.deserializePayload(record, PayloadTypeKey)
+	val := s.deserializePayload(record, PayloadTypeValue)
 	headers := recordHeaders(record)
 
 	return &Record{
@@ -137,7 +137,7 @@ type DeserializationOptions struct {
 }
 
 func payloadFromRecord(record *kgo.Record, payloadType PayloadType) []byte {
-	if payloadType == payloadTypeValue {
+	if payloadType == PayloadTypeValue {
 		return record.Value
 	}
 	return record.Key

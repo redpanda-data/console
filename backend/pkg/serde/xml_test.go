@@ -32,7 +32,7 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -58,7 +58,7 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Key: []byte(`<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`),
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -71,7 +71,7 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`this is no valid XML`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 			},

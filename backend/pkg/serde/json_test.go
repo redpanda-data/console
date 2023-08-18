@@ -31,7 +31,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`{"name": "John", "age": 30}`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -51,7 +51,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Key: []byte(`{"name": "John", "age": 30}`),
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -64,7 +64,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`[10, 20, 30]`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
@@ -75,7 +75,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`this is no valid JSON`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 			},

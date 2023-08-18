@@ -31,7 +31,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte("\n"),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -50,7 +50,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(" [^[:cntrl:]]*$"),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -69,7 +69,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Key: []byte(" [^[:cntrl:]]*$"),
 			},
-			payloadType: payloadTypeKey,
+			payloadType: PayloadTypeKey,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -88,7 +88,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte{0xff, 0xfe, 0xfd},
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 			},

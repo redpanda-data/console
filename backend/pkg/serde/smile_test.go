@@ -37,7 +37,7 @@ func TestSmileSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: smileData,
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -60,7 +60,7 @@ func TestSmileSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte(`this is no valid Smile`),
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 			},

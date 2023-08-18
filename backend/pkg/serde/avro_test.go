@@ -128,7 +128,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: msgData,
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -156,7 +156,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte{0, 1, 2, 3},
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "payload size is < 5", err.Error())
@@ -167,7 +167,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: []byte{1, 2, 3, 4, 5, 6, 7},
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte", err.Error())
@@ -178,7 +178,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			record: &kgo.Record{
 				Value: msgData2,
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "getting avro schema from registry: failed to get schema from registry: get schema by id request failed")

@@ -37,6 +37,6 @@ const (
 type PayloadType int
 
 const (
-	payloadTypeKey PayloadType = iota
-	payloadTypeValue
+	PayloadTypeKey PayloadType = iota
+	PayloadTypeValue
 )

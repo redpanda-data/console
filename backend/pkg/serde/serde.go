@@ -49,6 +49,10 @@ func WithSchemaPath(path string) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) { t.schemaPath = path }}
 }
 
+func WithTopic(topic string) SerdeOpt {
+	return serdeOpt{func(t *serdeCfg) { t.topic = topic }}
+}
+
 type Serde interface {
 	// Name returns the serde's display name. The name may be displayed in the frontend
 	// for example when troubleshooting is enabled.

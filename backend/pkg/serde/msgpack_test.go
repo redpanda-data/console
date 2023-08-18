@@ -54,7 +54,7 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 				Value: msgData,
 				Topic: "msgpack_topic",
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
@@ -74,7 +74,7 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 				Value: msgData,
 				Topic: "not_msgpack_topic",
 			},
-			payloadType: payloadTypeValue,
+			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.Error(t, err)
 				assert.Equal(t, "message pack encoding not configured for topic: not_msgpack_topic", err.Error())

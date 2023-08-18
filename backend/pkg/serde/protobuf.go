@@ -40,7 +40,7 @@ func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 	}
 
 	property := proto.RecordValue
-	if payloadType == payloadTypeKey {
+	if payloadType == PayloadTypeKey {
 		property = proto.RecordKey
 	}
 
@@ -163,7 +163,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 
 func (d ProtobufSerde) serializeJSON(jsonBytes []byte, payloadType PayloadType, topic string) ([]byte, error) {
 	property := proto.RecordValue
-	if payloadType == payloadTypeKey {
+	if payloadType == PayloadTypeKey {
 		property = proto.RecordKey
 	}
 
