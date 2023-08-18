@@ -336,6 +336,21 @@ func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName, vers
 	}, nil
 }
 
+// SchemaReferences return all schema ids that reference the requested subject-version.
+type SchemaReferences struct {
+	SchemaIDs []int `json:"schemaIds"`
+}
+
+// GetSchemaRegistrySchemaReferences returns all schema ids that references the input
+// subject-version. You can use -1 or 'latest' to check the latest version.
+func (s *Service) GetSchemaRegistrySchemaReferences(ctx context.Context, subjectName, version string) (*SchemaReferences, error) {
+	schemaRefs, err := s.kafkaSvc.SchemaService.GetSchemaReferences(ctx, subjectName, version)
+	if err != nil {
+		return nil, err
+	}
+	return &SchemaReferences{SchemaIDs: schemaRefs.SchemaIDs}, nil
+}
+
 // SchemaRegistryDeleteSubjectResponse is the response to deleting a whole schema registry subject.
 type SchemaRegistryDeleteSubjectResponse struct {
 	DeletedVersions []int `json:"deletedVersions"`

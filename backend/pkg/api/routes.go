@@ -142,6 +142,7 @@ func (api *API) routes() *chi.Mux {
 				r.Post("/schema-registry/subjects/{subject}/versions", api.handleCreateSchema())
 				r.Delete("/schema-registry/subjects/{subject}/versions/{version}", api.handleDeleteSubjectVersion())
 				r.Get("/schema-registry/subjects/{subject}/versions/{version}", api.handleGetSchemaSubjectDetails())
+				r.Get("/schema-registry/subjects/{subject}/versions/{version}/referencedby", api.handleGetSchemaReferences())
 
 				// Kafka Connect
 				r.Get("/kafka-connect/connectors", api.handleGetConnectors())

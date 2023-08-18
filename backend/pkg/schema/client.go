@@ -645,6 +645,35 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	return schemas, nil
 }
 
+type GetSchemaReferencesResponse struct {
+	SchemaIDs []int `json:"schemaIds"`
+}
+
+// GetSchemaReferences returns all schema ids that references the input
+// subject-version. You can use -1 or 'latest' to check the latest version.
+func (c *Client) GetSchemaReferences(ctx context.Context, subject, version string) (*GetSchemaReferencesResponse, error) {
+	var schemaIDs []int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&schemaIDs).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		Get("/subjects/{subject}/versions/{version}/referencedby")
+	if err != nil {
+		return nil, fmt.Errorf("get schema references failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schema references failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &GetSchemaReferencesResponse{SchemaIDs: schemaIDs}, nil
+}
+
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects
 func (c *Client) CheckConnectivity(ctx context.Context) error {
 	url := "subjects"

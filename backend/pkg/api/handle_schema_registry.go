@@ -198,6 +198,60 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetSchemaReferences() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request params
+		subjectName := rest.GetURLParam(r, "subject")
+
+		// 2. Parse and validate version input
+		version := rest.GetURLParam(r, "version")
+		switch version {
+		case console.SchemaVersionsLatest:
+		default:
+			// Must be number or it's invalid input
+			_, err := strconv.Atoi(version)
+			if err != nil {
+				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q, %q or a positive integer", version, console.SchemaVersionsLatest, console.SchemaVersionsAll)
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      descriptiveErr,
+					Status:   http.StatusBadRequest,
+					Message:  descriptiveErr.Error(),
+					IsSilent: false,
+				})
+				return
+			}
+		}
+
+		// 3. Get all subjects' details
+		res, err := api.ConsoleSvc.GetSchemaRegistrySchemaReferences(r.Context(), subjectName, version)
+		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schema references from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleDeleteSubject() http.HandlerFunc {
 	if !api.Cfg.Kafka.Schema.Enabled {
 		return api.handleSchemaRegistryNotConfigured()

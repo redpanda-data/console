@@ -245,6 +245,12 @@ func (s *Service) DeleteSubjectVersion(ctx context.Context, subject, version str
 	return s.registryClient.DeleteSubjectVersion(ctx, subject, version, deletePermanently)
 }
 
+// GetSchemaReferences returns all schema ids that references the input
+// subject-version. You can use -1 or 'latest' to check the latest version.
+func (s *Service) GetSchemaReferences(ctx context.Context, subject, version string) (*GetSchemaReferencesResponse, error) {
+	return s.registryClient.GetSchemaReferences(ctx, subject, version)
+}
+
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
