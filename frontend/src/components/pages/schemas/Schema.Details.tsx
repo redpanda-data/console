@@ -17,7 +17,6 @@ import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
 import { KowlJsonView } from '../../misc/KowlJsonView';
-import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
@@ -29,63 +28,6 @@ import { Button, Flex, Icon, Tag, Tooltip } from '@redpanda-data/ui';
 import { AiOutlineCopy } from 'react-icons/ai';
 import { Statistic } from '../../misc/Statistic';
 
-function renderSchemaType(value: any, _record: SchemaField, _index: number) {
-    return toSafeString(value);
-}
-
-function convertJsonField(name: string, field: JsonField): SchemaField {
-
-    switch (field.type) {
-        case JsonFieldType.ARRAY: {
-            let items = undefined;
-            if (field.items) {
-                const jsonField = convertJsonField(name, field.items);
-                items = jsonField.type;
-            }
-
-            return {
-                name,
-                type: {
-                    type: field.type,
-                    items,
-                }
-            };
-        }
-        case JsonFieldType.OBJECT: {
-            let fields: Record<string, unknown> | undefined = undefined;
-            if (field.properties) {
-                fields = {};
-                for (const name in field.properties) {
-                    const jsonField = convertJsonField(name, field.properties[name]);
-                    fields[name] = jsonField.type;
-                }
-            }
-            return {
-                name,
-                type: {
-                    type: field.type,
-                    properties: field.properties
-                }
-            };
-        }
-        case undefined: {
-            if (field.properties) {
-                return convertJsonField(name, { ...field, type: JsonFieldType.OBJECT });
-            }
-            if (field.items) {
-                return convertJsonField(name, { ...field, type: JsonFieldType.ARRAY });
-            }
-            break;
-        }
-        default: {
-            break;
-        }
-    }
-    return {
-        name,
-        type: field.type,
-    };
-}
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {

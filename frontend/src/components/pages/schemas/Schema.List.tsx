@@ -17,7 +17,6 @@ import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
@@ -29,7 +28,7 @@ import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Button, Checkbox, Flex, Skeleton } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
-function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
+function renderRequestErrors(requestErrors?: string[]) {
     if (!requestErrors || requestErrors.length === 0) {
         return null;
     }
@@ -37,11 +36,10 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     return (
         <Section>
             <div className="SchemaList__error-card">
-                {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
+                {requestErrors.map((errorMessage, idx) => (
                     <Alert key={idx} marginTop="1em" status="error">
                         <AlertIcon />
                         <div>{errorMessage}</div>
-                        <div>{requestDescription}</div>
                     </Alert>
                 ))}
             </div>

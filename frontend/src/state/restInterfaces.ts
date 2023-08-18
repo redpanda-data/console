@@ -815,85 +815,10 @@ export interface QuotaResponseSetting {
     value: number;
 }
 
-export interface SchemaOverviewResponse {
-    schemaOverview: SchemaOverview;
-    isConfigured: boolean;
-}
-
-export interface SchemaOverview {
-    mode: string;
-    compatibilityLevel: string;
-    subjects: string[];
-    requestErrors: SchemaOverviewRequestError[];
-}
-
-export interface SchemaOverviewRequestError {
-    requestDescription: string;
-    errorMessage: string;
-}
-
-export interface SchemaDetailsResponse {
-    schemaDetails: SchemaDetails;
-}
-
 export enum SchemaType {
     AVRO = 'AVRO',
     JSON = 'JSON',
     PROTOBUF = 'PROTOBUF',
-}
-
-export interface SchemaDetails {
-    string: string;
-    schemaId: number;
-    version: number;
-    compatibility: string;
-    type: SchemaType;
-    schema: Schema | JsonSchema;
-    registeredVersions: number[];
-
-    // added by frontend:
-    // 'schema' is (in some cases, like JSON schema) converted from string to object
-    // however, we want to keep the original
-    rawSchema: string;
-}
-
-export interface Schema {
-    doc: string;
-    name: string;
-    namespace: string;
-    type: string;
-    fields: SchemaField[];
-}
-
-export enum JsonFieldType {
-    STRING = 'string',
-    NUMBER = 'number',
-    INTEGER = 'integer',
-    OBJECT = 'object',
-    ARRAY = 'array',
-    BOOLEAN = 'boolean',
-    NULL = 'null'
-}
-
-export interface JsonSchema {
-    $id: string;
-    type: JsonFieldType;
-    title: string;
-    description: string;
-    properties?: Record<string, JsonField>;
-}
-
-export interface JsonField {
-    type: string;
-    items?: JsonField;
-    properties?: Record<string, JsonField>;
-}
-
-export interface SchemaField {
-    name: string;
-    type: string | Record<string, unknown> | null | undefined;
-    doc?: string | null | undefined;
-    default?: string | Record<string, unknown> | null | undefined;
 }
 
 
