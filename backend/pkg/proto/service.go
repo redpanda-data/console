@@ -197,6 +197,19 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 	return jsonBytes, nil
 }
 
+func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDescriptor) ([]byte, error) {
+	msg := dynamic.NewMessage(md)
+	err := msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
+		AnyResolver:        &anyResolver{s.registry},
+		AllowUnknownFields: true,
+	}, json)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+	}
+
+	return msg.Marshal()
+}
+
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
 // so that it's human-readable in the Console frontend.
 func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {

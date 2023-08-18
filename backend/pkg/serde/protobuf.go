@@ -106,18 +106,12 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 			return nil, errors.New("no topic specified")
 		}
 
-		property := proto.RecordValue
-		if payloadType == payloadTypeKey {
-			property = proto.RecordKey
-		}
-
-		messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(so.topic, property)
+		jsonBytes, err := json.Marshal(v)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+			return nil, fmt.Errorf("failed to serialize protobuf payload to json: %w", err)
 		}
 
-		msg := dynamic.NewMessage(messageDescriptor)
-		b, err := msg.Marshal()
+		b, err := d.serializeJSON(jsonBytes, payloadType, so.topic)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
 		}
@@ -143,6 +137,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
 		}
+
 		binData = b
 	case []byte:
 		trimmed := bytes.TrimLeft(v, " \t\r\n")
@@ -166,7 +161,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 	return binData, nil
 }
 
-func (d ProtobufSerde) serializeJSON(data []byte, payloadType PayloadType, topic string) ([]byte, error) {
+func (d ProtobufSerde) serializeJSON(jsonBytes []byte, payloadType PayloadType, topic string) ([]byte, error) {
 	property := proto.RecordValue
 	if payloadType == payloadTypeKey {
 		property = proto.RecordKey
@@ -174,14 +169,8 @@ func (d ProtobufSerde) serializeJSON(data []byte, payloadType PayloadType, topic
 
 	messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(topic, property)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+		return nil, err
 	}
 
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.Unmarshal([]byte(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
-	}
-
-	return msg.Marshal()
+	return d.ProtoSvc.SerializeJSONToProtobufMessage(jsonBytes, messageDescriptor)
 }
