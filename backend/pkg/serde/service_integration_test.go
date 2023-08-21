@@ -1756,12 +1756,12 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
 			Key: RecordPayloadInput{
-				Payload:   []byte("gadget_0"),
-				Enconding: PayloadEncodingText,
+				Payload:  []byte("gadget_0"),
+				Encoding: PayloadEncodingText,
 			},
 			Value: RecordPayloadInput{
-				Payload:   inputData,
-				Enconding: PayloadEncodingProtobuf,
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
 				Options: []SerdeOpt{
 					WithSchemaID(uint32(ss.ID)),
 					WithIndex(2, 0),

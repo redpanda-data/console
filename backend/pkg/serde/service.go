@@ -148,7 +148,7 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	// key
 	keyTS := make([]TroubleshootingReport, 0)
 	for _, serde := range s.SerDes {
-		if input.Key.Enconding == serde.Name() {
+		if input.Key.Encoding == serde.Name() {
 			bytes, err := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
 			if err != nil {
 				keyTS = append(keyTS, TroubleshootingReport{
@@ -168,7 +168,7 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 		valueTS := make([]TroubleshootingReport, 0)
 
 		for _, serde := range s.SerDes {
-			if input.Value.Enconding == serde.Name() {
+			if input.Value.Encoding == serde.Name() {
 				bytes, err := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
 				if err != nil {
 					valueTS = append(valueTS, TroubleshootingReport{

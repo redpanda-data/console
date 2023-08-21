@@ -112,9 +112,9 @@ type SerializeInput struct {
 }
 
 type RecordPayloadInput struct {
-	Payload   any
-	Enconding PayloadEncoding
-	Options   []SerdeOpt
+	Payload  any
+	Encoding PayloadEncoding
+	Options  []SerdeOpt
 }
 
 type SerializeOutput struct {
