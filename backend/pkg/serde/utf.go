@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"unicode/utf8"
 
@@ -33,7 +32,7 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there was no character left")
+		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	isUTF8 := utf8.Valid(payload)
@@ -59,7 +58,41 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 }
 
 func (UTF8Serde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	var byteData []byte
+	switch v := obj.(type) {
+	case string:
+		decoded, err := base64.StdEncoding.DecodeString(v)
+		if err == nil {
+			v = string(decoded)
+		}
+		byteData = []byte(v)
+	case []byte:
+		byteData = v
+	default:
+		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+	}
+
+	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
+
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+	}
+
+	isUTF8 := utf8.Valid(byteData)
+	if !isUTF8 {
+		return nil, fmt.Errorf("payload is not UTF8")
+	}
+
+	if !containsControlChars(byteData) {
+		return nil, fmt.Errorf("payload does not contain UTF8 control characters")
+	}
+
+	return byteData, nil
 }
 
 func containsControlChars(b []byte) bool {

@@ -32,7 +32,7 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there was no characters left")
+		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithSmile := len(payload) > 3 && payload[0] == ':' && payload[1] == ')' && payload[2] == '\n'

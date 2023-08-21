@@ -64,3 +64,110 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestNoneSerde_SerializePayload(t *testing.T) {
+	serde := NoneSerde{}
+
+	tests := []struct {
+		name           string
+		input          any
+		payloadType    PayloadType
+		options        []SerdeOpt
+		validationFunc func(*testing.T, []byte, error)
+	}{
+		{
+			name:  "empty byte",
+			input: []byte(""),
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
+		{
+			name:  "not empty byte",
+			input: []byte("asdf"),
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "input not empty", err.Error())
+			},
+		},
+		{
+			name:  "empty byte json",
+			input: []byte("{}"),
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
+		{
+			name:        "empty string",
+			input:       "",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
+		{
+			name:        "not empty string",
+			input:       "asdf",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "input not empty", err.Error())
+			},
+		},
+		{
+			name:  "empty string json",
+			input: "{}",
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
+		{
+			name:  "empty map",
+			input: map[string]interface{}{},
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
+		{
+			name:  "not empty map",
+			input: map[string]interface{}{"foo": "bar"},
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "input not empty", err.Error())
+			},
+		},
+		{
+			name:        "unsupported type",
+			input:       0,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "unsupported type int for protobuf serialization", err.Error())
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			test.validationFunc(t, data, err)
+		})
+	}
+}

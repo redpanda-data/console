@@ -41,7 +41,7 @@ func jsonDeserializePayload(payload []byte) (RecordPayload, error) {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there was no character left")
+		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'

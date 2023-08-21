@@ -60,5 +60,30 @@ func (TextSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 		o.apply(&so)
 	}
 
-	return obj.([]byte), nil
+	var byteData []byte
+	switch v := obj.(type) {
+	case string:
+		byteData = []byte(v)
+	case []byte:
+		byteData = v
+	default:
+		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+	}
+
+	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
+
+	if len(trimmed) == 0 {
+		return byteData, nil
+	}
+
+	isUTF8 := utf8.Valid(byteData)
+	if !isUTF8 {
+		return nil, fmt.Errorf("payload is not UTF8")
+	}
+
+	if containsControlChars(byteData) {
+		return nil, fmt.Errorf("payload contains UTF8 control characters therefore not plain text format")
+	}
+
+	return byteData, nil
 }

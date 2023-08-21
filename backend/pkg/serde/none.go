@@ -10,7 +10,6 @@
 package serde
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -39,5 +38,26 @@ func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 }
 
 func (NoneSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	emptyData := []byte{}
+
+	// TODO should we handle empty JSON for none?
+
+	switch v := obj.(type) {
+	case string:
+		if len(v) != 0 && v != "{}" {
+			return nil, fmt.Errorf("input not empty")
+		}
+	case []byte:
+		if len(v) != 0 && string(v) != "{}" {
+			return nil, fmt.Errorf("input not empty")
+		}
+	case map[string]interface{}:
+		if len(v) != 0 {
+			return nil, fmt.Errorf("input not empty")
+		}
+	default:
+		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+	}
+
+	return emptyData, nil
 }
