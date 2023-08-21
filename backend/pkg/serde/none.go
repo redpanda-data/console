@@ -56,7 +56,7 @@ func (NoneSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 			return nil, fmt.Errorf("input not empty")
 		}
 	default:
-		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+		return nil, fmt.Errorf("unsupported type %+T for serialization", obj)
 	}
 
 	return emptyData, nil

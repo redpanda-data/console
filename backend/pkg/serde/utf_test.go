@@ -106,3 +106,120 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestUTF8Serde_SerializePayload(t *testing.T) {
+	serde := UTF8Serde{}
+
+	tests := []struct {
+		name           string
+		input          any
+		payloadType    PayloadType
+		options        []SerdeOpt
+		validationFunc func(*testing.T, []byte, error)
+	}{
+		{
+			name:        "byte: empty byte",
+			input:       []byte(""),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: trimmed",
+			input:       []byte("\n"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: no control",
+			input:       []byte(" [^[:cntrl:]]*$"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "payload does not contain UTF8 control characters", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: invalid UTF8",
+			input:       []byte{0xff, 0xfe, 0xfd},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "payload is not UTF8", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: valid",
+			input:       []byte("Hello, 世界"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("Hello, 世界"), res)
+			},
+		},
+		{
+			name:        "invalid type",
+			input:       map[string]interface{}{},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "unsupported type map[string]interface {} for text serialization", err.Error())
+			},
+		},
+		{
+			name:        "string: empty byte",
+			input:       "",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: trimmed",
+			input:       "\n",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: no control",
+			input:       " [^[:cntrl:]]*$",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "payload does not contain UTF8 control characters", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: valid",
+			input:       "Hello, 世界",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("Hello, 世界"), res)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			test.validationFunc(t, data, err)
+		})
+	}
+}

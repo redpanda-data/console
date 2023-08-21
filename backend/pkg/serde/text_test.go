@@ -102,3 +102,69 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestTextSerde_SerializePayload(t *testing.T) {
+	serde := TextSerde{}
+
+	tests := []struct {
+		name           string
+		input          any
+		payloadType    PayloadType
+		options        []SerdeOpt
+		validationFunc func(*testing.T, []byte, error)
+	}{
+		{
+			name:        "empty byte",
+			input:       []byte(""),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(""), res)
+			},
+		},
+		{
+			name:        "not empty byte",
+			input:       []byte("asdf"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("asdf"), res)
+			},
+		},
+		{
+			name:        "empty string",
+			input:       "",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(""), res)
+			},
+		},
+		{
+			name:        "not empty string",
+			input:       "asdf",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte("asdf"), res)
+			},
+		},
+		{
+			name:  "invalid type",
+			input: map[string]interface{}{},
+
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "unsupported type map[string]interface {} for text serialization", err.Error())
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			test.validationFunc(t, data, err)
+		})
+	}
+}

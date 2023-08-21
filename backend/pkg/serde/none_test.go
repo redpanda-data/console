@@ -76,9 +76,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 		validationFunc func(*testing.T, []byte, error)
 	}{
 		{
-			name:  "empty byte",
-			input: []byte(""),
-
+			name:        "empty byte",
+			input:       []byte(""),
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.NoError(t, err)
@@ -86,9 +85,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			},
 		},
 		{
-			name:  "not empty byte",
-			input: []byte("asdf"),
-
+			name:        "not empty byte",
+			input:       []byte("asdf"),
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
@@ -96,9 +94,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty byte json",
-			input: []byte("{}"),
-
+			name:        "empty byte json",
+			input:       []byte("{}"),
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.NoError(t, err)
@@ -124,9 +121,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty string json",
-			input: "{}",
-
+			name:        "empty string json",
+			input:       "{}",
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.NoError(t, err)
@@ -134,9 +130,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty map",
-			input: map[string]interface{}{},
-
+			name:        "empty map",
+			input:       map[string]interface{}{},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.NoError(t, err)
@@ -144,9 +139,8 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			},
 		},
 		{
-			name:  "not empty map",
-			input: map[string]interface{}{"foo": "bar"},
-
+			name:        "not empty map",
+			input:       map[string]interface{}{"foo": "bar"},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
@@ -159,7 +153,7 @@ func TestNoneSerde_SerializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "unsupported type int for protobuf serialization", err.Error())
+				assert.Equal(t, "unsupported type int for serialization", err.Error())
 			},
 		},
 	}

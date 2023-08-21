@@ -67,7 +67,7 @@ func (TextSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 	case []byte:
 		byteData = v
 	default:
-		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
+		return nil, fmt.Errorf("unsupported type %+T for text serialization", obj)
 	}
 
 	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
