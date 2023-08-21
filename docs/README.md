@@ -10,7 +10,7 @@ If there are still open questions after reading this documentation don't hesitat
 
 - Getting started
     - [Installation](./installation.md)
-    - [Helm Chart](https://github.com/cloudhut/charts)
+    - [Helm Chart](https://github.com/redpanda-data/helm-charts)
     - [Terraform Module](https://github.com/cloudhut/terraform-modules)
 - Features
     - [Hosting](./features/hosting.md)
