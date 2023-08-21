@@ -10,7 +10,7 @@
 package serde
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -142,21 +142,23 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	var keySerResult RecordPayloadSerializeResult
 	var valueSerResult RecordPayloadSerializeResult
 
-	keyOK := false
-	valueOK := false
+	var err error
+	sr := SerializeOutput{}
 
 	// key
 	keyTS := make([]TroubleshootingReport, 0)
+	found := false
 	for _, serde := range s.SerDes {
 		if input.Key.Encoding == serde.Name() {
-			bytes, err := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
-			if err != nil {
+			found = true
+
+			bytes, serErr := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+			if serErr != nil {
 				keyTS = append(keyTS, TroubleshootingReport{
 					SerdeName: string(serde.Name()),
-					Message:   err.Error(),
+					Message:   serErr.Error(),
 				})
 			} else {
-				keyOK = true
 				keySerResult.Encoding = serde.Name()
 				keySerResult.Payload = bytes
 				keySerResult.Troubleshooting = keyTS
@@ -164,37 +166,40 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 		}
 	}
 
-	if keyOK {
-		valueTS := make([]TroubleshootingReport, 0)
+	sr.Key = &keySerResult
 
-		for _, serde := range s.SerDes {
-			if input.Value.Encoding == serde.Name() {
-				bytes, err := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
-				if err != nil {
-					valueTS = append(valueTS, TroubleshootingReport{
-						SerdeName: string(serde.Name()),
-						Message:   err.Error(),
-					})
-				} else {
-					valueOK = true
-					valueSerResult.Encoding = serde.Name()
-					valueSerResult.Payload = bytes
-					valueSerResult.Troubleshooting = valueTS
-				}
+	if !found {
+		err = fmt.Errorf("invalid encoding for key: %s", input.Key.Encoding)
+	}
+
+	if err != nil {
+		return &sr, err
+	}
+
+	valueTS := make([]TroubleshootingReport, 0)
+	found = false
+	for _, serde := range s.SerDes {
+		if input.Value.Encoding == serde.Name() {
+			found = true
+
+			bytes, serErr := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+			if serErr != nil {
+				valueTS = append(valueTS, TroubleshootingReport{
+					SerdeName: string(serde.Name()),
+					Message:   serErr.Error(),
+				})
+			} else {
+				valueSerResult.Encoding = serde.Name()
+				valueSerResult.Payload = bytes
+				valueSerResult.Troubleshooting = valueTS
 			}
 		}
 	}
 
-	sr := SerializeOutput{
-		Key:   &keySerResult,
-		Value: &valueSerResult,
-	}
+	sr.Value = &valueSerResult
 
-	var err error
-	if !keyOK {
-		err = errors.New("failed to serialize key record")
-	} else if !valueOK {
-		err = errors.New("failed to serialize value record")
+	if !found {
+		err = fmt.Errorf("invalid encoding for value: %s", input.Key.Encoding)
 	}
 
 	return &sr, err
