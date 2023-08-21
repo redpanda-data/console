@@ -105,3 +105,25 @@ type TroubleshootingReport struct {
 	// has not been deserialized as anticipated.
 	Message string `json:"message"`
 }
+
+type SerializeInput struct {
+	Key   RecordPayloadInput
+	Value RecordPayloadInput
+}
+
+type RecordPayloadInput struct {
+	Payload   any
+	Enconding PayloadEncoding
+	Options   []SerdeOpt
+}
+
+type SerializeOutput struct {
+	Key   *RecordPayloadSerializeResult `json:"key,omitempty"`
+	Value *RecordPayloadSerializeResult `json:"value,omitempty"`
+}
+
+type RecordPayloadSerializeResult struct {
+	Payload         []byte
+	Encoding        PayloadEncoding         `json:"encoding"`
+	Troubleshooting []TroubleshootingReport `json:"troubleshooting,omitempty"`
+}

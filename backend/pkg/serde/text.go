@@ -11,7 +11,6 @@ package serde
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"unicode/utf8"
 
@@ -56,5 +55,10 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 }
 
 func (TextSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	return obj.([]byte), nil
 }

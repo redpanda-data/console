@@ -10,6 +10,8 @@
 package serde
 
 import (
+	"errors"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
@@ -134,6 +136,68 @@ type DeserializationOptions struct {
 	// tested encoding method worked successfully no troubleshooting information
 	// is returned.
 	Troubleshoot bool
+}
+
+func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error) {
+	var keySerResult RecordPayloadSerializeResult
+	var valueSerResult RecordPayloadSerializeResult
+
+	keyOK := false
+	valueOK := false
+
+	// key
+	keyTS := make([]TroubleshootingReport, 0)
+	for _, serde := range s.SerDes {
+		if input.Key.Enconding == serde.Name() {
+			bytes, err := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+			if err != nil {
+				keyTS = append(keyTS, TroubleshootingReport{
+					SerdeName: string(serde.Name()),
+					Message:   err.Error(),
+				})
+			} else {
+				keyOK = true
+				keySerResult.Encoding = serde.Name()
+				keySerResult.Payload = bytes
+				keySerResult.Troubleshooting = keyTS
+			}
+		}
+	}
+
+	if keyOK {
+		valueTS := make([]TroubleshootingReport, 0)
+
+		for _, serde := range s.SerDes {
+			if input.Value.Enconding == serde.Name() {
+				bytes, err := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+				if err != nil {
+					valueTS = append(valueTS, TroubleshootingReport{
+						SerdeName: string(serde.Name()),
+						Message:   err.Error(),
+					})
+				} else {
+					valueOK = true
+					valueSerResult.Encoding = serde.Name()
+					valueSerResult.Payload = bytes
+					valueSerResult.Troubleshooting = valueTS
+				}
+			}
+		}
+	}
+
+	sr := SerializeOutput{
+		Key:   &keySerResult,
+		Value: &valueSerResult,
+	}
+
+	var err error
+	if !keyOK {
+		err = errors.New("failed to serialize key record")
+	} else if !valueOK {
+		err = errors.New("failed to serialize value record")
+	}
+
+	return &sr, err
 }
 
 func payloadFromRecord(record *kgo.Record, payloadType PayloadType) []byte {

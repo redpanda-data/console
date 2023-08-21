@@ -1661,6 +1661,122 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 }
 
+func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
+	t := s.T()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	ctx := context.Background()
+
+	t.Run("json with schema and index", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		require.NoError(err)
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&indexv1.Gadget_Gizmo{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.Index(2, 0),
+		)
+
+		msg := indexv1.Gadget{
+			Identity: "gadget_0",
+			Gizmo: &indexv1.Gadget_Gizmo{
+				Size: 10,
+				Item: &indexv1.Item{
+					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
+					Name:     "item_0",
+				},
+			},
+			Widgets: []*indexv1.Widget{
+				{
+					Id: "wid_0",
+				},
+				{
+					Id: "wid_1",
+				},
+			},
+		}
+
+		expectedData, err := serde.Encode(msg.GetGizmo())
+
+		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Key: RecordPayloadInput{
+				Payload:   []byte("gadget_0"),
+				Enconding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:   inputData,
+				Enconding: PayloadEncodingProtobuf,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ss.ID)),
+					WithIndex(2, 0),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte("gadget_0"), serRes.Key.Payload)
+		assert.Equal(expectedData, serRes.Value.Payload)
+	})
+}
+
 func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {
