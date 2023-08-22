@@ -17,10 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 type FileSystemTestSuite struct {
@@ -62,19 +63,19 @@ func (s *FileSystemTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
-	os.Mkdir("testdata", 0775)
+	os.Mkdir("testdata", 0o775)
 	os.Create("testdata\\visible.txt")
 	os.Create("testdata\\hidden.txt")
 	err := hide("testdata\\hidden.txt")
 	require.NoError(err)
 
-	os.Mkdir("testdata\\hiddenFolder", 0775)
+	os.Mkdir("testdata\\hiddenFolder", 0o775)
 	os.Create("testdata\\hiddenFolder\\visible.txt")
 	os.Create("testdata\\hiddenFolder\\hidden.txt")
 	err = hide("testdata\\hiddenFolder")
 	require.NoError(err)
 
-	os.Mkdir("testdata\\visibleFolder", 0775)
+	os.Mkdir("testdata\\visibleFolder", 0o775)
 	os.Create("testdata\\visibleFolder\\visible.txt")
 	os.Create("testdata\\visibleFolder\\hidden.txt")
 	err = hide("testdata\\visibleFolder\\hidden.txt")

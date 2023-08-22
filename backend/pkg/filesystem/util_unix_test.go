@@ -16,10 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 type FileSystemTestSuite struct {
@@ -34,7 +35,7 @@ func TestSuite(t *testing.T) {
 	suite.Run(t, &FileSystemTestSuite{})
 }
 
-func (s *FileSystemTestSuite) createBaseConfig() config.Filesystem {
+func (*FileSystemTestSuite) createBaseConfig() config.Filesystem {
 	cfg := config.Filesystem{}
 	cfg.SetDefaults()
 	cfg.Enabled = true
@@ -49,15 +50,15 @@ func (s *FileSystemTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
-	os.Mkdir("testdata", 0775)
+	os.Mkdir("testdata", 0o750)
 	os.Create("testdata/visible.txt")
 	os.Create("testdata/.hidden.txt")
 
-	os.Mkdir("testdata/..hiddenFolder", 0775)
+	os.Mkdir("testdata/..hiddenFolder", 0o750)
 	os.Create("testdata/..hiddenFolder/visible.txt")
 	os.Create("testdata/..hiddenFolder/.hidden.txt")
 
-	os.Mkdir("testdata/visibleFolder", 0775)
+	os.Mkdir("testdata/visibleFolder", 0o750)
 	os.Create("testdata/visibleFolder/visible.txt")
 	os.Create("testdata/visibleFolder/.hidden.txt")
 
@@ -75,7 +76,7 @@ func (s *FileSystemTestSuite) SetupSuite() {
 	s.log = log
 }
 
-func (s *FileSystemTestSuite) TearDownSuite() {
+func (*FileSystemTestSuite) TearDownSuite() {
 	os.RemoveAll("testdata")
 }
 
