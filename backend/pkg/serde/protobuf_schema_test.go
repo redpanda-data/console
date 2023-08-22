@@ -246,7 +246,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-func TestProtobufSchemaSerde_SerializePayload(t *testing.T) {
+func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 	require.NoError(t, err)
 

@@ -89,3 +89,159 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestJsonSerde_SerializeObject(t *testing.T) {
+	serde := JsonSerde{}
+
+	tests := []struct {
+		name           string
+		input          any
+		payloadType    PayloadType
+		options        []SerdeOpt
+		validationFunc func(*testing.T, []byte, error)
+	}{
+		{
+			name:        "byte: empty",
+			input:       []byte(""),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: trim",
+			input:       []byte("\r\n"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: empty",
+			input:       "",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: trim",
+			input:       "\r\n",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: invalid json",
+			input:       []byte("asdf"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "string: invalid json",
+			input:       "asdf",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "byte: valid json",
+			input:       []byte(`{"foo":"bar"}`),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`{"foo":"bar"}`), res)
+			},
+		},
+		{
+			name:        "string: valid json",
+			input:       `{"foo":"bar"}`,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`{"foo":"bar"}`), res)
+			},
+		},
+		{
+			name:        "byte: valid json array",
+			input:       []byte(`["foo", "bar"]`),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`["foo", "bar"]`), res)
+			},
+		},
+		{
+			name:        "string: valid json array",
+			input:       `["foo", "bar"]`,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`["foo", "bar"]`), res)
+			},
+		},
+		{
+			name: "map",
+			input: map[string]interface{}{
+				"foo": "bar",
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`{"foo":"bar"}`), res)
+			},
+		},
+		{
+			name:        "slice",
+			input:       []string{"foo", "bar"},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`["foo","bar"]`), res)
+			},
+		},
+		{
+			name:        "string",
+			input:       "foo",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "int",
+			input:       123,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			test.validationFunc(t, data, err)
+		})
+	}
+}

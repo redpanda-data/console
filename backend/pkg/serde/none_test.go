@@ -65,7 +65,7 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-func TestNoneSerde_SerializePayload(t *testing.T) {
+func TestNoneSerde_SerializeObject(t *testing.T) {
 	serde := NoneSerde{}
 
 	tests := []struct {

@@ -12,7 +12,6 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -28,13 +27,42 @@ func (JsonSerde) Name() PayloadEncoding {
 
 func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
-	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
-	return jsonDeserializePayload(trimmed)
+	return jsonDeserializePayload(payload)
 }
 
 func (JsonSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	var byteData []byte
+	switch v := obj.(type) {
+	case string:
+		byteData = []byte(v)
+	case []byte:
+		byteData = v
+	default:
+		encoded, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("error serializing to JSON: %w", err)
+		}
+		byteData = encoded
+	}
+
+	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
+
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+	}
+
+	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+	if !startsWithJSON {
+		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+	}
+
+	return trimmed, nil
 }
 
 func jsonDeserializePayload(payload []byte) (RecordPayload, error) {

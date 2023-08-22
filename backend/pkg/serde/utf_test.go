@@ -107,7 +107,7 @@ func TestUTF8Serde_DeserializePayload(t *testing.T) {
 	}
 }
 
-func TestUTF8Serde_SerializePayload(t *testing.T) {
+func TestUTF8Serde_SerializeObject(t *testing.T) {
 	serde := UTF8Serde{}
 
 	tests := []struct {

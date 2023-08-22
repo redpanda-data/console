@@ -103,7 +103,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-func TestTextSerde_SerializePayload(t *testing.T) {
+func TestTextSerde_SerializeObject(t *testing.T) {
 	serde := TextSerde{}
 
 	tests := []struct {

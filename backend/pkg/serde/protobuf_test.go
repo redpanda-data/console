@@ -169,7 +169,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-func TestProtobufSerde_SerializePayload(t *testing.T) {
+func TestProtobufSerde_SerializeObject(t *testing.T) {
 	logger, err := zap.NewProduction()
 	require.NoError(t, err)
 
