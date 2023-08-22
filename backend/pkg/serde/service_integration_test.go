@@ -215,7 +215,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -365,7 +365,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -593,7 +593,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -835,7 +835,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1038,7 +1038,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1257,7 +1257,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1526,7 +1526,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value

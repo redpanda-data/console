@@ -25,6 +25,8 @@ type Service struct {
 	SerDes []Serde
 }
 
+const defaultMaxPayloadSize = 1_000_000 // 1 MB
+
 func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
@@ -46,6 +48,11 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 // DeserializeRecord tries to deserialize a Kafka record into a struct that
 // can be processed by the Frontend.
 func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOptions) *Record {
+	// defaults
+	if opts.MaxPayloadSize <= 0 {
+		opts.MaxPayloadSize = defaultMaxPayloadSize
+	}
+
 	// 1. Test if it's a known binary Format
 	if record.Topic == "__consumer_offsets" {
 		rec, err := s.deserializeConsumerOffset(record)
@@ -55,8 +62,8 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 	}
 
 	// 2. Deserialize key & value separately
-	key := s.deserializePayload(record, PayloadTypeKey)
-	val := s.deserializePayload(record, PayloadTypeValue)
+	key := s.deserializePayload(record, PayloadTypeKey, &opts)
+	val := s.deserializePayload(record, PayloadTypeValue, &opts)
 	headers := recordHeaders(record)
 
 	return &Record{
@@ -68,7 +75,7 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 
 // deserializePayload deserializes either the key or value of a Kafka record by trying
 // the pre-defined deserialization strategies.
-func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType) RecordPayload {
+func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
 	// Check if payload is empty
@@ -94,24 +101,44 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 		} else {
 			// Serde deserialized successfully, let's add fields that always shall
 			// be set, regardless of the SerDe used.
-			rp.OriginalPayload = payload // TODO: Set to nil if too large or not requested
 			rp.PayloadSizeBytes = len(payload)
 			rp.IsPayloadNull = payload == nil
-			rp.IsPayloadTooLarge = false         // TODO: Set to true if too large
-			rp.Troubleshooting = troubleshooting // TODO: Only if troubleshooting is enabled in request opts
+			if len(payload) > opts.MaxPayloadSize {
+				rp.OriginalPayload = nil
+				rp.IsPayloadTooLarge = true
+			} else {
+				rp.OriginalPayload = payload
+				rp.IsPayloadTooLarge = false
+			}
+
+			if opts.Troubleshoot {
+				rp.Troubleshooting = troubleshooting
+			}
+
 			return rp
 		}
 	}
 
 	// Anything else is considered binary
-	return RecordPayload{
-		OriginalPayload:   payload, // TODO: Set to nil if too large or not requested
-		PayloadSizeBytes:  len(payload),
-		IsPayloadNull:     payload == nil,
-		IsPayloadTooLarge: false,           // TODO: Set to true if too large
-		Troubleshooting:   troubleshooting, // TODO: Only if troubleshooting is enabled in request opts
-		Encoding:          PayloadEncodingBinary,
+	rp := RecordPayload{
+		PayloadSizeBytes: len(payload),
+		IsPayloadNull:    payload == nil,
+		Encoding:         PayloadEncodingBinary,
 	}
+
+	if len(payload) > opts.MaxPayloadSize {
+		rp.OriginalPayload = nil
+		rp.IsPayloadTooLarge = true
+	} else {
+		rp.OriginalPayload = payload
+		rp.IsPayloadTooLarge = false
+	}
+
+	if opts.Troubleshoot {
+		rp.Troubleshooting = troubleshooting
+	}
+
+	return rp
 }
 
 // DeserializationOptions that can be provided by the requester to influence
@@ -136,6 +163,9 @@ type DeserializationOptions struct {
 	// tested encoding method worked successfully no troubleshooting information
 	// is returned.
 	Troubleshoot bool
+
+	// MaxPayloadSize is the maximum size of the payload.
+	MaxPayloadSize int
 }
 
 func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error) {
