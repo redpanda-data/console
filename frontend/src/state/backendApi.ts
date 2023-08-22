@@ -51,6 +51,11 @@ import {
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
 
+import { createPromiseClient } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/list_messages_connect'
+import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
@@ -398,9 +403,42 @@ const apiStore = {
             }
         };
         currentWS.onmessage = onMessageHandler;
+
+        this.listMessagesConnect(searchRequest)
     },
 
+    async listMessagesConnect(searchRequest: MessageSearchRequest): Promise<void> {
+        console.dir(this)
+        console.dir(appConfig)
+        console.dir(appGlobal)
 
+        const transport = createConnectTransport({
+            baseUrl: 'http://localhost:9090',
+        });
+
+        const client = createPromiseClient(ConsoleService, transport);
+
+        const req = new ListMessagesRequest()
+        req.topic = searchRequest.topicName
+        req.startOffset = BigInt(searchRequest.startOffset)
+        req.partitionId = searchRequest.partitionId
+        req.maxResults = searchRequest.maxResults
+        req.filterInterpreterCode = searchRequest.filterInterpreterCode
+
+        for await (const res of await client.listMessages(req)) {
+            if (res.controlMessage.case == 'data') {
+                const key = new TextDecoder().decode(res.controlMessage.value.key?.normalizedPayload);
+                console.log(`received data message with key ${key} of encoding ${res.controlMessage.value.key?.encoding} and value with encoding ${res.controlMessage.value.value?.encoding}`)
+
+                // const val = new TextDecoder().decode(res.controlMessage.value.value?.normalizedPayload);
+                // console.log(key)
+                // console.log(val) // should be JSON
+            }
+            if (res.controlMessage.case == 'phase') {
+                console.log(`phase: ${res.controlMessage.value.phase}`)
+            }
+        }
+    },
 
     stopMessageSearch() {
         if (currentWS) {
