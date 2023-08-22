@@ -845,6 +845,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(msg.GetGizmo())
+		require.NoError(err)
 
 		r := &kgo.Record{
 			// Key:   []byte(msg.GetIdentity()),
