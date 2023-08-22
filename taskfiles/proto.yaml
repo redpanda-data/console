@@ -31,6 +31,18 @@ tasks:
       - rm -rf {{.BACKEND_ROOT}}/internal/protogen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - PATH={{.BUILD_ROOT}}/bin:$PATH buf generate
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf format -w {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf format -w {{.BACKEND_ROOT}}/pkg/serde/testdata/proto
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf lint --config {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf lint --config {{.BACKEND_ROOT}}/pkg/serde/testdata/proto/buf.yaml {{.BACKEND_ROOT}}/pkg/serde/testdata/proto
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf generate --template {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.gen.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+        {{ .BUILD_ROOT }}/bin/buf generate --template {{.BACKEND_ROOT}}/pkg/serde/testdata/proto/buf.gen.yaml {{.BACKEND_ROOT}}/pkg/serde/testdata/proto
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
 
   install-buf:
