@@ -140,6 +140,7 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/schema-registry/schemas/types", api.handleGetSchemaRegistrySchemaTypes())
 				r.Delete("/schema-registry/subjects/{subject}", api.handleDeleteSubject())
 				r.Post("/schema-registry/subjects/{subject}/versions", api.handleCreateSchema())
+				r.Post("/schema-registry/subjects/{subject}/versions/{version}/validate", api.handleValidateSchema())
 				r.Delete("/schema-registry/subjects/{subject}/versions/{version}", api.handleDeleteSubjectVersion())
 				r.Get("/schema-registry/subjects/{subject}/versions/{version}", api.handleGetSchemaSubjectDetails())
 				r.Get("/schema-registry/subjects/{subject}/versions/{version}/referencedby", api.handleGetSchemaReferences())

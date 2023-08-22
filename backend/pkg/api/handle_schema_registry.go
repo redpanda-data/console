@@ -428,3 +428,53 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
+
+func (api *API) handleValidateSchema() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		version := rest.GetURLParam(r, "version")
+		switch version {
+		case console.SchemaVersionsLatest:
+		default:
+			// Must be number or it's invalid input
+			_, err := strconv.Atoi(version)
+			if err != nil {
+				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      descriptiveErr,
+					Status:   http.StatusBadRequest,
+					Message:  descriptiveErr.Error(),
+					IsSilent: false,
+				})
+				return
+			}
+		}
+
+		var payload schema.Schema
+		restErr := rest.Decode(w, r, &payload)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if payload.Schema == "" {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("payload validation failed for validating schema"),
+				Status:       http.StatusBadRequest,
+				Message:      "You must set the schema field when validating the schema",
+				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		// 2. Send validate request
+		res := api.ConsoleSvc.ValidateSchemaRegistrySchema(r.Context(), subjectName, version, payload)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}

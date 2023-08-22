@@ -13,11 +13,13 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hamba/avro/v2"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -79,7 +81,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		// 1. Index all returned schemas by their respective subject name and version as stored in the schema registry
 		schemasBySubjectAndVersion := make(map[string]map[int]SchemaVersionedResponse)
 		for _, schema := range schemasRes {
-			if schema.Type != TypeProtobuf.String() {
+			if schema.Type != TypeProtobuf {
 				continue
 			}
 			_, exists := schemasBySubjectAndVersion[schema.Subject]
@@ -93,7 +95,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		// registered in their own proto registry.
 		fdBySchemaID := make(map[int]*desc.FileDescriptor)
 		for _, schema := range schemasRes {
-			if schema.Type != TypeProtobuf.String() {
+			if schema.Type != TypeProtobuf {
 				continue
 			}
 
@@ -184,7 +186,7 @@ func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (avro.
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		codec, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes)
+		codec, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes, avro.DefaultSchemaCache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
 		}
@@ -251,11 +253,17 @@ func (s *Service) GetSchemaReferences(ctx context.Context, subject, version stri
 	return s.registryClient.GetSchemaReferences(ctx, subject, version)
 }
 
+// CheckCompatibility checks if a schema is compatible with the given version
+// that exists. You can use 'latest' to check compatibility with the latest version.
+func (s *Service) CheckCompatibility(ctx context.Context, subject string, version string, schema Schema) (*CheckCompatibilityResponse, error) {
+	return s.registryClient.CheckCompatibility(ctx, subject, version, schema)
+}
+
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
 // error will be returned.
-func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse) (avro.Schema, error) {
+func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse, schemaCache *avro.SchemaCache) (avro.Schema, error) {
 	if len(schema.References) == 0 {
 		return avro.Parse(schema.Schema)
 	}
@@ -268,10 +276,14 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 			return nil, err
 		}
 
-		if _, err := s.ParseAvroSchemaWithReferences(ctx, &SchemaResponse{
-			Schema:     schemaRef.Schema,
-			References: schemaRef.References,
-		}); err != nil {
+		if _, err := s.ParseAvroSchemaWithReferences(
+			ctx,
+			&SchemaResponse{
+				Schema:     schemaRef.Schema,
+				References: schemaRef.References,
+			},
+			schemaCache,
+		); err != nil {
 			return nil, fmt.Errorf(
 				"failed to parse schema reference (subject: %q, version %q): %w",
 				reference.Subject, reference.Version, err,
@@ -281,6 +293,76 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 
 	// Parse the main schema in the end after solving all references
 	return avro.Parse(schema.Schema)
+}
+
+// ValidateAvroSchema tries to parse the given avro schema with the avro library.
+// If there's an issue with the given schema, it will be returned to the user
+// so that they can fix the schema string.
+func (s *Service) ValidateAvroSchema(ctx context.Context, sch Schema) error {
+	tempCache := avro.SchemaCache{}
+	schemaRes := &SchemaResponse{Schema: sch.Schema, References: sch.References}
+	_, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes, &tempCache)
+	return err
+}
+
+// ValidateJSONSchema validates a JSON schema for syntax issues.
+func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schema, schemaCompiler *jsonschema.Compiler) error {
+	if schemaCompiler == nil {
+		schemaCompiler = jsonschema.NewCompiler()
+	}
+
+	for _, ref := range sch.References {
+		schemaRefRes, err := s.GetSchemaBySubjectAndVersion(ctx, ref.Subject, strconv.Itoa(ref.Version))
+		if err != nil {
+			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
+		}
+		schemaRef := Schema{
+			Schema:     schemaRefRes.Schema,
+			Type:       schemaRefRes.Type,
+			References: nil,
+		}
+		if err := s.ValidateJSONSchema(ctx, ref.Name, schemaRef, schemaCompiler); err != nil {
+			return err
+		}
+	}
+
+	// Prevent a panic by the schema compiler by checking the name before AddResource
+	if strings.IndexByte(name, '#') != -1 {
+		return fmt.Errorf("hashtags are not allowed as part of the schema name")
+	}
+	err := schemaCompiler.AddResource(name, strings.NewReader(sch.Schema))
+	if err != nil {
+		return fmt.Errorf("failed to add resource for %q", name)
+	}
+
+	_, err = jsonschema.CompileString(name, sch.Schema)
+	if err != nil {
+		return fmt.Errorf("failed to validate schema %q: %w", name, err)
+	}
+	return nil
+}
+
+// ValidateProtobufSchema validates a given protobuf schema by trying to parse it as a descriptor
+// along with all its references.
+func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch Schema) error {
+	schemasByPath := make(map[string]string)
+	schemasByPath[name] = sch.Schema
+
+	for _, ref := range sch.References {
+		schemaRefRes, err := s.GetSchemaBySubjectAndVersion(ctx, ref.Subject, strconv.Itoa(ref.Version))
+		if err != nil {
+			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
+		}
+		schemasByPath[ref.Name] = schemaRefRes.Schema
+	}
+	parser := protoparse.Parser{
+		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
+		InferImportPaths:      true,
+		ValidateUnlinkedFiles: true,
+		IncludeSourceCodeInfo: true,
+	}
+	_, err := parser.ParseFiles(name)
+	return err
 }
 
 // GetSchemaBySubjectAndVersion retrieves a schema from the schema registry

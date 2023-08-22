@@ -123,15 +123,8 @@ func newClient(cfg config.Schema) (*Client, error) {
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
-	Schema     string      `json:"schema"`
-	References []Reference `json:"references,omitempty"`
-}
-
-// Reference describes a reference to a different schema stored in the schema registry.
-type Reference struct {
-	Name    string `json:"name"`
-	Subject string `json:"subject"`
-	Version int    `json:"version"`
+	Schema     string            `json:"schema"`
+	References []SchemaReference `json:"references,omitempty"`
 }
 
 // GetSchemaByID returns the schema string identified by the input ID.
@@ -168,12 +161,12 @@ func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse,
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaVersionedResponse struct {
-	Subject    string      `json:"subject"`
-	SchemaID   int         `json:"id"`
-	Version    int         `json:"version"`
-	Schema     string      `json:"schema"`
-	Type       string      `json:"schemaType"`
-	References []Reference `json:"references"`
+	Subject    string            `json:"subject"`
+	SchemaID   int               `json:"id"`
+	Version    int               `json:"version"`
+	Schema     string            `json:"schema"`
+	Type       SchemaType        `json:"schemaType"`
+	References []SchemaReference `json:"references"`
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
@@ -210,9 +203,6 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 	parsed, ok := res.Result().(*SchemaVersionedResponse)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse schema by subject response")
-	}
-	if parsed.Type == "" {
-		parsed.Type = TypeAvro.String()
 	}
 
 	return parsed, nil
@@ -645,6 +635,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	return schemas, nil
 }
 
+// GetSchemaReferencesResponse is the response to fetching schema references.
 type GetSchemaReferencesResponse struct {
 	SchemaIDs []int `json:"schemaIds"`
 }
@@ -672,6 +663,38 @@ func (c *Client) GetSchemaReferences(ctx context.Context, subject, version strin
 	}
 
 	return &GetSchemaReferencesResponse{SchemaIDs: schemaIDs}, nil
+}
+
+// CheckCompatibilityResponse is the response to a compatibility check for a schema.
+type CheckCompatibilityResponse struct {
+	IsCompatible bool `json:"is_compatible"`
+}
+
+// CheckCompatibility checks if a schema is compatible with the given version
+// that exists. You can use 'latest' to check compatibility with the latest version.
+func (c *Client) CheckCompatibility(ctx context.Context, subject string, version string, schema Schema) (*CheckCompatibilityResponse, error) {
+	var checkCompatRes CheckCompatibilityResponse
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&checkCompatRes).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		SetQueryParam("verbose", "true").
+		SetBody(&schema).
+		Post("/compatibility/subjects/{subject}/versions/{version}")
+	if err != nil {
+		return nil, fmt.Errorf("check compatibility failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("check compatibility failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &checkCompatRes, nil
 }
 
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects

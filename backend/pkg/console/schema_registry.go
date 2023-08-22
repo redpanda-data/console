@@ -58,6 +58,7 @@ func (s *Service) GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryC
 	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
 }
 
+// PutSchemaRegistryConfig sets the global compatibility level.
 func (s *Service) PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error) {
 	config, err := s.kafkaSvc.SchemaService.PutConfig(ctx, compatLevel)
 	if err != nil {
@@ -119,7 +120,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 // or the full schema information that's part of the subject.
 type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
-	Type                string                                `json:"type"`
+	Type                schema.SchemaType                     `json:"type"`
 	Compatibility       schema.CompatibilityLevel             `json:"compatibility"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
@@ -208,7 +209,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		schemas = append(schemas, schemaRes)
 	}
 
-	schemaType := "unknown"
+	var schemaType schema.SchemaType
 	if len(schemas) > 0 {
 		schemaType = schemas[len(schemas)-1].Type
 	}
@@ -295,12 +296,12 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int         `json:"id"`
-	Version       int         `json:"version"`
-	IsSoftDeleted bool        `json:"isSoftDeleted"`
-	Type          string      `json:"type"`
-	Schema        string      `json:"schema"`
-	References    []Reference `json:"references"`
+	ID            int               `json:"id"`
+	Version       int               `json:"version"`
+	IsSoftDeleted bool              `json:"isSoftDeleted"`
+	Type          schema.SchemaType `json:"type"`
+	Schema        string            `json:"schema"`
+	References    []Reference       `json:"references"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
@@ -406,4 +407,73 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 	}
 
 	return &CreateSchemaResponse{ID: res.ID}, nil
+}
+
+// SchemaRegistrySchemaValidation is the response to a schema validation.
+type SchemaRegistrySchemaValidation struct {
+	Compatibility SchemaRegistrySchemaValidationCompatibility `json:"compatibility"`
+	ParsingError  string                                      `json:"parsingError,omitempty"`
+	IsValid       bool                                        `json:"isValid"`
+}
+
+// SchemaRegistrySchemaValidationCompatibility is the response to the compatibility check
+// performed by the schema registry.
+type SchemaRegistrySchemaValidationCompatibility struct {
+	IsCompatible bool   `json:"isCompatible"`
+	Error        string `json:"error,omitempty"`
+}
+
+// ValidateSchemaRegistrySchema validates a given schema by checking:
+// 1. Compatibility to previous versions if they exist.
+// 2. Validating the schema for correctness.
+func (s *Service) ValidateSchemaRegistrySchema(
+	ctx context.Context,
+	subjectName string,
+	version string,
+	sch schema.Schema,
+) *SchemaRegistrySchemaValidation {
+	// Compatibility check from schema registry
+	var compatErr string
+	var isCompatible bool
+	compatRes, err := s.kafkaSvc.SchemaService.CheckCompatibility(ctx, subjectName, version, sch)
+	if err != nil {
+		compatErr = err.Error()
+
+		// If subject doesn't exist, we will reset the error, because new subject schemas
+		// don't have any existing schema and therefore can't be incompatible.
+		var schemaErr *schema.RestError
+		if errors.As(err, &schemaErr) {
+			if schemaErr.ErrorCode == schema.CodeSubjectNotFound {
+				compatErr = ""
+				isCompatible = true
+			}
+		}
+	} else {
+		isCompatible = compatRes.IsCompatible
+	}
+
+	var parsingErr string
+	switch sch.Type {
+	case schema.TypeAvro:
+		if err := s.kafkaSvc.SchemaService.ValidateAvroSchema(ctx, sch); err != nil {
+			parsingErr = err.Error()
+		}
+	case schema.TypeJSON:
+		if err := s.kafkaSvc.SchemaService.ValidateJSONSchema(ctx, subjectName, sch, nil); err != nil {
+			parsingErr = err.Error()
+		}
+	case schema.TypeProtobuf:
+		if err := s.kafkaSvc.SchemaService.ValidateProtobufSchema(ctx, subjectName, sch); err != nil {
+			parsingErr = err.Error()
+		}
+	}
+
+	return &SchemaRegistrySchemaValidation{
+		Compatibility: SchemaRegistrySchemaValidationCompatibility{
+			IsCompatible: isCompatible,
+			Error:        compatErr,
+		},
+		ParsingError: parsingErr,
+		IsValid:      parsingErr == "" && isCompatible,
+	}
 }
