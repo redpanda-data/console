@@ -11,7 +11,6 @@ package serde
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -203,32 +202,4 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 	}
 
 	return binData, nil
-}
-
-// from franz-go
-
-// AppendEncode appends an encoded header to b according to the Confluent wire
-// format and returns it. Error is always nil.
-func appendEncode(b []byte, id int, index []int) ([]byte, error) {
-	b = append(
-		b,
-		0,
-		byte(id>>24),
-		byte(id>>16),
-		byte(id>>8),
-		byte(id>>0),
-	)
-
-	if len(index) > 0 {
-		if len(index) == 1 && index[0] == 0 {
-			b = append(b, 0) // first-index shortcut (one type in the protobuf)
-		} else {
-			b = binary.AppendVarint(b, int64(len(index)))
-			for _, idx := range index {
-				b = binary.AppendVarint(b, int64(idx))
-			}
-		}
-	}
-
-	return b, nil
 }

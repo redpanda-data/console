@@ -27,7 +27,6 @@ import (
 )
 
 func TestAvroSerde_DeserializePayload(t *testing.T) {
-	// fake schema registry
 	schemaStr := `{
 		"type": "record",
 		"name": "simple",
@@ -192,4 +191,200 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			test.validationFunc(t, payload, err)
 		})
 	}
+}
+
+func TestAvroSerde_SerializeObject(t *testing.T) {
+	schemaStr := `{
+		"type": "record",
+		"name": "simple",
+		"namespace": "org.hamba.avro",
+		"fields" : [
+			{"name": "a", "type": "long"},
+			{"name": "b", "type": "string"}
+		]
+	}`
+
+	avroSchema, err := avro.Parse(schemaStr)
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		switch r.URL.String() {
+		case "/schemas/ids/1000":
+			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+
+			resp := map[string]interface{}{
+				"schema": avroSchema.String(),
+			}
+
+			enc := json.NewEncoder(w)
+			if enc.Encode(resp) != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		case "/schemas/types":
+			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+			resp := []string{"AVRO"}
+			enc := json.NewEncoder(w)
+			if enc.Encode(resp) != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		case "/schemas":
+			type SchemaVersionedResponse struct {
+				Subject  string `json:"subject"`
+				SchemaID int    `json:"id"`
+				Version  int    `json:"version"`
+				Schema   string `json:"schema"`
+				Type     string `json:"schemaType"`
+				// References []Reference `json:"references"`
+			}
+
+			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+			resp := []SchemaVersionedResponse{
+				{
+					Subject:  "test-subject-shop-order-v1",
+					SchemaID: 1000,
+					Version:  1,
+					Schema:   string(schemaStr),
+					Type:     "AVRO",
+				},
+			}
+
+			enc := json.NewEncoder(w)
+			if enc.Encode(resp) != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		case "/subjects":
+			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+			resp := []string{"test-subject-avro-v1"}
+			enc := json.NewEncoder(w)
+			if enc.Encode(resp) != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}))
+	defer ts.Close()
+
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+
+	schemaSvc, err := schema.NewService(config.Schema{
+		Enabled: true,
+		URLs:    []string{ts.URL},
+	}, logger)
+	require.NoError(t, err)
+
+	type SimpleRecord struct {
+		A int64  `avro:"a"`
+		B string `avro:"b"`
+	}
+
+	t.Run("no schema id", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue)
+		require.Error(t, err)
+		assert.Equal(t, "no schema id specified", err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("invalid schema id", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(5567))
+		require.Error(t, err)
+		assert.Equal(t, "getting avro schema from registry: failed to get schema from registry: get schema by id request failed: Status code 404", err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("dynamic", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&SimpleRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
+	})
+
+	t.Run("string json", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&SimpleRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject(`{"a":27,"b":"foo"}`, PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(`{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `deserializing avo json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("byte json", func(t *testing.T) {
+		serde := AvroSerde{SchemaSvc: schemaSvc}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&SimpleRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&SimpleRecord{A: 12, B: "bar"})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject([]byte(`{"a":12,"b":"bar"}`), PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
+	})
 }

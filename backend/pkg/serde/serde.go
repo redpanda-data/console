@@ -9,7 +9,11 @@
 
 package serde
 
-import "github.com/twmb/franz-go/pkg/kgo"
+import (
+	"encoding/binary"
+
+	"github.com/twmb/franz-go/pkg/kgo"
+)
 
 type serdeCfg struct {
 	schemaId    uint32
@@ -69,4 +73,32 @@ type Serde interface {
 	// requirements across all strategies for serializing records are less known. For example
 	// some serializers may want to write metadata in Record Headers
 	SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error)
+}
+
+// from franz-go
+
+// AppendEncode appends an encoded header to b according to the Confluent wire
+// format and returns it. Error is always nil.
+func appendEncode(b []byte, id int, index []int) ([]byte, error) {
+	b = append(
+		b,
+		0,
+		byte(id>>24),
+		byte(id>>16),
+		byte(id>>8),
+		byte(id>>0),
+	)
+
+	if len(index) > 0 {
+		if len(index) == 1 && index[0] == 0 {
+			b = append(b, 0) // first-index shortcut (one type in the protobuf)
+		} else {
+			b = binary.AppendVarint(b, int64(len(index)))
+			for _, idx := range index {
+				b = binary.AppendVarint(b, int64(idx))
+			}
+		}
+	}
+
+	return b, nil
 }

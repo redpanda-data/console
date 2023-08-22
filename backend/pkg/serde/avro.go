@@ -10,12 +10,15 @@
 package serde
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/hamba/avro/v2"
+	"github.com/linkedin/goavro"
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -75,5 +78,73 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 }
 
 func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	if !so.schemaIDSet {
+		return nil, errors.New("no schema id specified")
+	}
+
+	schema, err := d.SchemaSvc.GetAvroSchemaByID(so.schemaId)
+	if err != nil {
+		return nil, fmt.Errorf("getting avro schema from registry: %w", err)
+	}
+
+	avroObj := obj
+	switch v := obj.(type) {
+	case []byte:
+		trimmed := bytes.TrimLeft(v, " \t\r\n")
+
+		if len(trimmed) == 0 {
+			return nil, errors.New("payload is empty")
+		}
+
+		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+		if startsWithJSON {
+			codec, err := goavro.NewCodec(schema.String())
+			if err != nil {
+				return nil, fmt.Errorf("parsing avro schema: %w", err)
+			}
+
+			avroObj, _, err = codec.NativeFromTextual(trimmed)
+			if err != nil {
+				return nil, fmt.Errorf("deserializing avo json: %w", err)
+			}
+		}
+	case string:
+		trimmed := strings.TrimLeft(v, " \t\r\n")
+
+		if len(trimmed) == 0 {
+			return nil, errors.New("string payload is empty")
+		}
+
+		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+		if startsWithJSON {
+			codec, err := goavro.NewCodec(schema.String())
+			if err != nil {
+				return nil, fmt.Errorf("parsing avro schema: %w", err)
+			}
+
+			avroObj, _, err = codec.NativeFromTextual([]byte(trimmed))
+			if err != nil {
+				return nil, fmt.Errorf("deserializing avo json: %w", err)
+			}
+		}
+	}
+
+	b, err := avro.Marshal(schema, avroObj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize avro: %w", err)
+	}
+
+	header, err := appendEncode(nil, int(so.schemaId), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed encode binary avro payload: %w", err)
+	}
+
+	binData := append(header, b...)
+
+	return binData, nil
 }
