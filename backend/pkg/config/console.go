@@ -19,14 +19,16 @@ import (
 type Console struct {
 	// Enabled should always be true unless you use your own
 	// implementation that satisfies the Console interface.
-	Enabled            bool                      `yaml:"enabled"`
-	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
+	Enabled                       bool                      `yaml:"enabled"`
+	TopicDocumentation            ConsoleTopicDocumentation `yaml:"topicDocumentation"`
+	MaxDeserializationPayloadSize int                       `yaml:"maxDeserializationPayloadSize"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.Enabled = true
 	c.TopicDocumentation.SetDefaults()
+	c.MaxDeserializationPayloadSize = 1_000_000
 }
 
 // RegisterFlags for sensitive Console configurations.

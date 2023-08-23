@@ -52,8 +52,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		}
 
 		// Run Interpreter filter and check if message passes the filter
-		// deserializedRec := s.Deserializer.DeserializeRecord(record)
-		deserializedRec := s.SerdeService.DeserializeRecord(record, serde.DeserializationOptions{})
+		deserializedRec := s.SerdeService.DeserializeRecord(record,
+			serde.DeserializationOptions{MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))
 		headers := make([]MessageHeader, 0)
