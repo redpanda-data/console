@@ -181,6 +181,12 @@ type assertHooks struct {
 }
 
 func (a *assertHooks) isCallAllowed(topicName string) bool {
+	// The target system may have created internal topics, which
+	// use an underscore prefix by convention. The calls to such topics
+	// are expected and therefore are allowed.
+	if strings.HasPrefix(topicName, "_") {
+		return true
+	}
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
 	parts := strings.Split(fnName, ".")
@@ -212,6 +218,7 @@ func (a *assertHooks) getCallReturnValue(topicName string) assertCallReturnValue
 
 func newAssertHooks(t *testing.T, returnValues map[string]map[string]assertCallReturnValue) *Hooks {
 	h := &assertHooks{
+		t:            t,
 		allowedCalls: map[string]map[string]bool{},
 		returnValues: map[string]map[string]assertCallReturnValue{},
 	}

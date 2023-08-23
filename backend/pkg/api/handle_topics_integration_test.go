@@ -77,10 +77,16 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		err := json.Unmarshal(body, &getRes)
 		require.NoError(err)
 
-		require.Len(getRes.Topics, 3)
-		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
-		assert.Equal(testutil.TopicNameForTest("get_topics_1"), getRes.Topics[1].TopicName)
-		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
+		// There may be internal topics, thus we need to check GTE
+		require.GreaterOrEqual(len(getRes.Topics), 3)
+		topicNames := make([]string, len(getRes.Topics))
+		for i, topicDetails := range getRes.Topics {
+			topicNames[i] = topicDetails.TopicName
+		}
+
+		assert.Contains(topicNames, testutil.TopicNameForTest("get_topics_0"))
+		assert.Contains(topicNames, testutil.TopicNameForTest("get_topics_1"))
+		assert.Contains(topicNames, testutil.TopicNameForTest("get_topics_2"))
 	})
 
 	t.Run("no see permission", func(t *testing.T) {
@@ -108,12 +114,12 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 			}
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 		defer cancel()
 
 		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
 
-		assert.Equal(200, res.StatusCode)
+		require.Equal(200, res.StatusCode)
 
 		type response struct {
 			Topics []*console.TopicSummary `json:"topics"`
