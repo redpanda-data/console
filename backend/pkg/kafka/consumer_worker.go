@@ -59,10 +59,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		headers := make([]MessageHeader, 0)
 		for _, header := range deserializedRec.Headers {
 			headersByKey[header.Key] = header.Value
-			headers = append(headers, MessageHeader{
-				Key:   header.Key,
-				Value: &header,
-			})
+			headers = append(headers, MessageHeader(header))
 		}
 
 		// Check if message passes filter code

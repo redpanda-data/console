@@ -302,7 +302,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
-		testTopicName := testutil.TopicNameForTest("deserializer_plain_protobuf")
+		testTopicName := testutil.TopicNameForTest("deserializer_plain_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
@@ -848,7 +848,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		r := &kgo.Record{
-			// Key:   []byte(msg.GetIdentity()),
+			Key:   []byte("item_0"),
 			Value: msgData,
 			Topic: testTopicName,
 		}

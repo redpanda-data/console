@@ -61,10 +61,30 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	doneCount := 0
 	progressCount := 0
 	errorCount := 0
+	seenZeroOffset := false
 	for stream.Receive() {
 		msg := stream.Msg()
 		switch cm := msg.GetControlMessage().(type) {
 		case *v1pb.ListMessagesResponse_Data:
+			if seenZeroOffset {
+				assert.NotEmpty(cm.Data.Offset)
+			}
+
+			if cm.Data.Offset == 0 {
+				seenZeroOffset = true
+			}
+
+			assert.NotEmpty(cm.Data.Timestamp)
+			assert.NotEmpty(cm.Data.Compression)
+			assert.NotEmpty(cm.Data.Headers)
+
+			for _, h := range cm.Data.Headers {
+				h := h
+				assert.NotEmpty(h)
+				assert.NotEmpty(h.Key)
+				assert.NotEmpty(h.Value)
+			}
+
 			key := string(cm.Data.GetKey().GetNormalizedPayload())
 			keys = append(keys, key)
 

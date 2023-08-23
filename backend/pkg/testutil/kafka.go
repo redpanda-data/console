@@ -92,6 +92,12 @@ func ProduceOrders(t *testing.T, ctx context.Context, kafkaCl *kgo.Client, topic
 				Value:     serializedOrder,
 				Topic:     topic,
 				Timestamp: recordTimeStamp,
+				Headers: []kgo.RecordHeader{
+					{
+						Key:   "revision",
+						Value: []byte("0"),
+					},
+				},
 			}
 			results := kafkaCl.ProduceSync(ctx, r)
 			require.NoError(t, results.FirstErr())

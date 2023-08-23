@@ -88,9 +88,50 @@ func (p *streamProgressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
+	headers := make([]*v1alpha.KafkaRecordHeader, 0, len(message.Headers))
+
+	for _, mh := range message.Headers {
+		mh := mh
+		headers = append(headers, &v1alpha.KafkaRecordHeader{
+			Key:   mh.Key,
+			Value: mh.Value,
+		})
+	}
+
+	data := &v1alpha.ListMessagesResponse_DataMessage{
+		Headers:         headers,
+		PartitionId:     message.PartitionID,
+		Offset:          message.Offset,
+		Timestamp:       message.Timestamp,
+		Compression:     message.Compression,
+		IsTransactional: message.IsTransactional,
+		Key: &v1alpha.KafkaRecordPayload{
+			OriginalPayload:   message.Key.OriginalPayload,
+			PayloadSize:       int32(message.Key.PayloadSizeBytes),
+			NormalizedPayload: message.Key.NormalizedPayload,
+			IsPayloadTooLarge: false, // TODO check for size
+			Encoding:          toProtoEncoding(message.Key.Encoding),
+		},
+		Value: &v1alpha.KafkaRecordPayload{
+			OriginalPayload:   message.Value.OriginalPayload,
+			PayloadSize:       int32(message.Value.PayloadSizeBytes),
+			NormalizedPayload: message.Value.NormalizedPayload,
+			IsPayloadTooLarge: false, // TODO check for size
+			Encoding:          toProtoEncoding(message.Value.Encoding),
+		},
+	}
+
+	p.stream.Send(&v1alpha.ListMessagesResponse{
+		ControlMessage: &v1alpha.ListMessagesResponse_Data{
+			Data: data,
+		},
+	})
+}
+
+func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding {
 	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 
-	switch message.Value.Encoding {
+	switch serdeEncoding {
 	case serde.PayloadEncodingNone:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NONE
 	case serde.PayloadEncodingAvro:
@@ -113,28 +154,7 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS
 	}
 
-	data := &v1alpha.ListMessagesResponse_DataMessage{
-		Value: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Value.OriginalPayload,
-			PayloadSize:       int32(message.Value.PayloadSizeBytes),
-			NormalizedPayload: message.Value.NormalizedPayload,
-			IsPayloadTooLarge: false, // TODO check for size
-			Encoding:          encoding,
-		},
-		Key: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Key.OriginalPayload,
-			PayloadSize:       int32(message.Key.PayloadSizeBytes),
-			NormalizedPayload: message.Key.NormalizedPayload,
-			IsPayloadTooLarge: false, // TODO check for size
-			Encoding:          encoding,
-		},
-	}
-
-	p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Data{
-			Data: data,
-		},
-	})
+	return encoding
 }
 
 func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {

@@ -56,10 +56,7 @@ type TopicMessage struct {
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
 // a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
-type MessageHeader struct {
-	Key   string              `json:"key"`
-	Value *serde.RecordHeader `json:"value"`
-}
+type MessageHeader serde.RecordHeader
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
 type PartitionConsumeRequest struct {

@@ -408,10 +408,11 @@ const apiStore = {
     },
 
     async listMessagesConnect(searchRequest: MessageSearchRequest): Promise<void> {
-        console.dir(this)
-        console.dir(appConfig)
-        console.dir(appGlobal)
 
+        // https://connectrpc.com/docs/web/using-clients
+        // https://github.com/connectrpc/connect-es
+        // https://github.com/connectrpc/examples-es
+        
         const transport = createConnectTransport({
             baseUrl: 'http://localhost:9090',
         });
@@ -428,11 +429,19 @@ const apiStore = {
         for await (const res of await client.listMessages(req)) {
             if (res.controlMessage.case == 'data') {
                 const key = new TextDecoder().decode(res.controlMessage.value.key?.normalizedPayload);
-                console.log(`received data message with key ${key} of encoding ${res.controlMessage.value.key?.encoding} and value with encoding ${res.controlMessage.value.value?.encoding}`)
+                console.log(`received data from partition ${res.controlMessage.value.partitionId} with offset ${res.controlMessage.value.offset} and timestamp ${new Date(Number(res.controlMessage.value.timestamp)).toISOString()}`)
+                console.log(`compression: ${res.controlMessage.value.compression} and is transactional: ${res.controlMessage.value.isTransactional}`)
+                console.log(`message with key ${key} of encoding ${res.controlMessage.value.key?.encoding}`)
+                console.log(`message value with encoding ${res.controlMessage.value.value?.encoding} of size: ${res.controlMessage.value.value?.payloadSize}`)
 
-                // const val = new TextDecoder().decode(res.controlMessage.value.value?.normalizedPayload);
-                // console.log(key)
-                // console.log(val) // should be JSON
+                const headers = res.controlMessage.value.headers
+                headers.forEach(h => {
+                    console.log(`header ${h.key}: ${new TextDecoder().decode(h.value)}`)
+                });
+
+                const valueJson = new TextDecoder().decode(res.controlMessage.value.value?.normalizedPayload);
+                console.log(valueJson) // should be JSON
+                console.log('---')
             }
             if (res.controlMessage.case == 'phase') {
                 console.log(`phase: ${res.controlMessage.value.phase}`)

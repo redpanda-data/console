@@ -31,8 +31,15 @@ message ListMessagesRequest {
 message ListMessagesResponse {
   // Data control message.
   message DataMessage {
-    KafkaRecordPayload key = 1; // Kafka key of the payload record.
-    KafkaRecordPayload value = 2; // Kafka value of the payload record.
+    int32 partition_id = 1;
+    int64 offset = 2;
+    int64 timestamp = 3;
+    string compression = 4;
+    bool is_transactional = 5;
+
+    repeated KafkaRecordHeader headers = 6; // Kafka record headers.
+    KafkaRecordPayload key = 7; // Kafka key of the payload record.
+    KafkaRecordPayload value = 8; // Kafka value of the payload record.
   }
 
   // Phase control message.
@@ -76,6 +83,12 @@ message KafkaRecordPayload {
   PayloadEncoding encoding = 3;
   bytes normalized_payload = 4;
   bool is_payload_too_large = 5;
+}
+
+// KafkaRecordHeader is the record header.
+message KafkaRecordHeader {
+  string key = 1; // Header key.
+  bytes value = 2;  // Header value.
 }
 
 enum PayloadEncoding {

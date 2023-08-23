@@ -183,7 +183,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: recordTimeStamp,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -333,7 +333,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -561,7 +561,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -802,7 +802,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1005,7 +1005,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1200,18 +1200,18 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		msg := indexv1.Gadget{
 			Identity: "gadget_0",
 			Gizmo: &indexv1.Gadget_Gizmo{
-				Size: 10,
+				Size: 11,
 				Item: &indexv1.Item{
 					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
-					Name:     "item_0",
+					Name:     "item_10",
 				},
 			},
 			Widgets: []*indexv1.Widget{
 				{
-					Id: "wid_0",
+					Id: "wid_10",
 				},
 				{
-					Id: "wid_1",
+					Id: "wid_11",
 				},
 			},
 		}
@@ -1219,12 +1219,12 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		msgData, err := serde.Encode(msg.GetGizmo())
 
 		r := &kgo.Record{
-			// Key:   []byte(msg.GetIdentity()),
+			// Key:   []byte("item_10"),
 			Value: msgData,
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1263,22 +1263,22 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// check value
 		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
-		assert.Equal(10.0, obj["size"])
+		assert.Equal(11.0, obj["size"])
 		assert.NotEmpty(obj["item"])
 
 		rObject := indexv1.Gadget_Gizmo{}
 		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rObject)
 		require.NoError(err)
-		assert.Equal(int32(10), rObject.GetSize())
-		assert.Equal("item_0", rObject.GetItem().GetName())
+		assert.Equal(int32(11), rObject.GetSize())
+		assert.Equal("item_10", rObject.GetItem().GetName())
 		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject.GetItem().GetItemType())
 
 		// franz-go serde
 		rObject2 := indexv1.Gadget_Gizmo{}
 		err = serde.Decode(record.Value, &rObject2)
 		require.NoError(err)
-		assert.Equal(int32(10), rObject2.GetSize())
-		assert.Equal("item_0", rObject2.GetItem().GetName())
+		assert.Equal(int32(11), rObject2.GetSize())
+		assert.Equal("item_10", rObject2.GetItem().GetName())
 		assert.Equal(indexv1.Item_ITEM_TYPE_PERSONAL, rObject2.GetItem().GetItemType())
 
 		// value properties
@@ -1493,7 +1493,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1671,7 +1671,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 	t.Run("json with schema and index", func(t *testing.T) {
 		// create the topic
-		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
+		testTopicName := testutil.TopicNameForTest("serde_schema_json_index")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 

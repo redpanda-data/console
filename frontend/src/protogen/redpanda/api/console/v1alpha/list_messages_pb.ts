@@ -257,16 +257,48 @@ export class ListMessagesResponse extends Message<ListMessagesResponse> {
  */
 export class ListMessagesResponse_DataMessage extends Message<ListMessagesResponse_DataMessage> {
   /**
+   * @generated from field: int32 partition_id = 1;
+   */
+  partitionId = 0;
+
+  /**
+   * @generated from field: int64 offset = 2;
+   */
+  offset = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 timestamp = 3;
+   */
+  timestamp = protoInt64.zero;
+
+  /**
+   * @generated from field: string compression = 4;
+   */
+  compression = "";
+
+  /**
+   * @generated from field: bool is_transactional = 5;
+   */
+  isTransactional = false;
+
+  /**
+   * Kafka record headers.
+   *
+   * @generated from field: repeated redpanda.api.console.v1alpha.KafkaRecordHeader headers = 6;
+   */
+  headers: KafkaRecordHeader[] = [];
+
+  /**
    * Kafka key of the payload record.
    *
-   * @generated from field: redpanda.api.console.v1alpha.KafkaRecordPayload key = 1;
+   * @generated from field: redpanda.api.console.v1alpha.KafkaRecordPayload key = 7;
    */
   key?: KafkaRecordPayload;
 
   /**
    * Kafka value of the payload record.
    *
-   * @generated from field: redpanda.api.console.v1alpha.KafkaRecordPayload value = 2;
+   * @generated from field: redpanda.api.console.v1alpha.KafkaRecordPayload value = 8;
    */
   value?: KafkaRecordPayload;
 
@@ -278,8 +310,14 @@ export class ListMessagesResponse_DataMessage extends Message<ListMessagesRespon
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha.ListMessagesResponse.DataMessage";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "key", kind: "message", T: KafkaRecordPayload },
-    { no: 2, name: "value", kind: "message", T: KafkaRecordPayload },
+    { no: 1, name: "partition_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "timestamp", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "compression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "is_transactional", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "headers", kind: "message", T: KafkaRecordHeader, repeated: true },
+    { no: 7, name: "key", kind: "message", T: KafkaRecordPayload },
+    { no: 8, name: "value", kind: "message", T: KafkaRecordPayload },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesResponse_DataMessage {
@@ -555,6 +593,55 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
 
   static equals(a: KafkaRecordPayload | PlainMessage<KafkaRecordPayload> | undefined, b: KafkaRecordPayload | PlainMessage<KafkaRecordPayload> | undefined): boolean {
     return proto3.util.equals(KafkaRecordPayload, a, b);
+  }
+}
+
+/**
+ * KafkaRecordHeader is the record header.
+ *
+ * @generated from message redpanda.api.console.v1alpha.KafkaRecordHeader
+ */
+export class KafkaRecordHeader extends Message<KafkaRecordHeader> {
+  /**
+   * Header key.
+   *
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * Header value.
+   *
+   * @generated from field: bytes value = 2;
+   */
+  value = new Uint8Array(0);
+
+  constructor(data?: PartialMessage<KafkaRecordHeader>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha.KafkaRecordHeader";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): KafkaRecordHeader {
+    return new KafkaRecordHeader().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): KafkaRecordHeader {
+    return new KafkaRecordHeader().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): KafkaRecordHeader {
+    return new KafkaRecordHeader().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: KafkaRecordHeader | PlainMessage<KafkaRecordHeader> | undefined, b: KafkaRecordHeader | PlainMessage<KafkaRecordHeader> | undefined): boolean {
+    return proto3.util.equals(KafkaRecordHeader, a, b);
   }
 }
 
