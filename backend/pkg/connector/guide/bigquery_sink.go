@@ -44,6 +44,7 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 						// No Group name and description here
 						ConfigKeys: append([]string{
 							"key.converter",
+							"key.converter.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
 							"autoCreateTables",
@@ -52,6 +53,7 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 							"allowBigQueryRequiredFieldRelaxation",
 							"upsertEnabled",
 							"deleteEnabled",
+							"kafkaKeyFieldName",
 							"timePartitioningType",
 							"bigQueryRetry",
 							"bigQueryRetryWait",
