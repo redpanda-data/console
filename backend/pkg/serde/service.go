@@ -32,7 +32,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 		SerDes: []Serde{
 			NoneSerde{},
 			JsonSerde{},
-			JsonSchemaSerde{},
+			JsonSchemaSerde{SchemaSvc: schemaService},
 			XMLSerde{},
 			AvroSerde{SchemaSvc: schemaService},
 			ProtobufSerde{ProtoSvc: protoSvc},

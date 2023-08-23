@@ -233,6 +233,11 @@ func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 	return s.registryClient.GetSubjectConfig(subject)
 }
 
+// GetSchemaByID gets the schema by ID.
+func (s *Service) GetSchemaByID(id uint32) (*SchemaResponse, error) {
+	return s.registryClient.GetSchemaByID(id)
+}
+
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
