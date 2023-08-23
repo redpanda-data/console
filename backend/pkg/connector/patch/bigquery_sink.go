@@ -51,8 +51,6 @@ func (c *ConfigPatchBigQuery) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case keyConverter:
-		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -82,6 +80,8 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) 
 		d.SetDisplayName("Upsert enabled")
 	case "deleteEnabled":
 		d.SetDisplayName("Delete enabled")
+	case "kafkaKeyFieldName":
+		d.SetDisplayName("Kafka key field name")
 	case "bigQueryRetry":
 		d.SetDisplayName("BigQuery retry attempts")
 	case "bigQueryRetryWait":
@@ -97,7 +97,9 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) 
 	switch d.Definition.Name {
 	case "keyfile":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "autoCreateTables":
+	case keyConverter,
+		"autoCreateTables",
+		"kafkaKeyFieldName":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
