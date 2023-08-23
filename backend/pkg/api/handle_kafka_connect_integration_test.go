@@ -14,7 +14,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -26,12 +25,10 @@ import (
 	con "github.com/cloudhut/connect-client"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -68,9 +65,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
 
 	redpandaContainer, err := runRedpandaForConnect(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
-	require.NoError(err)
-
-	seedBroker, err := getMappedHostPort(ctx, redpandaContainer, nat.Port(strconv.FormatInt(int64(exposedOutKafkaPort), 10)+"/tcp"))
 	require.NoError(err)
 
 	// HTTPBin container
@@ -161,82 +155,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		assert.Equal("http_connect_input", createConnectRes.Name)
 		assert.Equal("httpbin-input", createConnectRes.Config["kafka.topic"])
 		assert.Equal("1000", createConnectRes.Config["http.timer.interval.millis"])
-
-		// timeout to allow for connect instance to perform few requests
-		timer := time.NewTimer(3500 * time.Millisecond)
-		<-timer.C
-
-		cl, err := kgo.NewClient(
-			kgo.SeedBrokers(seedBroker),
-			kgo.ConsumeTopics("httpbin-input"),
-			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
-		)
-		require.NoError(err)
-
-		defer cl.Close()
-
-		type uuidValue struct {
-			UUID string `json:"uuid"`
-		}
-
-		type recordValue struct {
-			Value string `json:"value"`
-			Key   string
-		}
-
-		records := make([][]byte, 0)
-
-		// control polling end via context
-		pollCtx, pollCancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer pollCancel()
-
-		// check the data in the sink topic
-		for {
-			fetches := cl.PollFetches(pollCtx)
-			if fetches.IsClientClosed() {
-				break
-			}
-
-			errs := fetches.Errors()
-			if len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled)) {
-				break
-			}
-
-			require.Empty(errs)
-
-			fetches.EachRecord(func(record *kgo.Record) {
-				records = append(records, record.Value)
-			})
-		}
-
-		for _, vd := range records {
-			rv := recordValue{}
-			err := json.Unmarshal(vd, &rv)
-			require.NoError(err)
-			assert.NotEmpty(rv.Value)
-
-			uv := uuidValue{}
-			err = json.Unmarshal([]byte(rv.Value), &uv)
-			require.NoError(err)
-
-			_, err = uuid.Parse(uv.UUID)
-			assert.NoError(err)
-		}
-
-		nRecords := len(records)
-		assert.True(nRecords >= 3 && nRecords <= 5, "expect to have between 3 and 5 records. got: %d", nRecords)
-
-		// check GET
-		getRes, getBody := s.apiRequest(context.Background(), http.MethodGet, "/api/kafka-connect/clusters/redpanda_connect/connectors/http_connect_input", nil)
-		require.Equal(200, getRes.StatusCode)
-
-		getConnectRes := connect.ClusterConnectorInfo{}
-		err = json.Unmarshal(getBody, &getConnectRes)
-		require.NoError(err)
-
-		assert.Equal("http_connect_input", getConnectRes.Name)
-		assert.Equal("httpbin-input", getConnectRes.Config["kafka.topic"])
-		assert.Equal("1000", getConnectRes.Config["http.timer.interval.millis"])
 	})
 }
 

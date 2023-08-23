@@ -14,10 +14,8 @@ import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } 
 import { arrayMoveMutable } from 'array-move';
 import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Tooltip } from 'antd';
 import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import { Button, Input } from '@redpanda-data/ui';
-
+import { Button, Input, Tooltip } from '@redpanda-data/ui';
 
 @observer
 export class CommaSeparatedStringList extends Component<{
@@ -77,60 +75,60 @@ export class CommaSeparatedStringList extends Component<{
         const [hasFocus, setHasFocus] = useState(false);
         const [valuePending, setValuePending] = useState('');
 
-        return < >
-            {/* Input */}
-            <Tooltip overlay="[Enter] confirm, [ESC] cancel" visible={hasFocus} placement="top" autoAdjustOverflow={false} overlayClassName="inputHintTooltip" align={{ offset: [0, 4] }} >
+        return (
+            <>
+                {/* Input */}
+                <Tooltip label="[Enter] confirm, [ESC] cancel" isOpen={hasFocus} placement="top" hasArrow={true}>
+                    <Input
+                        className="ghostInput"
+                        size="sm"
+                        style={{ flexGrow: 1, flexBasis: '400px' }}
+                        onFocus={() => {
+                            setValuePending(item.id);
+                            setHasFocus(true);
+                        }}
+                        onBlur={() => {
+                            setHasFocus(false);
+                        }}
+                        onKeyDown={e => {
+                            if (e.key == 'Enter') {
+                                // can we rename that entry?
+                                if (this.data.any(x => x.id == valuePending)) {
+                                    // no, already exists
+                                    e.stopPropagation();
+                                    return;
+                                }
 
-                <Input
-                    className="ghostInput"
-                    size="sm"
-                    style={{ flexGrow: 1, flexBasis: '400px' }}
+                                if (/^[a-z][a-z_\d]*$/i.test(valuePending) == false) {
+                                    // no, invalid characters
+                                    e.stopPropagation();
+                                    return;
+                                }
 
-                    onFocus={() => {
-                        setValuePending(item.id);
-                        setHasFocus(true);
-                    }}
-                    onBlur={() => {
-                        setHasFocus(false)
-                    }}
-
-                    onKeyDown={e => {
-                        if (e.key == 'Enter') {
-
-                            // can we rename that entry?
-                            if (this.data.any(x => x.id == valuePending)) {
-                                // no, already exists
-                                e.stopPropagation();
-                                return;
+                                item.id = valuePending;
+                                (e.target as HTMLElement).blur();
+                            } else if (e.key == 'Escape') {
+                                (e.target as HTMLElement).blur();
                             }
+                        }}
+                        value={hasFocus ? valuePending : item.id}
+                        onChange={e => setValuePending(e.target.value)}
+                        spellCheck={false}
+                    />
+                </Tooltip>
 
-                            if (/^[a-z][a-z_\d]*$/i.test(valuePending) == false) {
-                                // no, invalid characters
-                                e.stopPropagation();
-                                return;
-                            }
-
-                            item.id = valuePending;
-                            (e.target as HTMLElement).blur();
-                        }
-                        else if (e.key == 'Escape') {
-                            (e.target as HTMLElement).blur();
-                        }
+                {/* Delete */}
+                <span
+                    className="deleteButton"
+                    onClick={() => {
+                        this.data.splice(index, 1);
                     }}
-
-                    value={hasFocus ? valuePending : item.id}
-                    onChange={e => setValuePending(e.target.value)}
-
-                    spellCheck={false}
-                />
-            </Tooltip>
-
-            {/* Delete */}
-            <span className="deleteButton" onClick={() => {
-                this.data.splice(index, 1);
-            }} ><XIcon /></span>
-        </>
-    })
+                >
+                    <XIcon />
+                </span>
+            </>
+        );
+    });
 
     AddButton = observer(() => {
         return <div className="createEntryRow">

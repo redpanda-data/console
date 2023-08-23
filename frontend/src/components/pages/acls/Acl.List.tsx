@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Tag, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
+import { Empty, Input, message, Dropdown, Menu, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,14 +30,16 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Button, Icon, SearchField } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Badge, Button, Icon, SearchField, Tooltip } from '@redpanda-data/ui';
 
 @observer
 class AclList extends PageComponent {
-
     columns: KowlColumnType<AclPrincipalGroup>[] = [
         {
-            width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
+            width: 'auto',
+            title: 'Principal',
+            dataIndex: 'principal',
+            sorter: sortField('principalName'),
             render: (_value: string, record: AclPrincipalGroup) => {
                 const userExists = api.serviceAccounts?.users.includes(record.principalName);
                 const isComplete = api.serviceAccounts?.isComplete === true;
@@ -45,30 +47,34 @@ class AclList extends PageComponent {
                 const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
                     ? 'User Group'
                     : record.principalType;
-                return <>
-                    <Tag>{principalType}</Tag>
-                    <span>{record.principalName}</span>
-                    {showWarning && <Tooltip overlay="User / ServiceAccount does not exist">
-                        <span style={{ marginLeft: '4px' }}>
-                            <QuestionIcon fill="orange" size={16} />
-                        </span>
-                    </Tooltip>}
-                </>
+                return (
+                    <>
+                        <Badge variant="subtle" mr="2">{principalType}</Badge>
+                        <span>{record.principalName}</span>
+                        {showWarning && (
+                            <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
+                                <span style={{ marginLeft: '4px' }}>
+                                    <QuestionIcon fill="orange" size={16} />
+                                </span>
+                            </Tooltip>
+                        )}
+                    </>
+                );
             },
             defaultSortOrder: 'ascend'
         },
         {
             width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
-            render: v => (!v || v == '*') ? <Tag>Any</Tag> : v
+            render: v => (!v || v == '*') ? <Badge variant="subtle">Any</Badge> : v
         },
         {
-            width: '60px', title: '',
+            width: '60px',
+            title: '',
             render: (_, record) => {
                 const userExists = api.serviceAccounts?.users.includes(record.principalName);
                 const hasAcls = record.sourceEntries.length > 0;
 
                 const onDelete = async (user: boolean, acls: boolean) => {
-
                     if (acls) {
                         try {
                             await api.deleteACLs({
@@ -337,7 +343,6 @@ class AclList extends PageComponent {
         return flattened;
     }
 
-
     @computed({ equals: comparer.structural }) get principalGroups(): AclPrincipalGroup[] {
         const flat = this.flatAcls;
 
@@ -400,43 +405,41 @@ class AclList extends PageComponent {
         return result;
     }
 
-
     SearchControls = observer(() => {
-
         return (
             <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <SearchField width="300px"
-                    searchText={uiSettings.aclList.configTable.quickSearch}
-                    setSearchText={x => uiSettings.aclList.configTable.quickSearch = x}
-                />
+                <SearchField width="300px" searchText={uiSettings.aclList.configTable.quickSearch} setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)} />
 
-                <span style={{ marginLeft: 'auto' }} >{' '}</span>
+                <span style={{ marginLeft: 'auto' }}> </span>
 
-                <Tooltip trigger={!Features.createUser ? 'hover' : 'none'} overlay="The cluster does not support this feature" >
+                <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                     <Button variant="outline" isDisabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
                         Create User
                     </Button>
                 </Tooltip>
 
-                <Button variant="outline" onClick={() => {
-                    this.editorType = 'create';
-                    this.edittingPrincipalGroup = {
-                        host: '',
-                        principalType: 'User',
-                        principalName: '',
-                        topicAcls: [createEmptyTopicAcl()],
-                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
-                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
-                        clusterAcls: createEmptyClusterAcl(),
-                        sourceEntries: []
-                    };
-                }}>Create ACLs</Button>
-
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        this.editorType = 'create';
+                        this.edittingPrincipalGroup = {
+                            host: '',
+                            principalType: 'User',
+                            principalName: '',
+                            topicAcls: [createEmptyTopicAcl()],
+                            consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                            transactionalIdAcls: [createEmptyTransactionalIdAcl()],
+                            clusterAcls: createEmptyClusterAcl(),
+                            sourceEntries: []
+                        };
+                    }}
+                >
+                    Create ACLs
+                </Button>
             </div>
         );
-    })
+    });
 }
-
 
 export default AclList;
 

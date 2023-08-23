@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Statistic, Row, Tooltip, Skeleton } from 'antd';
+import { Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -20,21 +20,22 @@ import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Heading, Icon, Link, Button } from '@redpanda-data/ui';
+import { Heading, Icon, Link, Button, Flex, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
-
+import { Statistic } from '../../misc/Statistic';
 
 @observer
 class Overview extends PageComponent {
-
-    @computed get hasRack() { return api.brokers?.sum(b => b.rack ? 1 : 0) }
+    @computed get hasRack() {
+        return api.brokers?.sum(b => (b.rack ? 1 : 0));
+    }
 
     constructor(p: any) {
         super(p);
@@ -62,53 +63,64 @@ class Overview extends PageComponent {
         const overview = api.clusterOverview;
         const brokers = api.brokers ?? [];
 
-        const clusterStatus = overview.kafka.status == 'HEALTHY'
-            ? { displayText: 'Running', className: 'status-green' }
-            : overview.kafka.status == 'DEGRADED'
-                ? { displayText: 'Degraded', className: 'status-yellow' }
-                : { displayText: 'Unhealthy', className: 'status-red' };
+        const clusterStatus = overview.kafka.status == 'HEALTHY' ? { displayText: 'Running', className: 'status-green' } : overview.kafka.status == 'DEGRADED' ? { displayText: 'Degraded', className: 'status-yellow' } : { displayText: 'Unhealthy', className: 'status-red' };
 
-        const brokerSize = brokers.length > 0
-            ? prettyBytes(brokers.sum(x => x.totalLogDirSizeBytes ?? 0))
-            : '...';
+        const brokerSize = brokers.length > 0 ? prettyBytes(brokers.sum(x => x.totalLogDirSizeBytes ?? 0)) : '...';
 
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
-            return <>{text}
-                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement="right">
-                    <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
-                </Tooltip>
-            </>
+            return (
+                <>
+                    {text}
+                    <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
+                        <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
+                    </Tooltip>
+                </>
+            );
         };
 
         const columns: KowlColumnType<BrokerWithConfigAndStorage>[] = [
             {
-                width: '80px', title: 'ID', dataIndex: 'brokerId',
-                render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend'
+                width: '80px',
+                title: 'ID',
+                dataIndex: 'brokerId',
+                render: renderIdColumn,
+                sorter: sortField('brokerId'),
+                defaultSortOrder: 'ascend'
             },
             {
-                width: 'auto', title: 'Status', render: (_, _r) => {
-                    return <>
-                        <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500" />
-                        Running
-                    </>
+                width: 'auto',
+                title: 'Status',
+                render: (_, _r) => {
+                    return (
+                        <>
+                            <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500" />
+                            Running
+                        </>
+                    );
                 }
             },
             {
-                width: '120px', title: 'Size', dataIndex: 'totalLogDirSizeBytes',
-                render: (t: number) => prettyBytesOrNA(t), sorter: sortField('totalLogDirSizeBytes')
+                width: '120px',
+                title: 'Size',
+                dataIndex: 'totalLogDirSizeBytes',
+                render: (t: number) => prettyBytesOrNA(t),
+                sorter: sortField('totalLogDirSizeBytes')
             },
             {
-                width: '100px', title: '', render: (_, r) => {
-                    return <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
-                        View
-                    </Button>
+                width: '100px',
+                title: '',
+                render: (_, r) => {
+                    return (
+                        <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
+                            View
+                        </Button>
+                    );
                 }
             }
-        ]
+        ];
 
-        if (this.hasRack)
-            columns.splice(3, 0, { width: '100px', title: 'Rack', render: (_, r) => r.rack });
+        if (this.hasRack) columns.splice(3, 0, { width: '100px', title: 'Rack', render: (_, r) => r.rack });
 
         const version = overview.redpanda.version ?? overview.kafka.version;
         const news = api.news?.filter(e => {
@@ -161,14 +173,14 @@ class Overview extends PageComponent {
                     </Section>
                      */}
                     <Section py={5} gridArea="health">
-                        <Row>
+                        <Flex>
                             <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
                             <Statistic title="Cluster Storage Size" value={brokerSize} />
                             <Statistic title="Cluster Version" value={version} />
                             <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
                             <Statistic title="Topics" value={overview.kafka.topicsCount} />
                             <Statistic title="Replicas" value={overview.kafka.replicasCount} />
-                        </Row>
+                        </Flex>
                     </Section>
 
                     <Section py={4} gridArea="broker">
@@ -305,9 +317,13 @@ function ClusterDetails() {
     const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
         let status = <div>{titleCase(overviewStatus.status)}</div>;
         if (overviewStatus.statusReason)
-            status = <Tooltip overlay={overviewStatus.statusReason}>{status}</Tooltip>
+            status = (
+                <Tooltip label={overviewStatus.statusReason} hasArrow>
+                    {status}
+                </Tooltip>
+            );
         return status;
-    }
+    };
 
     const clusters = overview.kafkaConnect?.clusters ?? [];
     const hasConnect = overview.kafkaConnect?.isConfigured == true && clusters.length > 0;

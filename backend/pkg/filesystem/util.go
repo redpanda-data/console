@@ -41,3 +41,12 @@ func (c *Service) isValidFileExtension(filename string) (bool, string) {
 	}
 	return false, trimmedFilename
 }
+
+// shouldSkip returns true if the given file or directory needs to be skipped
+func (c *Service) shouldSkip(filename string) bool {
+	if c.Cfg.SkipHiddenFiles && isHidden(filename) {
+		return true
+	}
+
+	return false
+}

@@ -91,6 +91,8 @@ kafka:
   #     enabled: false
   #     paths: []
   #     refreshInterval: 5m
+  #     # Set true if you want Console to skip the hidden files and directories while searching the local file system 
+  #     skipHiddenFiles: false
   #   importPaths is a list of paths from which to import Proto files into Redpanda Console.
   #   Paths are relative to the root directory.
   #   The `git` configuration must be enabled to use this feature.

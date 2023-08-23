@@ -18,17 +18,8 @@
     width: calc(100% - 200px);
     display: inline-flex;
     row-gap: 2px;
+    column-gap: 8px;
     flex-wrap: wrap;
-}
-
-.filterName {
-    display: inline-block;
-}
-
-.addFilter {
-    vertical-align: middle;
-    margin-top: -3px;
-    cursor: pointer;
 }
 
 .metaSection {

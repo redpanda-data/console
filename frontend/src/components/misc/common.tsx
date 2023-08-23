@@ -9,13 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties, Component } from 'react';
+import React, { Component } from 'react';
 import { PropsWithChildren } from 'react';
 import { TablePaginationConfig } from 'antd/lib/table';
 import { CompareFn } from 'antd/lib/table/interface';
-import Draggable from 'react-draggable';
 import { observer } from 'mobx-react';
-import { Grid, Modal, Tag } from 'antd';
+import { Modal } from 'antd';
 import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
 import env, { IsDev } from '../../utils/env';
@@ -24,8 +23,6 @@ import { clone } from '../../utils/jsonUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
-
-const { useBreakpoint } = Grid;
 
 export const Section = ((p: PropsWithChildren<{ title: string }>) =>
     <section style={{ padding: '1em 2em' }}>
@@ -41,33 +38,6 @@ export const WhiteCard = (p: PropsWithChildren<{ style?: React.CSSProperties, ti
             {p.children}
         </div>
     </div>
-
-
-const dragBoxStyle: CSSProperties = {
-    position: 'absolute', right: 0, zIndex: 9999,
-    margin: '4px', marginRight: '20px',
-    minWidth: '200px', display: 'flex', flexDirection: 'column', placeContent: 'center',
-    borderRadius: '3px', background: 'hsl(205, 20%, 20%)', color: '#eee', opacity: 0.8
-};
-export const DebugDisplay = observer(() => {
-    const screens = useBreakpoint();
-
-    return <Draggable bounds="parent" handle=".title">
-        <div style={dragBoxStyle}>
-            <div className="title" style={{ textAlign: 'center', padding: '6px', paddingBottom: '6px', borderBottom: '1px solid #aaa6', cursor: 'default', userSelect: 'none' }}>Debug</div>
-            <div style={{ padding: '8px', }}>
-                Breakpoints:{' '}
-                {Object.entries(screens)
-                    .filter(screen => !!screen[1])
-                    .map(screen => (
-                        <Tag color="blue" key={screen[0]}>
-                            {screen[0]}
-                        </Tag>
-                    ))}
-            </div>
-        </div>
-    </Draggable>
-})
 
 
 function constant(constantValue: JSX.Element): () => JSX.Element {

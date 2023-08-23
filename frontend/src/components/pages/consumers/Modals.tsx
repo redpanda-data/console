@@ -12,8 +12,8 @@
 
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
-import { findPopupContainer, numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Collapse, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
+import { numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
+import { Collapse, Modal, Popover, Radio, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -26,7 +26,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Button } from '@redpanda-data/ui';
+import { Button, Tooltip } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -97,176 +97,193 @@ export class EditOffsetsModal extends Component<{
         this.offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({ topicName: g.key, items: g.items }));
         const single = this.offsetsByTopic.length == 1;
 
-        return <Modal
-            title="Edit consumer group"
-            open={visible}
-            closeIcon={<></>} maskClosable={false}
-            okText="Review"
-            width="700px"
-            footer={this.footer()}
-            centered
-            className="consumerGroupModal consumerGroupModal-edit"
-        >
-            {/* Header */}
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '22px' }}>
-                <div>
-                    <div style={{
-                        width: '64px', height: '64px', padding: '14px',
-                        marginTop: '4px', marginLeft: '4px',
-                        background: '#718096', borderRadius: '1000px',
-                    }}>
-                        <PencilIconOutline color="white" />
+        return (
+            <Modal title="Edit consumer group" open={visible} closeIcon={<></>} maskClosable={false} okText="Review" width="700px" footer={this.footer()} centered className="consumerGroupModal consumerGroupModal-edit">
+                {/* Header */}
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '22px' }}>
+                    <div>
+                        <div
+                            style={{
+                                width: '64px',
+                                height: '64px',
+                                padding: '14px',
+                                marginTop: '4px',
+                                marginLeft: '4px',
+                                background: '#718096',
+                                borderRadius: '1000px'
+                            }}
+                        >
+                            <PencilIconOutline color="white" />
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <span>Group offsets will be editted for:</span>
+                    <div>
+                        <span>Group offsets will be editted for:</span>
 
-                    <div style={{ fontWeight: 600, margin: '8px 0', lineHeight: '1.5' }}>
-                        <div>Group: <span className="codeBox">{group.groupId}</span></div>
-                        <div>
-                            {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
+                        <div style={{ fontWeight: 600, margin: '8px 0', lineHeight: '1.5' }}>
+                            <div>
+                                Group: <span className="codeBox">{group.groupId}</span>
+                            </div>
+                            <div>
+                                {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Content */}
-            <div style={{ marginTop: '2em' }}>
-                {this.page == 0
-                    ? <div key="p1">{this.page1()}</div>
-                    : <div key="p2">{this.page2()}</div>
-                }
-            </div>
-
-        </Modal>;
+                {/* Content */}
+                <div style={{ marginTop: '2em' }}>{this.page == 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}</div>
+            </Modal>
+        );
     }
 
     page1() {
-
-        return <RadioOptionGroup<EditOptions>
-            disabled={this.isLoadingTimestamps}
-            value={this.selectedOption}
-            onChange={v => this.selectedOption = v}
-            options={[
-                {
-                    value: 'startOffset',
-                    title: 'Start Offset',
-                    subTitle: 'Set all offsets to the oldest partition\'s offset.',
-                },
-                {
-                    value: 'endOffset',
-                    title: 'End Offset',
-                    subTitle: 'Set all offsets to the newest partition\'s offset.',
-                },
-                {
-                    value: 'time',
-                    title: 'Specific Time',
-                    subTitle: 'Choose a timestamp to which all partition\'s offsets will be set.',
-                    content: <div style={{
-                        paddingTop: '6px',
-                        marginLeft: '-1px',
-                    }}>
-                        <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => this.timestampUtcMs = t} disabled={this.isLoadingTimestamps} />
-                    </div>
-                },
-                {
-                    value: 'otherGroup',
-                    title: 'Other Consumer Group',
-                    subTitle: 'Copy offsets from another (inactive) consumer group',
-                    content: <>
-                        <div style={{
-                            display: 'flex', gap: '.5em', flexDirection: 'column',
-                            paddingTop: '12px', marginLeft: '-1px'
-                        }}>
-                            <Select style={{ minWidth: '260px' }}
-                                placeholder="Select another consumer group..."
-                                showSearch
-                                options={this.otherConsumerGroups.map(g => ({ value: g.groupId, label: g.groupId, title: g.groupId, }))}
-                                value={this.selectedGroup}
-                                onChange={x => this.selectedGroup = x}
-                                disabled={this.isLoadingTimestamps}
-                            />
-
-                            <Radio.Group defaultValue="onlyExisting" style={{
-                                display: 'flex', flexDirection: 'column', gap: '4px',
-                                padding: '1px 8px 1px 4px',
-                            }}
-                                value={this.otherGroupCopyMode}
-                                onChange={x => this.otherGroupCopyMode = x.target.value}
+        return (
+            <RadioOptionGroup<EditOptions>
+                disabled={this.isLoadingTimestamps}
+                value={this.selectedOption}
+                onChange={v => (this.selectedOption = v)}
+                options={[
+                    {
+                        value: 'startOffset',
+                        title: 'Start Offset',
+                        subTitle: 'Set all offsets to the oldest partition\'s offset.'
+                    },
+                    {
+                        value: 'endOffset',
+                        title: 'End Offset',
+                        subTitle: 'Set all offsets to the newest partition\'s offset.'
+                    },
+                    {
+                        value: 'time',
+                        title: 'Specific Time',
+                        subTitle: 'Choose a timestamp to which all partition\'s offsets will be set.',
+                        content: (
+                            <div
+                                style={{
+                                    paddingTop: '6px',
+                                    marginLeft: '-1px'
+                                }}
                             >
-                                <Radio value="onlyExisting" disabled={this.isLoadingTimestamps} >
-                                    <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px" >
-                                        Copy matching offsets
-                                    </InfoText>
-                                </Radio>
-                                <Radio value="all" disabled={this.isLoadingTimestamps} >
-                                    <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px" >
-                                        Full Copy
-                                    </InfoText>
-                                </Radio>
-                            </Radio.Group>
-                        </div>
-                    </>
-                },
-            ]}
-        />;
+                                <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => (this.timestampUtcMs = t)} disabled={this.isLoadingTimestamps} />
+                            </div>
+                        )
+                    },
+                    {
+                        value: 'otherGroup',
+                        title: 'Other Consumer Group',
+                        subTitle: 'Copy offsets from another (inactive) consumer group',
+                        content: (
+                            <>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: '.5em',
+                                        flexDirection: 'column',
+                                        paddingTop: '12px',
+                                        marginLeft: '-1px'
+                                    }}
+                                >
+                                    <Select style={{ minWidth: '260px' }} placeholder="Select another consumer group..." showSearch options={this.otherConsumerGroups.map(g => ({ value: g.groupId, label: g.groupId, title: g.groupId }))} value={this.selectedGroup} onChange={x => (this.selectedGroup = x)} disabled={this.isLoadingTimestamps} />
+
+                                    <Radio.Group
+                                        defaultValue="onlyExisting"
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '4px',
+                                            padding: '1px 8px 1px 4px'
+                                        }}
+                                        value={this.otherGroupCopyMode}
+                                        onChange={x => (this.otherGroupCopyMode = x.target.value)}
+                                    >
+                                        <Radio value="onlyExisting" disabled={this.isLoadingTimestamps}>
+                                            <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px">
+                                                Copy matching offsets
+                                            </InfoText>
+                                        </Radio>
+                                        <Radio value="all" disabled={this.isLoadingTimestamps}>
+                                            <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px">
+                                                Full Copy
+                                            </InfoText>
+                                        </Radio>
+                                    </Radio.Group>
+                                </div>
+                            </>
+                        )
+                    }
+                ]}
+            />
+        );
     }
 
     page2() {
         const firstTopic = this.offsetsByTopic[0].topicName;
-        return <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            <Collapse bordered={false} defaultActiveKey={firstTopic}>
-                {this.offsetsByTopic.map(({ topicName, items }) =>
-
-                    <Collapse.Panel key={topicName}
-                        style={{ padding: 0 }}
-                        header={
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: '4px',
-                                fontWeight: 600, whiteSpace: 'nowrap'
-                            }}>
-                                {/* Title */}
-                                <span style={{
-                                    textOverflow: 'ellipsis',
-                                    overflow: 'hidden',
-                                    paddingRight: '30px',
-                                }}>{topicName}</span>
-                                <span style={{ display: 'inline-block', marginLeft: 'auto', padding: '0 1em', }}>{items.length} Partitions</span>
-                            </div>
-                        }>
-
-                        <Table
-                            size="small"
-                            showSorterTooltip={false}
-                            pagination={{ pageSize: 1000, position: ['none', 'none'] as any }}
-
-                            dataSource={items}
-                            rowKey={r => r.partitionId}
-                            rowClassName={(r) => r.newOffset == null ? 'unchanged' : ''}
-                            columns={[
-                                { width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend' },
-                                {
-                                    width: 150, title: 'Offset Before', dataIndex: 'offset',
-                                    render: v => v == null
-                                        ? <Tooltip
-                                            title="The group does not have an offset for this partition yet"
-                                            mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}
-                                        >
-                                            <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-                                        </Tooltip>
-                                        : numberToThousandsString(v)
-                                },
-                                {
-                                    title: 'Offset After',
-                                    render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
-                                }
-                            ]}
-                        />
-
-                    </Collapse.Panel>
-                )}
-            </Collapse>
-        </div>;
+        return (
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Collapse bordered={false} defaultActiveKey={firstTopic}>
+                    {this.offsetsByTopic.map(({ topicName, items }) => (
+                        <Collapse.Panel
+                            key={topicName}
+                            style={{ padding: 0 }}
+                            header={
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontWeight: 600,
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {/* Title */}
+                                    <span
+                                        style={{
+                                            textOverflow: 'ellipsis',
+                                            overflow: 'hidden',
+                                            paddingRight: '30px'
+                                        }}
+                                    >
+                                        {topicName}
+                                    </span>
+                                    <span style={{ display: 'inline-block', marginLeft: 'auto', padding: '0 1em' }}>{items.length} Partitions</span>
+                                </div>
+                            }
+                        >
+                            <Table
+                                size="small"
+                                showSorterTooltip={false}
+                                pagination={{ pageSize: 1000, position: ['none', 'none'] as any }}
+                                dataSource={items}
+                                rowKey={r => r.partitionId}
+                                rowClassName={r => (r.newOffset == null ? 'unchanged' : '')}
+                                columns={[
+                                    { width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend' },
+                                    {
+                                        width: 150,
+                                        title: 'Offset Before',
+                                        dataIndex: 'offset',
+                                        render: v =>
+                                            v == null ? (
+                                                <Tooltip label="The group does not have an offset for this partition yet" openDelay={1} placement="top" hasArrow>
+                                                    <span style={{ opacity: 0.66, marginLeft: '2px' }}>
+                                                        <SkipIcon />
+                                                    </span>
+                                                </Tooltip>
+                                            ) : (
+                                                numberToThousandsString(v)
+                                            )
+                                    },
+                                    {
+                                        title: 'Offset After',
+                                        render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
+                                    }
+                                ]}
+                            />
+                        </Collapse.Panel>
+                    ))}
+                </Collapse>
+            </div>
+        );
     }
 
     differWarning() {
@@ -512,9 +529,13 @@ export class EditOffsetsModal extends Component<{
 
         // No change
         if (val == null) {
-            return <Tooltip title="Offset will not be changed" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}>
-                <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-            </Tooltip>;
+            return (
+                <Tooltip label="Offset will not be changed" openDelay={1} placement="top" hasArrow>
+                    <span style={{ opacity: 0.66, marginLeft: '2px' }}>
+                        <SkipIcon />
+                    </span>
+                </Tooltip>
+            );
         }
 
         // Set by timestamp
@@ -542,20 +563,23 @@ export class EditOffsetsModal extends Component<{
                 // not found - no message after given timestamp
                 // use 'latest'
                 const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
-                return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
-                    <InfoText tooltip={<div>
-                        There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>).
-                        As a fallback, the last offset in that partition will be used.
-                    </div>}
-                        icon={<WarningOutlined />}
-                        iconSize="18px"
-                        iconColor="orangered"
-                        maxWidth="350px"
-                    >
-                        <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
-
-                    </InfoText>
-                </div>;
+                return (
+                    <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                        <InfoText
+                            tooltip={
+                                <div>
+                                    There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>). As a fallback, the last offset in that partition will be used.
+                                </div>
+                            }
+                            icon={<WarningOutlined />}
+                            iconSize="18px"
+                            iconColor="orangered"
+                            maxWidth="350px"
+                        >
+                            <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
+                        </InfoText>
+                    </div>
+                );
             }
         }
 

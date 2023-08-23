@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
+import { message, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -25,8 +25,9 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Button, Icon } from '@redpanda-data/ui';
+import { Button, Flex, Icon, Tag, Tooltip } from '@redpanda-data/ui';
 import { AiOutlineCopy } from 'react-icons/ai';
+import { Statistic } from '../../misc/Statistic';
 
 function renderSchemaType(value: any, _record: SchemaField, _index: number) {
     return toSafeString(value);
@@ -167,13 +168,13 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         return (
             <PageContent key="b">
                 <Section py={4}>
-                    <Row>
+                    <Flex>
                         <Statistic title="Type" value={schemaType}></Statistic>
                         <Statistic title="Subject" value={this.subjectNameRaw}></Statistic>
                         <Statistic title="Schema ID" value={schemaId}></Statistic>
                         <Statistic title="Version" value={version}></Statistic>
-                        <Statistic title="Compatibility" value={compatibility.toLowerCase()} style={{ textTransform: 'capitalize' }}></Statistic>
-                    </Row>
+                        <Statistic title="Compatibility" value={<span style={{ textTransform: 'capitalize' }}>{compatibility.toLowerCase()}</span>}></Statistic>
+                    </Flex>
                 </Section>
 
                 <Section>
@@ -202,10 +203,10 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                                     'Namespace': namespace,
                                 }).map(([k, v]) => {
                                     if (!k || v === undefined || v === null) return null;
-                                    return <Tag color="blue" key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
+                                    return <Tag key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
                                 })}
                                 {!!doc && <a href={doc}>
-                                    <Tag color="blue" style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
+                                    <Tag style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
                                 </a>}
                             </div>
 
@@ -223,8 +224,10 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                         />
 
                         <NoClipboardPopover placement="top">
-                            <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                                <Tooltip overlay="Copy raw JSON to clipboard">
+                            <div>
+                                {' '}
+                                {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                                <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true}>
                                     <Button
                                         isDisabled={!isClipboardAvailable}
                                         onClick={() => {

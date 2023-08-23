@@ -1218,30 +1218,8 @@ svg {
     transition-duration: 0s;
 }
 
-.filterTag {
-    padding-left: 0;
-    cursor: pointer;
-
-    span {
-        vertical-align: middle;
-        height: 100%
-    }
-}
-
 .ant-tag.filterTag>.anticon+span {
     margin-left: 0;
-}
-
-.filterTag .settingIconFilter,
-.filterTag .filterName {
-    border-right: 1px solid rgba(184, 184, 184, 0.4);
-    padding: 0 6px;
-    transition: 0.5 ease;
-}
-
-.filterTag .settingIconFilter:hover {
-    border-right: 1px solid rgba(184, 184, 184, 0.8);
-    background: rgba(206, 206, 206, 0.2);
 }
 
 @keyframes ant-progress-active {
@@ -3380,19 +3358,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 }
 
 .ant-btn[disabled] {
-    cursor: default !important;
-}
-
-.inputHintTooltip>.ant-tooltip-content {
-    .ant-tooltip-arrow {
-        display: none;
-    }
-
-    .ant-tooltip-inner {
-        padding: 4px 8px;
-        background-color: hsla(210deg, 14%, 25%, 90%);
-        box-shadow: 0 3px 6px 0px rgba(0, 0, 0, 0.12), 0 2px 10px 0 rgba(0, 0, 0, 0.19);
-    }
+  cursor: default !important;
 }
 
 

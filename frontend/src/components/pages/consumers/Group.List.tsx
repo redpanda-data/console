@@ -10,7 +10,6 @@
  */
 
 import React from 'react';
-import { Row, Statistic, Tag } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -29,7 +28,8 @@ import { ShortNum } from '../../misc/ShortNum';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { SearchField } from '@redpanda-data/ui';
+import { Flex, SearchField, Tag } from '@redpanda-data/ui';
+import { Statistic } from '../../misc/Statistic';
 
 
 @observer
@@ -80,7 +80,7 @@ class GroupList extends PageComponent {
             <>
                 <PageContent>
                     <Section py={4}>
-                        <Row>
+                        <Flex>
                             <Statistic title="Total Groups" value={groups.length} />
                             <div
                                 style={{
@@ -92,13 +92,13 @@ class GroupList extends PageComponent {
                             />
                             {stateGroups.map((g) => (
                                 <Statistic
-                                    style={{ marginRight: '1.5rem' }}
                                     key={g.key}
                                     title={g.key}
                                     value={g.items.length}
+                                    marginRight={'1.5rem'}
                                 />
                             ))}
-                        </Row>
+                        </Flex>
                     </Section>
 
                     <Section>

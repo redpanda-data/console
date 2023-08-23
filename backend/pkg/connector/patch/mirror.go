@@ -77,7 +77,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 		d.SetDocumentation("Replication factor for newly created remote topics. Set -1 for cluster default").
 			SetDefaultValue("-1")
 	case "topics.exclude":
-		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas")
+		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas")
 	case "sync.group.offsets.enabled":
 		d.SetDefaultValue("true")
 	case name:
