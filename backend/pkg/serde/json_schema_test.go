@@ -280,4 +280,124 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		assert.Equal(t, expectData, actualData)
 	})
+
+	t.Run("string json", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&ProductRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return json.Marshal(v.(*ProductRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return json.Unmarshal(b, v.(*ProductRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject(`{"productId":11,"productName":"foo","price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
+	})
+
+	t.Run("string invalid json", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(`{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `error validating json schema: jsonschema: '' does not validate with https://example.com/product.schema.json#/required: missing properties: 'productName'`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("string empty", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(``, PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("string trim", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject("\r\n", PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("string invalid format", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject(`foo`, PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `first byte indicates this it not valid JSON, expected brackets`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("byte json", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&ProductRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return json.Marshal(v.(*ProductRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return json.Unmarshal(b, v.(*ProductRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject([]byte(`{"productId":11,"productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
+	})
+
+	t.Run("byte invalid json", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject([]byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `error validating json schema: jsonschema: '/productId' does not validate with https://example.com/product.schema.json#/properties/productId/type: expected integer, but got string`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("byte empty", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject([]byte{}, PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("byte trim", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject([]byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Nil(t, b)
+	})
+
+	t.Run("byte invalid format", func(t *testing.T) {
+		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+
+		b, err := serde.SerializeObject([]byte("foo"), PayloadTypeValue, WithSchemaID(1000))
+		require.Error(t, err)
+		assert.Equal(t, `first byte indicates this it not valid JSON, expected brackets`, err.Error())
+		assert.Nil(t, b)
+	})
 }

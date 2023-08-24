@@ -360,7 +360,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(`{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
-		assert.Equal(t, `deserializing avo json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
+		assert.Equal(t, `deserializing avro json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
 		assert.Nil(t, b)
 	})
 

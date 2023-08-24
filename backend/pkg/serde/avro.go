@@ -110,7 +110,7 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 
 			avroObj, _, err = codec.NativeFromTextual(trimmed)
 			if err != nil {
-				return nil, fmt.Errorf("deserializing avo json: %w", err)
+				return nil, fmt.Errorf("deserializing avro json: %w", err)
 			}
 		}
 	case string:
@@ -129,7 +129,7 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 
 			avroObj, _, err = codec.NativeFromTextual([]byte(trimmed))
 			if err != nil {
-				return nil, fmt.Errorf("deserializing avo json: %w", err)
+				return nil, fmt.Errorf("deserializing avro json: %w", err)
 			}
 		}
 	}
