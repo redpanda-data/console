@@ -60,11 +60,6 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 		return nil, errors.New("no schema id specified")
 	}
 
-	schemaRes, err := s.SchemaSvc.GetSchemaByID(so.schemaId)
-	if err != nil {
-		return nil, fmt.Errorf("getting json schema from registry '%+v': %w", so.schemaId, err)
-	}
-
 	var byteData []byte
 	switch v := obj.(type) {
 	case string:
@@ -90,20 +85,9 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}
 
-	// validate
-	sch, err := s.compileJSONSchema(schemaRes)
-	if err != nil {
-		return nil, fmt.Errorf("error compiling json schema: %w", err)
-	}
-
-	var vObj interface{}
-	if err := json.Unmarshal(trimmed, &vObj); err != nil {
-		return nil, fmt.Errorf("error validating json schema: %w", err)
-	}
-
-	if err = sch.Validate(vObj); err != nil {
-		return nil, fmt.Errorf("error validating json schema: %w", err)
-	}
+	// Here we would get the schema by ID and validate against schema, but
+	// Redpanda currently does not support JSON Schema in the schema registry so we cannot do it.
+	// Just add the header to the payload.
 
 	header, err := appendEncode(nil, int(so.schemaId), nil)
 	if err != nil {
@@ -113,6 +97,24 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 	binData := append(header, trimmed...)
 
 	return binData, nil
+}
+
+func (s *JsonSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse) error {
+	sch, err := s.compileJSONSchema(schemaRes)
+	if err != nil {
+		return fmt.Errorf("error compiling json schema: %w", err)
+	}
+
+	var vObj interface{}
+	if err := json.Unmarshal(data, &vObj); err != nil {
+		return fmt.Errorf("error validating json schema: %w", err)
+	}
+
+	if err = sch.Validate(vObj); err != nil {
+		return fmt.Errorf("error validating json schema: %w", err)
+	}
+
+	return nil
 }
 
 func (s *JsonSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
