@@ -89,7 +89,15 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 	// Redpanda currently does not support JSON Schema in the schema registry so we cannot do it.
 	// Just add the header to the payload.
 
-	header, err := appendEncode(nil, int(so.schemaId), nil)
+	var index []int = nil
+	if so.indexSet {
+		index = so.index
+		if len(index) == 0 {
+			index = []int{0}
+		}
+	}
+
+	header, err := appendEncode(nil, int(so.schemaId), index)
 	if err != nil {
 		return nil, fmt.Errorf("failed encode json schema payload: %w", err)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -88,4 +89,206 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 			test.validationFunc(t, payload, err)
 		})
 	}
+}
+
+func TestMsgPackSerde_SerializeObject(t *testing.T) {
+	type Item struct {
+		Foo string
+	}
+
+	mspPackSvc, err := ms.NewService(config.Msgpack{
+		Enabled:    true,
+		TopicNames: []string{"msgpack_topic"},
+	})
+	require.NoError(t, err)
+
+	// serde
+	serde := MsgPackSerde{
+		MsgPackService: mspPackSvc,
+	}
+
+	t.Run("string json", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(`{"Foo":"bar"}`, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("string json array", func(t *testing.T) {
+		expected, err := msgpack.Marshal([]string{"foo", "bar"})
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(`["foo","bar"]`, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("string invalid json", func(t *testing.T) {
+		actual, err := serde.SerializeObject(`foo`, PayloadTypeValue)
+		require.Error(t, err)
+		assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
+		require.Nil(t, actual)
+	})
+
+	t.Run("string json with schema", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&Item{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return msgpack.Marshal(v.(*Item))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return msgpack.Unmarshal(b, v.(*Item))
+			}),
+		)
+
+		expected, err := srSerde.Encode(&item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(`{"Foo":"bar"}`, PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("string json map type", func(t *testing.T) {
+		item := map[string]interface{}{
+			"Foo": "bar",
+		}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(`{"Foo":"bar"}`, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("map type", func(t *testing.T) {
+		item := map[string]interface{}{
+			"Foo": "bar",
+		}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(item, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("struct type", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(item, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("struct with schema", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&Item{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return msgpack.Marshal(v.(*Item))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return msgpack.Unmarshal(b, v.(*Item))
+			}),
+		)
+
+		expected, err := srSerde.Encode(&item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(item, PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("byte json", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject([]byte(`{"Foo":"bar"}`), PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("byte json array", func(t *testing.T) {
+		expected, err := msgpack.Marshal([]string{"foo", "bar"})
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject([]byte(`["foo","bar"]`), PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("byte json with schema", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&Item{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return msgpack.Marshal(v.(*Item))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return msgpack.Unmarshal(b, v.(*Item))
+			}),
+		)
+
+		expected, err := srSerde.Encode(&item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject([]byte(`{"Foo":"bar"}`), PayloadTypeValue, WithSchemaID(1000))
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("byte json map type", func(t *testing.T) {
+		item := map[string]interface{}{
+			"Foo": "bar",
+		}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject([]byte(`{"Foo":"bar"}`), PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("byte", func(t *testing.T) {
+		item := Item{Foo: "bar"}
+		expected, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		input, err := msgpack.Marshal(item)
+		require.NoError(t, err)
+
+		actual, err := serde.SerializeObject(input, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expected, actual)
+	})
 }

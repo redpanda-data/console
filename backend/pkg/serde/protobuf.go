@@ -106,12 +106,12 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 			return nil, errors.New("no topic specified")
 		}
 
-		jsonBytes, err := json.Marshal(v)
+		encoded, err := json.Marshal(v)
 		if err != nil {
-			return nil, fmt.Errorf("failed to serialize protobuf payload to json: %w", err)
+			return nil, fmt.Errorf("failed to serialize protobuf payload: %w", err)
 		}
 
-		b, err := d.serializeJSON(jsonBytes, payloadType, so.topic)
+		b, err := d.serializeJSON(encoded, payloadType, so.topic)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
 		}

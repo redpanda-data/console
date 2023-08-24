@@ -130,12 +130,12 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 			return nil, errors.New("no schema id specified")
 		}
 
-		jsonBytes, err := json.Marshal(v)
+		encoded, err := json.Marshal(v)
 		if err != nil {
-			return nil, fmt.Errorf("failed to serialize protobuf payload to json: %w", err)
+			return nil, fmt.Errorf("failed to serialize protobuf payload: %w", err)
 		}
 
-		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(jsonBytes, int(so.schemaId), so.index)
+		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(encoded, int(so.schemaId), so.index)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize native protobuf payload: %w", err)
 		}

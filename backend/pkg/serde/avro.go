@@ -139,7 +139,15 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 		return nil, fmt.Errorf("failed to serialize avro: %w", err)
 	}
 
-	header, err := appendEncode(nil, int(so.schemaId), nil)
+	var index []int = nil
+	if so.indexSet {
+		index = so.index
+		if len(index) == 0 {
+			index = []int{0}
+		}
+	}
+
+	header, err := appendEncode(nil, int(so.schemaId), index)
 	if err != nil {
 		return nil, fmt.Errorf("failed encode binary avro payload: %w", err)
 	}
