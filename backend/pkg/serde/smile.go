@@ -58,5 +58,7 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 }
 
 func (SmileSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	// go-smile does not support encoding yet
+	// https://github.com/zencoder/go-smile
+	return nil, errors.New("serializing for smile data format is not implemented")
 }
