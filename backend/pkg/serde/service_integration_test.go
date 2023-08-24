@@ -102,7 +102,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.1.13"))
+	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.2.6"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
@@ -1774,6 +1774,199 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte("gadget_0"), serRes.Key.Payload)
 		assert.Equal(expectedData, serRes.Value.Payload)
+	})
+
+	t.Run("json schema with reference", func(t *testing.T) {
+		t.Skip("JSON Schemas not supported in Redpanda Schema Registry")
+
+		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		productIDSchema := `{
+			"$id": "product_id.json",
+			"title": "name",
+			"description": "The unique identifier for a product",
+			"type": "integer"
+		  }`
+
+		productNameSchema := `{
+			"$id": "product_name.json",
+			"title": "name",
+			"description": "Name of the product",
+			"type": "string"
+		  }`
+
+		productPriceSchema := `{
+			"$id": "product_price.json",
+			"title": "price",
+			"description": "The price of the product",
+			"type": "number",
+			"exclusiveMinimum": 0
+		  }`
+
+		schemaStr := `{
+			"$id": "schema.json",
+			"title": "Product",
+			"description": "A product from Acme's catalog",
+			"type": "object",
+			"properties": {
+			  "productId": { "$ref": "product_id.json" },
+			  "productName": { "$ref": "product_name.json" },
+			  "price": { "$ref": "product_price.json" }
+			},
+			"required": [ "productId", "productName" ]
+		}`
+
+		fullSchema := `{
+			"$id": "https://example.com/product.schema.json",
+			"title": "Product",
+			"description": "A product from Acme's catalog",
+			"type": "object",
+			"properties": {
+			  "productId": {
+				"description": "The unique identifier for a product",
+				"type": "integer"
+			  },
+			  "productName": {
+				"description": "Name of the product",
+				"type": "string"
+			  },
+			  "price": {
+				"description": "The price of the product",
+				"type": "number",
+				"exclusiveMinimum": 0
+			  }
+			},
+			"required": [ "productId", "productName" ]
+		}`
+
+		ssFull, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: fullSchema,
+			Type:   sr.TypeJSON,
+		})
+		require.NoError(err)
+		require.NotNil(ssFull)
+
+		ssID, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: productIDSchema,
+			Type:   sr.TypeJSON,
+		})
+		require.NoError(err)
+		require.NotNil(ssID)
+
+		ssName, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: productNameSchema,
+			Type:   sr.TypeJSON,
+		})
+		require.NoError(err)
+
+		ssPrice, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: productPriceSchema,
+			Type:   sr.TypeJSON,
+		})
+		require.NoError(err)
+		require.NotNil(ssPrice)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: schemaStr,
+			Type:   sr.TypeJSON,
+			References: []sr.SchemaReference{
+				{
+					Name:    "product_id.json",
+					Subject: ssID.Subject,
+					Version: ssID.Version,
+				},
+				{
+					Name:    "product_name.json",
+					Subject: ssName.Subject,
+					Version: ssName.Version,
+				},
+				{
+					Name:    "product_price.json",
+					Subject: ssPrice.Subject,
+					Version: ssPrice.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		type ProductRecord struct {
+			ProductID   int     `json:"productId"`
+			ProductName string  `json:"productName"`
+			Price       float32 `json:"price"`
+		}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1000,
+			&ProductRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return json.Marshal(v.(*ProductRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return json.Unmarshal(b, v.(*ProductRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		require.NoError(err)
+
+		out, err := serdeSvc.SerializeRecord(SerializeInput{
+			Key: RecordPayloadInput{
+				Payload:  "11",
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  `{"productId":11,"productName":"foo","price":10.25}`,
+				Encoding: PayloadEncodingJSON,
+				Options:  []SerdeOpt{WithSchemaID(uint32(ss.ID))},
+			},
+		})
+
+		require.NoError(err)
+
+		assert.NotNil(out)
+
+		// key
+		assert.Equal([]byte("11"), out.Key.Payload)
+		assert.Equal(PayloadEncodingText, out.Key.Encoding)
+
+		// value
+		assert.Equal(expectData, out.Value.Payload)
+		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
 	})
 }
 

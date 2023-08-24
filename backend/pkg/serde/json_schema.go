@@ -17,10 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*JsonSchemaSerde)(nil)

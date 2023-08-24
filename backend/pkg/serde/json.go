@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -35,6 +36,10 @@ func (JsonSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
+	}
+
+	if so.schemaIDSet {
+		return nil, errors.New("skipping plain json as schema id is set")
 	}
 
 	var byteData []byte

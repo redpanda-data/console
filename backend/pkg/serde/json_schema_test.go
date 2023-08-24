@@ -15,14 +15,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
