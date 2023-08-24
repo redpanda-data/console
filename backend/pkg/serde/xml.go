@@ -12,7 +12,6 @@ package serde
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -61,5 +60,31 @@ func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) 
 }
 
 func (XMLSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	so := serdeCfg{}
+	for _, o := range opts {
+		o.apply(&so)
+	}
+
+	var byteData []byte
+	switch v := obj.(type) {
+	case string:
+		byteData = []byte(v)
+	case []byte:
+		byteData = v
+	default:
+		return nil, fmt.Errorf("unsupported type %+T for XML serialization", obj)
+	}
+
+	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
+
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+	}
+
+	startsWithXML := trimmed[0] == '<'
+	if !startsWithXML {
+		return nil, fmt.Errorf("first byte indicates this it not valid XML")
+	}
+
+	return trimmed, nil
 }

@@ -85,3 +85,90 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestXMLSerde_SerializeObject(t *testing.T) {
+	serde := XMLSerde{}
+
+	tests := []struct {
+		name           string
+		input          any
+		payloadType    PayloadType
+		options        []SerdeOpt
+		validationFunc func(*testing.T, []byte, error)
+	}{
+		{
+			name:        "empty byte",
+			input:       []byte(""),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "not empty byte",
+			input:       []byte("asdf"),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid XML", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "empty string",
+			input:       "",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "not empty string",
+			input:       "asdf",
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "first byte indicates this it not valid XML", err.Error())
+				assert.Nil(t, res)
+			},
+		},
+		{
+			name:        "invalid type",
+			input:       map[string]interface{}{},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "unsupported type map[string]interface {} for XML serialization", err.Error())
+			},
+		},
+		{
+			name:        "valid string",
+			input:       `<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`), res)
+			},
+		},
+		{
+			name:        "valid byte",
+			input:       []byte(`<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`),
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				assert.NoError(t, err)
+				assert.Equal(t, []byte(`<?xml version="1.0" encoding="UTF-8"?><name>John</name><age>30</age>`), res)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			test.validationFunc(t, data, err)
+		})
+	}
+}
