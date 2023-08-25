@@ -47,7 +47,8 @@ import {
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
     OverviewNewsEntry,
-    Payload
+    Payload,
+    CompressionType
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -55,7 +56,7 @@ import { config as appConfig, isEmbedded } from '../config';
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/list_messages_connect'
-import { ListMessagesRequest, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+import { CompressionType as ProtoCompressionType, ListMessagesRequest, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -372,7 +373,7 @@ const apiStore = {
                     break;
 
                 case 'error':
-                    // error doesn't neccesarily mean the whole request is done
+                    // error doesn't necessarily mean the whole request is done
                     console.info('ws backend error: ' + msg.message);
                     const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
@@ -457,7 +458,7 @@ const apiStore = {
                     this.messageSearchPhase = null;
                     break;
                 case 'error':
-                    // error doesn't neccesarily mean the whole request is done
+                    // error doesn't necessarily mean the whole request is done
                     console.info('backend error: ' + res.controlMessage.value.message);
                     const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
@@ -468,32 +469,68 @@ const apiStore = {
                     });
                     break;
                 case 'data':
-                    // TODO we should replace the rest interface types and just utilize the generated Connect types
+                    // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
                     // this is my hacky way of attempting to get things working by converting the Connect types
                     // to the rest interface types that are hooked up to other things
 
                     const m = {} as TopicMessage;
                     m.partitionID = res.controlMessage.value.partitionId
                     
-                    // m.compression = CompressionType(res.controlMessage.value.compression)
+                    m.compression = CompressionType.Unknown
+                    switch (res.controlMessage.value.compression) {
+                        case ProtoCompressionType.UNCOMPRESSED:
+                            m.compression = CompressionType.Uncompressed;
+                            break;
+                        case ProtoCompressionType.GZIP:
+                            m.compression = CompressionType.GZip;
+                            break;
+                        case ProtoCompressionType.SNAPPY:
+                            m.compression = CompressionType.Snappy;
+                            break;
+                        case ProtoCompressionType.LZ4:
+                            m.compression = CompressionType.LZ4;
+                            break;
+                        case ProtoCompressionType.ZSTD:
+                            m.compression = CompressionType.ZStd;
+                            break;
+                    }
                     
                     m.offset = Number(res.controlMessage.value.offset)
                     m.timestamp = Number(res.controlMessage.value.timestamp)
                     m.isTransactional = res.controlMessage.value.isTransactional
                     m.headers = [];
                     res.controlMessage.value.headers.forEach(h => {
-                        m.headers.push( { key: h.key, value: { payload: h.value, encoding: 'text', schemaId:0, size: h.value.length, isPayloadNull: h.value == null }})
+                        m.headers.push( { 
+                            key: h.key, 
+                            value: { 
+                                payload: JSON.stringify(new TextDecoder().decode(h.value)), 
+                                encoding: 'text', 
+                                schemaId:0, size: 
+                                h.value.length, 
+                                isPayloadNull: h.value == null 
+                            }
+                        })
                     })
 
+                    // key
                     const key = res.controlMessage.value.key;
-                    const val = res.controlMessage.value.value;
+                    const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
                     m.key = {} as Payload
                     m.key.encoding = 'text'
                     m.key.isPayloadNull = key?.payloadSize == 0
                     m.key.payload = key?.originalPayload
-                    // m.key.schemaId = ...
-                   
+                    m.keyJson = JSON.stringify(keyPayload);
+                    m.key.payload = JSON.parse(m.keyJson)
+                    if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
+                        m.keyBinHexPreview = base64ToHexString(keyPayload);
+                        m.key.payload = decodeBase64(keyPayload);
+                    }
+
+                    // value
+                    const val = res.controlMessage.value.value;
+                    const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+
                     m.value = {} as Payload
                     switch (val?.encoding) {
                         case PayloadEncoding.AVRO:
@@ -514,25 +551,16 @@ const apiStore = {
                     } 
                         
                     m.value.isPayloadNull = val?.payloadSize == 0
-                    m.value.payload = key?.originalPayload
-                    // m.key.schemaId = ...
-
-                    if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
-                        const payload = new TextDecoder().decode(key.normalizedPayload);
-                        m.keyBinHexPreview = base64ToHexString(payload);
-                        m.key.payload = decodeBase64(payload);
-                    }
+                    m.valueJson = valuePayload;
+                    m.value.payload = JSON.parse(valuePayload)
 
                     if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
-                        const payload = new TextDecoder().decode(val?.normalizedPayload);
-                        m.valueBinHexPreview = base64ToHexString(payload);
-                        m.value.payload = decodeBase64(payload);
+                        m.valueBinHexPreview = base64ToHexString(valuePayload);
+                        m.value.payload = decodeBase64(valuePayload);
                     }
 
-                    const keyJson = new TextDecoder().decode(key?.normalizedPayload);
-                    const valueJson = new TextDecoder().decode(val?.normalizedPayload);
-                    m.keyJson = keyJson;
-                    m.valueJson = valueJson;
+                    console.log(m)
+                    console.dir(m)
 
                     this.messages.push(m);
                     break;
