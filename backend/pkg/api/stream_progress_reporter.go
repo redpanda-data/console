@@ -121,6 +121,24 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 		},
 	}
 
+	data.Key.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Key.Troubleshooting))
+	for _, ts := range message.Key.Troubleshooting {
+		ts := ts
+		data.Key.TroubleshootReport = append(data.Key.TroubleshootReport, &v1alpha.TroubleshootReport{
+			SerdeName: ts.SerdeName,
+			Message:   ts.Message,
+		})
+	}
+
+	data.Value.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Value.Troubleshooting))
+	for _, ts := range message.Value.Troubleshooting {
+		ts := ts
+		data.Value.TroubleshootReport = append(data.Value.TroubleshootReport, &v1alpha.TroubleshootReport{
+			SerdeName: ts.SerdeName,
+			Message:   ts.Message,
+		})
+	}
+
 	p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Data{
 			Data: data,

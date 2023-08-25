@@ -25,6 +25,8 @@ message ListMessagesRequest {
   int32 max_results = 5; // Maximum number of results
   string filter_interpreter_code = 6; // Base64 encoded code
   bytes enterprise = 7; // Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred.
+
+  bool troubleshoot = 8; // Include troubleshooting data in the response.
 }
 
 // ListMessagesResponse is the response for ListMessages call.
@@ -83,6 +85,12 @@ message KafkaRecordPayload {
   PayloadEncoding encoding = 3;
   bytes normalized_payload = 4;
   bool is_payload_too_large = 5;
+  repeated TroubleshootReport troubleshoot_report = 6;
+}
+
+message TroubleshootReport {
+  string serde_name = 1;
+  string message = 2;
 }
 
 // KafkaRecordHeader is the record header.

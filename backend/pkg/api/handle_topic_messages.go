@@ -242,6 +242,7 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 		StartTimestamp:        lmq.StartTimestamp,
 		MessageCount:          lmq.MaxResults,
 		FilterInterpreterCode: interpreterCode,
+		Troubleshoot:          req.Msg.GetTroubleshoot(),
 	}
 	// api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
 

@@ -21,7 +21,9 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
-func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
+func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
+	isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage, troubleshoot bool,
+) {
 	defer wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
@@ -53,7 +55,10 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 
 		// Run Interpreter filter and check if message passes the filter
 		deserializedRec := s.SerdeService.DeserializeRecord(record,
-			serde.DeserializationOptions{MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize})
+			serde.DeserializationOptions{
+				MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize,
+				Troubleshoot:   troubleshoot,
+			})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))
 		headers := make([]MessageHeader, 0)

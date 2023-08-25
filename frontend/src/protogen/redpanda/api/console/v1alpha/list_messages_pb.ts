@@ -141,6 +141,13 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
    */
   enterprise = new Uint8Array(0);
 
+  /**
+   * Include troubleshooting data in the response.
+   *
+   * @generated from field: bool troubleshoot = 8;
+   */
+  troubleshoot = false;
+
   constructor(data?: PartialMessage<ListMessagesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -156,6 +163,7 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
     { no: 5, name: "max_results", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "filter_interpreter_code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "enterprise", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 8, name: "troubleshoot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesRequest {
@@ -564,6 +572,11 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
    */
   isPayloadTooLarge = false;
 
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha.TroubleshootReport troubleshoot_report = 6;
+   */
+  troubleshootReport: TroubleshootReport[] = [];
+
   constructor(data?: PartialMessage<KafkaRecordPayload>) {
     super();
     proto3.util.initPartial(data, this);
@@ -577,6 +590,7 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
     { no: 3, name: "encoding", kind: "enum", T: proto3.getEnumType(PayloadEncoding) },
     { no: 4, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 5, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "troubleshoot_report", kind: "message", T: TroubleshootReport, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): KafkaRecordPayload {
@@ -593,6 +607,49 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
 
   static equals(a: KafkaRecordPayload | PlainMessage<KafkaRecordPayload> | undefined, b: KafkaRecordPayload | PlainMessage<KafkaRecordPayload> | undefined): boolean {
     return proto3.util.equals(KafkaRecordPayload, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha.TroubleshootReport
+ */
+export class TroubleshootReport extends Message<TroubleshootReport> {
+  /**
+   * @generated from field: string serde_name = 1;
+   */
+  serdeName = "";
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<TroubleshootReport>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha.TroubleshootReport";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "serde_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TroubleshootReport {
+    return new TroubleshootReport().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TroubleshootReport {
+    return new TroubleshootReport().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TroubleshootReport {
+    return new TroubleshootReport().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TroubleshootReport | PlainMessage<TroubleshootReport> | undefined, b: TroubleshootReport | PlainMessage<TroubleshootReport> | undefined): boolean {
+    return proto3.util.equals(TroubleshootReport, a, b);
   }
 }
 
