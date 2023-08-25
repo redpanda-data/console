@@ -607,7 +607,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         transaction(async () => {
             try {
                 this.fetchError = null;
-                api.startMessageSearch(request);
+                api.startMessageSearchNew(request);
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;

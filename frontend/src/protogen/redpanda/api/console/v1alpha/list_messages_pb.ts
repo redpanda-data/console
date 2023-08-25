@@ -7,6 +7,50 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 
 /**
+ * @generated from enum redpanda.api.console.v1alpha.CompressionType
+ */
+export enum CompressionType {
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_UNCOMPRESSED = 1;
+   */
+  UNCOMPRESSED = 1,
+
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_GZIP = 2;
+   */
+  GZIP = 2,
+
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_SNAPPY = 3;
+   */
+  SNAPPY = 3,
+
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_LZ4 = 4;
+   */
+  LZ4 = 4,
+
+  /**
+   * @generated from enum value: COMPRESSION_TYPE_ZSTD = 5;
+   */
+  ZSTD = 5,
+}
+// Retrieve enum metadata with: proto3.getEnumType(CompressionType)
+proto3.util.setEnumType(CompressionType, "redpanda.api.console.v1alpha.CompressionType", [
+  { no: 0, name: "COMPRESSION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "COMPRESSION_TYPE_UNCOMPRESSED" },
+  { no: 2, name: "COMPRESSION_TYPE_GZIP" },
+  { no: 3, name: "COMPRESSION_TYPE_SNAPPY" },
+  { no: 4, name: "COMPRESSION_TYPE_LZ4" },
+  { no: 5, name: "COMPRESSION_TYPE_ZSTD" },
+]);
+
+/**
  * @generated from enum redpanda.api.console.v1alpha.PayloadEncoding
  */
 export enum PayloadEncoding {
@@ -280,9 +324,9 @@ export class ListMessagesResponse_DataMessage extends Message<ListMessagesRespon
   timestamp = protoInt64.zero;
 
   /**
-   * @generated from field: string compression = 4;
+   * @generated from field: redpanda.api.console.v1alpha.CompressionType compression = 4;
    */
-  compression = "";
+  compression = CompressionType.UNSPECIFIED;
 
   /**
    * @generated from field: bool is_transactional = 5;
@@ -321,7 +365,7 @@ export class ListMessagesResponse_DataMessage extends Message<ListMessagesRespon
     { no: 1, name: "partition_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 3, name: "timestamp", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "compression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "compression", kind: "enum", T: proto3.getEnumType(CompressionType) },
     { no: 5, name: "is_transactional", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "headers", kind: "message", T: KafkaRecordHeader, repeated: true },
     { no: 7, name: "key", kind: "message", T: KafkaRecordPayload },

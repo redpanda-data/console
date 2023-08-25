@@ -30,6 +30,7 @@ tasks:
       # Delete previously generated files
       - rm -rf {{.BACKEND_ROOT}}/internal/protogen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
       - PATH={{.BUILD_ROOT}}/bin:$PATH buf generate
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go

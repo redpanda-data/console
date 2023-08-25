@@ -36,7 +36,7 @@ message ListMessagesResponse {
     int32 partition_id = 1;
     int64 offset = 2;
     int64 timestamp = 3;
-    string compression = 4;
+    CompressionType compression = 4;
     bool is_transactional = 5;
 
     repeated KafkaRecordHeader headers = 6; // Kafka record headers.
@@ -97,6 +97,15 @@ message TroubleshootReport {
 message KafkaRecordHeader {
   string key = 1; // Header key.
   bytes value = 2;  // Header value.
+}
+
+enum CompressionType {
+  COMPRESSION_TYPE_UNSPECIFIED = 0;
+  COMPRESSION_TYPE_UNCOMPRESSED = 1;
+  COMPRESSION_TYPE_GZIP = 2;
+  COMPRESSION_TYPE_SNAPPY = 3;
+  COMPRESSION_TYPE_LZ4 = 4;
+  COMPRESSION_TYPE_ZSTD = 5;
 }
 
 enum PayloadEncoding {

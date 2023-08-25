@@ -46,7 +46,8 @@ import {
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
-    OverviewNewsEntry
+    OverviewNewsEntry,
+    Payload
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -54,7 +55,7 @@ import { config as appConfig, isEmbedded } from '../config';
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/list_messages_connect'
-import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+import { ListMessagesRequest, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -404,6 +405,143 @@ const apiStore = {
         };
         currentWS.onmessage = onMessageHandler;
 
+        this.listMessagesConnect(searchRequest)
+    },
+
+    async startMessageSearchNew(_searchRequest: MessageSearchRequest): Promise<void> {
+        const searchRequest = {
+            ..._searchRequest, ...(appConfig.jwt ? {
+                enterprise: {
+                    redpandaCloud: {
+                        accessToken: appConfig.jwt
+                    }
+                }
+            } : {})
+        }
+
+        this.messageSearchPhase = 'Connecting';
+        this.messagesBytesConsumed = 0;
+        this.messagesTotalConsumed = 0;
+        this.messagesFor = searchRequest.topicName;
+        this.messages.length = 0;
+        this.messagesElapsedMs = null;
+
+        // do it
+        const transport = createConnectTransport({
+            baseUrl: 'http://localhost:9090',
+        });
+
+        const client = createPromiseClient(ConsoleService, transport);
+
+        const req = new ListMessagesRequest()
+        req.topic = searchRequest.topicName
+        req.startOffset = BigInt(searchRequest.startOffset)
+        req.partitionId = searchRequest.partitionId
+        req.maxResults = searchRequest.maxResults
+        req.filterInterpreterCode = searchRequest.filterInterpreterCode
+
+        for await (const res of await client.listMessages(req)) {
+            switch (res.controlMessage.case) {
+                case 'phase':
+                    this.messageSearchPhase = res.controlMessage.value.phase;
+                    break;
+                case 'progress':
+                    this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                    this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
+                    break;
+                case 'done':
+                    this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
+                    this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                    // this.MessageSearchCancelled = msg.isCancelled;
+                    this.messageSearchPhase = 'Done';
+                    this.messageSearchPhase = null;
+                    break;
+                case 'error':
+                    // error doesn't neccesarily mean the whole request is done
+                    console.info('backend error: ' + res.controlMessage.value.message);
+                    const notificationKey = `errorNotification-${Date.now()}`;
+                    notification['error']({
+                        key: notificationKey,
+                        message: 'Backend Error',
+                        description: res.controlMessage.value.message,
+                        duration: 5,
+                    });
+                    break;
+                case 'data':
+                    // TODO we should replace the rest interface types and just utilize the generated Connect types
+                    // this is my hacky way of attempting to get things working by converting the Connect types
+                    // to the rest interface types that are hooked up to other things
+
+                    const m = {} as TopicMessage;
+                    m.partitionID = res.controlMessage.value.partitionId
+                    
+                    // m.compression = CompressionType(res.controlMessage.value.compression)
+                    
+                    m.offset = Number(res.controlMessage.value.offset)
+                    m.timestamp = Number(res.controlMessage.value.timestamp)
+                    m.isTransactional = res.controlMessage.value.isTransactional
+                    m.headers = [];
+                    res.controlMessage.value.headers.forEach(h => {
+                        m.headers.push( { key: h.key, value: { payload: h.value, encoding: 'text', schemaId:0, size: h.value.length, isPayloadNull: h.value == null }})
+                    })
+
+                    const key = res.controlMessage.value.key;
+                    const val = res.controlMessage.value.value;
+
+                    m.key = {} as Payload
+                    m.key.encoding = 'text'
+                    m.key.isPayloadNull = key?.payloadSize == 0
+                    m.key.payload = key?.originalPayload
+                    // m.key.schemaId = ...
+                   
+                    m.value = {} as Payload
+                    switch (val?.encoding) {
+                        case PayloadEncoding.AVRO:
+                            m.value.encoding = 'avro'
+                            break;
+                        case PayloadEncoding.JSON:
+                            m.value.encoding = 'json'
+                            break;
+                        case PayloadEncoding.PROTOBUF:
+                            m.value.encoding = 'protobuf'
+                            break;
+                        case PayloadEncoding.TEXT:
+                            m.value.encoding = 'text'
+                            break;
+                        case PayloadEncoding.UTF8:
+                            m.value.encoding = 'utf8WithControlChars'
+                            break;
+                    } 
+                        
+                    m.value.isPayloadNull = val?.payloadSize == 0
+                    m.value.payload = key?.originalPayload
+                    // m.key.schemaId = ...
+
+                    if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
+                        const payload = new TextDecoder().decode(key.normalizedPayload);
+                        m.keyBinHexPreview = base64ToHexString(payload);
+                        m.key.payload = decodeBase64(payload);
+                    }
+
+                    if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
+                        const payload = new TextDecoder().decode(val?.normalizedPayload);
+                        m.valueBinHexPreview = base64ToHexString(payload);
+                        m.value.payload = decodeBase64(payload);
+                    }
+
+                    const keyJson = new TextDecoder().decode(key?.normalizedPayload);
+                    const valueJson = new TextDecoder().decode(val?.normalizedPayload);
+                    m.keyJson = keyJson;
+                    m.valueJson = valueJson;
+
+                    this.messages.push(m);
+                    break;
+            }
+        }
+
+        // one done
+        api.stopMessageSearch();
+ 
         this.listMessagesConnect(searchRequest)
     },
 

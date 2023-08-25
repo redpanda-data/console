@@ -98,12 +98,28 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 		})
 	}
 
+	compression := v1alpha.CompressionType_COMPRESSION_TYPE_UNSPECIFIED
+
+	// this should match pkg/kafka/consumer.go
+	switch message.Compression {
+	case "uncompressed":
+		compression = v1alpha.CompressionType_COMPRESSION_TYPE_UNCOMPRESSED
+	case "gzip":
+		compression = v1alpha.CompressionType_COMPRESSION_TYPE_GZIP
+	case "snappy":
+		compression = v1alpha.CompressionType_COMPRESSION_TYPE_SNAPPY
+	case "lz4":
+		compression = v1alpha.CompressionType_COMPRESSION_TYPE_LZ4
+	case "zstd":
+		compression = v1alpha.CompressionType_COMPRESSION_TYPE_ZSTD
+	}
+
 	data := &v1alpha.ListMessagesResponse_DataMessage{
 		Headers:         headers,
 		PartitionId:     message.PartitionID,
 		Offset:          message.Offset,
 		Timestamp:       message.Timestamp,
-		Compression:     message.Compression,
+		Compression:     compression,
 		IsTransactional: message.IsTransactional,
 		Key: &v1alpha.KafkaRecordPayload{
 			OriginalPayload:   message.Key.OriginalPayload,
