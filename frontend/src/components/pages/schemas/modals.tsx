@@ -15,7 +15,7 @@ const GenericModal = observer((p: {
     closeModal: () => void;
 }) => {
 
-    return <Modal isOpen onClose={p.closeModal} isCentered size="lg">
+    return <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
         <ModalOverlay />
         <ModalContent>
             <ModalHeader>{p.title}</ModalHeader>
@@ -46,7 +46,8 @@ export function openDeleteModal(
         title: <>Delete schema version {schemaVersionName}</>,
         body: <>
             This is a soft-delete operation. This schema version will remain readable. It can also be permanently deleted or recovered.
-            <Link>Learn more</Link>
+            {' '}<Link>Learn more</Link>
+            <br />
             <br />
             Are you sure?
         </>,

@@ -141,7 +141,7 @@ function schemaTypeToCodeBlockLanguage(type: string) {
     switch (lower) {
         case 'json':
         case 'avro':
-            return lower;
+            return 'json';
 
         default:
         case 'proto':
@@ -160,6 +160,12 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
     const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
     const schema = subject.schemas.first(x => x.version == selectedVersion)!;
+
+    const [formattedSchema] = useState(() => {
+        if (schema.type == 'AVRO' || schema.type == 'JSON')
+            return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+        return schema.schema;
+    })
 
     return <Flex gap="10">
 
@@ -251,7 +257,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
             {/* Code Block */}
             <CodeBlock
-                codeString={schema.schema}
+                codeString={formattedSchema}
                 language={schemaTypeToCodeBlockLanguage(schema.type)}
                 theme="light"
                 showLineNumbers
