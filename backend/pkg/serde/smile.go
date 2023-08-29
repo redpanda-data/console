@@ -27,30 +27,30 @@ func (SmileSerde) Name() PayloadEncoding {
 	return PayloadEncodingSmile
 }
 
-func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithSmile := len(payload) > 3 && payload[0] == ':' && payload[1] == ')' && payload[2] == '\n'
 	if !startsWithSmile {
-		return RecordPayload{}, fmt.Errorf("first bytes indicate this it not valid Smile format")
+		return &RecordPayload{}, fmt.Errorf("first bytes indicate this it not valid Smile format")
 	}
 
 	obj, err := smile.DecodeToObject(payload)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to decode Smile payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to decode Smile payload: %w", err)
 	}
 
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to serialize Smile payload to json: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to serialize Smile payload to json: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		DeserializedPayload: obj,
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingSmile,

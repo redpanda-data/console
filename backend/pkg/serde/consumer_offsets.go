@@ -103,8 +103,8 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 	}
 
 	return &Record{
-		Key:     *deserializedKey,
-		Value:   *deserializedVal,
+		Key:     deserializedKey,
+		Value:   deserializedVal,
 		Headers: recordHeaders(record),
 	}, nil
 }

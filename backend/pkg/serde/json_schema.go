@@ -33,15 +33,15 @@ func (JsonSchemaSerde) Name() PayloadEncoding {
 	return PayloadEncodingJSON
 }
 
-func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return RecordPayload{}, fmt.Errorf("payload size is < 5 for json schema")
+		return &RecordPayload{}, fmt.Errorf("payload size is < 5 for json schema")
 	}
 
 	if payload[0] != byte(0) {
-		return RecordPayload{}, fmt.Errorf("incorrect magic byte for json schema")
+		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for json schema")
 	}
 
 	// TODO: For more confidence we could just ask the schema service for the given

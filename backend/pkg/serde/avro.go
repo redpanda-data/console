@@ -34,43 +34,43 @@ func (AvroSerde) Name() PayloadEncoding {
 	return PayloadEncodingAvro
 }
 
-func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.SchemaSvc == nil {
-		return RecordPayload{}, fmt.Errorf("no schema registry configured")
+		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
 
 	if !d.SchemaSvc.IsEnabled() {
-		return RecordPayload{}, fmt.Errorf("schema registry configuration disabled")
+		return &RecordPayload{}, fmt.Errorf("schema registry configuration disabled")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return RecordPayload{}, fmt.Errorf("payload size is < 5")
+		return &RecordPayload{}, fmt.Errorf("payload size is < 5")
 	}
 
 	if payload[0] != byte(0) {
-		return RecordPayload{}, fmt.Errorf("incorrect magic byte for avro")
+		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for avro")
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
 	schema, err := d.SchemaSvc.GetAvroSchemaByID(schemaID)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
+		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
 
 	var obj interface{}
 	err = avro.Unmarshal(schema, payload[5:], &obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
 
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
+		return &RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   jsonBytes,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingAvro,

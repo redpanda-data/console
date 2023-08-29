@@ -33,13 +33,13 @@ func (MsgPackSerde) Name() PayloadEncoding {
 	return PayloadEncodingMsgPack
 }
 
-func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.MsgPackService == nil {
-		return RecordPayload{}, fmt.Errorf("no message pack service configured")
+		return &RecordPayload{}, fmt.Errorf("no message pack service configured")
 	}
 
 	if !d.MsgPackService.IsTopicAllowed(record.Topic) {
-		return RecordPayload{}, fmt.Errorf("message pack encoding not configured for topic: " + record.Topic)
+		return &RecordPayload{}, fmt.Errorf("message pack encoding not configured for topic: " + record.Topic)
 	}
 
 	payload := payloadFromRecord(record, payloadType)
@@ -47,16 +47,16 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType Payload
 	var obj interface{}
 	err := mp.Unmarshal(payload, &obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
 
 	b64 := base64.StdEncoding.EncodeToString(payload)
 	jsonBytes, err := json.Marshal(b64)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   jsonBytes,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingMsgPack,

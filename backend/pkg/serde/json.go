@@ -26,7 +26,7 @@ func (JsonSerde) Name() PayloadEncoding {
 	return PayloadEncodingJSON
 }
 
-func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	return jsonDeserializePayload(payload)
@@ -70,25 +70,25 @@ func (JsonSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 	return trimmed, nil
 }
 
-func jsonDeserializePayload(payload []byte) (RecordPayload, error) {
+func jsonDeserializePayload(payload []byte) (*RecordPayload, error) {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 	if !startsWithJSON {
-		return RecordPayload{}, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		return &RecordPayload{}, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}
 
 	var obj any
 	err := json.Unmarshal(payload, &obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to parse JSON payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to parse JSON payload: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   payload,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingJSON,

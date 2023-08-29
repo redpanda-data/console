@@ -25,13 +25,13 @@ func (TextSerde) Name() PayloadEncoding {
 	return PayloadEncodingText
 }
 
-func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{
+		return &RecordPayload{
 			NormalizedPayload:   payload,
 			DeserializedPayload: payload,
 			Encoding:            PayloadEncodingText,
@@ -40,14 +40,14 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 
 	isUTF8 := utf8.Valid(payload)
 	if !isUTF8 {
-		return RecordPayload{}, fmt.Errorf("payload is not UTF8")
+		return &RecordPayload{}, fmt.Errorf("payload is not UTF8")
 	}
 
 	if containsControlChars(payload) {
-		return RecordPayload{}, fmt.Errorf("payload contains UTF8 control characters therefore not plain text format")
+		return &RecordPayload{}, fmt.Errorf("payload contains UTF8 control characters therefore not plain text format")
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   payload,
 		DeserializedPayload: payload,
 		Encoding:            PayloadEncodingText,

@@ -85,7 +85,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			payload, err := serde.DeserializePayload(test.record, test.payloadType)
-			test.validationFunc(t, payload, err)
+			test.validationFunc(t, *payload, err)
 		})
 	}
 }

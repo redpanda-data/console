@@ -131,7 +131,7 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		}
 
 		wg.Add(1)
-		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh, consumeReq.Troubleshoot)
+		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh, consumeReq.Troubleshoot, true)
 	}
 	// Close the results channel once all workers have finished processing jobs and therefore no senders are left anymore
 	go func() {

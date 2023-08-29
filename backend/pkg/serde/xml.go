@@ -27,32 +27,32 @@ func (XMLSerde) Name() PayloadEncoding {
 	return PayloadEncodingXML
 }
 
-func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithXML := trimmed[0] == '<'
 	if !startsWithXML {
-		return RecordPayload{}, fmt.Errorf("first byte indicates this it not valid XML")
+		return &RecordPayload{}, fmt.Errorf("first byte indicates this it not valid XML")
 	}
 
 	r := strings.NewReader(string(trimmed))
 	jsonPayload, err := xj.Convert(r)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("error converting XML to JSON: %w", err)
+		return &RecordPayload{}, fmt.Errorf("error converting XML to JSON: %w", err)
 	}
 
 	var obj any
 	err = json.Unmarshal(jsonPayload.Bytes(), &obj)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to parse JSON payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to parse JSON payload: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   jsonPayload.Bytes(),
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingXML,

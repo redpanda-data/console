@@ -27,30 +27,30 @@ func (UTF8Serde) Name() PayloadEncoding {
 	return PayloadEncodingUtf8WithControlChars
 }
 
-func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	isUTF8 := utf8.Valid(payload)
 	if !isUTF8 {
-		return RecordPayload{}, fmt.Errorf("payload is not UTF8")
+		return &RecordPayload{}, fmt.Errorf("payload is not UTF8")
 	}
 
 	if !containsControlChars(payload) {
-		return RecordPayload{}, fmt.Errorf("payload does not contain UTF8 control characters")
+		return &RecordPayload{}, fmt.Errorf("payload does not contain UTF8 control characters")
 	}
 
 	b64 := base64.StdEncoding.EncodeToString(payload)
 	jsonBytes, err := json.Marshal(b64)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   jsonBytes,
 		DeserializedPayload: payload,
 		Encoding:            PayloadEncodingUtf8WithControlChars,

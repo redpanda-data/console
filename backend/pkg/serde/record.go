@@ -11,8 +11,8 @@ package serde
 
 // Record is parsed Kafka record that can be processed by the frontend.
 type Record struct {
-	Key     RecordPayload  `json:"key"`
-	Value   RecordPayload  `json:"value"`
+	Key     *RecordPayload `json:"key"`
+	Value   *RecordPayload `json:"value"`
 	Headers []RecordHeader `json:"headers"`
 }
 

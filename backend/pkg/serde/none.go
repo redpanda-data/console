@@ -23,14 +23,14 @@ func (NoneSerde) Name() PayloadEncoding {
 	return PayloadEncodingNone
 }
 
-func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) != 0 {
-		return RecordPayload{}, fmt.Errorf("payload is not empty as expected for none encoding")
+		return &RecordPayload{}, fmt.Errorf("payload is not empty as expected for none encoding")
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		NormalizedPayload:   []byte("{}"),
 		DeserializedPayload: payload,
 		Encoding:            PayloadEncodingNone,

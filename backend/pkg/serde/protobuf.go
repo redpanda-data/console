@@ -34,9 +34,9 @@ func (ProtobufSerde) Name() PayloadEncoding {
 	return PayloadEncodingProtobuf
 }
 
-func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
-		return RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
+		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
 	}
 
 	property := proto.RecordValue
@@ -46,7 +46,7 @@ func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 
 	messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(record.Topic, property)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to get message descriptor for payload: %w", err)
 	}
 
 	payload := payloadFromRecord(record, payloadType)
@@ -54,21 +54,21 @@ func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 	msg := dynamic.NewMessage(messageDescriptor)
 	err = msg.Unmarshal(payload)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
 	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
 	}
 
 	var native interface{}
 	err = json.Unmarshal(jsonBytes, &native)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		DeserializedPayload: native,
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,

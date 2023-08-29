@@ -65,7 +65,7 @@ type Serde interface {
 	// DeserializePayload is a method to deserialize either the
 	// key or value into our own Record format that can be processed by the
 	// Console frontend.
-	DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error)
+	DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error)
 
 	// For completeness we can define an interface that can be implemented by each Serde so that
 	// serialization could also be implemented. These would then be used when we want to produce

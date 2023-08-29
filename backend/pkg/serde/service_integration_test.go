@@ -215,7 +215,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -365,7 +365,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -414,6 +414,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
+		assert.Equal([]byte(msg.Id), dr.Key.NormalizedPayload)
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
@@ -671,7 +672,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
-		assert.Equal(pbData, dr.Value.OriginalPayload)
+		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(pbData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
@@ -698,7 +699,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
-		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
+		assert.Empty(dr.Key.OriginalPayload)
+		assert.Equal([]byte(msg.Id), dr.Key.NormalizedPayload)
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
@@ -860,7 +862,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
-		assert.Equal(msgData, dr.Value.OriginalPayload)
+		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
@@ -889,7 +891,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
-		assert.Equal([]byte(msg.Id), dr.Key.OriginalPayload)
+		assert.Empty(dr.Key.OriginalPayload)
+		assert.Equal([]byte(msg.Id), dr.Key.NormalizedPayload)
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
@@ -1079,7 +1082,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
-		assert.Equal(msgData, dr.Value.OriginalPayload)
+		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
@@ -1108,7 +1111,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
-		assert.Equal([]byte("gadget_0"), dr.Key.OriginalPayload)
+		assert.Empty(dr.Key.OriginalPayload)
+		assert.Equal([]byte("gadget_0"), dr.Key.NormalizedPayload)
 		assert.Equal(len([]byte("gadget_0")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
@@ -1285,7 +1289,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
-		assert.Equal(msgData, dr.Value.OriginalPayload)
+		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
@@ -1308,7 +1312,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingNone, dr.Key.Encoding)
 		assert.Equal(true, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
-		assert.Equal([]byte(nil), dr.Key.OriginalPayload)
+		assert.Empty(dr.Key.OriginalPayload)
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 0)
@@ -1604,7 +1608,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
-		assert.Equal(msgData, dr.Value.OriginalPayload)
+		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
 		assert.Empty(dr.Value.SchemaID)
 
@@ -1633,7 +1637,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
 		assert.Equal(false, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
-		assert.Equal([]byte("123456789"), dr.Key.OriginalPayload)
+		assert.Empty(dr.Key.OriginalPayload)
+		assert.Equal([]byte("123456789"), dr.Key.NormalizedPayload)
 		assert.Equal(len([]byte("123456789")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting

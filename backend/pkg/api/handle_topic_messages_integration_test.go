@@ -92,7 +92,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetKey())
 				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
-				assert.NotEmpty(cm.Data.GetKey().GetOriginalPayload())
+				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
 				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
@@ -100,7 +100,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetValue())
 				assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
-				assert.NotEmpty(cm.Data.GetValue().GetOriginalPayload())
+				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
 				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
@@ -191,7 +191,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetKey())
 				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
-				assert.NotEmpty(cm.Data.GetKey().GetOriginalPayload())
+				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
 				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
@@ -199,7 +199,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetValue())
 				assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
-				assert.NotEmpty(cm.Data.GetValue().GetOriginalPayload())
+				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
 				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())

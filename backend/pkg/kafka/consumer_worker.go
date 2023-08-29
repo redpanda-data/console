@@ -22,7 +22,8 @@ import (
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
-	isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage, troubleshoot bool,
+	isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage,
+	troubleshoot bool, includeRawData bool,
 ) {
 	defer wg.Done()
 	defer func() {
@@ -91,8 +92,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 			Headers:         headers,
 			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
 			IsTransactional: record.Attrs.IsTransactional(),
-			Key:             &deserializedRec.Key,
-			Value:           &deserializedRec.Value,
+			Key:             deserializedRec.Key,
+			Value:           deserializedRec.Value,
 			IsMessageOk:     isOK,
 			ErrorMessage:    errMessage,
 			MessageSize:     int64(len(record.Key) + len(record.Value)),

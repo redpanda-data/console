@@ -75,13 +75,17 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 
 // deserializePayload deserializes either the key or value of a Kafka record by trying
 // the pre-defined deserialization strategies.
-func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) RecordPayload {
+func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) *RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
+	var originalPayload []byte
+	if opts.IncludeRawData {
+		originalPayload = payload
+	}
 	// Check if payload is empty
 	if len(payload) == 0 {
-		return RecordPayload{
-			OriginalPayload:  payload,
+		return &RecordPayload{
+			OriginalPayload:  originalPayload,
 			IsPayloadNull:    payload == nil,
 			PayloadSizeBytes: 0,
 			Encoding:         PayloadEncodingNone,
@@ -91,47 +95,37 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 	troubleshooting := make([]TroubleshootingReport, 0)
 
 	// Try all registered SerDes in the order they were registered
+	var rp *RecordPayload
+	var err error
 	for _, serde := range s.SerDes {
-		rp, err := serde.DeserializePayload(record, payloadType)
+		rp, err = serde.DeserializePayload(record, payloadType)
 		if err != nil {
 			troubleshooting = append(troubleshooting, TroubleshootingReport{
 				SerdeName: string(serde.Name()),
 				Message:   err.Error(),
 			})
 		} else {
-			// Serde deserialized successfully, let's add fields that always shall
-			// be set, regardless of the SerDe used.
-			rp.PayloadSizeBytes = len(payload)
-			rp.IsPayloadNull = payload == nil
-			if len(payload) > opts.MaxPayloadSize {
-				rp.OriginalPayload = nil
-				rp.IsPayloadTooLarge = true
-			} else {
-				rp.OriginalPayload = payload
-				rp.IsPayloadTooLarge = false
-			}
-
-			if opts.Troubleshoot {
-				rp.Troubleshooting = troubleshooting
-			}
-
-			return rp
+			break
 		}
 	}
 
-	// Anything else is considered binary
-	rp := RecordPayload{
-		PayloadSizeBytes: len(payload),
-		IsPayloadNull:    payload == nil,
-		Encoding:         PayloadEncodingBinary,
+	if rp == nil {
+		// Anything else is considered binary
+		rp = &RecordPayload{
+			Encoding: PayloadEncodingBinary,
+		}
+	}
+
+	rp.PayloadSizeBytes = len(payload)
+	rp.IsPayloadNull = payload == nil
+
+	if opts.IncludeRawData {
+		rp.OriginalPayload = payload
 	}
 
 	if len(payload) > opts.MaxPayloadSize {
-		rp.OriginalPayload = nil
 		rp.IsPayloadTooLarge = true
-	} else {
-		rp.OriginalPayload = payload
-		rp.IsPayloadTooLarge = false
+		rp.NormalizedPayload = nil
 	}
 
 	if opts.Troubleshoot {
@@ -158,14 +152,17 @@ type DeserializationOptions struct {
 	// method has failed. Troubleshoot should always be set to true in this case.
 	ValueEncoding PayloadEncoding
 
+	// MaxPayloadSize is the maximum size of the payload.
+	MaxPayloadSize int
+
 	// Troubleshoot can be enabled to return additional information which reports
 	// why each performed deserialization strategy has failed. If the first
 	// tested encoding method worked successfully no troubleshooting information
 	// is returned.
 	Troubleshoot bool
 
-	// MaxPayloadSize is the maximum size of the payload.
-	MaxPayloadSize int
+	// IncludeRawData can be enabled to include raw binary data in the returned output.
+	IncludeRawData bool
 }
 
 func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error) {

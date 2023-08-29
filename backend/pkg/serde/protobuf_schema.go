@@ -36,46 +36,46 @@ func (ProtobufSchemaSerde) Name() PayloadEncoding {
 	return PayloadEncodingProtobuf
 }
 
-func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (RecordPayload, error) {
+func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
-		return RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
+		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
 	}
 
 	if !d.ProtoSvc.IsProtobufSchemaRegistryEnabled() {
-		return RecordPayload{}, fmt.Errorf("protobuf schema registry disabled")
+		return &RecordPayload{}, fmt.Errorf("protobuf schema registry disabled")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return RecordPayload{}, fmt.Errorf("payload size is < 5")
+		return &RecordPayload{}, fmt.Errorf("payload size is < 5")
 	}
 
 	if payload[0] != byte(0) {
-		return RecordPayload{}, fmt.Errorf("incorrect magic byte for protobuf schema")
+		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for protobuf schema")
 	}
 
 	var srSerde sr.Serde
 	schemaID, remainingData, err := srSerde.DecodeID(payload)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding schema id: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding schema id: %w", err)
 	}
 
 	index, remainingData, err := srSerde.DecodeIndex(remainingData, 128)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("decoding protobuf index: %w", err)
+		return &RecordPayload{}, fmt.Errorf("decoding protobuf index: %w", err)
 	}
 
 	fd, exists := d.ProtoSvc.GetFileDescriptorBySchemaID(schemaID)
 	if !exists {
-		return RecordPayload{}, fmt.Errorf("schema ID %+v not found", schemaID)
+		return &RecordPayload{}, fmt.Errorf("schema ID %+v not found", schemaID)
 	}
 
 	messageTypes := fd.GetMessageTypes()
 	var messageDescriptor *desc.MessageDescriptor
 	for _, idx := range index {
 		if idx > len(messageTypes) {
-			return RecordPayload{}, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
+			return &RecordPayload{}, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
 		}
 		messageDescriptor = messageTypes[idx]
 		messageTypes = messageDescriptor.GetNestedMessageTypes()
@@ -83,16 +83,16 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 
 	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(remainingData, messageDescriptor)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
 	}
 
 	var native interface{}
 	err = json.Unmarshal(jsonBytes, &native)
 	if err != nil {
-		return RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
+		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
-	return RecordPayload{
+	return &RecordPayload{
 		DeserializedPayload: native,
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,

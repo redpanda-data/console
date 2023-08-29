@@ -186,11 +186,18 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
   enterprise = new Uint8Array(0);
 
   /**
-   * Include troubleshooting data in the response.
+   * Optionally include troubleshooting data in the response.
    *
    * @generated from field: bool troubleshoot = 8;
    */
   troubleshoot = false;
+
+  /**
+   * Optionally include original raw payload.
+   *
+   * @generated from field: bool include_original_raw_payload = 9;
+   */
+  includeOriginalRawPayload = false;
 
   constructor(data?: PartialMessage<ListMessagesRequest>) {
     super();
@@ -208,6 +215,7 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
     { no: 6, name: "filter_interpreter_code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "enterprise", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 8, name: "troubleshoot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "include_original_raw_payload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesRequest {
@@ -592,31 +600,43 @@ export class ListMessagesResponse_ErrorMessage extends Message<ListMessagesRespo
  */
 export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   /**
+   * Original raw binary payload.
+   *
    * @generated from field: bytes original_payload = 1;
    */
   originalPayload = new Uint8Array(0);
 
   /**
+   * Payload size in bytes.
+   *
    * @generated from field: int32 payload_size = 2;
    */
   payloadSize = 0;
 
   /**
+   * Payload encoding if we have been able to detect.
+   *
    * @generated from field: redpanda.api.console.v1alpha.PayloadEncoding encoding = 3;
    */
   encoding = PayloadEncoding.UNSPECIFIED;
 
   /**
+   * Normilized user friendly representation of the payload.
+   *
    * @generated from field: bytes normalized_payload = 4;
    */
   normalizedPayload = new Uint8Array(0);
 
   /**
+   * If payload is too large for deserialization.
+   *
    * @generated from field: bool is_payload_too_large = 5;
    */
   isPayloadTooLarge = false;
 
   /**
+   * Troubleshooting data for debugging.
+   *
    * @generated from field: repeated redpanda.api.console.v1alpha.TroubleshootReport troubleshoot_report = 6;
    */
   troubleshootReport: TroubleshootReport[] = [];
