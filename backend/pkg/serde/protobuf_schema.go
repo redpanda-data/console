@@ -52,7 +52,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 	}
 
 	if payload[0] != byte(0) {
-		return RecordPayload{}, fmt.Errorf("incorrect magic byte")
+		return RecordPayload{}, fmt.Errorf("incorrect magic byte for protobuf schema")
 	}
 
 	var srSerde sr.Serde

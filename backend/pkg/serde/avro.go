@@ -50,7 +50,7 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 	}
 
 	if payload[0] != byte(0) {
-		return RecordPayload{}, fmt.Errorf("incorrect magic byte")
+		return RecordPayload{}, fmt.Errorf("incorrect magic byte for avro")
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])

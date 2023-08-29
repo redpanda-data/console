@@ -222,7 +222,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "incorrect magic byte", err.Error())
+				assert.Equal(t, "incorrect magic byte for protobuf schema", err.Error())
 			},
 		},
 		{
