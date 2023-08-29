@@ -163,7 +163,7 @@ class SchemaList extends PageComponent<{}> {
 const SchemaTypeColumn = observer((p: {name: string}) => {
     const details = api.schemaDetails.get(p.name);
     if (!details) {
-        api.refreshSchemaDetails(p.name, 'latest');
+        api.refreshSchemaDetails(p.name);
         return <Skeleton height="15px"/>;
     }
 
@@ -173,7 +173,7 @@ const SchemaTypeColumn = observer((p: {name: string}) => {
 const LatestVersionColumn = observer((p: {name: string}) => {
     const details = api.schemaDetails.get(p.name);
     if (!details) {
-        api.refreshSchemaDetails(p.name, 'latest');
+        api.refreshSchemaDetails(p.name);
         return <Skeleton height="15px"/>;
     }
 

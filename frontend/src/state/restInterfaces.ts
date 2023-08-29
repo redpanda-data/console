@@ -1540,7 +1540,7 @@ export type SchemaRegistryVersionedSchema = {
     id: number;
     version: number;
     isSoftDeleted: boolean;
-    type: string;
+    type: SchemaType;
     schema: string;
     references: SchemaReference[];
 };

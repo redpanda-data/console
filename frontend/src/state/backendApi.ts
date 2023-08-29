@@ -977,9 +977,10 @@ const apiStore = {
             }, addError);
     },
 
-    refreshSchemaDetails(subjectName: string, version: number | 'latest' | 'all', force?: boolean) {
-        if (version == null) version = 'latest';
-
+    refreshSchemaDetails(subjectName: string, force?: boolean) {
+        // Always refresh all versions, otherwise we cannot know wether or not we have to refresh with 'all,
+        // If we refresh with 'latest' or specific number, we'd need to keep track of what information we're missing
+        const version = 'all';
         const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaRegistrySubjectDetails>;
 
         return rq
