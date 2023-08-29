@@ -25,7 +25,7 @@ import { Text } from '@redpanda-data/ui';
 import { Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SingleSelect } from '../../misc/Select';
-import { openDeleteModal } from './modals';
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
@@ -160,6 +160,10 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
     const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
     const schema = subject.schemas.first(x => x.version == selectedVersion)!;
+    if (!schema) {
+        setSelectedVersion(defaultVersion);
+        return null;
+    }
 
     const [formattedSchema] = useState(() => {
         if (schema.type == 'AVRO' || schema.type == 'JSON')
@@ -198,31 +202,57 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
                 {schema.isSoftDeleted
                     ? <>
-                        <Button variant="outline" ml="auto">Permanent delete</Button>
-                        <Button variant="outline" onClick={() => {
-                            api.createSchema(subject.name, {
-                                references: schema.references,
-                                schema: schema.schema,
-                                schemaType: schema.type,
-                            })
-                                .then(r => {
-                                    toast({
-                                        status: 'success', duration: 4000, isClosable: false,
-                                        title: `Schema ${subject.name} ${schema.version} has been recovered`,
-                                        description: 'Schema ID: ' + r.id,
+                        <Button
+                            variant="outline" ml="auto"
+                            onClick={() => openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
+                                api.deleteSchemaSubjectVersion(subject.name, schema.version, true)
+                                    .then(() => {
+                                        api.refreshSchemaDetails(subject.name, true);
+
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: 'Schema version permanently deleted'
+                                        });
                                     })
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: 'Failed to permanently delete schema version',
+                                            description: String(err),
+                                        })
+                                    });
+                            })}>
+                            Permanent delete
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                api.createSchema(subject.name, {
+                                    references: schema.references,
+                                    schema: schema.schema,
+                                    schemaType: schema.type,
                                 })
-                                .catch(err => {
-                                    toast({
-                                        status: 'error', duration: null, isClosable: true,
-                                        title: `Failed to recover schema ${subject.name} ${schema.version} `,
-                                        description: 'Error: ' + String(err),
+                                    .then(r => {
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: `Schema ${subject.name} ${schema.version} has been recovered`,
+                                            description: 'Schema ID: ' + r.id,
+                                        })
                                     })
-                                })
-                        }}>Recover</Button>
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: `Failed to recover schema ${subject.name} ${schema.version} `,
+                                            description: 'Error: ' + String(err),
+                                        })
+                                    })
+                            }}>
+                            Recover
+                        </Button>
                     </>
                     : <>
-                        <Button variant="outline" ml="auto" onClick={() => openDeleteModal(`${subject.name} ${schema.version}`, () => {
+                        <Button variant="outline" ml="auto" onClick={() => openDeleteModal(`${subject.name} version ${schema.version}`, () => {
                             api.deleteSchemaSubjectVersion(subject.name, schema.version, false)
                                 .then(() => {
                                     api.refreshSchemaDetails(subject.name, true);
