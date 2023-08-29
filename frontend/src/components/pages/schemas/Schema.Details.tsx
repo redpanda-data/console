@@ -18,7 +18,7 @@ import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, CodeBlock, Divider, Flex, isSingleValue, ListItem, Select, Tabs, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, CodeBlock, Divider, Flex, Grid, GridItem, ListItem, Tabs, UnorderedList, useToast } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
 import { Text } from '@redpanda-data/ui';
@@ -26,6 +26,7 @@ import { Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { SingleSelect } from '../../misc/Select';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { KowlDiffEditor } from '../../misc/KowlEditor';
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
@@ -151,6 +152,13 @@ function schemaTypeToCodeBlockLanguage(type: string) {
     }
 }
 
+function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
+    const lower = schema.type.toLowerCase();
+    if (lower == 'avro' || lower == 'json')
+        return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+    return schema.schema;
+}
+
 const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
     const toast = useToast();
 
@@ -165,11 +173,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
         return null;
     }
 
-    const [formattedSchema] = useState(() => {
-        if (schema.type == 'AVRO' || schema.type == 'JSON')
-            return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
-        return schema.schema;
-    })
+    const formattedSchema = getFormattedSchemaText(schema);
 
     return <Flex gap="10">
 
@@ -308,46 +312,90 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
     const subject = p.subject;
 
+    const defaultVersionLeft = subject.versions[0].version;
+    const defaultVersionRight = subject.versions[subject.versions.length - 1].version;
 
-    // const defaultVersion = (typeof this.version == 'string')
-    //     ? subject.versions[subject.versions.length - 1].version
-    //     : this.version;
-    const defaultVersion = subject.versions[subject.versions.length - 1].version;
-    const [_selectedVersion, setSelectedVersion] = useState(defaultVersion);
+    const [selectedVersionLeft, setSelectedVersionLeft] = useState(defaultVersionLeft);
+    const [selectedVersionRight, setSelectedVersionRight] = useState(defaultVersionRight);
 
+    const schemaLeft = subject.schemas.first(x => x.version == selectedVersionLeft);
+    const schemaRight = subject.schemas.first(x => x.version == selectedVersionRight);
+    if (!schemaLeft) {
+        setSelectedVersionLeft(subject.versions[0].version);
+        return null;
+    }
+    if (!schemaRight) {
+        setSelectedVersionLeft(subject.versions[0].version);
+        return null;
+    }
 
-    return <div>
+    return <Flex direction="column" gap="10">
 
-        <Flex gap="1rem">
-            <Label text="Version">
-                <Select
-                    defaultValue={
-                        {
-                            label: 'Version ' + defaultVersion,
-                            value: defaultVersion,
-                        }
-                    }
-                    onChange={(value) => {
-                        if (!isSingleValue(value)) return;
-                        const version = value!.value;
-                        // this.version = version?.value as 'latest' | number;
-                        // editQuery(x => {
-                        //     x.version = String(this.version);
-                        // });
-                        setSelectedVersion(version);
-                    }}
-                    options={subject.versions.map((v) => ({ label: 'Version ' + v.version, value: v.version }))}
-                    isDisabled={subject.versions.length == 0}
-                />
-            </Label>
+        {/* Two version selectors */}
+        <Grid templateColumns="repeat(2, 1fr)" gap="4" minWidth="0" width="100%" >
+            <GridItem w="100%" >
+                {/* Version Select / Delete / Recover */}
+                <Flex gap="2" alignItems="flex-end">
+                    <Label text="Version">
+                        <Box width="200px">
+                            <SingleSelect
+                                value={selectedVersionLeft}
+                                onChange={value => {
+                                    setSelectedVersionLeft(value);
+                                }}
+                                options={subject.versions.map((v) => ({
+                                    value: v.version,
+                                    label: String(v.version)
+                                        + (v.isSoftDeleted ? ' (soft-deleted)' : '')
+                                        + ((subject.versions[subject.versions.length - 1] == v) ? ' (latest)' : ''),
+                                }))}
+                                isDisabled={subject.versions.length == 0}
+                            />
+                        </Box>
+                    </Label>
+                    <Flex height="36px" alignItems="center" ml="4">
+                        Schema ID: {schemaLeft.id}
+                    </Flex>
+                </Flex>
+            </GridItem>
 
-            <Button variant="outline" ml="auto">Permanent delete</Button>
-            <Button variant="outline">Recover</Button>
-        </Flex>
+            <GridItem w="100%" >
+                {/* Version Select / Delete / Recover */}
+                <Flex gap="2" alignItems="flex-end">
+                    <Label text="Version">
+                        <Box width="200px">
+                            <SingleSelect
+                                value={selectedVersionRight}
+                                onChange={value => {
+                                    setSelectedVersionRight(value);
+                                }}
+                                options={subject.versions.map((v) => ({
+                                    value: v.version,
+                                    label: String(v.version)
+                                        + (v.isSoftDeleted ? ' (soft-deleted)' : '')
+                                        + ((subject.versions[subject.versions.length - 1] == v) ? ' (latest)' : ''),
+                                }))}
+                                isDisabled={subject.versions.length == 0}
+                            />
+                        </Box>
+                    </Label>
+                    <Flex height="36px" alignItems="center" ml="4">
+                        Schema ID: {schemaRight.id}
+                    </Flex>
+                </Flex>
+            </GridItem>
 
+        </Grid>
 
-
-    </div>
+        {/* Diff View */}
+        <KowlDiffEditor height="800px"
+            language={schemaTypeToCodeBlockLanguage(schemaLeft.type)}
+            original={getFormattedSchemaText(schemaLeft)}
+            modified={getFormattedSchemaText(schemaRight)}
+            options={{
+                readOnly: true,
+            }} />
+    </Flex>
 });
 
 const SchemaReferences = observer((p: { schema: SchemaRegistryVersionedSchema }) => {
