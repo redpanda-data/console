@@ -147,13 +147,14 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		assert.GreaterOrEqual(progressCount, 0)
 	})
 
-	t.Run("with troubleshoot", func(t *testing.T) {
+	t.Run("with troubleshoot and raw payload", func(t *testing.T) {
 		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
-			Topic:        topicName,
-			StartOffset:  -2,
-			PartitionId:  -1,
-			MaxResults:   100,
-			Troubleshoot: true,
+			Topic:                     topicName,
+			StartOffset:               -2,
+			PartitionId:               -1,
+			MaxResults:                100,
+			Troubleshoot:              true,
+			IncludeOriginalRawPayload: true,
 		}))
 		require.NoError(err)
 
@@ -191,7 +192,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetKey())
 				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
-				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetKey().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
 				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
@@ -199,7 +200,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 				assert.NotEmpty(cm.Data.GetValue())
 				assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
-				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetValue().GetOriginalPayload())
 				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
 				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
 				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())

@@ -46,6 +46,7 @@ type ListMessageRequest struct {
 	MessageCount          int
 	FilterInterpreterCode string
 	Troubleshoot          bool
+	IncludeRawPayload     bool
 }
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
@@ -133,6 +134,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		Partitions:            consumeRequests,
 		FilterInterpreterCode: listReq.FilterInterpreterCode,
 		Troubleshoot:          listReq.Troubleshoot,
+		IncludeRawPayload:     listReq.IncludeRawPayload,
 	}
 
 	progress.OnPhase("Consuming messages")

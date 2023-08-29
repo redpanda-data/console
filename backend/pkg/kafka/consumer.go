@@ -78,6 +78,7 @@ type TopicConsumeRequest struct {
 	Partitions            map[int32]*PartitionConsumeRequest
 	FilterInterpreterCode string
 	Troubleshoot          bool
+	IncludeRawPayload     bool
 }
 
 type interpreterArguments struct {
@@ -131,7 +132,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		}
 
 		wg.Add(1)
-		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh, consumeReq.Troubleshoot, true)
+		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh,
+			consumeReq.Troubleshoot, consumeReq.IncludeRawPayload)
 	}
 	// Close the results channel once all workers have finished processing jobs and therefore no senders are left anymore
 	go func() {

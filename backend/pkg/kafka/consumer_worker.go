@@ -59,6 +59,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 			serde.DeserializationOptions{
 				MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize,
 				Troubleshoot:   troubleshoot,
+				IncludeRawData: includeRawData,
 			})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))
