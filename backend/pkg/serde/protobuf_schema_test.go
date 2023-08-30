@@ -455,60 +455,6 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			assert.Equal(t, expectData, actualData)
 		})
 
-		t.Run("valid with index", func(t *testing.T) {
-			// TODO TEST THIS IN INTEGRATION TEST WITH ACTUAL SCHEMA
-
-			// var testSerde sr.Serde
-			// testSerde.Register(
-			// 	2000,
-			// 	&indexv1.Gadget_Gizmo{},
-			// 	sr.EncodeFn(func(v any) ([]byte, error) {
-			// 		return proto.Marshal(v.(*indexv1.Gadget_Gizmo))
-			// 	}),
-			// 	sr.DecodeFn(func(b []byte, v any) error {
-			// 		return proto.Unmarshal(b, v.(*indexv1.Gadget_Gizmo))
-			// 	}),
-			// 	sr.Index(2, 0),
-			// )
-
-			// msg := indexv1.Gadget{
-			// 	Identity: "gadget_0",
-			// 	Gizmo: &indexv1.Gadget_Gizmo{
-			// 		Size: 10,
-			// 		Item: &indexv1.Item{
-			// 			ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
-			// 			Name:     "item_0",
-			// 		},
-			// 	},
-			// 	Widgets: []*indexv1.Widget{
-			// 		{
-			// 			Id: "wid_0",
-			// 		},
-			// 		{
-			// 			Id: "wid_1",
-			// 		},
-			// 	},
-			// }
-
-			// expectData, err := testSerde.Encode(msg.GetGizmo())
-			// require.NoError(t, err)
-
-			// data := map[string]interface{}{
-			// 	"size": 10,
-			// 	"item": map[string]interface{}{
-			// 		"itemType": 1,
-			// 		"name":     "item_0",
-			// 	},
-			// }
-
-			// serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
-
-			// actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(2000), WithIndex(2, 0))
-			// assert.NoError(t, err)
-
-			// assert.Equal(t, expectData, actualData)
-		})
-
 		t.Run("invalid schema id", func(t *testing.T) {
 			data := map[string]interface{}{
 				"id": "333",
