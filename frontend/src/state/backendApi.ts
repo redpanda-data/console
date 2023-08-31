@@ -1006,7 +1006,6 @@ const apiStore = {
             subjectVersions.set(version, [] as SchemaReferencedByEntry[]);
             const versionReferences = subjectVersions.get(version)!;
 
-
             for (const ref of references) {
                 if (ref.error) {
                     console.error('error in refreshSchemaReferencedBy', { subjectName, version, error: ref.error });

@@ -88,6 +88,9 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
             if (!details) return;
 
             for (const v of details.versions) {
+                if (v.isSoftDeleted)
+                    continue;
+
                 api.refreshSchemaReferencedBy(subjectName, v.version, force);
             }
         });
