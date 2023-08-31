@@ -1572,3 +1572,14 @@ export type SchemaRegistryCreateSchema = {
 export type SchemaRegistryCreateSchemaResponse = {
     id: number;
 }
+
+// GET /schema-registry/subjects/{subject}/versions/{version}/referencedby
+export type SchemaReferencedByEntry = {
+    schemaId: number;
+    error?: string;
+    usages: SchemaReferencedByUsage[];
+}
+export type SchemaReferencedByUsage = {
+    subject: string;
+    version: number;
+}

@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { PageComponent, PageInitHelper } from '../Page';
+import { PageComponent } from '../Page';
 import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
@@ -27,6 +27,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { SingleSelect } from '../../misc/Select';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { KowlDiffEditor } from '../../misc/KowlEditor';
+import { uiState } from '../../../state/uiState';
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
@@ -35,19 +36,8 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     @observable version = 'latest' as 'latest' | number;
 
-    initPage(p: PageInitHelper): void {
-
-        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
-        const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
-
-        const version = getVersionFromQuery();
-        editQuery(x => {
-            x.version = String(version);
-        });
-
-        p.title = subjectNameRaw;
-        p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb(subjectNameRaw, `/schema-registry/${subjectNameEncoded}?version=${version}`);
+    initPage(): void {
+        this.updateTitleAndBreadcrumbs();
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
@@ -56,7 +46,34 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         super(p);
         this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
+
         makeObservable(this);
+    }
+
+    componentDidUpdate(prevProps: { subjectName: string }) {
+        if (!prevProps) return;
+
+        const prevName = decodeURIComponent(prevProps.subjectName);
+
+        if (prevName != this.subjectNameRaw) {
+            this.updateTitleAndBreadcrumbs();
+            this.refreshData();
+        }
+    }
+
+    updateTitleAndBreadcrumbs() {
+        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        this.subjectNameRaw = subjectNameRaw;
+
+        const version = getVersionFromQuery();
+        editQuery(x => {
+            x.version = String(version);
+        });
+
+        uiState.pageTitle = subjectNameRaw;
+        uiState.pageBreadcrumbs = [];
+        uiState.pageBreadcrumbs.push({ title: 'Schema Registry', linkTo: '/schema-registry' });
+        uiState.pageBreadcrumbs.push({ title: subjectNameRaw, linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}` });
     }
 
     refreshData(force?: boolean) {
@@ -65,8 +82,15 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         api.refreshSchemaSubjects(force);
         api.refreshSchemaTypes(force);
 
-        const encoded = decodeURIComponent(this.props.subjectName);
-        api.refreshSchemaDetails(encoded, force);
+        const subjectName = decodeURIComponent(this.props.subjectName);
+        api.refreshSchemaDetails(subjectName, force).then(() => {
+            const details = api.schemaDetails.get(subjectName);
+            if (!details) return;
+
+            for (const v of details.versions) {
+                api.refreshSchemaReferencedBy(subjectName, v.version, force);
+            }
+        });
     }
 
     render() {
@@ -301,8 +325,8 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
         </Flex>
 
         {/* References Box */}
-        <Box mt="20">
-            <SchemaReferences schema={schema} />
+        <Box>
+            <SchemaReferences subject={subject} schema={schema} />
         </Box>
 
     </Flex>
@@ -398,11 +422,15 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
     </Flex>
 });
 
-const SchemaReferences = observer((p: { schema: SchemaRegistryVersionedSchema }) => {
-    const { schema } = p;
+const SchemaReferences = observer((p: { subject: SchemaRegistrySubjectDetails, schema: SchemaRegistryVersionedSchema }) => {
+    const { subject, schema } = p;
+    const version = schema.version;
+
+    const referencedByVersions = api.schemaReferencedBy.get(subject.name);
+    const referencedBy = referencedByVersions && referencedByVersions.get(version);
 
     return <>
-        <Text fontSize="lg" fontWeight="bold">References</Text>
+        <Text mt="20" fontSize="lg" fontWeight="bold">References</Text>
         <Text mb="6">
             Schemas that are required by this version. <Link as={ReactRouterLink} to="/home">Learn More</Link>
         </Text>
@@ -416,6 +444,22 @@ const SchemaReferences = observer((p: { schema: SchemaRegistryVersionedSchema })
                 })}
             </UnorderedList>
             : <Text>This schema has no references.</Text>
+        }
+
+        <Text mt="20" fontSize="lg" fontWeight="bold">Referenced By</Text>
+        <Text mb="6">
+            Schemas that reference this version. <Link as={ReactRouterLink} to="/home">Learn More</Link>
+        </Text>
+
+        {referencedBy && referencedBy.length > 0
+            ? <UnorderedList>
+                {referencedBy.flatMap(x => x.usages).map(ref => {
+                    return <ListItem key={ref.subject + ref.version}>
+                        <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(ref.subject)}?version=${ref.version}`}>{ref.subject}</Link>
+                    </ListItem>
+                })}
+            </UnorderedList>
+            : <Text>This schema has no incoming references.</Text>
         }
     </>
 })

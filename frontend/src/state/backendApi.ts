@@ -56,7 +56,8 @@ import {
     SchemaRegistryDeleteSubjectVersionResponse,
     SchemaRegistryDeleteSubjectResponse,
     SchemaRegistryCompatabilityMode,
-    SchemaRegistrySetCompatabilityModeRequest
+    SchemaRegistrySetCompatabilityModeRequest,
+    SchemaReferencedByEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -248,6 +249,7 @@ const apiStore = {
     schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
     schemaTypes: undefined as string[] | undefined,
     schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
+    schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
 
     topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
@@ -990,6 +992,31 @@ const apiStore = {
             .catch(addError);
     },
 
+    refreshSchemaReferencedBy(subjectName: string, version: number, force?: boolean) {
+
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`, force) as Promise<SchemaReferencedByEntry[]>;
+
+        return rq.then(references => {
+            let subjectVersions = this.schemaReferencedBy.get(subjectName);
+            if (!subjectVersions) {
+                subjectVersions = new Map<number, SchemaReferencedByEntry[]>();
+                this.schemaReferencedBy.set(subjectName, subjectVersions);
+            }
+
+            subjectVersions.set(version, [] as SchemaReferencedByEntry[]);
+            const versionReferences = subjectVersions.get(version)!;
+
+
+            for (const ref of references) {
+                if (ref.error) {
+                    console.error('error in refreshSchemaReferencedBy', { subjectName, version, error: ref.error });
+                    continue;
+                }
+                versionReferences.push(ref);
+            }
+            // Todo: maybe add another array of "refrencedBy errors" that can be used in the ui
+        }).catch(() => { });
+    },
     async setSchemaRegistryCompatabilityMode(mode: SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
             method: 'PUT',
