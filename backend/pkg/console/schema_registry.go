@@ -337,19 +337,66 @@ func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName, vers
 	}, nil
 }
 
-// SchemaReferences return all schema ids that reference the requested subject-version.
-type SchemaReferences struct {
-	SchemaIDs []int `json:"schemaIds"`
+// SchemaReference return all schema ids that reference the requested subject-version.
+type SchemaReference struct {
+	SchemaID int           `json:"schemaId"`
+	Error    string        `json:"error,omitempty"`
+	Usages   []SchemaUsage `json:"usages"`
 }
 
-// GetSchemaRegistrySchemaReferences returns all schema ids that references the input
+// SchemaUsage is the subject-version that uses this schema id.
+type SchemaUsage struct {
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// GetSchemaRegistrySchemaReferencedBy returns all schema ids that references the input
 // subject-version. You can use -1 or 'latest' to check the latest version.
-func (s *Service) GetSchemaRegistrySchemaReferences(ctx context.Context, subjectName, version string) (*SchemaReferences, error) {
+func (s *Service) GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName, version string) ([]SchemaReference, error) {
 	schemaRefs, err := s.kafkaSvc.SchemaService.GetSchemaReferences(ctx, subjectName, version)
 	if err != nil {
 		return nil, err
 	}
-	return &SchemaReferences{SchemaIDs: schemaRefs.SchemaIDs}, nil
+
+	ch := make(chan SchemaReference, len(schemaRefs.SchemaIDs))
+	grp, grpCtx := errgroup.WithContext(ctx)
+	for _, schemaID := range schemaRefs.SchemaIDs {
+		schemaIDCpy := schemaID
+		grp.Go(func() error {
+			subjectVersions, err := s.kafkaSvc.SchemaService.GetSchemaUsagesByID(grpCtx, schemaIDCpy)
+			if err != nil {
+				ch <- SchemaReference{
+					Error: err.Error(),
+				}
+				return nil
+			}
+
+			usages := make([]SchemaUsage, len(subjectVersions))
+			for i, subjectVersion := range subjectVersions {
+				usages[i] = SchemaUsage{
+					Subject: subjectVersion.Subject,
+					Version: subjectVersion.Version,
+				}
+			}
+
+			ch <- SchemaReference{
+				SchemaID: schemaIDCpy,
+				Usages:   usages,
+			}
+			return nil
+		})
+	}
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+	close(ch)
+
+	response := make([]SchemaReference, 0, len(schemaRefs.SchemaIDs))
+	for schemaRef := range ch {
+		response = append(response, schemaRef)
+	}
+
+	return response, nil
 }
 
 // SchemaRegistryDeleteSubjectResponse is the response to deleting a whole schema registry subject.
@@ -476,4 +523,28 @@ func (s *Service) ValidateSchemaRegistrySchema(
 		ParsingError: parsingErr,
 		IsValid:      parsingErr == "" && isCompatible,
 	}
+}
+
+// SchemaVersion is the response to requesting schema usages by a global schema id.
+type SchemaVersion struct {
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// GetSchemaUsagesByID registers a new schema for the given subject in the schema registry.
+func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error) {
+	res, err := s.kafkaSvc.SchemaService.GetSchemaUsagesByID(ctx, schemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	schemaVersions := make([]SchemaVersion, len(res))
+	for i, r := range res {
+		schemaVersions[i] = SchemaVersion{
+			Subject: r.Subject,
+			Version: r.Version,
+		}
+	}
+
+	return schemaVersions, nil
 }

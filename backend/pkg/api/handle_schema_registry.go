@@ -73,6 +73,40 @@ func (api *API) handleGetSchemaRegistrySchemaTypes() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse and validate version input
+		schemaIDStr := rest.GetURLParam(r, "id")
+		schemaID, err := strconv.Atoi(schemaIDStr)
+		if err != nil {
+			descriptiveErr := fmt.Errorf("schema id %q is not valid. Must be a positive integer", schemaID)
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      descriptiveErr,
+				Status:   http.StatusBadRequest,
+				Message:  descriptiveErr.Error(),
+				IsSilent: false,
+			})
+			return
+		}
+
+		res, err := api.ConsoleSvc.GetSchemaUsagesByID(r.Context(), schemaID)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schema usages for schema id: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 	if !api.Cfg.Kafka.Schema.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
@@ -198,7 +232,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 	}
 }
 
-func (api *API) handleGetSchemaReferences() http.HandlerFunc {
+func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
 	if !api.Cfg.Kafka.Schema.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
@@ -227,7 +261,7 @@ func (api *API) handleGetSchemaReferences() http.HandlerFunc {
 		}
 
 		// 3. Get all subjects' details
-		res, err := api.ConsoleSvc.GetSchemaRegistrySchemaReferences(r.Context(), subjectName, version)
+		res, err := api.ConsoleSvc.GetSchemaRegistrySchemaReferencedBy(r.Context(), subjectName, version)
 		if err != nil {
 			var schemaError *schema.RestError
 			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {

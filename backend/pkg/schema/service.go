@@ -385,3 +385,9 @@ func (s *Service) GetSchemaBySubjectAndVersion(ctx context.Context, subject stri
 func (s *Service) CreateSchema(ctx context.Context, subject string, schema Schema) (*CreateSchemaResponse, error) {
 	return s.registryClient.CreateSchema(ctx, subject, schema)
 }
+
+// GetSchemaUsagesByID returns all usages of a given schema ID. A single schema
+// can be reused in multiple subject versions.
+func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SubjectVersion, error) {
+	return s.registryClient.GetSchemaUsagesByID(ctx, schemaID)
+}

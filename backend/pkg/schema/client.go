@@ -697,6 +697,36 @@ func (c *Client) CheckCompatibility(ctx context.Context, subject string, version
 	return &checkCompatRes, nil
 }
 
+// SubjectVersion is a schema's subject name and version.
+type SubjectVersion struct {
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// GetSchemaUsagesByID returns all usages of a given schema ID. A single schema
+// can be reused in multiple subject versions.
+func (c *Client) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SubjectVersion, error) {
+	var subjectVersions []SubjectVersion
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&subjectVersions).
+		SetPathParam("id", strconv.Itoa(schemaID)).
+		Get("/schemas/ids/{id}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("get schema usages failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schema usages failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return subjectVersions, nil
+}
+
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects
 func (c *Client) CheckConnectivity(ctx context.Context) error {
 	url := "subjects"
