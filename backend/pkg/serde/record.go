@@ -107,6 +107,7 @@ type TroubleshootingReport struct {
 }
 
 type SerializeInput struct {
+	Topic string
 	Key   RecordPayloadInput
 	Value RecordPayloadInput
 }

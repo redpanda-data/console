@@ -173,6 +173,10 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	sr := SerializeOutput{}
 
 	// key
+	if input.Topic != "" {
+		input.Key.Options = append(input.Key.Options, WithTopic(input.Topic))
+	}
+
 	keyTS := make([]TroubleshootingReport, 0)
 	found := false
 	for _, serde := range s.SerDes {
@@ -188,10 +192,11 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 			} else {
 				keySerResult.Encoding = serde.Name()
 				keySerResult.Payload = bytes
-				keySerResult.Troubleshooting = keyTS
 			}
 		}
 	}
+
+	keySerResult.Troubleshooting = keyTS
 
 	sr.Key = &keySerResult
 
@@ -201,6 +206,11 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 
 	if err != nil {
 		return &sr, err
+	}
+
+	// value
+	if input.Topic != "" {
+		input.Value.Options = append(input.Value.Options, WithTopic(input.Topic))
 	}
 
 	valueTS := make([]TroubleshootingReport, 0)
@@ -218,10 +228,11 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 			} else {
 				valueSerResult.Encoding = serde.Name()
 				valueSerResult.Payload = bytes
-				valueSerResult.Troubleshooting = valueTS
 			}
 		}
 	}
+
+	valueSerResult.Troubleshooting = valueTS
 
 	sr.Value = &valueSerResult
 

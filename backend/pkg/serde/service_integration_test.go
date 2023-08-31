@@ -168,7 +168,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -315,7 +314,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
 		msg := shopv1.Order{
@@ -479,7 +477,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
 		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
@@ -604,6 +601,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(`444`, obj["id"])
 		assert.Equal(100.0, obj["orderValue"])
 		assert.Equal(1.0, obj["version"])
+
+		fmt.Println("!!!")
+		fmt.Println(string(dr.Value.NormalizedPayload))
 
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
@@ -773,7 +773,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -796,6 +795,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
@@ -965,7 +965,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1001,6 +1000,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:   []byte(msg.GetIdentity()),
@@ -1185,7 +1185,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1221,6 +1220,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(msg.GetGizmo())
+		require.NoError(err)
 
 		r := &kgo.Record{
 			// Key:   []byte("item_10"),
@@ -1401,7 +1401,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1489,6 +1488,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
@@ -1674,6 +1674,581 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 	ctx := context.Background()
 
+	t.Run("plain JSON", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_plain_json")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte("123"),
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingJSON,
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte("123"), serRes.Key.Payload)
+		assert.Equal([]byte(inputData), serRes.Value.Payload)
+	})
+
+	t.Run("plain protobuf", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+			{
+				TopicName:      testTopicName,
+				ValueProtoType: "shop.v1.Order",
+			},
+		}
+		cfg.Kafka.Protobuf.FileSystem.Enabled = true
+		cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+		cfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		inputData := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte("111"),
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
+		msg := shopv1.Order{
+			Id:        "111",
+			CreatedAt: timestamppb.New(orderCreatedAt),
+		}
+
+		expectData, err := proto.Marshal(&msg)
+		require.NoError(err)
+
+		assert.Equal([]byte("111"), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
+	t.Run("plain protobuf reference", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+			{
+				TopicName:      testTopicName,
+				ValueProtoType: "shop.v2.Order",
+			},
+		}
+		cfg.Kafka.Protobuf.FileSystem.Enabled = true
+		cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+		cfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte("444"),
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
+		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
+		orderDeliveredAt := time.Date(2023, time.July, 15, 12, 0, 0, 0, time.UTC)
+		orderCompletedAt := time.Date(2023, time.July, 15, 13, 0, 0, 0, time.UTC)
+
+		msg := shopv2.Order{
+			Version:       1,
+			Id:            "444",
+			CreatedAt:     timestamppb.New(orderCreatedAt),
+			LastUpdatedAt: timestamppb.New(orderUpdatedAt),
+			DeliveredAt:   timestamppb.New(orderDeliveredAt),
+			CompletedAt:   timestamppb.New(orderCompletedAt),
+			Customer: &shopv2.Customer{
+				Version:      1,
+				Id:           "customer_012345",
+				FirstName:    "Zig",
+				LastName:     "Zag",
+				CompanyName:  "Redpanda",
+				Email:        "zigzag_test@redpanda.com",
+				CustomerType: shopv2.Customer_CUSTOMER_TYPE_BUSINESS,
+			},
+			OrderValue: 100,
+			LineItems: []*shopv2.Order_LineItem{
+				{
+					ArticleId:    "art_0",
+					Name:         "line_0",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   20,
+				},
+				{
+					ArticleId:    "art_1",
+					Name:         "line_1",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    25,
+					TotalPrice:   50,
+				},
+				{
+					ArticleId:    "art_2",
+					Name:         "line_2",
+					Quantity:     3,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   30,
+				},
+			},
+			Payment: &shopv2.Order_Payment{
+				PaymentId: "pay_01234",
+				Method:    "card",
+			},
+			DeliveryAddress: &shopv2.Address{
+				Version: 1,
+				Id:      "addr_01234",
+				Customer: &shopv2.Address_Customer{
+					CustomerId:   "customer_012345",
+					CustomerType: "business",
+				},
+				FirstName: "Zig",
+				LastName:  "Zag",
+				State:     "CA",
+				City:      "SomeCity",
+				Zip:       "zzyzx",
+				Phone:     "123-456-78990",
+				CreatedAt: timestamppb.New(orderCreatedAt),
+				Revision:  1,
+			},
+			Revision: 1,
+		}
+
+		expectData, err := proto.Marshal(&msg)
+		require.NoError(err)
+
+		assert.Equal([]byte("444"), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
+	t.Run("schema registry protobuf", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv1.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv1.Order))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*shopv1.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2023, time.July, 11, 13, 0, 0, 0, time.UTC)
+		msg := shopv1.Order{
+			Id:        "222",
+			CreatedAt: timestamppb.New(orderCreatedAt),
+		}
+
+		expectData, err := serde.Encode(&msg)
+		require.NoError(err)
+
+		inputData := `{"id":"222","createdAt":"2023-07-11T13:00:00Z"}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte("222"),
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ss.ID)),
+					WithIndex(0),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte("222"), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
+	t.Run("schema registry protobuf multi", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_multi")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&indexv1.Gadget{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*indexv1.Gadget))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*indexv1.Gadget))
+			}),
+			sr.Index(2),
+		)
+
+		msg := indexv1.Gadget{
+			Identity: "gadget_0",
+			Gizmo: &indexv1.Gadget_Gizmo{
+				Size: 10,
+				Item: &indexv1.Item{
+					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
+					Name:     "item_0",
+				},
+			},
+			Widgets: []*indexv1.Widget{
+				{
+					Id: "wid_0",
+				},
+				{
+					Id: "wid_1",
+				},
+			},
+		}
+
+		expectData, err := serde.Encode(&msg)
+		require.NoError(err)
+
+		inputData := `{"identity":"gadget_0","gizmo":{"size":10,"item":{"name":"item_0","itemType":"ITEM_TYPE_PERSONAL"}},"widgets":[{"id":"wid_0"},{"id":"wid_1"}]}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte("gadget_0"),
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ss.ID)),
+					WithIndex(2),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte("gadget_0"), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
+	t.Run("schema registry protobuf nested", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&indexv1.Gadget_Gizmo{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*indexv1.Gadget_Gizmo))
+			}),
+			sr.Index(2, 0),
+		)
+
+		msg := indexv1.Gadget{
+			Identity: "gadget_0",
+			Gizmo: &indexv1.Gadget_Gizmo{
+				Size: 11,
+				Item: &indexv1.Item{
+					ItemType: indexv1.Item_ITEM_TYPE_PERSONAL,
+					Name:     "item_10",
+				},
+			},
+			Widgets: []*indexv1.Widget{
+				{
+					Id: "wid_10",
+				},
+				{
+					Id: "wid_11",
+				},
+			},
+		}
+
+		expectData, err := serde.Encode(msg.GetGizmo())
+		require.NoError(err)
+
+		inputData := `{"size":11,"item":{"name":"item_10","itemType":"ITEM_TYPE_PERSONAL"}}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  []byte{},
+				Encoding: PayloadEncodingNone,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ss.ID)),
+					WithIndex(2, 0),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte{}, serRes.Key.Payload)
+		assert.Equal(PayloadEncodingNone, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
 	t.Run("json with schema and index", func(t *testing.T) {
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_index")
@@ -1720,7 +2295,6 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1756,10 +2330,12 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		}
 
 		expectedData, err := serde.Encode(msg.GetGizmo())
+		require.NoError(err)
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
 		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("gadget_0"),
 				Encoding: PayloadEncodingText,
@@ -1947,9 +2523,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NoError(err)
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-		require.NoError(err)
 
 		out, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  "11",
 				Encoding: PayloadEncodingText,
