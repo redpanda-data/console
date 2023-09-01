@@ -149,7 +149,88 @@ func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadGateway,
-				Message:  fmt.Sprintf("Failed to retrieve schema registry types from the schema registry: %v", err.Error()),
+				Message:  fmt.Sprintf("Failed to set global compatibility level: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	type request struct {
+		Compatibility schema.CompatibilityLevel `json:"compatibility"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		req := request{}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 2. Set subject compatibility level
+		res, err := api.ConsoleSvc.PutSchemaRegistrySubjectConfig(r.Context(), subjectName, req.Compatibility)
+		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to set subject's compatibility level: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
+	if !api.Cfg.Kafka.Schema.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse request parameters
+		subjectName := rest.GetURLParam(r, "subject")
+
+		// 2. Set subject compatibility level
+		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectConfig(r.Context(), subjectName)
+		if err != nil {
+			var schemaError *schema.RestError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to delete subject's compatibility level: %v", err.Error()),
 				IsSilent: false,
 			})
 			return

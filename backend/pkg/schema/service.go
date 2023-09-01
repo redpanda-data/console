@@ -237,6 +237,16 @@ func (s *Service) GetSubjectConfig(ctx context.Context, subject string) (*Config
 	return s.registryClient.GetSubjectConfig(ctx, subject)
 }
 
+// PutSubjectConfig puts compatibility level for a given subject.
+func (s *Service) PutSubjectConfig(ctx context.Context, subject string, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	return s.registryClient.PutSubjectConfig(ctx, subject, compatLevel)
+}
+
+// DeleteSubjectConfig puts compatibility level for a given subject.
+func (s *Service) DeleteSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
+	return s.registryClient.DeleteSubjectConfig(ctx, subject)
+}
+
 // DeleteSubject deletes a schema registry subject.
 func (s *Service) DeleteSubject(ctx context.Context, subject string, deletePermanently bool) (*DeleteSubjectResponse, error) {
 	return s.registryClient.DeleteSubject(ctx, subject, deletePermanently)

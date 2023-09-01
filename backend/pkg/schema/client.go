@@ -420,6 +420,72 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 	return parsed, nil
 }
 
+// PutSubjectConfig sets compatibility level for a given subject.
+// If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
+// error code.
+func (c *Client) PutSubjectConfig(ctx context.Context, subject string, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	type requestPayload struct {
+		Compatibility CompatibilityLevel `json:"compatibility"`
+	}
+	payload := requestPayload{Compatibility: compatLevel}
+
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&PutConfigResponse{}).
+		SetBody(&payload).
+		SetPathParam("subject", subject).
+		Put("/config/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("put config for subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("put config for subject failed: Status code %d", res.StatusCode())
+		}
+
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*PutConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
+// DeleteSubjectConfig deletes compatibility level for a given subject.
+// If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
+// error code.
+func (c *Client) DeleteSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&ConfigResponse{}).
+		SetPathParam("subject", subject).
+		Delete("/config/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("delete config for subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("delete config for subject failed: Status code %d", res.StatusCode())
+		}
+
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*ConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
 // DeleteSubjectResponse describes the response to deleting a whole subject.
 type DeleteSubjectResponse struct {
 	Versions []int
