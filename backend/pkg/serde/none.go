@@ -42,6 +42,10 @@ func (NoneSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 
 	// TODO should we handle empty JSON for none?
 
+	if obj == nil {
+		return emptyData, nil
+	}
+
 	switch v := obj.(type) {
 	case string:
 		if len(v) != 0 && v != "{}" {

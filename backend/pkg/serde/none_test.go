@@ -156,6 +156,15 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 				assert.Equal(t, "unsupported type int for serialization", err.Error())
 			},
 		},
+		{
+			name:        "nil",
+			input:       nil,
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, res []byte, err error) {
+				require.NoError(t, err)
+				assert.Empty(t, res)
+			},
+		},
 	}
 
 	for _, test := range tests {

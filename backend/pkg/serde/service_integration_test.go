@@ -602,9 +602,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(100.0, obj["orderValue"])
 		assert.Equal(1.0, obj["version"])
 
-		fmt.Println("!!!")
-		fmt.Println(string(dr.Value.NormalizedPayload))
-
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
 		require.NoError(err)
@@ -2245,6 +2242,205 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte{}, serRes.Key.Payload)
 		assert.Equal(PayloadEncodingNone, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+	})
+
+	t.Run("schema registry protobuf references", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		// address
+		addressProto := "shop/v2/address.proto"
+		protoFile, err := os.ReadFile("testdata/proto/" + addressProto)
+		require.NoError(err)
+
+		ssAddress, err := rcl.CreateSchema(context.Background(), addressProto, sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ssAddress)
+
+		// customer
+		customerProto := "shop/v2/customer.proto"
+		protoFile, err = os.ReadFile("testdata/proto/" + customerProto)
+		require.NoError(err)
+
+		ssCustomer, err := rcl.CreateSchema(context.Background(), customerProto, sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ssCustomer)
+
+		// order
+		protoFile, err = os.ReadFile("testdata/proto/shop/v2/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+			References: []sr.SchemaReference{
+				{
+					Name:    addressProto,
+					Subject: ssAddress.Subject,
+					Version: ssAddress.Version,
+				},
+				{
+					Name:    customerProto,
+					Subject: ssCustomer.Subject,
+					Version: ssCustomer.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv2.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv2.Order))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*shopv2.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2023, time.July, 12, 13, 0, 0, 0, time.UTC)
+		orderUpdatedAt := time.Date(2023, time.July, 12, 14, 0, 0, 0, time.UTC)
+		orderDeliveredAt := time.Date(2023, time.July, 12, 15, 0, 0, 0, time.UTC)
+		orderCompletedAt := time.Date(2023, time.July, 12, 16, 0, 0, 0, time.UTC)
+
+		msg := shopv2.Order{
+			Version:       1,
+			Id:            "123456789",
+			CreatedAt:     timestamppb.New(orderCreatedAt),
+			LastUpdatedAt: timestamppb.New(orderUpdatedAt),
+			DeliveredAt:   timestamppb.New(orderDeliveredAt),
+			CompletedAt:   timestamppb.New(orderCompletedAt),
+			Customer: &shopv2.Customer{
+				Version:      1,
+				Id:           "customer_0123",
+				FirstName:    "Foo",
+				LastName:     "Bar",
+				CompanyName:  "Redpanda",
+				Email:        "foobar_test@redpanda.com",
+				CustomerType: shopv2.Customer_CUSTOMER_TYPE_BUSINESS,
+			},
+			OrderValue: 100,
+			LineItems: []*shopv2.Order_LineItem{
+				{
+					ArticleId:    "art0",
+					Name:         "line0",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   20,
+				},
+				{
+					ArticleId:    "art1",
+					Name:         "line1",
+					Quantity:     2,
+					QuantityUnit: "usd",
+					UnitPrice:    25,
+					TotalPrice:   50,
+				},
+				{
+					ArticleId:    "art2",
+					Name:         "line2",
+					Quantity:     3,
+					QuantityUnit: "usd",
+					UnitPrice:    10,
+					TotalPrice:   30,
+				},
+			},
+			Payment: &shopv2.Order_Payment{
+				PaymentId: "pay_0123",
+				Method:    "card",
+			},
+			DeliveryAddress: &shopv2.Address{
+				Version: 1,
+				Id:      "addr_0123",
+				Customer: &shopv2.Address_Customer{
+					CustomerId:   "customer_0123",
+					CustomerType: "business",
+				},
+				FirstName: "Foo",
+				LastName:  "Bar",
+				State:     "CA",
+				City:      "SomeCity",
+				Zip:       "xyzyz",
+				Phone:     "123-456-78990",
+				CreatedAt: timestamppb.New(orderCreatedAt),
+				Revision:  1,
+			},
+			Revision: 1,
+		}
+
+		expectData, err := serde.Encode(&msg)
+		require.NoError(err)
+
+		inputData := `{"version":1,"id":"123456789","createdAt":"2023-07-12T13:00:00Z","lastUpdatedAt":"2023-07-12T14:00:00Z","deliveredAt":"2023-07-12T15:00:00Z","completedAt":"2023-07-12T16:00:00Z","customer":{"version":1,"id":"customer_0123","firstName":"Foo","lastName":"Bar","gender":"","companyName":"Redpanda","email":"foobar_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art0","name":"line0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art1","name":"line1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art2","name":"line2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_0123","method":"card"},"deliveryAddress":{"version":1,"id":"addr_0123","customer":{"customerId":"customer_0123","customerType":"business"},"type":"","firstName":"Foo","lastName":"Bar","state":"CA","houseNumber":"","city":"SomeCity","zip":"xyzyz","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-12T13:00:00Z","revision":1},"revision":1}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  map[string]interface{}{"id": "123456789"},
+				Encoding: PayloadEncodingJSON,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingProtobuf,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ss.ID)),
+					WithIndex(0),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		assert.Equal([]byte(`{"id":"123456789"}`), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingJSON, serRes.Key.Encoding)
 		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
 	})
