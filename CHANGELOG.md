@@ -1,6 +1,15 @@
 # Changelog
 
-## v2.3.0 / To be released
+## v2.3.2 / 2023-09-05
+
+- [BUGFIX] Fix base64 decoding of 'utf8WithControlChars' in frontend
+- [ENHANCEMENT] Update Avro dependency
+
+## v2.3.1 / 2023-08-01
+
+- [BUGFIX] Fix Avro deserialization
+
+## v2.3.0 / 2023-07-21
 
 - [FEATURE] New Kafka connect setup & edit experience
 - [ENHANCEMENT] Support for serving Console on HTTPS / TLS Termination
