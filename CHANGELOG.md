@@ -1,6 +1,9 @@
 # Changelog
 
-## Master / to be released
+## v2.3.2 / 2023-09-05
+
+- [BUGFIX] Fix base64 decoding of 'utf8WithControlChars' in frontend
+- [ENHANCEMENT] Update Avro dependency
 
 ## v2.3.1 / 2023-08-01
 
