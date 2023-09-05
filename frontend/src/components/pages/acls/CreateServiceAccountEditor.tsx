@@ -1,6 +1,6 @@
 import { ReloadOutlined } from '@ant-design/icons';
 import { Select } from 'antd';
-import { Button, Input, Flex } from '@redpanda-data/ui';
+import { Button, Input, Flex, Checkbox } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { CreateUserRequest } from '../../../state/restInterfaces';
@@ -10,6 +10,7 @@ import { Tooltip } from '@redpanda-data/ui';
 export const CreateServiceAccountEditor = observer((p: { state: CreateUserRequest }) => {
     const state = p.state;
     const [showPw, setShowPw] = useState(false);
+    const [allowSpecialChars, setAllowSpecialChars] = useState(false);
     const toggleShowPw = () => setShowPw(!showPw);
 
     return (
@@ -52,18 +53,21 @@ export const CreateServiceAccountEditor = observer((p: { state: CreateUserReques
                         </LabelTooltip>
                     }
                 >
-                    <Flex alignItems="center" gap="2">
-                        <Input type={showPw ? 'text' : 'password'} value={state.password} onChange={e => (state.password = e.target.value)} spellCheck={false} {...{ autocomplete: 'off' }} style={{ width: 'calc(100% - 45px)' }} />
+                    <Flex direction="column" gap="2">
+                        <Flex alignItems="center" gap="2">
+                            <Input type={showPw ? 'text' : 'password'} value={state.password} onChange={e => (state.password = e.target.value)} spellCheck={false} {...{ autocomplete: 'off' }} style={{ width: 'calc(100% - 45px)' }} />
 
-                        <Button h="2rem" w="5rem" onClick={toggleShowPw}>
-                            {showPw ? 'Hide' : 'Show'}
-                        </Button>
-
-                        <Tooltip label={'Generate new random password'} placement="top" hasArrow>
-                            <Button onClick={() => (state.password = generatePassword(30))} variant="ghost" width="35px" display="inline-flex">
-                                <ReloadOutlined />
+                            <Button h="2rem" w="5rem" onClick={toggleShowPw}>
+                                {showPw ? 'Hide' : 'Show'}
                             </Button>
-                        </Tooltip>
+
+                            <Tooltip label={'Generate new random password'} placement="top" hasArrow>
+                                <Button onClick={() => state.password = generatePassword(30, allowSpecialChars)} variant="ghost" width="35px" display="inline-flex">
+                                    <ReloadOutlined />
+                                </Button>
+                            </Tooltip>
+                        </Flex>
+                        <Checkbox isChecked={allowSpecialChars} onChange={(e) => {setAllowSpecialChars(e.target.checked); state.password = generatePassword(30, e.target.checked)}}>Generate with special characters</Checkbox>
                     </Flex>
                 </Label>
 
@@ -91,7 +95,7 @@ export const CreateServiceAccountEditor = observer((p: { state: CreateUserReques
     );
 });
 
-export function generatePassword(length: number): string {
+export function generatePassword(length: number, allowSpecialChars: boolean): string {
     if (length <= 0) return '';
 
     const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -99,7 +103,10 @@ export function generatePassword(length: number): string {
     const numbers = '0123456789';
     const special = '.,&_+|[]/-()';
 
-    const alphabet = lowercase + uppercase + numbers + special;
+    let alphabet = lowercase + uppercase + numbers;
+    if (allowSpecialChars) {
+        alphabet += special;
+    }
 
     const randomValues = new Uint32Array(length);
     crypto.getRandomValues(randomValues);
