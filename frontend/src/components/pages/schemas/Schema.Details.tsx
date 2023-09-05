@@ -65,7 +65,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         const subjectNameRaw = decodeURIComponent(this.props.subjectName);
         this.subjectNameRaw = subjectNameRaw;
 
-        const version = getVersionFromQuery();
+        const version = getVersionFromQuery() ?? 'latest';
         editQuery(x => {
             x.version = String(version);
         });
@@ -146,7 +146,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     }
 }
 
-function getVersionFromQuery(): 'latest' | number {
+function getVersionFromQuery(): 'latest' | number | undefined {
     const query = new URLSearchParams(window.location.search);
     if (query.has('version')) {
         const versionStr = query.get('version');
@@ -161,7 +161,7 @@ function getVersionFromQuery(): 'latest' | number {
         console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
     }
 
-    return 'latest';
+    return undefined;
 }
 
 function schemaTypeToCodeBlockLanguage(type: string) {
@@ -191,7 +191,8 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
     const subject = p.subject;
 
-    const defaultVersion = subject.versions[subject.versions.length - 1].version;
+    const defaultVersion = getVersionFromQuery()
+        ?? subject.versions[subject.versions.length - 1].version;
     const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
     const schema = subject.schemas.first(x => x.version == selectedVersion)!;
