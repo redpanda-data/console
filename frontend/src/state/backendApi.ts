@@ -520,8 +520,12 @@ const apiStore = {
                     m.key.encoding = 'text'
                     m.key.isPayloadNull = key?.payloadSize == 0
                     m.key.payload = key?.originalPayload
-                    m.keyJson = JSON.stringify(keyPayload);
-                    m.key.payload = JSON.parse(m.keyJson)
+                    try {
+                        m.keyJson = JSON.stringify(keyPayload);
+                        m.key.payload = JSON.parse(m.keyJson)
+                    } catch (e) {
+                        console.log(e)
+                    }
                     if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
                         m.keyBinHexPreview = base64ToHexString(keyPayload);
                         m.key.payload = decodeBase64(keyPayload);
@@ -552,8 +556,13 @@ const apiStore = {
                         
                     m.value.isPayloadNull = val?.payloadSize == 0
                     m.valueJson = valuePayload;
-                    m.value.payload = JSON.parse(valuePayload)
-
+                    m.value.payload = val?.originalPayload
+                    try {
+                        m.valueJson = JSON.stringify(valuePayload);
+                        m.value.payload = JSON.parse(m.valueJson)
+                    } catch (e) {
+                        console.log(e)
+                    }
                     if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
                         m.valueBinHexPreview = base64ToHexString(valuePayload);
                         m.value.payload = decodeBase64(valuePayload);
