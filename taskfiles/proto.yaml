@@ -49,12 +49,13 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.25.0
-      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
+      BUF_VERSION: 1.26.1
+      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-{{ARCH}}
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
-      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 {{.BUF_URL}} -o '{{.BUILD_ROOT}}/bin/buf'
+      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-arm64 -o '{{.BUILD_ROOT}}/bin/buf'
+      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-x86_64 -o '{{.BUILD_ROOT}}/bin/buf'
       - chmod +x '{{.BUILD_ROOT}}/bin/buf'
     status:
       - test -f '{{.BUILD_ROOT}}/bin/buf'
-      - '[[ $({{ .BUILD_ROOT }}/bin/buf --version) == {{.BUF_VERSION}} ]]'
+      - "[[ $({{ .BUILD_ROOT }}/bin/buf --version) == '{{.BUF_VERSION}}' ]]"
