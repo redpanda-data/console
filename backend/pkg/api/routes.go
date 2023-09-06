@@ -201,6 +201,7 @@ func (api *API) routes() *chi.Mux {
 	// Connect reflection
 	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
 	baseRouter.Mount(grpcreflect.NewHandlerV1(reflector))
+	baseRouter.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
 
 	return baseRouter
 }
