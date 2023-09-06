@@ -861,7 +861,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
-		assert.Empty(dr.Value.SchemaID)
+		assert.Equal(uint32(ss.ID), *dr.Value.SchemaID)
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
@@ -1081,7 +1081,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
-		assert.Empty(dr.Value.SchemaID)
+		assert.Equal(uint32(ss.ID), *dr.Value.SchemaID)
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
@@ -1288,7 +1288,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
-		assert.Empty(dr.Value.SchemaID)
+		assert.Equal(uint32(ss.ID), *dr.Value.SchemaID)
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
@@ -1607,7 +1607,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Empty(dr.Value.OriginalPayload)
 		assert.Equal(len(msgData), dr.Value.PayloadSizeBytes)
-		assert.Empty(dr.Value.SchemaID)
+		assert.Equal(uint32(ss.ID), *dr.Value.SchemaID)
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)

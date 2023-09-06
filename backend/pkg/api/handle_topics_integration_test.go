@@ -323,8 +323,14 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				return nil, nil, false
 			case *kmsg.DescribeConfigsRequest:
 
-				slices.SortFunc(v.Resources, func(a, b kmsg.DescribeConfigsRequestResource) bool {
-					return a.ResourceName < b.ResourceName
+				slices.SortFunc(v.Resources, func(a, b kmsg.DescribeConfigsRequestResource) int {
+					if a.ResourceName < b.ResourceName {
+						return -1
+					} else if a.ResourceName > b.ResourceName {
+						return 1
+					} else {
+						return 0
+					}
 				})
 
 				require.Len(v.Resources, 3)

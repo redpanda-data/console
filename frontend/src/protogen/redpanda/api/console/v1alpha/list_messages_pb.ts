@@ -607,11 +607,11 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   originalPayload = new Uint8Array(0);
 
   /**
-   * Payload size in bytes.
+   * Normilized user friendly representation of the payload.
    *
-   * @generated from field: int32 payload_size = 2;
+   * @generated from field: bytes normalized_payload = 2;
    */
-  payloadSize = 0;
+  normalizedPayload = new Uint8Array(0);
 
   /**
    * Payload encoding if we have been able to detect.
@@ -621,23 +621,30 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   encoding = PayloadEncoding.UNSPECIFIED;
 
   /**
-   * Normilized user friendly representation of the payload.
+   * Optionally, the schema ID used to deserialized the message.
    *
-   * @generated from field: bytes normalized_payload = 4;
+   * @generated from field: int32 schema_id = 4;
    */
-  normalizedPayload = new Uint8Array(0);
+  schemaId = 0;
+
+  /**
+   * Payload size in bytes.
+   *
+   * @generated from field: int32 payload_size = 5;
+   */
+  payloadSize = 0;
 
   /**
    * If payload is too large for deserialization.
    *
-   * @generated from field: bool is_payload_too_large = 5;
+   * @generated from field: bool is_payload_too_large = 6;
    */
   isPayloadTooLarge = false;
 
   /**
    * Troubleshooting data for debugging.
    *
-   * @generated from field: repeated redpanda.api.console.v1alpha.TroubleshootReport troubleshoot_report = 6;
+   * @generated from field: repeated redpanda.api.console.v1alpha.TroubleshootReport troubleshoot_report = 7;
    */
   troubleshootReport: TroubleshootReport[] = [];
 
@@ -650,11 +657,12 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   static readonly typeName = "redpanda.api.console.v1alpha.KafkaRecordPayload";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "original_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 2, name: "payload_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 3, name: "encoding", kind: "enum", T: proto3.getEnumType(PayloadEncoding) },
-    { no: 4, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 5, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "troubleshoot_report", kind: "message", T: TroubleshootReport, repeated: true },
+    { no: 4, name: "schema_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "payload_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "troubleshoot_report", kind: "message", T: TroubleshootReport, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): KafkaRecordPayload {

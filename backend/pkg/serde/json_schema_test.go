@@ -65,7 +65,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
-				assert.Nil(t, payload.SchemaID)
+				assert.Equal(t, uint32(1000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 
 				assert.Equal(t, `{"foo":"bar"}`, string(payload.NormalizedPayload))
@@ -84,7 +84,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
-				assert.Nil(t, payload.SchemaID)
+				assert.Equal(t, uint32(1000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 			},
 		},

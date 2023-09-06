@@ -74,6 +74,7 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 		NormalizedPayload:   jsonBytes,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingAvro,
+		SchemaID:            &schemaID,
 	}, nil
 }
 

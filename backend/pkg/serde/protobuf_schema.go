@@ -92,10 +92,13 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
+	sID := uint32(schemaID)
+
 	return &RecordPayload{
 		DeserializedPayload: native,
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,
+		SchemaID:            &sID,
 	}, nil
 }
 

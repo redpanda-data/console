@@ -109,11 +109,15 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 		}
 	}
 
+	addTS := opts.Troubleshoot
 	if rp == nil {
 		// Anything else is considered binary
 		rp = &RecordPayload{
 			Encoding: PayloadEncodingBinary,
 		}
+
+		// if we failed to find a successful serde always add troubleshooting info
+		addTS = true
 	}
 
 	rp.PayloadSizeBytes = len(payload)
@@ -128,7 +132,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 		rp.NormalizedPayload = nil
 	}
 
-	if opts.Troubleshoot {
+	if addTS {
 		rp.Troubleshooting = troubleshooting
 	}
 

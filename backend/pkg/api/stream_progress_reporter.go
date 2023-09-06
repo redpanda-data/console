@@ -137,6 +137,14 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 		},
 	}
 
+	if message.Key.SchemaID != nil {
+		data.Key.SchemaId = int32(*message.Key.SchemaID)
+	}
+
+	if message.Value.SchemaID != nil {
+		data.Value.SchemaId = int32(*message.Value.SchemaID)
+	}
+
 	data.Key.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Key.Troubleshooting))
 	for _, ts := range message.Key.Troubleshooting {
 		ts := ts

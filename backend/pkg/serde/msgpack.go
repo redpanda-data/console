@@ -123,6 +123,7 @@ func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...
 		binData = b
 	}
 
+	// TODO does it even make sense to have schema ID for msgpack?
 	if so.schemaIDSet {
 		var index []int = nil
 		if so.indexSet {

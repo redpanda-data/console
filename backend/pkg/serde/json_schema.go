@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,10 +45,17 @@ func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for json schema")
 	}
 
+	schemaID := binary.BigEndian.Uint32(payload[1:5])
+
 	// TODO: For more confidence we could just ask the schema service for the given
 	// schema and based on the response we can check the schema type (avro, json, ..)
 
-	return jsonDeserializePayload(payload[5:])
+	r, err := jsonDeserializePayload(payload[5:])
+	if r != nil {
+		r.SchemaID = &schemaID
+	}
+
+	return r, err
 }
 
 func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {

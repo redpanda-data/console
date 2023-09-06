@@ -192,7 +192,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
-				assert.Nil(t, payload.SchemaID)
+				assert.Equal(t, uint32(1000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
 				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
