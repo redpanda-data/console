@@ -1,0 +1,61 @@
+version: 3
+tasks:
+  lint:
+    deps:
+      - install-buf
+    desc: lint proto files
+    cmds:
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format {{.ROOT_DIR}}/proto -w
+
+  format:
+    deps:
+      - install-buf
+    desc: format proto files
+    cmds:
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w --exit-code
+
+  mod-update:
+    deps:
+      - install-buf
+    desc: update mod
+    cmds:
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf mod update {{.ROOT_DIR}}/proto
+
+  generate:
+    desc: generate protos
+    deps:
+      - install-buf
+    cmds:
+      # Delete previously generated files
+      - rm -rf {{.BACKEND_ROOT}}/internal/protogen
+      - rm -rf {{.FRONTEND_ROOT}}/src/protogen
+      # APIs defined in proto folder
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf generate
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w
+      # APIs in different packages for test data, etc...
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf format -w {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf lint --config {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        {{ .BUILD_ROOT }}/bin/buf generate --template {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.gen.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+      # In CI ensure no changes
+      - if [[ $CI == "true" ]]; then git diff --exit-code; fi
+
+  install-buf:
+    desc: install buf
+    vars:
+      BUF_VERSION: 1.25.0
+      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
+    cmds:
+      - mkdir -p {{.BUILD_ROOT}}/bin
+      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 {{.BUF_URL}} -o '{{.BUILD_ROOT}}/bin/buf'
+      - chmod +x '{{.BUILD_ROOT}}/bin/buf'
+    status:
+      - test -f '{{.BUILD_ROOT}}/bin/buf'
+      - '[[ $({{ .BUILD_ROOT }}/bin/buf --version) == {{.BUF_VERSION}} ]]'

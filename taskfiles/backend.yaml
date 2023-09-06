@@ -116,17 +116,7 @@ tasks:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         GOBIN={{ .BUILD_ROOT }}/bin/go go generate ./...
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf format -w pkg/kafka/testdata/proto
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf lint pkg/kafka/testdata/proto
-        {{ .BUILD_ROOT }}/bin/buf lint pkg/kafka/testdata/proto_update
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf generate --template=pkg/kafka/testdata/proto/buf.gen.yaml pkg/kafka/testdata/proto
-        {{ .BUILD_ROOT }}/bin/buf generate --template=pkg/kafka/testdata/proto_update/buf.gen.yaml pkg/kafka/testdata/proto_update
+      - task: ':proto:generate'
       - task: 'fmt'
 
   test-unit:
