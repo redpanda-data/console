@@ -206,7 +206,8 @@ func (api *API) routes() *chi.Mux {
 	return baseRouter
 }
 
-func NewRequestValidationInterceptor(logger *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
+// NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
+func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
 	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
 		return connect_go.UnaryFunc(func(
 			ctx context.Context,
