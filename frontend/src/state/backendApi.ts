@@ -410,6 +410,10 @@ const apiStore = {
     },
 
     async startMessageSearchNew(_searchRequest: MessageSearchRequest): Promise<void> {
+        // https://connectrpc.com/docs/web/using-clients
+        // https://github.com/connectrpc/connect-es
+        // https://github.com/connectrpc/examples-es
+
         const searchRequest = {
             ..._searchRequest, ...(appConfig.jwt ? {
                 enterprise: {
@@ -443,184 +447,182 @@ const apiStore = {
 
         console.log('calling list messages')
 
-        for await (const res of await client.listMessages(req)) {
-            switch (res.controlMessage.case) {
-                case 'phase':
-                    this.messageSearchPhase = res.controlMessage.value.phase;
-                    break;
-                case 'progress':
-                    this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                    this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
-                    break;
-                case 'done':
-                    this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
-                    this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                    // this.MessageSearchCancelled = msg.isCancelled;
-                    this.messageSearchPhase = 'Done';
-                    this.messageSearchPhase = null;
-                    break;
-                case 'error':
-                    // error doesn't necessarily mean the whole request is done
-                    console.info('backend error: ' + res.controlMessage.value.message);
-                    const notificationKey = `errorNotification-${Date.now()}`;
-                    notification['error']({
-                        key: notificationKey,
-                        message: 'Backend Error',
-                        description: res.controlMessage.value.message,
-                        duration: 5,
-                    });
-                    break;
-                case 'data':
-                    // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
-                    // this is my hacky way of attempting to get things working by converting the Connect types
-                    // to the rest interface types that are hooked up to other things
+        try {
+            for await (const res of await client.listMessages(req)) {
+                switch (res.controlMessage.case) {
+                    case 'phase':
+                        this.messageSearchPhase = res.controlMessage.value.phase;
+                        break;
+                    case 'progress':
+                        this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                        this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
+                        break;
+                    case 'done':
+                        this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
+                        this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                        // this.MessageSearchCancelled = msg.isCancelled;
+                        this.messageSearchPhase = 'Done';
+                        this.messageSearchPhase = null;
+                        break;
+                    case 'error':
+                        // error doesn't necessarily mean the whole request is done
+                        console.info('backend error: ' + res.controlMessage.value.message);
+                        const notificationKey = `errorNotification-${Date.now()}`;
+                        notification['error']({
+                            key: notificationKey,
+                            message: 'Backend Error',
+                            description: res.controlMessage.value.message,
+                            duration: 5,
+                        });
+                        break;
+                    case 'data':
+                        // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
+                        // this is my hacky way of attempting to get things working by converting the Connect types
+                        // to the rest interface types that are hooked up to other things
 
-                    const m = {} as TopicMessage;
-                    m.partitionID = res.controlMessage.value.partitionId
-                    
-                    m.compression = CompressionType.Unknown
-                    switch (res.controlMessage.value.compression) {
-                        case ProtoCompressionType.UNCOMPRESSED:
-                            m.compression = CompressionType.Uncompressed;
-                            break;
-                        case ProtoCompressionType.GZIP:
-                            m.compression = CompressionType.GZip;
-                            break;
-                        case ProtoCompressionType.SNAPPY:
-                            m.compression = CompressionType.Snappy;
-                            break;
-                        case ProtoCompressionType.LZ4:
-                            m.compression = CompressionType.LZ4;
-                            break;
-                        case ProtoCompressionType.ZSTD:
-                            m.compression = CompressionType.ZStd;
-                            break;
-                    }
-                    
-                    m.offset = Number(res.controlMessage.value.offset)
-                    m.timestamp = Number(res.controlMessage.value.timestamp)
-                    m.isTransactional = res.controlMessage.value.isTransactional
-                    m.headers = [];
-                    res.controlMessage.value.headers.forEach(h => {
-                        m.headers.push( { 
-                            key: h.key, 
-                            value: { 
-                                payload: JSON.stringify(new TextDecoder().decode(h.value)), 
-                                encoding: 'text', 
-                                schemaId:0, size: 
-                                h.value.length, 
-                                isPayloadNull: h.value == null 
-                            }
-                        })
-                    })
-
-                    // key
-                    const key = res.controlMessage.value.key;
-                    const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
-
-                    console.log('key:')
-                    console.log(key)
-                    console.log('keyPayload:')
-                    console.log(keyPayload)
-
-                    m.key = {} as Payload
-                    switch (key?.encoding) {
-                        case PayloadEncoding.AVRO:
-                            m.key.encoding = 'avro'
-                            break;
-                        case PayloadEncoding.JSON:
-                            m.key.encoding = 'json'
-                            break;
-                        case PayloadEncoding.PROTOBUF:
-                            m.key.encoding = 'protobuf'
-                            break;
-                        case PayloadEncoding.TEXT:
-                            m.key.encoding = 'text'
-                            break;
-                        case PayloadEncoding.UTF8:
-                            m.key.encoding = 'utf8WithControlChars'
-                            break;
-                    } 
-
-                    m.key.isPayloadNull = key?.payloadSize == 0
-                    m.key.payload = keyPayload
-
-                    try {
-                        m.key.payload = JSON.parse(keyPayload)
-                    } catch (e) {
-                        console.log(e)
-                    }
-
-                    if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
-                        m.keyBinHexPreview = base64ToHexString(m.key.payload);
-                        m.key.payload = decodeBase64(m.key.payload);
-                    }
-
-                    m.keyJson = JSON.stringify(m.key.payload);
-
-                    // value
-                    const val = res.controlMessage.value.value;
-                    const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
-
-                    console.log('val:')
-                    console.log(val)
-                    console.log('valuePayload:')
-                    console.log(valuePayload)
-
-                    m.value = {} as Payload
-                    switch (val?.encoding) {
-                        case PayloadEncoding.AVRO:
-                            m.value.encoding = 'avro'
-                            break;
-                        case PayloadEncoding.JSON:
-                            m.value.encoding = 'json'
-                            break;
-                        case PayloadEncoding.PROTOBUF:
-                            m.value.encoding = 'protobuf'
-                            break;
-                        case PayloadEncoding.TEXT:
-                            m.value.encoding = 'text'
-                            break;
-                        case PayloadEncoding.UTF8:
-                            m.value.encoding = 'utf8WithControlChars'
-                            break;
-                    } 
+                        const m = {} as TopicMessage;
+                        m.partitionID = res.controlMessage.value.partitionId
                         
-                    m.value.isPayloadNull = val?.payloadSize == 0
-                    m.valueJson = valuePayload;
-                    
-                    try {
-                        m.value.payload = JSON.parse(valuePayload)
-                    } catch (e) {
-                        console.log(e)
-                    }
+                        m.compression = CompressionType.Unknown
+                        switch (res.controlMessage.value.compression) {
+                            case ProtoCompressionType.UNCOMPRESSED:
+                                m.compression = CompressionType.Uncompressed;
+                                break;
+                            case ProtoCompressionType.GZIP:
+                                m.compression = CompressionType.GZip;
+                                break;
+                            case ProtoCompressionType.SNAPPY:
+                                m.compression = CompressionType.Snappy;
+                                break;
+                            case ProtoCompressionType.LZ4:
+                                m.compression = CompressionType.LZ4;
+                                break;
+                            case ProtoCompressionType.ZSTD:
+                                m.compression = CompressionType.ZStd;
+                                break;
+                        }
+                        
+                        m.offset = Number(res.controlMessage.value.offset)
+                        m.timestamp = Number(res.controlMessage.value.timestamp)
+                        m.isTransactional = res.controlMessage.value.isTransactional
+                        m.headers = [];
+                        res.controlMessage.value.headers.forEach(h => {
+                            m.headers.push( { 
+                                key: h.key, 
+                                value: { 
+                                    payload: JSON.stringify(new TextDecoder().decode(h.value)), 
+                                    encoding: 'text', 
+                                    schemaId:0, size: 
+                                    h.value.length, 
+                                    isPayloadNull: h.value == null 
+                                }
+                            })
+                        })
 
-                    if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
-                        m.valueBinHexPreview = base64ToHexString(m.value.payload);
-                        m.value.payload = decodeBase64(m.value.payload);
-                    }
-               
-                    m.valueJson = JSON.stringify(m.value.payload);
+                        // key
+                        const key = res.controlMessage.value.key;
+                        const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
-                    console.log(m)
+                        console.log('key:')
+                        console.log(key)
+                        console.log('keyPayload:')
+                        console.log(keyPayload)
 
-                    this.messages.push(m);
-                    break;
+                        m.key = {} as Payload
+                        switch (key?.encoding) {
+                            case PayloadEncoding.AVRO:
+                                m.key.encoding = 'avro'
+                                break;
+                            case PayloadEncoding.JSON:
+                                m.key.encoding = 'json'
+                                break;
+                            case PayloadEncoding.PROTOBUF:
+                                m.key.encoding = 'protobuf'
+                                break;
+                            case PayloadEncoding.TEXT:
+                                m.key.encoding = 'text'
+                                break;
+                            case PayloadEncoding.UTF8:
+                                m.key.encoding = 'utf8WithControlChars'
+                                break;
+                        } 
+
+                        m.key.isPayloadNull = key?.payloadSize == 0
+                        m.key.payload = keyPayload
+
+                        try {
+                            m.key.payload = JSON.parse(keyPayload)
+                        } catch (e) {
+                            console.log(e)
+                        }
+
+                        if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
+                            m.keyBinHexPreview = base64ToHexString(m.key.payload);
+                            m.key.payload = decodeBase64(m.key.payload);
+                        }
+
+                        m.keyJson = JSON.stringify(m.key.payload);
+
+                        // value
+                        const val = res.controlMessage.value.value;
+                        const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+
+                        console.log('val:')
+                        console.log(val)
+                        console.log('valuePayload:')
+                        console.log(valuePayload)
+
+                        m.value = {} as Payload
+                        switch (val?.encoding) {
+                            case PayloadEncoding.AVRO:
+                                m.value.encoding = 'avro'
+                                break;
+                            case PayloadEncoding.JSON:
+                                m.value.encoding = 'json'
+                                break;
+                            case PayloadEncoding.PROTOBUF:
+                                m.value.encoding = 'protobuf'
+                                break;
+                            case PayloadEncoding.TEXT:
+                                m.value.encoding = 'text'
+                                break;
+                            case PayloadEncoding.UTF8:
+                                m.value.encoding = 'utf8WithControlChars'
+                                break;
+                        } 
+                            
+                        m.value.isPayloadNull = val?.payloadSize == 0
+                        m.valueJson = valuePayload;
+                        
+                        try {
+                            m.value.payload = JSON.parse(valuePayload)
+                        } catch (e) {
+                            console.log(e)
+                        }
+
+                        if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
+                            m.valueBinHexPreview = base64ToHexString(m.value.payload);
+                            m.value.payload = decodeBase64(m.value.payload);
+                        }
+                
+                        m.valueJson = JSON.stringify(m.value.payload);
+
+                        console.log(m)
+
+                        this.messages.push(m);
+                        break;
+                }
             }
+        } catch (e) {
+            // https://connectrpc.com/docs/web/errors
+            console.log(e)
         }
 
         // one done
         api.stopMessageSearch();
- 
-        this.listMessagesConnect(searchRequest)
-    },
+     },
 
     async listMessagesConnect(searchRequest: MessageSearchRequest): Promise<void> {
-
-        // https://connectrpc.com/docs/web/using-clients
-        // https://github.com/connectrpc/connect-es
-        // https://github.com/connectrpc/examples-es
-        
         const transport = createConnectTransport({
             baseUrl: window.location.origin,
         });
