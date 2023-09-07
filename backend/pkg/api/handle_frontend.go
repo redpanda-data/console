@@ -88,6 +88,8 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("frontend request:", r.Method, r.URL.Path)
+
 		if isRequestToIndexFile(r) {
 			handleIndex(w, r)
 			return
