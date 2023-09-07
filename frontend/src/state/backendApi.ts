@@ -429,7 +429,7 @@ const apiStore = {
 
         // do it
         const transport = createConnectTransport({
-            baseUrl: 'http://localhost:9090',
+            baseUrl: window.location.origin,
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -622,7 +622,7 @@ const apiStore = {
         // https://github.com/connectrpc/examples-es
         
         const transport = createConnectTransport({
-            baseUrl: 'http://localhost:9090',
+            baseUrl: window.location.origin,
         });
 
         const client = createPromiseClient(ConsoleService, transport);
