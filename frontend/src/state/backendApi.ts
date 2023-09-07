@@ -441,6 +441,8 @@ const apiStore = {
         req.maxResults = searchRequest.maxResults
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
 
+        console.log('calling list messages')
+
         for await (const res of await client.listMessages(req)) {
             switch (res.controlMessage.case) {
                 case 'phase':
@@ -516,24 +518,54 @@ const apiStore = {
                     const key = res.controlMessage.value.key;
                     const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
+                    console.log('key:')
+                    console.log(key)
+                    console.log('keyPayload:')
+                    console.log(keyPayload)
+
                     m.key = {} as Payload
-                    m.key.encoding = 'text'
+                    switch (key?.encoding) {
+                        case PayloadEncoding.AVRO:
+                            m.key.encoding = 'avro'
+                            break;
+                        case PayloadEncoding.JSON:
+                            m.key.encoding = 'json'
+                            break;
+                        case PayloadEncoding.PROTOBUF:
+                            m.key.encoding = 'protobuf'
+                            break;
+                        case PayloadEncoding.TEXT:
+                            m.key.encoding = 'text'
+                            break;
+                        case PayloadEncoding.UTF8:
+                            m.key.encoding = 'utf8WithControlChars'
+                            break;
+                    } 
+
                     m.key.isPayloadNull = key?.payloadSize == 0
-                    m.key.payload = key?.originalPayload
+                    m.key.payload = keyPayload
+
                     try {
-                        m.keyJson = JSON.stringify(keyPayload);
-                        m.key.payload = JSON.parse(m.keyJson)
+                        m.key.payload = JSON.parse(keyPayload)
                     } catch (e) {
                         console.log(e)
                     }
+
                     if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
-                        m.keyBinHexPreview = base64ToHexString(keyPayload);
-                        m.key.payload = decodeBase64(keyPayload);
+                        m.keyBinHexPreview = base64ToHexString(m.key.payload);
+                        m.key.payload = decodeBase64(m.key.payload);
                     }
+
+                    m.keyJson = JSON.stringify(m.key.payload);
 
                     // value
                     const val = res.controlMessage.value.value;
                     const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+
+                    console.log('val:')
+                    console.log(val)
+                    console.log('valuePayload:')
+                    console.log(valuePayload)
 
                     m.value = {} as Payload
                     switch (val?.encoding) {
@@ -556,20 +588,21 @@ const apiStore = {
                         
                     m.value.isPayloadNull = val?.payloadSize == 0
                     m.valueJson = valuePayload;
-                    m.value.payload = val?.originalPayload
+                    
                     try {
-                        m.valueJson = JSON.stringify(valuePayload);
-                        m.value.payload = JSON.parse(m.valueJson)
+                        m.value.payload = JSON.parse(valuePayload)
                     } catch (e) {
                         console.log(e)
                     }
+
                     if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
-                        m.valueBinHexPreview = base64ToHexString(valuePayload);
-                        m.value.payload = decodeBase64(valuePayload);
+                        m.valueBinHexPreview = base64ToHexString(m.value.payload);
+                        m.value.payload = decodeBase64(m.value.payload);
                     }
+               
+                    m.valueJson = JSON.stringify(m.value.payload);
 
                     console.log(m)
-                    console.dir(m)
 
                     this.messages.push(m);
                     break;
