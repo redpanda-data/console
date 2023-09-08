@@ -11,7 +11,7 @@
 
 import React, { Component } from 'react';
 import { observer } from 'mobx-react';
-import { ConfigProvider, Popover, Table } from 'antd';
+import { ConfigProvider, Table } from 'antd';
 import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from '../../misc/common';
 import { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
 import { BrokerList } from '../../misc/BrokerList';
@@ -19,7 +19,7 @@ import { IndeterminateCheckbox } from './components/IndeterminateCheckbox';
 import { SelectionInfoBar } from './components/StatisticsBar';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { ColumnProps } from 'antd/lib/table/Column';
-import { DefaultSkeleton, findPopupContainer, ZeroSizeWrapper, InfoText } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, ZeroSizeWrapper, InfoText } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { computed, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { PartitionSelection } from './ReassignPartitions';
@@ -28,6 +28,7 @@ import { uiSettings } from '../../../state/ui';
 import { ColumnFilterItem, ColumnsType, ExpandableConfig, TableRowSelection } from 'antd/lib/table/interface';
 import { SearchOutlined, WarningTwoTone } from '@ant-design/icons';
 import { SearchTitle } from '../../misc/KowlTable';
+import { Popover } from '@redpanda-data/ui'
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -439,11 +440,13 @@ function renderPartitionError(partition: Partition) {
 
     return <Popover
         title="Partition Error"
-        placement="rightTop" overlayClassName="popoverSmall"
-        getPopupContainer={findPopupContainer}
-        content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-            {txt}
-        </div>
+        placement="right-start" 
+        size="auto"
+        hideCloseButton
+        content={
+            <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+                {txt}
+            </div>
         }
     >
         <span>
@@ -459,12 +462,14 @@ function renderPartitionError(partition: Partition) {
 function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
     return <Popover
         title="Partition Error"
-        placement="rightTop" overlayClassName="popoverSmall"
-        getPopupContainer={findPopupContainer}
-        content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-            Some partitions could not be retreived.<br />
-            Expand the topic to see which partitions are affected.
-        </div>
+        placement="right-start" 
+        size="auto"
+        hideCloseButton
+        content={
+            <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+                Some partitions could not be retreived.<br />
+                Expand the topic to see which partitions are affected.
+            </div>
         }
     >
         <span>

@@ -11,12 +11,12 @@
 
 
 
-import { Alert, Empty, message, Modal, Popover } from 'antd';
+import { Alert, Empty, message, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
-import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
@@ -45,7 +45,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button } from '@redpanda-data/ui';
+import { Button, Popover } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -359,26 +359,21 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     const meta = findConnectorMetadata(c);
     const displayName = meta?.friendlyName ?? removeNamespace(c);
 
-    return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-        {meta && meta.logo &&
-            <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <ZeroSizeWrapper width="22px" transform="translateY(-1px)" >
-                    <div style={{ width: '22px', height: '22px' }}>
-                        {meta.logo}
-                    </div>
-                </ZeroSizeWrapper>
-            </span>
-        }
+    return (
+        <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+            {meta && meta.logo && (
+                <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
+                    <ZeroSizeWrapper width="22px" transform="translateY(-1px)">
+                        <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
+                    </ZeroSizeWrapper>
+                </span>
+            )}
 
-        <Popover placement="right" overlayClassName="popoverSmall"
-            getPopupContainer={findPopupContainer}
-            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                {c}
-            </div>}
-        >
-            {displayName}
-        </Popover>
-    </div>
+            <Popover placement="right" size="stretch" hideCloseButton={true} content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}>
+                {displayName}
+            </Popover>
+        </div>
+    );
 });
 
 export function removeNamespace(className: string): string {

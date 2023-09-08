@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Tag, Collapse, Popover, Empty } from 'antd';
+import { Table, Collapse, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -29,11 +29,10 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tooltip } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag, Tooltip, Popover } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
-
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
@@ -545,7 +544,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
     const icon = stateIcons.get(state);
 
     return (
-        <Popover content={consumerGroupStateTable} placement="right">
+        <Popover trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
             <span>
                 {icon}
                 <span> {p.group.state}</span>

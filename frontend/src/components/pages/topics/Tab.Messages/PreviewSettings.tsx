@@ -10,7 +10,7 @@
  */
 
 import { FilterOutlined } from '@ant-design/icons';
-import { AutoComplete, Input, Modal, Popover } from 'antd';
+import { AutoComplete, Input, Modal } from 'antd';
 import { arrayMoveMutable } from 'array-move';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -25,7 +25,7 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from '@primer/octicons-react';
-import { Button, Checkbox } from '@redpanda-data/ui';
+import { Button, Checkbox, Popover } from '@redpanda-data/ui';
 
 
 const globHelp = <div>
@@ -144,7 +144,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div>
                 <span >
                     When viewing large messages we're often only interested in a few specific fields.
-                    Add <Popover trigger={['click']} placement="bottom" content={globHelp}>
+                    Add <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton>
                         <span style={{
                             margin: '0 2px',
                             color: 'hsl(205deg, 100%, 50%)',
@@ -266,9 +266,10 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
 
             {/* Settings */}
             <Popover
-                trigger={['click']}
-                placement="bottomLeft"
-                arrowPointAtCenter={true}
+                trigger={'click'}
+                placement="bottom-start"
+                size="auto"
+                hideCloseButton
                 content={<div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }} >
 
                     <Label text="Display Name" style={{ marginBottom: '.5em' }}>

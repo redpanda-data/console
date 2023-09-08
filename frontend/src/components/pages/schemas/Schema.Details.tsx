@@ -227,7 +227,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                             <div>
                                 {' '}
                                 {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                                <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true}>
+                                <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true} isDisabled={!isClipboardAvailable}>
                                     <Button
                                         isDisabled={!isClipboardAvailable}
                                         onClick={() => {
