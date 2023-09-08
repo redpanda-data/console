@@ -90,6 +90,8 @@ func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.De
 //
 // Because you may have more than one remote dir, this function
 // will return a slice of log dirs as well.
+//
+//nolint:gocognit // the sort if else adds complexity
 func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogDirsResponseDir {
 	if len(logDirs) == 0 {
 		return nil
@@ -130,6 +132,7 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 				})
 			}
 			slices.SortFunc(logDirPartitions, func(a, b kmsg.DescribeLogDirsResponseDirTopicPartition) int {
+				//nolint:gocritic // this if else is easier to read
 				if a.Partition < b.Partition {
 					return -1
 				} else if a.Partition > b.Partition {
@@ -145,6 +148,7 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 			})
 		}
 		slices.SortFunc(logDirTopics, func(a, b kmsg.DescribeLogDirsResponseDirTopic) int {
+			//nolint:gocritic // this if else is easier to read
 			if a.Topic < b.Topic {
 				return -1
 			} else if a.Topic > b.Topic {

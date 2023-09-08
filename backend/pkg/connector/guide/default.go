@@ -81,6 +81,8 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
+//
+//nolint:gocognit,cyclop // the sort if else adds complexity
 func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configs := make([]model.ConfigDefinition, len(patchedConfigs))
@@ -101,6 +103,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 	// 2. Sort grouped configs by their reported order
 	for _, groupedDefs := range configsByGroup {
 		slices.SortFunc(groupedDefs, func(a, b model.ConfigDefinition) int {
+			//nolint:gocritic // this if else is easier to read
 			if a.Definition.Order < b.Definition.Order {
 				return -1
 			} else if a.Definition.Order > b.Definition.Order {
@@ -132,6 +135,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 	}
 	groupNames := maps.Keys(importanceScoreByGroupName)
 	// Sort by groupname asc
+	//nolint:gocritic // this if else is easier to read
 	slices.SortFunc(groupNames, func(a, b string) int {
 		if a < b {
 			return -1
