@@ -396,7 +396,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
         const content =
             <ChakraProvider theme={redpandaTheme}>
                 <div style={{marginBottom: '0.2em'}}>
-                    <Progress value={this.props.fillFactor * 100} isIndeterminate={this.props.statusText === 'Connecting'}/>
+                    <Progress value={this.props.fillFactor * 100} isIndeterminate={this.props.statusText === 'Connecting'} colorScheme="brand" />
                     <div style={StatusIndicator.statusBarStyle}>
                         <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
                         <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
