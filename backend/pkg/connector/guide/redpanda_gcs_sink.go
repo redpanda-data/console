@@ -19,8 +19,10 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.redpanda.kafka.connect.gcs.GcsSinkConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			topicsToExport(),
 

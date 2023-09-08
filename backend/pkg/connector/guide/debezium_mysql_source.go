@@ -19,8 +19,10 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "io.debezium.connector.mysql.MySqlConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to import",

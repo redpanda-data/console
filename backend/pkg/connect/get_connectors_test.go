@@ -90,9 +90,10 @@ func Test_traceToErrorContent(t *testing.T) {
 
 func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 	type test struct {
-		name     string
-		input    *connect.ListConnectorsResponseExpanded
-		expected *ClusterConnectorInfo
+		name       string
+		input      *connect.ListConnectorsResponseExpanded
+		configHook KafkaConnectToConsoleHook
+		expected   *ClusterConnectorInfo
 	}
 
 	tests := []test{
@@ -1756,11 +1757,99 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "healthy - apply hook",
+			configHook: func(pluginClassName string, configs map[string]string) map[string]string {
+				result := make(map[string]string)
+				for key, value := range configs {
+					switch key {
+					case "delete":
+						// skip
+					case "change":
+						result[key] = value + ".changed"
+					default:
+						result[key] = value
+					}
+				}
+				result["added"] = "added value"
+
+				return result
+			},
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "mirror-source-connector-apfe",
+					Config: map[string]string{
+						"change":          "value1",
+						"delete":          "value2",
+						"leave":           "value3",
+						"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{
+						{
+							Connector: "mirror-source-connector-apfe",
+							Task:      0,
+						},
+					},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "mirror-source-connector-apfe",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "RUNNING",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						{
+							ID:       0,
+							State:    "RUNNING",
+							WorkerID: "172.21.0.5:8083",
+						},
+					},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "mirror-source-connector-apfe",
+				Class: "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+				Config: map[string]string{
+					"change":          "value1.changed",
+					"leave":           "value3",
+					"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+					"added":           "added value",
+				},
+				Type:         "source",
+				Topic:        "unknown",
+				State:        connectorStateRunning,
+				Status:       connectorStatusHealthy,
+				TotalTasks:   1,
+				RunningTasks: 1,
+				Trace:        "",
+				Errors:       []ClusterConnectorInfoError{},
+				Tasks: []ClusterConnectorTaskInfo{
+					{
+						TaskID:   0,
+						State:    connectorStateRunning,
+						WorkerID: "172.21.0.5:8083",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := connectorsResponseToClusterConnectorInfo(tc.input)
+			actual := connectorsResponseToClusterConnectorInfo(tc.configHook, tc.input)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

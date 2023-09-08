@@ -1209,8 +1209,8 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := KafkaConnectToConsoleMirrorSourceHook(tt.args.response, tt.args.config); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("KafkaConnectToConsoleMirrorSourceHook() = %v, want %v", got, tt.want)
+			if got := KafkaConnectValidateToConsoleMirrorSourceHook(tt.args.response, tt.args.config); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("KafkaConnectValidateToConsoleMirrorSourceHook() = %v, want %v", got, tt.want)
 			}
 		})
 	}

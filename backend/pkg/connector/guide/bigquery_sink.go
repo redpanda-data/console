@@ -19,8 +19,10 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.wepay.kafka.connect.bigquery.BigQuerySinkConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			topicsToExport(),
 

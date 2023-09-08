@@ -19,8 +19,10 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.mongodb.kafka.connect.MongoSourceConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topic prefix",
