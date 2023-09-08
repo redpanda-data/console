@@ -160,6 +160,30 @@ func (api *API) routes() *chi.Mux {
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
+
+			// Connect RPC
+			v, err := protovalidate.New()
+			if err != nil {
+				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+			}
+
+			interceptors := []connect_go.Interceptor{}
+
+			// we want the actual request validation after all authorization and permission checks
+			interceptors = append(interceptors, NewRequestValidationInterceptor(api.Logger, v))
+
+			// Connect service(s)
+			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
+				// api,
+				consolev1alphaconnect.UnimplementedConsoleServiceHandler{},
+				connect_go.WithInterceptors(interceptors...),
+			))
+
+			// Connect reflection
+			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
+			r.Mount(grpcreflect.NewHandlerV1(reflector))
+			r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
 
@@ -179,29 +203,6 @@ func (api *API) routes() *chi.Mux {
 
 		wsRouter.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
 	})
-
-	// Connect RPC
-	v, err := protovalidate.New()
-	if err != nil {
-		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
-	}
-
-	interceptors := []connect_go.Interceptor{}
-
-	// we want the actual request validation after all authorization and permission checks
-	interceptors = append(interceptors, NewRequestValidationInterceptor(api.Logger, v))
-
-	// Connect service(s)
-	baseRouter.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
-		// api,
-		consolev1alphaconnect.UnimplementedConsoleServiceHandler{},
-		connect_go.WithInterceptors(interceptors...),
-	))
-
-	// Connect reflection
-	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
-	baseRouter.Mount(grpcreflect.NewHandlerV1(reflector))
-	baseRouter.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
 
 	return baseRouter
 }

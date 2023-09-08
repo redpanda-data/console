@@ -100,8 +100,14 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 
 	// 2. Sort grouped configs by their reported order
 	for _, groupedDefs := range configsByGroup {
-		slices.SortFunc(groupedDefs, func(a, b model.ConfigDefinition) bool {
-			return a.Definition.Order < b.Definition.Order
+		slices.SortFunc(groupedDefs, func(a, b model.ConfigDefinition) int {
+			if a.Definition.Order < b.Definition.Order {
+				return -1
+			} else if a.Definition.Order > b.Definition.Order {
+				return 1
+			} else {
+				return 0
+			}
 		})
 	}
 
@@ -126,8 +132,14 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 	}
 	groupNames := maps.Keys(importanceScoreByGroupName)
 	// Sort by groupname asc
-	slices.SortFunc(groupNames, func(a, b string) bool {
-		return a < b
+	slices.SortFunc(groupNames, func(a, b string) int {
+		if a < b {
+			return -1
+		} else if a > b {
+			return 1
+		} else {
+			return 0
+		}
 	})
 	// Sort by number of required props
 	sort.SliceStable(groupNames, func(a, b int) bool {

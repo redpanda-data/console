@@ -129,8 +129,14 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 					Size:      size,
 				})
 			}
-			slices.SortFunc(logDirPartitions, func(a, b kmsg.DescribeLogDirsResponseDirTopicPartition) bool {
-				return a.Partition < b.Partition
+			slices.SortFunc(logDirPartitions, func(a, b kmsg.DescribeLogDirsResponseDirTopicPartition) int {
+				if a.Partition < b.Partition {
+					return -1
+				} else if a.Partition > b.Partition {
+					return 1
+				} else {
+					return 0
+				}
 			})
 
 			logDirTopics = append(logDirTopics, kmsg.DescribeLogDirsResponseDirTopic{
@@ -138,8 +144,14 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 				Partitions: logDirPartitions,
 			})
 		}
-		slices.SortFunc(logDirTopics, func(a, b kmsg.DescribeLogDirsResponseDirTopic) bool {
-			return a.Topic < b.Topic
+		slices.SortFunc(logDirTopics, func(a, b kmsg.DescribeLogDirsResponseDirTopic) int {
+			if a.Topic < b.Topic {
+				return -1
+			} else if a.Topic > b.Topic {
+				return 1
+			} else {
+				return 0
+			}
 		})
 
 		unifiedLogDirs = append(unifiedLogDirs, kmsg.DescribeLogDirsResponseDir{

@@ -12,20 +12,20 @@ plugins:
     opt: paths=source_relative
     out: backend/pkg/protogen
 
-  - plugin: buf.build/connectrpc/go
+  - plugin: connect-go
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
     out: backend/pkg/protogen
 
   # Typescript plugins
-  - plugin: buf.build/bufbuild/connect-es
+  - plugin: buf.build/bufbuild/es
     opt:
       - target=ts
       - import_extension=
     out: frontend/src/protogen
 
-  - plugin: buf.build/bufbuild/es
+  - plugin: buf.build/connectrpc/es
     opt:
       - target=ts
       - import_extension=
