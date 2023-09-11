@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -52,6 +53,7 @@ const (
 	messageEncodingBinary               messageEncoding = "binary"
 	messageEncodingMsgP                 messageEncoding = "msgpack"
 	messageEncodingSmile                messageEncoding = "smile"
+	messageEncodingUint                 messageEncoding = "uint"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -315,7 +317,66 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 8. Test for UTF-8 validity
+	// 8. Numerical values are tricky.
+	// If the payload is of specific length we can try to convert to a numerical value.
+	// We are going to assume and support only uints.
+	// We have to do this before UTF8 as some numerical values can also be "valid" UTF8 values.
+	isNumerical := false
+	var numericalPayload []byte
+	var numericalObject interface{}
+	switch len(payload) {
+	case 8:
+		var bev uint64
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumerical = true
+			numericalPayload = []byte(strconv.FormatUint(bev, 10))
+			numericalObject = bev
+		}
+	case 4:
+		var bev uint32
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumerical = true
+			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericalObject = bev
+		}
+	case 2:
+		var bev uint16
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumerical = true
+			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericalObject = bev
+		}
+	case 1:
+		var bev uint8
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumerical = true
+			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericalObject = bev
+		}
+	}
+
+	if isNumerical {
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            numericalPayload,
+				RecognizedEncoding: messageEncodingUint,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             numericalObject,
+			RecognizedEncoding: messageEncodingUint,
+			Size:               len(payload),
+		}
+	}
+
+	// 9. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		// If we have an UTF8 string with control chars (e.g. byte array with 0x00) we want to

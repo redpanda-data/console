@@ -13,6 +13,7 @@ package kafka
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1175,6 +1176,76 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(int32(1), deliveryAddress.GetRevision())
 
 		assert.Equal(int32(1), rOrder.GetRevision())
+	})
+
+	t.Run("numerical key", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("deserializer_plain_json")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		keyBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(keyBytes, 123)
+		r := &kgo.Record{
+			Key:   keyBytes,
+			Value: []byte("my text value"),
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingText, dr.Value.Payload.RecognizedEncoding)
+		assert.Equal("my text value", dr.Value.Object)
+		assert.Equal([]byte("my text value"), dr.Value.Payload.Payload)
+
+		assert.Equal(messageEncodingUint, dr.Key.Payload.RecognizedEncoding)
+		assert.Equal(uint32(123), dr.Key.Object)
+		assert.Equal([]byte("123"), dr.Key.Payload.Payload)
 	})
 }
 
