@@ -346,14 +346,14 @@ class GroupByTopics extends Component<{
                             //         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                             //     </Tooltip>
                             // },
-                            render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
+                            render: (text, record) => <Flex pr={2} gap={1}>
                                 <IconButton onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
                                     <PencilIcon />
                                 </IconButton>
                                 <IconButton onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
                                     <TrashIcon />
                                 </IconButton>
-                            </div>,
+                            </Flex>,
                         },
                     ]}
                 />

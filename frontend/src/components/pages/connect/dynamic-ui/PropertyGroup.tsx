@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Box, Divider, Heading, Link, Text } from '@redpanda-data/ui';
+import { Accordion, Box, Divider, Heading, Link, Text } from '@redpanda-data/ui';
 import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from '../../../../state/connect/state';
@@ -40,10 +40,24 @@ export const PropertyGroupComponent = observer((props: {
         return (
             <div className="dynamicInputs">
                 {filteredProperties.map((p) => (
-                    <PropertyComponent key={p.name} property={p} />
+                    <PropertyComponent key={p.name} property={p}/>
                 ))}
 
-                <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
+                <div style={{gridColumn: 'span 4', paddingLeft: '8px'}}>
+                    <Accordion items={subGroups.map((subGroup) => ({
+                        heading: <div style={{display: 'flex', alignItems: 'center', gap: '1em'}}>
+                                        <span style={{fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans'}}>
+                                            {subGroup.group.name}
+                                        </span>
+                            <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
+                        </div>,
+                        description: <PropertyGroupComponent
+                            group={subGroup}
+                            allGroups={props.allGroups}
+                            showAdvancedOptions={props.showAdvancedOptions}
+                            connectorType={props.connectorType}
+                        />
+                    }))}/>
                     <Collapse ghost bordered={false}>
                         {subGroups.map((subGroup) => (
                             <Collapse.Panel
