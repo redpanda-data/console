@@ -1338,7 +1338,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		consumeCtx, consumeCancel = context.WithTimeout(context.Background(), 2*time.Second)
 		defer consumeCancel()
 
-		// get the records again
+		// create a new client to get the records again
 		cl = s.consumerClientForTopic(testTopicName)
 
 		records := make([]*kgo.Record, 0, 2)
@@ -1415,7 +1415,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 				objStr, err := deserializeShopV1_2(cr.Value, ss2.ID)
 				require.NoError(err)
 
-				// franz-go serde
 				o2 := v1_2Order{}
 				err = json.Unmarshal([]byte(objStr), &o2)
 				require.NoError(err)
@@ -1445,11 +1444,10 @@ func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
-// Both packages define the same protobuf types in terms of fully qualified name and proto package name
-// Since Proto types do a global registration, names are expectant to be globally unique within process
+// Both packages define the same protobuf types in terms of fully qualified name and proto package name.
+// Since Proto types do a global registration, names are expectant to be globally unique within process.
 // This makes it difficult to use both generated packages within same test.
-// So we have a utility command line helper to do our serialization and deserialization for us
-// out of test / process.
+// So we have a utility CLI helper to do our serialization and deserialization for us out of test process.
 // See: https://protobuf.dev/reference/go/faq#namespace-conflict
 func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
 	cmdPath, err := filepath.Abs("./testdata/proto_update/msgbin/main.go")
