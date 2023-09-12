@@ -73,17 +73,15 @@ export class AdminUsers extends Component<{}> {
                 // expandIconColumnIndex={0}
                 expandRowByClick={true}
                 expandedRowRender={(user: UserDetails) => (
-                    <div>
-                        <Accordion
-                            defaultIndex={0}
-                            items={
-                                user.grantedRoles.map(r => ({
-                                    heading: r.role.name,
-                                    description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
-                                }))
-                            }
-                        />
-                    </div>
+                    <Accordion
+                        defaultIndex={0}
+                        items={
+                            user.grantedRoles.map(r => ({
+                                heading: r.role.name,
+                                description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
+                            }))
+                        }
+                    />
                 )}
             />
         );

@@ -13,7 +13,7 @@
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
 import { numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Collapse, Modal, Radio, Select, Table } from 'antd';
+import { Modal, Radio, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -26,7 +26,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Button, Tooltip, Popover } from '@redpanda-data/ui';
+import {Button, Tooltip, Popover, Accordion} from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -217,71 +217,61 @@ export class EditOffsetsModal extends Component<{
     }
 
     page2() {
-        const firstTopic = this.offsetsByTopic[0].topicName;
         return (
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <Collapse bordered={false} defaultActiveKey={firstTopic}>
-                    {this.offsetsByTopic.map(({ topicName, items }) => (
-                        <Collapse.Panel
-                            key={topicName}
-                            style={{ padding: 0 }}
-                            header={
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                        fontWeight: 600,
-                                        whiteSpace: 'nowrap'
-                                    }}
-                                >
-                                    {/* Title */}
-                                    <span
-                                        style={{
-                                            textOverflow: 'ellipsis',
-                                            overflow: 'hidden',
-                                            paddingRight: '30px'
-                                        }}
-                                    >
+                <Accordion defaultIndex={0} items={this.offsetsByTopic.map(({topicName, items}) => ({
+                    heading:   <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {/* Title */}
+                        <span
+                            style={{
+                                textOverflow: 'ellipsis',
+                                overflow: 'hidden',
+                                paddingRight: '30px'
+                            }}
+                        >
                                         {topicName}
                                     </span>
-                                    <span style={{ display: 'inline-block', marginLeft: 'auto', padding: '0 1em' }}>{items.length} Partitions</span>
-                                </div>
-                            }
-                        >
-                            <Table
-                                size="small"
-                                showSorterTooltip={false}
-                                pagination={{ pageSize: 1000, position: ['none', 'none'] as any }}
-                                dataSource={items}
-                                rowKey={r => r.partitionId}
-                                rowClassName={r => (r.newOffset == null ? 'unchanged' : '')}
-                                columns={[
-                                    { width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend' },
-                                    {
-                                        width: 150,
-                                        title: 'Offset Before',
-                                        dataIndex: 'offset',
-                                        render: v =>
-                                            v == null ? (
-                                                <Tooltip label="The group does not have an offset for this partition yet" openDelay={1} placement="top" hasArrow>
+                        <span style={{ display: 'inline-block', marginLeft: 'auto', padding: '0 1em' }}>{items.length} Partitions</span>
+                    </div>,
+                    description: <Table
+                        size="small"
+                        showSorterTooltip={false}
+                        pagination={{ pageSize: 1000, position: ['none', 'none'] as any }}
+                        dataSource={items}
+                        rowKey={r => r.partitionId}
+                        rowClassName={r => (r.newOffset == null ? 'unchanged' : '')}
+                        columns={[
+                            { width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend' },
+                            {
+                                width: 150,
+                                title: 'Offset Before',
+                                dataIndex: 'offset',
+                                render: v =>
+                                    v == null ? (
+                                        <Tooltip label="The group does not have an offset for this partition yet" openDelay={1} placement="top" hasArrow>
                                                     <span style={{ opacity: 0.66, marginLeft: '2px' }}>
                                                         <SkipIcon />
                                                     </span>
-                                                </Tooltip>
-                                            ) : (
-                                                numberToThousandsString(v)
-                                            )
-                                    },
-                                    {
-                                        title: 'Offset After',
-                                        render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
-                                    }
-                                ]}
-                            />
-                        </Collapse.Panel>
-                    ))}
-                </Collapse>
+                                        </Tooltip>
+                                    ) : (
+                                        numberToThousandsString(v)
+                                    )
+                            },
+                            {
+                                title: 'Offset After',
+                                render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
+                            }
+                        ]}
+                    />
+                }))} />
             </div>
         );
     }
