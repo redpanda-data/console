@@ -35,7 +35,7 @@ type Filesystem struct {
 	Paths []string `yaml:"paths"`
 
 	// SkipHiddenFiles specifies whether or not hidden files should be watched or not
-	SkipHiddenFiles bool
+	SkipHiddenFiles bool `yaml:"skipHiddenFiles"`
 }
 
 // Validate all root and child config structs
