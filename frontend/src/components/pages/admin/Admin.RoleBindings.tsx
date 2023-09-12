@@ -12,11 +12,11 @@
 
 /* eslint-disable react/jsx-key */
 
-import React, { Component, ReactNode } from 'react';
+import React, { Component } from 'react';
 import { RoleBinding, Subject } from '../../../state/restInterfaces';
-import { Collapse } from 'antd';
 import '../../../utils/arrayExtensions';
 import { QuickTable, ObjToKv } from '../../../utils/tsxUtils';
+import {Accordion} from '@redpanda-data/ui';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
     render() {
@@ -25,7 +25,11 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
         const rows: [any, any][] = [
             [<span className="resourceLabel">Binding</span>, <span className="roleBindingId">{binding.ephemeralId}</span>],
             [<span className="resourceLabelSub">Metadata</span>, QuickTable(ObjToKv(binding.metadata), { tableStyle: { width: 'auto', fontFamily: 'monospace', fontSize: '80%' }, gapWidth: '6px' })],
-            [<span className="resourceLabelSub">Subjects</span>, <Expander title="click to expand" className="subjectListExpander">{binding.subjects.map(s => <SubjectComponent key={s.name + s.providerName} subject={s} />)}</Expander>]
+            [<span className="resourceLabelSub">Subjects</span>, <Accordion items={[
+                {heading: 'click to expand', description: <div>
+                        {binding.subjects.map(s => <SubjectComponent key={s.name + s.providerName} subject={s} />)}
+                    </div>}
+            ]}/>]
         ];
 
         const t = QuickTable(rows, {
@@ -38,14 +42,6 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
         });
 
         return t;
-    }
-}
-
-export class Expander extends Component<{ title: ReactNode, className?: string, children?: React.ReactNode }> {
-    render() {
-        return <Collapse bordered={false} className={'expander ' + this.props.className}>
-            <Collapse.Panel key={0} header={this.props.title}>{this.props.children}</Collapse.Panel>
-        </Collapse>
     }
 }
 
