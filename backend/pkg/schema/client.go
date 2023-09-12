@@ -204,6 +204,7 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 	return parsed, nil
 }
 
+// GetSchemasBySubject gets all versioned schemas for a given subject.
 func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse, error) {
 	versionRes, err := c.GetSubjectVersions(subject)
 	if err != nil {
