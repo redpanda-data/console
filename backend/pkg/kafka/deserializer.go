@@ -317,66 +317,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 8. Numerical values are tricky.
-	// If the payload is of specific length we can try to convert to a numerical value.
-	// We are going to assume and support only uints.
-	// We have to do this before UTF8 as some numerical values can also be "valid" UTF8 values.
-	isNumerical := false
-	var numericalPayload []byte
-	var numericalObject interface{}
-	switch len(payload) {
-	case 8:
-		var bev uint64
-		buf := bytes.NewReader(payload)
-		err := binary.Read(buf, binary.BigEndian, &bev)
-		if err == nil {
-			isNumerical = true
-			numericalPayload = []byte(strconv.FormatUint(bev, 10))
-			numericalObject = bev
-		}
-	case 4:
-		var bev uint32
-		buf := bytes.NewReader(payload)
-		err := binary.Read(buf, binary.BigEndian, &bev)
-		if err == nil {
-			isNumerical = true
-			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
-			numericalObject = bev
-		}
-	case 2:
-		var bev uint16
-		buf := bytes.NewReader(payload)
-		err := binary.Read(buf, binary.BigEndian, &bev)
-		if err == nil {
-			isNumerical = true
-			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
-			numericalObject = bev
-		}
-	case 1:
-		var bev uint8
-		buf := bytes.NewReader(payload)
-		err := binary.Read(buf, binary.BigEndian, &bev)
-		if err == nil {
-			isNumerical = true
-			numericalPayload = []byte(strconv.FormatUint(uint64(bev), 10))
-			numericalObject = bev
-		}
-	}
-
-	if isNumerical {
-		return &deserializedPayload{
-			Payload: normalizedPayload{
-				Payload:            numericalPayload,
-				RecognizedEncoding: messageEncodingUint,
-			},
-			IsPayloadNull:      payload == nil,
-			Object:             numericalObject,
-			RecognizedEncoding: messageEncodingUint,
-			Size:               len(payload),
-		}
-	}
-
-	// 9. Test for UTF-8 validity
+	// 8. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		// If we have an UTF8 string with control chars (e.g. byte array with 0x00) we want to
@@ -402,6 +343,65 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			IsPayloadNull:      payload == nil,
 			Object:             string(payload),
 			RecognizedEncoding: messageEncodingText,
+			Size:               len(payload),
+		}
+	}
+
+	// 9. Numeric values are tricky.
+	// If the payload is of specific length we can try to convert to a numeric value.
+	// We are going to assume and support only uints.
+	// We have to do this before UTF8 as some numeric values can also be "valid" UTF8 values.
+	isNumeric := false
+	var numericPayload []byte
+	var numericObject interface{}
+	switch len(payload) {
+	case 8:
+		var bev uint64
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(bev, 10))
+			numericObject = bev
+		}
+	case 4:
+		var bev uint32
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	case 2:
+		var bev uint16
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	case 1:
+		var bev uint8
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	}
+
+	if isNumeric {
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            numericPayload,
+				RecognizedEncoding: messageEncodingUint,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             numericObject,
+			RecognizedEncoding: messageEncodingUint,
 			Size:               len(payload),
 		}
 	}
