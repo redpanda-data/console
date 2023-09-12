@@ -13,10 +13,13 @@ package kafka
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,7 +43,6 @@ import (
 	indexv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/index/v1"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v1"
 	shopv2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2"
-	shopv1_2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto_update/gen/shop/v1"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -1313,31 +1315,15 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(ss.ID, srRes[0].ID)
 		assert.Equal(ss2.ID, srRes[1].ID)
 
-		// Set up Serde for updated proto
-		serde.Register(
-			ss2.ID,
-			&shopv1_2.Order{},
-			sr.EncodeFn(func(v any) ([]byte, error) {
-				return proto.Marshal(v.(*shopv1_2.Order))
-			}),
-			sr.DecodeFn(func(b []byte, v any) error {
-				return proto.Unmarshal(b, v.(*shopv1_2.Order))
-			}),
-			sr.Index(0),
-		)
-
+		msg2ID := "333"
 		order2CreatedAt := time.Date(2023, time.July, 11, 14, 0, 0, 0, time.UTC)
-		msg2 := shopv1_2.Order{
-			Version:    22,
-			Id:         "333",
-			CreatedAt:  timestamppb.New(order2CreatedAt),
-			OrderValue: 3456,
-		}
-
-		msgData, err = serde.Encode(&msg2)
+		order2CreatedAtStr := order2CreatedAt.Format(time.DateTime)
+		order2CreateInput := fmt.Sprintf(`{"id":"%s","version":22,"created_at":"%s","order_value":3456}`, msg2ID, order2CreatedAtStr)
+		msgData, err = serializeShopV1_2(order2CreateInput, ss2.ID)
+		require.NoError(err)
 
 		r = &kgo.Record{
-			Key:       []byte(msg2.Id),
+			Key:       []byte(msg2ID),
 			Value:     msgData,
 			Topic:     testTopicName,
 			Timestamp: order2CreatedAt,
@@ -1369,9 +1355,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			iter := fetches.RecordIter()
 
 			for !iter.Done() && len(records) != 2 {
-				fmt.Println("!!! GETTING RECORD")
 				record = iter.Next()
-				fmt.Println("!!! GOT RECORD:", string(record.Key))
 				records = append(records, record)
 			}
 		}
@@ -1401,35 +1385,44 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 				assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), ov1.GetCreatedAt().GetSeconds())
 
 				// franz-go serde
-				// TODO this fails with
-				// interface conversion: interface {} is *v1.Order, not *v1_2.Order [recovered]
 				o2 := shopv1.Order{}
 				err = serde.Decode(cr.Value, &o2)
 				require.NoError(err)
 				assert.Equal("222", o2.Id)
 				assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), o2.GetCreatedAt().GetSeconds())
-			} else if string(cr.Key) == msg2.Id {
+			} else if string(cr.Key) == msg2ID {
 				dr := svc2.Deserializer.DeserializeRecord(cr)
 				require.NotNil(dr)
 				assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
 				assert.IsType(map[string]interface{}{}, dr.Value.Object)
 
-				ov12 := shopv1_2.Order{}
-				err = protojson.Unmarshal(dr.Value.Payload.Payload, &ov12)
+				// the JSON tags have to match shopv_1 Order protojson tags
+				type v1_2Order struct {
+					Version    int32     `json:"version,omitempty"`
+					Id         string    `json:"id,omitempty"`
+					CreatedAt  time.Time `json:"createdAt,omitempty"`
+					OrderValue int32     `json:"orderValue,omitempty"`
+				}
+
+				ov12 := v1_2Order{}
+				err = json.Unmarshal(dr.Value.Payload.Payload, &ov12)
 				require.NoError(err)
 				assert.Equal("333", ov12.Id)
 				assert.Equal(int32(3456), ov12.OrderValue)
 				assert.Equal(int32(22), ov12.Version)
-				assert.Equal(timestamppb.New(order2CreatedAt).GetSeconds(), ov12.GetCreatedAt().GetSeconds())
+				assert.Equal(order2CreatedAt.Unix(), ov12.CreatedAt.Unix())
+
+				objStr, err := deserializeShopV1_2(cr.Value, ss2.ID)
+				require.NoError(err)
 
 				// franz-go serde
-				o2 := shopv1_2.Order{}
-				err = serde.Decode(cr.Value, &o2)
+				o2 := v1_2Order{}
+				err = json.Unmarshal([]byte(objStr), &o2)
 				require.NoError(err)
 				assert.Equal("333", o2.Id)
 				assert.Equal(int32(3456), o2.OrderValue)
 				assert.Equal(int32(22), o2.Version)
-				assert.Equal(timestamppb.New(order2CreatedAt).GetSeconds(), o2.GetCreatedAt().GetSeconds())
+				assert.Equal(order2CreatedAt.Unix(), o2.CreatedAt.Unix())
 			} else {
 				assert.Fail("unknown record:" + string(cr.Key))
 			}
@@ -1449,4 +1442,64 @@ func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat
 	}
 
 	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
+}
+
+// We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
+// Both packages define the same protobuf types in terms of fully qualified name and proto package name
+// Since Proto types do a global registration, names are expectant to be globally unique within process
+// This makes it difficult to use both generated packages within same test.
+// So we have a utility command line helper to do our serialization and deserialization for us
+// out of test / process.
+// See: https://protobuf.dev/reference/go/faq#namespace-conflict
+func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
+	cmdPath, err := filepath.Abs("./testdata/proto_update/msgbin/main.go")
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(
+		"go",
+		"run",
+		cmdPath,
+		"-cmd=serialize",
+		"-input="+jsonInput,
+		"-schema-id="+strconv.Itoa(schemaID),
+	)
+	var out strings.Builder
+	cmd.Stdout = &out
+	err = cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+	output := out.String()
+	return base64.StdEncoding.DecodeString(output)
+}
+
+func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
+	cmdPath, err := filepath.Abs("./testdata/proto_update/msgbin/main.go")
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command(
+		"go",
+		"run",
+		cmdPath,
+		"-cmd=deserialize",
+		"-input="+base64.StdEncoding.EncodeToString(binInput),
+		"-schema-id="+strconv.Itoa(schemaID),
+	)
+	var out strings.Builder
+	cmd.Stdout = &out
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	err = cmd.Run()
+	if err != nil {
+		errOutput := errOut.String()
+		if errOutput != "" {
+			return "", fmt.Errorf("%s: %w", errOutput, err)
+		}
+		return "", err
+	}
+	return out.String(), nil
 }
