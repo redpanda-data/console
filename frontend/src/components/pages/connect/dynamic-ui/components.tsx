@@ -60,7 +60,6 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
     return (
         <>
             <Box mb="8">
-                {JSON.stringify(connectorStore.connectorStepDefinitions)}
                 <RadioGroup name="settingsMode"
                     value={connectorStore.viewMode}
                     defaultValue={connectorStore.viewMode}
