@@ -21,7 +21,7 @@ import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import {Accordion, SearchField, Tooltip} from '@redpanda-data/ui';
+import { Accordion, SearchField, Tooltip } from '@redpanda-data/ui';
 
 @observer
 export class AdminUsers extends Component<{}> {
