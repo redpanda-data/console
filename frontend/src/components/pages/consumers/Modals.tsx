@@ -26,7 +26,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import {Button, Tooltip, Popover, Accordion} from '@redpanda-data/ui';
+import { Button, Tooltip, Popover, Accordion, Flex, Text } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -220,27 +220,22 @@ export class EditOffsetsModal extends Component<{
         return (
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <Accordion defaultIndex={0} items={this.offsetsByTopic.map(({topicName, items}) => ({
-                    heading:   <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontWeight: 600,
-                            whiteSpace: 'nowrap'
-                        }}
+                    heading: <Flex
+                        alignItems="center"
+                        gap={1}
+                        fontWeight={600}
+                        whiteSpace="nowrap"
                     >
                         {/* Title */}
-                        <span
-                            style={{
-                                textOverflow: 'ellipsis',
-                                overflow: 'hidden',
-                                paddingRight: '30px'
-                            }}
+                        <Text
+                            textOverflow="ellipsis"
+                            overflow="hidden"
+                            pr={8}
                         >
-                                        {topicName}
-                                    </span>
-                        <span style={{ display: 'inline-block', marginLeft: 'auto', padding: '0 1em' }}>{items.length} Partitions</span>
-                    </div>,
+                            {topicName}
+                        </Text>
+                        <Text display="inline-block" ml="auto" padding="0 1rem">{items.length} Partitions</Text>
+                    </Flex>,
                     description: <Table
                         size="small"
                         showSorterTooltip={false}
