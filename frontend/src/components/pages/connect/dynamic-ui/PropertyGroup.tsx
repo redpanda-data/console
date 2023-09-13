@@ -11,7 +11,6 @@
 
 /* eslint-disable no-useless-escape */
 import { Accordion, Box, Divider, Heading, Link, Text } from '@redpanda-data/ui';
-import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from '../../../../state/connect/state';
 import { TopicInput } from './forms/TopicInput';
@@ -58,29 +57,6 @@ export const PropertyGroupComponent = observer((props: {
                             connectorType={props.connectorType}
                         />
                     }))}/>
-                    <Collapse ghost bordered={false}>
-                        {subGroups.map((subGroup) => (
-                            <Collapse.Panel
-                                className={subGroup.propertiesWithErrors.length > 0 ? 'hasErrors' : ''}
-                                key={subGroup.group.name ?? '<null>'}
-                                header={
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
-                                        <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>
-                                            {subGroup.group.name}
-                                        </span>
-                                        <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
-                                    </div>
-                                }
-                            >
-                                <PropertyGroupComponent
-                                    group={subGroup}
-                                    allGroups={props.allGroups}
-                                    showAdvancedOptions={props.showAdvancedOptions}
-                                    connectorType={props.connectorType}
-                                />
-                            </Collapse.Panel>
-                        ))}
-                    </Collapse>
                 </div>
             </div>
         );
