@@ -22,6 +22,7 @@ import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
 import MongoDBLogo from '../../../assets/connectors/mongodb.png';
 import IcebergLogo from '../../../assets/connectors/iceberg.png';
+import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
 import DebeziumLogo from '../../../assets/connectors/debezium.png';
 import ConfluentLogo from '../../../assets/connectors/confluent.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -262,6 +263,43 @@ const connectorMetadata: ConnectorMetadata[] = [
         friendlyName: 'Iceberg',
         description: 'Exports messages to Iceberg tables',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
+    } as const,
+
+    // JMS Connectors
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Exports messages to JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Imports messages from JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-source-connector/'
+    } as const,
+
+
+    // IBM MQ Connectors
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Exports messages to IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsource.MQSourceConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Imports messages from IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-source-connector/'
     } as const,
 
     // Community Connector
