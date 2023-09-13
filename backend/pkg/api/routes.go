@@ -221,7 +221,7 @@ func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Val
 
 			err := validator.Validate(msg)
 			if err != nil {
-				return nil, err
+				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, err)
 			}
 
 			return next(ctx, req)
