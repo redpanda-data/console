@@ -5,14 +5,12 @@
 package consolev1alphaconnect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
