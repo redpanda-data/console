@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Progress, Modal, Popconfirm, Skeleton, message } from 'antd';
+import { Modal, Popconfirm, Skeleton, message } from 'antd';
 import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
@@ -24,7 +24,7 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Button, Checkbox } from '@redpanda-data/ui';
+import { Button, Checkbox, Progress } from '@redpanda-data/ui';
 
 
 @observer
@@ -566,7 +566,10 @@ export class BrokersCol extends Component<{ state: ReassignmentState }> {
 const ProgressBar = function (p: { percent: number, state: 'active' | 'success', left?: React.ReactNode, right?: React.ReactNode }) {
     const { percent, state, left, right } = p;
     return <>
-        <Progress percent={percent} status={state} size="small" showInfo={false} style={{ lineHeight: 0.1, display: 'block' }} />
+        <Progress value={percent} colorScheme={{
+            'success': 'success',
+            'active': 'brand'
+        }[state]} />
         <div style={{
             display: 'flex', marginTop: '1px',
             fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '75%'

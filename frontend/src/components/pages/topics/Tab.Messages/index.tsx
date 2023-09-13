@@ -281,7 +281,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </Box>
 
                     {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) && <StatusIndicator identityKey="messageSearch" fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults} statusText={api.messageSearchPhase!} progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`} bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined} messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined} />}
+                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
+                        <StatusIndicator
+                            identityKey="messageSearch"
+                            fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
+                            statusText={api.messageSearchPhase!}
+                            progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
+                            messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
+                        />
+                    }
 
                     {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&

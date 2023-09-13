@@ -12,8 +12,8 @@
 import React, { useState, Component, CSSProperties, ReactNode } from 'react';
 import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton } from 'antd';
-import { Button as RpButton, ButtonProps as RpButtonProps, Tooltip, PlacementWithLogical } from '@redpanda-data/ui';
+import { Radio, message, Skeleton } from 'antd';
+import { Button as RpButton, ButtonProps as RpButtonProps, Tooltip, PlacementWithLogical, Progress, redpandaTheme, ChakraProvider, Box, Flex, Text } from '@redpanda-data/ui';
 import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -330,10 +330,6 @@ interface StatusIndicatorProps {
 @observer
 export class StatusIndicator extends Component<StatusIndicatorProps> {
 
-    static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
-    static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
-    static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
-
     hide: MessageType | undefined;
 
     timerHandle: NodeJS.Timeout;
@@ -394,25 +390,32 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     }
 
     customRender() {
-        const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
-            <div style={StatusIndicator.progressStyle}>
-                <Progress percent={this.props.fillFactor * 100} showInfo={false} status="active" size="small" style={{ lineHeight: 1 }} />
-            </div>
-            <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
-                <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
-            </div>
-            {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                <div style={StatusIndicator.statusBarStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined style={{ color: colors.brandOrange }} /> {this.props.bytesConsumed}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined style={{ color: colors.brandOrange }} />{this.props.messagesConsumed} messages
-                    </div>
-                </div>
-            }
-        </div>
+        const content =
+            <ChakraProvider theme={redpandaTheme}>
+                <Box mb="0.2em">
+                    <Box minW={300}>
+                        <Progress
+                            value={this.props.fillFactor * 100}
+                            isIndeterminate={this.props.statusText === 'Connecting'}
+                            colorScheme="brand"
+                        />
+                    </Box>
+                    <Flex fontSize="sm" fontWeight="bold">
+                        <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
+                        <Text ml="auto" pl="2em">{this.props.progressText}</Text>
+                    </Flex>
+                    {(this.props.bytesConsumed && this.props.messagesConsumed) &&
+                        <Flex fontSize="sm" fontWeight="bold">
+                            <Flex alignItems="center">
+                                <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
+                            </Flex>
+                            <Box style={{alignItems: 'center', marginLeft: 'auto'}}>
+                                <CopyOutlined style={{color: colors.brandOrange}}/>{this.props.messagesConsumed} messages
+                            </Box>
+                        </Flex>
+                    }
+                </Box>
+            </ChakraProvider>
 
         this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: 0, type: 'loading' });
     }
