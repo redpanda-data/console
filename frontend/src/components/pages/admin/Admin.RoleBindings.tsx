@@ -16,7 +16,7 @@ import React, { Component } from 'react';
 import { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { QuickTable, ObjToKv } from '../../../utils/tsxUtils';
-import {Accordion} from '@redpanda-data/ui';
+import { Accordion } from '@redpanda-data/ui';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
     render() {
