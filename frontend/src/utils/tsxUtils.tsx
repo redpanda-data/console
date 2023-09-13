@@ -400,12 +400,12 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
                             colorScheme="brand"
                         />
                     </Box>
-                    <Flex fontWeight="bold" fontSize="80%" fontFamily='"Open Sans", sans-serif'>
+                    <Flex fontSize="sm" fontWeight="bold">
                         <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
                         <Text ml="auto" pl="2em">{this.props.progressText}</Text>
                     </Flex>
                     {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                        <Flex fontWeight="bold" fontSize="80%" fontFamily='"Open Sans", sans-serif'>
+                        <Flex fontSize="sm" fontWeight="bold">
                             <Flex alignItems="center">
                                 <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
                             </Flex>
