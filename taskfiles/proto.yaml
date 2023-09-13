@@ -32,12 +32,10 @@ tasks:
       # Delete previously generated files
       - rm -rf {{.BACKEND_ROOT}}/internal/protogen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
-      - for: { var: BUF_INPUTS }
-        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf lint {{ .ITEM }}
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
+      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w 
       - for: { var: BUF_INPUTS }
         cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
-      - for: { var: BUF_INPUTS }
-        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w {{ .ITEM }}
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
 
   install-buf:
