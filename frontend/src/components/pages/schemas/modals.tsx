@@ -37,7 +37,6 @@ const GenericModal = observer((p: {
     </Modal>
 });
 
-
 export function openDeleteModal(
     schemaVersionName: string,
     onConfirm: () => void

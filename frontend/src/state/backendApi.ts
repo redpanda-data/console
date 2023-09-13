@@ -1016,6 +1016,7 @@ const apiStore = {
             // Todo: maybe add another array of "refrencedBy errors" that can be used in the ui
         }).catch(() => { });
     },
+
     async setSchemaRegistryCompatabilityMode(mode: SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
             method: 'PUT',
@@ -1025,6 +1026,25 @@ const apiStore = {
             body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatabilityModeRequest),
         });
         return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+    },
+
+    async setSchemaRegistrySubjectCompatabilityMode(subjectName: string, mode: 'DEFAULT' | SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
+        if (mode === 'DEFAULT') {
+            const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
+                method: 'DELETE',
+            });
+            return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+        }
+        else {
+            const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
+                method: 'PUT',
+                headers: [
+                    ['Content-Type', 'application/json']
+                ],
+                body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatabilityModeRequest),
+            });
+            return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+        }
     },
 
     async createSchema(subjectName: string, request: SchemaRegistryCreateSchema): Promise<SchemaRegistryCreateSchemaResponse> {

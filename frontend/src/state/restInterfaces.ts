@@ -1525,7 +1525,7 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
     name: string;
     type: SchemaType;
-    compatibility: SchemaRegistryCompatabilityMode;
+    compatibility: 'DEFAULT' | SchemaRegistryCompatabilityMode;
     versions: SchemaRegistrySubjectDetailsVersion[];
     latestActiveVersion: number;
     schemas: SchemaRegistryVersionedSchema[];

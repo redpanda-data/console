@@ -118,7 +118,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
                 {/* Buttons */}
                 <Flex gap="2">
-                    <Button variant="outline">Edit Compatability</Button>
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatability`)}>Edit Compatability</Button>
                     <Button variant="outline">Add new version</Button>
                     <Button variant="outline">Delete subject</Button>
                 </Flex>
@@ -164,7 +164,7 @@ function getVersionFromQuery(): 'latest' | number | undefined {
     return undefined;
 }
 
-function schemaTypeToCodeBlockLanguage(type: string) {
+export function schemaTypeToCodeBlockLanguage(type: string) {
     const lower = type.toLowerCase();
     switch (lower) {
         case 'json':
@@ -179,7 +179,7 @@ function schemaTypeToCodeBlockLanguage(type: string) {
     }
 }
 
-function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
+export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
     const lower = schema.type.toLowerCase();
     if (lower == 'avro' || lower == 'json')
         return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
@@ -191,17 +191,22 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
     const subject = p.subject;
 
-    const defaultVersion = getVersionFromQuery()
-        ?? subject.versions[subject.versions.length - 1].version;
+    const queryVersion = getVersionFromQuery();
+    const defaultVersion = !queryVersion || queryVersion == 'latest'
+        ? subject.latestActiveVersion
+        : queryVersion;
     const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
     const schema = subject.schemas.first(x => x.version == selectedVersion)!;
+
     if (!schema) {
-        setSelectedVersion(defaultVersion);
+        if (selectedVersion != defaultVersion) {
+            setSelectedVersion(defaultVersion);
+        }
+
         return null;
     }
 
-    const formattedSchema = getFormattedSchemaText(schema);
 
     return <Flex gap="10">
 
@@ -319,7 +324,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
             {/* Code Block */}
             <CodeBlock
-                codeString={formattedSchema}
+                codeString={getFormattedSchemaText(schema)}
                 language={schemaTypeToCodeBlockLanguage(schema.type)}
                 theme="light"
                 showLineNumbers
@@ -341,13 +346,14 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
     const subject = p.subject;
 
     const defaultVersionLeft = subject.versions[0].version;
-    const defaultVersionRight = subject.versions[subject.versions.length - 1].version;
+    const defaultVersionRight = subject.latestActiveVersion;
 
     const [selectedVersionLeft, setSelectedVersionLeft] = useState(defaultVersionLeft);
     const [selectedVersionRight, setSelectedVersionRight] = useState(defaultVersionRight);
 
     const schemaLeft = subject.schemas.first(x => x.version == selectedVersionLeft);
     const schemaRight = subject.schemas.first(x => x.version == selectedVersionRight);
+
     if (!schemaLeft) {
         setSelectedVersionLeft(subject.versions[0].version);
         return null;

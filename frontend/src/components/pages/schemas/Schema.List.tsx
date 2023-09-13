@@ -16,7 +16,7 @@ import { api } from '../../../state/backendApi';
 import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
@@ -25,8 +25,8 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button, Checkbox, Flex, Skeleton } from '@redpanda-data/ui';
-import { Statistic } from '../../misc/Statistic';
+import { Alert, AlertIcon, Button, Checkbox, Divider, Flex, Skeleton } from '@redpanda-data/ui';
+import { SmallStat } from '../../misc/SmallStat';
 
 function renderRequestErrors(requestErrors?: string[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -110,12 +110,16 @@ class SchemaList extends PageComponent<{}> {
 
         return (
             <PageContent key="b">
-                <Section py={4}>
-                    <Flex>
-                        <Statistic title="Mode" value={api.schemaMode}></Statistic>
-                        <Statistic title="Compatibility Level" value={api.schemaConfig}></Statistic>
-                    </Flex>
-                </Section>
+                {/* Statistics Bar */}
+                <Flex gap="1rem" alignItems="center">
+                    <SmallStat title="Mode">{api.schemaConfig ?? <InlineSkeleton width="100px" />}</SmallStat>
+                    <Divider height="2ch" orientation="vertical" />
+                    <SmallStat title="Compatability">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
+                </Flex>
+
+                <Button variant="outline" mb="4" width="fit-content" onClick={() => appGlobal.history.push('/schema-registry/edit-compatability')}>
+                    Edit Compatability
+                </Button>
 
                 {renderRequestErrors()}
 
@@ -142,8 +146,8 @@ class SchemaList extends PageComponent<{}> {
                         dataSource={filteredSubjects}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name}/> },
-                            { title: 'Latest Version', render: (_, r) => <LatestVersionColumn name={r.name}/> },
+                            { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name} /> },
+                            { title: 'Latest Version', render: (_, r) => <LatestVersionColumn name={r.name} /> },
                         ]}
 
                         observableSettings={uiSettings.schemaList}
@@ -160,21 +164,21 @@ class SchemaList extends PageComponent<{}> {
     }
 }
 
-const SchemaTypeColumn = observer((p: {name: string}) => {
+const SchemaTypeColumn = observer((p: { name: string }) => {
     const details = api.schemaDetails.get(p.name);
     if (!details) {
         api.refreshSchemaDetails(p.name);
-        return <Skeleton height="15px"/>;
+        return <Skeleton height="15px" />;
     }
 
     return <>{details.type}</>;
 });
 
-const LatestVersionColumn = observer((p: {name: string}) => {
+const LatestVersionColumn = observer((p: { name: string }) => {
     const details = api.schemaDetails.get(p.name);
     if (!details) {
         api.refreshSchemaDetails(p.name);
-        return <Skeleton height="15px"/>;
+        return <Skeleton height="15px" />;
     }
 
     return <>{details.latestActiveVersion}</>;

@@ -41,6 +41,7 @@ import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
+import EditSchemaCompatabilityPage from './pages/schemas/EditCompatability';
 
 //
 //	Route Types
@@ -117,6 +118,8 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         // Menu entry for Page
         if (entry.path.includes(':'))
             return null; // only root-routes (no param) can be in menu
+        if (!entry.icon)
+            return null; // items without icon do not appear in the sidebar
 
         let isEnabled = true;
         let disabledText: JSX.Element = <></>;
@@ -283,6 +286,8 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
     MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
+    MakeRoute<{ subjectName: string }>('/schema-registry/edit-compatability', EditSchemaCompatabilityPage, 'Edit Schema Compatability'),
+    MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName/edit-compatability', EditSchemaCompatabilityPage, 'Edit Schema Compatability'),
 
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', FilterIcon, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
