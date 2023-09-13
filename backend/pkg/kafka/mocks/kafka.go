@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+
 	kafka "github.com/redpanda-data/console/backend/pkg/kafka"
 )
 

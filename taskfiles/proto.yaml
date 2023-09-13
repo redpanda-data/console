@@ -26,25 +26,18 @@ tasks:
     desc: generate protos
     deps:
       - install-buf
+    vars:
+      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
     cmds:
       # Delete previously generated files
       - rm -rf {{.BACKEND_ROOT}}/internal/protogen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
-      # APIs defined in proto folder
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf generate
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w
-      # APIs in different packages for test data, etc...
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf format -w {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf lint --config {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf generate --template {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/buf.gen.yaml {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
-        # In CI ensure no changes
+      - for: { var: BUF_INPUTS }
+        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf lint {{ .ITEM }}
+      - for: { var: BUF_INPUTS }
+        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
+      - for: { var: BUF_INPUTS }
+        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w {{ .ITEM }}
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
 
   install-buf:
