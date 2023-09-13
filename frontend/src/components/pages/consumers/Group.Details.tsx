@@ -34,10 +34,6 @@ import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
 
-function notNull<TValue>(value: TValue | null): value is TValue {
-    return value !== null;
-}
-
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
@@ -381,7 +377,7 @@ class GroupByTopics extends Component<{
 
 
         return (
-            <Accordion items={topicEntriesAccordion.filter(notNull)} defaultIndex={defaultExpand} />
+            <Accordion items={topicEntriesAccordion.filterNull()} defaultIndex={defaultExpand} />
         );
     }
 }
@@ -487,7 +483,7 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
 
 
         return (
-            <Accordion items={memberEntriesAccordion.filter(notNull)} defaultIndex={defaultExpandIndex}/>
+            <Accordion items={memberEntriesAccordion.filterNull()} defaultIndex={defaultExpandIndex}/>
         );
     }
 }
