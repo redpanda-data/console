@@ -167,10 +167,10 @@ func (api *API) routes() *chi.Mux {
 				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 			}
 
-			interceptors := []connect_go.Interceptor{}
-
 			// we want the actual request validation after all authorization and permission checks
-			interceptors = append(interceptors, NewRequestValidationInterceptor(api.Logger, v))
+			interceptors := []connect_go.Interceptor{
+				NewRequestValidationInterceptor(api.Logger, v),
+			}
 
 			// Connect service(s)
 			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
