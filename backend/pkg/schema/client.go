@@ -213,7 +213,7 @@ func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse,
 
 	results := []SchemaVersionedResponse{}
 	for _, sv := range versionRes.Versions {
-		sr, err := c.GetSchemaBySubject(subject, strconv.FormatInt(int64(sv), 10))
+		sr, err := c.GetSchemaBySubject(subject, strconv.Itoa(sv))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
 		}
