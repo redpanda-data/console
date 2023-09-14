@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -201,6 +202,25 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 	}
 
 	return parsed, nil
+}
+
+// GetSchemasBySubject gets all versioned schemas for a given subject.
+func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse, error) {
+	versionRes, err := c.GetSubjectVersions(subject)
+	if err != nil {
+		return nil, err
+	}
+
+	results := []SchemaVersionedResponse{}
+	for _, sv := range versionRes.Versions {
+		sr, err := c.GetSchemaBySubject(subject, strconv.FormatInt(int64(sv), 10))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
+		}
+		results = append(results, *sr)
+	}
+
+	return results, nil
 }
 
 // SubjectsResponse is the schema for the GET /subjects endpoint.
@@ -413,7 +433,7 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 	}
 
 	type chRes struct {
-		schemaRes *SchemaVersionedResponse
+		schemaRes []SchemaVersionedResponse
 		err       error
 	}
 	ch := make(chan chRes, len(subjectsRes.Subjects))
@@ -421,9 +441,9 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
 		go func(s string) {
-			r, err := c.GetSchemaBySubject(s, "latest")
+			srRes, err := c.GetSchemasBySubject(s)
 			ch <- chRes{
-				schemaRes: r,
+				schemaRes: srRes,
 				err:       err,
 			}
 		}(subject)
@@ -435,7 +455,7 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 		if res.err != nil {
 			return nil, fmt.Errorf("failed to fetch at least one schema: %w", res.err)
 		}
-		schemas = append(schemas, *res.schemaRes)
+		schemas = append(schemas, res.schemaRes...)
 	}
 
 	return schemas, nil
