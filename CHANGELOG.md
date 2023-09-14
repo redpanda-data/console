@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.3 / 2023-09-14
+
+- [BUGFIX] Get all schemas for protobuf compilation in order to support records of multiple versions of same schema.
+- [IMPROVEMENT] Add numeric values to the deserializer. Console will attempt to deserialize payloads as big endian uints.
+
 ## v2.3.2 / 2023-09-05
 
 - [BUGFIX] Fix base64 decoding of 'utf8WithControlChars' in frontend
