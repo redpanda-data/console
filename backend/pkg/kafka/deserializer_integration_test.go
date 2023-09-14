@@ -1183,7 +1183,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 	t.Run("schema registry protobuf update", func(t *testing.T) {
 		// create the topic
-		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf")
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_update")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
@@ -1430,7 +1430,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("numeric key", func(t *testing.T) {
-		testTopicName := testutil.TopicNameForTest("deserializer_plain_json")
+		testTopicName := testutil.TopicNameForTest("deserializer_numeric_key")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
@@ -1500,7 +1500,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("ambiguous numeric key as text", func(t *testing.T) {
-		testTopicName := testutil.TopicNameForTest("deserializer_plain_json")
+		testTopicName := testutil.TopicNameForTest("deserializer_numeric_key_text")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
