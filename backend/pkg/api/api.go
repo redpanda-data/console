@@ -20,6 +20,8 @@ import (
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -118,11 +120,16 @@ func (api *API) Start() {
 		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
 
+	mux := api.routes()
+
 	// Server
-	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
+	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, mux)
 	if err != nil {
 		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
 	}
+
+	// need this to make gRPC protocol work
+	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{})
 
 	err = api.server.Start()
 	if err != nil {

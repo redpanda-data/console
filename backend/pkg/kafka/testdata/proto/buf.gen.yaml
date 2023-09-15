@@ -1,5 +1,5 @@
 version: v1
 plugins:
   - plugin: buf.build/protocolbuffers/go
-    out: pkg/kafka/testdata/proto/gen
+    out: backend/pkg/kafka/testdata/proto/gen
     opt: paths=source_relative
