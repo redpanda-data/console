@@ -71,7 +71,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	var metadata kadm.Metadata
 	grp.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.KafkaAdmClient.Metadata(ctx)
+		metadata, err = s.kafkaSvc.KafkaAdmClient.Metadata(grpCtx)
 		return err
 	})
 
@@ -80,7 +80,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	grp.Go(func() error {
 		var err error
 
-		clusterVersion, err = s.GetKafkaVersion(childCtx)
+		clusterVersion, err = s.GetKafkaVersion(grpCtx)
 		if err != nil {
 			s.logger.Warn("failed to request kafka version", zap.Error(err))
 		}
