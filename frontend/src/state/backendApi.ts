@@ -1706,12 +1706,6 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
         throw new Error(`${response.status} (${text ?? response.statusText})`);
     }
 
-    // server/proxy error?
-    if (!response.ok) {
-        text = text?.trim() ?? '';
-        throw new Error(`${response.status} (${text ?? response.statusText})`);
-    }
-
     return obj as T;
 }
 

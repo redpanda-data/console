@@ -41,6 +41,10 @@ export class WrappedApiError extends Error {
             this.path = response.url;
         }
     }
+
+    toString() {
+        return `${this.message} (Status ${this.statusCode})`;
+    }
 }
 
 
