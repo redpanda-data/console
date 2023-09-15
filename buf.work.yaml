@@ -1,4 +1,3 @@
 version: v1
 directories:
   - proto
-  - ./backend/pkg/kafka/testdata/proto

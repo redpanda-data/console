@@ -27,10 +27,12 @@ tasks:
     deps:
       - install-buf
     vars:
-      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto
+      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update
     cmds:
       # Delete previously generated files
-      - rm -rf {{.BACKEND_ROOT}}/internal/protogen
+      - rm -rf {{.BACKEND_ROOT}}/pkg/protogen
+      - rm -rf {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto/gen
+      - rm -rf {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update/gen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - task: lint
       - task: format
