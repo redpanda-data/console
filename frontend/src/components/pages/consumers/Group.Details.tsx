@@ -299,12 +299,12 @@ class GroupByTopics extends Component<{
                             <Flex ml={2} gap={1}>
                                 {/* InfoTags */}
                                 <Tooltip placement="top" label="Summed lag of all partitions of the topic" hasArrow>
-                                    <Tag color="rgb(225, 66, 38)">
+                                    <Tag colorScheme="brand" variant="solid">
                                         lag: {numberToThousandsString(totalLagAll)}
                                     </Tag>
                                 </Tooltip>
                                 <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
-                                    <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
+                                    <Tag colorScheme="brand" variant="solid">assigned partitions: {partitionsAssigned}</Tag>
                                 </Tooltip>
                             </Flex>
                         </Flex>
@@ -441,15 +441,15 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                     heading: <Flex alignItems="baseline" gap="1">
                         <Text fontWeight={600} fontSize="lg" mr={4}>{renderMergedID(m.id, m.clientId)}</Text>
                         <Tooltip placement="top" label="Host of the member" hasArrow>
-                            <Tag color="blue">
+                            <Tag colorScheme="blue">
                                 host: {m.clientHost}
                             </Tag>
                         </Tooltip>
                         <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
-                            <Tag color="rgb(225, 66, 38)">partitions: {totalPartitions}</Tag>
+                            <Tag variant="solid" colorScheme="brand">partitions: {totalPartitions}</Tag>
                         </Tooltip>
                         <Tooltip placement="top" label="Summed lag over all assigned partitions of all topics" hasArrow>
-                            <Tag color="rgb(225, 66, 38)">lag: {totalLag}</Tag>
+                            <Tag variant="solid" colorScheme="brand">lag: {totalLag}</Tag>
                         </Tooltip>
                     </Flex>,
                     description: <Table
