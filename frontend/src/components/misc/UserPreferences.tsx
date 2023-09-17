@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from 'react';
-import { observer } from 'mobx-react';
-import { Menu, Modal, Input, message, InputNumber } from 'antd';
+import { Component, FC } from 'react';
+import { observer, useLocalObservable } from 'mobx-react';
+import { Menu, Modal, Input, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label } from '../../utils/tsxUtils';
 import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
-import { Button, Checkbox, IconButton } from '@redpanda-data/ui';
+import { Button, Checkbox, Flex, IconButton, useToast } from '@redpanda-data/ui';
 
 type Action = () => void;
 
-const settingsTabs: { name: string, component: () => ReactNode }[] = [
+const settingsTabs: { name: string, component: FC }[] = [
     { name: 'Statistics Bar', component: () => <StatsBarTab /> },
     { name: 'Json Viewer', component: () => <JsonViewerTab /> },
     { name: 'Import/Export', component: () => <ImportExportTab /> },
@@ -62,40 +62,41 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
         super(p);
         makeObservable(this);
     }
+
     render() {
-        const { visible, onClose } = this.props;
+        const {visible, onClose} = this.props;
         const tab = settingsTabs.first(t => t.name == this.selectedTab);
 
-        return 1 &&
+        return (
             <Modal centered open={visible}
-                closable={false}
-                title={null}
-                onOk={onClose}
-                onCancel={onClose}
+                   closable={false}
+                   title={null}
+                   onOk={onClose}
+                   onCancel={onClose}
 
-                destroyOnClose={true}
+                   destroyOnClose={true}
 
-                cancelButtonProps={{ style: { display: 'none' } }}
-                maskClosable={true}
-                footer={<div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                    <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
-                        Changes are saved automatically
-                    </div>
-                    <Button variant="outline" onClick={onClose} >Close</Button>
-                </div>}
-                className="preferencesDialog"
-                bodyStyle={{ padding: '0', display: 'flex', flexDirection: 'column' }}
+                   cancelButtonProps={{style: {display: 'none'}}}
+                   maskClosable={true}
+                   footer={<div style={{display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end'}}>
+                       <div style={{fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282'}}>
+                           Changes are saved automatically
+                       </div>
+                       <Button variant="outline" onClick={onClose}>Close</Button>
+                   </div>}
+                   className="preferencesDialog"
+                   bodyStyle={{padding: '0', display: 'flex', flexDirection: 'column'}}
             >
                 {/* Title */}
-                <div className="h3" style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(0 0% 90% / 1)' }}>
+                <div className="h3" style={{display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(0 0% 90% / 1)'}}>
                     User Preferences
                 </div>
 
                 {/* Body */}
-                <div style={{ display: 'flex', flexGrow: 1 }}>
+                <div style={{display: 'flex', flexGrow: 1}}>
                     {/* Menu */}
-                    <Menu mode="vertical" style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
-                        {settingsTabs.map(t => <Menu.Item key={t.name} >{t.name}</Menu.Item>)}
+                    <Menu mode="vertical" style={{width: '160px', height: '100%'}} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
+                        {settingsTabs.map(t => <Menu.Item key={t.name}>{t.name}</Menu.Item>)}
                     </Menu>
 
                     {/* Content */}
@@ -103,11 +104,12 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
                         display: 'flex', flexGrow: 1, gap: '16px', flexDirection: 'column',
                         padding: '0 20px', paddingBottom: '40px',
                     }}>
-                        <div className="h3" style={{ marginTop: '16px', marginBottom: '8px' }}>{tab?.name}</div>
-                        {tab?.component()}
+                        <div className="h3" style={{marginTop: '16px', marginBottom: '8px'}}>{tab?.name}</div>
+                        {tab && <tab.component/>}
                     </div>
                 </div>
-            </Modal>;
+            </Modal>
+        );
     }
 }
 
@@ -156,86 +158,101 @@ class JsonViewerTab extends Component {
     }
 }
 
-@observer
-class ImportExportTab extends Component {
-    @observable importCode = '';
-    @observable resetConfirm = '';
-
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
-    render() {
-        return <>
-            <Label text="Import">
-                <div style={{ display: 'flex' }}>
-                    <Input
-                        style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
-                        placeholder="Paste a previously exported settings string..."
-                        value={this.importCode}
-                        onChange={e => this.importCode = e.target.value}
-                        size="small"
-                    />
-                    <Button onClick={() => {
-                        try {
-                            const data = JSON.parse(this.importCode);
-                            const skipped: string[] = [];
-                            transaction(() => {
-                                for (const k in data) {
-                                    if (!Reflect.has(uiSettings, k))
-                                        skipped.push(k);
-                                    else
-                                        (uiSettings as any)[k] = data[k];
-                                }
-                            });
-                            if (skipped.length > 0)
-                                message.warn('Some properties were skipped during import:\n' + skipped.join(', '));
-                            else
-                                message.success('Settings imported successfully');
-                            this.importCode = '';
-                        } catch (e) {
-                            message.error('Unable to import settings. See console for more information.');
-                            console.error('unable to import settings', { error: e });
-                        }
-
-                    }}>Import</Button>
-                </div>
-            </Label>
-
-            <Label text="Export">
+const ImportExportTab: FC = observer(() => {
+    const toast = useToast()
+    const $state = useLocalObservable<{
+        importCode: string;
+        resetConfirm: string;
+    }>(() => ({
+        importCode: '',
+        resetConfirm: ''
+    }))
+    return <>
+        <Label text="Import">
+            <Flex>
+                <Input
+                    style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }}
+                    spellCheck={false}
+                    placeholder="Paste a previously exported settings string..."
+                    value={$state.importCode}
+                    onChange={e => $state.importCode = e.target.value}
+                    size="small"
+                />
                 <Button onClick={() => {
                     try {
-                        navigator.clipboard.writeText(JSON.stringify(uiSettings));
-                        message.success('Preferences copied to clipboard!');
+                        const data = JSON.parse($state.importCode);
+                        const skipped: string[] = [];
+                        transaction(() => {
+                            for (const k in data) {
+                                if (!Reflect.has(uiSettings, k))
+                                    skipped.push(k);
+                                else
+                                    (uiSettings as any)[k] = data[k];
+                            }
+                        });
+                        if (skipped.length > 0)
+                            toast({
+                                status: 'warning',
+                                description: 'Some properties were skipped during import:\n' + skipped.join(', ')
+                            })
+                        else
+                            toast({
+                                status: 'success',
+                                description: 'Settings imported successfully'
+                            })
+                        $state.importCode = '';
                     } catch (e) {
-                        message.error('Unable to copy settings to clipboard. See console for more information.');
-                        console.error('unable to copy settings to clipboard', { error: e });
+                        toast({
+                            status: 'error',
+                            description: 'Unable to import settings. See console for more information.'
+                        })
+                        console.error('unable to import settings', { error: e });
                     }
-                }}>
-                    Export User Preferences
-                </Button>
-            </Label>
 
-            <Label text="Reset">
-                <>
-                    <div>
-                        <Input style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
-                            placeholder='type "reset" here to confirm and enable the button'
-                            value={this.resetConfirm}
-                            onChange={str => this.resetConfirm = str.target.value} />
-                        <Button onClick={() => {
-                            clearSettings();
-                            message.success('All settings have been reset to their defaults');
-                            this.resetConfirm = '';
-                        }} colorScheme="red" disabled={this.resetConfirm != 'reset'}>Reset</Button>
-                    </div>
-                    <span className="smallText">Clear all your user settings, resetting them to the default values</span>
-                </>
-            </Label>
-        </>;
-    }
-}
+                }}>Import</Button>
+            </Flex>
+        </Label>
+
+        <Label text="Export">
+            <Button onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(uiSettings)).then(() => {
+                    toast({
+                        status: 'success',
+                        description: 'Preferences copied to clipboard!'
+                    })
+                }).catch((e) => {
+                    toast({
+                        status: 'error',
+                        description: 'Unable to copy settings to clipboard. See console for more information.'
+                    });
+                    console.error('unable to copy settings to clipboard', {error: e});
+                })
+            }}>
+                Export User Preferences
+            </Button>
+        </Label>
+
+        <Label text="Reset">
+            <>
+                <div>
+                    <Input style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
+                           placeholder='type "reset" here to confirm and enable the button'
+                           value={$state.resetConfirm}
+                           onChange={str => $state.resetConfirm = str.target.value} />
+                    <Button onClick={() => {
+                        clearSettings();
+                        toast({
+                            status: 'success',
+                            description: 'All settings have been reset to their defaults'
+                        });
+                        $state.resetConfirm = '';
+                    }} colorScheme="red" isDisabled={$state.resetConfirm !== 'reset'}>Reset</Button>
+                </div>
+                <span className="smallText">Clear all your user settings, resetting them to the default values</span>
+            </>
+        </Label>
+    </>;
+})
 
 @observer
 class AutoRefreshTab extends Component {

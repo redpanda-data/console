@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { observer } from 'mobx-react';
-import { Select, Modal, AutoComplete, message } from 'antd';
+import { Select, Modal, AutoComplete } from 'antd';
 import { api } from '../../../state/backendApi';
 import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
@@ -20,7 +20,7 @@ import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Button, Icon, Input, InputGroup } from '@redpanda-data/ui';
+import { Button, Icon, Input, InputGroup, useToast } from '@redpanda-data/ui';
 const { Option } = Select;
 
 
@@ -30,6 +30,7 @@ export const AclPrincipalGroupEditor = observer((p: {
     onClose: () => void
 }) => {
     const group = p.principalGroup;
+    const toast = useToast()
 
     const existingPrincipals: string[] = [];
     const principalOptions = existingPrincipals.map(p => ({ value: p }));
@@ -97,18 +98,21 @@ export const AclPrincipalGroupEditor = observer((p: {
                     return;
                 }
 
-                if (p.type == 'create')
-                    message.success(
-                        <>
+                if (p.type == 'create') {
+                    toast({
+                        status: 'success',
+                        description: <span>
                             Created ACLs for principal <Code>{group.principalName}</Code>
-                        </>
-                    );
-                else
-                    message.success(
-                        <>
+                        </span>
+                    });
+                } else {
+                    toast({
+                        status: 'success',
+                        description: <span>
                             Updated ACLs for principal <Code>{group.principalName}</Code>
-                        </>
-                    );
+                        </span>
+                    });
+                }
 
                 setIsLoading(false);
                 p.onClose();

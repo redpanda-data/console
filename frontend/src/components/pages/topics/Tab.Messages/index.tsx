@@ -11,14 +11,14 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Radio, Select, Table, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, Modal, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
-import React, { Component, ReactNode } from 'react';
+import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
@@ -46,7 +46,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip, Popover } from '@redpanda-data/ui';
+import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip, Popover, useToast } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -64,6 +64,51 @@ interface TopicMessageViewProps {
         - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
         - add back summary of quick search  <this.FilterSummary />
 */
+
+const getStringValue = (value: string | TopicMessage): string => typeof value === 'string' ? value : JSON.stringify(value, null, 4)
+
+const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({record, onSaveToFile}) => {
+
+    const toast = useToast()
+    return (
+        <Menu>
+            <Menu.Item key="0" disabled={record.key.isPayloadNull} onClick={() => {
+                navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                    toast({
+                        status: 'success',
+                        description: 'Key copied to clipboard'
+                    })
+                })
+            }}>
+                Copy Key
+            </Menu.Item>
+            <Menu.Item key="2" disabled={record.value.isPayloadNull} onClick={() => {
+                navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                    toast({
+                        status: 'success',
+                        description: 'Value copied to clipboard'
+                    })
+                })
+            }}>
+                Copy Value
+            </Menu.Item>
+            <Menu.Item key="4" onClick={() => {
+                navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
+                    toast({
+                        status: 'success',
+                        description: 'Epoch Timestamp copied to clipboard'
+                    })
+                })
+            }}>
+                Copy Epoch Timestamp
+            </Menu.Item>
+            <Menu.Item key="5" onClick={() => onSaveToFile()}>
+                Save to File
+            </Menu.Item>
+        </Menu>
+    );
+};
+
 
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
@@ -440,7 +485,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <div>
                             {' '}
                             {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={<CopyDropdown record={record} onSaveToFile={() => this.downloadMessages = [record]} />} trigger={['click']}>
                                 <Button className="iconButton" style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} variant="link">
                                     <EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />
                                 </Button>
@@ -550,23 +595,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const tb = String(b.key) ?? '';
         return ta.localeCompare(tb);
     }
-
-    copyDropdown = (record: TopicMessage) => (
-        <Menu>
-            <Menu.Item key="0" disabled={record.key.isPayloadNull} onClick={() => copyMessage(record, 'jsonKey')}>
-                Copy Key
-            </Menu.Item>
-            <Menu.Item key="2" disabled={record.value.isPayloadNull} onClick={() => copyMessage(record, 'jsonValue')}>
-                Copy Value
-            </Menu.Item>
-            <Menu.Item key="4" onClick={() => copyMessage(record, 'timestamp')}>
-                Copy Epoch Timestamp
-            </Menu.Item>
-            <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
-                Save to File
-            </Menu.Item>
-        </Menu>
-    );
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
@@ -1503,30 +1531,6 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
             {content}
         </Menu.Item>
     );
-}
-
-// we can only write text to the clipboard, so rawKey/rawValue have been removed for now
-function copyMessage(record: TopicMessage, field: 'jsonKey' | 'jsonValue' | 'timestamp') {
-    switch (field) {
-        case 'jsonKey':
-            typeof record.key.payload === 'string'
-                ? navigator.clipboard.writeText(record.key.payload as string)
-                : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
-            message.success('Key copied to clipboard', 5);
-            break;
-        case 'jsonValue':
-            typeof record.value.payload === 'string'
-                ? navigator.clipboard.writeText(record.value.payload as string)
-                : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
-            message.success('Value copied to clipboard', 5);
-            break;
-        case 'timestamp':
-            navigator.clipboard.writeText(record.timestamp.toString());
-            message.success('Epoch Timestamp copied to clipboard', 5);
-            break;
-        default:
-        // empty
-    }
 }
 
 function createPublishRecordsModal(parent: TopicMessageView) {

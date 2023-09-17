@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { message } from 'antd';
 import { observer } from 'mobx-react';
 import React, { useEffect } from 'react';
 import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
 import { uiSettings } from '../../state/ui';
-import { Tooltip, useDisclosure } from '@redpanda-data/ui';
+import { Tooltip, useDisclosure, useToast } from '@redpanda-data/ui';
 const { setTimeout } = window;
 
 let ctrlDown = false;
@@ -35,6 +34,7 @@ type TooltipPopperRect = { x: number; y: number; width: number; height: number }
 
 export const KowlJsonView = observer((props: ReactJsonViewProps) => {
     const { style, ...restProps } = props;
+    const toast = useToast()
 
     const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -133,15 +133,15 @@ export const KowlJsonView = observer((props: ReactJsonViewProps) => {
                         collapsed={settings.collapsed}
                         onSelect={e => {
                             if (ctrlDown) {
-                                if (navigator?.clipboard) {
-                                    navigator.clipboard.writeText(String(e.value));
-                                    message.success(
-                                        <span>
-                                            Copied value of <span className="codeBox">{e.name}</span>
+                                navigator.clipboard.writeText(String(e.value)).then(() => {
+                                    toast({
+                                        status: 'success',
+                                        description: <span>
+                                             Copied value of <span className="codeBox">{e.name}</span>
                                         </span>,
-                                        0.8
-                                    );
-                                }
+                                        duration: 800
+                                    })
+                                })
                             }
                         }}
                         {...restProps}
