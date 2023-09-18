@@ -167,10 +167,10 @@ func (api *API) routes() *chi.Mux {
 				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 			}
 
-			interceptors := []connect_go.Interceptor{}
-
 			// we want the actual request validation after all authorization and permission checks
-			interceptors = append(interceptors, NewRequestValidationInterceptor(api.Logger, v))
+			interceptors := []connect_go.Interceptor{
+				NewRequestValidationInterceptor(api.Logger, v),
+			}
 
 			// Connect service(s)
 			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
@@ -206,7 +206,8 @@ func (api *API) routes() *chi.Mux {
 	return baseRouter
 }
 
-func NewRequestValidationInterceptor(logger *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
+// NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
+func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
 	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
 		return connect_go.UnaryFunc(func(
 			ctx context.Context,
@@ -219,7 +220,7 @@ func NewRequestValidationInterceptor(logger *zap.Logger, validator *protovalidat
 
 			err := validator.Validate(msg)
 			if err != nil {
-				return nil, err
+				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, err)
 			}
 
 			return next(ctx, req)

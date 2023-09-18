@@ -11,7 +11,7 @@
 
 import { Component } from 'react';
 import { UserDetails } from '../../../state/restInterfaces';
-import { Table, Collapse } from 'antd';
+import { Table } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField } from '../../misc/common';
@@ -21,7 +21,7 @@ import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { SearchField, Tooltip } from '@redpanda-data/ui';
+import { Accordion, SearchField, Tooltip } from '@redpanda-data/ui';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -73,13 +73,15 @@ export class AdminUsers extends Component<{}> {
                 // expandIconColumnIndex={0}
                 expandRowByClick={true}
                 expandedRowRender={(user: UserDetails) => (
-                    <Collapse defaultActiveKey={user.grantedRoles.length > 0 ? user.grantedRoles[0].role.name : undefined}>
-                        {user.grantedRoles.map(r => (
-                            <Collapse.Panel key={r.role.name} header={r.role.name}>
-                                <RoleComponent role={r.role} grantedBy={r.grantedBy} />
-                            </Collapse.Panel>
-                        ))}
-                    </Collapse>
+                    <Accordion
+                        defaultIndex={0}
+                        items={
+                            user.grantedRoles.map(r => ({
+                                heading: r.role.name,
+                                description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
+                            }))
+                        }
+                    />
                 )}
             />
         );

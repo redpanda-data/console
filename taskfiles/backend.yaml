@@ -102,7 +102,7 @@ tasks:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         GOBIN={{ .BUILD_ROOT }}/bin/go go generate ./...
-      - task: proto:generate
+      - task: ':proto:generate'
       - task: 'fmt'
 
   test-unit:

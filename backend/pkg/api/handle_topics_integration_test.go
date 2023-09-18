@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"testing"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/exp/slices"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -322,15 +322,8 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 			case *kmsg.MetadataRequest:
 				return nil, nil, false
 			case *kmsg.DescribeConfigsRequest:
-
-				slices.SortFunc(v.Resources, func(a, b kmsg.DescribeConfigsRequestResource) int {
-					if a.ResourceName < b.ResourceName {
-						return -1
-					} else if a.ResourceName > b.ResourceName {
-						return 1
-					} else {
-						return 0
-					}
+				sort.Slice(v.Resources, func(i, j int) bool {
+					return v.Resources[i].ResourceName < v.Resources[j].ResourceName
 				})
 
 				require.Len(v.Resources, 3)

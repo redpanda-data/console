@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -130,13 +131,7 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 				})
 			}
 			slices.SortFunc(logDirPartitions, func(a, b kmsg.DescribeLogDirsResponseDirTopicPartition) int {
-				if a.Partition < b.Partition {
-					return -1
-				} else if a.Partition > b.Partition {
-					return 1
-				} else {
-					return 0
-				}
+				return int(a.Partition - b.Partition)
 			})
 
 			logDirTopics = append(logDirTopics, kmsg.DescribeLogDirsResponseDirTopic{
@@ -144,14 +139,8 @@ func unifyLogDirs(logDirs []kmsg.DescribeLogDirsResponseDir) []kmsg.DescribeLogD
 				Partitions: logDirPartitions,
 			})
 		}
-		slices.SortFunc(logDirTopics, func(a, b kmsg.DescribeLogDirsResponseDirTopic) int {
-			if a.Topic < b.Topic {
-				return -1
-			} else if a.Topic > b.Topic {
-				return 1
-			} else {
-				return 0
-			}
+		sort.Slice(logDirTopics, func(i, j int) bool {
+			return logDirTopics[i].Topic < logDirTopics[j].Topic
 		})
 
 		unifiedLogDirs = append(unifiedLogDirs, kmsg.DescribeLogDirsResponseDir{

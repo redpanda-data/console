@@ -170,7 +170,7 @@ class AclList extends PageComponent {
 
             onCreate: () => observable({
                 username: '',
-                password: generatePassword(30),
+                password: generatePassword(30, false),
                 mechanism: 'SCRAM-SHA-256',
             } as CreateUserRequest),
 

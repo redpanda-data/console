@@ -11,17 +11,18 @@
 
 
 
-import { Alert, Empty, message, Modal, Popover } from 'antd';
+import { Alert, Empty, message, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
-import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
 import MongoDBLogo from '../../../assets/connectors/mongodb.png';
 import IcebergLogo from '../../../assets/connectors/iceberg.png';
+import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
 import DebeziumLogo from '../../../assets/connectors/debezium.png';
 import ConfluentLogo from '../../../assets/connectors/confluent.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -45,7 +46,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button } from '@redpanda-data/ui';
+import { Button, Popover } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -264,6 +265,43 @@ const connectorMetadata: ConnectorMetadata[] = [
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
+    // JMS Connectors
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Exports messages to JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Imports messages from JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-source-connector/'
+    } as const,
+
+
+    // IBM MQ Connectors
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Exports messages to IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsource.MQSourceConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Imports messages from IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-source-connector/'
+    } as const,
+
     // Community Connector
     {
         classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
@@ -359,26 +397,21 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     const meta = findConnectorMetadata(c);
     const displayName = meta?.friendlyName ?? removeNamespace(c);
 
-    return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-        {meta && meta.logo &&
-            <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <ZeroSizeWrapper width="22px" transform="translateY(-1px)" >
-                    <div style={{ width: '22px', height: '22px' }}>
-                        {meta.logo}
-                    </div>
-                </ZeroSizeWrapper>
-            </span>
-        }
+    return (
+        <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+            {meta && meta.logo && (
+                <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
+                    <ZeroSizeWrapper width="22px" transform="translateY(-1px)">
+                        <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
+                    </ZeroSizeWrapper>
+                </span>
+            )}
 
-        <Popover placement="right" overlayClassName="popoverSmall"
-            getPopupContainer={findPopupContainer}
-            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                {c}
-            </div>}
-        >
-            {displayName}
-        </Popover>
-    </div>
+            <Popover placement="right" size="stretch" hideCloseButton={true} content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}>
+                {displayName}
+            </Popover>
+        </div>
+    );
 });
 
 export function removeNamespace(className: string): string {

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Modal, notification, Popover } from 'antd';
+import { Modal, notification } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -28,7 +28,7 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Checkbox, Alert, AlertIcon, Flex, Tooltip } from '@redpanda-data/ui';
+import { Button, Icon, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
@@ -122,8 +122,9 @@ class TopicList extends PageComponent {
                             title="Partition Details"
                             content={partitionDetails}
                             placement="right"
-                            mouseEnterDelay={0}
                             trigger="hover"
+                            size="stretch"
+                            hideCloseButton
                         >
                             <div
                                 className="hoverLink"
@@ -314,7 +315,7 @@ const renderName = (topic: Topic) => {
     );
 
     return (
-        <Popover content={popoverContent} placement="right" mouseEnterDelay={0.1} mouseLeaveDelay={0.1}>
+        <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
             <span>
                 {topic.topicName}
                 {iconClosedEye}
