@@ -1,6 +1,4 @@
 version: 3
-includes:
-  proto: proto.yaml
 tasks:
   install-golangci-lint:
     desc: install golangci linter
