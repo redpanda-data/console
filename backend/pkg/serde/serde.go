@@ -25,6 +25,9 @@ type serdeCfg struct {
 	indexSet bool
 
 	topic string
+
+	uintSize    UintSize
+	uintSizeSet bool
 }
 
 type (
@@ -55,6 +58,13 @@ func WithSchemaPath(path string) SerdeOpt {
 
 func WithTopic(topic string) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) { t.topic = topic }}
+}
+
+func WithUintSize(size UintSize) SerdeOpt {
+	return serdeOpt{func(t *serdeCfg) {
+		t.uintSize = size
+		t.uintSizeSet = true
+	}}
 }
 
 type Serde interface {

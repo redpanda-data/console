@@ -23,6 +23,7 @@ const (
 	PayloadEncodingBinary               PayloadEncoding = "binary"
 	PayloadEncodingMsgPack              PayloadEncoding = "msgpack"
 	PayloadEncodingSmile                PayloadEncoding = "smile"
+	PayloadEncodingUint                 PayloadEncoding = "uint"
 )
 
 type HeaderEncoding string
@@ -39,4 +40,14 @@ type PayloadType int
 const (
 	PayloadTypeKey PayloadType = iota
 	PayloadTypeValue
+)
+
+// UintSize is the size of uint to be used in uint serialization.
+type UintSize uint
+
+const (
+	Uint8 UintSize = iota
+	Uint16
+	Uint32
+	Uint64
 )

@@ -41,6 +41,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			SmileSerde{},
 			UTF8Serde{},
 			TextSerde{},
+			UintSerde{},
 		},
 	}
 }
