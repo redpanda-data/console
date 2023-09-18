@@ -58,6 +58,7 @@ const App = () => {
                 inside an Ant modal.
              */}
             <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} portalZIndex={1001}>
+                <div id="portals" />
                 <ErrorBoundary>
                     <RequireAuth>
                         {isEmbedded()
