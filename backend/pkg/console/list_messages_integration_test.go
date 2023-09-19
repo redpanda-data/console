@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -494,6 +495,70 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
 	})
+
+	t.Run("messages with filter", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		orderMatcher := MatchesOrders([]string{"1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).AnyTimes() // how many times should we expect this to be called with a filter?
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+
+		code := `return value.ID.startsWith('1')`
+
+		input := ListMessageRequest{
+			TopicName:             testTopicName,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
+
+	t.Run("messages with key filter", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		orderMatcher := MatchesOrders([]string{"2", "3", "12", "13"})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).AnyTimes() // how many times should we expect this to be called with a filter?
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+
+		code := `return key.endsWith('2') || key.endsWith('3')`
+
+		input := ListMessageRequest{
+			TopicName:             testTopicName,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
 }
 
 func createNewTestService(t *testing.T, log *zap.Logger,
@@ -546,4 +611,53 @@ type OrderMatcher struct {
 	expectedID string
 	actualID   string
 	err        string
+}
+
+// Matches implements the Matcher interface for OrderMatcher
+func (o *OrdersMatcher) Matches(x interface{}) bool {
+	if m, ok := x.(*kafka.TopicMessage); ok {
+		order := testutil.Order{}
+		err := json.Unmarshal(m.Value.NormalizedPayload, &order)
+		if err != nil {
+			o.err = fmt.Sprintf("marshal error: %s", err.Error())
+			return false
+		}
+
+		o.actualID = order.ID
+
+		o.m.Lock()
+		defer o.m.Unlock()
+
+		_, ok := o.expectedIDs[order.ID]
+		if ok {
+			delete(o.expectedIDs, order.ID)
+		}
+
+		return ok
+	}
+
+	o.err = "value is not a TopicMessage"
+	return false
+}
+
+// String implements the Stringer interface for OrderMatcher
+func (o *OrdersMatcher) String() string {
+	return fmt.Sprintf("has order ID %s expected order ID %s. err: %s", o.actualID, o.expectedIDs, o.err)
+}
+
+// MatchesOrder creates the Matcher
+func MatchesOrders(ids []string) gomock.Matcher {
+	idMap := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		idMap[id] = struct{}{}
+	}
+	return &OrdersMatcher{expectedIDs: idMap}
+}
+
+// OrderMatcher can be used in expect functions to assert on Order ID
+type OrdersMatcher struct {
+	expectedIDs map[string]struct{}
+	actualID    string
+	err         string
+	m           sync.Mutex
 }
