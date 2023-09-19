@@ -30,7 +30,7 @@ import { StepReview, TopicWithMoves } from './Step3.Review';
 import { ApiData, computeReassignments, TopicPartitions } from './logic/reassignLogic';
 import { computeMovedReplicas, partitionSelectionToTopicPartitions, topicAssignmentsToReassignmentRequest } from './logic/utils';
 import { IsDev } from '../../../utils/env';
-import { Message, scrollTo, scrollToTop } from '../../../utils/utils';
+import { scrollTo, scrollToTop } from '../../../utils/utils';
 import { ActiveReassignments } from './components/ActiveReassignments';
 import { ReassignmentTracker } from './logic/reassignmentTracker';
 import { showErrorModal } from '../../misc/ErrorModal';
@@ -401,7 +401,11 @@ class ReassignPartitions extends PageComponent {
             if (!success) return false;
         }
 
-        const msg = new Message('Starting reassignment');
+        const toastRef = toast({
+            status: 'loading',
+            description: 'Starting reassignment',
+            duration: null,
+        })
         try {
             const response = await api.startPartitionReassignment(request);
 
@@ -414,21 +418,31 @@ class ReassignPartitions extends PageComponent {
 
             if (errors.length == 0) {
                 // No errors
-                msg.setSuccess();
+                toast.update(toastRef, {
+                    status: 'success',
+                    duration: 2500,
+                })
                 return true;
             } else if (startedCount > 0) {
                 // Some errors
-                msg.setSuccess();
+                toast.update(toastRef, {
+                    status: 'success',
+                    duration: 2500,
+                })
                 this.setReassignError(startedCount, errors);
                 return true;
             } else {
                 // All errors
-                msg.setError();
+                toast.update(toastRef, {
+                    status: 'error',
+                    duration: 2500,
+                })
                 this.setReassignError(startedCount, errors);
                 return false;
             }
         } catch (err) {
-            msg.hide();
+            toast.close(toastRef)
+
             return false;
         }
     }
@@ -473,24 +487,36 @@ class ReassignPartitions extends PageComponent {
             })
         }
 
-        const msg = new Message('Setting bandwidth throttle... 1/2');
+
+        const toastRef = toast({
+            status: 'loading',
+            description: 'Setting bandwidth throttle... 1/2',
+            duration: null
+        })
         try {
             let response = await api.setReplicationThrottleRate(api.clusterInfo!.brokers.map(b => b.brokerId), maxBytesPerSecond);
             let errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setLoading('Setting bandwidth throttle... 2/2');
+            toast.update(toastRef, {
+                description: 'Setting bandwidth throttle... 2/2',
+                duration: 2500,
+            })
 
             response = await api.setThrottledReplicas(topicReplicas);
             errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setSuccess('Setting bandwidth throttle... done');
+            toast.update(toastRef, {
+                status: 'success',
+                description: 'Setting bandwidth throttle... done',
+                duration: 2500,
+            })
             return true;
         } catch (err) {
-            msg.hide();
+            toast.close(toastRef);
             console.error('error setting throttle', err);
             return false;
         }
@@ -608,16 +634,29 @@ class ReassignPartitions extends PageComponent {
             okButtonProps: { danger: true, autoFocus: false, },
             async onOk() {
                 const baseText = 'Removing throttle config from topics';
-                const msg = new Message(baseText + '...');
+
+                const toastId = toast({
+                    status: 'loading',
+                    description: baseText + '...',
+                    duration: null
+                })
 
                 const result = await api.resetThrottledReplicas(throttledTopics);
                 const errors = result.patchedConfigs.filter(r => r.error);
 
                 if (errors.length == 0) {
-                    msg.setSuccess(baseText + ' - Done');
+                    toast.update(toastId, {
+                        status: 'success',
+                        description: baseText + ' -  Done',
+                        duration: 2500,
+                    })
                 }
                 else {
-                    msg.setError(baseText + ': ' + errors.length + ' errors');
+                    toast.update(toastId, {
+                        status: 'error',
+                        description: baseText + ': '  + errors.length + ' errors',
+                        duration: 2500,
+                    })
                     console.error('errors in removeThrottleFromTopics', errors);
                 }
 

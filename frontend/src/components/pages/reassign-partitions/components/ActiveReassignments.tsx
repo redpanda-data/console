@@ -464,6 +464,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         const partitions = state.partitions.map(p => p.partitionId);
 
+        // TODO Toast to be migrated with a dialog
         const msg = new Message(`Cancelling reassignment of '${state.topicName}'...`);
         try {
             const cancelRequest = {

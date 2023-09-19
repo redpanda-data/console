@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, Component, CSSProperties, ReactNode } from 'react';
+import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
-import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Skeleton } from 'antd';
-import { Button as RpButton, ButtonProps as RpButtonProps, Tooltip, PlacementWithLogical, Progress, redpandaTheme, ChakraProvider, Box, Flex, Text } from '@redpanda-data/ui';
-import { MessageType } from 'antd/lib/message';
+import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import { message, Radio, Skeleton } from 'antd';
+import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
@@ -327,10 +326,20 @@ interface StatusIndicatorProps {
     progressText: string;
 }
 
+
+
+// TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+    }
+})
+
 @observer
 export class StatusIndicator extends Component<StatusIndicatorProps> {
 
-    hide: MessageType | undefined;
+    toastRef: ToastId | null = null
 
     timerHandle: NodeJS.Timeout;
     lastUpdateTimestamp: number;
@@ -385,45 +394,53 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     componentWillUnmount() {
         clearInterval(this.timerHandle);
-        this.hide?.call(this);
-        this.hide = undefined;
+        this.toastRef && toast.close(this.toastRef)
+        this.toastRef = null
     }
 
     customRender() {
         const content =
-            <ChakraProvider theme={redpandaTheme}>
-                <Box mb="0.2em">
-                    <Box minW={300}>
-                        <Progress
-                            value={this.props.fillFactor * 100}
-                            isIndeterminate={this.props.statusText === 'Connecting'}
-                            colorScheme="brand"
-                        />
-                    </Box>
-                    <Flex fontSize="sm" fontWeight="bold">
-                        <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
-                        <Text ml="auto" pl="2em">{this.props.progressText}</Text>
-                    </Flex>
-                    {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                        <Flex fontSize="sm" fontWeight="bold">
-                            <Flex alignItems="center">
-                                <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
-                            </Flex>
-                            <Box style={{alignItems: 'center', marginLeft: 'auto'}}>
-                                <CopyOutlined style={{color: colors.brandOrange}}/>{this.props.messagesConsumed} messages
-                            </Box>
-                        </Flex>
-                    }
+            <Box mb="0.2em">
+                <Box minW={300}>
+                    <Progress
+                        value={this.props.fillFactor * 100}
+                        isIndeterminate={this.props.statusText === 'Connecting'}
+                        colorScheme="blue"
+                    />
                 </Box>
-            </ChakraProvider>
+                <Flex fontSize="sm" fontWeight="bold">
+                    <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
+                    <Text ml="auto" pl="2em">{this.props.progressText}</Text>
+                </Flex>
+                {(this.props.bytesConsumed && this.props.messagesConsumed) &&
+                    <Flex fontSize="sm" fontWeight="bold">
+                        <Flex alignItems="center">
+                            <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
+                        </Flex>
+                        <Box style={{alignItems: 'center', marginLeft: 'auto'}}>
+                            <CopyOutlined style={{color: colors.brandOrange}}/>{this.props.messagesConsumed} messages
+                        </Box>
+                    </Flex>
+                }
+            </Box>
 
-        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: 0, type: 'loading' });
+        if(this.toastRef === null) {
+            this.toastRef = toast({
+                status: 'info',
+                description: content,
+                duration: null,
+            })
+        } else {
+            toast.update(this.toastRef, {
+                description: content
+            })
+        }
     }
 
     render() {
         // workaround to propagate the update (timer -> mobx -> re-render)
         this.mobxSink = this.showWaitingText;
-        return null;
+        return <ToastContainer />;
     }
 }
 
