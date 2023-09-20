@@ -471,9 +471,7 @@ function makeCreateTopicModal(parent: TopicList) {
     return createAutoModal<void, CreateTopicModalState>({
         modalProps: {
             title: 'Create Topic',
-            width: '80%',
-            style: { minWidth: '600px', maxWidth: '1000px', top: '50px' },
-            bodyStyle: { paddingTop: '1em' },
+            style: { width: '80%', minWidth: '600px', maxWidth: '1000px', top: '50px' },
 
             okText: 'Create',
             successTitle: 'Topic created!',

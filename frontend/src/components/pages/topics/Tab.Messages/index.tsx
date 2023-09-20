@@ -1537,9 +1537,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
     return createAutoModal({
         modalProps: {
             title: 'Produce Message',
-            width: '80%',
-            style: { minWidth: '690px', maxWidth: '1000px' },
-            bodyStyle: { paddingTop: '1em' },
+            style: { width: '80%', minWidth: '690px', maxWidth: '1000px' },
             centered: true,
 
             okText: 'Publish',

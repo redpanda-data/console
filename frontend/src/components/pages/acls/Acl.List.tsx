@@ -171,9 +171,7 @@ class AclList extends PageComponent {
         const m = createAutoModal({
             modalProps: {
                 title: 'Create User',
-                width: '80%',
-                style: { minWidth: '400px', maxWidth: '600px', top: '50px' },
-                bodyStyle: { paddingTop: '1em' },
+                style: { width: '80%', minWidth: '400px', maxWidth: '600px', top: '50px' },
 
                 okText: 'Create',
                 successTitle: 'User Created',

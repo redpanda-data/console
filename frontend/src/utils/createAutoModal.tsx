@@ -9,17 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
-import { Modal, ModalProps as AntdModalProps, Result } from 'antd';
+import { Result } from 'antd';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React from 'react';
+import React, { CSSProperties, ReactElement } from 'react';
 import { toJson } from './jsonUtils';
-import { Button } from '@redpanda-data/ui';
+import { Button, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 
-export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'onCancel' | 'onOk' | 'afterClose' | 'modalRender'> & {
-    // skipSuccess?: boolean,
+export type AutoModalProps = {
+    title: string;
+    style: CSSProperties;
+    closable: boolean;
+    centered?: boolean;
+    keyboard: boolean;
+    maskClosable: boolean;
+    okText: string;
     successTitle?: string,
-};
+    onCancel?: (e: React.MouseEvent) => void;
+    onOk?: (e: React.MouseEvent) => void;
+    afterClose?: () => void;
+}
 
 export type AutoModal<TArg> = {
     show: (arg: TArg) => void;
@@ -43,20 +52,20 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
     isOkEnabled?: (state: TModalState) => boolean,
     // called when 'onOk' has returned (and not thrown an exception)
     onSuccess?: (state: TModalState, result: any) => void,
-    // called when the user clicks 'Close'. When the user clicks 'Ok', the 'onOk' handler is called, and once it returns (without throwing any errors) the dialog is
-    // considered to be in the 'success' state (where the return of onOk is shown, stuff like "Successfully created XYZ entries"), the only remaining available button is "Close",
-    // and once the user clicks it 'onComplete' will be called.
-    onComplete?: (state: TModalState) => void,
-
 }): AutoModal<TShowArg> {
 
     let userState: TModalState | undefined = undefined;
-    const state = observable({
-        modalProps: null as AntdModalProps | null,
+    const state = observable<{
+        modalProps: AutoModalProps | null;
+        visible: boolean;
+        loading: boolean;
+        result: null | { error?: any, returnValue?: JSX.Element; }
+    }>({
+        modalProps: null,
         visible: false,
         loading: false,
-        result: null as null | { error?: any, returnValue?: JSX.Element; },
-    }, undefined, { defaultDecorator: observable.ref });
+        result: null,
+    }, undefined, {defaultDecorator: observable.ref});
 
     // Called by user to create a new modal instance
     const show = action((arg: TShowArg) => {
@@ -80,9 +89,8 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                         error: null,
                     };
                 } catch (e) {
-                    state.result = { error: e };
-                }
-                finally {
+                    state.result = {error: e};
+                } finally {
                     state.loading = false;
                 }
 
@@ -99,10 +107,10 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         state.visible = true;
     });
 
-    const renderError = (err: any) => {
+    const renderError = (err: any): ReactElement => {
         let content;
         let title = 'Error';
-        const codeBoxStyle = { fontSize: '12px', fontFamily: 'monospace', color: 'hsl(0deg 0% 25%)', margin: '0em 1em' };
+        const codeBoxStyle = {fontSize: '12px', fontFamily: 'monospace', color: 'hsl(0deg 0% 25%)', margin: '0em 1em'};
 
         if (React.isValidElement(err))
             // JSX
@@ -114,69 +122,100 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             // Error
             title = err.name;
             content = <div style={codeBoxStyle}>{err.message}</div>;
-        }
-        else {
+        } else {
             // Object
             content = <div style={codeBoxStyle}>
                 {toJson(err, 4)}
             </div>;
         }
 
-        return <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="error"
-            title={title}
+        return <Result style={{margin: 0, padding: 0, marginTop: '1em'}} status="error"
+                       title={title}
         >
             {content}
         </Result>
     };
 
-    const renderSuccess = (response: JSX.Element | null | undefined) => {
-        const onSuccessClose = () => {
-            state.visible = false;
-            options.onComplete?.(userState!);
-        };
-
-        return <>
-            <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
+    const renderSuccess = (response: JSX.Element | null | undefined) =>
+        <Result style={{margin: 0, padding: 0, marginTop: '1em'}} status="success"
                 title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button variant="solid" colorScheme="brand" size="lg" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
-            />
-        </>;
-    };
+                extra={
+                    <Button
+                        variant="solid"
+                        colorScheme="brand"
+                        size="lg"
+                        style={{width: '16rem'}}
+                        onClick={() => {
+                            state.modalProps?.afterClose?.()
+                        }}
+                    >Close</Button>}
+        />
 
     // The component the user uses to render/mount into the jsx tree
     const Component = observer(() => {
         if (!state.modalProps) return <></>;
 
-        let content: JSX.Element;
-        let isOkEnabled = true;
-        let buttonProps: AntdModalProps;
+        let content: ReactElement;
+
+        let modalState: 'error' | 'success' | 'normal' = 'normal'
 
         if (state.result) {
             if (state.result.error) {
                 // Error
+                modalState = 'error'
                 content = renderError(state.result.error);
-                buttonProps = propsOnError;
             } else {
                 // Success
+                modalState = 'success'
                 content = renderSuccess(state.result.returnValue);
-                buttonProps = propsOnSuccess;
             }
         } else {
             // Normal
+            modalState = 'normal'
             content = options.content(userState!);
-            isOkEnabled = options.isOkEnabled?.(userState!) ?? true;
-            buttonProps = { okButtonProps: { disabled: !isOkEnabled } };
         }
 
-        return <Modal {...state.modalProps} {...buttonProps} open={state.visible} confirmLoading={state.loading}>
-            {content}
-        </Modal>;
+        return (
+            <Modal
+                isOpen={state.visible}
+                onClose={() => {
+                    state.modalProps?.afterClose?.()
+                }}>
+                <ModalOverlay/>
+                <ModalContent style={state.modalProps.style}>
+                    {modalState !== 'success' && <ModalHeader>{state.modalProps.title}</ModalHeader>}
+                    <ModalBody>
+                        {content}
+                    </ModalBody>
+                    {modalState !== 'success' && <ModalFooter>
+                        <Flex gap={2}>
+                            {modalState === 'normal' && <Button
+                                variant="ghost"
+                                onClick={(e) => {
+                                    state.modalProps?.onCancel?.(e)
+                                }}
+                            >
+                                Cancel
+                            </Button>}
+                            <Button
+                                colorScheme="brand"
+                                variant="solid"
+                                isLoading={state.loading}
+                                isDisabled={!options.isOkEnabled?.(userState!)}
+                                onClick={(e) => {
+                                    state.modalProps?.onOk?.(e)
+                                }}
+                            >
+                                {modalState === 'error' ? 'Back' : state.modalProps.okText}
+                            </Button>
+                        </Flex>
+                    </ModalFooter>}
+                </ModalContent>
+            </Modal>
+        );
     });
 
-    return { show, Component };
+    return {show, Component};
 }
 
-const styleHidden = { style: { display: 'none' } };
-const propsOnError = { cancelButtonProps: styleHidden, okText: 'Back' } as AntdModalProps;
-const propsOnSuccess = { footer: null, title: null } as AntdModalProps; //  cancelButtonProps: styleHidden, okButtonProps: styleHidden,
