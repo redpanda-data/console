@@ -12,6 +12,42 @@ components:
           type: array
       title: BadRequest
       type: object
+    ConfigSynonym:
+      properties:
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/Source'
+        value:
+          type: string
+      type: object
+    Configuration:
+      properties:
+        config_synonyms:
+          items:
+            $ref: '#/components/schemas/ConfigSynonym'
+          readOnly: true
+          type: array
+        documentation:
+          type: string
+        is_read_only:
+          type: boolean
+        is_sensitive:
+          type: boolean
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/Source'
+        type:
+          type: string
+        value:
+          type: string
+      type: object
+    CreateTopicResponse:
+      properties:
+        topic:
+          $ref: '#/components/schemas/Topic'
+      type: object
     CreateUserRequest.User:
       properties:
         mechanism:
@@ -32,6 +68,8 @@ components:
           $ref: '#/components/schemas/SASLMechanism'
         name:
           type: string
+      type: object
+    DeleteTopicResponse:
       type: object
     DeleteUserResponse:
       type: object
@@ -141,6 +179,18 @@ components:
               value in the third `emailAddresses` message.
           type: string
       type: object
+    Filter:
+      properties:
+        name:
+          type: string
+      type: object
+    GetTopicConfigurationResponse:
+      properties:
+        configuration:
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+      type: object
     Help:
       description: |-
         Provides links to documentation or for performing an out of band action.
@@ -165,6 +215,15 @@ components:
         url:
           description: The URL of the link.
           type: string
+      type: object
+    ListTopicsResponse:
+      properties:
+        next_page_token:
+          type: string
+        topics:
+          items:
+            $ref: '#/components/schemas/Topic'
+          type: array
       type: object
     ListUsersResponse:
       properties:
@@ -227,6 +286,29 @@ components:
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
+      type: string
+    SetConfiguration:
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+      type: object
+    SetTopicConfigurationResponse:
+      properties:
+        configuration:
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+      type: object
+    Source:
+      enum:
+        - SOURCE_DYNAMIC_TOPIC_CONFIG
+        - SOURCE_DYNAMIC_BROKER_CONFIG
+        - SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG
+        - SOURCE_STATIC_BROKER_CONFIG
+        - SOURCE_DEFAULT_CONFIG
+        - SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
       type: string
     Status:
       properties:
@@ -293,6 +375,48 @@ components:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
           type: string
       type: object
+    Topic:
+      properties:
+        configuration:
+          description: configurations is omitted in ListTopics.
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+        is_internal:
+          type: boolean
+        name:
+          type: string
+        partition_count:
+          format: int32
+          type: integer
+        replication_factor:
+          format: int32
+          type: integer
+      type: object
+    UpdateConfiguration:
+      properties:
+        key:
+          type: string
+        operation:
+          $ref: '#/components/schemas/UpdateConfiguration.Operation'
+        value:
+          type: string
+      type: object
+    UpdateConfiguration.Operation:
+      enum:
+        - OPERATION_SET
+        - OPERATION_DELETE
+        - OPERATION_APPEND
+        - OPERATION_SUBTRACT
+      type: string
+    UpdateTopicConfigurationResponse:
+      properties:
+        configuration:
+          description: Topic's complete set of configurations after this partial patch has been applied.
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+      type: object
     UpdateUserRequest.User:
       properties:
         mechanism:
@@ -329,6 +453,238 @@ info:
   version: v1alpha1
 openapi: 3.0.3
 paths:
+  /v1alpha1/topics:
+    get:
+      description: List Topics
+      operationId: TopicService_ListTopics
+      parameters:
+        - in: query
+          name: filter.name
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicsResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Topics
+      tags:
+        - TopicService
+    post:
+      description: Create a Topic.
+      operationId: TopicService_CreateTopic
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Topic'
+        description: TBD if we want to use separate message for Topic in CreateTopic.
+        required: true
+        x-originalParamName: topic
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+          description: Topic Created
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create Topic
+      tags:
+        - TopicService
+  /v1alpha1/topics/{name}:
+    delete:
+      description: Delete Topic.
+      operationId: TopicService_DeleteTopic
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Topic was deleted successfully
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Topic
+      tags:
+        - TopicService
+  /v1alpha1/topics/{topic_name}/configuration:
+    get:
+      description: Get Topic Configuration.
+      operationId: TopicService_GetTopicConfiguration
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicConfigurationResponse'
+          description: Ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Topic Configuration
+      tags:
+        - TopicService
+    patch:
+      description: Updates a subset of the topic configuration.
+      operationId: TopicService_UpdateTopicConfiguration
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfiguration'
+        required: true
+        x-originalParamName: configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTopicConfigurationResponse'
+          description: Ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Update Topic Configuration
+      tags:
+        - TopicService
+    put:
+      description: Set the entire configuration of a topic. Config entries not provided in the request are removed.
+      operationId: TopicService_SetTopicConfiguration
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConfiguration'
+        required: true
+        x-originalParamName: configuration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetTopicConfigurationResponse'
+          description: Ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Set Topic Configuration
+      tags:
+        - TopicService
   /v1alpha1/users:
     get:
       description: List Users
@@ -494,4 +850,5 @@ servers:
           					Example (Dedicated): https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com<br>
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
+  - name: TopicService
   - name: UserService
