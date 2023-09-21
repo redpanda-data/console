@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message ListUsersRequest {
+  optional string name = 1;
+}
+
+enum SASLMechanism {
+  SASL_MECHANISM_UNSPECIFIED = 0;
+  SASL_MECHANISM_SCRAM_SHA_256 = 1;
+  SASL_MECHANISM_SCRAM_SHA_512 = 2;
+}
+
+message ListUsersResponse {
+  message User {
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  repeated User users = 1;
+}
+
+message CreateUserRequest {
+  message User {
+    string name = 1 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128
+    ];
+    string password = 2 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 128
+    ];
+    SASLMechanism mechanism = 3;
+  }
+  User user = 1;
+}
+
+message CreateUserResponse {
+  message User {
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  message User {
+    string name = 1 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128
+    ];
+    string password = 2 [
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 128
+    ];
+    SASLMechanism mechanism = 3;
+  }
+  User user = 1;
+}
+
+message UpdateUserResponse {
+  message User {
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  User user = 1;
+}
+
+message DeleteUserRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+}
+
+message DeleteUserResponse {}
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/users"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create User"
+      description: "Create a User."
+      responses: {
+        key: "201"
+        value: {
+          description: "Namespace Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
+          }
+        }
+      }
+      responses: {
+        key: "500"
+        value: {
+          description: "Internal Server Error. Reach out to support."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha1/users/{user.name}"
+      body: "user"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update User"
+      description: "Update a User."
+      responses: {
+        key: "200"
+        value: {
+          description: "Ok"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "500"
+        value: {
+          description: "Internal Server Error. Reach out to support."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1alpha1/users"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Users"
+      description: "List Users"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "500"
+        value: {
+          description: "Internal Server Error. Reach out to support."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/users/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Users"
+      description: "Delete Users"
+      responses: {
+        key: "204"
+        value: {
+          description: "User was deleted successfully."
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "500"
+        value: {
+          description: "Internal Server Error. Reach out to support."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}

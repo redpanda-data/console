@@ -1,5 +1,7 @@
 version: v1
 deps:
+  - buf.build/envoyproxy/protoc-gen-validate:dfcdc5ea103dda467963fb7079e4df28debcfd28
+  - buf.build/grpc-ecosystem/grpc-gateway:a1ecdc58eccd49aa8bea2a7a9022dc27
   - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
 breaking:
@@ -10,3 +12,4 @@ breaking:
 lint:
   use:
     - DEFAULT
+  allow_comment_ignores: true
