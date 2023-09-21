@@ -9,6 +9,8 @@ breaking:
     - FILE
     - WIRE
     - WIRE_JSON
+  ignore:
+    - redpanda/api/dataplane/v1alpha1
 lint:
   use:
     - DEFAULT
