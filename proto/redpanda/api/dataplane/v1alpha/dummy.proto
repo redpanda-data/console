@@ -1,0 +1,21 @@
+// This file is a trick to force protoc-gen-openapiv2 into including the types used here into the openapi spec. They are not normally included, because they are not explicitly referenced in any proto (as protobuf ANY is used in errordetails).
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha;
+
+import "google/protobuf/empty.proto";
+import "google/rpc/error_details.proto";
+
+message DummyMethodResponse {
+  google.rpc.BadRequest bad_request = 1;
+  google.rpc.ErrorInfo error_info = 2;
+  google.rpc.QuotaFailure quota_failure = 3;
+  google.rpc.Help help = 4;
+}
+
+service DummyService {
+  // buf:lint:ignore RPC_REQUEST_STANDARD_NAME
+  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc DummyMethod(google.protobuf.Empty) returns (DummyMethodResponse);
+}
