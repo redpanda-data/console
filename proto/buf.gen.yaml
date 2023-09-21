@@ -30,3 +30,7 @@ plugins:
       - target=ts
       - import_extension=
     out: frontend/src/protogen
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.18.0
+    out: backend/pkg/protogen
+    opt:
+      - paths=source_relative

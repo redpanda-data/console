@@ -1,0 +1,24 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/redpanda-data/console/backend/pkg/protogen
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/bufbuild/protovalidate
+plugins:
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.18.0
+    out: proto/gen/openapi
+    opt:
+      - logtostderr=true
+      - stderrthreshold=WARNING
+      - allow_merge=true
+      - output_format=json
+      - disable_service_tags=false
+      - omit_enum_default_value=true
+      - json_names_for_fields=false
+      - use_go_templates=true
+      - proto3_optional_nullable=true
+      - openapi_naming_strategy=simple
+      - disable_default_responses=true
+
