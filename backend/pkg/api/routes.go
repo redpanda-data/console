@@ -10,11 +10,9 @@
 package api
 
 import (
-	"context"
-	"errors"
 	"net/http"
 
-	connect_go "connectrpc.com/connect"
+	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
@@ -24,9 +22,11 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
+	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -174,27 +174,27 @@ func (api *API) routes() *chi.Mux {
 			})
 
 			// Connect RPC
+			userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
+
+			// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
+			// handlers and print the responses without a copy of the proto schema.
+			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName, dataplanev1alpha1connect.UserServiceName)
+
+			// Setup Interceptors
 			v, err := protovalidate.New()
 			if err != nil {
 				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 			}
 
 			// we want the actual request validation after all authorization and permission checks
-			interceptors := []connect_go.Interceptor{
-				NewRequestValidationInterceptor(api.Logger, v),
-			}
+			validationInterceptor := interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator"))
+			commonInterceptors := connect.WithInterceptors(validationInterceptor)
 
-			// Connect service(s)
-			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
-				// api,
-				consolev1alphaconnect.UnimplementedConsoleServiceHandler{},
-				connect_go.WithInterceptors(interceptors...),
-			))
-
-			// Connect reflection
-			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
+			// Mount Connect services
 			r.Mount(grpcreflect.NewHandlerV1(reflector))
 			r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(consolev1alphaconnect.UnimplementedConsoleServiceHandler{}, commonInterceptors))
+			r.Mount(dataplanev1alpha1connect.NewUserServiceHandler(userSvc, commonInterceptors))
 
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
@@ -217,28 +217,4 @@ func (api *API) routes() *chi.Mux {
 	})
 
 	return baseRouter
-}
-
-// NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
-func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
-	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
-		return connect_go.UnaryFunc(func(
-			ctx context.Context,
-			req connect_go.AnyRequest,
-		) (connect_go.AnyResponse, error) {
-			msg, ok := req.Any().(protoreflect.ProtoMessage)
-			if !ok {
-				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, errors.New("request is not a protocol buffer message"))
-			}
-
-			err := validator.Validate(msg)
-			if err != nil {
-				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, err)
-			}
-
-			return next(ctx, req)
-		})
-	}
-
-	return connect_go.UnaryInterceptorFunc(interceptor)
 }
