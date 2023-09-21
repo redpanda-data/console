@@ -82,12 +82,14 @@ type TopicConsumeRequest struct {
 }
 
 type interpreterArguments struct {
-	PartitionID  int32
-	Offset       int64
-	Timestamp    time.Time
-	Key          interface{}
-	Value        interface{}
-	HeadersByKey map[string][]byte
+	PartitionID   int32
+	Offset        int64
+	Timestamp     time.Time
+	Key           interface{}
+	Value         interface{}
+	HeadersByKey  map[string][]byte
+	KeySchemaID   *uint32
+	ValueSchemaID *uint32
 }
 
 // FetchMessages is in charge of fulfilling the topic consume request. This is tricky
@@ -149,24 +151,21 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	// that propagate to all the launched go routines.
 	messageCount := 0
 	messageCountByPartition := make(map[int32]int64)
-	remainingPartitionRequests := len(consumeReq.Partitions)
+
 	for msg := range resultsCh {
 		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
-
 		partitionReq := consumeReq.Partitions[msg.PartitionID]
+
 		if msg.IsMessageOk && messageCountByPartition[msg.PartitionID] < partitionReq.MaxMessageCount {
 			messageCount++
 			messageCountByPartition[msg.PartitionID]++
+
 			progress.OnMessage(msg)
 		}
 
-		if msg.Offset >= partitionReq.EndOffset {
-			remainingPartitionRequests--
-		}
-
 		// Do we need more messages to satisfy the user request? Return if request is satisfied
-		isRequestSatisfied := messageCount == consumeReq.MaxMessageCount || remainingPartitionRequests == 0
+		isRequestSatisfied := messageCount == consumeReq.MaxMessageCount
 		if isRequestSatisfied {
 			return nil
 		}
@@ -180,6 +179,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 // The caller is responsible for closing the client if desired.
 func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
 	defer close(jobs)
+
+	remainingPartitionRequests := len(consumeReq.Partitions)
 
 	for {
 		select {
@@ -203,19 +204,24 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 			// Iterate on all messages from this poll
 			for !iter.Done() {
 				record := iter.Next()
-				partitionReq := consumeReq.Partitions[record.Partition]
-
-				if record.Offset > partitionReq.EndOffset {
-					// reached end offset within this partition, we strive to fulfil the consume request so that we achieve
-					// equal distribution across the partitions
-					continue
-				}
 
 				// Avoid a deadlock in case the jobs channel is full
 				select {
 				case <-ctx.Done():
 					return
 				case jobs <- record:
+				}
+
+				partitionReq := consumeReq.Partitions[record.Partition]
+
+				if record.Offset >= partitionReq.EndOffset {
+					if remainingPartitionRequests > 0 {
+						remainingPartitionRequests--
+					}
+
+					if remainingPartitionRequests == 0 {
+						return
+					}
 				}
 			}
 		}
@@ -275,6 +281,15 @@ func (*Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error
 		vm.Set("key", args.Key)
 		vm.Set("value", args.Value)
 		vm.Set("headers", args.HeadersByKey)
+
+		if args.KeySchemaID != nil {
+			vm.Set("keySchemaID", *args.KeySchemaID)
+		}
+
+		if args.ValueSchemaID != nil {
+			vm.Set("valueSchemaID", *args.ValueSchemaID)
+		}
+
 		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)

@@ -15,11 +15,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -31,8 +34,10 @@ type ConsoleIntegrationTestSuite struct {
 
 	kafkaClient      *kgo.Client
 	kafkaAdminClient *kadm.Client
+	kafkaSRClient    *sr.Client
 
 	testSeedBroker string
+	registryAddr   string
 }
 
 func TestSuite(t *testing.T) {
@@ -44,7 +49,7 @@ func (s *ConsoleIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.1.13"))
 	require.NoError(err)
 	s.redpandaContainer = container
 
@@ -54,6 +59,15 @@ func (s *ConsoleIntegrationTestSuite) SetupSuite() {
 	s.testSeedBroker = seedBroker
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
+
+	registryAddr, err := testutil.GetMappedHostPort(ctx, container, nat.Port("8081/tcp"))
+	require.NoError(err)
+
+	s.registryAddr = registryAddr
+
+	rcl, err := sr.NewClient(sr.URLs("http://" + registryAddr))
+	require.NoError(err)
+	s.kafkaSRClient = rcl
 }
 
 func (s *ConsoleIntegrationTestSuite) TearDownSuite() {
@@ -61,4 +75,10 @@ func (s *ConsoleIntegrationTestSuite) TearDownSuite() {
 	assert := require.New(t)
 
 	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
+}
+
+func withImage(image string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Image = image
+	}
 }

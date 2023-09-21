@@ -114,7 +114,7 @@ func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := getMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
+	registryAddr, err := testutil.GetMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
 	require.NoError(err)
 	s.registryAddress = registryAddr
 
@@ -1526,7 +1526,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1568,20 +1568,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("text", dr.Key.Object)
 		assert.Equal([]byte("text"), dr.Key.Payload.Payload)
 	})
-}
-
-func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.

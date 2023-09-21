@@ -71,12 +71,14 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 
 		// Check if message passes filter code
 		args := interpreterArguments{
-			PartitionID:  record.Partition,
-			Offset:       record.Offset,
-			Timestamp:    record.Timestamp,
-			Key:          deserializedRec.Key, // TODO should this be deserialized payload / like an object?
-			Value:        deserializedRec.Value.DeserializedPayload,
-			HeadersByKey: headersByKey,
+			PartitionID:   record.Partition,
+			Offset:        record.Offset,
+			Timestamp:     record.Timestamp,
+			Key:           deserializedRec.Key.DeserializedPayload, // TODO should this be deserialized payload / like an object?
+			Value:         deserializedRec.Value.DeserializedPayload,
+			HeadersByKey:  headersByKey,
+			KeySchemaID:   deserializedRec.Key.SchemaID,
+			ValueSchemaID: deserializedRec.Value.SchemaID,
 		}
 
 		isOK, err := isMessageOK(args)
