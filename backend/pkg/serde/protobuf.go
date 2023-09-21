@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"strings"
 
-	v1proto "github.com/golang/protobuf/proto"
+	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // intentional import of old module
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	v2proto "google.golang.org/protobuf/proto"
@@ -26,14 +26,17 @@ import (
 
 var _ Serde = (*ProtobufSerde)(nil)
 
+// ProtobufSerde represents the serde for dealing with Protobuf types.
 type ProtobufSerde struct {
 	ProtoSvc *proto.Service
 }
 
+// Name returns the name of the serde payload encoding.
 func (ProtobufSerde) Name() PayloadEncoding {
 	return PayloadEncodingProtobuf
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
 		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
@@ -75,6 +78,9 @@ func (d ProtobufSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 	}, nil
 }
 
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:gocognit,cyclop // lots of supported inputs.
 func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
@@ -124,7 +130,7 @@ func (d ProtobufSerde) SerializeObject(obj any, payloadType PayloadType, opts ..
 
 		trimmed := strings.TrimLeft(v, " \t\r\n")
 
-		if len(trimmed) == 0 {
+		if trimmed == "" {
 			return nil, errors.New("string payload is empty")
 		}
 

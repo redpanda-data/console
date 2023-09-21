@@ -18,21 +18,25 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-var _ Serde = (*JsonSerde)(nil)
+var _ Serde = (*JSONSerde)(nil)
 
-type JsonSerde struct{}
+// JSONSerde represents the serde for dealing with JSON types.
+type JSONSerde struct{}
 
-func (JsonSerde) Name() PayloadEncoding {
+// Name returns the name of the serde payload encoding.
+func (JSONSerde) Name() PayloadEncoding {
 	return PayloadEncodingJSON
 }
 
-func (JsonSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
+func (JSONSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	return jsonDeserializePayload(payload)
 }
 
-func (JsonSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (JSONSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

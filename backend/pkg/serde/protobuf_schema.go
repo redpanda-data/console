@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"strings"
 
-	v1proto "github.com/golang/protobuf/proto"
+	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // intentional import of old module
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -28,14 +28,17 @@ import (
 
 var _ Serde = (*ProtobufSchemaSerde)(nil)
 
+// ProtobufSchemaSerde represents the serde for dealing with Protobuf with schema types.
 type ProtobufSchemaSerde struct {
 	ProtoSvc *proto.Service
 }
 
+// Name returns the name of the serde payload encoding.
 func (ProtobufSchemaSerde) Name() PayloadEncoding {
 	return PayloadEncodingProtobuf
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
 		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
@@ -102,7 +105,10 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 	}, nil
 }
 
-func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:gocognit,cyclop // lots of supported inputs.
+func (d ProtobufSchemaSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -138,7 +144,7 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 			return nil, fmt.Errorf("failed to serialize protobuf payload: %w", err)
 		}
 
-		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(encoded, int(so.schemaId), so.index)
+		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(encoded, int(so.schemaID), so.index)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize native protobuf payload: %w", err)
 		}
@@ -151,7 +157,7 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 
 		trimmed := strings.TrimLeft(v, " \t\r\n")
 
-		if len(trimmed) == 0 {
+		if trimmed == "" {
 			return nil, errors.New("string payload is empty")
 		}
 
@@ -160,7 +166,7 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 		}
 
-		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage([]byte(trimmed), int(so.schemaId), so.index)
+		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage([]byte(trimmed), int(so.schemaID), so.index)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize string protobuf payload: %w", err)
 		}
@@ -173,7 +179,7 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 				return nil, errors.New("no schema id specified")
 			}
 
-			b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(trimmed, int(so.schemaId), so.index)
+			b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage(trimmed, int(so.schemaID), so.index)
 			if err != nil {
 				return nil, fmt.Errorf("failed to serialize json protobuf payload: %w", err)
 			}
@@ -188,17 +194,17 @@ func (d ProtobufSchemaSerde) SerializeObject(obj any, payloadType PayloadType, o
 				index = []int{0}
 			}
 
-			_, err := d.ProtoSvc.GetMessageDescriptorForSchema(int(so.schemaId), index)
+			_, err := d.ProtoSvc.GetMessageDescriptorForSchema(int(so.schemaID), index)
 			if err != nil {
 				return nil, fmt.Errorf("failed to serialize binary protobuf payload: %w", err)
 			}
 
-			header, err := appendEncode(nil, int(so.schemaId), index)
+			binData, err = appendEncode(nil, int(so.schemaID), index)
 			if err != nil {
 				return nil, fmt.Errorf("failed encode binary protobuf payload: %w", err)
 			}
 
-			binData = append(header, v...)
+			binData = append(binData, v...)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)

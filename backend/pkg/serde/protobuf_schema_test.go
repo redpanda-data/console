@@ -56,17 +56,19 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas/types":
+		case srListSchemaTypesPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"PROTOBUF"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas":
+		case srListSchemasPath:
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -90,14 +92,16 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/subjects":
+		case srListSubjectsPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-shop-order-v1"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		default:
@@ -246,6 +250,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
+//nolint:gocognit,cyclop // complexity in a test
 func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 	require.NoError(t, err)
@@ -261,7 +266,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		}
 
 		switch r.URL.String() {
-		case "/schemas/ids/1000":
+		case "/schemas/ids/5000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]interface{}{
@@ -271,6 +276,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		case "/schemas/ids/2000":
@@ -283,6 +289,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		case "/schemas/types":
@@ -291,6 +298,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		case "/schemas":
@@ -307,7 +315,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			resp := []SchemaVersionedResponse{
 				{
 					Subject:  "test-subject-shop-order-v1",
-					SchemaID: 1000,
+					SchemaID: 5000,
 					Version:  1,
 					Schema:   string(protoFile),
 					Type:     "PROTOBUF",
@@ -324,14 +332,16 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/subjects":
+		case srListSubjectsPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-shop-order-v1", "test-subject-shop-data-v1"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		default:
@@ -429,7 +439,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			var srSerde sr.Serde
 			srSerde.Register(
-				1000,
+				5000,
 				&shopv1.Order{},
 				sr.EncodeFn(func(v any) ([]byte, error) {
 					return proto.Marshal(v.(*shopv1.Order))
@@ -449,7 +459,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(1000))
+			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -477,7 +487,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			var srSerde sr.Serde
 			srSerde.Register(
-				1000,
+				5000,
 				&shopv1.Order{},
 				sr.EncodeFn(func(v any) ([]byte, error) {
 					return proto.Marshal(v.(*shopv1.Order))
@@ -495,7 +505,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(1000))
+			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -516,7 +526,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data := `notjson`
 			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(1000))
+			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(5000))
 			assert.Error(t, err)
 			assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
 			assert.Nil(t, actualData)
@@ -531,7 +541,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			var srSerde sr.Serde
 			srSerde.Register(
-				1000,
+				5000,
 				&shopv1.Order{},
 				sr.EncodeFn(func(v any) ([]byte, error) {
 					return proto.Marshal(v.(*shopv1.Order))
@@ -549,7 +559,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(1000))
+			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -575,7 +585,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			var srSerde sr.Serde
 			srSerde.Register(
-				1000,
+				5000,
 				&shopv1.Order{},
 				sr.EncodeFn(func(v any) ([]byte, error) {
 					return proto.Marshal(v.(*shopv1.Order))
@@ -594,7 +604,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(1000))
+			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)

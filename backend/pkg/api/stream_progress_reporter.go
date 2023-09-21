@@ -192,6 +192,10 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_MESSAGE_PACK
 	case serde.PayloadEncodingSmile:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_SMILE
+	case serde.PayloadEncodingUint:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_UINT
+	case serde.PayloadEncodingBinary:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 	case serde.PayloadEncodingConsumerOffsets:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS
 	}

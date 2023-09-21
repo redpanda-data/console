@@ -180,6 +180,7 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 	return jsonBytes, schemaID, nil
 }
 
+// DeserializeProtobufMessageToJSON deserializes the protobuf message to JSON.
 func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
 	msg := dynamic.NewMessage(md)
 	err := msg.Unmarshal(payload)
@@ -198,6 +199,7 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 	return jsonBytes, nil
 }
 
+// SerializeJSONToProtobufMessage serializes the JSON data to Protobuf message.
 func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDescriptor) ([]byte, error) {
 	msg := dynamic.NewMessage(md)
 	err := msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
@@ -211,6 +213,7 @@ func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDe
 	return msg.Marshal()
 }
 
+// GetMessageDescriptorForSchema gets the Protobuf message descriptor for the schema ID and message index.
 // TODO consolidate this with getMessageDescriptorFromConfluentMessage
 func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*desc.MessageDescriptor, error) {
 	fd, exists := s.GetFileDescriptorBySchemaID(schemaID)
@@ -235,6 +238,8 @@ func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*des
 	return messageDescriptor, nil
 }
 
+// SerializeJSONToConfluentProtobufMessage serialized the JSON message to confluent wrapped payload
+// using the schema ID and message index.
 func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID int, index []int) ([]byte, error) {
 	if len(index) == 0 {
 		index = []int{0}
@@ -292,6 +297,7 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	return jsonBytes, 0, nil
 }
 
+// IsProtobufSchemaRegistryEnabled returns whether the schema registry is enabled in the configuration.
 func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
 	return s.cfg.SchemaRegistry.Enabled
 }
@@ -594,6 +600,7 @@ func (s *Service) setFileDescriptorsBySchemaID(descriptors map[int]*desc.FileDes
 	s.fileDescriptorsBySchemaID = descriptors
 }
 
+// GetFileDescriptorBySchemaID gets the file descriptor by schema ID.
 func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
 	s.fileDescriptorsBySchemaIDMutex.Lock()
 	defer s.fileDescriptorsBySchemaIDMutex.Unlock()

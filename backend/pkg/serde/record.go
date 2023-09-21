@@ -16,6 +16,7 @@ type Record struct {
 	Headers []RecordHeader `json:"headers"`
 }
 
+// RecordPayload represents the record payload we have processed.
 type RecordPayload struct {
 	// OriginalPayload is the original Kafka record. This may be helpful for
 	// downloading an original Kafka record. This is only set when this
@@ -106,23 +107,27 @@ type TroubleshootingReport struct {
 	Message string `json:"message"`
 }
 
+// SerializeInput represents the input to serialize methods.
 type SerializeInput struct {
 	Topic string
 	Key   RecordPayloadInput
 	Value RecordPayloadInput
 }
 
+// RecordPayloadInput represents the actual input of payloads for serialization.
 type RecordPayloadInput struct {
 	Payload  any
 	Encoding PayloadEncoding
 	Options  []SerdeOpt
 }
 
+// SerializeOutput represents the result of serialization.
 type SerializeOutput struct {
 	Key   *RecordPayloadSerializeResult `json:"key,omitempty"`
 	Value *RecordPayloadSerializeResult `json:"value,omitempty"`
 }
 
+// RecordPayloadSerializeResult represents the payload result of serialization.
 type RecordPayloadSerializeResult struct {
 	Payload         []byte
 	Encoding        PayloadEncoding         `json:"encoding"`

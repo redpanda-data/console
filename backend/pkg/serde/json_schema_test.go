@@ -27,7 +27,7 @@ import (
 )
 
 func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
-	serde := JsonSchemaSerde{}
+	serde := JSONSchemaSerde{}
 
 	type Item struct {
 		Foo string `json:"foo"`
@@ -165,17 +165,19 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas/types":
+		case srListSchemaTypesPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"JSON"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas":
+		case srListSchemasPath:
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -191,7 +193,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 					Subject:  "test-subject-shop-order-v1",
 					SchemaID: 1000,
 					Version:  1,
-					Schema:   string(schemaStr),
+					Schema:   schemaStr,
 					Type:     "JSON",
 				},
 			}
@@ -199,14 +201,16 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/subjects":
+		case srListSubjectsPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-json-v1"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		default:
@@ -232,7 +236,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	}
 
 	t.Run("no schema id", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue)
 		require.Error(t, err)
@@ -243,7 +247,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("invalid schema id", func(t *testing.T) {
 		t.Skip("Redpanda schema registry doesn't support JSON schema")
 
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(5567))
 		require.Error(t, err)
@@ -254,7 +258,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("dynamic validation error", func(t *testing.T) {
 		t.Skip("Redpanda schema registry doesn't support JSON schema")
 
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		actualData, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -263,7 +267,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("dynamic", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -287,7 +291,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string json", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -313,7 +317,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("string invalid json", func(t *testing.T) {
 		t.Skip("Redpanda schema registry doesn't support JSON schema")
 
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(`{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -322,7 +326,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string empty", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(``, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -331,7 +335,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string trim", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject("\r\n", PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -340,7 +344,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string invalid format", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(`foo`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -349,7 +353,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte json", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -375,7 +379,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("byte invalid json", func(t *testing.T) {
 		t.Skip("Redpanda schema registry doesn't support JSON schema")
 
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject([]byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -384,7 +388,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte empty", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject([]byte{}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -393,7 +397,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte trim", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject([]byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -402,7 +406,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte invalid format", func(t *testing.T) {
-		serde := JsonSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject([]byte("foo"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)

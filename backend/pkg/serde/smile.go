@@ -21,12 +21,15 @@ import (
 
 var _ Serde = (*SmileSerde)(nil)
 
+// SmileSerde represents the serde for dealing with Smile types.
 type SmileSerde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (SmileSerde) Name() PayloadEncoding {
 	return PayloadEncodingSmile
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -57,7 +60,9 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 	}, nil
 }
 
-func (SmileSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+// This is not supported for this type for now.
+func (SmileSerde) SerializeObject(_ any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
 	// go-smile does not support encoding yet
 	// https://github.com/zencoder/go-smile
 	return nil, errors.New("serializing for smile data format is not implemented")

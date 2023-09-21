@@ -119,6 +119,9 @@ func ProduceOrders(t *testing.T, ctx context.Context, kafkaCl *kgo.Client, topic
 	}
 }
 
+// ProduceOrdersWithSchemas produces sample order records with schemas.
+//
+//nolint:revive // t is passed first for testing helper function.
 func ProduceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Client, rcl *sr.Client, topic string) []int {
 	ssID := produceOrdersWithSchemas(t, ctx, kafkaCl, rcl, "../testutil/testdata/proto/things/v1/widget.proto", topic,
 		time.Date(2023, time.September, 12, 10, 0, 0, 0, time.UTC), 0,
@@ -151,7 +154,7 @@ func ProduceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 		}, func(i int, recordTimeStamp time.Time) any {
 			oID := strconv.Itoa(i)
 
-			ov = ov * 2
+			ov *= 2
 
 			return &things.Item{
 				Id:        oID,
@@ -164,6 +167,7 @@ func ProduceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 	return []int{ssID, ssID2}
 }
 
+//nolint:revive // t is passed first for testing helper function.
 func produceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Client, rcl *sr.Client,
 	protoFilePath string, topic string, startTime time.Time, startIndex int,
 	protoV any,
@@ -176,7 +180,7 @@ func produceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 	absProtoPath, err := filepath.Abs(protoFilePath)
 	require.NoError(t, err)
 
-	protoFile, err := os.ReadFile(absProtoPath)
+	protoFile, err := os.ReadFile(filepath.Clean(absProtoPath))
 	require.NoError(t, err)
 
 	ss, err := rcl.CreateSchema(context.Background(), topic+"-value", sr.Schema{
@@ -235,20 +239,21 @@ func produceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 	return ss.ID
 }
 
-// MetricNameForTest creates metric name
+// MetricNameForTest creates metric name.
 func MetricNameForTest(testName string) string {
 	testName = testName[strings.LastIndex(testName, "/")+1:]
 
 	return "test_redpanda_console_" + testName
 }
 
-// TopicNameForTest creates topic name
+// TopicNameForTest creates topic name.
 func TopicNameForTest(testName string) string {
 	testName = testName[strings.LastIndex(testName, "/")+1:]
 
 	return "test.redpanda.console." + testName
 }
 
+// GetMappedHostPort gets the mapped host port for the container.
 func GetMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
 	hostIP, err := c.Host(ctx)
 	if err != nil {

@@ -118,7 +118,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := getMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
+	registryAddr, err := testutil.GetMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
 	require.NoError(err)
 	s.registryAddress = registryAddr
 
@@ -3223,20 +3223,6 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(expectData, out.Value.Payload)
 		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
 	})
-}
-
-func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.

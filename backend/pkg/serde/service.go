@@ -27,12 +27,13 @@ type Service struct {
 
 const defaultMaxPayloadSize = 1_000_000 // 1 MB
 
+// NewService creates the new serde service.
 func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NoneSerde{},
-			JsonSerde{},
-			JsonSchemaSerde{SchemaSvc: schemaService},
+			JSONSerde{},
+			JSONSchemaSerde{SchemaSvc: schemaService},
 			XMLSerde{},
 			AvroSerde{SchemaSvc: schemaService},
 			ProtobufSerde{ProtoSvc: protoSvc},
@@ -100,14 +101,15 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 	var err error
 	for _, serde := range s.SerDes {
 		rp, err = serde.DeserializePayload(record, payloadType)
-		if err != nil {
-			troubleshooting = append(troubleshooting, TroubleshootingReport{
-				SerdeName: string(serde.Name()),
-				Message:   err.Error(),
-			})
-		} else {
+		if err == nil {
+			// found the matching serde
 			break
 		}
+
+		troubleshooting = append(troubleshooting, TroubleshootingReport{
+			SerdeName: string(serde.Name()),
+			Message:   err.Error(),
+		})
 	}
 
 	addTS := opts.Troubleshoot
@@ -170,6 +172,7 @@ type DeserializationOptions struct {
 	IncludeRawData bool
 }
 
+// SerializeRecord will serialize the input.
 func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error) {
 	var keySerResult RecordPayloadSerializeResult
 	var valueSerResult RecordPayloadSerializeResult

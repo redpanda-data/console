@@ -25,21 +25,24 @@ import (
 
 var _ Serde = (*MsgPackSerde)(nil)
 
+// MsgPackSerde represents the serde for dealing with MessagePack types.
 type MsgPackSerde struct {
 	MsgPackService *msgpack.Service
 }
 
+// Name returns the name of the serde payload encoding.
 func (MsgPackSerde) Name() PayloadEncoding {
 	return PayloadEncodingMsgPack
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.MsgPackService == nil {
 		return &RecordPayload{}, fmt.Errorf("no message pack service configured")
 	}
 
 	if !d.MsgPackService.IsTopicAllowed(record.Topic) {
-		return &RecordPayload{}, fmt.Errorf("message pack encoding not configured for topic: " + record.Topic)
+		return &RecordPayload{}, fmt.Errorf("message pack encoding not configured for topic: %s", record.Topic)
 	}
 
 	payload := payloadFromRecord(record, payloadType)
@@ -63,7 +66,10 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType Payload
 	}, nil
 }
 
-func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:gocognit,cyclop // lots of supported inputs.
+func (MsgPackSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -74,7 +80,7 @@ func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...
 	case string:
 		trimmed := strings.TrimLeft(v, " \t\r\n")
 
-		if len(trimmed) == 0 {
+		if trimmed == "" {
 			return nil, errors.New("string payload is empty")
 		}
 
@@ -98,9 +104,8 @@ func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...
 	case []byte:
 		trimmed := bytes.TrimLeft(v, " \t\r\n")
 		if len(trimmed) != 0 && trimmed[0] == '[' || trimmed[0] == '{' {
-
 			var nativeObj interface{}
-			err := json.Unmarshal([]byte(trimmed), &nativeObj)
+			err := json.Unmarshal(trimmed, &nativeObj)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deserialize json to messagepack payload: %w", err)
 			}
@@ -125,7 +130,7 @@ func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...
 
 	// TODO does it even make sense to have schema ID for msgpack?
 	if so.schemaIDSet {
-		var index []int = nil
+		var index []int
 		if so.indexSet {
 			index = so.index
 			if len(index) == 0 {
@@ -133,12 +138,12 @@ func (d MsgPackSerde) SerializeObject(obj any, payloadType PayloadType, opts ...
 			}
 		}
 
-		header, err := appendEncode(nil, int(so.schemaId), index)
+		b, err := appendEncode(nil, int(so.schemaID), index)
 		if err != nil {
 			return nil, fmt.Errorf("failed encode binary messagepack payload: %w", err)
 		}
 
-		b := append(header, binData...)
+		b = append(b, binData...)
 		binData = b
 	}
 

@@ -22,12 +22,15 @@ import (
 
 var _ Serde = (*UintSerde)(nil)
 
+// UintSerde represents the serde for dealing with Uint numeric types.
 type UintSerde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (UintSerde) Name() PayloadEncoding {
 	return PayloadEncodingUint
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (UintSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
@@ -85,7 +88,8 @@ func (UintSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}, nil
 }
 
-func (UintSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (UintSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -129,7 +133,7 @@ func convertStringToUint(v string, ss UintSize) ([]byte, error) {
 	var byteData []byte
 
 	trimmed := strings.TrimLeft(v, " \t\r\n")
-	if len(trimmed) == 0 {
+	if trimmed == "" {
 		return nil, errors.New("string payload is empty")
 	}
 

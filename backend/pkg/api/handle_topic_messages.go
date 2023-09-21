@@ -245,6 +245,7 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 		Troubleshoot:          req.Msg.GetTroubleshoot(),
 		IncludeRawPayload:     req.Msg.GetIncludeOriginalRawPayload(),
 	}
+	// TODO fix to support this
 	// api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
 
 	// Use 30min duration if we want to search a whole topic or forward messages as they arrive

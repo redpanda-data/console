@@ -18,7 +18,7 @@ import (
 )
 
 func TestJsonSerde_DeserializePayload(t *testing.T) {
-	serde := JsonSerde{}
+	serde := JSONSerde{}
 
 	tests := []struct {
 		name           string
@@ -91,7 +91,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 }
 
 func TestJsonSerde_SerializeObject(t *testing.T) {
-	serde := JsonSerde{}
+	serde := JSONSerde{}
 
 	tests := []struct {
 		name           string

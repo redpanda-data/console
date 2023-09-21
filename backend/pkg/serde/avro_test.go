@@ -26,6 +26,12 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
+const (
+	srListSchemasPath     = "/schemas"
+	srListSchemaTypesPath = "/schemas/types"
+	srListSubjectsPath    = "/subjects"
+)
+
 func TestAvroSerde_DeserializePayload(t *testing.T) {
 	schemaStr := `{
 		"type": "record",
@@ -47,7 +53,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		}
 
 		switch r.URL.String() {
-		case "/schemas/ids/1000":
+		case "/schemas/ids/3000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]interface{}{
@@ -57,6 +63,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		default:
@@ -74,7 +81,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 
 	var srSerde sr.Serde
 	srSerde.Register(
-		1000,
+		3000,
 		&SimpleRecord{},
 		sr.EncodeFn(func(v any) ([]byte, error) {
 			return avro.Marshal(avroSchema, v.(*SimpleRecord))
@@ -131,7 +138,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
-				assert.Equal(t, uint32(1000), *payload.SchemaID)
+				assert.Equal(t, uint32(3000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingAvro, payload.Encoding)
 
 				assert.Equal(t, `{"a":27,"b":"foo"}`, string(payload.NormalizedPayload))
@@ -214,7 +221,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		}
 
 		switch r.URL.String() {
-		case "/schemas/ids/1000":
+		case "/schemas/ids/2000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]interface{}{
@@ -224,17 +231,19 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas/types":
+		case srListSchemaTypesPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"AVRO"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/schemas":
+		case srListSchemasPath:
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -248,9 +257,9 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			resp := []SchemaVersionedResponse{
 				{
 					Subject:  "test-subject-shop-order-v1",
-					SchemaID: 1000,
+					SchemaID: 2000,
 					Version:  1,
-					Schema:   string(schemaStr),
+					Schema:   schemaStr,
 					Type:     "AVRO",
 				},
 			}
@@ -258,14 +267,16 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
-		case "/subjects":
+		case srListSubjectsPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-avro-v1"}
 			enc := json.NewEncoder(w)
 			if enc.Encode(resp) != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
 			}
 			return
 		default:
@@ -312,7 +323,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		var srSerde sr.Serde
 		srSerde.Register(
-			1000,
+			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
 				return avro.Marshal(avroSchema, v.(*SimpleRecord))
@@ -325,7 +336,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -336,7 +347,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		var srSerde sr.Serde
 		srSerde.Register(
-			1000,
+			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
 				return avro.Marshal(avroSchema, v.(*SimpleRecord))
@@ -349,7 +360,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(`{"a":27,"b":"foo"}`, PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(`{"a":27,"b":"foo"}`, PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -358,7 +369,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 	t.Run("invalid json", func(t *testing.T) {
 		serde := AvroSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(`{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(`{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(2000))
 		require.Error(t, err)
 		assert.Equal(t, `deserializing avro json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
 		assert.Nil(t, b)
@@ -369,7 +380,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		var srSerde sr.Serde
 		srSerde.Register(
-			1000,
+			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
 				return avro.Marshal(avroSchema, v.(*SimpleRecord))
@@ -382,7 +393,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 12, B: "bar"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject([]byte(`{"a":12,"b":"bar"}`), PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject([]byte(`{"a":12,"b":"bar"}`), PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)

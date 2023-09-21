@@ -26,14 +26,17 @@ import (
 
 var _ Serde = (*AvroSerde)(nil)
 
+// AvroSerde represents the serde for dealing with Avro types.
 type AvroSerde struct {
 	SchemaSvc *schema.Service
 }
 
+// Name returns the name of the serde payload encoding.
 func (AvroSerde) Name() PayloadEncoding {
 	return PayloadEncodingAvro
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.SchemaSvc == nil {
 		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
@@ -78,7 +81,10 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 	}, nil
 }
 
-func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:gocognit,cyclop // lots of supported inputs
+func (d AvroSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -88,7 +94,7 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 		return nil, errors.New("no schema id specified")
 	}
 
-	schema, err := d.SchemaSvc.GetAvroSchemaByID(so.schemaId)
+	schema, err := d.SchemaSvc.GetAvroSchemaByID(so.schemaID)
 	if err != nil {
 		return nil, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
@@ -117,7 +123,7 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 	case string:
 		trimmed := strings.TrimLeft(v, " \t\r\n")
 
-		if len(trimmed) == 0 {
+		if trimmed == "" {
 			return nil, errors.New("string payload is empty")
 		}
 
@@ -140,7 +146,7 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 		return nil, fmt.Errorf("failed to serialize avro: %w", err)
 	}
 
-	var index []int = nil
+	var index []int
 	if so.indexSet {
 		index = so.index
 		if len(index) == 0 {
@@ -148,12 +154,12 @@ func (d AvroSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Ser
 		}
 	}
 
-	header, err := appendEncode(nil, int(so.schemaId), index)
+	binData, err := appendEncode(nil, int(so.schemaID), index)
 	if err != nil {
 		return nil, fmt.Errorf("failed encode binary avro payload: %w", err)
 	}
 
-	binData := append(header, b...)
+	binData = append(binData, b...)
 
 	return binData, nil
 }

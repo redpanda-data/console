@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package serde provides an abstraction layer for serializing and deserializing
+// Kafka records.
 package serde
 
 import (
@@ -16,7 +18,7 @@ import (
 )
 
 type serdeCfg struct {
-	schemaId    uint32
+	schemaID    uint32
 	schemaIDSet bool
 
 	schemaPath string
@@ -32,12 +34,13 @@ type serdeCfg struct {
 
 type (
 	// SerdeOpt is an option to configure a Serde.
-	SerdeOpt interface{ apply(*serdeCfg) }
+	SerdeOpt interface{ apply(*serdeCfg) } //nolint:revive // stuttering
 	serdeOpt struct{ fn func(*serdeCfg) }
 )
 
 func (o serdeOpt) apply(t *serdeCfg) { o.fn(t) }
 
+// WithIndex adds a message index to serde options. Useful for Protobuf serialization and deserialization.
 func WithIndex(index ...int) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) {
 		t.index = index
@@ -45,21 +48,25 @@ func WithIndex(index ...int) SerdeOpt {
 	}}
 }
 
+// WithSchemaID adds a schema ID to serde options.
 func WithSchemaID(id uint32) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) {
-		t.schemaId = id
+		t.schemaID = id
 		t.schemaIDSet = true
 	}}
 }
 
+// WithSchemaPath adds a schema path to serde options.
 func WithSchemaPath(path string) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) { t.schemaPath = path }}
 }
 
+// WithTopic adds a topic name to serde options.
 func WithTopic(topic string) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) { t.topic = topic }}
 }
 
+// WithUintSize adds the uint size to use for serialization and deserialization of numeric payloads.
 func WithUintSize(size UintSize) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) {
 		t.uintSize = size
@@ -67,6 +74,7 @@ func WithUintSize(size UintSize) SerdeOpt {
 	}}
 }
 
+// Serde is the generic serde interface that all type serdes implement.
 type Serde interface {
 	// Name returns the serde's display name. The name may be displayed in the frontend
 	// for example when troubleshooting is enabled.
@@ -89,6 +97,8 @@ type Serde interface {
 
 // AppendEncode appends an encoded header to b according to the Confluent wire
 // format and returns it. Error is always nil.
+//
+//nolint:unparam // we always pass nil
 func appendEncode(b []byte, id int, index []int) ([]byte, error) {
 	b = append(
 		b,

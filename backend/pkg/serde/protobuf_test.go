@@ -330,7 +330,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		t.Run("missing topic", func(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
-			data := `{"id":"543"}`
+			data := `{"id":"654"}`
 			actualData, err := serde.SerializeObject(data, PayloadTypeValue)
 			assert.Error(t, err)
 			assert.Equal(t, "no topic specified", err.Error())
@@ -340,7 +340,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		t.Run("topic not found", func(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
-			data := `{"id":"543"}`
+			data := `{"id":"765"}`
 			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
 			assert.Equal(t, "failed to serialize string protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())

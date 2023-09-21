@@ -24,17 +24,20 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
-var _ Serde = (*JsonSchemaSerde)(nil)
+var _ Serde = (*JSONSchemaSerde)(nil)
 
-type JsonSchemaSerde struct {
+// JSONSchemaSerde represents the serde for dealing with JSON types that have a JSON schema.
+type JSONSchemaSerde struct {
 	SchemaSvc *schema.Service
 }
 
-func (JsonSchemaSerde) Name() PayloadEncoding {
+// Name returns the name of the serde payload encoding.
+func (JSONSchemaSerde) Name() PayloadEncoding {
 	return PayloadEncodingJSON
 }
 
-func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
+func (JSONSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
@@ -58,7 +61,8 @@ func (JsonSchemaSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 	return r, err
 }
 
-func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (JSONSchemaSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -97,7 +101,7 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 	// Redpanda currently does not support JSON Schema in the schema registry so we cannot do it.
 	// Just add the header to the payload.
 
-	var index []int = nil
+	var index []int
 	if so.indexSet {
 		index = so.index
 		if len(index) == 0 {
@@ -105,17 +109,18 @@ func (s JsonSchemaSerde) SerializeObject(obj any, payloadType PayloadType, opts 
 		}
 	}
 
-	header, err := appendEncode(nil, int(so.schemaId), index)
+	binData, err := appendEncode(nil, int(so.schemaID), index)
 	if err != nil {
 		return nil, fmt.Errorf("failed encode json schema payload: %w", err)
 	}
 
-	binData := append(header, trimmed...)
+	binData = append(binData, trimmed...)
 
 	return binData, nil
 }
 
-func (s *JsonSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse) error {
+//nolint:unused // could be useful when we support JSON schemas
+func (s *JSONSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse) error {
 	sch, err := s.compileJSONSchema(schemaRes)
 	if err != nil {
 		return fmt.Errorf("error compiling json schema: %w", err)
@@ -133,7 +138,8 @@ func (s *JsonSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse
 	return nil
 }
 
-func (s *JsonSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
+//nolint:unused // could be useful when we support JSON schemas
+func (s *JSONSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
 	schemaName := "redpanda_json_schema_main.json"
 
@@ -145,7 +151,8 @@ func (s *JsonSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*
 	return c.Compile(schemaName)
 }
 
-func (s *JsonSchemaSerde) buildJSONSchemaWithReferences(compiler *jsonschema.Compiler, name string, schemaRes *schema.SchemaResponse) error {
+//nolint:unused // could be useful when we support JSON schemas
+func (s *JSONSchemaSerde) buildJSONSchemaWithReferences(compiler *jsonschema.Compiler, name string, schemaRes *schema.SchemaResponse) error {
 	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema)); err != nil {
 		return err
 	}

@@ -173,6 +173,7 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 	return descriptors[0], nil
 }
 
+// IsEnabled returns whether the schema registry is enabled in configuration.
 func (s *Service) IsEnabled() bool {
 	return s.cfg.Enabled
 }

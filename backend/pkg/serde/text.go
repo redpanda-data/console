@@ -19,12 +19,15 @@ import (
 
 var _ Serde = (*TextSerde)(nil)
 
+// TextSerde represents the serde for dealing with text types.
 type TextSerde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (TextSerde) Name() PayloadEncoding {
 	return PayloadEncodingText
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
@@ -54,7 +57,8 @@ func (TextSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}, nil
 }
 
-func (TextSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (TextSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

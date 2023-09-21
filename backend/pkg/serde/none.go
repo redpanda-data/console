@@ -17,12 +17,15 @@ import (
 
 var _ Serde = (*NoneSerde)(nil)
 
+// NoneSerde represents the serde for dealing with nil types.
 type NoneSerde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (NoneSerde) Name() PayloadEncoding {
 	return PayloadEncodingNone
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
@@ -37,7 +40,8 @@ func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}, nil
 }
 
-func (NoneSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (NoneSerde) SerializeObject(obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
 	emptyData := []byte{}
 
 	// TODO should we handle empty JSON for none?
@@ -48,7 +52,7 @@ func (NoneSerde) SerializeObject(obj any, payloadType PayloadType, opts ...Serde
 
 	switch v := obj.(type) {
 	case string:
-		if len(v) != 0 && v != "{}" {
+		if v != "" && v != "{}" {
 			return nil, fmt.Errorf("input not empty")
 		}
 	case []byte:

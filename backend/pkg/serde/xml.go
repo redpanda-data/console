@@ -21,12 +21,15 @@ import (
 
 var _ Serde = (*XMLSerde)(nil)
 
+// XMLSerde represents the serde for dealing with XML encoded types.
 type XMLSerde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (XMLSerde) Name() PayloadEncoding {
 	return PayloadEncodingXML
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -59,7 +62,8 @@ func (XMLSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) 
 	}, nil
 }
 
-func (XMLSerde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (XMLSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

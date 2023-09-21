@@ -21,12 +21,15 @@ import (
 
 var _ Serde = (*UTF8Serde)(nil)
 
+// UTF8Serde represents the serde for dealing with UTF8 text types.
 type UTF8Serde struct{}
 
+// Name returns the name of the serde payload encoding.
 func (UTF8Serde) Name() PayloadEncoding {
 	return PayloadEncodingUtf8WithControlChars
 }
 
+// DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -57,7 +60,8 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 	}, nil
 }
 
-func (UTF8Serde) SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error) {
+// SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+func (UTF8Serde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

@@ -110,9 +110,14 @@ export enum PayloadEncoding {
   BINARY = 10,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 11;
+   * @generated from enum value: PAYLOAD_ENCODING_UINT = 11;
    */
-  CONSUMER_OFFSETS = 11,
+  UINT = 11,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 12;
+   */
+  CONSUMER_OFFSETS = 12,
 }
 // Retrieve enum metadata with: proto3.getEnumType(PayloadEncoding)
 proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha.PayloadEncoding", [
@@ -127,7 +132,8 @@ proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha.PayloadEn
   { no: 8, name: "PAYLOAD_ENCODING_MESSAGE_PACK" },
   { no: 9, name: "PAYLOAD_ENCODING_SMILE" },
   { no: 10, name: "PAYLOAD_ENCODING_BINARY" },
-  { no: 11, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
+  { no: 11, name: "PAYLOAD_ENCODING_UINT" },
+  { no: 12, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
 ]);
 
 /**
