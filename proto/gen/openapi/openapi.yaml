@@ -1,5 +1,22 @@
 components:
   schemas:
+    ACL.Operation:
+      enum:
+        - OPERATION_ANY
+        - OPERATION_ALL
+        - OPERATION_READ
+        - OPERATION_WRITE
+        - OPERATION_CREATE
+        - OPERATION_DELETE
+        - OPERATION_ALTER
+        - OPERATION_DESCRIBE
+        - OPERATION_CLUSTER_ACTION
+        - OPERATION_DESCRIBE_CONFIGS
+        - OPERATION_ALTER_CONFIGS
+        - OPERATION_IDEMPOTENT_WRITE
+        - OPERATION_CREATE_TOKENS
+        - OPERATION_DESCRIBE_TOKENS
+      type: string
     BadRequest:
       description: |-
         Describes violations in a client request. This error type focuses on the
@@ -43,6 +60,8 @@ components:
         value:
           type: string
       type: object
+    CreateACLResponse:
+      type: object
     CreateTopicResponse:
       properties:
         topic:
@@ -68,6 +87,30 @@ components:
           $ref: '#/components/schemas/SASLMechanism'
         name:
           type: string
+      type: object
+    DeleteACLsRequest.Filter:
+      properties:
+        host:
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          type: string
+        resource_name:
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    DeleteACLsResponse:
+      properties:
+        matching_acls:
+          items:
+            $ref: '#/components/schemas/MatchingACL'
+          type: array
       type: object
     DeleteTopicResponse:
       type: object
@@ -179,11 +222,6 @@ components:
               value in the third `emailAddresses` message.
           type: string
       type: object
-    Filter:
-      properties:
-        name:
-          type: string
-      type: object
     GetTopicConfigurationResponse:
       properties:
         configuration:
@@ -216,6 +254,41 @@ components:
           description: The URL of the link.
           type: string
       type: object
+    ListACLsRequest.Filter:
+      properties:
+        host:
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          type: string
+        resource_name:
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListACLsResponse:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/Policy'
+          type: array
+        resource_name:
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListTopicsRequest.Filter:
+      properties:
+        name:
+          type: string
+      type: object
     ListTopicsResponse:
       properties:
         next_page_token:
@@ -237,6 +310,45 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          type: string
+      type: object
+    MatchingACL:
+      properties:
+        error_code:
+          format: int32
+          type: integer
+        error_message:
+          type: string
+        host:
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          type: string
+        resource_name:
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    PermissionType:
+      enum:
+        - PERMISSION_TYPE_ANY
+        - PERMISSION_TYPE_DENY
+        - PERMISSION_TYPE_ALLOW
+      type: string
+    Policy:
+      properties:
+        host:
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
           type: string
       type: object
     QuotaFailure:
@@ -282,6 +394,23 @@ components:
             developer project id>".
           type: string
       type: object
+    ResourcePatternType:
+      enum:
+        - RESOURCE_PATTERN_TYPE_ANY
+        - RESOURCE_PATTERN_TYPE_MATCH
+        - RESOURCE_PATTERN_TYPE_LITERAL
+        - RESOURCE_PATTERN_TYPE_PREFIXED
+      type: string
+    ResourceType:
+      enum:
+        - RESOURCE_TYPE_ANY
+        - RESOURCE_TYPE_TOPIC
+        - RESOURCE_TYPE_GROUP
+        - RESOURCE_TYPE_CLUSTER
+        - RESOURCE_TYPE_TRANSACTIONAL_ID
+        - RESOURCE_TYPE_DELEGATION_TOKEN
+        - RESOURCE_TYPE_USER
+      type: string
     SASLMechanism:
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
@@ -453,6 +582,276 @@ info:
   version: v1alpha1
 openapi: 3.0.3
 paths:
+  /v1alpha1/acls:
+    delete:
+      description: Delete all ACLs that match the given filter
+      operationId: ACLService_DeleteACLs
+      parameters:
+        - in: query
+          name: filter.resource_type
+          schema:
+            enum:
+              - RESOURCE_TYPE_ANY
+              - RESOURCE_TYPE_TOPIC
+              - RESOURCE_TYPE_GROUP
+              - RESOURCE_TYPE_CLUSTER
+              - RESOURCE_TYPE_TRANSACTIONAL_ID
+              - RESOURCE_TYPE_DELEGATION_TOKEN
+              - RESOURCE_TYPE_USER
+            type: string
+        - in: query
+          name: filter.resource_name
+          schema:
+            type: string
+        - in: query
+          name: filter.resource_pattern_type
+          schema:
+            enum:
+              - RESOURCE_PATTERN_TYPE_ANY
+              - RESOURCE_PATTERN_TYPE_MATCH
+              - RESOURCE_PATTERN_TYPE_LITERAL
+              - RESOURCE_PATTERN_TYPE_PREFIXED
+            type: string
+        - in: query
+          name: filter.principal
+          schema:
+            type: string
+        - in: query
+          name: filter.host
+          schema:
+            type: string
+        - in: query
+          name: filter.operation
+          schema:
+            enum:
+              - OPERATION_ANY
+              - OPERATION_ALL
+              - OPERATION_READ
+              - OPERATION_WRITE
+              - OPERATION_CREATE
+              - OPERATION_DELETE
+              - OPERATION_ALTER
+              - OPERATION_DESCRIBE
+              - OPERATION_CLUSTER_ACTION
+              - OPERATION_DESCRIBE_CONFIGS
+              - OPERATION_ALTER_CONFIGS
+              - OPERATION_IDEMPOTENT_WRITE
+              - OPERATION_CREATE_TOKENS
+              - OPERATION_DESCRIBE_TOKENS
+            type: string
+        - in: query
+          name: filter.permission_type
+          schema:
+            enum:
+              - PERMISSION_TYPE_ANY
+              - PERMISSION_TYPE_DENY
+              - PERMISSION_TYPE_ALLOW
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteACLsResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete ACLs
+      tags:
+        - ACLService
+    get:
+      description: List ACLs
+      operationId: ACLService_ListACLs
+      parameters:
+        - in: query
+          name: filter.resource_type
+          schema:
+            enum:
+              - RESOURCE_TYPE_ANY
+              - RESOURCE_TYPE_TOPIC
+              - RESOURCE_TYPE_GROUP
+              - RESOURCE_TYPE_CLUSTER
+              - RESOURCE_TYPE_TRANSACTIONAL_ID
+              - RESOURCE_TYPE_DELEGATION_TOKEN
+              - RESOURCE_TYPE_USER
+            type: string
+        - in: query
+          name: filter.resource_name
+          schema:
+            type: string
+        - in: query
+          name: filter.resource_pattern_type
+          schema:
+            enum:
+              - RESOURCE_PATTERN_TYPE_ANY
+              - RESOURCE_PATTERN_TYPE_MATCH
+              - RESOURCE_PATTERN_TYPE_LITERAL
+              - RESOURCE_PATTERN_TYPE_PREFIXED
+            type: string
+        - in: query
+          name: filter.principal
+          schema:
+            type: string
+        - in: query
+          name: filter.host
+          schema:
+            type: string
+        - in: query
+          name: filter.operation
+          schema:
+            enum:
+              - OPERATION_ANY
+              - OPERATION_ALL
+              - OPERATION_READ
+              - OPERATION_WRITE
+              - OPERATION_CREATE
+              - OPERATION_DELETE
+              - OPERATION_ALTER
+              - OPERATION_DESCRIBE
+              - OPERATION_CLUSTER_ACTION
+              - OPERATION_DESCRIBE_CONFIGS
+              - OPERATION_ALTER_CONFIGS
+              - OPERATION_IDEMPOTENT_WRITE
+              - OPERATION_CREATE_TOKENS
+              - OPERATION_DESCRIBE_TOKENS
+            type: string
+        - in: query
+          name: filter.permission_type
+          schema:
+            enum:
+              - PERMISSION_TYPE_ANY
+              - PERMISSION_TYPE_DENY
+              - PERMISSION_TYPE_ALLOW
+            type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListACLsResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List ACLs
+      tags:
+        - ACLService
+    post:
+      description: Create ACL
+      operationId: ACLService_CreateACL
+      parameters:
+        - in: query
+          name: resource_type
+          schema:
+            enum:
+              - RESOURCE_TYPE_ANY
+              - RESOURCE_TYPE_TOPIC
+              - RESOURCE_TYPE_GROUP
+              - RESOURCE_TYPE_CLUSTER
+              - RESOURCE_TYPE_TRANSACTIONAL_ID
+              - RESOURCE_TYPE_DELEGATION_TOKEN
+              - RESOURCE_TYPE_USER
+            type: string
+        - in: query
+          name: resource_name
+          schema:
+            type: string
+        - in: query
+          name: resource_pattern_type
+          schema:
+            enum:
+              - RESOURCE_PATTERN_TYPE_ANY
+              - RESOURCE_PATTERN_TYPE_MATCH
+              - RESOURCE_PATTERN_TYPE_LITERAL
+              - RESOURCE_PATTERN_TYPE_PREFIXED
+            type: string
+        - in: query
+          name: principal
+          schema:
+            type: string
+        - in: query
+          name: host
+          schema:
+            type: string
+        - in: query
+          name: operation
+          schema:
+            enum:
+              - OPERATION_ANY
+              - OPERATION_ALL
+              - OPERATION_READ
+              - OPERATION_WRITE
+              - OPERATION_CREATE
+              - OPERATION_DELETE
+              - OPERATION_ALTER
+              - OPERATION_DESCRIBE
+              - OPERATION_CLUSTER_ACTION
+              - OPERATION_DESCRIBE_CONFIGS
+              - OPERATION_ALTER_CONFIGS
+              - OPERATION_IDEMPOTENT_WRITE
+              - OPERATION_CREATE_TOKENS
+              - OPERATION_DESCRIBE_TOKENS
+            type: string
+        - in: query
+          name: permission_type
+          schema:
+            enum:
+              - PERMISSION_TYPE_ANY
+              - PERMISSION_TYPE_DENY
+              - PERMISSION_TYPE_ALLOW
+            type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateACLResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create ACL
+      tags:
+        - ACLService
   /v1alpha1/topics:
     get:
       description: List Topics
@@ -850,5 +1249,6 @@ servers:
           					Example (Dedicated): https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com<br>
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
+  - name: ACLService
   - name: TopicService
   - name: UserService
