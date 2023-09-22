@@ -14,6 +14,7 @@ import (
 	"math"
 	"net/http"
 
+	connect_go "connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 
@@ -68,6 +69,7 @@ type AuthorizationHooks interface {
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
 	PrintListMessagesAuditLog(r *http.Request, req *console.ListMessageRequest)
+	PrintRPCViewMessageAuditLog(ctx context.Context, r connect_go.AnyRequest, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
@@ -203,6 +205,9 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	return []string{"all"}, nil
 }
 func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {}
+func (*defaultHooks) PrintRPCViewMessageAuditLog(_ context.Context, _ connect_go.AnyRequest, _ *console.ListMessageRequest) {
+}
+
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }

@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	connect_go "connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -350,6 +351,12 @@ func (a *assertHooks) AllowedTopicActions(_ context.Context, topic string) ([]st
 
 func (a *assertHooks) PrintListMessagesAuditLog(_ *http.Request, r *console.ListMessageRequest) {
 	if !a.isCallAllowed(r.TopicName) {
+		assertHookCall(a.t)
+	}
+}
+
+func (a *assertHooks) PrintRPCViewMessageAuditLog(ctx context.Context, r connect_go.AnyRequest, req *console.ListMessageRequest) {
+	if !a.isCallAllowed(req.TopicName) {
 		assertHookCall(a.t)
 	}
 }
