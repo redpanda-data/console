@@ -5,7 +5,9 @@ managed:
     default: github.com/redpanda-data/console/backend/pkg/protogen
     except:
       - buf.build/googleapis/googleapis
+      - buf.build/grpc-ecosystem/grpc-gateway
       - buf.build/bufbuild/protovalidate
+      - buf.build/envoyproxy/protoc-gen-validate
 plugins:
   # Go Plugins
   - plugin: buf.build/protocolbuffers/go

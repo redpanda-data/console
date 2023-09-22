@@ -10,11 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	_ "github.com/redpanda-data/console/backend/pkg/protogen/protoc-gen-openapiv2/options"
 )
 
 const (
