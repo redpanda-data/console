@@ -9,15 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import { Modal } from 'antd';
+import { Component, useState } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
 import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
-import { Box, Button, FormLabel, Input, Spinner, Stack, Text } from '@redpanda-data/ui';
+import { Box, Button, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Stack, Text } from '@redpanda-data/ui';
 import { appGlobal } from '../../state/appGlobal';
 import { toJson } from '../../utils/jsonUtils';
 import AzureADLogo from '../../utils/svg/AzureADLogo';
@@ -95,17 +94,26 @@ class Login extends Component {
 
         return (
           <div className="login">
-            <Modal
-              title="Access Denied"
-              open={uiState.loginError != null}
-              cancelButtonProps={{ style: { display: 'none' } }}
-              closable={false}
-              maskClosable={false}
-              onOk={() => {
-                uiState.loginError = null;
-              }}
-            >
-              <p style={{ whiteSpace: 'pre-wrap' }}>{uiState.loginError}</p>
+              <Modal
+                  isOpen={uiState.loginError != null}
+                  onClose={() => {
+                      uiState.loginError = null;
+                  }}
+              >
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Access Denied</ModalHeader>
+                    <ModalBody>
+                        <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button onClick={() => {
+                              uiState.loginError = null;
+                        }}>
+                           OK
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
             </Modal>
 
             <div className="loginContainer">
@@ -207,6 +215,7 @@ const plainLoginState = observable({
 });
 
 const PlainLoginBox = observer((p: { provider?: Provider }) => {
+    const [error, setError] = useState<string | null>(null)
     const provider = p.provider;
     if (!provider) return null;
 
@@ -272,14 +281,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
                             return;
                         }
 
-                        Modal.error({
-                            title: 'Error',
-                            content: <>
-                                <blockquote>
-                                    {err.message}
-                                </blockquote>
-                            </>
-                        });
+                        setError(err.message)
                     }
                     finally {
                         state.isLoading = false;
@@ -289,6 +291,27 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
                 {state.isLoading && <Spinner size="sm" mr="1" />}
                 Login
             </Button>
+            <Modal
+                isOpen={error !== null}
+                onClose={() => {
+                    setError(null);
+                }}
+            >
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Error</ModalHeader>
+                    <ModalBody>
+                        <blockquote>{error}</blockquote>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button onClick={() => {
+                            setError(null);
+                        }}>
+                            OK
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </Box>
     </>
 });

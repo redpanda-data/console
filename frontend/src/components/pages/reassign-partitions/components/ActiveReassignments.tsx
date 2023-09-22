@@ -10,7 +10,7 @@
  */
 
 import React, { Component, FC, useRef } from 'react';
-import { Modal, Popconfirm, Skeleton } from 'antd';
+import { Modal as AntModal, Popconfirm, Skeleton } from 'antd';
 import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
@@ -24,7 +24,7 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Button, Checkbox, Progress, ToastId, useToast } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
 
 
 @observer
@@ -215,53 +215,58 @@ export const ThrottleDialog: FC<{ visible: boolean, lastKnownMinThrottle: number
         onClose();
     }
 
-    return <Modal
-        title="Throttle Settings"
-        open={visible} maskClosable={true} closeIcon={<></>}
-        width="700px"
 
-        onCancel={onClose}
+    return (
+        <Modal
+            isOpen={visible}
+            onClose={onClose}
+        >
+            <ModalOverlay/>
+            <ModalContent minW="3xl">
+                <ModalHeader>Throttle Settings</ModalHeader>
+                <ModalBody>
+                    <Flex flexDirection="column" gap={4}>
+                        <Box mx={4}>
+                            <Text>Using throttling you can limit the network traffic for reassignments.</Text>
+                            <UnorderedList mt={2} px={6}>
+                                <ListItem>Throttling applies to all replication traffic, not just to active reassignments.</ListItem>
+                                <ListItem>Once the reassignment completes you'll have to remove the throttling configuration. <br/>
+                                    Console will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                                </ListItem>
+                            </UnorderedList>
+                        </Box>
+                        <BandwidthSlider value={throttleValue} onChange={x => $state.newThrottleValue = x}/>
+                    </Flex>
+                </ModalBody>
+                <ModalFooter>
+                    <Flex w="full" justifyContent="space-between">
+                        <Button
+                            variant="outline"
+                            colorScheme="red"
+                            onClick={() => {
+                                $state.newThrottleValue = null;
+                                void applyBandwidthThrottle();
+                            }}
+                        >Remove throttle</Button>
 
-        footer={<div style={{ display: 'flex' }}>
-            <Button
-                variant="outline"
-                colorScheme="red"
-                onClick={() => {
-                    $state.newThrottleValue = null;
-                    void applyBandwidthThrottle();
-                }}
-            >Remove throttle</Button>
-
-            <Button
-                style={{ marginLeft: 'auto' }}
-                onClick={onClose}
-            >Close</Button>
-
-            <Button
-                disabled={noChange}
-                variant="solid"
-                onClick={() => {
-                    void applyBandwidthThrottle();
-                }}
-            >Apply</Button>
-        </div>}
-    >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', }}>
-            <div style={{ margin: '0 1em' }}>
-                <p style={{ margin: 0 }}>Using throttling you can limit the network traffic for reassignments.</p>
-                <ul style={{ marginTop: '0.5em', padding: '0 1.5em' }}>
-                    <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
-                    <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
-                        Console will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
-                    </li>
-                </ul>
-            </div>
-
-            <BandwidthSlider value={throttleValue} onChange={x => $state.newThrottleValue = x} />
-        </div>
-
-    </Modal>
-
+                        <Flex gap={1}>
+                            <Button
+                                style={{marginLeft: 'auto'}}
+                                onClick={onClose}
+                            >Close</Button>
+                            <Button
+                                disabled={noChange}
+                                variant="solid"
+                                onClick={() => {
+                                    void applyBandwidthThrottle();
+                                }}
+                            >Apply</Button>
+                        </Flex>
+                    </Flex>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    )
 })
 
 @observer
@@ -337,7 +342,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
             </div>
         ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;
 
-        return <Modal
+        return <AntModal
             title={'Reassignment: ' + state.topicName}
             open={visible}
 
@@ -352,7 +357,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
             maskClosable={true}
         >
             {modalContent}
-        </Modal>
+        </AntModal>
     }
 
     isThrottled(): boolean {
