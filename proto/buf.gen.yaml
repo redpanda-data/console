@@ -13,13 +13,14 @@ plugins:
   - plugin: buf.build/protocolbuffers/go
     opt: paths=source_relative
     out: backend/pkg/protogen
-
+  - plugin: buf.build/grpc/go
+    opt: paths=source_relative
+    out: backend/pkg/protogen
   - plugin: buf.build/connectrpc/go
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
     out: backend/pkg/protogen
-
   # Typescript plugins
   - plugin: buf.build/bufbuild/es
     opt:
