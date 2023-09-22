@@ -62,6 +62,12 @@ components:
       type: object
     CreateACLResponse:
       type: object
+    CreateSecretResponse:
+      properties:
+        secret:
+          $ref: '#/components/schemas/SecretInput'
+      title: CreateSecretResponse is the response of CreateSecret
+      type: object
     CreateTopicResponse:
       properties:
         topic:
@@ -111,6 +117,9 @@ components:
           items:
             $ref: '#/components/schemas/MatchingACL'
           type: array
+      type: object
+    DeleteSecretResponse:
+      title: DeleteSecretResponse is the response of DeleteSecret
       type: object
     DeleteTopicResponse:
       type: object
@@ -284,6 +293,27 @@ components:
         resource_type:
           $ref: '#/components/schemas/ResourceType'
       type: object
+    ListSecretsRequest.Filter:
+      properties:
+        labels[string]:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+      title: Defines the filter for Secrets
+      type: object
+    ListSecretsResponse:
+      properties:
+        next_page_token:
+          description: token to retrieve the next page.
+          type: string
+        secrets:
+          items:
+            $ref: '#/components/schemas/Secret'
+          type: array
+      title: ListSecretsResponse is the response of ListSecrets
+      type: object
     ListTopicsRequest.Filter:
       properties:
         name:
@@ -416,6 +446,33 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
+    Secret:
+      properties:
+        id:
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+      title: Secret defienes the secret resource
+      type: object
+    SecretInput:
+      properties:
+        id:
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        secret_data:
+          items:
+            format: byte
+            type: string
+          type: array
+      required:
+        - secret_data
+      type: object
     SetConfiguration:
       properties:
         key:
@@ -538,6 +595,12 @@ components:
         - OPERATION_APPEND
         - OPERATION_SUBTRACT
       type: string
+    UpdateSecretResponse:
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      title: UpdateSecretResponse is the response of UpdateSecret
+      type: object
     UpdateTopicConfigurationResponse:
       properties:
         configuration:
@@ -852,6 +915,175 @@ paths:
       summary: Create ACL
       tags:
         - ACLService
+  /v1alpha1/secret/{secret.id}:
+    put:
+      description: Update a Secret content.
+      operationId: SecretService_UpdateSecret
+      parameters:
+        - in: path
+          name: secret.id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                labels:
+                  additionalProperties:
+                    type: string
+                  type: object
+              title: Secret defienes the secret resource
+              type: object
+        description: Secret defienes the secret resource
+        required: true
+        x-originalParamName: secret
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Ok
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Update Secret
+      tags:
+        - SecretService
+  /v1alpha1/secrets:
+    get:
+      description: List Secrets
+      operationId: SecretService_ListSecrets
+      parameters:
+        - in: query
+          name: filter.name
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.labels[string]
+          schema:
+            type: string
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSecretsResponse'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Secrets
+      tags:
+        - SecretService
+    post:
+      description: Create a Secret.
+      operationId: SecretService_CreateSecret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretInput'
+        required: true
+        x-originalParamName: secret
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Secret Created.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create Secret
+      tags:
+        - SecretService
+  /v1alpha1/secrets/{id}:
+    delete:
+      description: Delete a Secret.
+      operationId: SecretService_DeleteSecret
+      parameters:
+        - description: The id of the secret you want to delete
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Secret was deleted successfully.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Secret
+      tags:
+        - SecretService
   /v1alpha1/topics:
     get:
       description: List Topics
@@ -1250,5 +1482,6 @@ servers:
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
   - name: ACLService
+  - name: SecretService
   - name: TopicService
   - name: UserService
