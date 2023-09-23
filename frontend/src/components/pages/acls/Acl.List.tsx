@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Dropdown, Menu, Modal } from 'antd';
+import { Empty, Input, Dropdown, Menu } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +30,8 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, Text, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text } from '@redpanda-data/ui';
+import React, { FC, useRef } from 'react';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -102,10 +103,9 @@ class AclList extends PageComponent {
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
-                            Modal.error({
-                                title: 'Delete ACLs failed',
-                                content: <div className="codeBox">{toJson(err)}</div>,
-                            });
+                            this.aclFailed = {
+                                err,
+                            }
                         }
                     }
 
@@ -119,10 +119,9 @@ class AclList extends PageComponent {
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
-                            Modal.error({
-                                title: 'Delete ACLs failed',
-                                content: <div className="codeBox">{toJson(err)}</div>,
-                            });
+                            this.aclFailed = {
+                                err,
+                            }
                         }
                     }
 
@@ -159,6 +158,7 @@ class AclList extends PageComponent {
     ];
 
     editorType: 'create' | 'edit' = 'create';
+    @observable aclFailed: { err: unknown } | null = null;
     @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
     CreateServiceAccountModal;
@@ -267,6 +267,9 @@ class AclList extends PageComponent {
         const groups = this.principalGroups;
 
         return <>
+            <AlertDeleteFailed aclFailed={this.aclFailed} onClose={() => {
+                this.aclFailed = null
+            }}/>
             <ToastContainer />
             <PageContent>
 
@@ -468,6 +471,27 @@ function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
     }
 
     return false;
+}
+
+const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null, onClose: () => void }> = ({aclFailed, onClose}) => {
+    const ref = useRef(null)
+    return (
+        <AlertDialog isOpen={aclFailed !== null} onClose={onClose} leastDestructiveRef={ref}>
+            <AlertDialogOverlay>
+                <AlertDialogContent>
+                    <AlertDialogHeader>Delete ACLs failed</AlertDialogHeader>
+                    <AlertDialogBody>
+                        <div className="codeBox">{aclFailed !== null && toJson(aclFailed.err)}</div>
+                    </AlertDialogBody>
+                    <AlertDialogFooter>
+                        <Button ref={ref} onClick={onClose}>
+                            Cancel
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialogOverlay>
+        </AlertDialog>
+    )
 }
 
 
