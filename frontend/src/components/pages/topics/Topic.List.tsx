@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import { Modal } from 'antd';
+import React, { useState } from 'react';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -22,13 +21,12 @@ import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { useState } from 'react';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Text, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Button, Checkbox, Flex, Icon, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
@@ -328,6 +326,8 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     const [deletionPending, setDeletionPending] = useState(false);
     const [error, setError] = useState<string | Error | null>(null);
     const toast = useToast()
+    const cancelRef = React.useRef(null)
+
 
     const cleanup = () => {
         setDeletionPending(false);
@@ -351,44 +351,52 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     };
 
     return (
-        <Modal
-            className="topicDeleteModal"
-            open={topicToDelete != null}
-            centered
-            closable={false}
-            maskClosable={!deletionPending}
-            keyboard={!deletionPending}
-            okText={error ? 'Retry' : 'Yes'}
-            confirmLoading={deletionPending}
-            okType="danger"
-            cancelText="No"
-            width="570px"
-            cancelButtonProps={{ disabled: deletionPending }}
-            onCancel={cancel}
-            onOk={() => {
-                setDeletionPending(true);
-                api.deleteTopic(topicToDelete!.topicName) // modal is not shown when topic is null
-                    .then(finish)
-                    .catch(setError)
-                    .finally(() => { setDeletionPending(false) });
-            }}
+        <AlertDialog
+            isOpen={topicToDelete !== null}
+            leastDestructiveRef={cancelRef}
+            onClose={cancel}
         >
-            <>
-                {error && <Alert status="error">
-                    <AlertIcon />
-                    {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
-                </Alert>}
-                {topicToDelete?.isInternal && <Alert status="error">
-                    <AlertIcon />
-                    This is an internal topic, deleting it might have unintended side-effects!
-                </Alert>}
-                <p>
-                    Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
-                    This action cannot be undone.
-                </p>
-            </>
-        </Modal>
-    );
+            <AlertDialogOverlay>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        Delete Topic
+                    </AlertDialogHeader>
+
+                    <AlertDialogBody>
+                        {error && <Alert status="error" mb={2}>
+                            <AlertIcon/>
+                            {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
+                        </Alert>}
+                        {topicToDelete?.isInternal && <Alert status="error" mb={2}>
+                            <AlertIcon/>
+                            This is an internal topic, deleting it might have unintended side-effects!
+                        </Alert>}
+                        <Text>
+                            Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br/>
+                            This action cannot be undone.
+                        </Text>
+                    </AlertDialogBody>
+
+                    <AlertDialogFooter>
+                        <Button ref={cancelRef} onClick={cancel} variant="ghost">
+                            Cancel
+                        </Button>
+                        <Button isLoading={deletionPending} colorScheme="brand" onClick={() => {
+                            setDeletionPending(true);
+                            api.deleteTopic(topicToDelete!.topicName) // modal is not shown when topic is null
+                                .then(finish)
+                                .catch(setError)
+                                .finally(() => {
+                                    setDeletionPending(false)
+                                });
+                        }} ml={3}>
+                            Delete
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialogOverlay>
+        </AlertDialog>
+    )
 }
 
 function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): JSX.Element {
