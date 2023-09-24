@@ -11,9 +11,9 @@
 
 import React from 'react';
 import { Component } from 'react';
-import { Modal } from 'antd';
 import { action, observable } from 'mobx';
 import { XCircleIcon } from '@heroicons/react/solid';
+import { Box, Text, Button, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 
 
 class ErrorModal extends Component<ErrorModalProps> {
@@ -32,59 +32,47 @@ class ErrorModal extends Component<ErrorModalProps> {
         const p = this.props;
 
         return <Modal
-            open={p.isVisible}
-
-            onOk={p.onClose}
-            afterClose={p.afterClose}
-
-            cancelButtonProps={{ style: { display: 'none' } }}
-
-            bodyStyle={{ paddingTop: '1.5em' }}
-            width="auto"
-            style={{
-                minWidth: 'min(95%, 550px)',
-                maxWidth: 'min(900px, 80%)',
-                width: 'auto',
-                maxHeight: '100%'
-            }}
-            centered={true}
-            maskClosable={false}
-            closeIcon={<></>}
-            transitionName={p.animate ? undefined : ''}
-            maskTransitionName={p.animate ? undefined : ''}
+            isOpen={p.isVisible}
+            onClose={p.onClose}
+            onCloseComplete={p.afterClose}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2em' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', flexDirection: 'row', gap: '22px', paddingRight: '1.5em' }}>
+            <ModalOverlay />
+            <ModalContent minW="3xl">
+                <ModalHeader>
+                    {this.title}
+                </ModalHeader>
+                <ModalBody>
+                    <Flex flexDirection="column" gap={8}>
+                        {/* Header */}
+                        <Flex flexDirection="row" gap={2} pr={6}>
 
-                    {/* Icon */}
-                    <div style={{
-                        height: '70px', // height determines icon size
-                        alignSelf: 'center',
-                        margin: '-6px', // compensate for built in padding
-                        marginTop: '0px',
-                    }}>
-                        <XCircleIcon color="#F53649" />
-                    </div>
+                            {/* Icon */}
+                            <div style={{
+                                height: '70px', // height determines icon size
+                                alignSelf: 'center',
+                            }}>
+                                <XCircleIcon color="#F53649"/>
+                            </div>
 
-                    {/* Title */}
-                    <div style={{ alignSelf: 'center' }}>
-                        <div style={{
-                            color: 'hsla(0deg, 0%, 0%, 85%)',
-                            fontSize: '16px', fontWeight: 500, lineHeight: 2,
-                            overflow: 'hidden',
-                        }}>{this.title}</div>
-                        <div>{this.subTitle}</div>
-                    </div>
-                </div>
+                            {/* Title */}
+                            <Box alignSelf="center">
+                                <Text>{this.subTitle}</Text>
+                            </Box>
+                        </Flex>
 
-                {/* Content */}
-                {this.content &&
-                    <div style={{ alignSelf: 'stretch', overflowY: 'auto', maxHeight: '300px' }}>
-                        {this.content}
-                    </div>
-                }
-            </div>
+                        {/* Content */}
+                        {this.content &&
+                            <Box alignSelf="stretch" overflowY="auto" maxHeight="300px">
+                                {this.content}
+                            </Box>
+                        }
+                    </Flex>
+                </ModalBody>
+                <ModalFooter>
+                    <Button onClick={p.onClose}>OK</Button>
+                </ModalFooter>
+            </ModalContent>
+
         </Modal>
     }
 }
