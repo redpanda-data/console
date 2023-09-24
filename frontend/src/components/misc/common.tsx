@@ -9,12 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { PropsWithChildren } from 'react';
+import React, { PropsWithChildren, useState } from 'react';
 import { TablePaginationConfig } from 'antd/lib/table';
 import { CompareFn } from 'antd/lib/table/interface';
 import { observer } from 'mobx-react';
-import { Modal } from 'antd';
 import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
 import env, { IsDev } from '../../utils/env';
@@ -23,6 +21,7 @@ import { clone } from '../../utils/jsonUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
+import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 
 export const Section = ((p: PropsWithChildren<{ title: string }>) =>
     <section style={{ padding: '1em 2em' }}>
@@ -92,63 +91,60 @@ export function range(start: number, end: number): number[] {
     return ar;
 }
 
-let updateDialogOpen = false;
-
 /*
 * TODO:
 * Reloading the page does not ensure we'll get the update!
 * If there are multiple backend instances, we might get connected to an old instance again when we trigger a reload.
 */
-@observer
-export class UpdatePopup extends Component {
-    render() {
-        if (IsDev) return null;
+export const UpdatePopup = observer(() => {
+    const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(true)
+    if (IsDev) return null;
 
-        if (updateDialogOpen) return null;
+    const serverTimestamp = uiState.serverBuildTimestamp;
+    if (serverTimestamp == null) return null;
 
-        const serverTimestamp = uiState.serverBuildTimestamp;
-        if (serverTimestamp == null) return null;
+    const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
 
-        const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
+    if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
+    if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
 
-        if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
-        if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
+    if (serverTimestamp < curTimestamp)
+        return null; // don't downgrade
+    if (serverTimestamp == curTimestamp)
+        return null; // version already matches
 
-        if (serverTimestamp < curTimestamp)
-            return null; // don't downgrade
-        if (serverTimestamp == curTimestamp)
-            return null; // version already matches
+    console.log('frontend update available', {
+        serverTimestamp: serverTimestamp,
+        serverDate: new Date(serverTimestamp * 1000),
+        localTimestamp: curTimestamp,
+        localDate: new Date(curTimestamp * 1000),
+        localVersion: clone(env),
+    });
 
-        console.log('frontend update available', {
-            serverTimestamp: serverTimestamp,
-            serverDate: new Date(serverTimestamp * 1000),
-            localTimestamp: curTimestamp,
-            localDate: new Date(curTimestamp * 1000),
-            localVersion: clone(env),
-        });
-
-        updateDialogOpen = true;
-        setTimeout(() => {
-            Modal.info({
-                title: 'Redpanda Console has been updated',
-                content: <div>The page must be reloaded to apply the newest version of the frontend.</div>,
-                mask: true,
-                maskClosable: false,
-                centered: true,
-                okText: 'Reload',
-                onOk: () => {
-                    console.log('reloading frontend...');
-                    window.location.reload();
-                    updateDialogOpen = false;
-                },
-                onCancel: () => { updateDialogOpen = false; }
-            });
-        });
-
-        return null;
-
-    }
-}
+    return (
+        <Modal isOpen={isUpdateDialogOpen} onClose={() => setUpdateDialogOpen(false)}>
+            <ModalOverlay/>
+            <ModalContent minW="xl">
+                <ModalHeader>Redpanda Console has been updated</ModalHeader>
+                <ModalBody>The page must be reloaded to apply the newest version of the frontend.</ModalBody>
+                <ModalFooter gap={2}>
+                    <Button variant="outline" colorScheme="red" onClick={() => {
+                        setUpdateDialogOpen(false);
+                    }}>
+                        Cancel
+                    </Button>
+                    <Button variant="solid" onClick={() => {
+                        console.log('reloading frontend...');
+                        setUpdateDialogOpen(false);
+                        window.location.reload();
+                    }}>
+                        Reload
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+})
 
 export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
     if (!summary.hint)
