@@ -169,7 +169,6 @@ export const ThrottleDialog: FC<{ visible: boolean, lastKnownMinThrottle: number
     const noChange = ($state.newThrottleValue === lastKnownMinThrottle)
         || ($state.newThrottleValue == null);
 
-    // console.log('nochange:', { noChange, newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle })
 
     const applyBandwidthThrottle = async () => {
         toastRef.current = toast({
