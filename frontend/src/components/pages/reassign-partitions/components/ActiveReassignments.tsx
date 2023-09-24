@@ -10,22 +10,30 @@
  */
 
 import React, { Component, FC, useRef } from 'react';
-import { Modal as AntModal, Popconfirm, Skeleton } from 'antd';
+import { Popconfirm, Skeleton } from 'antd';
 import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
 import { QuickTable } from '../../../../utils/tsxUtils';
 import { sortField } from '../../../misc/common';
 import { uiSettings } from '../../../../state/ui';
-import { Message, prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { ReassignmentState } from '../logic/reassignmentTracker';
 import { observer, useLocalObservable } from 'mobx-react';
 import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, Checkbox, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, redpandaToastOptions, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
 
+// TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+        duration: 2000
+    }
+})
 
 @observer
 export class ActiveReassignments extends Component<{ throttledTopics: string[], onRemoveThrottleFromTopics: () => void }> {
@@ -83,6 +91,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
         const currentReassignments = reassignmentTracker.trackingReassignments ?? [];
 
         return <>
+            <ToastContainer />
             {/* Title */}
             <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
                 <span className="title">Current Reassignments</span>
@@ -310,10 +319,10 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
 
         const modalContent = Boolean(topicConfig) ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
+            <Flex flexDirection="column" gap={12}>
 
                 {/* Info */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', }}>
+                <Flex flexDirection="column" gap={4}>
                     <div>
                         {QuickTable([
                             ['Replicas', replicas],
@@ -321,17 +330,17 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                             ['Removing', removingReplicas],
                         ])}
                     </div>
-                </div>
+                </Flex>
 
                 {/* Throttle */}
-                <div style={{ display: 'flex', gap: '1em' }}>
+                <Flex gap={4}>
                     <Checkbox isChecked={this.shouldThrottle} onChange={e => this.shouldThrottle = e.target.checked}>
                         <span>
                             <span>Throttle Reassignment</span><br />
                             <span style={{ fontSize: 'smaller', opacity: '0.6', marginLeft: '2em' }}>Using global throttle limit for all replication traffic</span>
                         </span>
                     </Checkbox>
-                </div>
+                </Flex>
 
                 {/* Cancel */}
                 <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
@@ -339,25 +348,27 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 >
                     <Button variant="outline" colorScheme="red">Cancel Reassignment</Button>
                 </Popconfirm>
-            </div>
+            </Flex>
         ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;
 
-        return <AntModal
-            title={'Reassignment: ' + state.topicName}
-            open={visible}
-
-            okText="Apply &amp; Close"
-            onOk={() => {
-                this.applyBandwidthThrottle();
-                this.props.onClose();
-            }}
-
-            cancelText="Close"
-            onCancel={this.props.onClose}
-            maskClosable={true}
-        >
-            {modalContent}
-        </AntModal>
+        return (
+            <Modal isOpen={visible} onClose={this.props.onClose}>
+                <ModalOverlay/>
+                <ModalContent minW="3xl">
+                    <ModalHeader>
+                        Reassignment: {state.topicName}
+                    </ModalHeader>
+                    <ModalBody>{modalContent}</ModalBody>
+                    <ModalFooter gap={2}>
+                        <Button variant="outline" onClick={this.props.onClose}>Close</Button>
+                        <Button variant="solid" isDisabled={!topicConfig} onClick={() => {
+                            this.applyBandwidthThrottle();
+                            this.props.onClose();
+                        }}>Apply &amp; Close</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        )
     }
 
     isThrottled(): boolean {
@@ -468,8 +479,11 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         const partitions = state.partitions.map(p => p.partitionId);
 
-        // TODO Toast to be migrated with a dialog
-        const msg = new Message(`Cancelling reassignment of '${state.topicName}'...`);
+        const toastRef = toast({
+            status: 'loading',
+            description: `Cancelling reassignment of '${state.topicName}'...`
+        })
+
         try {
             const cancelRequest = {
                 topics: [
@@ -486,12 +500,20 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
             console.log('cancel reassignment result', { request: cancelRequest, response: response });
 
-            msg.setSuccess();
+            toast.update(toastRef, {
+                status: 'success',
+                description: `Cancelling reassignment of '${state.topicName}': Done`,
+                duration: 1000,
+            })
             this.props.onClose();
         }
         catch (err) {
             console.error('cancel reassignment: ' + String(err));
-            msg.setError();
+            toast.update(toastRef, {
+                status: 'error',
+                description: `Cancelling reassignment of '${state.topicName}': Error`,
+                duration: 1000,
+            })
         }
     }
 }
