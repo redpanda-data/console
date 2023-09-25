@@ -562,3 +562,12 @@ export function IconButton(p: { onClick?: React.MouseEventHandler<HTMLElement>; 
         </Tooltip>
     );
 }
+
+
+export const navigatorClipboardErrorHandler = (e: DOMException) => {
+    toast({
+        status: 'error',
+        description: 'Unable to copy settings to clipboard. See console for more information.'
+    });
+    console.error('unable to copy settings to clipboard', {error: e});
+}

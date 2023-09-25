@@ -15,7 +15,7 @@ import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label, navigatorClipboardErrorHandler, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -239,7 +239,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                                             onClick={() => {
                                                 navigator.clipboard.writeText(rawSchema).then(() => {
                                                     toast({status: 'success', description: 'Schema copied to clipboard', duration: 1200});
-                                                })
+                                                }).catch(navigatorClipboardErrorHandler)
                                             }}
                                         >
                                             <Icon as={AiOutlineCopy} color="#555" width="18px"/>

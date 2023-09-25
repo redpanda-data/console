@@ -35,7 +35,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, Label, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
@@ -78,7 +78,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
                         status: 'success',
                         description: 'Key copied to clipboard'
                     })
-                })
+                }).catch(navigatorClipboardErrorHandler)
             }}>
                 Copy Key
             </Menu.Item>
@@ -88,7 +88,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
                         status: 'success',
                         description: 'Value copied to clipboard'
                     })
-                })
+                }).catch(navigatorClipboardErrorHandler)
             }}>
                 Copy Value
             </Menu.Item>
@@ -98,7 +98,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
                         status: 'success',
                         description: 'Epoch Timestamp copied to clipboard'
                     })
-                })
+                }).catch(navigatorClipboardErrorHandler)
             }}>
                 Copy Epoch Timestamp
             </Menu.Item>

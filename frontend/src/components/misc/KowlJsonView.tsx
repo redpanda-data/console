@@ -14,6 +14,7 @@ import React, { useEffect } from 'react';
 import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
 import { uiSettings } from '../../state/ui';
 import { Tooltip, useDisclosure, useToast } from '@redpanda-data/ui';
+import { navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 const { setTimeout } = window;
 
 let ctrlDown = false;
@@ -141,7 +142,7 @@ export const KowlJsonView = observer((props: ReactJsonViewProps) => {
                                         </span>,
                                         duration: 800
                                     })
-                                })
+                                }).catch(navigatorClipboardErrorHandler)
                             }
                         }}
                         {...restProps}

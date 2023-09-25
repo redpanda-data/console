@@ -13,7 +13,7 @@ import { Component, FC } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Menu, Modal, Input, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
-import { Label } from '../../utils/tsxUtils';
+import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
 import { Button, Checkbox, Flex, IconButton, useToast } from '@redpanda-data/ui';
@@ -220,20 +220,14 @@ const ImportExportTab: FC = observer(() => {
                         status: 'success',
                         description: 'Preferences copied to clipboard!'
                     })
-                }).catch((e) => {
-                    toast({
-                        status: 'error',
-                        description: 'Unable to copy settings to clipboard. See console for more information.'
-                    });
-                    console.error('unable to copy settings to clipboard', {error: e});
-                })
+                }).catch(navigatorClipboardErrorHandler)
             }}>
                 Export User Preferences
             </Button>
         </Label>
 
         <Label text="Reset">
-            <div>
+            <>
                 <Input style={{maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em'}} spellCheck={false}
                        placeholder='type "reset" here to confirm and enable the button'
                        value={$state.resetConfirm}
@@ -246,8 +240,8 @@ const ImportExportTab: FC = observer(() => {
                     });
                     $state.resetConfirm = '';
                 }} colorScheme="red" isDisabled={$state.resetConfirm !== 'reset'}>Reset</Button>
-            </div>
-            <span className="smallText">Clear all your user settings, resetting them to the default values</span>
+                <span className="smallText">Clear all your user settings, resetting them to the default values</span>
+            </>
         </Label>
     </>;
 })

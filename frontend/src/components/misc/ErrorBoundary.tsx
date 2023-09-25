@@ -18,7 +18,7 @@ import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
 import { envVarDebugAr } from '../../utils/env';
 import { NoClipboardPopover } from './NoClipboardPopover';
 import { isClipboardAvailable } from '../../utils/featureDetection';
-import { ObjToKv } from '../../utils/tsxUtils';
+import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
 import StackTrace from 'stacktrace-js';
 import { Button, Icon, useToast } from '@redpanda-data/ui';
 
@@ -232,7 +232,7 @@ const CopyToClipboardButton: FC<{message: string, disabled: boolean; isLoading: 
                         status: 'success',
                         description: 'All info copied to clipboard!'
                     })
-                })
+                }).catch(navigatorClipboardErrorHandler)
             }}>
             <Icon as={CopyOutlined}/>
             Copy Info
