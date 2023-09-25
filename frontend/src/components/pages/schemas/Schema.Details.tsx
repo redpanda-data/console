@@ -232,7 +232,6 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
                             <NoClipboardPopover placement="top">
                                 <div>
-                                    {' '}
                                     {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                                     <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true} isDisabled={!isClipboardAvailable}>
                                         <Button
