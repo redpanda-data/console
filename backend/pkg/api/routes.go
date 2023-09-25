@@ -161,27 +161,7 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
 
-			// Connect RPC
-			v, err := protovalidate.New()
-			if err != nil {
-				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
-			}
-
-			// we want the actual request validation after all authorization and permission checks
-			interceptors := []connect_go.Interceptor{
-				NewRequestValidationInterceptor(api.Logger, v),
-			}
-
-			// Connect service(s)
-			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
-				api,
-				connect_go.WithInterceptors(interceptors...),
-			))
-
-			// Connect reflection
-			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
-			r.Mount(grpcreflect.NewHandlerV1(reflector))
-			r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+			api.configRPCRoutes(r)
 
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
@@ -204,6 +184,30 @@ func (api *API) routes() *chi.Mux {
 	})
 
 	return baseRouter
+}
+
+func (api *API) configRPCRoutes(r chi.Router) {
+	// Connect RPC
+	v, err := protovalidate.New()
+	if err != nil {
+		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+	}
+
+	// we want the actual request validation after all authorization and permission checks
+	interceptors := []connect_go.Interceptor{
+		NewRequestValidationInterceptor(api.Logger, v),
+	}
+
+	// Connect service(s)
+	r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
+		api,
+		connect_go.WithInterceptors(interceptors...),
+	))
+
+	// Connect reflection
+	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
+	r.Mount(grpcreflect.NewHandlerV1(reflector))
+	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
 }
 
 // NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
