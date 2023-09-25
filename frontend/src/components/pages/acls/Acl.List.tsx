@@ -30,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Alert, Text, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip } from '@redpanda-data/ui';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -97,7 +97,7 @@ class AclList extends PageComponent {
                             });
                             toast({
                                 status: 'success',
-                                description: <>Deleted ACLs for <Code>{record.principalName}</Code></>
+                                description: <Text as="span">Deleted ACLs for <Code>{record.principalName}</Code></Text>
                             });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });

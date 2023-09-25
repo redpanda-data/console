@@ -72,7 +72,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
     const toast = useToast()
     return (
         <Menu>
-            <Menu.Item key="0" disabled={record.key.isPayloadNull} onClick={() => {
+            <Menu.Item disabled={record.key.isPayloadNull} onClick={() => {
                 navigator.clipboard.writeText(getStringValue(record)).then(() => {
                     toast({
                         status: 'success',
@@ -82,7 +82,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
             }}>
                 Copy Key
             </Menu.Item>
-            <Menu.Item key="2" disabled={record.value.isPayloadNull} onClick={() => {
+            <Menu.Item disabled={record.value.isPayloadNull} onClick={() => {
                 navigator.clipboard.writeText(getStringValue(record)).then(() => {
                     toast({
                         status: 'success',
@@ -92,7 +92,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
             }}>
                 Copy Value
             </Menu.Item>
-            <Menu.Item key="4" onClick={() => {
+            <Menu.Item onClick={() => {
                 navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
                     toast({
                         status: 'success',
@@ -102,7 +102,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({rec
             }}>
                 Copy Epoch Timestamp
             </Menu.Item>
-            <Menu.Item key="5" onClick={() => onSaveToFile()}>
+            <Menu.Item onClick={() => onSaveToFile()}>
                 Save to File
             </Menu.Item>
         </Menu>

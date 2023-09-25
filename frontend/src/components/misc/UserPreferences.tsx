@@ -233,23 +233,21 @@ const ImportExportTab: FC = observer(() => {
         </Label>
 
         <Label text="Reset">
-            <>
-                <div>
-                    <Input style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
-                           placeholder='type "reset" here to confirm and enable the button'
-                           value={$state.resetConfirm}
-                           onChange={str => $state.resetConfirm = str.target.value} />
-                    <Button onClick={() => {
-                        clearSettings();
-                        toast({
-                            status: 'success',
-                            description: 'All settings have been reset to their defaults'
-                        });
-                        $state.resetConfirm = '';
-                    }} colorScheme="red" isDisabled={$state.resetConfirm !== 'reset'}>Reset</Button>
-                </div>
-                <span className="smallText">Clear all your user settings, resetting them to the default values</span>
-            </>
+            <div>
+                <Input style={{maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em'}} spellCheck={false}
+                       placeholder='type "reset" here to confirm and enable the button'
+                       value={$state.resetConfirm}
+                       onChange={str => $state.resetConfirm = str.target.value}/>
+                <Button onClick={() => {
+                    clearSettings();
+                    toast({
+                        status: 'success',
+                        description: 'All settings have been reset to their defaults'
+                    });
+                    $state.resetConfirm = '';
+                }} colorScheme="red" isDisabled={$state.resetConfirm !== 'reset'}>Reset</Button>
+            </div>
+            <span className="smallText">Clear all your user settings, resetting them to the default values</span>
         </Label>
     </>;
 })
