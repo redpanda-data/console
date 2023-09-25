@@ -13,7 +13,7 @@ import React, { FC } from 'react';
 import { EyeClosedIcon } from '@primer/octicons-react';
 import { Flex, Text, Tooltip, useToast } from '@redpanda-data/ui';
 
-export const HideStatisticsBarButton: FC<{ onClick: Function }> = ({onClick}) => {
+export const HideStatisticsBarButton: FC<{ onClick: () => void }> = ({onClick}) => {
     const toast = useToast()
     return (
         <Tooltip label={<Text whiteSpace="nowrap">Hide statistics bar</Text>} placement="right" hasArrow>
