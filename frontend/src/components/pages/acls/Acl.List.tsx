@@ -114,7 +114,7 @@ class AclList extends PageComponent {
                             await api.deleteServiceAccount(record.principalName);
                             toast({
                                 status: 'success',
-                                description: <span>Deleted user <Code>{record.principalName}</Code></span>
+                                description: <Text as="span">Deleted user <Code>{record.principalName}</Code></Text>
                             });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });

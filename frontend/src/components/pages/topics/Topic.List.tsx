@@ -28,7 +28,7 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover, useToast } from '@redpanda-data/ui';
+import { Button, Icon, Text, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
@@ -340,7 +340,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
 
         toast({
             title: 'Topic Deleted',
-            description: <>Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully</>,
+            description: <Text as="span">Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully</Text>,
             status: 'success',
         })
     };

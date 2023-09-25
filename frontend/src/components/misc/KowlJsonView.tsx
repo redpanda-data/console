@@ -13,7 +13,7 @@ import { observer } from 'mobx-react';
 import React, { useEffect } from 'react';
 import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
 import { uiSettings } from '../../state/ui';
-import { Tooltip, useDisclosure, useToast } from '@redpanda-data/ui';
+import { Code, Text, Tooltip, useDisclosure, useToast } from '@redpanda-data/ui';
 import { navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 const { setTimeout } = window;
 
@@ -137,9 +137,7 @@ export const KowlJsonView = observer((props: ReactJsonViewProps) => {
                                 navigator.clipboard.writeText(String(e.value)).then(() => {
                                     toast({
                                         status: 'success',
-                                        description: <span>
-                                             Copied value of <span className="codeBox">{e.name}</span>
-                                        </span>,
+                                        description: <Text as="span">Copied value of <Code>{e.name}</Code></Text>,
                                         duration: 800
                                     })
                                 }).catch(navigatorClipboardErrorHandler)

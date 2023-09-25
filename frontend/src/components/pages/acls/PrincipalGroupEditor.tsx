@@ -20,7 +20,7 @@ import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Button, Icon, Input, InputGroup, useToast } from '@redpanda-data/ui';
+import { Button, Icon, Text, Input, InputGroup, useToast } from '@redpanda-data/ui';
 const { Option } = Select;
 
 
@@ -101,16 +101,16 @@ export const AclPrincipalGroupEditor = observer((p: {
                 if (p.type == 'create') {
                     toast({
                         status: 'success',
-                        description: <span>
+                        description: <Text as="span">
                             Created ACLs for principal <Code>{group.principalName}</Code>
-                        </span>
+                        </Text>
                     });
                 } else {
                     toast({
                         status: 'success',
-                        description: <span>
+                        description: <Text as="span">
                             Updated ACLs for principal <Code>{group.principalName}</Code>
-                        </span>
+                        </Text>
                     });
                 }
 
