@@ -34,7 +34,13 @@ message CreateUserRequest {
       (buf.validate.field).string.min_len = 3,
       (buf.validate.field).string.max_len = 128
     ];
-    SASLMechanism mechanism = 3;
+    SASLMechanism mechanism = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0]
+      }
+    ];
   }
   User user = 1;
 }
@@ -57,7 +63,7 @@ message UpdateUserRequest {
       (buf.validate.field).string.min_len = 3,
       (buf.validate.field).string.max_len = 128
     ];
-    SASLMechanism mechanism = 3;
+    SASLMechanism mechanism = 3 [(buf.validate.field).enum.defined_only = true];
   }
   User user = 1;
 }
