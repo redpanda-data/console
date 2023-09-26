@@ -11,9 +11,9 @@
 
 
 
-import { Alert, Empty, message, Modal } from 'antd';
-import { observer } from 'mobx-react';
-import React, { Component, CSSProperties, useState } from 'react';
+import { Alert, Empty, Modal } from 'antd';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
@@ -41,12 +41,12 @@ import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
 import TwitterLogo from '../../../assets/connectors/twitter.svg';
 import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
-import { action, makeObservable, observable, runInAction } from 'mobx';
+import { action, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button, Popover } from '@redpanda-data/ui';
+import { Button, Popover, useToast } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -502,8 +502,7 @@ export function NotConfigured() {
     );
 }
 
-@observer
-export class ConfirmModal<T> extends Component<{
+type ConfirmModalProps<T> = {
     target: () => T | null, // when set, dialog is shown
     clearTarget: () => void, // called when the dialog is done
 
@@ -511,83 +510,22 @@ export class ConfirmModal<T> extends Component<{
     successMessage: (target: T) => JSX.Element, // "x done successfully"
 
     onOk: (target: T) => Promise<void>,
-}> {
-    @observable isPending = false;
-    @observable error: string | Error | null = null;
+}
 
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
+export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
+    const $state = useLocalObservable<{isPending: boolean; error: string | Error | null}>(() => ({
+        isPending: false,
+        error: null
+    }))
+    const toast = useToast()
 
-    @action.bound async onOk() {
-        this.isPending = true;
-        const target = this.props.target()!;
-        try {
-            await this.props.onOk(target);
-            this.success(target);
-        } catch (err) {
-            this.error = err as any;
-        } finally {
-            this.isPending = false;
-        }
-    }
-
-    @action.bound success(target: T) {
-        const messageContent = this.props.successMessage(target);
-        const msg = message.success({ content: messageContent, onClick: () => msg?.() });
-
-        this.cancel();
-    }
-
-    @action.bound cancel() {
-        runInAction(() => {
-            this.isPending = false;
-            this.error = null;
-            this.props.clearTarget();
-        })
-
-    }
-
-    render() {
-        const target = this.props.target();
-        const err = this.renderError();
-
-        const content = target && this.props.content(target);
-
-        return <Modal
-            className="confirmModal"
-            open={target != null}
-            centered closable={false} maskClosable={!this.isPending} keyboard={!this.isPending}
-            okText={this.error ? 'Retry' : 'Yes'}
-            confirmLoading={this.isPending}
-            okType="danger"
-            cancelText="No"
-            cancelButtonProps={{ disabled: this.isPending }}
-            onCancel={this.cancel}
-            onOk={this.onOk}
-        >
-            <>
-                <div>
-                    {content}
-                </div>
-                {err && <Alert
-                    type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
-                    message={err.title}
-                    description={err.content}
-                />}
-
-            </>
-        </Modal>
-    }
-
-    renderError(): { title: JSX.Element, content: JSX.Element } | undefined {
-        if (!this.error)
+    const renderError: () => { title: JSX.Element, content: JSX.Element } | undefined = () => {
+        if (!$state.error)
             return undefined;
 
-        const txt = typeof this.error == 'string'
-            ? this.error
-            : this.error.message;
+        const txt = typeof $state.error == 'string'
+            ? $state.error
+            : $state.error.message;
 
         // try parsing as json
         let apiErr: ApiError | undefined;
@@ -608,14 +546,75 @@ export class ConfirmModal<T> extends Component<{
 
         // render error object
         return {
-            title: <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+            title: <div style={{display: 'inline-flex', alignItems: 'center', gap: '0.3em'}}>
                 <span>Error</span>
-                <span style={{ fontSize: '75%', opacity: 0.7 }}>- {apiErr.statusCode}</span>
+                <span style={{fontSize: '75%', opacity: 0.7}}>- {apiErr.statusCode}</span>
             </div>,
-            content: <div className="codeBox" style={{ mixBlendMode: 'multiply' }}>{apiErr.message}</div>
+            content: <div className="codeBox" style={{mixBlendMode: 'multiply'}}>{apiErr.message}</div>
         };
     }
-}
+
+    const cancel = action(() => {
+        runInAction(() => {
+            $state.isPending = false;
+            $state.error = null;
+            props.clearTarget();
+        })
+    })
+
+    const success = action((target: T) => {
+        const messageContent = props.successMessage(target);
+        toast({
+            status: 'success',
+            description: messageContent,
+        });
+
+        cancel();
+    })
+
+    const onOk = action(async () => {
+        $state.isPending = true;
+        const target = props.target()!;
+        try {
+            await props.onOk(target);
+            success(target);
+        } catch (err) {
+            $state.error = err as any;
+        } finally {
+            $state.isPending = false;
+        }
+    })
+
+    const target = props.target();
+    const err = renderError();
+
+    const content = target && props.content(target);
+
+    return <Modal
+        className="confirmModal"
+        open={target != null}
+        centered closable={false} maskClosable={!$state.isPending} keyboard={!$state.isPending}
+        okText={$state.error ? 'Retry' : 'Yes'}
+        confirmLoading={$state.isPending}
+        okType="danger"
+        cancelText="No"
+        cancelButtonProps={{ disabled: $state.isPending }}
+        onCancel={cancel}
+        onOk={onOk}
+    >
+        <>
+            <div>
+                {content}
+            </div>
+            {err && <Alert
+                type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
+                message={err.title}
+                description={err.content}
+            />}
+
+        </>
+    </Modal>
+})
 
 // Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
 // or an array of connectors (in which case it will show the sum)

@@ -10,12 +10,12 @@
  */
 
 import React from 'react';
-import { message, Select, Table } from 'antd';
+import { Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label, navigatorClipboardErrorHandler, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -25,7 +25,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Button, Flex, Icon, Tag, Tooltip } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Icon, redpandaToastOptions, Tag, Tooltip } from '@redpanda-data/ui';
 import { AiOutlineCopy } from 'react-icons/ai';
 import { Statistic } from '../../misc/Statistic';
 
@@ -86,6 +86,11 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
         type: field.type,
     };
 }
+
+// TODO - once SchemaDetailsView is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    defaultOptions: redpandaToastOptions.defaultOptions
+})
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
@@ -166,121 +171,124 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         const defaultVersion = queryVersion ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
 
         return (
-            <PageContent key="b">
-                <Section py={4}>
-                    <Flex>
-                        <Statistic title="Type" value={schemaType}></Statistic>
-                        <Statistic title="Subject" value={this.subjectNameRaw}></Statistic>
-                        <Statistic title="Schema ID" value={schemaId}></Statistic>
-                        <Statistic title="Version" value={version}></Statistic>
-                        <Statistic title="Compatibility" value={<span style={{ textTransform: 'capitalize' }}>{compatibility.toLowerCase()}</span>}></Statistic>
-                    </Flex>
-                </Section>
+            <>
+                <ToastContainer/>
+                <PageContent key="b">
+                    <Section py={4}>
+                        <Flex>
+                            <Statistic title="Type" value={schemaType}></Statistic>
+                            <Statistic title="Subject" value={this.subjectNameRaw}></Statistic>
+                            <Statistic title="Schema ID" value={schemaId}></Statistic>
+                            <Statistic title="Version" value={version}></Statistic>
+                            <Statistic title="Compatibility" value={<span style={{textTransform: 'capitalize'}}>{compatibility.toLowerCase()}</span>}></Statistic>
+                        </Flex>
+                    </Section>
 
-                <Section>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', columnGap: '1.5em', marginBottom: '1em' }}>
-                        <Label text="Version">
-                            <Select style={{ minWidth: '200px' }}
-                                defaultValue={defaultVersion}
-                                onChange={(version) => {
-                                    this.version = version as 'latest' | number;
-                                    this.refreshData(true);
-                                    editQuery(x => {
-                                        x.version = String(this.version);
-                                    });
-                                }}
-                                disabled={versions.length == 0}
-                            >
-                                {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}
-                            </Select>
-                        </Label>
-
-                        <Label text="Details" style={{ alignSelf: 'stretch' }}>
-                            <div style={{ display: 'inline-flex', flexWrap: 'wrap', minHeight: '32px', alignItems: 'center', rowGap: '.3em' }}>
-                                {Object.entries({
-                                    'Type': type,
-                                    'Name': name,
-                                    'Namespace': namespace,
-                                }).map(([k, v]) => {
-                                    if (!k || v === undefined || v === null) return null;
-                                    return <Tag key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
-                                })}
-                                {!!doc && <a href={doc}>
-                                    <Tag style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
-                                </a>}
-                            </div>
-
-                        </Label>
-                    </div>
-
-                    <div style={{ marginBottom: '1.5em', display: 'flex', gap: '1em' }}>
-                        <OptionGroup label=""
-                            options={{
-                                'Show Fields': 'fields',
-                                'Show JSON': 'json',
-                            }}
-                            value={uiSettings.schemaDetails.viewMode}
-                            onChange={s => uiSettings.schemaDetails.viewMode = s}
-                        />
-
-                        <NoClipboardPopover placement="top">
-                            <div>
-                                {' '}
-                                {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                                <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true} isDisabled={!isClipboardAvailable}>
-                                    <Button
-                                        isDisabled={!isClipboardAvailable}
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(rawSchema);
-                                            message.success('Schema copied to clipboard', 1.2);
+                    <Section>
+                        <div style={{display: 'flex', alignItems: 'flex-start', columnGap: '1.5em', marginBottom: '1em'}}>
+                            <Label text="Version">
+                                <Select style={{minWidth: '200px'}}
+                                        defaultValue={defaultVersion}
+                                        onChange={(version) => {
+                                            this.version = version as 'latest' | number;
+                                            this.refreshData(true);
+                                            editQuery(x => {
+                                                x.version = String(this.version);
+                                            });
                                         }}
-                                    >
-                                        <Icon as={AiOutlineCopy} color="#555" width="18px" />
-                                    </Button>
-                                </Tooltip>
-                            </div>
-                        </NoClipboardPopover>
+                                        disabled={versions.length == 0}
+                                >
+                                    {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}
+                                </Select>
+                            </Label>
 
-                    </div>
+                            <Label text="Details" style={{alignSelf: 'stretch'}}>
+                                <div style={{display: 'inline-flex', flexWrap: 'wrap', minHeight: '32px', alignItems: 'center', rowGap: '.3em'}}>
+                                    {Object.entries({
+                                        'Type': type,
+                                        'Name': name,
+                                        'Namespace': namespace,
+                                    }).map(([k, v]) => {
+                                        if (!k || v === undefined || v === null) return null;
+                                        return <Tag key={k}><span style={{color: '#2d5b86'}}>{k}:</span> {toSafeString(v)}</Tag>
+                                    })}
+                                    {!!doc && <a href={doc}>
+                                        <Tag style={{cursor: 'pointer'}}><span style={{color: '#2d5b86'}}>Documentation:</span> <a style={{textDecoration: 'underline'}} href={doc}>{doc}</a></Tag>
+                                    </a>}
+                                </div>
 
-                    <div>
-                        {uiSettings.schemaDetails.viewMode == 'json' &&
-                            <KowlJsonView
-                                shouldCollapse={false}
-                                collapsed={false}
-                                src={jsonViewObject}
-                                style={{
-                                    border: 'solid thin lightgray',
-                                    borderRadius: '.25em',
-                                    padding: '1em 1em 1em 2em',
-                                    marginBottom: '1.5rem',
-                                }}
+                            </Label>
+                        </div>
+
+                        <div style={{marginBottom: '1.5em', display: 'flex', gap: '1em'}}>
+                            <OptionGroup label=""
+                                         options={{
+                                             'Show Fields': 'fields',
+                                             'Show JSON': 'json',
+                                         }}
+                                         value={uiSettings.schemaDetails.viewMode}
+                                         onChange={s => uiSettings.schemaDetails.viewMode = s}
                             />
-                        }
 
-                        {uiSettings.schemaDetails.viewMode == 'fields' &&
-                            <Table
-                                size="small"
-                                columns={[
-                                    { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault', }, // sorter: sortField('name')
-                                    { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', render: renderSchemaType }, //  sorter: sortField('type'),
-                                    { title: 'Default', dataIndex: 'default', className: 'whiteSpaceDefault' },
-                                    { title: 'Documentation', dataIndex: 'doc', className: 'whiteSpaceDefault' },
-                                ]}
-                                rowKey="name"
-                                dataSource={fields}
-                                pagination={false}
-                                style={{
-                                    maxWidth: '100%',
-                                    marginTop: '1.5rem',
-                                    marginBottom: '1.5rem',
-                                }}
-                            />
-                        }
+                            <NoClipboardPopover placement="top">
+                                <div>
+                                    {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                                    <Tooltip label="Copy raw JSON to clipboard" placement="top" hasArrow={true} isDisabled={!isClipboardAvailable}>
+                                        <Button
+                                            isDisabled={!isClipboardAvailable}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(rawSchema).then(() => {
+                                                    toast({status: 'success', description: 'Schema copied to clipboard', duration: 1200});
+                                                }).catch(navigatorClipboardErrorHandler)
+                                            }}
+                                        >
+                                            <Icon as={AiOutlineCopy} color="#555" width="18px"/>
+                                        </Button>
+                                    </Tooltip>
+                                </div>
+                            </NoClipboardPopover>
 
-                    </div>
-                </Section>
-            </PageContent>
+                        </div>
+
+                        <div>
+                            {uiSettings.schemaDetails.viewMode == 'json' &&
+                                <KowlJsonView
+                                    shouldCollapse={false}
+                                    collapsed={false}
+                                    src={jsonViewObject}
+                                    style={{
+                                        border: 'solid thin lightgray',
+                                        borderRadius: '.25em',
+                                        padding: '1em 1em 1em 2em',
+                                        marginBottom: '1.5rem',
+                                    }}
+                                />
+                            }
+
+                            {uiSettings.schemaDetails.viewMode == 'fields' &&
+                                <Table
+                                    size="small"
+                                    columns={[
+                                        {title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault',}, // sorter: sortField('name')
+                                        {title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', render: renderSchemaType}, //  sorter: sortField('type'),
+                                        {title: 'Default', dataIndex: 'default', className: 'whiteSpaceDefault'},
+                                        {title: 'Documentation', dataIndex: 'doc', className: 'whiteSpaceDefault'},
+                                    ]}
+                                    rowKey="name"
+                                    dataSource={fields}
+                                    pagination={false}
+                                    style={{
+                                        maxWidth: '100%',
+                                        marginTop: '1.5rem',
+                                        marginBottom: '1.5rem',
+                                    }}
+                                />
+                            }
+
+                        </div>
+                    </Section>
+                </PageContent>
+            </>
         );
     }
 }

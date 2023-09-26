@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, message, Dropdown, Menu, Modal } from 'antd';
+import { Empty, Input, Dropdown, Menu, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +30,16 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Badge, Button, Icon, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Alert, Text, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip } from '@redpanda-data/ui';
+
+// TODO - once AclList is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+        duration: 2000
+    }
+})
 
 @observer
 class AclList extends PageComponent {
@@ -86,7 +95,10 @@ class AclList extends PageComponent {
                                 operation: 'Any',
                                 permissionType: 'Any',
                             });
-                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                            toast({
+                                status: 'success',
+                                description: <Text as="span">Deleted ACLs for <Code>{record.principalName}</Code></Text>
+                            });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
@@ -100,7 +112,10 @@ class AclList extends PageComponent {
                     if (user) {
                         try {
                             await api.deleteServiceAccount(record.principalName);
-                            message.success(<>Deleted user <Code>{record.principalName}</Code></>);
+                            toast({
+                                status: 'success',
+                                description: <Text as="span">Deleted user <Code>{record.principalName}</Code></Text>
+                            });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
@@ -254,6 +269,7 @@ class AclList extends PageComponent {
         const groups = this.principalGroups;
 
         return <>
+            <ToastContainer />
             <PageContent>
 
                 {this.edittingPrincipalGroup &&

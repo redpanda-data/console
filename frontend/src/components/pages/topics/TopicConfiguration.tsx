@@ -1,11 +1,10 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, Icon, SearchField, AlertIcon, ChakraProvider, redpandaTheme, Tooltip, Popover, Grid, GridItem, Text } from '@redpanda-data/ui';
+import { Alert, Icon, SearchField, AlertIcon, Tooltip, Popover, Grid, GridItem, Text, Box, redpandaTheme, ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
 import { Input, message, Modal, Radio, Select } from 'antd';
-import { action, makeObservable, observable } from 'mobx';
-import { Observer, observer } from 'mobx-react';
-import { Component } from 'react';
+import { Observer, observer, useLocalObservable } from 'mobx-react';
+import { FC } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
@@ -16,27 +15,29 @@ import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
 
 
-@observer
-export default class ConfigurationEditor extends Component<{
+type ConfigurationEditorProps = {
     targetTopic: string | null, // topic name, or null if default configs
-        entries: ConfigEntryExtended[],
-        onForceRefresh: () => void,
-}> {
-    @observable isEditting = false;
-    @observable filter: string | undefined = undefined;
+    entries: ConfigEntryExtended[],
+    onForceRefresh: () => void,
+}
 
-    modal: ReturnType<ModalFunc> | null = null;
-    @observable modalValueType = 'default' as 'default' | 'custom';
-    @observable modalError = null as string | null;
+const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
+    const $state = useLocalObservable<{
+        isEditing: boolean;
+        filter?: string;
+        modalValueType: 'default' | 'custom';
+        modalError: string | null,
+        modal: ReturnType<ModalFunc> | null;
+    }>(() => ({
+        isEditing: false,
+        modalValueType: 'default',
+        modalError: null,
+        modal: null,
+    }))
 
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
-    @action.bound editConfig(configEntry: ConfigEntryExtended) {
-        if (this.modal) {
-            this.modal.destroy();
+    const editConfig = (configEntry: ConfigEntryExtended) => {
+        if ($state.modal) {
+            $state.modal.destroy();
         }
 
         configEntry.currentValue = configEntry.value;
@@ -46,14 +47,14 @@ export default class ConfigurationEditor extends Component<{
         const defaultSource = defaultEntry?.source ?? configEntry.source;
         const friendlyDefault = formatConfigValue(configEntry.name, defaultValue, 'friendly');
         const initialValueType = configEntry.isExplicitlySet ? 'custom' : 'default';
-        this.modalValueType = initialValueType;
-        this.modalError = null;
+        $state.modalValueType = initialValueType;
+        $state.modalError = null;
 
-        this.modal = Modal.confirm({
-            title: <><Icon as={AdjustmentsIcon} /> {'Edit ' + configEntry.name}</>,
+        $state.modal = Modal.confirm({
+            title: <><Icon as={AdjustmentsIcon}/> {'Edit ' + configEntry.name}</>,
             width: '80%',
-            style: { minWidth: '400px', maxWidth: '600px', top: '50px' },
-            bodyStyle: { paddingTop: '1em' },
+            style: {minWidth: '400px', maxWidth: '600px', top: '50px'},
+            bodyStyle: {paddingTop: '1em'},
             className: 'configModal',
 
             okText: 'Save changes',
@@ -64,12 +65,17 @@ export default class ConfigurationEditor extends Component<{
             icon: null,
 
             content: <Observer>{() => {
-                const isCustom = this.modalValueType == 'custom';
+                const isCustom = $state.modalValueType == 'custom';
 
                 return (
-                    <ChakraProvider theme={redpandaTheme} disableGlobalStyle={true} disableEnvironment={true}>
+                    <ChakraProvider
+                        theme={redpandaTheme}
+                        toastOptions={redpandaToastOptions}
+                        disableGlobalStyle={true}
+                        disableEnvironment={true}
+                    >
                         <div>
-                            <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{this.props.targetTopic}</code>.</p>
+                            <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{props.targetTopic}</code>.</p>
                             <div style={{
                                 padding: '1em',
                                 background: 'rgb(238, 238, 238)',
@@ -78,17 +84,17 @@ export default class ConfigurationEditor extends Component<{
                                 margin: '1em 0'
                             }}>{configEntry.documentation}</div>
 
-                            <div style={{ fontWeight: 'bold', marginBottom: '0.5em' }}>Value</div>
-                            <Radio.Group className="valueRadioGroup" value={this.modalValueType} onChange={e => this.modalValueType = e.target.value} >
+                            <div style={{fontWeight: 'bold', marginBottom: '0.5em'}}>Value</div>
+                            <Radio.Group className="valueRadioGroup" value={$state.modalValueType} onChange={e => $state.modalValueType = e.target.value}>
                                 <Radio value="default">
                                     <span>Default: </span>
-                                    <span style={{ fontWeight: 'bold' }}>{friendlyDefault}</span>
+                                    <span style={{fontWeight: 'bold'}}>{friendlyDefault}</span>
                                     <div className="subText">Inherited from {defaultSource}</div>
                                 </Radio>
                                 <Radio value="custom">
                                     <span>Custom</span>
                                     <div className="subText">Set at topic configuration</div>
-                                    <div style={{ position: 'relative', zIndex: 2 }} onClick={e => {
+                                    <div style={{position: 'relative', zIndex: 2}} onClick={e => {
                                         if (isCustom) {
                                             // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
                                             // otherwise they will steal focus, closing any select/dropdowns
@@ -96,14 +102,14 @@ export default class ConfigurationEditor extends Component<{
                                             e.preventDefault();
                                         }
                                     }}>
-                                        <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry} />
+                                        <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry}/>
                                     </div>
                                 </Radio>
                             </Radio.Group>
 
-                            {this.modalError && <Alert status="error" style={{ margin: '1em 0' }}>
-                                <AlertIcon />
-                                {this.modalError}
+                            {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
+                                <AlertIcon/>
+                                {$state.modalError}
                             </Alert>}
                         </div>
                     </ChakraProvider>
@@ -116,20 +122,20 @@ export default class ConfigurationEditor extends Component<{
                 // -> When type is "custom" and "currentValue" changed
                 // So this excludes the case where value was changed, but the type was "default" before and after
                 let needToApply = false;
-                if (this.modalValueType != initialValueType)
+                if ($state.modalValueType != initialValueType)
                     needToApply = true;
-                if (this.modalValueType == 'custom' && configEntry.value != configEntry.currentValue)
+                if ($state.modalValueType == 'custom' && configEntry.value != configEntry.currentValue)
                     needToApply = true;
 
                 if (!needToApply)
                     return;
 
-                const operation = this.modalValueType == 'custom'
+                const operation = $state.modalValueType == 'custom'
                     ? 'SET'
                     : 'DELETE';
 
                 try {
-                    await api.changeTopicConfig(this.props.targetTopic, [
+                    await api.changeTopicConfig(props.targetTopic, [
                         {
                             key: configEntry.name,
                             op: operation,
@@ -138,75 +144,81 @@ export default class ConfigurationEditor extends Component<{
                                 : undefined,
                         }
                     ]);
+                    // TODO - do after modals migration
                     message.success(<>Successfully updated config <code>{configEntry.name}</code></>)
+                    // toast({
+                    //     status: 'success',
+                    //     description: <span>Successfully updated config <code>{configEntry.name}</code></span>,
+                    // })
                 } catch (err) {
-                    console.error('error while applying config change', { err, configEntry });
-                    this.modalError = (err instanceof Error)
+                    console.error('error while applying config change', {err, configEntry});
+                    $state.modalError = (err instanceof Error)
                         ? err.message
                         : String(err);
                     // we must to throw an error to keep the modal open
                     throw err;
                 }
 
-                this.props.onForceRefresh();
+                props.onForceRefresh()
             },
         });
     }
 
-    render() {
-        const topic = this.props.targetTopic;
-        const hasEditPermissions = topic
-            ? api.topicPermissions.get(topic)?.canEditTopicConfig ?? true
-            : true;
+    const topic = props.targetTopic;
+    const hasEditPermissions = topic
+        ? api.topicPermissions.get(topic)?.canEditTopicConfig ?? true
+        : true;
 
-        let entries = this.props.entries;
-        const filter = this.filter;
-        if (filter)
-            entries = entries.filter(x => x.name.includes(filter) || (x.value ?? '').includes(filter));
+    let entries = props.entries;
+    const filter = $state.filter;
+    if (filter)
+        entries = entries.filter(x => x.name.includes(filter) || (x.value ?? '').includes(filter));
 
-        const entryOrder = {
-            'retention': -3,
-            'cleanup': -2,
-        };
+    const entryOrder = {
+        'retention': -3,
+        'cleanup': -2,
+    };
 
-        entries = entries.slice().sort((a, b) => {
-            for (const [e, order] of Object.entries(entryOrder)) {
-                if (a.name.includes(e) && !b.name.includes(e)) return order;
-                if (b.name.includes(e) && !a.name.includes(e)) return -order;
-            }
-            return 0;
-        });
+    entries = entries.slice().sort((a, b) => {
+        for (const [e, order] of Object.entries(entryOrder)) {
+            if (a.name.includes(e) && !b.name.includes(e)) return order;
+            if (b.name.includes(e) && !a.name.includes(e)) return -order;
+        }
+        return 0;
+    });
 
-        const categories = entries.groupInto(x => x.category);
-        for (const e of categories) if (!e.key) e.key = 'Other';
+    const categories = entries.groupInto(x => x.category);
+    for (const e of categories) if (!e.key) e.key = 'Other';
 
-        return (
-            <div style={{ paddingTop: '1em' }}>
-                <div className="configGroupTable">
-                    <SearchField searchText={this.filter || ''} placeholderText="Filter" setSearchText={value => (this.filter = value)} icon="filter" />
-                    {categories.map(x => (
-                        <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} hasEditPermissions={hasEditPermissions} />
-                    ))}
-                </div>
+    return (
+        <Box pt={4}>
+            <div className="configGroupTable">
+                <SearchField searchText={$state.filter || ''} placeholderText="Filter" setSearchText={value => ($state.filter = value)} icon="filter"/>
+                {categories.map(x => (
+                    <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={editConfig} hasEditPermissions={hasEditPermissions}/>
+                ))}
             </div>
-        );
-    }
-}
+        </Box>
+    );
+})
+
+export default ConfigurationEditor
+
 
 const ConfigGroup = observer((p: { groupName?: string; onEditEntry: (configEntry: ConfigEntryExtended) => void; entries: ConfigEntryExtended[]; hasEditPermissions: boolean }) => {
     return (
         <>
-            <div className="configGroupSpacer" />
+            <div className="configGroupSpacer"/>
             {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
             {p.entries.map(e => (
-                <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions} />
+                <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions}/>
             ))}
         </>
     );
 });
 
 const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtended) => void; entry: ConfigEntryExtended; hasEditPermissions: boolean }) => {
-    const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(p.entry, p.hasEditPermissions);
+    const {canEdit, reason: nonEdittableReason} = isTopicConfigEdittable(p.entry, p.hasEditPermissions);
 
     const entry = p.entry;
     const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
@@ -229,7 +241,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             if (canEdit) p.onEditEntry(p.entry);
                         }}
                     >
-                        <Icon as={PencilIcon} />
+                        <Icon as={PencilIcon}/>
                     </span>
                 </Tooltip>
                 {entry.documentation && (
@@ -240,21 +252,21 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             <Grid templateColumns="1fr" gap={4} w="fit-content">
                                 <GridItem>
                                     <strong>{entry.name}</strong>
-                                    <br />
+                                    <br/>
                                     {entry.documentation}
                                 </GridItem>
                                 <GridItem>
                                     <Grid templateColumns="25% 1fr" gap={2}>
-                                        <GridItem >
+                                        <GridItem>
                                             <strong>Value</strong>
                                         </GridItem>
-                                        <GridItem >
+                                        <GridItem>
                                             <span>{friendlyValue}</span>
                                         </GridItem>
-                                        <GridItem >
+                                        <GridItem>
                                             <strong>Source</strong>
                                         </GridItem>
-                                        <GridItem >
+                                        <GridItem>
                                             <div>
                                                 <code>{entry.source}</code>
                                             </div>
@@ -265,7 +277,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             </Grid>
                         }
                     >
-                        <Icon as={InfoCircleOutlined} />
+                        <Icon as={InfoCircleOutlined}/>
                     </Popover>
                 )}
             </span>
@@ -274,19 +286,19 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
 });
 
 function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean): { canEdit: boolean; reason?: string } {
-    if (!hasEditPermissions) return { canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries' };
+    if (!hasEditPermissions) return {canEdit: false, reason: 'You don\'t have permissions to change topic configuration entries'};
 
     if (isServerless()) {
         const edittableEntries = ['retention.ms', 'retention.bytes'];
 
         if (edittableEntries.includes(entry.name)) {
-            return { canEdit: true };
+            return {canEdit: true};
         }
 
-        return { canEdit: false, reason: 'This configuration is not editable on Serverless clusters' };
+        return {canEdit: false, reason: 'This configuration is not editable on Serverless clusters'};
     }
 
-    return { canEdit: true };
+    return {canEdit: true};
 }
 
 
@@ -298,10 +310,10 @@ export const ConfigEntryEditor = observer((p: {
     switch (entry.frontendFormat) {
         case 'BOOLEAN':
             return <Select value={entry.currentValue} onChange={c => entry.currentValue = c} className={p.className}
-                options={[
-                    { value: 'false', label: 'False' },
-                    { value: 'true', label: 'True' },
-                ]}
+                           options={[
+                               {value: 'false', label: 'False'},
+                               {value: 'true', label: 'True'},
+                           ]}
             />
 
         case 'SELECT':
@@ -333,20 +345,20 @@ export const ConfigEntryEditor = observer((p: {
             />
 
         case 'PASSWORD':
-            return <Password value={entry.currentValue ?? ''} onChange={x => entry.currentValue = x.target.value} />
+            return <Password value={entry.currentValue ?? ''} onChange={x => entry.currentValue = x.target.value}/>
 
         case 'RATIO':
-            return <RatioInput value={Number(entry.currentValue)} onChange={x => entry.currentValue = x} />
+            return <RatioInput value={Number(entry.currentValue)} onChange={x => entry.currentValue = x}/>
 
         case 'INTEGER':
-            return <NumInput value={Number(entry.currentValue)} onChange={e => entry.currentValue = Math.round(e ?? 0)} className={p.className} />
+            return <NumInput value={Number(entry.currentValue)} onChange={e => entry.currentValue = Math.round(e ?? 0)} className={p.className}/>
 
         case 'DECIMAL':
-            return <NumInput value={Number(entry.currentValue)} onChange={e => entry.currentValue = e} className={p.className} />
+            return <NumInput value={Number(entry.currentValue)} onChange={e => entry.currentValue = e} className={p.className}/>
 
         case 'STRING':
         default:
-            return <Input value={String(entry.currentValue)} onChange={e => entry.currentValue = e.target.value} className={p.className} />
+            return <Input value={String(entry.currentValue)} onChange={e => entry.currentValue = e.target.value} className={p.className}/>
     }
 });
 

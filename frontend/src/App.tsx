@@ -24,7 +24,7 @@ import './assets/fonts/inter.css';
 
 import { BrowserRouter } from 'react-router-dom';
 import { observer } from 'mobx-react';
-import { Container, Grid, Sidebar } from '@redpanda-data/ui';
+import { Container, Grid, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from './state/ui';
 import { createVisibleSidebarItems } from './components/routes';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
@@ -52,12 +52,12 @@ const App = () => {
     return (
         <BrowserRouter basename={getBasePath()}>
             <HistorySetter />
-            {/* 
+            {/*
                 Setting portalZIndex to 1001 allows popovers, tooltips and any component that uses portals
-                to render _above_ Ant's modal component (which sets its z-index to 1000) when they're 
+                to render _above_ Ant's modal component (which sets its z-index to 1000) when they're
                 inside an Ant modal.
              */}
-            <ChakraProvider theme={redpandaTheme} portalZIndex={1001}>
+            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} portalZIndex={1001}>
                 <ErrorBoundary>
                     <RequireAuth>
                         {isEmbedded()

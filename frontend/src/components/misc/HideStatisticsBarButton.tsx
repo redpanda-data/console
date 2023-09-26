@@ -9,26 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import React from 'react';
-import { message } from 'antd';
+import React, { FC } from 'react';
 import { EyeClosedIcon } from '@primer/octicons-react';
-import { Tooltip } from '@redpanda-data/ui';
-export class HideStatisticsBarButton extends Component<{ onClick: () => void }> {
-    handleClick = () => {
-        this.props.onClick();
-        message.info('Statistics bar hidden! You can enable it again in the preferences.', 8);
-    };
+import { Flex, Text, Tooltip, useToast } from '@redpanda-data/ui';
 
-    render() {
-        return (
-            <Tooltip label={<span style={{ whiteSpace: 'nowrap' }}>Hide statistics bar</span>} placement="right" hasArrow>
-                <div className="hideStatsBarButton" onClick={this.handleClick}>
-                    <div style={{ display: 'flex', width: '100%' }}>
-                        <EyeClosedIcon size="medium" />
-                    </div>
-                </div>
-            </Tooltip>
-        );
-    }
+export const HideStatisticsBarButton: FC<{ onClick: Function }> = ({onClick}) => {
+    const toast = useToast()
+    return (
+        <Tooltip label={<Text whiteSpace="nowrap">Hide statistics bar</Text>} placement="right" hasArrow>
+            <div className="hideStatsBarButton" onClick={() => {
+                onClick()
+                toast({
+                    status: 'info',
+                    description: 'Statistics bar hidden! You can enable it again in the preferences.'
+                });
+            }}>
+                <Flex width="100%">
+                    <EyeClosedIcon size="medium"/>
+                </Flex>
+            </div>
+        </Tooltip>
+    );
 }

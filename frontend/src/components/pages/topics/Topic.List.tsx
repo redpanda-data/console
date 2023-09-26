@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Modal, notification } from 'antd';
+import { Modal } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -28,7 +28,7 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Icon, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover } from '@redpanda-data/ui';
+import { Button, Icon, Text, Checkbox, Alert, AlertIcon, Flex, Tooltip, Popover, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
@@ -327,6 +327,7 @@ const renderName = (topic: Topic) => {
 function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDelete: Topic | null; onFinish: () => void; onCancel: () => void }) {
     const [deletionPending, setDeletionPending] = useState(false);
     const [error, setError] = useState<string | Error | null>(null);
+    const toast = useToast()
 
     const cleanup = () => {
         setDeletionPending(false);
@@ -336,9 +337,12 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     const finish = () => {
         onFinish();
         cleanup();
-        notification['success']({
-            message: <>Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully</>,
-        });
+
+        toast({
+            title: 'Topic Deleted',
+            description: <Text as="span">Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully</Text>,
+            status: 'success',
+        })
     };
 
     const cancel = () => {
