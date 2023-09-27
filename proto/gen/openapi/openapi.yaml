@@ -65,7 +65,7 @@ components:
     CreateSecretResponse:
       properties:
         secret:
-          $ref: '#/components/schemas/SecretInput'
+          $ref: '#/components/schemas/Secret'
       title: CreateSecretResponse is the response of CreateSecret
       type: object
     CreateTopicResponse:
@@ -934,9 +934,14 @@ paths:
                   additionalProperties:
                     type: string
                   type: object
-              title: Secret defienes the secret resource
+                secret_data:
+                  items:
+                    format: byte
+                    type: string
+                  type: array
+              required:
+                - secret_data
               type: object
-        description: Secret defienes the secret resource
         required: true
         x-originalParamName: secret
       responses:
