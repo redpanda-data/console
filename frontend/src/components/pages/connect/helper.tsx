@@ -722,7 +722,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
                     <ModalBody>
                         <Box px={2} py={3} w="full" className="codeBox" style={{whiteSpace: 'pre', overflow: 'scroll'}}>{err}</Box>
                     </ModalBody>
-                    <ModalFooter>
+                    <ModalFooter gap={2}>
                         <Button onClick={close}>Close</Button>
                     </ModalFooter>
                 </ModalContent>

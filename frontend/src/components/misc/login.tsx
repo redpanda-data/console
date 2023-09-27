@@ -106,7 +106,7 @@ class Login extends Component {
                     <ModalBody>
                         <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
                     </ModalBody>
-                    <ModalFooter>
+                    <ModalFooter gap={2}>
                         <Button onClick={() => {
                               uiState.loginError = null;
                         }}>
@@ -303,7 +303,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
                     <ModalBody>
                         <blockquote>{error}</blockquote>
                     </ModalBody>
-                    <ModalFooter>
+                    <ModalFooter gap={2}>
                         <Button onClick={() => {
                             setError(null);
                         }}>

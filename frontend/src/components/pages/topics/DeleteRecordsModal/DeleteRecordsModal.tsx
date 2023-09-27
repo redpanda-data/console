@@ -492,7 +492,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                         />
                     )}
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter gap={2}>
                     <Button
                         variant="solid"
                         colorScheme={hasErrors ? 'gray' : 'brand'}

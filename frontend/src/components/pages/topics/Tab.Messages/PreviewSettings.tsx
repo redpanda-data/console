@@ -228,7 +228,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                     <ModalBody>
                         {content}
                     </ModalBody>
-                    <ModalFooter>
+                    <ModalFooter gap={2}>
                         <Button onClick={() => {
                             this.props.setShowDialog(false)
                         }}>Close</Button>

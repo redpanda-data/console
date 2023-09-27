@@ -384,7 +384,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                 <ModalBody>
                     <CodeBlock language="json" codeString={p.error.content} showScroll={false} />
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter gap={2}>
                     {hasConnectorLogs &&
                         <Button onClick={() => appGlobal.history.push('/topics/__redpanda.connectors_logs')} mr="auto">
                             Show Logs

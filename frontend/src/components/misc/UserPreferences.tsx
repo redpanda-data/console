@@ -16,7 +16,7 @@ import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 import { transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
-import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text, Box } from '@redpanda-data/ui';
+import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text } from '@redpanda-data/ui';
 
 type SettingsTabKeys = 'statisticsBar' | 'jsonViewer' | 'importExport' | 'autoRefresh'
 
@@ -73,13 +73,11 @@ export const UserPreferencesDialog: FC<{isOpen: boolean; onClose: () => void}> =
                         </Flex>
                     </Flex>
                 </ModalBody>
-                <ModalFooter>
-                    <Box display="flex" gap={4} alignItems="center" justifyContent="flex-end">
-                        <Text fontSize="xs" color="gray.500">
-                            Changes are saved automatically
-                        </Text>
-                        <Button onClick={onClose}>Close</Button>
-                    </Box>
+                <ModalFooter alignItems="center" justifyContent="flex-end" gap={2}>
+                    <Text fontSize="xs" color="gray.500">
+                        Changes are saved automatically
+                    </Text>
+                    <Button onClick={onClose}>Close</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>

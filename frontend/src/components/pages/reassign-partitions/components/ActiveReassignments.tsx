@@ -247,30 +247,28 @@ export const ThrottleDialog: FC<{ visible: boolean, lastKnownMinThrottle: number
                         <BandwidthSlider value={throttleValue} onChange={x => $state.newThrottleValue = x}/>
                     </Flex>
                 </ModalBody>
-                <ModalFooter>
-                    <Flex w="full" justifyContent="space-between">
+                <ModalFooter justifyContent="space-between">
+                    <Button
+                        variant="outline"
+                        colorScheme="red"
+                        onClick={() => {
+                            $state.newThrottleValue = null;
+                            void applyBandwidthThrottle();
+                        }}
+                    >Remove throttle</Button>
+
+                    <Flex gap={2}>
                         <Button
-                            variant="outline"
-                            colorScheme="red"
+                            style={{marginLeft: 'auto'}}
+                            onClick={onClose}
+                        >Close</Button>
+                        <Button
+                            disabled={noChange}
+                            variant="solid"
                             onClick={() => {
-                                $state.newThrottleValue = null;
                                 void applyBandwidthThrottle();
                             }}
-                        >Remove throttle</Button>
-
-                        <Flex gap={1}>
-                            <Button
-                                style={{marginLeft: 'auto'}}
-                                onClick={onClose}
-                            >Close</Button>
-                            <Button
-                                disabled={noChange}
-                                variant="solid"
-                                onClick={() => {
-                                    void applyBandwidthThrottle();
-                                }}
-                            >Apply</Button>
-                        </Flex>
+                        >Apply</Button>
                     </Flex>
                 </ModalFooter>
             </ModalContent>

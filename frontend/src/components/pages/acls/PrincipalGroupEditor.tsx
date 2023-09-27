@@ -248,7 +248,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         </VStack>
                     </VStack>
                 </ModalBody>
-                <ModalFooter gap={1}>
+                <ModalFooter gap={2}>
                     <Button variant="ghost" onClick={p.onClose}>Cancel</Button>
                     <Button variant="solid" colorScheme="brand" onClick={onOK} isLoading={isLoading}>OK</Button>
                 </ModalFooter>

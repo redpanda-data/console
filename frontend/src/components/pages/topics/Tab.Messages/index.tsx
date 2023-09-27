@@ -1227,7 +1227,7 @@ const ColumnSettings: FC<{getShowDialog: () => boolean; setShowDialog: (val: boo
                         </Box>
                     </Box>
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter gap={2}>
                     <Button onClick={() => {
                         setShowDialog(false)
                     }} colorScheme="red">Close</Button>

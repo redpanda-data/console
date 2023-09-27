@@ -68,7 +68,7 @@ class ErrorModal extends Component<ErrorModalProps> {
                         }
                     </Flex>
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter gap={2}>
                     <Button onClick={p.onClose}>OK</Button>
                 </ModalFooter>
             </ModalContent>
