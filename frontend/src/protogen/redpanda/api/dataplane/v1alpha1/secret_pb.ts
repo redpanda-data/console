@@ -293,9 +293,9 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
  */
 export class CreateSecretResponse extends Message<CreateSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
    */
-  secret?: SecretInput;
+  secret?: Secret;
 
   constructor(data?: PartialMessage<CreateSecretResponse>) {
     super();
@@ -305,7 +305,7 @@ export class CreateSecretResponse extends Message<CreateSecretResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "secret", kind: "message", T: SecretInput },
+    { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateSecretResponse {
@@ -332,9 +332,9 @@ export class CreateSecretResponse extends Message<CreateSecretResponse> {
  */
 export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
    */
-  secret?: Secret;
+  secret?: SecretInput;
 
   constructor(data?: PartialMessage<UpdateSecretRequest>) {
     super();
@@ -344,7 +344,7 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "secret", kind: "message", T: Secret },
+    { no: 1, name: "secret", kind: "message", T: SecretInput },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateSecretRequest {
