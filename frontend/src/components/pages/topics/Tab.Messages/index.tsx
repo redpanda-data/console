@@ -1445,10 +1445,7 @@ class MessageSearchFilterBar extends Component {
                             </Label>
 
                             {/* Help Bar */}
-                            <Alert status="info" m={0} px={2} py={1}>
-                                <AlertIcon/>
-                                <Text fontSize="sm" color="gray.700" fontWeight={300}>Help: {helpEntries}</Text>
-                            </Alert>
+                            <Text fontSize="sm" color="gray.700" fontWeight={300}>Help: {helpEntries}</Text>
 
                         </Flex>}
                     </ModalBody>
