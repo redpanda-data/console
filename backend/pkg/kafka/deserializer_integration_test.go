@@ -1456,7 +1456,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)

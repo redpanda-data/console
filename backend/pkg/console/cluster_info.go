@@ -37,7 +37,7 @@ type Broker struct {
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
 func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
-	eg, _ := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
@@ -46,7 +46,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
 	// times in case of a single broker being down.
-	childCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+	childCtx, cancel := context.WithTimeout(egCtx, 6*time.Second)
 	defer cancel()
 
 	eg.Go(func() error {
