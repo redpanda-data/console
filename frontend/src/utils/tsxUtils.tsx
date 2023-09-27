@@ -12,7 +12,7 @@
 import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
-import { message, Radio, Skeleton } from 'antd';
+import { Radio, Skeleton } from 'antd';
 import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -351,7 +351,6 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     constructor(p: any) {
         super(p);
-        message.config({ top: 20 });
 
         // Periodically check if we got any new messages. If not, show a different text after some time
         this.lastUpdateTimestamp = Date.now();

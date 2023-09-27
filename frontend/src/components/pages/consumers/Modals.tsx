@@ -21,12 +21,11 @@ import { sortField } from '../../misc/common';
 import { toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
-import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -53,6 +52,13 @@ export type GroupOffset = {
     newOffset?: number | Date | PartitionOffset;
 };
 
+const { ToastContainer, toast } = createStandaloneToast({
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+        duration: 2000
+    }
+})
 
 @observer
 export class EditOffsetsModal extends Component<{
@@ -97,48 +103,51 @@ export class EditOffsetsModal extends Component<{
         const single = this.offsetsByTopic.length == 1;
 
         return (
-            <Modal isOpen={visible} onClose={() => {
-            }}>
-                <ModalOverlay/>
-                <ModalContent minW="5xl">
-                    <ModalHeader>Edit consumer group</ModalHeader>
-                    <ModalBody>
-                        <HStack spacing={6}>
-                            <div>
-                                <div
-                                    style={{
-                                        width: '64px',
-                                        height: '64px',
-                                        padding: '14px',
-                                        marginTop: '4px',
-                                        marginLeft: '4px',
-                                        background: '#718096',
-                                        borderRadius: '1000px'
-                                    }}
-                                >
-                                    <PencilIconOutline color="white"/>
-                                </div>
-                            </div>
-                            <div>
-                                <span>Group offsets will be editted for:</span>
-
-                                <div style={{fontWeight: 600, margin: '8px 0', lineHeight: '1.5'}}>
-                                    <div>
-                                        Group: <span className="codeBox">{group.groupId}</span>
-                                    </div>
-                                    <div>
-                                        {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
+            <>
+                <ToastContainer />
+                <Modal isOpen={visible} onClose={() => {
+                }}>
+                    <ModalOverlay/>
+                    <ModalContent minW="5xl">
+                        <ModalHeader>Edit consumer group</ModalHeader>
+                        <ModalBody>
+                            <HStack spacing={6}>
+                                <div>
+                                    <div
+                                        style={{
+                                            width: '64px',
+                                            height: '64px',
+                                            padding: '14px',
+                                            marginTop: '4px',
+                                            marginLeft: '4px',
+                                            background: '#718096',
+                                            borderRadius: '1000px'
+                                        }}
+                                    >
+                                        <PencilIconOutline color="white"/>
                                     </div>
                                 </div>
-                            </div>
-                        </HStack>
+                                <div>
+                                    <span>Group offsets will be editted for:</span>
 
-                        {/* Content */}
-                        <div style={{marginTop: '2em'}}>{this.page == 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}</div>
-                    </ModalBody>
-                    <ModalFooter>{this.footer()}</ModalFooter>
-                </ModalContent>
-            </Modal>
+                                    <div style={{fontWeight: 600, margin: '8px 0', lineHeight: '1.5'}}>
+                                        <div>
+                                            Group: <span className="codeBox">{group.groupId}</span>
+                                        </div>
+                                        <div>
+                                            {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </HStack>
+
+                            {/* Content */}
+                            <div style={{marginTop: '2em'}}>{this.page == 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}</div>
+                        </ModalBody>
+                        <ModalFooter gap={2}>{this.footer()}</ModalFooter>
+                    </ModalContent>
+                </Modal>
+            </>
         )
     }
 
@@ -315,19 +324,32 @@ export class EditOffsetsModal extends Component<{
                 const propOffsets = this.props.offsets;
                 // Fetch offset for each partition
                 setTimeout(async () => {
-                    const msg = new Message('Fetching offsets for timestamp', 'loading', '...');
+                    const toastMsg = 'Fetching offsets for timestamp'
+                    const toastRef = toast({
+                        status: 'loading',
+                        description: `${toastMsg}...`,
+                        duration: null
+                    })
 
                     let offsetsForTimestamp: TopicOffset[];
                     try {
                         offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.timestampUtcMs);
-                        msg.setSuccess(undefined, ' - done');
+                        toast.update(toastRef, {
+                            status: 'success',
+                            duration: 2000,
+                            description: `${toastMsg} - done`
+                        })
                     } catch (err) {
                         showErrorModal(
                             'Failed to fetch offsets for timestamp',
                             <span>Could not lookup offsets for given timestamp <span className="codeBox">{new Date(this.timestampUtcMs).toUTCString()}</span>.</span>,
                             toJson({errors: err, request: requiredTopics}, 4)
                         );
-                        msg.setError(undefined, ' - failed');
+                        toast.update(toastRef, {
+                            status: 'error',
+                            duration: 2000,
+                            description: `${toastMsg} - failed`
+                        })
                         return;
                     }
 
@@ -406,7 +428,7 @@ export class EditOffsetsModal extends Component<{
                 <span><ChevronRightIcon/></span>
             </Button>
         </div>;
-        else return <div style={{display: 'flex'}}>
+        else return <>
             <Button key="back" onClick={() => this.setPage(0)} style={{paddingRight: '18px'}}
                     isDisabled={disableNav}
             >
@@ -424,7 +446,7 @@ export class EditOffsetsModal extends Component<{
             >
                 <span>Apply</span>
             </Button>
-        </div>;
+        </>;
     }
 
     updateVisible(visible: boolean) {
@@ -472,7 +494,12 @@ export class EditOffsetsModal extends Component<{
         const offsets = this.props.offsets!;
 
         this.isApplyingEdit = true;
-        const msg = new Message('Applying offsets', 'loading', '...');
+        const toastMsg = 'Applying offsets'
+        const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null
+        })
         const topics = createEditRequest(offsets);
         try {
             const editResponse = await api.editConsumerGroupOffsets(group.groupId, topics);
@@ -486,10 +513,18 @@ export class EditOffsetsModal extends Component<{
                 throw {errors: errors, request: topics};
             }
 
-            msg.setSuccess(undefined, ' - done');
+            toast.update(toastRef, {
+                status: 'success',
+                duration: 2000,
+                description: `${toastMsg} - done`
+            })
         } catch (err) {
             console.error('failed to apply offset edit', err);
-            msg.setError(undefined, ' - failed');
+            toast.update(toastRef, {
+                status: 'error',
+                duration: 2000,
+                description: `${toastMsg} - failed`
+            })
             showErrorModal(
                 'Apply editted offsets',
                 <span>
@@ -701,7 +736,7 @@ export class DeleteOffsetsModal extends Component<{
                             </Box>
                         </Flex>
                     </ModalBody>
-                    <ModalFooter>
+                    <ModalFooter gap={2}>
                         <Button onClick={() => this.onDeleteOffsets()} colorScheme="red">Delete</Button>
                     </ModalFooter>
                 </ModalContent>
@@ -715,7 +750,12 @@ export class DeleteOffsetsModal extends Component<{
         const group = this.props.group;
         const offsets = this.props.offsets!;
 
-        const msg = new Message('Deleting offsets', 'loading', '...');
+        const toastMsg = 'Deleting offsets'
+        const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null
+        })
         try {
             if (this.props.mode === 'group') {
                 await api.deleteConsumerGroup(group.groupId);
@@ -733,10 +773,18 @@ export class DeleteOffsetsModal extends Component<{
                 }
             }
 
-            msg.setSuccess(undefined, ' - done');
+            toast.update(toastRef, {
+                status: 'success',
+                duration: 2000,
+                description: `${toastMsg} - done`
+            })
         } catch (err) {
             console.error(err);
-            msg.setError(undefined, ' - failed');
+            toast.update(toastRef, {
+                status: 'error',
+                duration: 2000,
+                description: `${toastMsg} - failed`
+            })
             showErrorModal(
                 'Delete offsets',
                 <span>
