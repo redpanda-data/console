@@ -3546,6 +3546,247 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(expectData, out.Value.Payload)
 		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
 	})
+
+	t.Run("schema registry avro references", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		eventDataSchemaStr := `
+		{
+			"namespace": "io.test.event.schema",
+			"type": "record",
+			"name": "EventData",
+			"fields":[
+				{
+					"name":"id",
+					"type": "string"
+				},
+				{
+					"name":"event_type",
+					"type":"string"
+				},
+				{
+					"name":"version",
+					"type":"string"
+				}
+			]
+		}`
+
+		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(eventDataSchema)
+
+		ssEventData, err := rcl.CreateSchema(context.Background(), "io.test.event.schema.EventData", sr.Schema{
+			Schema: eventDataSchemaStr,
+			Type:   sr.TypeAvro,
+		})
+		require.NoError(err)
+		require.NotNil(ssEventData)
+
+		userSchemaStr := `
+		{
+			"namespace": "io.test.user.schema",
+			"type": "record",
+			"name": "User",
+			"fields": [
+				{
+					"name": "name",
+					"type": "string"
+				},
+				{
+					"name": "email",
+					"type": "string"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
+
+		userSchema, err := avro.Parse(userSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(userSchema)
+
+		ssUser, err := rcl.CreateSchema(context.Background(), "io.test.user.schema.User", sr.Schema{
+			Schema: userSchemaStr,
+			Type:   sr.TypeAvro,
+			References: []sr.SchemaReference{
+				{
+					Name:    "io.test.event.schema.EventData",
+					Subject: ssEventData.Subject,
+					Version: ssEventData.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ssUser)
+
+		orderSchemaStr := `
+		{
+			"namespace": "io.test.order.schema",
+			"type": "record",
+			"name": "Order",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string"
+				},
+				{
+					"name": "price",
+					"type": "double"
+				},
+				{
+					"name": "quantity",
+					"type": "long"
+				},
+				{
+					"name": "customer",
+					"type": "io.test.user.schema.User"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
+
+		orderSchema, err := avro.Parse(orderSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(orderSchema)
+
+		ssOrder, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: orderSchemaStr,
+			Type:   sr.TypeAvro,
+			References: []sr.SchemaReference{
+				{
+					Name:    "io.test.event.schema.EventData",
+					Subject: ssEventData.Subject,
+					Version: ssEventData.Version,
+				},
+				{
+					Name:    "io.test.user.schema.User",
+					Subject: ssUser.Subject,
+					Version: ssUser.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ssOrder)
+
+		type EventDataRecord struct {
+			ID        string `avro:"id" json:"id"`
+			EventType string `avro:"event_type" json:"event_type"`
+			Version   string `avro:"version" json:"version"`
+		}
+
+		type UserRecord struct {
+			Name     string          `avro:"name" json:"name"`
+			Email    string          `avro:"email" json:"email"`
+			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
+		}
+
+		type OrderRecord struct {
+			ID       string          `avro:"id" json:"id"`
+			Price    float64         `avro:"price" json:"price"`
+			Quantity int64           `avro:"quantity" json:"quantity"`
+			User     UserRecord      `avro:"customer" json:"customer"`
+			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
+		}
+
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		inputData := `{"customer":{"email":"user1@example.com","metadata":{"event_type":"user","id":"user1_event_2345","version":"1"},"name":"user1"},"id":"order_1","metadata":{"event_type":"order","id":"order1_event_5432","version":"2"},"price":7.50,"quantity":7}`
+
+		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  map[string]interface{}{"id": "order_1"},
+				Encoding: PayloadEncodingJSON,
+			},
+			Value: RecordPayloadInput{
+				Payload:  inputData,
+				Encoding: PayloadEncodingAvro,
+				Options: []SerdeOpt{
+					WithSchemaID(uint32(ssOrder.ID)),
+				},
+			},
+		})
+
+		assert.NoError(err)
+		require.NotNil(serRes)
+
+		var serde sr.Serde
+		serde.Register(
+			ssOrder.ID,
+			&OrderRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(orderSchema, v.(*OrderRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+			}),
+		)
+
+		order := OrderRecord{
+			ID:       "order_1",
+			Price:    7.50,
+			Quantity: 7,
+			User: UserRecord{
+				Name:  "user1",
+				Email: "user1@example.com",
+				Metadata: EventDataRecord{
+					ID:        "user1_event_2345",
+					Version:   "1",
+					EventType: "user",
+				},
+			},
+			Metadata: EventDataRecord{
+				ID:        "order1_event_5432",
+				Version:   "2",
+				EventType: "order",
+			},
+		}
+
+		expectData, err := serde.Encode(&order)
+		require.NoError(err)
+		require.NotEmpty(expectData)
+
+		assert.Equal([]byte(`{"id":"order_1"}`), serRes.Key.Payload)
+		assert.Equal(PayloadEncodingJSON, serRes.Key.Encoding)
+		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(PayloadEncodingAvro, serRes.Value.Encoding)
+	})
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
