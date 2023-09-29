@@ -24,7 +24,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/hamba/avro/v2 v2.13.0
+	github.com/hamba/avro/v2 v2.16.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jhump/protoreflect v1.14.1

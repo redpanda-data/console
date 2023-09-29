@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -2138,6 +2139,328 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal([]byte("my text value"), dr.Value.OriginalPayload)
 		assert.Equal(len([]byte("my text value")), dr.Value.PayloadSizeBytes)
+	})
+
+	t.Run("avro schema references", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		eventDataSchemaStr := `
+		{
+			"namespace": "io.test.event.schema",
+			"type": "record",
+			"name": "EventData",
+			"fields":[
+				{
+					"name":"id",
+					"type": "string"
+				},
+				{
+					"name":"event_type",
+					"type":"string"
+				},
+				{
+					"name":"version",
+					"type":"string"
+				}
+			]
+		}`
+
+		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(eventDataSchema)
+
+		ssEventData, err := rcl.CreateSchema(context.Background(), "io.test.event.schema.EventData", sr.Schema{
+			Schema: eventDataSchemaStr,
+			Type:   sr.TypeAvro,
+		})
+		require.NoError(err)
+		require.NotNil(ssEventData)
+
+		userSchemaStr := `
+		{
+			"namespace": "io.test.user.schema",
+			"type": "record",
+			"name": "User",
+			"fields": [
+				{
+					"name": "name",
+					"type": "string"
+				},
+				{
+					"name": "email",
+					"type": "string"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
+
+		userSchema, err := avro.Parse(userSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(userSchema)
+
+		ssUser, err := rcl.CreateSchema(context.Background(), "io.test.user.schema.User", sr.Schema{
+			Schema: userSchemaStr,
+			Type:   sr.TypeAvro,
+			References: []sr.SchemaReference{
+				{
+					Name:    "io.test.event.schema.EventData",
+					Subject: ssEventData.Subject,
+					Version: ssEventData.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ssUser)
+
+		orderSchemaStr := `
+		{
+			"namespace": "io.test.order.schema",
+			"type": "record",
+			"name": "Order",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string"
+				},
+				{
+					"name": "price",
+					"type": "double"
+				},
+				{
+					"name": "quantity",
+					"type": "long"
+				},
+				{
+					"name": "customer",
+					"type": "io.test.user.schema.User"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
+
+		orderSchema, err := avro.Parse(orderSchemaStr)
+		require.NoError(err)
+		require.NotEmpty(orderSchema)
+
+		ssOrder, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: orderSchemaStr,
+			Type:   sr.TypeAvro,
+			References: []sr.SchemaReference{
+				{
+					Name:    "io.test.event.schema.EventData",
+					Subject: ssEventData.Subject,
+					Version: ssEventData.Version,
+				},
+				{
+					Name:    "io.test.user.schema.User",
+					Subject: ssUser.Subject,
+					Version: ssUser.Version,
+				},
+			},
+		})
+		require.NoError(err)
+		require.NotNil(ssOrder)
+
+		type EventDataRecord struct {
+			ID        string `avro:"id" json:"id"`
+			EventType string `avro:"event_type" json:"event_type"`
+			Version   string `avro:"version" json:"version"`
+		}
+
+		type UserRecord struct {
+			Name     string          `avro:"name" json:"name"`
+			Email    string          `avro:"email" json:"email"`
+			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
+		}
+
+		type OrderRecord struct {
+			ID       string          `avro:"id" json:"id"`
+			Price    float64         `avro:"price" json:"price"`
+			Quantity int64           `avro:"quantity" json:"quantity"`
+			User     UserRecord      `avro:"customer" json:"customer"`
+			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
+		}
+
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		var serde sr.Serde
+		serde.Register(
+			ssOrder.ID,
+			&OrderRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(orderSchema, v.(*OrderRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+			}),
+		)
+
+		order := OrderRecord{
+			ID:       "order_0",
+			Price:    10.25,
+			Quantity: 5,
+			User: UserRecord{
+				Name:  "user0",
+				Email: "user0@example.com",
+				Metadata: EventDataRecord{
+					ID:        "user0_event_1234",
+					Version:   "1",
+					EventType: "user",
+				},
+			},
+			Metadata: EventDataRecord{
+				ID:        "order0_event_4321",
+				Version:   "1",
+				EventType: "order",
+			},
+		}
+
+		binData, err := serde.Encode(&order)
+		require.NoError(err)
+		require.NotEmpty(binData)
+
+		r := &kgo.Record{
+			Key:   []byte(order.ID),
+			Value: binData,
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		require.NotNil(dr)
+
+		// check value
+		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal("order_0", obj["id"])
+		assert.Equal(10.25, obj["price"])
+		assert.Equal(int64(5), obj["quantity"])
+		assert.NotEmpty(obj["customer"])
+		assert.NotEmpty(obj["metadata"])
+
+		orderObj := OrderRecord{}
+
+		err = json.Unmarshal(dr.Value.NormalizedPayload, &orderObj)
+		require.NoError(err)
+
+		assert.Equal(order, orderObj)
+
+		// value troubleshooting
+		require.Len(dr.Value.Troubleshooting, 4)
+		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
+		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[2].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[2].Message)
+		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
+
+		// check key
+		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
+		require.Truef(ok, "parsed payload is not of type []byte")
+		assert.Equal("order_0", string(keyObj))
+		assert.Empty(dr.Key.SchemaID)
+
+		// key properties
+		assert.Equal(PayloadEncodingText, dr.Key.Encoding)
+		assert.Equal(false, dr.Key.IsPayloadNull)
+		assert.Equal(false, dr.Key.IsPayloadTooLarge)
+		assert.Empty(dr.Key.OriginalPayload)
+		assert.Equal([]byte("order_0"), dr.Key.NormalizedPayload)
+		assert.Equal(len([]byte("order_0")), dr.Key.PayloadSizeBytes)
+
+		// key troubleshooting
+		require.Len(dr.Key.Troubleshooting, 10)
+		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
+		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
+		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[2].SerdeName)
+		assert.Equal("incorrect magic byte for json schema", dr.Key.Troubleshooting[2].Message)
+		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
+		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
+		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
+		assert.Equal("incorrect magic byte for avro", dr.Key.Troubleshooting[4].Message)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
+		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_avro_ref'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
+		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
+		assert.Equal("incorrect magic byte for protobuf schema", dr.Key.Troubleshooting[6].Message)
+		assert.Equal(string(PayloadEncodingMsgPack), dr.Key.Troubleshooting[7].SerdeName)
+		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_avro_ref", dr.Key.Troubleshooting[7].Message)
+		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
+		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
 	})
 }
 
