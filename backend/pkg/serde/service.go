@@ -113,7 +113,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 	}
 
 	addTS := opts.Troubleshoot
-	if rp == nil {
+	if rp == nil || err != nil || (rp != nil && rp.Encoding == "") {
 		// Anything else is considered binary
 		rp = &RecordPayload{
 			Encoding: PayloadEncodingBinary,
@@ -188,20 +188,25 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	keyTS := make([]TroubleshootingReport, 0)
 	found := false
 	for _, serde := range s.SerDes {
-		if input.Key.Encoding == serde.Name() {
-			found = true
-
-			bytes, serErr := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
-			if serErr != nil {
-				keyTS = append(keyTS, TroubleshootingReport{
-					SerdeName: string(serde.Name()),
-					Message:   serErr.Error(),
-				})
-			} else {
-				keySerResult.Encoding = serde.Name()
-				keySerResult.Payload = bytes
-			}
+		if input.Key.Encoding != serde.Name() {
+			continue
 		}
+
+		found = true
+
+		bytes, serErr := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+		if serErr == nil {
+			err = nil
+			keySerResult.Encoding = serde.Name()
+			keySerResult.Payload = bytes
+			break
+		}
+		err = serErr
+
+		keyTS = append(keyTS, TroubleshootingReport{
+			SerdeName: string(serde.Name()),
+			Message:   serErr.Error(),
+		})
 	}
 
 	keySerResult.Troubleshooting = keyTS
@@ -224,20 +229,26 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	valueTS := make([]TroubleshootingReport, 0)
 	found = false
 	for _, serde := range s.SerDes {
-		if input.Value.Encoding == serde.Name() {
-			found = true
-
-			bytes, serErr := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
-			if serErr != nil {
-				valueTS = append(valueTS, TroubleshootingReport{
-					SerdeName: string(serde.Name()),
-					Message:   serErr.Error(),
-				})
-			} else {
-				valueSerResult.Encoding = serde.Name()
-				valueSerResult.Payload = bytes
-			}
+		if input.Value.Encoding != serde.Name() {
+			continue
 		}
+
+		found = true
+
+		bytes, serErr := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+		if serErr == nil {
+			err = nil
+			valueSerResult.Encoding = serde.Name()
+			valueSerResult.Payload = bytes
+			break
+		}
+
+		err = serErr
+
+		valueTS = append(valueTS, TroubleshootingReport{
+			SerdeName: string(serde.Name()),
+			Message:   serErr.Error(),
+		})
 	}
 
 	valueSerResult.Troubleshooting = valueTS
@@ -245,7 +256,7 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 	sr.Value = &valueSerResult
 
 	if !found {
-		err = fmt.Errorf("invalid encoding for value: %s", input.Key.Encoding)
+		err = fmt.Errorf("invalid encoding for value: %s", input.Value.Encoding)
 	}
 
 	return &sr, err

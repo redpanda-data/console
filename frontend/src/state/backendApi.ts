@@ -55,8 +55,9 @@ import { config as appConfig, isEmbedded } from '../config';
 
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/list_messages_connect'
-import { CompressionType as ProtoCompressionType, ListMessagesRequest, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/console_service_connect'
+import {  ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/common_pb'
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;

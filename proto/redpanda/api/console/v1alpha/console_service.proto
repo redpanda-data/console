@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha;
+
+import "redpanda/api/console/v1alpha/list_messages.proto";
+import "redpanda/api/console/v1alpha/publish_messages.proto";
+
+// ConsoleService represents the Console API service.
+service ConsoleService {
+  // ListMessages lists the messages according to the requested query.
+  rpc ListMessages(ListMessagesRequest) returns (stream ListMessagesResponse) {}
+
+  // PublishMessage publishes message.
+  rpc PublishMessage(PublishMessageRequest) returns (PublishMessageResponse) {}
+}

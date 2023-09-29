@@ -14,6 +14,8 @@ import (
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // ProduceRecordsResponse is the responses to producing multiple Kafka RecordBatches.
@@ -28,10 +30,12 @@ type ProduceRecordsResponse struct {
 
 // ProduceRecordResponse is the response to producing a Kafka RecordBatch.
 type ProduceRecordResponse struct {
-	TopicName   string `json:"topicName"`
-	PartitionID int32  `json:"partitionId"`
-	Offset      int64  `json:"offset"`
-	Error       string `json:"error,omitempty"`
+	TopicName            string                        `json:"topicName"`
+	PartitionID          int32                         `json:"partitionId"`
+	Offset               int64                         `json:"offset"`
+	Error                string                        `json:"error,omitempty"`
+	KeyTroubleshooting   []serde.TroubleshootingReport `json:"keyTroubleshooting,omitempty"`
+	ValueTroubleshooting []serde.TroubleshootingReport `json:"valueTroubleshooting,omitempty"`
 }
 
 // ProduceRecords produces one or more records. This might involve multiple topics or a just a single topic.
@@ -64,4 +68,37 @@ func (s *Service) ProduceRecords(ctx context.Context, records []*kgo.Record, use
 		Records: formattedResponses,
 		Error:   "", // Will be omitted
 	}
+}
+
+// PublishRecord serializes and produces the records.
+func (s *Service) PublishRecord(
+	ctx context.Context,
+	topic string,
+	partitionID int32,
+	headers []kgo.RecordHeader,
+	key *serde.RecordPayloadInput,
+	value *serde.RecordPayloadInput,
+	useTransactions bool,
+	compressionType int8,
+) (*ProduceRecordResponse, error) {
+	r, err := s.kafkaSvc.PublishRecord(ctx, topic, partitionID, headers, key, value, useTransactions, compressionType)
+	res := &ProduceRecordResponse{}
+
+	if r != nil {
+		res.TopicName = r.TopicName
+		res.PartitionID = r.PartitionID
+		res.Offset = r.Offset
+		res.KeyTroubleshooting = r.KeyTroubleshooting
+		res.ValueTroubleshooting = r.ValueTroubleshooting
+
+		if r.Error != nil {
+			res.Error = r.Error.Error()
+		}
+	}
+
+	if err != nil {
+		res.Error = err.Error()
+	}
+
+	return res, err
 }

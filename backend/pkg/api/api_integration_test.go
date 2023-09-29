@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -28,13 +29,16 @@ import (
 
 	connect_go "connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
+	"github.com/docker/go-connections/nat"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -50,15 +54,23 @@ type APIIntegrationTestSuite struct {
 
 	kafkaClient      *kgo.Client
 	kafkaAdminClient *kadm.Client
+	kafkaSRClient    *sr.Client
 
 	cfg *config.Config
 	api *API
 
 	testSeedBroker string
+	registryAddr   string
 }
 
 func TestSuite(t *testing.T) {
 	suite.Run(t, &APIIntegrationTestSuite{})
+}
+
+func withImage(image string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Image = image
+	}
 }
 
 func (s *APIIntegrationTestSuite) SetupSuite() {
@@ -66,7 +78,7 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.2.6"))
 	require.NoError(err)
 	s.redpandaContainer = container
 
@@ -76,6 +88,15 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	s.testSeedBroker = seedBroker
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
+
+	registryAddr, err := testutil.GetMappedHostPort(ctx, container, nat.Port("8081/tcp"))
+	require.NoError(err)
+
+	s.registryAddr = registryAddr
+
+	rcl, err := sr.NewClient(sr.URLs("http://" + registryAddr))
+	require.NoError(err)
+	s.kafkaSRClient = rcl
 
 	httpListenPort := rand.Intn(50000) + 10000
 	s.cfg = &config.Config{}
@@ -88,6 +109,26 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 		},
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
+	s.cfg.Kafka.Protobuf.Enabled = true
+	s.cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
+	s.cfg.Kafka.Protobuf.SchemaRegistry.RefreshInterval = 2 * time.Second
+	s.cfg.Kafka.Schema.Enabled = true
+	s.cfg.Kafka.Schema.URLs = []string{"http://" + registryAddr}
+
+	// proto message mapping
+	absProtoPath, err := filepath.Abs("../testutil/testdata/proto")
+	require.NoError(err)
+	s.cfg.Kafka.Protobuf.Enabled = true
+	s.cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+		{
+			TopicName:      testutil.TopicNameForTest("publish_messages_proto_plain"),
+			ValueProtoType: "testutil.things.v1.Item",
+		},
+	}
+	s.cfg.Kafka.Protobuf.FileSystem.Enabled = true
+	s.cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+	s.cfg.Kafka.Protobuf.FileSystem.Paths = []string{absProtoPath}
+
 	s.api = New(s.cfg)
 
 	go s.api.Start()
@@ -159,6 +200,20 @@ func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
 	assert.NoError(t, err)
 
 	return res, body
+}
+
+func (s *APIIntegrationTestSuite) consumerClientForTopic(topicName string) *kgo.Client {
+	t := s.T()
+	require := require.New(t)
+
+	cl, err := kgo.NewClient(
+		kgo.SeedBrokers(s.testSeedBroker),
+		kgo.ConsumeTopics(topicName),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+	)
+	require.NoError(err)
+
+	return cl
 }
 
 type assertCallReturnValue struct {

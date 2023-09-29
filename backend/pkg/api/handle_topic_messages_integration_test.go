@@ -13,17 +13,27 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
+	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )
 
 func (s *APIIntegrationTestSuite) TestListMessages() {
@@ -144,6 +154,8 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 			keys)
 		assert.Equal(3, phaseCount)
 		assert.Equal(0, errorCount)
+		assert.Equal(1, doneCount)
+		assert.True(seenZeroOffset)
 		assert.GreaterOrEqual(progressCount, 0)
 	})
 
@@ -244,6 +256,344 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 			keys)
 		assert.Equal(3, phaseCount)
 		assert.Equal(0, errorCount)
+		assert.Equal(1, doneCount)
+		assert.True(seenZeroOffset)
 		assert.GreaterOrEqual(progressCount, 0)
+	})
+}
+
+func (s *APIIntegrationTestSuite) TestPublishMessages() {
+	t := s.T()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	// setup
+	ctx := context.Background()
+
+	client := v1ac.NewConsoleServiceClient(
+		http.DefaultClient,
+		s.httpAddress(),
+		connect.WithGRPCWeb(), // use GRPCWeb because we also expect this endpoint to be called by web client
+	)
+
+	// This test depends on configs configured
+
+	topicName := testutil.TopicNameForTest("publish_messages_0")
+	topicNameProtoPain := testutil.TopicNameForTest("publish_messages_proto_plain")
+	topicNameProtoSR := testutil.TopicNameForTest("publish_messages_proto_sr")
+
+	_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+	assert.NoError(err)
+
+	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicNameProtoPain)
+	assert.NoError(err)
+
+	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicNameProtoSR)
+	assert.NoError(err)
+
+	defer func() {
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoPain)
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoSR)
+	}()
+
+	t.Run("JSON message", func(t *testing.T) {
+		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
+			Topic:       topicName,
+			PartitionId: -1,
+			Headers: []*v1pb.KafkaRecordHeader{
+				{
+					Key:   "header_key_0",
+					Value: []byte("header_val_0"),
+				},
+			},
+			Key: &v1pb.PublishMessagePayloadOptions{
+				Data:     "123",
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
+			},
+			Value: &v1pb.PublishMessagePayloadOptions{
+				Data:     `{"id": 123,"name":"foo"}`,
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON,
+			},
+		}))
+		require.NoError(err)
+
+		require.NotNil(res)
+		assert.Equal(topicName, res.Msg.GetTopic())
+		assert.Equal(int32(0), res.Msg.GetPartitionId())
+		assert.Equal(int64(0), res.Msg.GetOffset())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(topicName)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+		require.Len(record.Headers, 1)
+		assert.Equal("header_key_0", record.Headers[0].Key)
+		assert.Equal("header_val_0", string(record.Headers[0].Value))
+		assert.Equal("123", string(record.Key))
+		assert.Equal(`{"id": 123,"name":"foo"}`, string(record.Value))
+	})
+
+	t.Run("protobuf message", func(t *testing.T) {
+		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
+			Topic:       topicNameProtoPain,
+			PartitionId: -1,
+			Headers: []*v1pb.KafkaRecordHeader{
+				{
+					Key:   "header_key_1",
+					Value: []byte("header_val_1"),
+				},
+			},
+			Key: &v1pb.PublishMessagePayloadOptions{
+				Data:     "321",
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
+			},
+			Value: &v1pb.PublishMessagePayloadOptions{
+				Data:     `{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00.0Z"}`,
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
+			},
+		}))
+		require.NoError(err)
+
+		require.NotNil(res)
+		assert.Equal(topicNameProtoPain, res.Msg.GetTopic())
+		assert.Equal(int32(0), res.Msg.GetPartitionId())
+		assert.Equal(int64(0), res.Msg.GetOffset())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(topicNameProtoPain)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+		require.Len(record.Headers, 1)
+		assert.Equal("header_key_1", record.Headers[0].Key)
+		assert.Equal("header_val_1", string(record.Headers[0].Value))
+		assert.Equal("321", string(record.Key))
+
+		objTime := time.Date(2023, time.September, 12, 10, 0, 0, 0, time.UTC)
+
+		expectedData, err := proto.Marshal(&things.Item{
+			Id:        "321",
+			Name:      "item_0",
+			Version:   1,
+			CreatedAt: timestamppb.New(objTime),
+		})
+		require.NoError(err)
+
+		assert.Equal(expectedData, record.Value)
+
+		obj2 := things.Item{}
+		err = proto.Unmarshal(record.Value, &obj2)
+
+		require.NoError(err)
+		assert.Equal("321", obj2.Id)
+		assert.Equal("item_0", obj2.Name)
+		assert.Equal(timestamppb.New(objTime), obj2.CreatedAt)
+	})
+
+	t.Run("protobuf message - fail", func(t *testing.T) {
+		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
+			Topic:       topicNameProtoPain,
+			PartitionId: -1,
+			Headers: []*v1pb.KafkaRecordHeader{
+				{
+					Key:   "header_key_1",
+					Value: []byte("header_val_1"),
+				},
+			},
+			Key: &v1pb.PublishMessagePayloadOptions{
+				Data:     "321",
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
+			},
+			Value: &v1pb.PublishMessagePayloadOptions{
+				Data:     `{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00"}`, // incorrect format
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
+			},
+		}))
+
+		assert.Nil(res)
+
+		require.Error(err)
+		assert.Contains(err.Error(), "invalid_argument: no schema id specified")
+		var connectErr *connect.Error
+		require.True(errors.As(err, &connectErr))
+		details := connectErr.Details()
+		assert.Len(details, 2)
+
+		seenInfo := false
+		detail := details[0]
+		msg, valueErr := detail.Value()
+		assert.NoError(valueErr)
+		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
+			seenInfo = true
+			assert.Equal("dataplane.api.redpanda.com", errInfo.GetDomain())
+			assert.Contains(errInfo.GetReason(), "failed to serialize string protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
+		}
+
+		detail = details[1]
+		msg, valueErr = detail.Value()
+		assert.NoError(valueErr)
+		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
+			seenInfo = true
+			assert.Equal("dataplane.api.redpanda.com", errInfo.GetDomain())
+			assert.Contains(errInfo.GetReason(), "protobuf:no schema id specified")
+		}
+
+		require.True(seenInfo)
+	})
+
+	t.Run("protobuf message - schema registry", func(t *testing.T) {
+		protoFilePath := "../testutil/testdata/proto/things/v1/item.proto"
+		absProtoPath, err := filepath.Abs(protoFilePath)
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile(filepath.Clean(absProtoPath))
+		require.NoError(err)
+
+		ss, err := s.kafkaSRClient.CreateSchema(context.Background(), topicNameProtoSR+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// we refresh protobuf descriptors from schema registry every 5s
+		timer1 := time.NewTimer(2 * time.Second)
+		<-timer1.C
+
+		ssID := int32(ss.ID)
+		index := int32(0)
+
+		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
+			Topic:       topicNameProtoSR,
+			PartitionId: -1,
+			Headers: []*v1pb.KafkaRecordHeader{
+				{
+					Key:   "header_key_sr_0",
+					Value: []byte("header_val_sr_0"),
+				},
+			},
+			Key: &v1pb.PublishMessagePayloadOptions{
+				Data:     "543",
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
+			},
+			Value: &v1pb.PublishMessagePayloadOptions{
+				Data:     `{"id":"543", "name":"item_sr_0", "version":2, "createdAt":"2023-09-12T11:00:00.0Z"}`,
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
+				SchemaId: &ssID,
+				Index:    &index,
+			},
+		}))
+		require.NoError(err)
+
+		require.NotNil(res)
+		assert.Equal(topicNameProtoSR, res.Msg.GetTopic())
+		assert.Equal(int32(0), res.Msg.GetPartitionId())
+		assert.Equal(int64(0), res.Msg.GetOffset())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(topicNameProtoSR)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+		require.Len(record.Headers, 1)
+		assert.Equal("header_key_sr_0", record.Headers[0].Key)
+		assert.Equal("header_val_sr_0", string(record.Headers[0].Value))
+		assert.Equal("543", string(record.Key))
+
+		objTime := time.Date(2023, time.September, 12, 11, 0, 0, 0, time.UTC)
+
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&things.Item{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*things.Item))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*things.Item))
+			}),
+			sr.Index(0),
+		)
+
+		expectedData, err := serde.Encode(&things.Item{
+			Id:        "543",
+			Name:      "item_sr_0",
+			Version:   2,
+			CreatedAt: timestamppb.New(objTime),
+		})
+		require.NoError(err)
+
+		assert.Equal(expectedData, record.Value)
+
+		obj2 := things.Item{}
+		err = serde.Decode(record.Value, &obj2)
+
+		require.NoError(err)
+		assert.Equal("543", obj2.Id)
+		assert.Equal("item_sr_0", obj2.Name)
+		assert.Equal(timestamppb.New(objTime), obj2.CreatedAt)
 	})
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
@@ -39,6 +40,7 @@ type Servicer interface {
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
 	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionType int8) ProduceRecordsResponse
+	PublishRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, int8) (*ProduceRecordResponse, error)
 	GetSchemaDetails(_ context.Context, subject string, version string) (*SchemaDetails, error)
 	GetSchemaOverview(ctx context.Context) (*SchemaOverview, error)
 	Start() error

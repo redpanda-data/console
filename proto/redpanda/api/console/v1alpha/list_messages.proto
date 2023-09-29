@@ -3,6 +3,7 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha;
 
 import "buf/validate/validate.proto";
+import "redpanda/api/console/v1alpha/common.proto";
 
 // ListMessagesRequest is the request for ListMessages call.
 message ListMessagesRequest {
@@ -88,46 +89,4 @@ message KafkaRecordPayload {
   int32 payload_size = 5; // Payload size in bytes.
   bool is_payload_too_large = 6; // If payload is too large for deserialization.
   repeated TroubleshootReport troubleshoot_report = 7; // Troubleshooting data for debugging.
-}
-
-message TroubleshootReport {
-  string serde_name = 1;
-  string message = 2;
-}
-
-// KafkaRecordHeader is the record header.
-message KafkaRecordHeader {
-  string key = 1; // Header key.
-  bytes value = 2; // Header value.
-}
-
-enum CompressionType {
-  COMPRESSION_TYPE_UNSPECIFIED = 0;
-  COMPRESSION_TYPE_UNCOMPRESSED = 1;
-  COMPRESSION_TYPE_GZIP = 2;
-  COMPRESSION_TYPE_SNAPPY = 3;
-  COMPRESSION_TYPE_LZ4 = 4;
-  COMPRESSION_TYPE_ZSTD = 5;
-}
-
-enum PayloadEncoding {
-  PAYLOAD_ENCODING_UNSPECIFIED = 0;
-  PAYLOAD_ENCODING_NONE = 1;
-  PAYLOAD_ENCODING_AVRO = 2;
-  PAYLOAD_ENCODING_PROTOBUF = 3;
-  PAYLOAD_ENCODING_JSON = 4;
-  PAYLOAD_ENCODING_XML = 5;
-  PAYLOAD_ENCODING_TEXT = 6;
-  PAYLOAD_ENCODING_UTF8 = 7;
-  PAYLOAD_ENCODING_MESSAGE_PACK = 8;
-  PAYLOAD_ENCODING_SMILE = 9;
-  PAYLOAD_ENCODING_BINARY = 10;
-  PAYLOAD_ENCODING_UINT = 11;
-  PAYLOAD_ENCODING_CONSUMER_OFFSETS = 12;
-}
-
-// ConsoleService represents the Console API service.
-service ConsoleService {
-  // ListMessages lists the messages according to the requested query.
-  rpc ListMessages(ListMessagesRequest) returns (stream ListMessagesResponse) {}
 }
