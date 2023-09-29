@@ -1661,53 +1661,9 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     cursor: default;
 }
 
-.hideStatsBarButton {
-    opacity: 0;
-    transition: opacity 150ms;
-    color: #888;
-    display: flex;
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    padding: 5px;
-    border-radius: 32px;
-    transform: translate(-27px, -20px);
-
-    &:hover {
-        background: var(--ant-primary-2);
-        color: var(--ant-primary-6);
-    }
-
-    svg {
-        vertical-align: baseline;
-    }
-}
-
 .statisticsBar {
     position: relative;
     overflow: hidden;
-
-    &:hover {
-        .hideStatsBarButton {
-            opacity: 1;
-        }
-    }
-
-    .ant-row {
-        gap: 2em;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-
-        overflow-x: hidden;
-
-        &::after {
-            @include beforeAfter;
-            left: unset;
-            width: 80px;
-
-            background: linear-gradient(to right, transparent, white);
-        }
-    }
 }
 
 .filterTagDisabled {
