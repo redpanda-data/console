@@ -1246,7 +1246,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateConfiguration'
+              items:
+                $ref: '#/components/schemas/UpdateConfiguration'
+              type: array
         required: true
         x-originalParamName: configuration
       responses:
@@ -1290,7 +1292,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SetConfiguration'
+              items:
+                $ref: '#/components/schemas/SetConfiguration'
+              type: array
         required: true
         x-originalParamName: configuration
       responses:

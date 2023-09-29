@@ -610,9 +610,9 @@ export class UpdateTopicConfigurationRequest extends Message<UpdateTopicConfigur
   topicName = "";
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration configuration = 2;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration configuration = 2;
    */
-  configuration?: UpdateTopicConfigurationRequest_UpdateConfiguration;
+  configuration: UpdateTopicConfigurationRequest_UpdateConfiguration[] = [];
 
   constructor(data?: PartialMessage<UpdateTopicConfigurationRequest>) {
     super();
@@ -623,7 +623,7 @@ export class UpdateTopicConfigurationRequest extends Message<UpdateTopicConfigur
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "configuration", kind: "message", T: UpdateTopicConfigurationRequest_UpdateConfiguration },
+    { no: 2, name: "configuration", kind: "message", T: UpdateTopicConfigurationRequest_UpdateConfiguration, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationRequest {
@@ -779,9 +779,9 @@ export class SetTopicConfigurationRequest extends Message<SetTopicConfigurationR
   topicName = "";
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest.SetConfiguration configuration = 2;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest.SetConfiguration configuration = 2;
    */
-  configuration?: SetTopicConfigurationRequest_SetConfiguration;
+  configuration: SetTopicConfigurationRequest_SetConfiguration[] = [];
 
   constructor(data?: PartialMessage<SetTopicConfigurationRequest>) {
     super();
@@ -792,7 +792,7 @@ export class SetTopicConfigurationRequest extends Message<SetTopicConfigurationR
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "configuration", kind: "message", T: SetTopicConfigurationRequest_SetConfiguration },
+    { no: 2, name: "configuration", kind: "message", T: SetTopicConfigurationRequest_SetConfiguration, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationRequest {
