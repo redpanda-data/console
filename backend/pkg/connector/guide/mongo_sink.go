@@ -19,8 +19,10 @@ func NewMongoSinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.mongodb.kafka.connect.MongoSinkConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			topicsToExport(),
 

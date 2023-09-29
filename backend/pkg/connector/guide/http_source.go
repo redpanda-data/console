@@ -21,8 +21,10 @@ func NewHTTPSourceGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to import",

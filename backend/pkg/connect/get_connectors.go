@@ -106,6 +106,9 @@ type ClusterConnectorTaskInfo struct {
 	Trace    string `json:"trace,omitempty"` // only set if the task is errored
 }
 
+// KafkaConnectToConsoleHook is a function that lets you modify the response before it is sent to the Console frontend.
+type KafkaConnectToConsoleHook = func(pluginClassName string, configs map[string]string) map[string]string
+
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
@@ -127,7 +130,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 				ch <- &ClusterConnectors{
 					ClusterName:    cfg.Name,
 					ClusterAddress: cfg.URL,
-					Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
+					Connectors:     s.listConnectorsExpandedToClusterConnectorInfo(connectors),
 					Error:          errMsg,
 				}
 				return
@@ -155,7 +158,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 				ClusterInfo:       root,
 				TotalConnectors:   totalConnectors,
 				RunningConnectors: runningConnectors,
-				Connectors:        listConnectorsExpandedToClusterConnectorInfo(connectors),
+				Connectors:        s.listConnectorsExpandedToClusterConnectorInfo(connectors),
 				Error:             errMsg,
 			}
 		}(cluster.Cfg, cluster.Client)
@@ -188,7 +191,7 @@ func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) 
 	return ClusterConnectors{
 		ClusterName:    c.Cfg.Name,
 		ClusterAddress: c.Cfg.URL,
-		Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
+		Connectors:     s.listConnectorsExpandedToClusterConnectorInfo(connectors),
 		Error:          errMsg,
 	}, nil
 }
@@ -237,10 +240,11 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 		}
 	}
 
+	connectorClass := getMapValueOrString(cInfo.Config, "connector.class", "unknown")
 	return ClusterConnectorInfo{
 		Name:         cInfo.Name,
-		Class:        getMapValueOrString(cInfo.Config, "connector.class", "unknown"),
-		Config:       cInfo.Config,
+		Class:        connectorClass,
+		Config:       s.Interceptor.KafkaConnectToConsole(connectorClass, cInfo.Config),
 		Type:         cInfo.Type,
 		State:        stateInfo.Connector.State,
 		Topic:        getMapValueOrString(cInfo.Config, "kafka.topic", "unknown"),
@@ -250,7 +254,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	}, nil
 }
 
-func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
+func (s *Service) listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
 	if l == nil {
 		return []ClusterConnectorInfo{}
 	}
@@ -258,7 +262,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
 		c := c
-		cInfo := connectorsResponseToClusterConnectorInfo(&c)
+		cInfo := connectorsResponseToClusterConnectorInfo(s.Interceptor.KafkaConnectToConsole, &c)
 		connectorInfo = append(connectorInfo, *cInfo)
 	}
 
@@ -266,7 +270,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 }
 
 //nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
-func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
+func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHook, c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	totalTasks := len(c.Status.Tasks)
 	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
 	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, totalTasks)
@@ -387,11 +391,17 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 
 	connectorErrors = append(connectorErrors, connectorTaskErrors...)
 
+	connectorClass := getMapValueOrString(c.Info.Config, "connector.class", "unknown")
+	if configHook == nil {
+		configHook = func(pluginClassName string, configs map[string]string) map[string]string {
+			return configs
+		}
+	}
 	return &ClusterConnectorInfo{
 		Name:         c.Info.Name,
-		Class:        getMapValueOrString(c.Info.Config, "connector.class", "unknown"),
+		Class:        connectorClass,
 		Topic:        getMapValueOrString(c.Info.Config, "kafka.topic", "unknown"),
-		Config:       c.Info.Config,
+		Config:       configHook(connectorClass, c.Info.Config),
 		Type:         c.Info.Type,
 		State:        c.Status.Connector.State,
 		Status:       connStatus,

@@ -19,8 +19,10 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.redpanda.kafka.connect.jdbc.JdbcSinkConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to export",

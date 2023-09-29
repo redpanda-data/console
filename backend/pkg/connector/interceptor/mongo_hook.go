@@ -20,10 +20,41 @@ var (
 // ConsoleToKafkaConnectMongoDBHook sets connection authentication, output format properties and post processor chain
 func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 	setConnectionURI(config)
-	setFormatOutputStream(config)
-	setPostProcessorChain(config)
+	for _, field := range []string{"key", "value"} {
+		if config["output.format."+field] == nil {
+			if v := getFormatOutputString(config[field+".converter"]); v != "" {
+				config["output.format."+field] = v
+			}
+		}
+	}
+	config["post.processor.chain"] = getPostProcessorChain(config["post.processor.chain"], config["key.projection.type"], config["value.projection.type"], config["field.renamer.mapping"])
 
 	return config
+}
+
+// KafkaConnectToConsoleMongoDBHook removes MongoDB specific config options
+func KafkaConnectToConsoleMongoDBHook(config map[string]string) map[string]string {
+	result := make(map[string]string)
+	for key, value := range config {
+		switch key {
+		case "output.format.key":
+			if value == getFormatOutputString(config["key.converter"]) {
+				continue
+			}
+		case "output.format.value":
+			if value == getFormatOutputString(config["value.converter"]) {
+				continue
+			}
+		case "post.processor.chain":
+			if value == getPostProcessorChain(nil, config["key.projection.type"], config["value.projection.type"], config["field.renamer.mapping"]) {
+				continue
+			}
+		}
+
+		result[key] = value
+	}
+
+	return result
 }
 
 func setConnectionURI(config map[string]any) {
@@ -33,10 +64,6 @@ func setConnectionURI(config map[string]any) {
 		} else {
 			config["connection.uri"] = "mongodb://"
 		}
-	}
-
-	if _, exists := config["connection.url"]; !exists {
-		config["connection.url"] = config["connection.uri"]
 	}
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
@@ -62,63 +89,61 @@ func setConnectionURI(config map[string]any) {
 	}
 }
 
-func setFormatOutputStream(config map[string]any) {
-	for _, field := range []string{"key", "value"} {
-		if config["output.format."+field] == nil {
-			switch config[field+".converter"] {
-			case "org.apache.kafka.connect.json.JsonConverter",
-				"io.confluent.connect.avro.AvroConverter":
-				config["output.format."+field] = "schema"
-			case "org.apache.kafka.connect.storage.StringConverter":
-				config["output.format."+field] = "json"
-			case "org.apache.kafka.connect.converters.ByteArrayConverter":
-				config["output.format."+field] = "bson"
-			}
-		}
+func getFormatOutputString(converter any) string {
+	switch converter {
+	case "org.apache.kafka.connect.json.JsonConverter",
+		"io.confluent.connect.avro.AvroConverter":
+		return "schema"
+	case "org.apache.kafka.connect.storage.StringConverter":
+		return "json"
+	case "org.apache.kafka.connect.converters.ByteArrayConverter":
+		return "bson"
 	}
+
+	return ""
 }
 
-func setPostProcessorChain(config map[string]any) {
-	var postProcessorChain string
-	if config["post.processor.chain"] != nil {
-		postProcessorChain = config["post.processor.chain"].(string)
+func getPostProcessorChain(postProcessorChain any, keyProjectionType any, valueProjectionType any, fieldRenamerMapping any) string {
+	var postProcessorChainResult string
+	if postProcessorChain != nil {
+		postProcessorChainResult = postProcessorChain.(string)
 	} else {
-		postProcessorChain = "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder"
+		postProcessorChainResult = "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder"
 	}
 
-	switch config["key.projection.type"] {
+	switch keyProjectionType {
 	case "allowlist":
-		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector") {
-			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector"
+		if !strings.Contains(postProcessorChainResult, "com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector") {
+			postProcessorChainResult += ",com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector"
 		}
 	case "blocklist":
-		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector") {
-			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector"
+		if !strings.Contains(postProcessorChainResult, "com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector") {
+			postProcessorChainResult += ",com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector"
 		}
 	}
 
-	switch config["value.projection.type"] {
+	switch valueProjectionType {
 	case "allowlist":
-		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.AllowListValueProjector") {
-			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.AllowListValueProjector"
+		if !strings.Contains(postProcessorChainResult, "com.mongodb.kafka.connect.sink.processor.AllowListValueProjector") {
+			postProcessorChainResult += ",com.mongodb.kafka.connect.sink.processor.AllowListValueProjector"
 		}
 	case "blocklist":
-		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.BlockListValueProjector") {
-			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.BlockListValueProjector"
+		if !strings.Contains(postProcessorChainResult, "com.mongodb.kafka.connect.sink.processor.BlockListValueProjector") {
+			postProcessorChainResult += ",com.mongodb.kafka.connect.sink.processor.BlockListValueProjector"
 		}
 	}
 
-	if config["field.renamer.mapping"] != nil && config["field.renamer.mapping"] != "[]" {
-		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping") {
-			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping"
+	if fieldRenamerMapping != nil && fieldRenamerMapping != "" && fieldRenamerMapping != "[]" {
+		if !strings.Contains(postProcessorChainResult, "com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping") {
+			postProcessorChainResult += ",com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping"
 		}
 	}
 
-	config["post.processor.chain"] = postProcessorChain
+	return postProcessorChainResult
 }
 
-// KafkaConnectToConsoleMongoDBHook adds connection fields: URL, username and password
-func KafkaConnectToConsoleMongoDBHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
+// KafkaConnectValidateToConsoleMongoDBHook adds connection fields: URL, username and password
+func KafkaConnectValidateToConsoleMongoDBHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs,
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{

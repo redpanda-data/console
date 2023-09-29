@@ -19,8 +19,10 @@ func NewMirrorHeartbeatGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "org.apache.kafka.connect.mirror.MirrorHeartbeatConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Connector configuration",

@@ -28,11 +28,16 @@ type Guide interface {
 	// additional configurations by default (e.g. schema registry configuration).
 	ConsoleToKafkaConnect(configs map[string]any) map[string]any
 
-	// KafkaConnectToConsole takes the response from the kafka connect cluster and returns
+	// KafkaConnectToConsole gets the connector configuration from Kafka connect to adjust it
+	// for the Console, e.g. to strip configuration injected by the ConsoleToKafkaConnect method
+	// so do that they are not visible to the user.
+	KafkaConnectToConsole(configs map[string]string) map[string]string
+
+	// KafkaConnectValidateToConsole takes the `validate` response from the Kafka connect cluster and returns
 	// the enriched validation response that is understood by Console.
 	//
 	// The Console validation response contains additional metadata that allows the frontend
 	// to provide the user with more context, such as Documentation links a two-level grouping,
 	// opinionated ordering etc.
-	KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse
+	KafkaConnectValidateToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse
 }
