@@ -97,7 +97,7 @@ message UpdateTopicConfigurationRequest {
     Operation operation = 3;
   }
   string topic_name = 1;
-  UpdateConfiguration configuration = 2;
+  repeated UpdateConfiguration configuration = 2;
 }
 
 message UpdateTopicConfigurationResponse {
@@ -111,7 +111,7 @@ message SetTopicConfigurationRequest {
     string value = 2;
   }
   string topic_name = 1;
-  SetConfiguration configuration = 2;
+  repeated SetConfiguration configuration = 2;
 }
 
 message SetTopicConfigurationResponse {
