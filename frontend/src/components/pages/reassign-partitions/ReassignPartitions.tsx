@@ -331,7 +331,7 @@ class ReassignPartitions extends PageComponent {
 
                                 const toastId = toast({
                                     status: 'loading',
-                                    description: baseText + '...',
+                                    description: `${baseText}...`,
                                     duration: null
                                 })
 
@@ -341,13 +341,13 @@ class ReassignPartitions extends PageComponent {
                                 if (errors.length == 0) {
                                     toast.update(toastId, {
                                         status: 'success',
-                                        description: baseText + ' -  Done',
+                                        description: `${baseText} - Done`,
                                         duration: 2500,
                                     })
                                 } else {
                                     toast.update(toastId, {
                                         status: 'error',
-                                        description: baseText + ': ' + errors.length + ' errors',
+                                        description: `${baseText}: ${errors.length} errors`,
                                         duration: 2500,
                                     })
                                     console.error('errors in removeThrottleFromTopics', errors);
