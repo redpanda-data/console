@@ -4,6 +4,7 @@ deps:
   - buf.build/grpc-ecosystem/grpc-gateway:a1ecdc58eccd49aa8bea2a7a9022dc27
   - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
+  - buf.build/redpandadata/common
 breaking:
   use:
     - FILE

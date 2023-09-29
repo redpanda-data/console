@@ -3,7 +3,6 @@ syntax = "proto3";
 package redpanda.api.dataplane.v1alpha1;
 
 import "google/api/annotations.proto";
-// import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -40,6 +39,7 @@ message Topic {
   int32 replication_factor = 4;
   // configurations is omitted in ListTopics.
   repeated Configuration configuration = 5;
+  // redpanda.api.common.v1alpha1.ErrorStatus x = 7;
 }
 
 message CreateTopicRequest {

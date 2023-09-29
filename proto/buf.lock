@@ -21,3 +21,8 @@ deps:
     repository: grpc-gateway
     commit: a1ecdc58eccd49aa8bea2a7a9022dc27
     digest: shake256:efdd86fbdc42e8b7259fe461a49656827a03fb7cba0b3b9eb622ca10654ec6beccb9a051229c1553ccd89ed3e95d69ad4d7c799f1da3f3f1bd447b7947a4893e
+  - remote: buf.build
+    owner: redpandadata
+    repository: common
+    commit: b54ec1730dab411aaa6f2c84dc6f1164
+    digest: shake256:c3f8d0201c1966d7e19ff00f076d7cf54022d1da314e6c89b55ded6446223641f227e3c14d9e37d421738637b8a65566c76838b1357acbb5e893e29bed6cce00
