@@ -149,7 +149,7 @@ type Topic struct {
 	PartitionCount    int32  `protobuf:"varint,3,opt,name=partition_count,json=partitionCount,proto3" json:"partition_count,omitempty"`
 	ReplicationFactor int32  `protobuf:"varint,4,opt,name=replication_factor,json=replicationFactor,proto3" json:"replication_factor,omitempty"`
 	// configurations is omitted in ListTopics.
-	Configuration []*Topic_Configuration `protobuf:"bytes,5,rep,name=configuration,proto3" json:"configuration,omitempty"`
+	Configuration []*Topic_Configuration `protobuf:"bytes,5,rep,name=configuration,proto3" json:"configuration,omitempty"` // redpanda.api.common.v1alpha1.ErrorStatus x = 7;
 }
 
 func (x *Topic) Reset() {

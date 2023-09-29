@@ -16,6 +16,7 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -49,6 +50,9 @@ type RouteHooks interface {
 	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
 	// By default we serve the frontend on these routes.
 	ConfigRouter(router chi.Router)
+
+	// ConfigGRPCGateway allows you to add gRPC-Gateway handlers.
+	ConfigGRPCGateway(mux *runtime.ServeMux)
 }
 
 // AuthorizationHooks include all functions which allow you to intercept the requests at various
@@ -158,6 +162,7 @@ func (*defaultHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
+func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
 
 // Authorization Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {

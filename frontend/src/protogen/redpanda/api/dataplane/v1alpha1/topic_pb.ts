@@ -33,6 +33,8 @@ export class Topic extends Message<Topic> {
   /**
    * configurations is omitted in ListTopics.
    *
+   * redpanda.api.common.v1alpha1.ErrorStatus x = 7;
+   *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 5;
    */
   configuration: Topic_Configuration[] = [];

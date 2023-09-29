@@ -26,6 +26,7 @@ tasks:
     desc: generate protos
     deps:
       - install-buf
+      - install-connect-gateway
     vars:
       BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update
     cmds:
@@ -36,6 +37,7 @@ tasks:
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - task: lint
       - task: format
+      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
       - for: { var: BUF_INPUTS }
         cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
       - task: :backend:fmt
@@ -77,3 +79,11 @@ tasks:
     status:
       - '[[ $(yq --version) == *"{{.YQ_VERSION}}"* ]]'
 
+  install-connect-gateway:
+    desc: install connect-gateway
+    vars:
+      VERSION: 0.2.2
+    cmds:
+      - 'go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@d941a13c0fbf10931098de2fd084d3ee8d0bd1e4'
+    status:
+      - '[[ $(protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'

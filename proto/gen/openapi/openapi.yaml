@@ -564,7 +564,10 @@ components:
     Topic:
       properties:
         configuration:
-          description: configurations is omitted in ListTopics.
+          description: |-
+            configurations is omitted in ListTopics.
+
+            redpanda.api.common.v1alpha1.ErrorStatus x = 7;
           items:
             $ref: '#/components/schemas/Configuration'
           type: array

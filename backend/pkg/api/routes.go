@@ -20,8 +20,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	connectgateway "go.vallahaye.net/connect-gateway"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
@@ -29,6 +32,60 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
+
+// Setup connect and grpc-gateway
+func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
+	// Connect RPC
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
+
+	// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
+	// handlers and print the responses without a copy of the proto schema.
+	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName, dataplanev1alpha1connect.UserServiceName)
+
+	// Setup Interceptors
+	v, err := protovalidate.New()
+	if err != nil {
+		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+	}
+	// we want the actual request validation after all authorization and permission checks
+	interceptors := []connect.Interceptor{
+		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
+	}
+
+	// Setup gRPC-GW
+	mux := runtime.NewServeMux(
+		runtime.WithErrorHandler(NiceHTTPErrorHandler),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
+			Marshaler: &runtime.JSONPb{
+				MarshalOptions: protojson.MarshalOptions{
+					UseProtoNames:   true, // use snake_case
+					EmitUnpopulated: true, // output zero values e.g. 0, "", false
+				},
+				UnmarshalOptions: protojson.UnmarshalOptions{
+					DiscardUnknown: true,
+				},
+			},
+		}),
+	)
+
+	// Mount Connect services
+	r.Mount(grpcreflect.NewHandlerV1(reflector))
+	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+	r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(consolev1alphaconnect.UnimplementedConsoleServiceHandler{}, connect.WithInterceptors(interceptors...)))
+
+	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(interceptors...))
+	r.Mount(userSvcPath, userSvcHandler)
+	// Connect services are hooked via the ordinary
+	// api.Hooks.Route.ConfigAPIRouter() hook.
+
+	// gRPC-Gateway handlers
+	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(mux, userSvc, connectgateway.WithInterceptors(interceptors...))
+	// Call gRPC-Gateway hooks
+	api.Hooks.Route.ConfigGRPCGateway(mux)
+
+	r.Mount("/v1alpha1", mux) // Dataplane API
+	r.Mount("/api/v1", mux)
+}
 
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
@@ -90,6 +147,8 @@ func (api *API) routes() *chi.Mux {
 		router.Group(func(r chi.Router) {
 			r.Use(createSetVersionInfoHeader(version.BuiltAt))
 			api.Hooks.Route.ConfigAPIRouter(r)
+
+			api.setupConnectWithGRPCGateway(r)
 
 			r.Route("/api", func(r chi.Router) {
 				// Overview
@@ -172,29 +231,6 @@ func (api *API) routes() *chi.Mux {
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
-
-			// Connect RPC
-			userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
-
-			// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
-			// handlers and print the responses without a copy of the proto schema.
-			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName, dataplanev1alpha1connect.UserServiceName)
-
-			// Setup Interceptors
-			v, err := protovalidate.New()
-			if err != nil {
-				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
-			}
-
-			// we want the actual request validation after all authorization and permission checks
-			validationInterceptor := interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator"))
-			commonInterceptors := connect.WithInterceptors(validationInterceptor)
-
-			// Mount Connect services
-			r.Mount(grpcreflect.NewHandlerV1(reflector))
-			r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
-			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(consolev1alphaconnect.UnimplementedConsoleServiceHandler{}, commonInterceptors))
-			r.Mount(dataplanev1alpha1connect.NewUserServiceHandler(userSvc, commonInterceptors))
 
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})

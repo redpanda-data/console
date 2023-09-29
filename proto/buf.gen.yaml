@@ -37,3 +37,7 @@ plugins:
     out: backend/pkg/protogen
     opt:
       - paths=source_relative
+      - generate_unbound_methods=true
+  - plugin: connect-gateway
+    out: backend/pkg/protogen
+    opt: paths=source_relative
