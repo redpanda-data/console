@@ -495,7 +495,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                 <ModalFooter gap={2}>
                     <Button
                         variant="solid"
-                        colorScheme={hasErrors ? 'gray' : 'brand'}
+                        colorScheme={hasErrors ? 'gray' : 'red'}
                         onClick={onOk}
                         isLoading={okButtonLoading}
                         isDisabled={isOkButtonDisabled()}
