@@ -17,7 +17,6 @@ import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
 import env, { IsDev } from '../../utils/env';
 import { ZeroSizeWrapper } from '../../utils/tsxUtils';
-import { clone } from '../../utils/jsonUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
@@ -113,14 +112,6 @@ export const UpdatePopup = observer(() => {
     if (serverTimestamp == curTimestamp)
         return null; // version already matches
 
-    console.log('frontend update available', {
-        serverTimestamp: serverTimestamp,
-        serverDate: new Date(serverTimestamp * 1000),
-        localTimestamp: curTimestamp,
-        localDate: new Date(curTimestamp * 1000),
-        localVersion: clone(env),
-    });
-
     return (
         <Modal isOpen={isUpdateDialogOpen} onClose={() => setUpdateDialogOpen(false)}>
             <ModalOverlay/>
@@ -134,7 +125,6 @@ export const UpdatePopup = observer(() => {
                         Cancel
                     </Button>
                     <Button variant="solid" onClick={() => {
-                        console.log('reloading frontend...');
                         setUpdateDialogOpen(false);
                         window.location.reload();
                     }}>

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -326,7 +326,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     const [deletionPending, setDeletionPending] = useState(false);
     const [error, setError] = useState<string | Error | null>(null);
     const toast = useToast()
-    const cancelRef = React.useRef(null)
+    const cancelRef = useRef<HTMLButtonElement | null>(null)
 
 
     const cleanup = () => {

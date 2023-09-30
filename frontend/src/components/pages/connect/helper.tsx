@@ -10,10 +10,9 @@
  */
 
 
-
 import { Alert, Empty } from 'antd';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { CSSProperties, useState } from 'react';
+import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
@@ -517,11 +516,11 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
         isPending: false,
         error: null
     }))
-    const cancelRef = React.useRef(null)
+    const cancelRef = useRef<HTMLButtonElement | null>(null)
 
     const toast = useToast()
 
-    const renderError: () => { title: JSX.Element, content: JSX.Element } | undefined = () => {
+    const renderError: () => { title: string, content: string } | undefined = () => {
         if (!$state.error)
             return undefined;
 
@@ -542,17 +541,14 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
         // return text only
         if (!apiErr)
             return {
-                title: <>Error</>,
-                content: <>{txt}</>
+                title: 'Error',
+                content: txt
             };
 
         // render error object
         return {
-            title: <div style={{display: 'inline-flex', alignItems: 'center', gap: '0.3em'}}>
-                <span>Error</span>
-                <span style={{fontSize: '75%', opacity: 0.7}}>- {apiErr.statusCode}</span>
-            </div>,
-            content: <div className="codeBox" style={{mixBlendMode: 'multiply'}}>{apiErr.message}</div>
+            title: `${apiErr.statusCode}`,
+            content: apiErr.message
         };
     }
 
@@ -602,15 +598,15 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
             <AlertDialogHeader>Confirm</AlertDialogHeader>
             <AlertDialogBody>
                 {content}
-                {err && <Alert
-                    type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
+                {err && <Box mt={4}><Alert
+                    type="error"
                     message={err.title}
                     description={err.content}
-                />}
+                /></Box>}
             </AlertDialogBody>
             <AlertDialogFooter gap={2}>
-                <Button onClick={cancel} ref={cancelRef} variant="outline" colorScheme="red">No</Button>
-                <Button onClick={onOk} colorScheme="red" isLoading={$state.isPending}>{$state.error ? 'Retry' : 'Yes'}</Button>
+                <Button onClick={cancel} ref={cancelRef} variant="outline">No</Button>
+                <Button onClick={onOk} isLoading={$state.isPending}>{$state.error ? 'Retry' : 'Yes'}</Button>
             </AlertDialogFooter>
         </AlertDialogContent>
         </AlertDialogOverlay>
@@ -715,8 +711,8 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
                     <ModalHeader>
                         {
                             task.taskId == null
-                                ? <>Error in Connector</>
-                                : <>{`Error trace of task ${task.taskId}`}</>
+                                ? 'Error in Connector'
+                                : `Error trace of task ${task.taskId}`
                         }
                     </ModalHeader>
                     <ModalBody>
