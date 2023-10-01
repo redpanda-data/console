@@ -26,10 +26,9 @@ import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast } from '@redpanda-data/ui';
+import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast, useDisclosure } from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
-import { useDisclosure } from '@chakra-ui/react-use-disclosure';
 const { Option } = Select;
 
 const ConnectorType = observer(

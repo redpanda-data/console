@@ -30,11 +30,12 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme } from '@redpanda-data/ui';
 import React, { FC, useRef } from 'react';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: false,

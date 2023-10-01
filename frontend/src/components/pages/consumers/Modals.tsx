@@ -25,7 +25,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -53,6 +53,7 @@ export type GroupOffset = {
 };
 
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: false,

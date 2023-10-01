@@ -24,10 +24,11 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, redpandaToastOptions, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: false,

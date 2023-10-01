@@ -37,7 +37,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaToastOptions } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 
@@ -53,6 +53,7 @@ export { reassignmentTracker };
 
 // TODO - once ReassignPartitions is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: true,
