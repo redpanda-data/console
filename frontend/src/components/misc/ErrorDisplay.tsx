@@ -9,36 +9,40 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
+import React, { FC, ReactElement } from 'react';
 import { observer } from 'mobx-react';
-import { Result } from 'antd';
-import { Button } from '@redpanda-data/ui';
+import { Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { api } from '../../state/backendApi';
-import { CloseCircleOutlined } from '@ant-design/icons'
-import Section from '../misc/Section';
+import { WarningIcon } from '@chakra-ui/icons';
 
 
-@observer
-export class ErrorDisplay extends React.Component<{ children?: React.ReactNode }> {
-
-    render() {
-        if (api.errors.length === 0)
-            return this.props.children;
-
-        return <>
-            <Result style={{ margin: 0, padding: 0 }} status={500} title="Backend API Error" subTitle="Something went wrong while pulling data from the backend server" />
-            <div style={{ margin: '2em 2em', display: 'flex', flexDirection: 'column' }}>
-                <Button size="large" py=".7rem" minWidth="12em" alignSelf="center" onClick={clearErrors}>Retry</Button>
-
-                <Section mt={4}>
-                    {api.errors.map((e, i) => <div key={i}>
-                        <CloseCircleOutlined style={{ color: 'red' }} /> {formatError(e)}
-                    </div>)}
-                </Section>
-            </div>
-        </>;
+export const ErrorDisplay: FC<{children: ReactElement}> = observer(({ children }) => {
+    if (api.errors.length === 0) {
+        return children;
     }
-}
+
+    return (
+        <>
+            <Result
+                status={500}
+                title="Backend API Error"
+                userMessage="Something went wrong while pulling data from the backend server"
+                extra={<Button alignSelf="center" onClick={clearErrors}>Retry</Button>}
+            />
+
+            <Section>
+                <List spacing={3}>
+                    {api.errors.map((e, i) => (
+                        <ListItem key={i} display="flex">
+                            <ListIcon as={WarningIcon} color="red.500" alignSelf="center" />
+                            {formatError(e)}
+                        </ListItem>
+                    ))}
+                </List>
+            </Section>
+        </>
+    );
+});
 
 function formatError(err: any): string {
     if (err instanceof Error && err.message) {
