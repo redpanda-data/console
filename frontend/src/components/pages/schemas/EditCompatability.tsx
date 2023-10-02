@@ -57,6 +57,7 @@ class EditSchemaCompatabilityPage extends PageComponent<{ subjectName: string }>
     initPage(p: PageInitHelper): void {
         p.title = 'Edit Schema Compatability';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
+        p.addBreadcrumb('Edit Compatability', '/schema-registry');
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }

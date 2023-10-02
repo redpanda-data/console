@@ -119,7 +119,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 {/* Buttons */}
                 <Flex gap="2">
                     <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatability`)}>Edit Compatability</Button>
-                    <Button variant="outline">Add new version</Button>
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}>Add new version</Button>
                     <Button variant="outline">Delete subject</Button>
                 </Flex>
 
@@ -243,13 +243,14 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                             variant="outline" ml="auto"
                             onClick={() => openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
                                 api.deleteSchemaSubjectVersion(subject.name, schema.version, true)
-                                    .then(() => {
-                                        api.refreshSchemaDetails(subject.name, true);
-
+                                    .then(async () => {
                                         toast({
                                             status: 'success', duration: 4000, isClosable: false,
                                             title: 'Schema version permanently deleted'
                                         });
+
+                                        await api.refreshSchemaDetails(subject.name, true);
+                                        setSelectedVersion(api.schemaDetails.get(subject.name)!.latestActiveVersion);
                                     })
                                     .catch(err => {
                                         toast({

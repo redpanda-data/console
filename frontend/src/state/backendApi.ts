@@ -57,7 +57,8 @@ import {
     SchemaRegistryDeleteSubjectResponse,
     SchemaRegistryCompatabilityMode,
     SchemaRegistrySetCompatabilityModeRequest,
-    SchemaReferencedByEntry
+    SchemaReferencedByEntry,
+    SchemaRegistryValidateSchemaResponse
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -1047,6 +1048,16 @@ const apiStore = {
         }
     },
 
+    async validateSchema(subjectName: string, version: number | 'latest', request: SchemaRegistryCreateSchema): Promise<SchemaRegistryValidateSchemaResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
+    },
     async createSchema(subjectName: string, request: SchemaRegistryCreateSchema): Promise<SchemaRegistryCreateSchemaResponse> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`, {
             method: 'POST',

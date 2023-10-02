@@ -42,6 +42,7 @@ import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import EditSchemaCompatabilityPage from './pages/schemas/EditCompatability';
+import { SchemaCreatePage, SchemaAddVersionPage } from './pages/schemas/Schema.Create';
 
 //
 //	Route Types
@@ -285,6 +286,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
+    MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
+    MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName/add-version', SchemaAddVersionPage, 'Add version'),
     MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
     MakeRoute<{ subjectName: string }>('/schema-registry/edit-compatability', EditSchemaCompatabilityPage, 'Edit Schema Compatability'),
     MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName/edit-compatability', EditSchemaCompatabilityPage, 'Edit Schema Compatability'),

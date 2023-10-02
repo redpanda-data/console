@@ -1577,6 +1577,15 @@ export type SchemaRegistryCreateSchemaResponse = {
     id: number;
 }
 
+// POST /schema-registry/subjects/{subject}/versions/{version}/validate
+export type SchemaRegistryValidateSchemaResponse = {
+    compatibility: {
+        isCompatible: boolean;
+    };
+    parsingError?: string;
+    isValid: boolean;
+}
+
 // GET /schema-registry/subjects/{subject}/versions/{version}/referencedby
 export type SchemaReferencedByEntry = {
     schemaId: number;

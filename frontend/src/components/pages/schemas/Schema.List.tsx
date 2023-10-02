@@ -133,7 +133,7 @@ class SchemaList extends PageComponent<{}> {
 
                 <Section>
                     <Flex justifyContent={'space-between'} pb={3}>
-                        <Button colorScheme="brand">Create new schema</Button>
+                        <Button colorScheme="brand" onClick={() => appGlobal.history.push('/schema-registry/create')}>Create new schema</Button>
                         <Checkbox
                             isChecked={uiSettings.schemaList.showSoftDeleted}
                             onChange={e => uiSettings.schemaList.showSoftDeleted = e.target.checked}
