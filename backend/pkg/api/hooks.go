@@ -32,6 +32,13 @@ type Hooks struct {
 	Console       ConsoleHooks
 }
 
+// ConnectService is used by
+type ConnectService struct {
+	ServiceName string
+	MountPath   string
+	Handler     http.Handler
+}
+
 // RouteHooks allow you to modify the Router
 type RouteHooks interface {
 	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
@@ -53,6 +60,9 @@ type RouteHooks interface {
 
 	// ConfigGRPCGateway allows you to add gRPC-Gateway handlers.
 	ConfigGRPCGateway(mux *runtime.ServeMux)
+
+	// ConfigConnectRPC asks for Connect services that shall be registered in the server.
+	ConfigConnectRPC() []ConnectService
 }
 
 // AuthorizationHooks include all functions which allow you to intercept the requests at various
@@ -163,6 +173,9 @@ func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
 func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
+func (*defaultHooks) ConfigConnectRPC() []ConnectService {
+	return []ConnectService{}
+}
 
 // Authorization Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {

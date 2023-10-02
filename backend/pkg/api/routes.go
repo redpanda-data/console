@@ -35,12 +35,23 @@ import (
 
 // Setup connect and grpc-gateway
 func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
-	// Connect RPC
+	// OSS Handlers
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
+
+	// Handlers from hooks
+	reflectServices := []string{
+		consolev1alphaconnect.ConsoleServiceName,
+		dataplanev1alpha1connect.UserServiceName,
+	}
+
+	for _, svc := range api.Hooks.Route.ConfigConnectRPC() {
+		reflectServices = append(reflectServices, svc.ServiceName)
+		r.Mount(svc.MountPath, svc.Handler)
+	}
 
 	// With server reflection enabled, ad-hoc debugging tools can call your gRPC-compatible
 	// handlers and print the responses without a copy of the proto schema.
-	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName, dataplanev1alpha1connect.UserServiceName)
+	reflector := grpcreflect.NewStaticReflector(reflectServices...)
 
 	// Setup Interceptors
 	v, err := protovalidate.New()
