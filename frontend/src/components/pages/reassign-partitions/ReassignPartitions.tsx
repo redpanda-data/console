@@ -209,7 +209,6 @@ class ReassignPartitions extends PageComponent {
                 </Section>
 
 
-                <button onClick={this.removeThrottleFromTopics}>click</button>
                 {/* Active Reassignments */}
                 <Section id="activeReassignments">
                     <ActiveReassignments

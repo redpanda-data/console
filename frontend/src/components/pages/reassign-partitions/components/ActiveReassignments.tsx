@@ -10,7 +10,7 @@
  */
 
 import React, { Component, FC, useRef } from 'react';
-import { Popconfirm, Skeleton } from 'antd';
+import { Skeleton } from 'antd';
 import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
@@ -24,7 +24,7 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverCloseButton, PopoverArrow, PopoverContent, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useDisclosure, useToast, PopoverFooter, PopoverBody, ButtonGroup } from '@redpanda-data/ui';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -277,6 +277,37 @@ export const ThrottleDialog: FC<{ visible: boolean, lastKnownMinThrottle: number
     )
 })
 
+const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({onConfirm}) => {
+    const { isOpen, onToggle, onClose } = useDisclosure()
+
+    return (
+        <Popover
+            returnFocusOnClose={false}
+            isOpen={isOpen}
+            onClose={onClose}
+            closeOnBlur={false}
+        >
+            <PopoverTrigger>
+                <Button onClick={onToggle} variant="outline" colorScheme="red">Cancel Reassignment</Button>
+            </PopoverTrigger>
+            <PopoverContent>
+                <PopoverHeader fontWeight="semibold">Confirmation</PopoverHeader>
+                <PopoverArrow/>
+                <PopoverCloseButton/>
+                <PopoverBody>
+                    Are you sure you want to stop the reassignment?
+                </PopoverBody>
+                <PopoverFooter display="flex" justifyContent="flex-end">
+                    <ButtonGroup size="sm">
+                        <Button variant="ghost">No</Button>
+                        <Button colorScheme="red" onClick={onConfirm}>Yes</Button>
+                    </ButtonGroup>
+                </PopoverFooter>
+            </PopoverContent>
+        </Popover>
+    )
+};
+
 @observer
 export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
     lastState: ReassignmentState | null;
@@ -342,11 +373,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 </Flex>
 
                 {/* Cancel */}
-                <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
-                    onConfirm={() => this.cancelReassignment()}
-                >
-                    <Button variant="outline" colorScheme="red">Cancel Reassignment</Button>
-                </Popconfirm>
+                <CancelReassignmentButton onConfirm={() => this.cancelReassignment()}/>
             </Flex>
         ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;
 
