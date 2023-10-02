@@ -514,6 +514,11 @@ export interface UserData {
     canListQuotas: boolean;
     canReassignPartitions: boolean;
     canPatchConfigs: boolean;
+
+    canViewSchemas: boolean;
+    canCreateSchemas: boolean;
+    canDeleteSchemas: boolean;
+    canManageSchemaRegistry: boolean;
 }
 export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
