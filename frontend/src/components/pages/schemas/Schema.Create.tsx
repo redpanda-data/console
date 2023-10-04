@@ -138,14 +138,27 @@ const SchemaPageButtons = observer((p: {
     const [isValidating, setValidating] = useState(false);
     const [isCreating, setCreating] = useState(false);
     const { editorState } = p;
-
+    const isMissingName = !editorState.computedSubjectName;
 
     return <Flex gap="4" mt="4">
         <Button colorScheme="brand" variant="solid"
-            isDisabled={isCreating}
+            isDisabled={isCreating || isMissingName || isValidating}
             isLoading={isCreating}
             loadingText="Creating..."
             onClick={async () => {
+                // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
+                setValidating(true);
+                const validationResponse = await validateSchema(editorState)
+                    .finally(() => setValidating(false));
+
+
+                if (!validationResponse.isValid || validationResponse.isCompatible === false) {
+                    // Something is wrong with the schema, abort
+
+                }
+
+
+                // try to create the schema
                 setCreating(true);
                 try {
                     const r = await api.createSchema(editorState.computedSubjectName, {
@@ -154,21 +167,24 @@ const SchemaPageButtons = observer((p: {
                         references: editorState.references.filter(x => x.name && x.subject)
                     }).finally(() => setCreating(false));
 
+                    // success: navigate to details
                     console.log('schema created', { response: r });
+                    const subjectName = editorState.computedSubjectName;
+                    console.log('navigating to details', { subjectName });
+                    appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+
                 } catch (err) {
+                    // error: open modal
                     console.log('failed to create schema', { err });
                 }
-                // try to create the schema
 
-                // error: open modal
 
-                // success: navigate to details
             }}>
             Save
         </Button>
 
         <Button variant="solid"
-            isDisabled={isValidating}
+            isDisabled={isValidating || isMissingName || isValidating}
             isLoading={isValidating}
             loadingText="Validate"
             onClick={async () => {
@@ -303,11 +319,15 @@ const SchemaEditor = observer((p: {
                 <FormField label={isCustom
                     ? 'Subject name'
                     : 'Computed subject name'
-                }>
+                }
+                    isInvalid={!state.computedSubjectName}
+                    errorText="Subject name is required"
+                >
                     <Input
                         value={state.computedSubjectName}
                         onChange={e => state.userInput = e.target.value}
                         isDisabled={!isCustom || isAddVersion}
+
                     />
                 </FormField>
             </Flex>
