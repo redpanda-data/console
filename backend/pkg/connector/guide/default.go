@@ -48,16 +48,16 @@ func (*DefaultGuide) ClassName() string {
 
 // ConsoleToKafkaConnect implements Guide.ConsoleToKafkaConnect.
 func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]any {
-	for _, injectedVal := range g.options.injectedValues {
+	for injectedKey, injectedVal := range g.options.injectedValues {
 		if injectedVal.IsAuthoritative {
 			// We are allowed to override existing user configs
-			configs[injectedVal.Key] = injectedVal.Value
+			configs[injectedKey] = injectedVal.Value
 			continue
 		}
 
 		// We are not allowed to override existing user configs
-		if _, exists := configs[injectedVal.Key]; !exists {
-			configs[injectedVal.Key] = injectedVal.Value
+		if _, exists := configs[injectedKey]; !exists {
+			configs[injectedKey] = injectedVal.Value
 		}
 	}
 
@@ -81,7 +81,23 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
-func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse {
+func (g *DefaultGuide) KafkaConnectToConsole(configs map[string]string) map[string]string {
+	if g.options.kafkaConnectToConsoleHookFn != nil {
+		configs = g.options.kafkaConnectToConsoleHookFn(configs)
+	}
+
+	result := make(map[string]string)
+	for key, value := range configs {
+		if !g.wasInjected(key, value) {
+			result[key] = value
+		}
+	}
+
+	return result
+}
+
+// KafkaConnectValidateToConsole implements Guide.KafkaConnectValidateToConsole.
+func (g *DefaultGuide) KafkaConnectValidateToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configs := make([]model.ConfigDefinition, len(patchedConfigs))
 	configsByGroup := make(map[string][]model.ConfigDefinition)
@@ -161,8 +177,16 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 		},
 	}
 
-	if g.options.kafkaConnectToConsoleHookFn == nil {
+	if g.options.kafkaConnectValidateToConsoleHookFn == nil {
 		return validationResponse
 	}
-	return g.options.kafkaConnectToConsoleHookFn(validationResponse, originalConfig)
+	return g.options.kafkaConnectValidateToConsoleHookFn(validationResponse, originalConfig)
+}
+
+func (g *DefaultGuide) wasInjected(key string, value string) bool {
+	if injectedVal, exists := g.options.injectedValues[key]; exists {
+		return value == injectedVal.Value
+	}
+
+	return false
 }

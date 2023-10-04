@@ -19,8 +19,10 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "com.snowflake.kafka.connector.SnowflakeSinkConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			topicsToExport(),
 

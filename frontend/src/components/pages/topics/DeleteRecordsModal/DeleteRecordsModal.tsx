@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useState } from 'react';
-import { Input, Modal, notification, Select, Slider } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Input, Modal, Select, Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,7 +20,7 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
-import { Spinner, Alert, AlertIcon } from '@redpanda-data/ui';
+import { Spinner, Alert, AlertIcon, useToast } from '@redpanda-data/ui';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -343,6 +343,7 @@ interface DeleteRecordsModalProps {
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
     const { visible, topic, onCancel, onFinish, afterClose } = props;
+    const toast = useToast()
 
     useEffect(() => {
         topic?.topicName && api.refreshPartitionsForTopic(topic.topicName, true);
@@ -379,9 +380,10 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             setOkButtonLoading(false);
         } else {
             onFinish();
-            notification['success']({
-                message: 'Records deleted successfully',
-            });
+            toast({
+                description: 'Records deleted successfully',
+                status: 'success',
+            })
         }
     };
 

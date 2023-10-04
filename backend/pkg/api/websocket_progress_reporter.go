@@ -82,10 +82,13 @@ func (p *progressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
-	_ = p.websocket.writeJSON(struct {
+	err := p.websocket.writeJSON(struct {
 		Type    string              `json:"type"`
 		Message *kafka.TopicMessage `json:"message"`
 	}{"message", message})
+	if err != nil {
+		p.logger.Warn("failed to write message to websocket connection", zap.Error(err))
+	}
 }
 
 func (p *progressReporter) OnComplete(elapsedMs int64, isCancelled bool) {

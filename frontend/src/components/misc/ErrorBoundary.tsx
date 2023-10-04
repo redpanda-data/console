@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties } from 'react';
+import React, { CSSProperties, FC } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import { toJson } from '../../utils/jsonUtils';
-import { Layout, message, Space } from 'antd';
+import { Layout, Space } from 'antd';
 import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
 import { envVarDebugAr } from '../../utils/env';
 import { NoClipboardPopover } from './NoClipboardPopover';
 import { isClipboardAvailable } from '../../utils/featureDetection';
-import { ObjToKv } from '../../utils/tsxUtils';
+import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
 import StackTrace from 'stacktrace-js';
-import { Button, Icon } from '@redpanda-data/ui';
+import { Button, Icon, useToast } from '@redpanda-data/ui';
 
 const { Content } = Layout;
 
@@ -156,7 +156,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
         this.hasError = true;
     }
 
-    copyError() {
+    getError() {
         let data = '';
 
         for (const e of this.infoItems) {
@@ -164,8 +164,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
             data += `${e.name}:\n${str}\n\n`;
         }
 
-        navigator.clipboard.writeText(data);
-        message.success('All info copied to clipboard!', 5);
+        return data
     }
 
     dismiss() {
@@ -188,13 +187,12 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                         Dismiss
                     </Button>
                     <NoClipboardPopover>
-                        <Button variant="ghost" size="large"
+                        <CopyToClipboardButton
                             disabled={!isClipboardAvailable || !this.decodingDone}
                             isLoading={!this.decodingDone}
-                            onClick={() => this.copyError()}>
-                            <Icon as={CopyOutlined} />
-                            Copy Info
-                        </Button>
+                            message={this.getError()}
+                        />
+
                     </NoClipboardPopover>
                 </Space>
             </div>
@@ -217,6 +215,29 @@ function getStringFromInfo(info: InfoItem) {
     } catch (err) {
         return 'Error calling infoItem func: ' + err;
     }
+}
+
+const CopyToClipboardButton: FC<{message: string, disabled: boolean; isLoading: boolean}> = ({message, disabled, isLoading}) => {
+    const toast = useToast()
+
+    return (
+        <Button
+            variant="ghost"
+            size="large"
+            disabled={disabled}
+            isLoading={isLoading}
+            onClick={() => {
+                navigator.clipboard.writeText(message).then(() => {
+                    toast({
+                        status: 'success',
+                        description: 'All info copied to clipboard!'
+                    })
+                }).catch(navigatorClipboardErrorHandler)
+            }}>
+            <Icon as={CopyOutlined}/>
+            Copy Info
+        </Button>
+    )
 }
 
 @observer

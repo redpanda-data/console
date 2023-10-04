@@ -622,6 +622,11 @@ export function titleCase(str: string): string {
 
 
 type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
+
+/**
+ * @deprecated - we should use Chakra's useToast instead
+ * This class should be removed together with its usage in the modals.
+ */
 export class Message {
     private key: string;
     private hideFunc: MessageType;

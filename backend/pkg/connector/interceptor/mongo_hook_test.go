@@ -12,6 +12,18 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 		want   map[string]any
 	}{
 		{
+			name: "Should use connection.url as connection.uri",
+			config: map[string]any{
+				"connection.url":       "mongodb+srv://user:pass@cluster0.abcd.mongodb.net",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
+			},
+			want: map[string]any{
+				"connection.url":       "mongodb+srv://user:pass@cluster0.abcd.mongodb.net",
+				"connection.uri":       "mongodb+srv://user:pass@cluster0.abcd.mongodb.net",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
+			},
+		},
+		{
 			name: "Should construct connection.uri from UI wizard",
 			config: map[string]any{
 				"connection.url":       "mongodb+srv://cluster0.abcd.mongodb.net",
@@ -44,7 +56,7 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 		},
 		{
-			name: "Should be able to update password when created outside of UI with secret manager",
+			name: "Should not play with connection.uri when created outside of UI with secret manager",
 			config: map[string]any{
 				"connection.uri":       "mongodb+srv://user:${secretsManager:connector-1:connection.password}@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
@@ -52,15 +64,14 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 			want: map[string]any{
-				"connection.uri":       "mongodb+srv://user:${secretsManager:connector-2:connection.password}@cluster0.abcd.mongodb.net",
-				"connection.url":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"connection.uri":       "mongodb+srv://user:${secretsManager:connector-1:connection.password}@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
 				"connection.password":  "${secretsManager:connector-2:connection.password}",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 		},
 		{
-			name: "Should be able to update password when created outside of UI without secret manager",
+			name: "Should not play with connection.uri when created outside of UI without secret manager",
 			config: map[string]any{
 				"connection.uri":       "mongodb+srv://user:pswd@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
@@ -68,15 +79,14 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 			want: map[string]any{
-				"connection.uri":       "mongodb+srv://user:${secretsManager:connector-2:connection.password}@cluster0.abcd.mongodb.net",
-				"connection.url":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"connection.uri":       "mongodb+srv://user:pswd@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
 				"connection.password":  "${secretsManager:connector-2:connection.password}",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 		},
 		{
-			name: "Should be able to update password when created outside of UI when secret managet disabled",
+			name: "Should not play with connection.uri when created outside of UI when secret managet disabled",
 			config: map[string]any{
 				"connection.uri":       "mongodb+srv://user:pswd@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
@@ -84,8 +94,7 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 			want: map[string]any{
-				"connection.uri":       "mongodb+srv://user:pswd2@cluster0.abcd.mongodb.net",
-				"connection.url":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"connection.uri":       "mongodb+srv://user:pswd@cluster0.abcd.mongodb.net",
 				"connection.username":  "user",
 				"connection.password":  "pswd2",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
@@ -96,7 +105,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			config: map[string]any{},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 		},
@@ -107,7 +115,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "PostProcessorChain",
 			},
 		},
@@ -116,7 +123,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			config: map[string]any{},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
 			},
 		},
@@ -127,7 +133,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"key.projection.type":  "allowlist",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector",
 			},
@@ -140,7 +145,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"key.projection.type":  "allowlist",
 				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector",
 			},
@@ -153,7 +157,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"key.projection.type":  "blocklist",
 				"post.processor.chain": "Any,com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector",
 			},
@@ -166,7 +169,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"key.projection.type":  "blocklist",
 				"post.processor.chain": "Any,com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector",
 			},
@@ -179,7 +181,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"value.projection.type": "allowlist",
 				"post.processor.chain":  "Any,com.mongodb.kafka.connect.sink.processor.AllowListValueProjector",
 			},
@@ -192,7 +193,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"value.projection.type": "allowlist",
 				"post.processor.chain":  "com.mongodb.kafka.connect.sink.processor.AllowListValueProjector,Any",
 			},
@@ -205,7 +205,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"value.projection.type": "blocklist",
 				"post.processor.chain":  "Any,com.mongodb.kafka.connect.sink.processor.BlockListValueProjector",
 			},
@@ -218,7 +217,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"value.projection.type": "blocklist",
 				"post.processor.chain":  "com.mongodb.kafka.connect.sink.processor.BlockListValueProjector",
 			},
@@ -231,7 +229,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"field.renamer.mapping": "[{\"oldName\":\"key.COUNTRYCODE\",\"newName\":\"CountryCode\"}]",
 				"post.processor.chain":  "Any,com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping",
 			},
@@ -244,7 +241,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"field.renamer.mapping": "[{\"oldName\":\"key.COUNTRYCODE\",\"newName\":\"CountryCode\"}]",
 				"post.processor.chain":  "com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping",
 			},
@@ -257,7 +253,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":        "mongodb://",
-				"connection.url":        "mongodb://",
 				"field.renamer.mapping": "[]",
 				"post.processor.chain":  "Any",
 			},
@@ -271,7 +266,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"key.converter":        "org.apache.kafka.connect.json.JsonConverter",
 				"output.format.key":    "json",
@@ -285,7 +279,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"key.converter":        "org.apache.kafka.connect.json.JsonConverter",
 				"output.format.key":    "schema",
@@ -299,7 +292,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"key.converter":        "io.confluent.connect.avro.AvroConverter",
 				"output.format.key":    "schema",
@@ -313,7 +305,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"key.converter":        "org.apache.kafka.connect.storage.StringConverter",
 				"output.format.key":    "json",
@@ -327,7 +318,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"key.converter":        "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"output.format.key":    "bson",
@@ -342,7 +332,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"value.converter":      "org.apache.kafka.connect.json.JsonConverter",
 				"output.format.value":  "json",
@@ -356,7 +345,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"value.converter":      "org.apache.kafka.connect.json.JsonConverter",
 				"output.format.value":  "schema",
@@ -370,7 +358,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"value.converter":      "io.confluent.connect.avro.AvroConverter",
 				"output.format.value":  "schema",
@@ -384,7 +371,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"value.converter":      "org.apache.kafka.connect.storage.StringConverter",
 				"output.format.value":  "json",
@@ -398,7 +384,6 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 			},
 			want: map[string]any{
 				"connection.uri":       "mongodb://",
-				"connection.url":       "mongodb://",
 				"post.processor.chain": "Any",
 				"value.converter":      "org.apache.kafka.connect.converters.ByteArrayConverter",
 				"output.format.value":  "bson",
@@ -409,6 +394,157 @@ func TestConsoleToKafkaConnectMongoDBHook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ConsoleToKafkaConnectMongoDBHook(tt.config); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConsoleToKafkaConnectMongoDBHook() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestKafkaConnectToConsoleMongoDBHook(t *testing.T) {
+	tests := []struct {
+		name   string
+		config map[string]string
+		want   map[string]string
+	}{
+		{
+			name: "Should not remove connection.url",
+			config: map[string]string{
+				"connection.uri":      "mongodb+srv://user:pass@cluster0.abcd.mongodb.net",
+				"connection.url":      "mongodb+srv://cluster0.abcd.mongodb.net",
+				"connection.username": "user",
+				"connection.password": "pass",
+			},
+			want: map[string]string{
+				"connection.uri":      "mongodb+srv://user:pass@cluster0.abcd.mongodb.net",
+				"connection.url":      "mongodb+srv://cluster0.abcd.mongodb.net",
+				"connection.username": "user",
+				"connection.password": "pass",
+			},
+		},
+		{
+			name: "Should remove default post.processor.chain",
+			config: map[string]string{
+				"connection.uri":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
+			},
+			want: map[string]string{
+				"connection.uri": "mongodb+srv://cluster0.abcd.mongodb.net",
+			},
+		},
+		{
+			name: "Should not remove custom post.processor.chain",
+			config: map[string]string{
+				"connection.uri":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,Custom",
+			},
+			want: map[string]string{
+				"connection.uri":       "mongodb+srv://cluster0.abcd.mongodb.net",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,Custom",
+			},
+		},
+		{
+			name: "Should remove post.processor.chain for allowlist",
+			config: map[string]string{
+				"connection.uri":       "mongodb://",
+				"key.projection.type":  "allowlist",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector",
+			},
+			want: map[string]string{
+				"connection.uri":      "mongodb://",
+				"key.projection.type": "allowlist",
+			},
+		},
+		{
+			name: "Should remove post.processor.chain for blocklist",
+			config: map[string]string{
+				"connection.uri":       "mongodb://",
+				"key.projection.type":  "blocklist",
+				"post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder,com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector",
+			},
+			want: map[string]string{
+				"connection.uri":      "mongodb://",
+				"key.projection.type": "blocklist",
+			},
+		},
+		{
+			name: "Should remove output.format.key for JsonConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.json.JsonConverter",
+				"output.format.key": "schema",
+			},
+			want: map[string]string{
+				"connection.uri": "mongodb://",
+				"key.converter":  "org.apache.kafka.connect.json.JsonConverter",
+			},
+		},
+		{
+			name: "Should not remove custom output.format.key for JsonConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.json.JsonConverter",
+				"output.format.key": "json",
+			},
+			want: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.json.JsonConverter",
+				"output.format.key": "json",
+			},
+		},
+		{
+			name: "Should remove output.format.key for AvroConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "io.confluent.connect.avro.AvroConverter",
+				"output.format.key": "schema",
+			},
+			want: map[string]string{
+				"connection.uri": "mongodb://",
+				"key.converter":  "io.confluent.connect.avro.AvroConverter",
+			},
+		},
+		{
+			name: "Should remove output.format.key for StringConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.storage.StringConverter",
+				"output.format.key": "json",
+			},
+			want: map[string]string{
+				"connection.uri": "mongodb://",
+				"key.converter":  "org.apache.kafka.connect.storage.StringConverter",
+			},
+		},
+		{
+			name: "Should not remove custom output.format.key for StringConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.storage.StringConverter",
+				"output.format.key": "schema",
+			},
+			want: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.storage.StringConverter",
+				"output.format.key": "schema",
+			},
+		},
+		{
+			name: "Should remove output.format.key for ByteArrayConverter",
+			config: map[string]string{
+				"connection.uri":    "mongodb://",
+				"key.converter":     "org.apache.kafka.connect.converters.ByteArrayConverter",
+				"output.format.key": "bson",
+			},
+			want: map[string]string{
+				"connection.uri": "mongodb://",
+				"key.converter":  "org.apache.kafka.connect.converters.ByteArrayConverter",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := KafkaConnectToConsoleMongoDBHook(tt.config); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ConsoleToKafkaConnectMongoDBHook() = %v, want %v", got, tt.want)
 			}
 		})
