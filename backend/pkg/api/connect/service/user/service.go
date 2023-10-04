@@ -31,22 +31,27 @@ type Service struct {
 	logger      *zap.Logger
 	consoleSvc  console.Servicer
 	redpandaSvc *redpanda.Service
+
+	isProtectedUserFn func(userName string) bool
 }
 
-func NewService(cfg *config.Config, logger *zap.Logger, redpandaSvc *redpanda.Service, consoleSvc console.Servicer) *Service {
+func NewService(cfg *config.Config,
+	logger *zap.Logger,
+	redpandaSvc *redpanda.Service,
+	consoleSvc console.Servicer,
+	isProtectedUserFn func(userName string) bool,
+) *Service {
 	return &Service{
-		cfg:         cfg,
-		logger:      logger,
-		consoleSvc:  consoleSvc,
-		redpandaSvc: redpandaSvc,
+		cfg:               cfg,
+		logger:            logger,
+		consoleSvc:        consoleSvc,
+		redpandaSvc:       redpandaSvc,
+		isProtectedUserFn: isProtectedUserFn,
 	}
 }
 
 func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
-	// 1. Check permissions
-	// TODO
-
-	// 2. Check if we can list users
+	// 1. Check if we can list users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,
@@ -56,7 +61,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 		)
 	}
 
-	// 3. List users
+	// 2. List users
 	users, err := s.redpandaSvc.ListUsers(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
@@ -68,11 +73,9 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 
 	filteredUsers := make([]*v1alpha1.ListUsersResponse_User, 0)
 	for _, user := range users {
-		// TODO: Filter users as defined in hooks
-		/*
-			if s.hooks.IsProtectedKafkaUser(user) {
-				continue
-			}*/
+		if s.isProtectedUserFn(user) {
+			continue
+		}
 		filteredUsers = append(filteredUsers, &v1alpha1.ListUsersResponse_User{
 			Name: user,
 		})

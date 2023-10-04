@@ -36,7 +36,7 @@ import (
 // Setup connect and grpc-gateway
 func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// OSS Handlers
-	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 
 	// Handlers from hooks
 	reflectServices := []string{
