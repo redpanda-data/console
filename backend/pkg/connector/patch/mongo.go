@@ -119,12 +119,12 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		d.SetDefaultValue("mongodb-" + extractType(connectorClass, mongoClassSelectorRegexp) + "-connector-" + strings.ToLower(random.String(4)))
 	}
 
-	patchImportance(d)
+	d = patchImportance(d)
 
 	return d
 }
 
-func patchImportance(d model.ConfigDefinition) {
+func patchImportance(d model.ConfigDefinition) model.ConfigDefinition {
 	// Importance Patches
 	switch d.Definition.Name {
 	case "topic.prefix",
@@ -141,6 +141,8 @@ func patchImportance(d model.ConfigDefinition) {
 		"output.schema.value":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
+
+	return d
 }
 
 func isSink(connectorClass string) bool {
