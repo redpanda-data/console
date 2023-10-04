@@ -125,7 +125,7 @@ const KafkaConnectorMain = observer(
                         name: 'Configuration',
                         component: <Box mt="8">
                             <Box maxWidth="800px">
-                                <ConfigPage connectorStore={connectorStore} />
+                                <ConfigPage connectorStore={connectorStore} context="EDIT" />
                             </Box>
 
                             {/* Update Config Button */}
