@@ -26,9 +26,10 @@ import { isEmbedded } from '../../../../config';
 
 export interface ConfigPageProps {
     connectorStore: ConnectorPropertiesStore;
+    context: 'CREATE' | 'EDIT';
 }
 
-export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore }: ConfigPageProps) => {
+export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
     if (connectorStore.error)
         return (
             <div>
@@ -93,7 +94,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
                 </>
                 : <>
                     <div style={{ margin: '0 auto 1.5rem' }}>
-                        <ConnectorJsonEditor connectorStore={connectorStore} />
+                        <ConnectorJsonEditor connectorStore={connectorStore} context={context} />
                     </div>
                 </>
             }
@@ -102,7 +103,8 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
 });
 
 function ConnectorJsonEditor(p: {
-    connectorStore: ConnectorPropertiesStore
+    connectorStore: ConnectorPropertiesStore,
+    context: 'CREATE' | 'EDIT'
 }) {
     const connectorStore = p.connectorStore;
 
@@ -150,7 +152,7 @@ function ConnectorJsonEditor(p: {
             connectorStore.jsonText = x;
         }}
         options={{
-            readOnly: isEmbedded()
+            readOnly: isEmbedded() && p.context == 'EDIT'
         }}
     />
 }
