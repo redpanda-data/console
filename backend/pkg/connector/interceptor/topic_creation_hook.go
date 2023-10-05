@@ -45,7 +45,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 		Definition: model.ConfigDefinitionKey{
 			Name:          "topic.creation.default.replication.factor",
 			Type:          "LONG",
-			DefaultValue:  "-1",
+			DefaultValue:  "0",
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Topic creation replication factor",
