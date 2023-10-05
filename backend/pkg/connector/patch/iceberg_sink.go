@@ -62,13 +62,13 @@ func (*ConfigPatchIcebergSink) PatchDefinition(d model.ConfigDefinition, _ strin
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case name:
 		d.SetDefaultValue("iceberg-sink-connector-" + strings.ToLower(random.String(4)))
-	case "iceberg.control.commitIntervalMs":
+	case "iceberg.control.commit.interval-ms":
 		d.SetDisplayName("Iceberg commit interval ms")
-	case "iceberg.control.commitThreads":
+	case "iceberg.control.commit.threads":
 		d.SetDisplayName("Iceberg commit threads")
-	case "iceberg.control.commitTimeoutMs":
+	case "iceberg.control.commit.timeout-ms":
 		d.SetDisplayName("Iceberg commit timeout ms")
-	case "iceberg.tables.upsertModeEnabled":
+	case "iceberg.tables.upsert-mode-enabled":
 		d.SetDisplayName("Iceberg tables upsert mode enabled")
 	case "iceberg.control.topic":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh).
