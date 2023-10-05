@@ -262,7 +262,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         author: 'Tabular',
         friendlyName: 'Iceberg',
         description: 'Exports messages to Iceberg tables',
-        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-iceberg-sink-connector/'
     } as const,
 
     // JMS Connectors
