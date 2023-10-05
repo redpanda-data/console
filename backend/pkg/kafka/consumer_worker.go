@@ -23,7 +23,7 @@ import (
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 	isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage,
-	troubleshoot bool, includeRawData bool,
+	consumeReq TopicConsumeRequest,
 ) {
 	defer wg.Done()
 	defer func() {
@@ -58,8 +58,10 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 		deserializedRec := s.SerdeService.DeserializeRecord(record,
 			serde.DeserializationOptions{
 				MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize,
-				Troubleshoot:   troubleshoot,
-				IncludeRawData: includeRawData,
+				Troubleshoot:   consumeReq.Troubleshoot,
+				IncludeRawData: consumeReq.IncludeRawPayload,
+				KeyEncoding:    consumeReq.KeyDeserializer,
+				ValueEncoding:  consumeReq.ValueDeserializer,
 			})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))

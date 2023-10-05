@@ -76,6 +76,20 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
    */
   includeOriginalRawPayload = false;
 
+  /**
+   * Optionally specify key payload deserialization strategy to use.
+   *
+   * @generated from field: optional redpanda.api.console.v1alpha.PayloadEncoding key_deserializer = 10;
+   */
+  keyDeserializer?: PayloadEncoding;
+
+  /**
+   * Optionally specify value payload deserialization strategy to use.
+   *
+   * @generated from field: optional redpanda.api.console.v1alpha.PayloadEncoding value_deserializer = 11;
+   */
+  valueDeserializer?: PayloadEncoding;
+
   constructor(data?: PartialMessage<ListMessagesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -93,6 +107,8 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
     { no: 7, name: "enterprise", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 8, name: "troubleshoot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "include_original_raw_payload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "key_deserializer", kind: "enum", T: proto3.getEnumType(PayloadEncoding), opt: true },
+    { no: 11, name: "value_deserializer", kind: "enum", T: proto3.getEnumType(PayloadEncoding), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesRequest {

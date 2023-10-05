@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 const (
@@ -47,6 +48,8 @@ type ListMessageRequest struct {
 	FilterInterpreterCode string
 	Troubleshoot          bool
 	IncludeRawPayload     bool
+	KeyDeserializer       serde.PayloadEncoding
+	ValueDeserializer     serde.PayloadEncoding
 }
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
@@ -135,6 +138,8 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		FilterInterpreterCode: listReq.FilterInterpreterCode,
 		Troubleshoot:          listReq.Troubleshoot,
 		IncludeRawPayload:     listReq.IncludeRawPayload,
+		KeyDeserializer:       listReq.KeyDeserializer,
+		ValueDeserializer:     listReq.ValueDeserializer,
 	}
 
 	progress.OnPhase("Consuming messages")

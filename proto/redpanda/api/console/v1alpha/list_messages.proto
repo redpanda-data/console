@@ -29,6 +29,9 @@ message ListMessagesRequest {
 
   bool troubleshoot = 8; // Optionally include troubleshooting data in the response.
   bool include_original_raw_payload = 9; // Optionally include original raw payload.
+
+  optional PayloadEncoding key_deserializer = 10; // Optionally specify key payload deserialization strategy to use.
+  optional PayloadEncoding value_deserializer = 11; // Optionally specify value payload deserialization strategy to use.
 }
 
 // ListMessagesResponse is the response for ListMessages call.

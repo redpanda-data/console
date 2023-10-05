@@ -96,10 +96,23 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 
 	troubleshooting := make([]TroubleshootingReport, 0)
 
+	serdeEncoding := opts.KeyEncoding
+	if payloadType == PayloadTypeValue {
+		serdeEncoding = opts.ValueEncoding
+	}
+
+	doCustomEncoding := serdeEncoding != PayloadEncodingUnspecified && serdeEncoding != ""
+
 	// Try all registered SerDes in the order they were registered
 	var rp *RecordPayload
 	var err error
 	for _, serde := range s.SerDes {
+		if doCustomEncoding {
+			if serdeEncoding != serde.Name() {
+				continue
+			}
+		}
+
 		rp, err = serde.DeserializePayload(record, payloadType)
 		if err == nil {
 			// found the matching serde
