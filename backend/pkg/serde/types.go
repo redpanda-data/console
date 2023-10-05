@@ -13,7 +13,7 @@ package serde
 type PayloadEncoding string
 
 const (
-	// PayloadEncodingNone is the enum of none types.
+	// PayloadEncodingUnspecified is for when encoding is not specified.
 	PayloadEncodingUnspecified PayloadEncoding = "unspecified"
 	// PayloadEncodingNone is the enum of none types.
 	PayloadEncodingNone PayloadEncoding = "none"

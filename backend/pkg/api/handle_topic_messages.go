@@ -336,6 +336,8 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 		encoding = serde.PayloadEncodingBinary
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS:
 		encoding = serde.PayloadEncodingConsumerOffsets
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED:
+		encoding = serde.PayloadEncodingUnspecified
 	}
 
 	return encoding
