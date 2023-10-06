@@ -22,10 +22,11 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"go.uber.org/zap"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
@@ -64,7 +65,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		}),
 	)
 	r.Mount("/v1alpha1", gwMux) // Dataplane API
-	r.Mount("/api/v1", gwMux)   // TODO remove this once serverless handlers are removed from connect-enterprise.
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
