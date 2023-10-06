@@ -11,17 +11,15 @@
 
 import { useState } from 'react';
 import { observer } from 'mobx-react';
-import { AutoComplete, Select } from 'antd';
 import { api } from '../../../state/backendApi';
 import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
-import { containsIgnoreCase } from '../../../utils/utils';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Button, HStack, Icon, Text, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, VStack } from '@redpanda-data/ui';
-const { Option } = Select;
+import { Box, Button, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
+import { SingleSelect } from '../../misc/Select';
 
 
 export const AclPrincipalGroupEditor = observer((p: {
@@ -32,8 +30,6 @@ export const AclPrincipalGroupEditor = observer((p: {
     const group = p.principalGroup;
     const toast = useToast()
 
-    const existingPrincipals: string[] = [];
-    const principalOptions = existingPrincipals.map(p => ({ value: p }));
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(undefined as string | undefined);
 
@@ -139,28 +135,32 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 }
                             >
                                 <InputGroup>
-                                    <Select
-                                        value={group.principalType}
-                                        onChange={x => (group.principalType = x)}
-                                        disabled
-                                        showArrow={false}
-                                        style={{
-                                            width: '80px',
-                                            background: 'hsl(0deg 0% 98%)',
-                                            cursor: 'default'
-                                        }}
-                                    >
-                                        <Option value="User">User</Option>
-                                        {/* <Option value="Group">Group</Option> */}
-                                    </Select>
-                                    <AutoComplete
-                                        style={{ width: 260 }}
-                                        options={principalOptions}
-                                        filterOption={(inputValue, option) => containsIgnoreCase(option!.value, inputValue)}
+                                    <Box mr={2} minW={150}>
+                                        <SingleSelect<string>
+                                            value={group.principalType}
+                                            options={[
+                                                {
+                                                    label: 'User',
+                                                    value: 'User',
+                                                },
+                                                // {
+                                                //     label: 'Group',
+                                                //     value: 'Group'
+                                                // }
+                                            ]}
+                                            onChange={(value) => {
+                                                group.principalType = value
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Input
                                         value={group.principalName}
-                                        onChange={v => {
-                                            if (v.includes(':')) return;
-                                            group.principalName = v;
+                                        onChange={(e) => {
+                                            if (e.target.value.includes(':')) {
+                                                return;
+                                            }
+                                            group.principalName = e.target.value;
                                         }}
                                         {...{ spellCheck: false }}
                                     />

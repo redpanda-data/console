@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { AutoComplete, Input } from 'antd';
+import { Input } from 'antd';
 import { arrayMoveMutable } from 'array-move';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, DraggableProvided, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
 import { api } from '../../../../state/backendApi';
 import { PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
@@ -23,7 +23,8 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import { Button, Checkbox, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover } from '@redpanda-data/ui';
+import { SingleSelect } from '../../../misc/Select';
 
 
 const globHelp = <div>
@@ -166,9 +167,9 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                                             <div
                                                 ref={draggableProvided.innerRef}
                                                 {...draggableProvided.draggableProps}
-                                                {...draggableProvided.dragHandleProps}
                                             >
                                                 <PreviewTagSettings tag={tag} index={index}
+                                                                    draggableProvided={draggableProvided}
                                                     onRemove={() => tags.removeAll(t => t.id == tag.id)}
                                                     allCurrentKeys={currentKeys}
                                                 />
@@ -246,18 +247,14 @@ todo:
 -
  */
 @observer
-class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
+class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, onRemove: () => void, allCurrentKeys: string[], draggableProvided: DraggableProvided }>{
     render() {
-        const { tag, onRemove, allCurrentKeys } = this.props;
+        const { tag, onRemove, allCurrentKeys, draggableProvided } = this.props;
 
-        return <div style={{
-            display: 'flex', placeItems: 'center', gap: '4px',
-            background: 'hsl(0deg, 0%, 91%)', padding: '4px', borderRadius: '4px',
-            marginBottom: '6px'
-        }}>
+        return <Flex placeItems="center" gap={1} p={1} borderRadius={1} mb={1.5}>
 
             {/* Move Handle */}
-            <span className="moveHandle"><ThreeBarsIcon /></span>
+            <span className="moveHandle" {...draggableProvided.dragHandleProps}><ThreeBarsIcon /></span>
 
             {/* Enabled */}
             <Checkbox isChecked={tag.isActive} onChange={e => tag.isActive = e.target.checked} />
@@ -286,29 +283,20 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                 <span className="inlineButton" ><GearIcon /></span>
             </Popover>
 
-            {/* Pattern */}
-            <AutoComplete options={allCurrentKeys.map(t => ({ label: t, value: t }))}
-                size="small"
-                style={{ flexGrow: 1, flexBasis: '400px' }}
-
-                defaultActiveFirstOption={true}
-                onSearch={(_value: string) => {
-                    // console.log('onSearch ', value);
-                }}
-                value={tag.pattern}
-
-                onChange={(value: string) => tag.pattern = value}
-                placeholder="Pattern..."
-                filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
-
-                notFoundContent="None"
-
-                {...{ spellCheck: 'false' }}
-            />
+            <Box w="full">
+                <SingleSelect<string>
+                    placeholder="Pattern..."
+                    value={tag.pattern}
+                    onChange={(value) => {
+                        tag.pattern = value
+                    }}
+                    options={allCurrentKeys.map(t => ({label: t, value: t}))}
+                />
+            </Box>
 
             {/* Remove */}
             <span className="inlineButton" onClick={onRemove} ><XIcon /></span>
-        </div>;
+        </Flex>;
     }
 }
 
