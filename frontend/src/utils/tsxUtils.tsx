@@ -12,8 +12,8 @@
 import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
-import { message, Radio, Skeleton } from 'antd';
-import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
+import { Radio, Skeleton } from 'antd';
+import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
@@ -330,6 +330,7 @@ interface StatusIndicatorProps {
 
 // TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: false,
@@ -351,7 +352,6 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     constructor(p: any) {
         super(p);
-        message.config({ top: 20 });
 
         // Periodically check if we got any new messages. If not, show a different text after some time
         this.lastUpdateTimestamp = Date.now();

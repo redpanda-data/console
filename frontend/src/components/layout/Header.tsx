@@ -21,7 +21,7 @@ import { ZeroSizeWrapper } from '../../utils/tsxUtils';
 import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 import { IsDev } from '../../utils/env';
-import { ColorModeSwitch } from '@redpanda-data/ui';
+import { ColorModeSwitch, Flex } from '@redpanda-data/ui';
 
 const AppPageHeader = observer(() => {
 
@@ -60,10 +60,10 @@ const AppPageHeader = observer(() => {
             title={null}
         />
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <Flex ml="auto" alignItems="center" gap={3}>
             <UserPreferencesButton />
             {(IsDev && !isEmbedded()) && <ColorModeSwitch />}
-        </div>
+        </Flex>
     </MotionDiv>;
 });
 

@@ -10,10 +10,10 @@
  */
 
 
-import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
+import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
-import { numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Modal, Radio, Select, Table } from 'antd';
+import { InfoText, numberToThousandsString, RadioOptionGroup } from '../../../utils/tsxUtils';
+import { Radio, Select, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -21,12 +21,11 @@ import { sortField } from '../../misc/common';
 import { toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
-import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Button, Tooltip, Popover, Accordion, Flex, Text } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -53,7 +52,14 @@ export type GroupOffset = {
     newOffset?: number | Date | PartitionOffset;
 };
 
-
+const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+        duration: 2000
+    }
+})
 
 @observer
 export class EditOffsetsModal extends Component<{
@@ -94,46 +100,56 @@ export class EditOffsetsModal extends Component<{
         offsets = offsets ?? this.lastOffsets;
         if (!offsets) return null;
 
-        this.offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({ topicName: g.key, items: g.items }));
+        this.offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({topicName: g.key, items: g.items}));
         const single = this.offsetsByTopic.length == 1;
 
         return (
-            <Modal title="Edit consumer group" open={visible} closeIcon={<></>} maskClosable={false} okText="Review" width="700px" footer={this.footer()} centered className="consumerGroupModal consumerGroupModal-edit">
-                {/* Header */}
-                <div style={{ display: 'flex', flexDirection: 'row', gap: '22px' }}>
-                    <div>
-                        <div
-                            style={{
-                                width: '64px',
-                                height: '64px',
-                                padding: '14px',
-                                marginTop: '4px',
-                                marginLeft: '4px',
-                                background: '#718096',
-                                borderRadius: '1000px'
-                            }}
-                        >
-                            <PencilIconOutline color="white" />
-                        </div>
-                    </div>
-                    <div>
-                        <span>Group offsets will be editted for:</span>
+            <>
+                <ToastContainer />
+                <Modal isOpen={visible} onClose={() => {
+                }}>
+                    <ModalOverlay/>
+                    <ModalContent minW="5xl">
+                        <ModalHeader>Edit consumer group</ModalHeader>
+                        <ModalBody>
+                            <HStack spacing={6}>
+                                <div>
+                                    <div
+                                        style={{
+                                            width: '64px',
+                                            height: '64px',
+                                            padding: '14px',
+                                            marginTop: '4px',
+                                            marginLeft: '4px',
+                                            background: '#718096',
+                                            borderRadius: '1000px'
+                                        }}
+                                    >
+                                        <PencilIconOutline color="white"/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span>Group offsets will be editted for:</span>
 
-                        <div style={{ fontWeight: 600, margin: '8px 0', lineHeight: '1.5' }}>
-                            <div>
-                                Group: <span className="codeBox">{group.groupId}</span>
-                            </div>
-                            <div>
-                                {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                    <div style={{fontWeight: 600, margin: '8px 0', lineHeight: '1.5'}}>
+                                        <div>
+                                            Group: <span className="codeBox">{group.groupId}</span>
+                                        </div>
+                                        <div>
+                                            {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length} {offsets.length == 1 ? 'Partition' : 'Partitions'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </HStack>
 
-                {/* Content */}
-                <div style={{ marginTop: '2em' }}>{this.page == 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}</div>
-            </Modal>
-        );
+                            {/* Content */}
+                            <div style={{marginTop: '2em'}}>{this.page == 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}</div>
+                        </ModalBody>
+                        <ModalFooter gap={2}>{this.footer()}</ModalFooter>
+                    </ModalContent>
+                </Modal>
+            </>
+        )
     }
 
     page1() {
@@ -164,7 +180,7 @@ export class EditOffsetsModal extends Component<{
                                     marginLeft: '-1px'
                                 }}
                             >
-                                <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => (this.timestampUtcMs = t)} disabled={this.isLoadingTimestamps} />
+                                <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => (this.timestampUtcMs = t)} disabled={this.isLoadingTimestamps}/>
                             </div>
                         )
                     },
@@ -183,7 +199,7 @@ export class EditOffsetsModal extends Component<{
                                         marginLeft: '-1px'
                                     }}
                                 >
-                                    <Select style={{ minWidth: '260px' }} placeholder="Select another consumer group..." showSearch options={this.otherConsumerGroups.map(g => ({ value: g.groupId, label: g.groupId, title: g.groupId }))} value={this.selectedGroup} onChange={x => (this.selectedGroup = x)} disabled={this.isLoadingTimestamps} />
+                                    <Select style={{minWidth: '260px'}} placeholder="Select another consumer group..." showSearch options={this.otherConsumerGroups.map(g => ({value: g.groupId, label: g.groupId, title: g.groupId}))} value={this.selectedGroup} onChange={x => (this.selectedGroup = x)} disabled={this.isLoadingTimestamps}/>
 
                                     <Radio.Group
                                         defaultValue="onlyExisting"
@@ -218,7 +234,7 @@ export class EditOffsetsModal extends Component<{
 
     page2() {
         return (
-            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div style={{maxHeight: '400px', overflowY: 'auto'}}>
                 <Accordion defaultIndex={0} items={this.offsetsByTopic.map(({topicName, items}) => ({
                     heading: <Flex
                         alignItems="center"
@@ -239,12 +255,12 @@ export class EditOffsetsModal extends Component<{
                     description: <Table
                         size="small"
                         showSorterTooltip={false}
-                        pagination={{ pageSize: 1000, position: ['none', 'none'] as any }}
+                        pagination={{pageSize: 1000, position: ['none', 'none'] as any}}
                         dataSource={items}
                         rowKey={r => r.partitionId}
                         rowClassName={r => (r.newOffset == null ? 'unchanged' : '')}
                         columns={[
-                            { width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend' },
+                            {width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend'},
                             {
                                 width: 150,
                                 title: 'Offset Before',
@@ -252,8 +268,8 @@ export class EditOffsetsModal extends Component<{
                                 render: v =>
                                     v == null ? (
                                         <Tooltip label="The group does not have an offset for this partition yet" openDelay={1} placement="top" hasArrow>
-                                                    <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-                                                        <SkipIcon />
+                                                    <span style={{opacity: 0.66, marginLeft: '2px'}}>
+                                                        <SkipIcon/>
                                                     </span>
                                         </Tooltip>
                                     ) : (
@@ -262,11 +278,11 @@ export class EditOffsetsModal extends Component<{
                             },
                             {
                                 title: 'Offset After',
-                                render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
+                                render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r}/>
                             }
                         ]}
                     />
-                }))} />
+                }))}/>
             </div>
         );
     }
@@ -283,7 +299,7 @@ export class EditOffsetsModal extends Component<{
         </div>;
 
         return <Popover trigger="click" content={content} size="auto" hideCloseButton>
-            <WarningOutlined />
+            <WarningOutlined/>
         </Popover>;
     }
 
@@ -309,19 +325,32 @@ export class EditOffsetsModal extends Component<{
                 const propOffsets = this.props.offsets;
                 // Fetch offset for each partition
                 setTimeout(async () => {
-                    const msg = new Message('Fetching offsets for timestamp', 'loading', '...');
+                    const toastMsg = 'Fetching offsets for timestamp'
+                    const toastRef = toast({
+                        status: 'loading',
+                        description: `${toastMsg}...`,
+                        duration: null
+                    })
 
                     let offsetsForTimestamp: TopicOffset[];
                     try {
                         offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.timestampUtcMs);
-                        msg.setSuccess(undefined, ' - done');
+                        toast.update(toastRef, {
+                            status: 'success',
+                            duration: 2000,
+                            description: `${toastMsg} - done`
+                        })
                     } catch (err) {
                         showErrorModal(
                             'Failed to fetch offsets for timestamp',
                             <span>Could not lookup offsets for given timestamp <span className="codeBox">{new Date(this.timestampUtcMs).toUTCString()}</span>.</span>,
-                            toJson({ errors: err, request: requiredTopics }, 4)
+                            toJson({errors: err, request: requiredTopics}, 4)
                         );
-                        msg.setError(undefined, ' - failed');
+                        toast.update(toastRef, {
+                            status: 'error',
+                            duration: 2000,
+                            description: `${toastMsg} - failed`
+                        })
                         return;
                     }
 
@@ -372,8 +401,7 @@ export class EditOffsetsModal extends Component<{
                                     newOffset: o.offset,
                                 });
                     }
-                }
-                else {
+                } else {
                     showErrorModal(
                         'Consumer group not found',
                         null,
@@ -391,35 +419,35 @@ export class EditOffsetsModal extends Component<{
         const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
 
         if (this.page == 0) return <div>
-            <Button key="cancel" onClick={this.props.onClose} >Cancel</Button>
+            <Button key="cancel" onClick={this.props.onClose}>Cancel</Button>
 
             <Button key="next" variant="solid" onClick={() => this.setPage(1)}
-                isDisabled={disableContinue || disableNav}
-                isLoading={this.isLoadingTimestamps}
+                    isDisabled={disableContinue || disableNav}
+                    isLoading={this.isLoadingTimestamps}
             >
                 <span>Review</span>
-                <span><ChevronRightIcon /></span>
+                <span><ChevronRightIcon/></span>
             </Button>
         </div>;
-        else return <div style={{ display: 'flex' }}>
-            <Button key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}
-                isDisabled={disableNav}
+        else return <>
+            <Button key="back" onClick={() => this.setPage(0)} style={{paddingRight: '18px'}}
+                    isDisabled={disableNav}
             >
-                <span><ChevronLeftIcon /></span>
+                <span><ChevronLeftIcon/></span>
                 <span>Back</span>
             </Button>
 
             <Button key="cancel"
-                style={{ marginLeft: 'auto' }}
-                onClick={this.props.onClose}
+                    style={{marginLeft: 'auto'}}
+                    onClick={this.props.onClose}
             >Cancel</Button>
 
             <Button key="next" variant="solid" isDisabled={disableNav}
-                onClick={() => this.onApplyEdit()}
+                    onClick={() => this.onApplyEdit()}
             >
                 <span>Apply</span>
             </Button>
-        </div>;
+        </>;
     }
 
     updateVisible(visible: boolean) {
@@ -450,8 +478,7 @@ export class EditOffsetsModal extends Component<{
                 });
             });
 
-        }
-        else {
+        } else {
             if (this.autorunDisposer) {
                 this.autorunDisposer();
                 this.autorunDisposer = null;
@@ -462,12 +489,18 @@ export class EditOffsetsModal extends Component<{
     }
 
 
-    @action async onApplyEdit() {
+    @action
+    async onApplyEdit() {
         const group = this.props.group;
         const offsets = this.props.offsets!;
 
         this.isApplyingEdit = true;
-        const msg = new Message('Applying offsets', 'loading', '...');
+        const toastMsg = 'Applying offsets'
+        const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null
+        })
         const topics = createEditRequest(offsets);
         try {
             const editResponse = await api.editConsumerGroupOffsets(group.groupId, topics);
@@ -476,16 +509,23 @@ export class EditOffsetsModal extends Component<{
                 partitions: t.partitions.filter(x => x.error),
             })).filter(t => t.partitions.length > 0);
             if (errors.length > 0) {
-                console.error('apply offsets, backend errors', { errors: errors, request: topics });
+                console.error('apply offsets, backend errors', {errors: errors, request: topics});
                 // eslint-disable-next-line no-throw-literal
-                throw { errors: errors, request: topics };
+                throw {errors: errors, request: topics};
             }
 
-            msg.setSuccess(undefined, ' - done');
-        }
-        catch (err) {
+            toast.update(toastRef, {
+                status: 'success',
+                duration: 2000,
+                description: `${toastMsg} - done`
+            })
+        } catch (err) {
             console.error('failed to apply offset edit', err);
-            msg.setError(undefined, ' - failed');
+            toast.update(toastRef, {
+                status: 'error',
+                duration: 2000,
+                description: `${toastMsg} - failed`
+            })
             showErrorModal(
                 'Apply editted offsets',
                 <span>
@@ -494,8 +534,7 @@ export class EditOffsetsModal extends Component<{
                 </span>,
                 toJson(err, 4),
             );
-        }
-        finally {
+        } finally {
             this.isApplyingEdit = false;
             api.refreshConsumerGroup(this.props.group.groupId, true);
             this.props.onClose();
@@ -503,7 +542,8 @@ export class EditOffsetsModal extends Component<{
     }
 }
 
-@observer class ColAfter extends Component<{
+@observer
+class ColAfter extends Component<{
     selectedTime?: number
     record: GroupOffset
 }> {
@@ -516,8 +556,8 @@ export class EditOffsetsModal extends Component<{
         if (val == null) {
             return (
                 <Tooltip label="Offset will not be changed" openDelay={1} placement="top" hasArrow>
-                    <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-                        <SkipIcon />
+                    <span style={{opacity: 0.66, marginLeft: '2px'}}>
+                        <SkipIcon/>
                     </span>
                 </Tooltip>
             );
@@ -533,15 +573,15 @@ export class EditOffsetsModal extends Component<{
             if ('offset' in val) {
 
                 // error
-                if (val.error) return <span style={{ color: 'orangered' }}>
+                if (val.error) return <span style={{color: 'orangered'}}>
                     {val.error}
                 </span>;
 
                 // successful fetch
                 if (val.timestamp > 0)
-                    return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    return <div style={{display: 'inline-flex', gap: '6px', alignItems: 'center'}}>
                         <span>{numberToThousandsString(val.offset)}</span>
-                        <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}
+                        <span style={{fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default'}}
                         >({new Date(val.timestamp).toLocaleString()})</span>
                     </div>;
 
@@ -549,14 +589,14 @@ export class EditOffsetsModal extends Component<{
                 // use 'latest'
                 const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
                 return (
-                    <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    <div style={{display: 'inline-flex', gap: '6px', alignItems: 'center'}}>
                         <InfoText
                             tooltip={
                                 <div>
                                     There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>). As a fallback, the last offset in that partition will be used.
                                 </div>
                             }
-                            icon={<WarningOutlined />}
+                            icon={<WarningOutlined/>}
                             iconSize="18px"
                             iconColor="orangered"
                             maxWidth="350px"
@@ -578,18 +618,18 @@ export class EditOffsetsModal extends Component<{
             const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
 
             const content = (val == -2)
-                ? { name: 'Earliest', offset: partition?.waterMarkLow ?? '...' }
-                : { name: 'Latest', offset: partition?.waterMarkHigh ?? '...' };
+                ? {name: 'Earliest', offset: partition?.waterMarkLow ?? '...'}
+                : {name: 'Latest', offset: partition?.waterMarkHigh ?? '...'};
 
-            return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+            return <div style={{display: 'inline-flex', gap: '6px', alignItems: 'center'}}>
                 <span>{typeof content.offset == 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
-                <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>({content.name})</span>
+                <span style={{fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default'}}>({content.name})</span>
             </div>;
         }
 
         // Loading placeholder
         if (typeof val === 'string') {
-            return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
+            return <span style={{opacity: 0.66, fontStyle: 'italic'}}>{val}</span>;
         }
 
         return `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
@@ -617,7 +657,7 @@ export class DeleteOffsetsModal extends Component<{
     lastOffsets: GroupOffset[];
 
     render() {
-        const { group, mode } = this.props;
+        const {group, mode} = this.props;
         let offsets = this.props.offsets;
 
         const visible = Boolean(offsets);
@@ -625,91 +665,102 @@ export class DeleteOffsetsModal extends Component<{
         offsets = offsets ?? this.lastOffsets;
         if (!offsets) return null;
 
-        const offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({ topicName: g.key, items: g.items }));
+        const offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({topicName: g.key, items: g.items}));
         const singleTopic = offsetsByTopic.length == 1;
         const singlePartition = offsets.length == 1;
 
-        return <Modal
-            title={mode == 'group'
-                ? 'Delete consumer group'
-                : 'Delete consumer group offsets'
-            }
-            open={visible}
-            closeIcon={<></>} maskClosable={false}
-            width="600px"
+        return (
+            <Modal isOpen={visible} onClose={this.props.onClose}>
+                <ModalOverlay/>
+                <ModalContent minW="5xl">
+                    <ModalHeader>{mode == 'group'
+                        ? 'Delete consumer group'
+                        : 'Delete consumer group offsets'
+                    }</ModalHeader>
+                    <ModalBody>
+                        <Flex flexDirection="row" gap={6}>
+                            <div>
+                                <div style={{
+                                    width: '64px', height: '64px', padding: '12px', marginTop: '4px',
+                                    background: '#F53649', borderRadius: '1000px'
+                                }}>
+                                    <TrashIconOutline color="white"/>
+                                </div>
+                            </div>
+                            <Box>
+                                <Box>
+                                    <Text>Are you sure you want to delete offsets from this consumer group?</Text>
+                                    <Box fontWeight="600" mt={1} mb={6}>
+                                        <Text>Group: <span className="codeBox">{group.groupId}</span></Text>
+                                    </Box>
+                                </Box>
 
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onOk={() => this.onDeleteOffsets()}
+                                <Box>
+                                    {mode === 'group' && (
+                                        <Box>
+                                            <Text>Group offsets will be deleted for all topics and partitions:</Text>
+                                            <UnorderedList fontWeight="600" my={2}>
+                                                {singleTopic ? (
+                                                    <>
+                                                        <ListItem>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></ListItem>
+                                                        <ListItem>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</ListItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ListItem>{offsetsByTopic.length} Topics / {offsets.length} {singlePartition ? 'partition' : 'partitions'}</ListItem>
+                                                    </>
+                                                )}
+                                            </UnorderedList>
+                                        </Box>
+                                    )}
 
-            onCancel={() => this.props.onClose()}
-        >
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '1.8em' }}>
-                <div>
-                    <div style={{
-                        width: '64px', height: '64px', padding: '12px', marginTop: '4px',
-                        background: '#F53649', borderRadius: '1000px'
-                    }}>
-                        <TrashIconOutline color="white" />
-                    </div>
-                </div>
-                <div>
-                    <div>
-                        <span>Are you sure you want to delete offsets from this consumer group?</span>
-                        <div style={{ fontWeight: 600, marginTop: '2px', marginBottom: '1.5em' }}>
-                            <div>Group: <span className="codeBox">{group.groupId}</span></div>
-                        </div>
-                    </div>
+                                    {mode === 'topic' && (
+                                        <Box>
+                                            <Text>Group offsets will be deleted for topic:</Text>
+                                            <List fontWeight="600" my={2}>
+                                                <ListItem>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></ListItem>
+                                                <ListItem>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</ListItem>
+                                            </List>
+                                        </Box>
+                                    )}
 
-                    <div>
-                        {mode == 'group' && <div>
-                            <span>Group offsets will be deleted for all topics and partitions:</span>
-                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
-                                {singleTopic
-                                    ? <>
-                                        <li>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></li>
-                                        <li>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</li>
-                                    </>
-                                    : <>
-                                        <li>{offsetsByTopic.length} Topics / {offsets.length} {singlePartition ? 'partition' : 'partitions'}</li>
-                                    </>
-                                }
-                            </ul>
-                        </div>}
-
-                        {mode == 'topic' && <div>
-                            <span>Group offsets will be deleted for topic:</span>
-                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
-                                <li>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></li>
-                                <li>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</li>
-                            </ul>
-                        </div>}
-
-                        {mode == 'partition' && <div>
-                            <span>Group offsets will be deleted for partition:</span>
-                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
-                                <li>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></li>
-                                <li>Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span></li>
-                            </ul>
-                        </div>}
-                    </div>
-                </div>
-
-            </div>
-        </Modal >;
+                                    {mode === 'partition' && (
+                                        <Box>
+                                            <Text>Group offsets will be deleted for partition:</Text>
+                                            <UnorderedList fontWeight="600" my={2}>
+                                                <ListItem>Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span></ListItem>
+                                                <ListItem>Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span></ListItem>
+                                            </UnorderedList>
+                                        </Box>
+                                    )}
+                                </Box>
+                            </Box>
+                        </Flex>
+                    </ModalBody>
+                    <ModalFooter gap={2}>
+                        <Button onClick={() => this.onDeleteOffsets()} colorScheme="red">Delete</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        )
     }
 
 
-    @action async onDeleteOffsets() {
+    @action
+    async onDeleteOffsets() {
         const group = this.props.group;
         const offsets = this.props.offsets!;
 
-        const msg = new Message('Deleting offsets', 'loading', '...');
+        const toastMsg = 'Deleting offsets'
+        const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null
+        })
         try {
             if (this.props.mode === 'group') {
                 await api.deleteConsumerGroup(group.groupId);
-            }
-            else {
+            } else {
                 const deleteRequest = createDeleteRequest(offsets);
                 const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
                 const errors = deleteResponse.map(t => ({
@@ -717,17 +768,24 @@ export class DeleteOffsetsModal extends Component<{
                     partitions: t.partitions.filter(x => x.error),
                 })).filter(t => t.partitions.length > 0);
                 if (errors.length > 0) {
-                    console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                    console.error('backend returned errors for deleteOffsets', {request: deleteRequest, errors: errors});
                     // eslint-disable-next-line no-throw-literal
-                    throw { request: deleteRequest, errors: errors };
+                    throw {request: deleteRequest, errors: errors};
                 }
             }
 
-            msg.setSuccess(undefined, ' - done');
-        }
-        catch (err) {
+            toast.update(toastRef, {
+                status: 'success',
+                duration: 2000,
+                description: `${toastMsg} - done`
+            })
+        } catch (err) {
             console.error(err);
-            msg.setError(undefined, ' - failed');
+            toast.update(toastRef, {
+                status: 'error',
+                duration: 2000,
+                description: `${toastMsg} - failed`
+            })
             showErrorModal(
                 'Delete offsets',
                 <span>
@@ -736,16 +794,14 @@ export class DeleteOffsetsModal extends Component<{
                 </span>,
                 toJson(err, 4)
             );
-        }
-        finally {
+        } finally {
             api.refreshConsumerGroups(true);
 
             const remainingOffsets = group.topicOffsets.sum(t => t.partitionOffsets.length) - offsets.length;
             if (remainingOffsets == 0) {
                 // Group is fully deleted, go back to list
                 appGlobal.history.replace('/groups');
-            }
-            else {
+            } else {
                 this.props.onClose();
             }
         }

@@ -66,7 +66,7 @@ export class UserProfile extends Component {
                 </div>
             </Dropdown>
 
-            <UserPreferencesDialog visible={this.preferencesOpen} onClose={() => this.preferencesOpen = false} />
+            <UserPreferencesDialog isOpen={this.preferencesOpen} onClose={() => this.preferencesOpen = false} />
         </>
     }
 }

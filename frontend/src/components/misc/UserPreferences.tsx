@@ -9,111 +9,80 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, FC } from 'react';
+import React, { Component, FC, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
-import { Menu, Modal, Input, InputNumber } from 'antd';
+import { Menu, Input, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
-import { makeObservable, observable, transaction } from 'mobx';
+import { transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
-import { Button, Checkbox, Flex, IconButton, useToast } from '@redpanda-data/ui';
+import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text } from '@redpanda-data/ui';
 
-type Action = () => void;
+type SettingsTabKeys = 'statisticsBar' | 'jsonViewer' | 'importExport' | 'autoRefresh'
 
-const settingsTabs: { name: string, component: FC }[] = [
-    { name: 'Statistics Bar', component: () => <StatsBarTab /> },
-    { name: 'Json Viewer', component: () => <JsonViewerTab /> },
-    { name: 'Import/Export', component: () => <ImportExportTab /> },
-    { name: 'Auto Refresh', component: () => <AutoRefreshTab /> },
-
+const settingsTabs: Record<SettingsTabKeys, { name: string, component: FC }> = {
+    statisticsBar: {name: 'Statistics Bar', component: () => <StatsBarTab/>},
+    jsonViewer: {name: 'Json Viewer', component: () => <JsonViewerTab/>},
+    importExport: {name: 'Import/Export', component: () => <ImportExportTab/>},
+    autoRefresh: {name: 'Auto Refresh', component: () => <AutoRefreshTab/>},
     // pagination position
-    // { name: "Message Search", component: () => <MessageSearchTab /> },
-];
-
-
-@observer
-export class UserPreferencesButton extends Component {
-    @observable isOpen = false;
-
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
-    render() {
-
-        return <>
-            <UserPreferencesDialog visible={this.isOpen} onClose={() => this.isOpen = false} />
-            <IconButton
-                className="hoverButton userPreferencesButton"
-                variant="outline"
-                aria-label="user preferences"
-                icon={<ToolsIcon size={17} />}
-                onClick={() => this.isOpen = true}
-            />
-        </>;
-    }
-}
-
-@observer
-export class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
-    @observable selectedTab: string = settingsTabs[0].name;
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
-    render() {
-        const {visible, onClose} = this.props;
-        const tab = settingsTabs.first(t => t.name == this.selectedTab);
-
-        return (
-            <Modal centered open={visible}
-                   closable={false}
-                   title={null}
-                   onOk={onClose}
-                   onCancel={onClose}
-
-                   destroyOnClose={true}
-
-                   cancelButtonProps={{style: {display: 'none'}}}
-                   maskClosable={true}
-                   footer={<div style={{display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end'}}>
-                       <div style={{fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282'}}>
-                           Changes are saved automatically
-                       </div>
-                       <Button variant="outline" onClick={onClose}>Close</Button>
-                   </div>}
-                   className="preferencesDialog"
-                   bodyStyle={{padding: '0', display: 'flex', flexDirection: 'column'}}
-            >
-                {/* Title */}
-                <div className="h3" style={{display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(0 0% 90% / 1)'}}>
-                    User Preferences
-                </div>
-
-                {/* Body */}
-                <div style={{display: 'flex', flexGrow: 1}}>
-                    {/* Menu */}
-                    <Menu mode="vertical" style={{width: '160px', height: '100%'}} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
-                        {settingsTabs.map(t => <Menu.Item key={t.name}>{t.name}</Menu.Item>)}
-                    </Menu>
-
-                    {/* Content */}
-                    <div style={{
-                        display: 'flex', flexGrow: 1, gap: '16px', flexDirection: 'column',
-                        padding: '0 20px', paddingBottom: '40px',
-                    }}>
-                        <div className="h3" style={{marginTop: '16px', marginBottom: '8px'}}>{tab?.name}</div>
-                        {tab && <tab.component/>}
-                    </div>
-                </div>
-            </Modal>
-        );
-    }
+    // messageSearch: { name: "Message Search", component: () => <MessageSearchTab /> },
 }
 
 
+
+export const UserPreferencesButton: FC = () => {
+    const [isOpen, setOpen] = useState<boolean>(false);
+    return <>
+        <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
+        <IconButton
+            className="hoverButton userPreferencesButton"
+            variant="outline"
+            aria-label="user preferences"
+            icon={<ToolsIcon size={17} />}
+            onClick={() => setOpen(true)}
+        />
+    </>;
+}
+
+export const UserPreferencesDialog: FC<{isOpen: boolean; onClose: () => void}> = ({isOpen, onClose}) => {
+    const [selectedTab, setSelectedTab] = useState<SettingsTabKeys>('statisticsBar')
+    const tab = settingsTabs[selectedTab]
+
+    return (
+        <Modal isCentered isOpen={isOpen} onClose={onClose}>
+            <ModalOverlay />
+            <ModalContent minW="5xl" minH="50vh">
+                <ModalHeader>User Preferences</ModalHeader>
+                <ModalBody>
+                    <Flex flexGrow={1}>
+                        {/* Menu */}
+                        <Menu
+                            mode="vertical"
+                            style={{width: '160px', height: '100%'}}
+                            selectedKeys={[selectedTab]}
+                            onClick={p => setSelectedTab(p.key as SettingsTabKeys)}
+                        >
+                            {Object.entries(settingsTabs).map(([key, {name}]) => <Menu.Item key={key}>{name}</Menu.Item>)}
+                        </Menu>
+
+                        {/* Content */}
+                        <Flex flexGrow={1} gap={4} flexDirection="column" px={5} pb={10}>
+                            <Text fontSize="xl">{tab.name}</Text>
+                            <tab.component/>
+                        </Flex>
+                    </Flex>
+                </ModalBody>
+                <ModalFooter alignItems="center" justifyContent="flex-end" gap={2}>
+                    <Text fontSize="xs" color="gray.500">
+                        Changes are saved automatically
+                    </Text>
+                    <Button onClick={onClose}>Close</Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    )
+}
 
 @observer
 class StatsBarTab extends Component {

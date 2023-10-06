@@ -21,7 +21,6 @@ import { uiState } from '../../../state/uiState';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { makePaginationConfig } from '../../misc/common';
-import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { TopicQuickInfoStatistic } from './QuickInfo';
@@ -269,7 +268,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     {uiSettings.topicDetailsShowStatisticsBar && (
                         <Section py={4}>
                             <div className="statisticsBar">
-                                <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
                                 <TopicQuickInfoStatistic topic={topic} />
                             </div>
                         </Section>

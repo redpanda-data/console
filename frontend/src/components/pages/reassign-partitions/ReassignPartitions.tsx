@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { observer } from 'mobx-react';
-import { Steps, Modal } from 'antd';
+import { Steps } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -37,7 +37,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, createStandaloneToast, Flex, redpandaToastOptions } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 
@@ -53,6 +53,7 @@ export { reassignmentTracker };
 
 // TODO - once ReassignPartitions is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: {
         ...redpandaToastOptions.defaultOptions,
         isClosable: true,
@@ -63,6 +64,8 @@ const { ToastContainer, toast } = createStandaloneToast({
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
+
+    @observable removeThrottleFromTopicsContent: string[] | null = null
 
     @observable currentStep = 0; // current page of the wizard
 
@@ -276,6 +279,85 @@ class ReassignPartitions extends PageComponent {
                 </Section>
 
             </PageContent>
+                <Modal isOpen={this.removeThrottleFromTopicsContent !== null} onClose={() => {
+                    this.removeThrottleFromTopicsContent = null
+                }}>
+                    <ModalOverlay/>
+                    <ModalContent minW="5xl">
+                        <ModalHeader>
+                            <Flex gap={2}><ExclamationCircleOutlined/>Remove throttle config from topics</Flex>
+                        </ModalHeader>
+                        <ModalBody>
+                            <div>
+                                <div>
+                                    There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br/>
+                                    Kowl implements throttling of reassignments by
+                                    setting{' '}
+                                    <span className="tooltip" style={{textDecoration: 'dotted underline'}}>
+                            two configuration values
+                            <span className="tooltiptext" style={{textAlign: 'left', width: '500px'}}>
+                                Kowl sets those two configuration entries when throttling a topic reassignment:
+                                <div style={{marginTop: '.5em'}}>
+                                    <code>leader.replication.throttled.replicas</code><br/>
+                                    <code>follower.replication.throttled.replicas</code>
+                                </div>
+                            </span>
+                        </span>{' '}
+                                    in a topics configuration.<br/>
+                                    So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
+                                </div>
+                                <div style={{margin: '1em 0'}}>
+                                    <h4>Throttled Topics</h4>
+                                    <ul style={{maxHeight: '145px', overflowY: 'auto'}}>
+                                        {this.removeThrottleFromTopicsContent?.map(t => <li key={t}>{t}</li>)}
+                                    </ul>
+                                </div>
+                                <div>
+                                    Do you want to remove the throttle config from those topics?
+                                </div>
+                            </div>
+                        </ModalBody>
+                        <ModalFooter gap={2}>
+                            <Button variant="outline" onClick={() => {
+                                this.removeThrottleFromTopicsContent = null
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button onClick={async () => {
+                                if (this.removeThrottleFromTopicsContent === null) {
+                                    return
+                                }
+                                const baseText = 'Removing throttle config from topics';
+
+                                const toastId = toast({
+                                    status: 'loading',
+                                    description: `${baseText}...`,
+                                    duration: null
+                                })
+
+                                const result = await api.resetThrottledReplicas(this.removeThrottleFromTopicsContent);
+                                const errors = result.patchedConfigs.filter(r => r.error);
+
+                                if (errors.length == 0) {
+                                    toast.update(toastId, {
+                                        status: 'success',
+                                        description: `${baseText} - Done`,
+                                        duration: 2500,
+                                    })
+                                } else {
+                                    toast.update(toastId, {
+                                        status: 'error',
+                                        description: `${baseText}: ${errors.length} errors`,
+                                        duration: 2500,
+                                    })
+                                    console.error('errors in removeThrottleFromTopics', errors);
+                                }
+
+                                this.refreshTopicConfigs();
+                            }} colorScheme="red">Remove throttle</Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
             </div>
         </>
     }
@@ -592,82 +674,7 @@ class ReassignPartitions extends PageComponent {
     }
 
     async removeThrottleFromTopics() {
-        const throttledTopics = clone(this.topicsWithThrottle);
-        const refreshTopicConfigs = this.refreshTopicConfigs;
-
-        Modal.confirm({
-            title: 'Remove throttle config from topics',
-            icon: <ExclamationCircleOutlined />,
-            width: 'auto',
-            style: { maxWidth: '66%' },
-            content:
-                <div>
-                    <div>
-                        There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br />
-                        Kowl implements throttling of reassignments by
-                        setting{' '}
-                        <span className="tooltip" style={{ textDecoration: 'dotted underline' }}>
-                            two configuration values
-                            <span className="tooltiptext" style={{ textAlign: 'left', width: '500px' }}>
-                                Kowl sets those two configuration entries when throttling a topic reassignment:
-                                <div style={{ marginTop: '.5em' }}>
-                                    <code>leader.replication.throttled.replicas</code><br />
-                                    <code>follower.replication.throttled.replicas</code>
-                                </div>
-                            </span>
-                        </span>{' '}
-                        in a topics configuration.<br />
-                        So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
-                    </div>
-                    <div style={{ margin: '1em 0' }}>
-                        <h4>Throttled Topics</h4>
-                        <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
-                            {throttledTopics.map(t => <li key={t}>{t}</li>)}
-                        </ul>
-                    </div>
-                    <div>
-                        Do you want to remove the throttle config from those topics?
-                    </div>
-                </div>,
-
-            okText: 'Remove throttle',
-            okButtonProps: { danger: true, autoFocus: false, },
-            async onOk() {
-                const baseText = 'Removing throttle config from topics';
-
-                const toastId = toast({
-                    status: 'loading',
-                    description: baseText + '...',
-                    duration: null
-                })
-
-                const result = await api.resetThrottledReplicas(throttledTopics);
-                const errors = result.patchedConfigs.filter(r => r.error);
-
-                if (errors.length == 0) {
-                    toast.update(toastId, {
-                        status: 'success',
-                        description: baseText + ' -  Done',
-                        duration: 2500,
-                    })
-                }
-                else {
-                    toast.update(toastId, {
-                        status: 'error',
-                        description: baseText + ': '  + errors.length + ' errors',
-                        duration: 2500,
-                    })
-                    console.error('errors in removeThrottleFromTopics', errors);
-                }
-
-                refreshTopicConfigs();
-            },
-
-            maskClosable: true,
-            cancelButtonProps: { autoFocus: true },
-        })
-
-
+        this.removeThrottleFromTopicsContent = clone(this.topicsWithThrottle)
     }
 
     @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {

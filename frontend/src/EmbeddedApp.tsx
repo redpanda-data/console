@@ -8,7 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
- 
+
  import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -30,7 +30,7 @@ import { SetConfigArguments, setup, embeddedAvailableRoutesObservable } from './
 import HistorySetter from './components/misc/HistorySetter';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
-import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 
 export interface EmbeddedProps extends SetConfigArguments {
     // This is the base url that is used:
@@ -71,7 +71,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
     return (
         <BrowserRouter basename={basePath}>
             <HistorySetter />
-            <ChakraProvider theme={redpandaTheme}>
+            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
                  <AppContent />
             </ChakraProvider>
         </BrowserRouter>

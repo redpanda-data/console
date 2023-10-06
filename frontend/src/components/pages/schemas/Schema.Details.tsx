@@ -25,7 +25,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Button, createStandaloneToast, Flex, Icon, redpandaToastOptions, Tag, Tooltip } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Icon, redpandaTheme, redpandaToastOptions, Tag, Tooltip } from '@redpanda-data/ui';
 import { AiOutlineCopy } from 'react-icons/ai';
 import { Statistic } from '../../misc/Statistic';
 
@@ -89,6 +89,7 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
 
 // TODO - once SchemaDetailsView is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
     defaultOptions: redpandaToastOptions.defaultOptions
 })
 
