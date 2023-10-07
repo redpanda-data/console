@@ -11,13 +11,12 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, Radio, Select, Table, Typography } from 'antd';
+import { ConfigProvider, Dropdown, Empty, Menu, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import * as moment from 'moment';
 import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
@@ -46,10 +45,11 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Flex, Input, InputGroup, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, DateTimePicker, Flex, Input, InputGroup, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
+
 
 const { Option } = Select;
 
@@ -827,67 +827,25 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
     }
 }
 
-
-@observer
-class StartOffsetDateTimePicker extends Component {
-
-    constructor(p: any) {
-        super(p);
+const StartOffsetDateTimePicker: FC = observer(() => {
         const searchParams = uiState.topicSettings.searchParams;
-        // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
-        if (!searchParams.startTimestampWasSetByUser) {
-            // so far, the user did not change the startTimestamp, so we set it to 'now'
-            searchParams.startTimestamp = new Date().getTime();
-        }
-        // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
+
+        return (
+            <DateTimePicker
+                customInput={<Input />}
+                value={searchParams.startTimestamp}
+                defaultDate={searchParams.startTimestampWasSetByUser ? new Date(searchParams.startTimestamp) : new Date()}
+                defaultTimezone={uiState.topicSettings.searchParametersLocalTimeMode ? 'Local' : 'UTC'}
+                dateFormat="dd.MM.yyyy HH:mm:ss"
+                onChange={(value, dateString, timezone) => {
+                    searchParams.startTimestamp = value?.getTime() ?? -1
+                    searchParams.startTimestampWasSetByUser = true;
+                    uiState.topicSettings.searchParametersLocalTimeMode = timezone === 'Local';
+                }}
+            />
+        )
     }
-
-    render() {
-        const searchParams = uiState.topicSettings.searchParams;
-        // new Date().getTimezoneOffset()
-
-        // startTimestamp is always in unixSeconds, so for display we might have to convert
-        let format = 'DD.MM.YYYY HH:mm:ss';
-        let current: moment.Moment | undefined = searchParams.startTimestamp <= 0 ? undefined : moment.utc(searchParams.startTimestamp);
-
-        if (uiState.topicSettings.searchParametersLocalTimeMode) {
-            current = current?.local();
-            format += ' [(Local)]';
-        } else {
-            format += ' [(UTC)]';
-        }
-
-        return <DatePicker showTime={true} allowClear={false}
-            renderExtraFooter={() => <DateTimePickerExtraFooter />}
-            format={format}
-            value={current}
-            onChange={e => {
-                // console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
-                searchParams.startTimestamp = e?.valueOf() ?? -1;
-                searchParams.startTimestampWasSetByUser = true;
-            }}
-            onOk={e => {
-                // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
-                searchParams.startTimestamp = e.valueOf();
-            }}
-        />;
-    }
-}
-
-@observer
-class DateTimePickerExtraFooter extends Component {
-    render() {
-        return <Radio.Group
-            value={uiState.topicSettings.searchParametersLocalTimeMode ? 'local' : 'utc'}
-            onChange={e => {
-                // console.log("date mode changed", { newValue: e.target.value, isLocalMode: uiState.topicSettings.searchParametersLocalTimeMode });
-                uiState.topicSettings.searchParametersLocalTimeMode = e.target.value == 'local';
-            }}>
-            <Radio value="local">Local</Radio>
-            <Radio value="utc">UTC</Radio>
-        </Radio.Group>;
-    }
-}
+)
 
 
 @observer
@@ -1373,11 +1331,11 @@ class MessageSearchFilterBar extends Component {
                             borderWidth="0px 1px"
                             px="6px"
                             textDecoration={e.isActive ? '' : 'line-through'}
-                            opacity={e.isActive ? 1 : 0.5}
+                            color={e.isActive ? undefined : 'gray'}
                         >
                             {e.name ? e.name : (e.code ? e.code : 'New Filter')}
                         </TagLabel>
-                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" />
+                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
 

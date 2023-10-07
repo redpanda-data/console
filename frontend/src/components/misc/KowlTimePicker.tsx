@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import React from 'react';
-import { DatePicker, Radio } from 'antd';
+import React, { Component } from 'react';
+import { Radio } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import moment from 'moment';
+import { DateTimePicker, Input } from '@redpanda-data/ui';
 
 @observer
 export class KowlTimePicker extends Component<{
@@ -32,34 +32,20 @@ export class KowlTimePicker extends Component<{
     }
 
     render() {
-        let format = 'DD.MM.YYYY HH:mm:ss';
-        let current: moment.Moment = moment.utc(this.timestampUtcMs);
+        const current: moment.Moment = moment.utc(this.timestampUtcMs);
 
-        if (this.isLocalTimeMode) {
-            current = current?.local();
-            format += ' [(Local)]';
-        } else {
-            format += ' [(UTC)]';
-        }
-
-        return (
-            <DatePicker
-                showTime={true}
-                allowClear={false}
-                renderExtraFooter={() => this.footer()}
-                format={format}
-                value={current}
-                onChange={(e) => {
-                    this.timestampUtcMs = e?.valueOf() ?? -1;
-                    this.props.onChange(this.timestampUtcMs);
-                }}
-                onOk={(e) => {
-                    this.timestampUtcMs = e.valueOf();
-                    this.props.onChange(this.timestampUtcMs);
-                }}
-                disabled={this.props.disabled}
-            />
-        );
+        return <DateTimePicker
+            customInput={<Input />}
+            defaultDate={new Date(this.timestampUtcMs)}
+            disabled={this.props.disabled}
+            dateFormat="dd.MM.yyyy HH:mm:ss"
+            onChange={(value, dateString, timezone) => {
+                console.log({value, dateString, timezone})
+                this.timestampUtcMs = value?.getTime() ?? -1
+                this.props.onChange(this.timestampUtcMs);
+            }}
+            defaultTimezone={current?.local() ? 'Local' : 'UTC'}
+        />
     }
 
     footer() {

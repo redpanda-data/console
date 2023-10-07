@@ -21,6 +21,8 @@ import './assets/fonts/open-sans.css';
 import './assets/fonts/poppins.css';
 import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
+import './custom-date-time-picker.scss'
+
 
 /* end global stylesheet */
 
