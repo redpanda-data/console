@@ -9,91 +9,57 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react'
-import { Dropdown } from 'antd';
 import { api } from '../../state/backendApi';
-import { makeObservable, observable } from 'mobx';
 import { UserPreferencesDialog } from './UserPreferences';
 import { AppFeatures } from '../../utils/env';
-import { Avatar } from '@redpanda-data/ui';
+import { Avatar, Button, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger } from '@redpanda-data/ui';
 
-@observer
-export class UserProfile extends Component {
-    @observable menuOpen = false;
-    @observable preferencesOpen = false;
+export const UserProfile = observer(() => {
+    const [preferencesOpen, setPreferencesOpen] = useState(false);
 
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-        api.refreshUserData();
+    useEffect(() => {
+        void api.refreshUserData();
+    }, [])
+
+    const userName = api.userData?.user?.meta?.name ?? 'null';
+
+    if (!AppFeatures.SINGLE_SIGN_ON) {
+        return null;
     }
+    if (!api.userData || !api.userData.user || !api.userData.user.meta.name) {
+        return null;
+    }
+    const user = api.userData.user;
 
-    render() {
-        if (!AppFeatures.SINGLE_SIGN_ON) {
-            return null;
-        }
-        if (!api.userData || !api.userData.user || !api.userData.user.meta.name) {
-            return null;
-        }
-        const user = api.userData.user;
-
-        // rc-dropdown supports this property, but the antd wrapper doesn't specify it.
-        // luckily antd passes many props to rc-dropdown using the spread operator
-        const noExpand = { minOverlayWidthMatchTrigger: false };
-
-        return <>
-            <Dropdown overlayClassName="avatarDropdown"
-                overlay={() => <UserMenu onOpenPreferences={() => {
-                    this.preferencesOpen = true;
-                    this.menuOpen = false;
-                }} />}
-                trigger={['click']}
-                arrow={false}
-                placement="top"
-                open={this.menuOpen}
-                onOpenChange={e => this.menuOpen = e}
-                {...noExpand}
-            >
+    return <>
+        <Popover placement="top-start" trigger="click">
+            <PopoverTrigger>
                 <div className="profile">
                     <div className="avatar">
-                        <Avatar name={user.meta.name} src={user.meta.avatarUrl} size="sm" />
+                        <Avatar name={user.meta.name} src={user.meta.avatarUrl} size="sm"/>
                     </div>
                     <div className="text">
                         <div className="userName">{user.meta.name}</div>
                         <div className="prefText">Preferences</div>
                     </div>
                 </div>
-            </Dropdown>
+            </PopoverTrigger>
+            <PopoverContent>
+                <PopoverHeader px={8}>Signed in as <div>{userName}</div></PopoverHeader>
+                <PopoverBody>
+                    <Button w="full" justifyContent="start" variant="ghost" onClick={() => {
+                        setPreferencesOpen(true);
+                    }}>Preferences</Button>
+                    <Button w="full" justifyContent="start" variant="ghost" onClick={() => {
+                        void api.logout();
+                        window.location.reload();
+                    }}>Logout</Button>
+                </PopoverBody>
+            </PopoverContent>
+        </Popover>
 
-            <UserPreferencesDialog isOpen={this.preferencesOpen} onClose={() => this.preferencesOpen = false} />
-        </>
-    }
-}
-
-@observer
-export class UserMenu extends Component<{ onOpenPreferences: () => void }> {
-    render() {
-        const userName = api.userData?.user?.meta?.name ?? 'null';
-
-        return (
-            <div className="userMenu">
-                <div className="menuItem header">
-                    Signed in as<br />
-                    <span style={{ fontWeight: 'bold' }}>{userName}</span>
-                </div>
-
-                <div className="divider" />
-
-                <div className="menuItem" onClick={() => this.props.onOpenPreferences()}>
-                    Preferences
-                </div>
-
-                <div className="menuItem" onClick={() => { api.logout(); window.location.reload(); }}>
-                    Logout
-                </div>
-            </div>
-        )
-    }
-}
-
+        <UserPreferencesDialog isOpen={preferencesOpen} onClose={() => setPreferencesOpen(false)}/>
+    </>
+})

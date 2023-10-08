@@ -10,14 +10,13 @@
  */
 
 import React from 'react';
-import { Menu, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
 import { Switch, useHistory } from 'react-router-dom';
 import { Section } from './misc/common';
 import { Route, Redirect } from 'react-router';
 import { PageComponentType, PageProps } from './pages/Page';
 import TopicList from './pages/topics/Topic.List';
 import TopicDetails from './pages/topics/Topic.Details';
-import { observer } from 'mobx-react';
 import GroupList from './pages/consumers/Group.List';
 import GroupDetails from './pages/consumers/Group.Details';
 import { uiState } from '../state/uiState';
@@ -57,16 +56,6 @@ export interface PageDefinition<TRouteParams = {}> {
     visibilityCheck?: () => MenuItemState;
 }
 
-
-export const RouteMenu = observer(() =>
-    <Menu mode="inline"
-        theme="light"
-        selectedKeys={uiState.selectedMenuKeys}
-        style={{ border: 0, background: 'none' }}
-        items={CreateRouteMenuItems(APP_ROUTES)}
-    >
-    </Menu>
-)
 
 // Generate content for <Menu> from all routes
 export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {

@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, Radio, Select, Table, Typography } from 'antd';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon, KebabHorizontalIcon } from '@primer/octicons-react';
+import { ConfigProvider, DatePicker, Empty, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
@@ -30,7 +30,6 @@ import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
-import { isClipboardAvailable } from '../../../../utils/featureDetection';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
@@ -39,18 +38,16 @@ import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsStrin
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
-import { NoClipboardPopover } from '../../../misc/NoClipboardPopover';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Flex, Input, InputGroup, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
-
 const { Option } = Select;
 
 interface TopicMessageViewProps {
@@ -67,43 +64,47 @@ interface TopicMessageViewProps {
 const getStringValue = (value: string | TopicMessage): string => typeof value === 'string' ? value : JSON.stringify(value, null, 4)
 
 const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({record, onSaveToFile}) => {
-
     const toast = useToast()
     return (
         <Menu>
-            <Menu.Item disabled={record.key.isPayloadNull} onClick={() => {
-                navigator.clipboard.writeText(getStringValue(record)).then(() => {
-                    toast({
-                        status: 'success',
-                        description: 'Key copied to clipboard'
-                    })
-                }).catch(navigatorClipboardErrorHandler)
-            }}>
-                Copy Key
-            </Menu.Item>
-            <Menu.Item disabled={record.value.isPayloadNull} onClick={() => {
-                navigator.clipboard.writeText(getStringValue(record)).then(() => {
-                    toast({
-                        status: 'success',
-                        description: 'Value copied to clipboard'
-                    })
-                }).catch(navigatorClipboardErrorHandler)
-            }}>
-                Copy Value
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-                navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
-                    toast({
-                        status: 'success',
-                        description: 'Epoch Timestamp copied to clipboard'
-                    })
-                }).catch(navigatorClipboardErrorHandler)
-            }}>
-                Copy Epoch Timestamp
-            </Menu.Item>
-            <Menu.Item onClick={() => onSaveToFile()}>
-                Save to File
-            </Menu.Item>
+            <MenuButton as={Button} variant="link" className="iconButton">
+                <KebabHorizontalIcon />
+            </MenuButton>
+            <MenuList>
+                <MenuItem disabled={record.key.isPayloadNull} onClick={() => {
+                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Key copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Key
+                </MenuItem>
+                <MenuItem disabled={record.value.isPayloadNull} onClick={() => {
+                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Value copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Value
+                </MenuItem>
+                <MenuItem onClick={() => {
+                    navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Epoch Timestamp copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Epoch Timestamp
+                </MenuItem>
+                <MenuItem onClick={() => onSaveToFile()}>
+                    Save to File
+                </MenuItem>
+            </MenuList>
         </Menu>
     );
 };
@@ -301,22 +302,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                     {/* Topic Actions */}
                     <div className={styles.topicActionsWrapper}>
-                        <Dropdown
-                            trigger={['click']}
-                            overlay={
-                                <Menu>
-                                    <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
-                                        Publish Message
-                                    </Menu.Item>
-                                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                                </Menu>
-                            }
-                        >
-                            <Button variant="outline" minWidth="120px" gap="2" className="topicActionsButton">
+                        <Menu>
+                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
                                 Actions
-                                <MdExpandMore size="1.5rem" />
-                            </Button>
-                        </Dropdown>
+                            </MenuButton>
+                            <MenuList>
+                                <MenuItem
+                                    onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}
+                                >
+                                    Publish Message
+                                </MenuItem>
+                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                            </MenuList>
+                        </Menu>
                     </div>
 
                     {/* Quick Search */}
@@ -480,17 +478,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     );
                 },
                 render: (_text, record) => (
-                    <NoClipboardPopover placement="left">
-                        <div>
-                            {' '}
-                            {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={<CopyDropdown record={record} onSaveToFile={() => this.downloadMessages = [record]} />} trigger={['click']}>
-                                <Button className="iconButton" style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} variant="link">
-                                    <EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />
-                                </Button>
-                            </Dropdown>
-                        </div>
-                    </NoClipboardPopover>
+                    <CopyDropdown record={record} onSaveToFile={() => this.downloadMessages = [record]} />
                 ),
             },
             // todo: size was a guess anyway, might be added back later
@@ -1505,9 +1493,9 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
         );
 
     return (
-        <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>
+        <MenuItem key={key} isDisabled={!isEnabled} onClick={onClick}>
             {content}
-        </Menu.Item>
+        </MenuItem>
     );
 }
 
