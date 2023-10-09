@@ -18,6 +18,7 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -186,9 +187,9 @@ func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
 func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
-func (*defaultHooks) ConfigConnectRPC(ConfigConnectRPCRequest) ConfigConnectRPCResponse {
+func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnectRPCResponse {
 	return ConfigConnectRPCResponse{
-		Interceptors:       []connect.Interceptor{},
+		Interceptors:       req.BaseInterceptors,
 		AdditionalServices: []ConnectService{},
 	}
 }
