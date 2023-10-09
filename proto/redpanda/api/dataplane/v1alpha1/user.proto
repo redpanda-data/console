@@ -27,10 +27,12 @@ message ListUsersResponse {
 message CreateUserRequest {
   message User {
     string name = 1 [
+      (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128
     ];
     string password = 2 [
+      (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 3,
       (buf.validate.field).string.max_len = 128
     ];
@@ -56,14 +58,22 @@ message CreateUserResponse {
 message UpdateUserRequest {
   message User {
     string name = 1 [
+      (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128
     ];
     string password = 2 [
+      (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 3,
       (buf.validate.field).string.max_len = 128
     ];
-    SASLMechanism mechanism = 3 [(buf.validate.field).enum.defined_only = true];
+    SASLMechanism mechanism = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0]
+      }
+    ];
   }
   User user = 1;
 }
@@ -78,6 +88,7 @@ message UpdateUserResponse {
 
 message DeleteUserRequest {
   string name = 1 [
+    (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128
   ];
@@ -98,7 +109,7 @@ service UserService {
       responses: {
         key: "201"
         value: {
-          description: "Namespace Created"
+          description: "Creates a user"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
           }
