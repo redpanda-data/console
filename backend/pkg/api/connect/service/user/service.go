@@ -87,11 +87,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 }
 
 func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error) {
-	// 1. Check permissions
-	// TODO: Check if requester is allowed to create users
-	// TODO: Check if targeted user is a protected user
-
-	// 2. Check if we can create users
+	// 1. Check if we can create users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,

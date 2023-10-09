@@ -26,9 +26,8 @@ import (
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
-
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
+	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
@@ -104,7 +103,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	reflector := grpcreflect.NewStaticReflector(reflectServiceNames...)
 	r.Mount(grpcreflect.NewHandlerV1(reflector))
 	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
-
 }
 
 // All the routes for the application are defined in one place.
