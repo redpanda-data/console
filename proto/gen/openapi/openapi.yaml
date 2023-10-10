@@ -720,6 +720,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeleteACLsResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -817,6 +823,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ListACLsResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -903,6 +915,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateACLResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -954,6 +972,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Secret'
           description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1007,6 +1031,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ListSecretsResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1039,6 +1069,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Secret'
           description: Secret Created.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1071,6 +1107,12 @@ paths:
             application/json:
               schema: {}
           description: Secret was deleted successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1119,6 +1161,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ListTopicsResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1152,6 +1200,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Topic'
           description: Topic Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1183,12 +1237,24 @@ paths:
             application/json:
               schema: {}
           description: Topic was deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
           description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
@@ -1215,6 +1281,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetTopicConfigurationResponse'
           description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1261,6 +1333,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/UpdateTopicConfigurationResponse'
           description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1307,6 +1385,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetTopicConfigurationResponse'
           description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1341,9 +1425,19 @@ paths:
         "200":
           content:
             application/json:
+              example:
+                users:
+                  - name: payment-service
+                  - name: jane
               schema:
                 $ref: '#/components/schemas/ListUsersResponse'
           description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1365,6 +1459,11 @@ paths:
       requestBody:
         content:
           application/json:
+            example:
+              user:
+                mechanism: SASL_MECHANISM_SCRAM_SHA_256
+                name: payment-service
+                password: secure-password
             schema:
               $ref: '#/components/schemas/CreateUserRequest.User'
         required: true
@@ -1373,9 +1472,39 @@ paths:
         "201":
           content:
             application/json:
+              example:
+                user:
+                  mechanism: SASL_MECHANISM_SCRAM_SHA_256
+                  name: payment-service
               schema:
                 $ref: '#/components/schemas/CreateUserRequest.User'
-          description: Namespace Created
+          description: Creates a user
+        "400":
+          content:
+            application/json:
+              example:
+                code: INVALID_ARGUMENT
+                details:
+                  - '@type': type.googleapis.com/google.rpc.ErrorInfo
+                    domain: redpanda.com/dataplane
+                    metadata: {}
+                    reason: INVALID_INPUT
+                  - '@type': type.googleapis.com/google.rpc.BadRequest
+                    field_violations:
+                      - description: value length must be at least 3 characters
+                        field: user.password
+                      - description: value is required
+                        field: user.mechanism
+                message: provided parameters are invalid
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Bad Request. Check API documentation and update request.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "500":
           content:
             application/json:
@@ -1405,8 +1534,15 @@ paths:
         "204":
           content:
             application/json:
+              example: {}
               schema: {}
           description: User was deleted successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
         "404":
           content:
             application/json:
@@ -1441,6 +1577,10 @@ paths:
       requestBody:
         content:
           application/json:
+            example:
+              user:
+                mechanism: SASL_MECHANISM_SCRAM_SHA_256
+                password: new-password
             schema:
               properties:
                 mechanism:
@@ -1454,15 +1594,39 @@ paths:
         "200":
           content:
             application/json:
+              example:
+                user:
+                  mechanism: SASL_MECHANISM_SCRAM_SHA_256
+                  name: payment-service
               schema:
                 $ref: '#/components/schemas/UpdateUserResponse.User'
           description: Ok
-        "404":
+        "400":
+          content:
+            application/json:
+              example:
+                code: INVALID_ARGUMENT
+                details:
+                  - '@type': type.googleapis.com/google.rpc.ErrorInfo
+                    domain: redpanda.com/dataplane
+                    metadata: {}
+                    reason: INVALID_INPUT
+                  - '@type': type.googleapis.com/google.rpc.BadRequest
+                    field_violations:
+                      - description: value length must be at least 3 characters
+                        field: user.password
+                      - description: value is required
+                        field: user.mechanism
+                message: provided parameters are invalid
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Bad Request. Check API documentation and update request.
+        "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not Found
+          description: Unauthenticated.
         "500":
           content:
             application/json:
