@@ -124,15 +124,6 @@ service UserService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
   rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
@@ -161,15 +152,6 @@ service UserService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
@@ -183,15 +165,6 @@ service UserService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}
-          }
-        }
-      }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
           }
         }
       }
@@ -213,15 +186,6 @@ service UserService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }

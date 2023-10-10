@@ -143,15 +143,6 @@ service ACLService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
 
@@ -169,15 +160,6 @@ service ACLService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
 
@@ -192,15 +174,6 @@ service ACLService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.DeleteACLsResponse"}
-          }
-        }
-      }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
           }
         }
       }

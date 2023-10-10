@@ -39,7 +39,7 @@ func NiceHTTPErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler 
 		err = customStatus.Err
 	}
 	s := status.Convert(err)
-	pb := statusToNice(s.Proto())
+	pb := StatusToNice(s.Proto())
 
 	w.Header().Del("Trailer")
 	w.Header().Del("Transfer-Encoding")
@@ -130,9 +130,9 @@ func handleForwardResponseTrailer(w http.ResponseWriter, md runtime.ServerMetada
 	}
 }
 
-// statusToNice converts a google.rpc.Status to cloudv1alpha1.ErrorStatus,
+// StatusToNice converts a google.rpc.Status to cloudv1alpha1.ErrorStatus,
 // which is "nicer" variant with Code as Enum.
-func statusToNice(s *spb.Status) *commonv1alpha1.ErrorStatus {
+func StatusToNice(s *spb.Status) *commonv1alpha1.ErrorStatus {
 	pb := commonv1alpha1.ErrorStatus{
 		Code:    code.Code(s.Code),
 		Message: s.Message,

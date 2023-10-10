@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  responses: {
+    key: "401"
+    value: {
+      description: "Unauthenticated."
+      schema: {
+        json_schema: {ref: ".google.rpc.Status"}
+      }
+    }
+  }
+  responses: {
+    key: "500"
+    value: {
+      description: "Internal Server Error. Reach out to support."
+      schema: {
+        json_schema: {ref: ".google.rpc.Status"}
+      }
+    }
+  }
+};

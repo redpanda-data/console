@@ -3,16 +3,26 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
 	"golang.org/x/exp/slices"
+	"google.golang.org/genproto/googleapis/rpc/code"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
 var (
@@ -52,6 +62,7 @@ func main() { //nolint:cyclop,gocognit // this is just some tool
 	updateServers(doc3)
 	updateSecurity(doc3)
 	updateOperations(doc3)
+	updateUsers(doc3)
 	updateAny(doc3)
 	removeDummies(doc3)
 
@@ -356,4 +367,138 @@ func updateOperations(doc3 *openapi3.T) {
 	doc3.Components.Schemas["ErrorInfo"].Value.Title = "ErrorInfo"
 	doc3.Components.Schemas["QuotaFailure"].Value.Title = "QuotaFailure"
 	doc3.Components.Schemas["Help"].Value.Title = "Help"
+}
+
+func updateUsers(doc3 *openapi3.T) {
+	// Get /users
+	{
+		users := []*v1alpha1.ListUsersResponse_User{
+			{
+				Name: "payment-service",
+			},
+			{
+				Name: "jane",
+			},
+		}
+		response := &v1alpha1.ListUsersResponse{Users: users}
+		responseExample := toExample(response, "List Users", "List users", true)
+		doc3.Paths["/v1alpha1/users"].Get.Responses.Get(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+
+	// POST /users
+	{
+		// Request
+		createUserReq := &v1alpha1.CreateUserRequest{User: &v1alpha1.CreateUserRequest_User{
+			Name:      "payment-service",
+			Password:  "secure-password",
+			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+		}}
+		doc3.Paths["/v1alpha1/users"].Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq, "Create User", "Create user", false).Value
+
+		// Responses
+		response := &v1alpha1.CreateUserResponse{User: &v1alpha1.CreateUserResponse_User{
+			Name:      "payment-service",
+			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
+		}}
+		responseExample := toExample(response, "Create User", "Create user", true)
+		doc3.Paths["/v1alpha1/users"].Post.Responses.Get(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
+
+		badRequestExample := toExample(
+			newBadRequestError(
+				&errdetails.BadRequest_FieldViolation{
+					Field:       "user.password",
+					Description: "value length must be at least 3 characters",
+				},
+				&errdetails.BadRequest_FieldViolation{
+					Field:       "user.mechanism",
+					Description: "value is required",
+				},
+			),
+			"Bad Request",
+			"Bad Request",
+			true)
+		doc3.Paths["/v1alpha1/users"].Post.Responses.Get(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+	}
+
+	// PUT /users/{user.name}
+	{
+		// Request
+		updateUserReq := &v1alpha1.UpdateUserRequest{
+			User: &v1alpha1.UpdateUserRequest_User{
+				// Name:      "payment-service", // Will be populated from URL param
+				Password:  "new-password",
+				Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}
+		doc3.Paths["/v1alpha1/users/{user.name}"].Put.RequestBody.Value.Content["application/json"].Example = toExample(updateUserReq, "Update User", "Update user", false).Value
+
+		// Responses
+		response := &v1alpha1.UpdateUserResponse{
+			User: &v1alpha1.UpdateUserResponse_User{
+				Name:      "payment-service",
+				Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
+			},
+		}
+		responseExample := toExample(response, "Update User", "Update user", true)
+		doc3.Paths["/v1alpha1/users/{user.name}"].Put.Responses.Get(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+
+		badRequestExample := toExample(
+			newBadRequestError(
+				&errdetails.BadRequest_FieldViolation{
+					Field:       "user.password",
+					Description: "value length must be at least 3 characters",
+				},
+				&errdetails.BadRequest_FieldViolation{
+					Field:       "user.mechanism",
+					Description: "value is required",
+				},
+			),
+			"Bad Request",
+			"Bad Request",
+			true)
+		doc3.Paths["/v1alpha1/users/{user.name}"].Put.Responses.Get(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+	}
+
+	// DELETE /users/{name}
+	{
+		// Response
+		response := &v1alpha1.DeleteUserResponse{}
+		responseExample := toExample(response, "Delete User", "Delete user", true)
+		doc3.Paths["/v1alpha1/users/{name}"].Delete.Responses.Get(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+}
+
+func newBadRequestError(fieldValidations ...*errdetails.BadRequest_FieldViolation) *commonv1alpha1.ErrorStatus {
+	return connectErrorToErrorStatus(
+		apierrors.NewConnectError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("provided parameters are invalid"),
+			apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+			apierrors.NewBadRequest(fieldValidations...),
+		),
+	)
+}
+
+func connectErrorToErrorStatus(connectErr *connect.Error) *commonv1alpha1.ErrorStatus {
+	connectErr.Details()
+	details := make([]*anypb.Any, len(connectErr.Details()))
+
+	for i, d := range connectErr.Details() {
+		msg, err := d.Value()
+		if err != nil {
+			panic(err)
+		}
+		anyDetail, err := anypb.New(msg)
+		if err != nil {
+			panic(err)
+		}
+		details[i] = anyDetail
+	}
+	pb := commonv1alpha1.ErrorStatus{
+		Code:    code.Code(connectErr.Code()),
+		Message: connectErr.Message(),
+		Details: details,
+	}
+
+	return &pb
 }

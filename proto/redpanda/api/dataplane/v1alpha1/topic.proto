@@ -136,15 +136,6 @@ service TopicService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
@@ -158,15 +149,6 @@ service TopicService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTopicsResponse"}
-          }
-        }
-      }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
           }
         }
       }
@@ -218,15 +200,6 @@ service TopicService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
   rpc UpdateTopicConfiguration(UpdateTopicConfigurationRequest) returns (UpdateTopicConfigurationResponse) {
@@ -255,15 +228,6 @@ service TopicService {
           }
         }
       }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
     };
   }
   rpc SetTopicConfiguration(SetTopicConfigurationRequest) returns (SetTopicConfigurationResponse) {
@@ -287,15 +251,6 @@ service TopicService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
-      responses: {
-        key: "500"
-        value: {
-          description: "Internal Server Error. Reach out to support."
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
