@@ -116,6 +116,15 @@ service UserService {
         }
       }
       responses: {
+        key: "400"
+        value: {
+          description: "Bad Request. Check API documentation and update request."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
         key: "500"
         value: {
           description: "Internal Server Error. Reach out to support."
@@ -144,9 +153,9 @@ service UserService {
         }
       }
       responses: {
-        key: "404"
+        key: "400"
         value: {
-          description: "Not Found"
+          description: "Bad Request. Check API documentation and update request."
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }

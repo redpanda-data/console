@@ -14,4 +14,5 @@ const (
 	ReasonConsoleError          = "CONSOLE_ERROR"
 	ReasonRedpandaAdminAPIError = "REDPANDA_ADMIN_API_ERROR"
 	ReasonInvalidInput          = "INVALID_INPUT"
+	ReasonResourceNotFound      = "RESOURCE_NOT_FOUND"
 )
