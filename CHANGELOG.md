@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.4 / 2023-10-10
+
+- [FIX] Build with latest Alpine image to address CVE-2023-38039.
+
 ## v2.3.3 / 2023-09-14
 
 - [BUGFIX] Get all schemas for protobuf compilation in order to support records of multiple versions of same schema.
