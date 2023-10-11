@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package interceptor defines all connect interceptors that can be used for
+// the connect api.
 package interceptor
 
 import (
@@ -44,21 +46,25 @@ func NewRequestValidationInterceptor(validator *protovalidate.Validator, logger 
 			}
 
 			var badRequest *errdetails.BadRequest
-			switch v := err.(type) {
-			case *protovalidate.ValidationError:
-				var validationErrs []*errdetails.BadRequest_FieldViolation
-				for _, violation := range v.Violations {
+			var validationErr *protovalidate.ValidationError
+			var runtimeErr *protovalidate.RuntimeError
+			var compilationErr *protovalidate.CompilationError
+
+			switch {
+			case errors.As(err, &validationErr):
+				var fieldViolations []*errdetails.BadRequest_FieldViolation
+				for _, violation := range validationErr.Violations {
 					fieldViolationErr := &errdetails.BadRequest_FieldViolation{
 						Field:       violation.FieldPath,
 						Description: violation.Message,
 					}
-					validationErrs = append(validationErrs, fieldViolationErr)
+					fieldViolations = append(fieldViolations, fieldViolationErr)
 				}
-				badRequest = apierrors.NewBadRequest(validationErrs...)
-			case *protovalidate.RuntimeError:
-				logger.Error("validation runtime error", zap.Error(v))
-			case *protovalidate.CompilationError:
-				logger.Error("validation compilation error", zap.Error(v))
+				badRequest = apierrors.NewBadRequest(fieldViolations...)
+			case errors.As(err, &runtimeErr):
+				logger.Error("validation runtime error", zap.Error(runtimeErr))
+			case errors.As(err, &compilationErr):
+				logger.Error("validation compilation error", zap.Error(compilationErr))
 			}
 
 			return nil, apierrors.NewConnectError(

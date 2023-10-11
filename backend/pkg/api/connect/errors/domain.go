@@ -10,5 +10,6 @@
 package errors
 
 const (
+	// DomainDataplane defines the string for the proto error domain "dataplane".
 	DomainDataplane = "redpanda.com/dataplane"
 )

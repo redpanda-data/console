@@ -185,7 +185,7 @@ func updateInfo(doc3 *openapi3.T) {
 	}
 }
 
-func toExample(in proto.Message, summary string, description string, emitUnpopulated bool) *openapi3.Example { //nolint:unused // this will be useful
+func toExample(in proto.Message, summary string, description string, emitUnpopulated bool) *openapi3.Example {
 	marshaled, err := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		EmitUnpopulated: emitUnpopulated,

@@ -89,6 +89,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
+	//nolint:gocritic // It's okay to use append here, since we no longer need to access both given slices anymore
 	allServices := append(ossServices, hookOutput.AdditionalServices...)
 
 	var reflectServiceNames []string
@@ -107,9 +108,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
-	// connectRouter := chi.NewRouter()
-	// grpcGatewayRouter := chi.NewRouter()
-
 	baseRouter := chi.NewRouter()
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))

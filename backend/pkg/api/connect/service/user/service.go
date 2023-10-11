@@ -7,6 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package user contains the implementation of all User endpoints.
 package user
 
 import (
@@ -28,6 +29,8 @@ import (
 
 var _ dataplanev1alpha1connect.UserServiceHandler = (*Service)(nil)
 
+// Service that implements the UserServiceHandler interface. This includes all
+// RPCs to manage Redpanda or Kafka users.
 type Service struct {
 	cfg         *config.Config
 	logger      *zap.Logger
@@ -37,6 +40,7 @@ type Service struct {
 	isProtectedUserFn func(userName string) bool
 }
 
+// NewService creates a new user service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
 	redpandaSvc *redpanda.Service,
@@ -52,7 +56,8 @@ func NewService(cfg *config.Config,
 	}
 }
 
-func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
+// ListUsers returns a list of all existing users.
+func (s *Service) ListUsers(ctx context.Context, _ *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
 	// 1. Check if we can list users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
@@ -88,6 +93,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 	}), nil
 }
 
+// CreateUser creates a new Redpanda/Kafka user.
 func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error) {
 	// 1. Check if we can create users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
@@ -137,6 +143,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	return connect.NewResponse(res), nil
 }
 
+// UpdateUser upserts a new Redpanda/Kafka user. This equals a PUT operation.
 func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.UpdateUserRequest]) (*connect.Response[v1alpha1.UpdateUserResponse], error) {
 	// 1. Check if we can update users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
@@ -185,6 +192,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	}), nil
 }
 
+// DeleteUser deletes an existing Redpanda/Kafka user.
 func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.DeleteUserRequest]) (*connect.Response[v1alpha1.DeleteUserResponse], error) {
 	// 1. Check if we can delete users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {

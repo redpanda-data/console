@@ -16,6 +16,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// NewConnectError is a helper function to construct a new connect error.
+// This function should always be used over instantiating connect errors directly,
+// as we can ensure that certain error details will always be provided.
 func NewConnectError(code connect.Code, innerErr error, errInfo *errdetails.ErrorInfo, errDetails ...proto.Message) *connect.Error {
 	connectErr := connect.NewError(code, innerErr)
 
@@ -39,11 +42,13 @@ func NewConnectError(code connect.Code, innerErr error, errInfo *errdetails.Erro
 	return connectErr
 }
 
+// KeyVal is a key/value pair that is used to provide additional metadata labels.
 type KeyVal struct {
 	Key   string
 	Value string
 }
 
+// NewErrorInfo is a helper function to create a new ErrorInfo detail.
 func NewErrorInfo(reason string, metadata ...KeyVal) *errdetails.ErrorInfo {
 	var md map[string]string
 	if len(metadata) > 0 {

@@ -33,12 +33,16 @@ type Hooks struct {
 	Console       ConsoleHooks
 }
 
+// ConfigConnectRPCRequest is the config object that is passed into the
+// hook to configure the Connect API. The hook implementation can use
+// this to control the behaviour of the connect API (e.g. change order,
+// add additional interceptors, mount more routes etc).
 type ConfigConnectRPCRequest struct {
 	BaseInterceptors []connect.Interceptor
 	GRPCGatewayMux   *runtime.ServeMux
 }
 
-// ConnectConfig configured connect services
+// ConfigConnectRPCResponse configures connect services.
 type ConfigConnectRPCResponse struct {
 	// Instructs OSS to use these intercptors for all connect services
 	Interceptors []connect.Interceptor
@@ -47,7 +51,9 @@ type ConfigConnectRPCResponse struct {
 	AdditionalServices []ConnectService
 }
 
-// ConnectService is used by
+// ConnectService is a Connect handler along with its metadata
+// that is required to mount the service in the mux as well
+// as advertise it in the gRPC reflector.
 type ConnectService struct {
 	ServiceName string
 	MountPath   string
