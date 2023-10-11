@@ -387,7 +387,7 @@ func (s *Service) GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subje
 				ch <- SchemaReference{
 					Error: err.Error(),
 				}
-				return nil
+				return nil //nolint:nilerr // we communicate error via channel
 			}
 
 			usages := make([]SchemaUsage, len(subjectVersions))
