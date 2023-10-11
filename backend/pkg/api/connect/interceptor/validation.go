@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 )
 
 // NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
@@ -31,7 +32,7 @@ func NewRequestValidationInterceptor(validator *protovalidate.Validator, logger 
 				return nil, apierrors.NewConnectError(
 					connect.CodeInvalidArgument,
 					errors.New("request is not a protocol buffer message"),
-					apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+					apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 				)
 			}
 
@@ -63,7 +64,7 @@ func NewRequestValidationInterceptor(validator *protovalidate.Validator, logger 
 			return nil, apierrors.NewConnectError(
 				connect.CodeInvalidArgument,
 				errors.New("provided parameters are invalid"),
-				apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 				badRequest, // This may be nil, but that's okay.
 			)
 		}

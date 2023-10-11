@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+enum Reason {
+  REASON_UNSPECIFIED = 0;
+  REASON_FEATURE_NOT_CONFIGURED = 1;
+  REASON_CONSOLE_ERROR = 2;
+  REASON_REDPANDA_ADMIN_API_ERROR = 3;
+}

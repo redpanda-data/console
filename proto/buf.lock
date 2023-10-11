@@ -24,5 +24,5 @@ deps:
   - remote: buf.build
     owner: redpandadata
     repository: common
-    commit: b54ec1730dab411aaa6f2c84dc6f1164
-    digest: shake256:c3f8d0201c1966d7e19ff00f076d7cf54022d1da314e6c89b55ded6446223641f227e3c14d9e37d421738637b8a65566c76838b1357acbb5e893e29bed6cce00
+    commit: 1d9a63a953054b3581e0995dbdbcad41
+    digest: shake256:50f7e7504488a748be5b9547fe40784d9f0357cc7782870995ce15c0b2253613a972873aea4e8e3407e544dc430d7b1acfaa5f0d2029c6daeb15edeac7a3ed61

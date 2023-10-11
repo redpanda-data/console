@@ -20,6 +20,7 @@ import (
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -57,7 +58,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,
 			errors.New("the redpanda admin api must be configured to list users"),
-			apierrors.NewErrorInfo(apierrors.ReasonFeatureNotConfigured),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
 		)
 	}
@@ -68,7 +69,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonRedpandaAdminAPIError),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
@@ -93,7 +94,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,
 			errors.New("the redpanda admin api must be configured to create users"),
-			apierrors.NewErrorInfo(apierrors.ReasonFeatureNotConfigured),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
 		)
 	}
@@ -103,7 +104,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
@@ -113,7 +114,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal, // Internal because the mechanism should already be validated
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonConsoleError),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
@@ -123,7 +124,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonRedpandaAdminAPIError),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
@@ -142,7 +143,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,
 			errors.New("the redpanda admin api must be configured to update users"),
-			apierrors.NewErrorInfo(apierrors.ReasonFeatureNotConfigured),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
 		)
 	}
@@ -152,7 +153,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 		)
 	}
 
@@ -162,7 +163,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal, // Internal because the mechanism should already be validated
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonConsoleError),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
@@ -172,7 +173,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonRedpandaAdminAPIError),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
@@ -190,7 +191,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeUnavailable,
 			errors.New("the redpanda admin api must be configured to delete users"),
-			apierrors.NewErrorInfo(apierrors.ReasonFeatureNotConfigured),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
 		)
 	}
@@ -200,7 +201,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
@@ -211,7 +212,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonRedpandaAdminAPIError),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 	exists := false
@@ -225,7 +226,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,
 			errors.New("user not found"),
-			apierrors.NewErrorInfo(apierrors.ReasonResourceNotFound),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
 		)
 	}
 
@@ -235,7 +236,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
-			apierrors.NewErrorInfo(apierrors.ReasonRedpandaAdminAPIError),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
