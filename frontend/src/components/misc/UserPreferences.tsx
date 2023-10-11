@@ -11,12 +11,12 @@
 
 import React, { Component, FC, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
-import { Menu, Input, InputNumber } from 'antd';
+import { Input, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 import { transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
-import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text } from '@redpanda-data/ui';
+import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text, Tabs } from '@redpanda-data/ui';
 
 type SettingsTabKeys = 'statisticsBar' | 'jsonViewer' | 'importExport' | 'autoRefresh'
 
@@ -28,7 +28,6 @@ const settingsTabs: Record<SettingsTabKeys, { name: string, component: FC }> = {
     // pagination position
     // messageSearch: { name: "Message Search", component: () => <MessageSearchTab /> },
 }
-
 
 
 export const UserPreferencesButton: FC = () => {
@@ -45,33 +44,20 @@ export const UserPreferencesButton: FC = () => {
     </>;
 }
 
-export const UserPreferencesDialog: FC<{isOpen: boolean; onClose: () => void}> = ({isOpen, onClose}) => {
-    const [selectedTab, setSelectedTab] = useState<SettingsTabKeys>('statisticsBar')
-    const tab = settingsTabs[selectedTab]
-
-    return (
+export const UserPreferencesDialog: FC<{isOpen: boolean; onClose: () => void}> = ({isOpen, onClose}) =>
+    (
         <Modal isCentered isOpen={isOpen} onClose={onClose}>
-            <ModalOverlay />
+            <ModalOverlay/>
             <ModalContent minW="5xl" minH="50vh">
                 <ModalHeader>User Preferences</ModalHeader>
                 <ModalBody>
-                    <Flex flexGrow={1}>
-                        {/* Menu */}
-                        <Menu
-                            mode="vertical"
-                            style={{width: '160px', height: '100%'}}
-                            selectedKeys={[selectedTab]}
-                            onClick={p => setSelectedTab(p.key as SettingsTabKeys)}
-                        >
-                            {Object.entries(settingsTabs).map(([key, {name}]) => <Menu.Item key={key}>{name}</Menu.Item>)}
-                        </Menu>
-
-                        {/* Content */}
-                        <Flex flexGrow={1} gap={4} flexDirection="column" px={5} pb={10}>
-                            <Text fontSize="xl">{tab.name}</Text>
-                            <tab.component/>
-                        </Flex>
-                    </Flex>
+                    <Tabs
+                        items={Object.entries(settingsTabs).map(([key, {name, component: Component}]) => ({
+                            name,
+                            component: <Component/>,
+                            key,
+                        }))}
+                    />
                 </ModalBody>
                 <ModalFooter alignItems="center" justifyContent="flex-end" gap={2}>
                     <Text fontSize="xs" color="gray.500">
@@ -82,7 +68,6 @@ export const UserPreferencesDialog: FC<{isOpen: boolean; onClose: () => void}> =
             </ModalContent>
         </Modal>
     )
-}
 
 @observer
 class StatsBarTab extends Component {
