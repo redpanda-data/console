@@ -471,7 +471,7 @@ func updateUsers(doc3 *openapi3.T) {
 				apierrors.NewConnectError(
 					connect.CodeNotFound,
 					fmt.Errorf("user not found"),
-					apierrors.NewErrorInfo(apierrors.ReasonResourceNotFound),
+					apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
 				),
 			),
 			"Bad Request",
@@ -486,7 +486,7 @@ func newBadRequestError(fieldValidations ...*errdetails.BadRequest_FieldViolatio
 		apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf("provided parameters are invalid"),
-			apierrors.NewErrorInfo(apierrors.ReasonInvalidInput),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			apierrors.NewBadRequest(fieldValidations...),
 		),
 	)

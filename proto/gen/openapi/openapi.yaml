@@ -1488,7 +1488,7 @@ paths:
                   - '@type': type.googleapis.com/google.rpc.ErrorInfo
                     domain: redpanda.com/dataplane
                     metadata: {}
-                    reason: INVALID_INPUT
+                    reason: REASON_INVALID_INPUT
                   - '@type': type.googleapis.com/google.rpc.BadRequest
                     field_violations:
                       - description: value length must be at least 3 characters
@@ -1552,7 +1552,7 @@ paths:
                   - '@type': type.googleapis.com/google.rpc.ErrorInfo
                     domain: redpanda.com/dataplane
                     metadata: {}
-                    reason: RESOURCE_NOT_FOUND
+                    reason: REASON_RESOURCE_NOT_FOUND
                 message: user not found
               schema:
                 $ref: '#/components/schemas/Status'
@@ -1618,7 +1618,7 @@ paths:
                   - '@type': type.googleapis.com/google.rpc.ErrorInfo
                     domain: redpanda.com/dataplane
                     metadata: {}
-                    reason: INVALID_INPUT
+                    reason: REASON_INVALID_INPUT
                   - '@type': type.googleapis.com/google.rpc.BadRequest
                     field_violations:
                       - description: value length must be at least 3 characters
