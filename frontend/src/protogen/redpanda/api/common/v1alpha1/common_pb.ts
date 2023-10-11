@@ -15,10 +15,82 @@ export enum Reason {
    * @generated from enum value: REASON_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
+
+  /**
+   * The specified resource could not be found.
+   *
+   * @generated from enum value: REASON_RESOURCE_NOT_FOUND = 1;
+   */
+  RESOURCE_NOT_FOUND = 1,
+
+  /**
+   * The input provided with the request is invalid.
+   *
+   * @generated from enum value: REASON_INVALID_INPUT = 2;
+   */
+  INVALID_INPUT = 2,
+
+  /**
+   * Authentication token is missing.
+   *
+   * @generated from enum value: REASON_NO_AUTHENTICATION_TOKEN = 3;
+   */
+  NO_AUTHENTICATION_TOKEN = 3,
+
+  /**
+   * The authentication token provided has expired.
+   *
+   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_EXPIRED = 4;
+   */
+  AUTHENTICATION_TOKEN_EXPIRED = 4,
+
+  /**
+   * The authentication token provided is invalid.
+   *
+   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_INVALID = 5;
+   */
+  AUTHENTICATION_TOKEN_INVALID = 5,
+
+  /**
+   * The user does not have the necessary permissions.
+   *
+   * @generated from enum value: REASON_PERMISSION_DENIED = 6;
+   */
+  PERMISSION_DENIED = 6,
+
+  /**
+   * The request cannot be completed due to server error.
+   *
+   * @generated from enum value: REASON_SERVER_ERROR = 7;
+   */
+  SERVER_ERROR = 7,
+
+  /**
+   * The request rate is too high.
+   *
+   * @generated from enum value: REASON_TOO_MANY_REQUESTS = 8;
+   */
+  TOO_MANY_REQUESTS = 8,
+
+  /**
+   * The request timed out.
+   *
+   * @generated from enum value: REASON_TIMEOUT = 9;
+   */
+  TIMEOUT = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Reason)
 proto3.util.setEnumType(Reason, "redpanda.api.common.v1alpha1.Reason", [
   { no: 0, name: "REASON_UNSPECIFIED" },
+  { no: 1, name: "REASON_RESOURCE_NOT_FOUND" },
+  { no: 2, name: "REASON_INVALID_INPUT" },
+  { no: 3, name: "REASON_NO_AUTHENTICATION_TOKEN" },
+  { no: 4, name: "REASON_AUTHENTICATION_TOKEN_EXPIRED" },
+  { no: 5, name: "REASON_AUTHENTICATION_TOKEN_INVALID" },
+  { no: 6, name: "REASON_PERMISSION_DENIED" },
+  { no: 7, name: "REASON_SERVER_ERROR" },
+  { no: 8, name: "REASON_TOO_MANY_REQUESTS" },
+  { no: 9, name: "REASON_TIMEOUT" },
 ]);
 
 /**
