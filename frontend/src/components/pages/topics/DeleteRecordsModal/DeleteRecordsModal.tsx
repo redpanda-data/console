@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useState } from 'react';
-import { Input, Modal, notification, Select, Slider } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Input, Select, Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,7 +20,7 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
-import { Spinner, Alert, AlertIcon } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, useToast } from '@redpanda-data/ui';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -343,6 +343,7 @@ interface DeleteRecordsModalProps {
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
     const { visible, topic, onCancel, onFinish, afterClose } = props;
+    const toast = useToast()
 
     useEffect(() => {
         topic?.topicName && api.refreshPartitionsForTopic(topic.topicName, true);
@@ -379,9 +380,10 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             setOkButtonLoading(false);
         } else {
             onFinish();
-            notification['success']({
-                message: 'Records deleted successfully',
-            });
+            toast({
+                description: 'Records deleted successfully',
+                status: 'success',
+            })
         }
     };
 
@@ -453,50 +455,55 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         return 'allPartitions';
     };
 
+
     return (
-        <Modal
-            title="Delete records in topic"
-            open={visible}
-            okType={hasErrors ? 'default' : 'danger'}
-            okText={hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
-            onOk={onOk}
-            okButtonProps={{
-                disabled: isOkButtonDisabled(),
-                loading: okButtonLoading,
-            }}
-            onCancel={onCancel}
-            width="700px"
-            afterClose={afterClose}
-        >
-            {hasErrors && (
-                <Alert status="error">
-                    <AlertIcon />
-                    <p>
-                        Errors have occurred when processing your request. Please contact your Kafka
-                        Administrator.
-                    </p>
-                    <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
-                </Alert>
-            )}
-            {!hasErrors && step === 1 && (
-                <SelectPartitionStep
-                    partitions={range(0, topic.partitionCount)}
-                    onPartitionOptionSelected={setPartitionOption}
-                    selectedPartitionOption={partitionOption}
-                    onPartitionSpecified={setSpecifiedPartition}
-                />
-            )}
-            {!hasErrors && step === 2 && partitionOption != null && (
-                <SelectOffsetStep
-                    onOffsetOptionSelected={setOffsetOption}
-                    offsetOption={offsetOption}
-                    topicName={topic.topicName}
-                    onOffsetSpecified={setSpecifiedOffset}
-                    partitionInfo={getPartitionInfo()}
-                    timestamp={timestamp}
-                    onTimestampChanged={setTimestamp}
-                />
-            )}
+        <Modal isOpen={visible} onClose={onCancel} onCloseComplete={afterClose}>
+            <ModalOverlay />
+            <ModalContent minW="2xl">
+                <ModalHeader>Delete records in topic</ModalHeader>
+                <ModalBody>
+                    {hasErrors && (
+                        <Alert status="error" mb={2}>
+                            <AlertIcon />
+                            <p>
+                                Errors have occurred when processing your request. Please contact your Kafka
+                                Administrator.
+                            </p>
+                            <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
+                        </Alert>
+                    )}
+                    {!hasErrors && step === 1 && (
+                        <SelectPartitionStep
+                            partitions={range(0, topic.partitionCount)}
+                            onPartitionOptionSelected={setPartitionOption}
+                            selectedPartitionOption={partitionOption}
+                            onPartitionSpecified={setSpecifiedPartition}
+                        />
+                    )}
+                    {!hasErrors && step === 2 && partitionOption != null && (
+                        <SelectOffsetStep
+                            onOffsetOptionSelected={setOffsetOption}
+                            offsetOption={offsetOption}
+                            topicName={topic.topicName}
+                            onOffsetSpecified={setSpecifiedOffset}
+                            partitionInfo={getPartitionInfo()}
+                            timestamp={timestamp}
+                            onTimestampChanged={setTimestamp}
+                        />
+                    )}
+                </ModalBody>
+                <ModalFooter gap={2}>
+                    <Button
+                        variant="solid"
+                        colorScheme={hasErrors ? 'gray' : 'red'}
+                        onClick={onOk}
+                        isLoading={okButtonLoading}
+                        isDisabled={isOkButtonDisabled()}
+                    >
+                        {hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
         </Modal>
-    );
+    )
 }

@@ -39,6 +39,14 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 	req.Config = s.Interceptor.ConsoleToKafkaConnect(className, req.Config)
 
 	cInfo, err := c.Client.CreateConnector(ctx, req)
+	connectorClass := getMapValueOrString(cInfo.Config, "connector.class", "unknown")
+	cInfo = con.ConnectorInfo{
+		Name:   cInfo.Name,
+		Config: s.Interceptor.KafkaConnectToConsole(connectorClass, cInfo.Config),
+		Tasks:  cInfo.Tasks,
+		Type:   cInfo.Type,
+	}
+
 	if err != nil {
 		return con.ConnectorInfo{}, &rest.Error{
 			Err:          fmt.Errorf("failed to create connector: %w", err),

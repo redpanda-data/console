@@ -85,45 +85,6 @@
     }
 }
 
-.configDocumentationTooltip {
-
-    .ant-popover-inner,
-    .ant-popover-arrow-content {
-        background-color: hsl(0deg 0% 93%);
-
-        font-weight: 500;
-        color: hsl(0deg 0% 20%);
-
-    }
-
-    .configDocuTitle {
-        font-weight: 700;
-        color: hsl(0deg 0% 40%);
-        margin-bottom: 1em;
-    }
-
-    .configDocuSource {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        column-gap: 2em;
-        row-gap: 0.5em;
-        margin: 1em 0;
-
-        .title {
-            font-weight: 700;
-            color: hsl(0deg 0% 40%);
-        }
-
-        .configSourceExplanation {
-            font-weight: 400;
-            font-size: 12px;
-            // border-left: 3px solid hsl(0deg 0% 50% / 56%);
-            // padding-left: 4px;
-            // background: hsl(0deg 0% 90%);
-        }
-    }
-}
-
 .configModal {
 
     .ant-modal-body {

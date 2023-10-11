@@ -16,6 +16,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -53,6 +54,7 @@ const (
 	messageEncodingBinary               messageEncoding = "binary"
 	messageEncodingMsgP                 messageEncoding = "msgpack"
 	messageEncodingSmile                messageEncoding = "smile"
+	messageEncodingUint                 messageEncoding = "uint"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -342,6 +344,65 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			IsPayloadNull:      payload == nil,
 			Object:             string(payload),
 			RecognizedEncoding: messageEncodingText,
+			Size:               len(payload),
+		}
+	}
+
+	// 9. Numeric values are tricky.
+	// If the payload is of specific length we can try to convert to a numeric value.
+	// We are going to assume and support only uints.
+	// We have to do this before UTF8 as some numeric values can also be "valid" UTF8 values.
+	isNumeric := false
+	var numericPayload []byte
+	var numericObject interface{}
+	switch len(payload) {
+	case 8:
+		var bev uint64
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(bev, 10))
+			numericObject = bev
+		}
+	case 4:
+		var bev uint32
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	case 2:
+		var bev uint16
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	case 1:
+		var bev uint8
+		buf := bytes.NewReader(payload)
+		err := binary.Read(buf, binary.BigEndian, &bev)
+		if err == nil {
+			isNumeric = true
+			numericPayload = []byte(strconv.FormatUint(uint64(bev), 10))
+			numericObject = bev
+		}
+	}
+
+	if isNumeric {
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            numericPayload,
+				RecognizedEncoding: messageEncodingUint,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             numericObject,
+			RecognizedEncoding: messageEncodingUint,
 			Size:               len(payload),
 		}
 	}

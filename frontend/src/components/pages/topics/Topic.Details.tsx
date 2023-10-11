@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Popover, Result, Typography } from 'antd';
+import { Result, Typography } from 'antd';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -21,7 +21,6 @@ import { uiState } from '../../../state/uiState';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { makePaginationConfig } from '../../misc/common';
-import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { TopicQuickInfoStatistic } from './QuickInfo';
@@ -36,7 +35,7 @@ import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Tooltip } from '@redpanda-data/ui';
+import { Button, Tooltip, Popover } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 
 const { Text } = Typography;
@@ -87,7 +86,7 @@ class TopicTab {
 
         return (
             1 && (
-                <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
+                <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`} hideCloseButton={true}>
                     <div>
                         <LockIcon size={16} /> {this.titleText}
                     </div>
@@ -143,7 +142,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             }, [() => {
                 if (AppFeatures.SINGLE_SIGN_ON)
                     if (api.userData != null && !api.userData.canListAcls)
-                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'}>
+                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'} hideCloseButton={true}>
                             <div> <LockIcon size={16} /> ACL</div>
                         </Popover>
                 return undefined;
@@ -269,7 +268,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     {uiSettings.topicDetailsShowStatisticsBar && (
                         <Section py={4}>
                             <div className="statisticsBar">
-                                <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
                                 <TopicQuickInfoStatistic topic={topic} />
                             </div>
                         </Section>

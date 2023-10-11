@@ -31,9 +31,21 @@ func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any
 	return config
 }
 
-// KafkaConnectToConsoleMirrorSourceHook adds MirrorMaker source specific config options
+// KafkaConnectToConsoleMirrorSourceHook removes MirrorMaker source specific config options
+func KafkaConnectToConsoleMirrorSourceHook(configs map[string]string) map[string]string {
+	result := make(map[string]string)
+	for key, value := range configs {
+		if key != "security.protocol" {
+			result[key] = value
+		}
+	}
+
+	return result
+}
+
+// KafkaConnectValidateToConsoleMirrorSourceHook adds MirrorMaker source specific config options
 // missing in Validate Kafka Connect response
-func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
+func KafkaConnectValidateToConsoleMirrorSourceHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 	securityProtocol := getConfig(&response, "security.protocol")
 
 	sasl := false

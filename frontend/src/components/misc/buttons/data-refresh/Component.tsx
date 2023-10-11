@@ -10,8 +10,7 @@
  */
 import { SyncIcon } from '@primer/octicons-react';
 import { MdPause, MdPlayCircleOutline } from 'react-icons/md';
-import { Popover } from 'antd';
-import { Button, Icon } from '@redpanda-data/ui';
+import { Button, Icon, Popover } from '@redpanda-data/ui';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { ReactNode } from 'react';
@@ -86,7 +85,7 @@ export const DataRefreshButton = observer(() => {
 
     const spinnerSize = '16px';
     const refreshTextFunc = (): ReactNode => {
-        return <div style={{ maxWidth: '350px' }}>
+        return <div>
             Click to force a refresh of the data shown in the current page.
             When switching pages, any data older than <span className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
         </div>;
@@ -94,7 +93,7 @@ export const DataRefreshButton = observer(() => {
     };
 
     const autoRefreshTextFunc = (): ReactNode => {
-        return <div style={{ maxWidth: '350px' }}>
+        return <div>
             Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
         </div>;
     };
@@ -106,7 +105,7 @@ export const DataRefreshButton = observer(() => {
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div className={styles.dataRefreshButton}>
-        <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+        <Popover isInPortal title="Auto Refresh" content={autoRefreshTextFunc} placement="right" hideCloseButton={true}>
             <Button
                 display="inline-flex" justifyContent="center" alignItems="center"
                 width="35px" borderRadius="100px"
@@ -121,7 +120,7 @@ export const DataRefreshButton = observer(() => {
         {
             (api.activeRequests.length == 0)
                 ? <>
-                    <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+                    <Popover isInPortal title="Force Refresh" content={refreshTextFunc} placement="right" hideCloseButton={true}>
                         <Button
                             className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`}
                             borderRadius="100px" width="35px"

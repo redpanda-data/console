@@ -12,7 +12,6 @@
 
 /*eslint block-scoped-var: "error"*/
 
-import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
 import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
@@ -63,9 +62,15 @@ import {
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
+import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
+
+const { toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: redpandaToastOptions.defaultOptions
+})
 
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
@@ -391,13 +396,12 @@ const apiStore = {
                 case 'error':
                     // error doesn't neccesarily mean the whole request is done
                     console.info('ws backend error: ' + msg.message);
-                    const notificationKey = `errorNotification-${Date.now()}`;
-                    notification['error']({
-                        key: notificationKey,
-                        message: 'Backend Error',
+                    toast({
+                        title: 'Backend Error',
                         description: msg.message,
-                        duration: 5,
+                        status: 'error'
                     });
+
                     break;
 
                 case 'message':

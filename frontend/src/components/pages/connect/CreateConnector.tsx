@@ -11,7 +11,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { comparer } from 'mobx';
-import { message } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ApiOutlined, DatabaseOutlined, SearchOutlined } from '@ant-design/icons';
 import { Wizard, WizardStep } from '../../misc/Wizard';
@@ -27,10 +26,9 @@ import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner } from '@redpanda-data/ui';
+import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast, useDisclosure } from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
-import { useDisclosure } from '@chakra-ui/react-use-disclosure';
 const { Option } = Select;
 
 const ConnectorType = observer(
@@ -222,6 +220,7 @@ interface ConnectorWizardProps {
 }
 
 const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
+    const toast = useToast()
     const history = appGlobal.history;
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
@@ -301,7 +300,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
                     {selectedPlugin ? (
                         <Box maxWidth="800px">
-                            <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} />
+                            <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} context="CREATE" />
                         </Box>
                     ) : (
                         <div>no cluster or plugin selected</div>
@@ -393,7 +392,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
                         await delay(intervalSec);
                     }
-                    message.success({ content: `Connector ${connectorName} created` });
+                    toast({
+                        status: 'success',
+                        description: `Connector ${connectorName} created`}
+                    );
 
                 } catch (e: any) {
                     switch (e?.name) {

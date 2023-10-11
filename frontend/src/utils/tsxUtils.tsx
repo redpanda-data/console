@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, Component, CSSProperties, ReactNode } from 'react';
+import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
-import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton } from 'antd';
-import { Button as RpButton, ButtonProps as RpButtonProps, Tooltip, PlacementWithLogical } from '@redpanda-data/ui';
-import { MessageType } from 'antd/lib/message';
+import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import { Radio, Skeleton } from 'antd';
+import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
@@ -328,14 +327,21 @@ interface StatusIndicatorProps {
     progressText: string;
 }
 
+
+
+// TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+    }
+})
+
 @observer
 export class StatusIndicator extends Component<StatusIndicatorProps> {
 
-    static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
-    static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
-    static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
-
-    hide: MessageType | undefined;
+    toastRef: ToastId | null = null
 
     timerHandle: NodeJS.Timeout;
     lastUpdateTimestamp: number;
@@ -347,7 +353,6 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     constructor(p: any) {
         super(p);
-        message.config({ top: 20 });
 
         // Periodically check if we got any new messages. If not, show a different text after some time
         this.lastUpdateTimestamp = Date.now();
@@ -390,38 +395,53 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     componentWillUnmount() {
         clearInterval(this.timerHandle);
-        this.hide?.call(this);
-        this.hide = undefined;
+        this.toastRef && toast.close(this.toastRef)
+        this.toastRef = null
     }
 
     customRender() {
-        const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
-            <div style={StatusIndicator.progressStyle}>
-                <Progress percent={this.props.fillFactor * 100} showInfo={false} status="active" size="small" style={{ lineHeight: 1 }} />
-            </div>
-            <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
-                <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
-            </div>
-            {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                <div style={StatusIndicator.statusBarStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined style={{ color: colors.brandOrange }} /> {this.props.bytesConsumed}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined style={{ color: colors.brandOrange }} />{this.props.messagesConsumed} messages
-                    </div>
-                </div>
-            }
-        </div>
+        const content =
+            <Box mb="0.2em">
+                <Box minW={300}>
+                    <Progress
+                        value={this.props.fillFactor * 100}
+                        isIndeterminate={this.props.statusText === 'Connecting'}
+                        colorScheme="blue"
+                    />
+                </Box>
+                <Flex fontSize="sm" fontWeight="bold">
+                    <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
+                    <Text ml="auto" pl="2em">{this.props.progressText}</Text>
+                </Flex>
+                {(this.props.bytesConsumed && this.props.messagesConsumed) &&
+                    <Flex fontSize="sm" fontWeight="bold">
+                        <Flex alignItems="center">
+                            <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
+                        </Flex>
+                        <Box style={{alignItems: 'center', marginLeft: 'auto'}}>
+                            <CopyOutlined style={{color: colors.brandOrange}}/>{this.props.messagesConsumed} messages
+                        </Box>
+                    </Flex>
+                }
+            </Box>
 
-        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: 0, type: 'loading' });
+        if(this.toastRef === null) {
+            this.toastRef = toast({
+                status: 'info',
+                description: content,
+                duration: null,
+            })
+        } else {
+            toast.update(this.toastRef, {
+                description: content
+            })
+        }
     }
 
     render() {
         // workaround to propagate the update (timer -> mobx -> re-render)
         this.mobxSink = this.showWaitingText;
-        return null;
+        return <ToastContainer />;
     }
 }
 
@@ -546,4 +566,13 @@ export function IconButton(p: { onClick?: React.MouseEventHandler<HTMLElement>; 
             <span className="iconButton disabled">{p.children}</span>
         </Tooltip>
     );
+}
+
+
+export const navigatorClipboardErrorHandler = (e: DOMException) => {
+    toast({
+        status: 'error',
+        description: 'Unable to copy settings to clipboard. See console for more information.'
+    });
+    console.error('unable to copy settings to clipboard', {error: e});
 }

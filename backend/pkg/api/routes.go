@@ -10,8 +10,13 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
+	connect_go "connectrpc.com/connect"
+	"connectrpc.com/grpcreflect"
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
@@ -19,7 +24,9 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -165,6 +172,30 @@ func (api *API) routes() *chi.Mux {
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
+
+			// Connect RPC
+			v, err := protovalidate.New()
+			if err != nil {
+				api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+			}
+
+			// we want the actual request validation after all authorization and permission checks
+			interceptors := []connect_go.Interceptor{
+				NewRequestValidationInterceptor(api.Logger, v),
+			}
+
+			// Connect service(s)
+			r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
+				// api,
+				consolev1alphaconnect.UnimplementedConsoleServiceHandler{},
+				connect_go.WithInterceptors(interceptors...),
+			))
+
+			// Connect reflection
+			reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
+			r.Mount(grpcreflect.NewHandlerV1(reflector))
+			r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
 
@@ -186,4 +217,28 @@ func (api *API) routes() *chi.Mux {
 	})
 
 	return baseRouter
+}
+
+// NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
+func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
+	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
+		return connect_go.UnaryFunc(func(
+			ctx context.Context,
+			req connect_go.AnyRequest,
+		) (connect_go.AnyResponse, error) {
+			msg, ok := req.Any().(protoreflect.ProtoMessage)
+			if !ok {
+				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, errors.New("request is not a protocol buffer message"))
+			}
+
+			err := validator.Validate(msg)
+			if err != nil {
+				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, err)
+			}
+
+			return next(ctx, req)
+		})
+	}
+
+	return connect_go.UnaryInterceptorFunc(interceptor)
 }

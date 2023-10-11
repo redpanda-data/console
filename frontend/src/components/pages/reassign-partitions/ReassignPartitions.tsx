@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react';
-import { Steps, message, notification, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,18 +29,18 @@ import { StepReview, TopicWithMoves } from './Step3.Review';
 import { ApiData, computeReassignments, TopicPartitions } from './logic/reassignLogic';
 import { computeMovedReplicas, partitionSelectionToTopicPartitions, topicAssignmentsToReassignmentRequest } from './logic/utils';
 import { IsDev } from '../../../utils/env';
-import { Message, scrollTo, scrollToTop } from '../../../utils/utils';
+import { scrollTo, scrollToTop } from '../../../utils/utils';
 import { ActiveReassignments } from './components/ActiveReassignments';
 import { ReassignmentTracker } from './logic/reassignmentTracker';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Flex } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions, Step, Stepper, Box, StepIndicator, StepStatus, StepIcon, StepNumber } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
+import { StepSeparator } from '@chakra-ui/react';
 
 
-const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
@@ -51,10 +50,21 @@ export interface PartitionSelection { // Which partitions are selected?
 const reassignmentTracker = new ReassignmentTracker();
 export { reassignmentTracker };
 
+// TODO - once ReassignPartitions is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: true,
+        duration: 2000
+    }
+})
 
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
+
+    @observable removeThrottleFromTopicsContent: string[] | null = null
 
     @observable currentStep = 0; // current page of the wizard
 
@@ -182,6 +192,7 @@ class ReassignPartitions extends PageComponent {
         const nextButtonHelp = typeof nextButtonCheck === 'string' ? nextButtonCheck as string : null;
 
         return <>
+            <ToastContainer />
             <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
             <PageContent>
                 {/* Statistics */}
@@ -209,9 +220,21 @@ class ReassignPartitions extends PageComponent {
                 <Section id="wizard">
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
-                        <Steps current={this.currentStep}>
-                            {steps.map(item => <Step key={item.title} title={item.title} icon={item.icon} />)}
-                        </Steps>
+                        <Stepper index={this.currentStep} colorScheme="brand">
+                            {steps.map((item, index) => <Step key={index} title={item.title}>
+                                <StepIndicator>
+                                    <StepStatus
+                                        complete={<StepIcon/>}
+                                        incomplete={<StepNumber/>}
+                                        active={<StepNumber/>}
+                                    />
+                                </StepIndicator>
+                                <Box>
+                                    {item.title}
+                                </Box>
+                                <StepSeparator />
+                            </Step>)}
+                        </Stepper>
                     </div>
 
                     {/* Content */}
@@ -267,6 +290,85 @@ class ReassignPartitions extends PageComponent {
                 </Section>
 
             </PageContent>
+                <Modal isOpen={this.removeThrottleFromTopicsContent !== null} onClose={() => {
+                    this.removeThrottleFromTopicsContent = null
+                }}>
+                    <ModalOverlay/>
+                    <ModalContent minW="5xl">
+                        <ModalHeader>
+                            <Flex gap={2}><ExclamationCircleOutlined/>Remove throttle config from topics</Flex>
+                        </ModalHeader>
+                        <ModalBody>
+                            <div>
+                                <div>
+                                    There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br/>
+                                    Kowl implements throttling of reassignments by
+                                    setting{' '}
+                                    <span className="tooltip" style={{textDecoration: 'dotted underline'}}>
+                            two configuration values
+                            <span className="tooltiptext" style={{textAlign: 'left', width: '500px'}}>
+                                Kowl sets those two configuration entries when throttling a topic reassignment:
+                                <div style={{marginTop: '.5em'}}>
+                                    <code>leader.replication.throttled.replicas</code><br/>
+                                    <code>follower.replication.throttled.replicas</code>
+                                </div>
+                            </span>
+                        </span>{' '}
+                                    in a topics configuration.<br/>
+                                    So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
+                                </div>
+                                <div style={{margin: '1em 0'}}>
+                                    <h4>Throttled Topics</h4>
+                                    <ul style={{maxHeight: '145px', overflowY: 'auto'}}>
+                                        {this.removeThrottleFromTopicsContent?.map(t => <li key={t}>{t}</li>)}
+                                    </ul>
+                                </div>
+                                <div>
+                                    Do you want to remove the throttle config from those topics?
+                                </div>
+                            </div>
+                        </ModalBody>
+                        <ModalFooter gap={2}>
+                            <Button variant="outline" onClick={() => {
+                                this.removeThrottleFromTopicsContent = null
+                            }}>
+                                Cancel
+                            </Button>
+                            <Button onClick={async () => {
+                                if (this.removeThrottleFromTopicsContent === null) {
+                                    return
+                                }
+                                const baseText = 'Removing throttle config from topics';
+
+                                const toastId = toast({
+                                    status: 'loading',
+                                    description: `${baseText}...`,
+                                    duration: null
+                                })
+
+                                const result = await api.resetThrottledReplicas(this.removeThrottleFromTopicsContent);
+                                const errors = result.patchedConfigs.filter(r => r.error);
+
+                                if (errors.length == 0) {
+                                    toast.update(toastId, {
+                                        status: 'success',
+                                        description: `${baseText} - Done`,
+                                        duration: 2500,
+                                    })
+                                } else {
+                                    toast.update(toastId, {
+                                        status: 'error',
+                                        description: `${baseText}: ${errors.length} errors`,
+                                        duration: 2500,
+                                    })
+                                    console.error('errors in removeThrottleFromTopics', errors);
+                                }
+
+                                this.refreshTopicConfigs();
+                            }} colorScheme="red">Remove throttle</Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
             </div>
         </>
     }
@@ -278,13 +380,14 @@ class ReassignPartitions extends PageComponent {
             this.selectedBrokerIds = [];
             this.reassignmentRequest = null;
 
-            if (showSelectionWarning)
-                notification.warn({
-                    message: 'Selection has been reset',
+            if (showSelectionWarning) {
+                toast({
+                    status: 'warning',
+                    title: 'Selection has been reset',
                     description: 'Your selection contained brokers or partitions that are not available anymore after the refresh. \n' +
                         'Your selection has been reset.',
-                    duration: 0,
-                });
+                })
+            }
 
             if (scrollTop)
                 setTimeout(() => {
@@ -346,7 +449,11 @@ class ReassignPartitions extends PageComponent {
             // Review -> Start
             const request = this.reassignmentRequest;
             if (request == null) {
-                message.error('reassignment request was null', 3);
+                toast({
+                    status: 'error',
+                    description: 'reassignment request was null',
+                    duration: 3000
+                });
                 return;
             }
 
@@ -361,7 +468,11 @@ class ReassignPartitions extends PageComponent {
                     }
                 }
                 catch (err) {
-                    message.error('Error starting partition reassignment.\nSee console for more information.', 3);
+                    toast({
+                        status: 'error',
+                        description: 'Error starting partition reassignment.\nSee console for more information.',
+                        duration: 3000
+                    });
                     console.error('error starting partition reassignment', { error: err });
                 }
                 finally {
@@ -383,7 +494,11 @@ class ReassignPartitions extends PageComponent {
             if (!success) return false;
         }
 
-        const msg = new Message('Starting reassignment');
+        const toastRef = toast({
+            status: 'loading',
+            description: 'Starting reassignment',
+            duration: null,
+        })
         try {
             const response = await api.startPartitionReassignment(request);
 
@@ -396,21 +511,31 @@ class ReassignPartitions extends PageComponent {
 
             if (errors.length == 0) {
                 // No errors
-                msg.setSuccess();
+                toast.update(toastRef, {
+                    status: 'success',
+                    duration: 2500,
+                })
                 return true;
             } else if (startedCount > 0) {
                 // Some errors
-                msg.setSuccess();
+                toast.update(toastRef, {
+                    status: 'success',
+                    duration: 2500,
+                })
                 this.setReassignError(startedCount, errors);
                 return true;
             } else {
                 // All errors
-                msg.setError();
+                toast.update(toastRef, {
+                    status: 'error',
+                    duration: 2500,
+                })
                 this.setReassignError(startedCount, errors);
                 return false;
             }
         } catch (err) {
-            msg.hide();
+            toast.close(toastRef)
+
             return false;
         }
     }
@@ -455,24 +580,36 @@ class ReassignPartitions extends PageComponent {
             })
         }
 
-        const msg = new Message('Setting bandwidth throttle... 1/2');
+
+        const toastRef = toast({
+            status: 'loading',
+            description: 'Setting bandwidth throttle... 1/2',
+            duration: null
+        })
         try {
             let response = await api.setReplicationThrottleRate(api.clusterInfo!.brokers.map(b => b.brokerId), maxBytesPerSecond);
             let errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setLoading('Setting bandwidth throttle... 2/2');
+            toast.update(toastRef, {
+                description: 'Setting bandwidth throttle... 2/2',
+                duration: 2500,
+            })
 
             response = await api.setThrottledReplicas(topicReplicas);
             errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setSuccess('Setting bandwidth throttle... done');
+            toast.update(toastRef, {
+                status: 'success',
+                description: 'Setting bandwidth throttle... done',
+                duration: 2500,
+            })
             return true;
         } catch (err) {
-            msg.hide();
+            toast.close(toastRef);
             console.error('error setting throttle', err);
             return false;
         }
@@ -548,69 +685,7 @@ class ReassignPartitions extends PageComponent {
     }
 
     async removeThrottleFromTopics() {
-        const throttledTopics = clone(this.topicsWithThrottle);
-        const refreshTopicConfigs = this.refreshTopicConfigs;
-
-        Modal.confirm({
-            title: 'Remove throttle config from topics',
-            icon: <ExclamationCircleOutlined />,
-            width: 'auto',
-            style: { maxWidth: '66%' },
-            content:
-                <div>
-                    <div>
-                        There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br />
-                        Kowl implements throttling of reassignments by
-                        setting{' '}
-                        <span className="tooltip" style={{ textDecoration: 'dotted underline' }}>
-                            two configuration values
-                            <span className="tooltiptext" style={{ textAlign: 'left', width: '500px' }}>
-                                Kowl sets those two configuration entries when throttling a topic reassignment:
-                                <div style={{ marginTop: '.5em' }}>
-                                    <code>leader.replication.throttled.replicas</code><br />
-                                    <code>follower.replication.throttled.replicas</code>
-                                </div>
-                            </span>
-                        </span>{' '}
-                        in a topics configuration.<br />
-                        So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
-                    </div>
-                    <div style={{ margin: '1em 0' }}>
-                        <h4>Throttled Topics</h4>
-                        <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
-                            {throttledTopics.map(t => <li key={t}>{t}</li>)}
-                        </ul>
-                    </div>
-                    <div>
-                        Do you want to remove the throttle config from those topics?
-                    </div>
-                </div>,
-
-            okText: 'Remove throttle',
-            okButtonProps: { danger: true, autoFocus: false, },
-            async onOk() {
-                const baseText = 'Removing throttle config from topics';
-                const msg = new Message(baseText + '...');
-
-                const result = await api.resetThrottledReplicas(throttledTopics);
-                const errors = result.patchedConfigs.filter(r => r.error);
-
-                if (errors.length == 0) {
-                    msg.setSuccess(baseText + ' - Done');
-                }
-                else {
-                    msg.setError(baseText + ': ' + errors.length + ' errors');
-                    console.error('errors in removeThrottleFromTopics', errors);
-                }
-
-                refreshTopicConfigs();
-            },
-
-            maskClosable: true,
-            cancelButtonProps: { autoFocus: true },
-        })
-
-
+        this.removeThrottleFromTopicsContent = clone(this.topicsWithThrottle)
     }
 
     @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {

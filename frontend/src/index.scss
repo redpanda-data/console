@@ -1530,23 +1530,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     background-color: rgba(255, 187, 0, 0.185);
 }
 
-.popoverSmall {
-    .ant-popover-inner-content {
-        /* reduced from 12 16 */
-        padding: 8px 16px;
-        font-size: 85%;
-    }
-
-    .ant-popover-title {
-        min-height: 10px;
-        font-size: 90%;
-    }
-
-    .ant-popover-inner {
-        border-radius: 4px;
-    }
-}
-
 .pageTitle {
     /* background: rgba(255, 0, 0, 0.089); */
 }
@@ -1678,53 +1661,9 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     cursor: default;
 }
 
-.hideStatsBarButton {
-    opacity: 0;
-    transition: opacity 150ms;
-    color: #888;
-    display: flex;
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    padding: 5px;
-    border-radius: 32px;
-    transform: translate(-27px, -20px);
-
-    &:hover {
-        background: var(--ant-primary-2);
-        color: var(--ant-primary-6);
-    }
-
-    svg {
-        vertical-align: baseline;
-    }
-}
-
 .statisticsBar {
     position: relative;
     overflow: hidden;
-
-    &:hover {
-        .hideStatsBarButton {
-            opacity: 1;
-        }
-    }
-
-    .ant-row {
-        gap: 2em;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-
-        overflow-x: hidden;
-
-        &::after {
-            @include beforeAfter;
-            left: unset;
-            width: 80px;
-
-            background: linear-gradient(to right, transparent, white);
-        }
-    }
 }
 
 .filterTagDisabled {

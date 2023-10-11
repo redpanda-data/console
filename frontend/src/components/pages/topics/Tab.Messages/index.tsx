@@ -9,51 +9,48 @@
  * by the Apache License, Version 2.0
  */
 
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Dropdown, Empty, Menu, message, Modal, Popover, Radio, Select, Table, Typography } from 'antd';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon, KebabHorizontalIcon } from '@primer/octicons-react';
+import { ConfigProvider, DatePicker, Empty, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
-import React, { Component, ReactNode } from 'react';
+import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from '../../../../state/backendApi';
 import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '../../../../state/ui';
+import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
-import { isClipboardAvailable } from '../../../../utils/featureDetection';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, Label, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
-import { NoClipboardPopover } from '../../../misc/NoClipboardPopover';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField, Tag, TagCloseButton, TagLabel, Tooltip } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
 import { Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
-const { Text } = Typography;
 const { Option } = Select;
 
 interface TopicMessageViewProps {
@@ -66,6 +63,55 @@ interface TopicMessageViewProps {
         - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
         - add back summary of quick search  <this.FilterSummary />
 */
+
+const getStringValue = (value: string | TopicMessage): string => typeof value === 'string' ? value : JSON.stringify(value, null, 4)
+
+const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
+    const toast = useToast()
+    return (
+        <Menu>
+            <MenuButton as={Button} variant="link" className="iconButton">
+                <KebabHorizontalIcon />
+            </MenuButton>
+            <MenuList>
+                <MenuItem disabled={record.key.isPayloadNull} onClick={() => {
+                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Key copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Key
+                </MenuItem>
+                <MenuItem disabled={record.value.isPayloadNull} onClick={() => {
+                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Value copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Value
+                </MenuItem>
+                <MenuItem onClick={() => {
+                    navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Epoch Timestamp copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Epoch Timestamp
+                </MenuItem>
+                <MenuItem onClick={() => onSaveToFile()}>
+                    Save to File
+                </MenuItem>
+            </MenuList>
+        </Menu>
+    );
+};
+
 
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
@@ -150,7 +196,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     <AlertIcon />
                     <div>Backend API Error</div>
                     <div>
-                        <Text>Please check and modify the request before resubmitting.</Text>
+                        <Typography.Text>Please check and modify the request before resubmitting.</Typography.Text>
                         <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
                         <Button onClick={() => this.executeMessageSearch()}>
                             Retry Search
@@ -259,22 +305,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                     {/* Topic Actions */}
                     <div className={styles.topicActionsWrapper}>
-                        <Dropdown
-                            trigger={['click']}
-                            overlay={
-                                <Menu>
-                                    <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
-                                        Publish Message
-                                    </Menu.Item>
-                                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                                </Menu>
-                            }
-                        >
-                            <Button variant="outline" minWidth="120px" gap="2" className="topicActionsButton">
+                        <Menu>
+                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
                                 Actions
-                                <MdExpandMore size="1.5rem" />
-                            </Button>
-                        </Dropdown>
+                            </MenuButton>
+                            <MenuList>
+                                <MenuItem
+                                    onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}
+                                >
+                                    Publish Message
+                                </MenuItem>
+                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                            </MenuList>
+                        </Menu>
                     </div>
 
                     {/* Quick Search */}
@@ -283,7 +326,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </Box>
 
                     {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) && <StatusIndicator identityKey="messageSearch" fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults} statusText={api.messageSearchPhase!} progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`} bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined} messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined} />}
+                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
+                        <StatusIndicator
+                            identityKey="messageSearch"
+                            fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
+                            statusText={api.messageSearchPhase!}
+                            progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
+                            messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
+                        />
+                    }
 
                     {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
@@ -361,7 +413,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return <div style={{ marginRight: '1em' }}>
             <MotionDiv identityKey={displayText}>
-                <Text type="secondary">{displayText}</Text>
+                <Typography.Text type="secondary">{displayText}</Typography.Text>
             </MotionDiv>
         </div>;
     }
@@ -429,17 +481,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     );
                 },
                 render: (_text, record) => (
-                    <NoClipboardPopover placement="left">
-                        <div>
-                            {' '}
-                            {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
-                                <Button className="iconButton" style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} variant="link">
-                                    <EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />
-                                </Button>
-                            </Dropdown>
-                        </div>
-                    </NoClipboardPopover>
+                    <CopyDropdown record={record} onSaveToFile={() => this.downloadMessages = [record]} />
                 ),
             },
             // todo: size was a guess anyway, might be added back later
@@ -544,23 +586,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return ta.localeCompare(tb);
     }
 
-    copyDropdown = (record: TopicMessage) => (
-        <Menu>
-            <Menu.Item key="0" disabled={record.key.isPayloadNull} onClick={() => copyMessage(record, 'jsonKey')}>
-                Copy Key
-            </Menu.Item>
-            <Menu.Item key="2" disabled={record.value.isPayloadNull} onClick={() => copyMessage(record, 'jsonValue')}>
-                Copy Value
-            </Menu.Item>
-            <Menu.Item key="4" onClick={() => copyMessage(record, 'timestamp')}>
-                Copy Epoch Timestamp
-            </Menu.Item>
-            <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
-                Save to File
-            </Menu.Item>
-        </Menu>
-    );
-
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
@@ -634,7 +659,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return (
             <Empty description={<>
-                <Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Text>
+                <Typography.Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Typography.Text>
                 {hintBox}
             </>} />
         );
@@ -662,20 +687,26 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
         if (count > 0 && !this.isOpen) setTimeout(() => this.isOpen = true);
         if (this.isOpen && count == 0) setTimeout(() => this.isOpen = false);
 
-        return <Modal
-            title={title} centered closable={false}
-            open={count > 0}
-            onOk={() => this.saveMessages()}
-            onCancel={onClose}
-            afterClose={onClose}
-            okText="Save Messages"
-        >
-            <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
-            <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
-                <Radio value="json" style={this.radioStyle}>JSON</Radio>
-                <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
-            </Radio.Group>
-        </Modal>;
+
+        return (
+            <Modal isOpen={count > 0} onClose={onClose}>
+                <ModalOverlay />
+                <ModalContent minW="2xl">
+                    <ModalHeader>{title}</ModalHeader>
+                    <ModalBody>
+                        <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
+                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
+                            <Radio value="json" style={this.radioStyle}>JSON</Radio>
+                            <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
+                        </Radio.Group>
+                    </ModalBody>
+                    <ModalFooter gap={2}>
+                        <Button variant="outline" colorScheme="red" onClick={onClose}>Cancel</Button>
+                        <Button variant="solid" onClick={() => this.saveMessages()}>Save Messages</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        )
     }
 
     saveMessages() {
@@ -1170,53 +1201,54 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
-@observer
-class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void; }> {
-
-    render() {
-
-        const content = <>
-            <Paragraph>
-                <Text>
-                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
-                </Text>
-            </Paragraph>
-            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
-            </div>
-            <div style={{ marginTop: '1em' }}>
-                <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
-                <Box>
-                    <OptionGroup label="Timestamp" options={{
-                        'Local DateTime': 'default',
-                        'Unix DateTime': 'unixTimestamp',
-                        'Relative': 'relative',
-                        'Local Date': 'onlyDate',
-                        'Local Time': 'onlyTime',
-                        'Unix Seconds': 'unixSeconds',
-                    }}
-                        value={uiState.topicSettings.previewTimestamps}
-                        onChange={e => uiState.topicSettings.previewTimestamps = e}
-                    />
+const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) =>
+(
+    <Modal isOpen={getShowDialog()} onClose={() => {
+        setShowDialog(false);
+    }}>
+        <ModalOverlay />
+        <ModalContent minW="4xl">
+            <ModalHeader>
+                Column Settings
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+                <Paragraph>
+                    <Text>
+                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                    </Text>
+                </Paragraph>
+                <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
+                    <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
-            </div>
-        </>;
+                <Box mt="1em">
+                    <Text mb={2}>More Settings</Text>
+                    <Box>
+                        <OptionGroup
+                            label="Timestamp"
+                            options={{
+                                'Local DateTime': 'default',
+                                'Unix DateTime': 'unixTimestamp',
+                                'Relative': 'relative',
+                                'Local Date': 'onlyDate',
+                                'Local Time': 'onlyTime',
+                                'Unix Seconds': 'unixSeconds',
+                            }}
+                            value={uiState.topicSettings.previewTimestamps}
+                            onChange={e => uiState.topicSettings.previewTimestamps = e}
+                        />
+                    </Box>
+                </Box>
+            </ModalBody>
+            <ModalFooter gap={2}>
+                <Button onClick={() => {
+                    setShowDialog(false)
+                }} colorScheme="red">Close</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+));
 
-        return <Modal
-            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Column Settings</span>}
-            open={this.props.getShowDialog()}
-            onOk={() => this.props.setShowDialog(false)}
-            onCancel={() => this.props.setShowDialog(false)}
-            width={750}
-            okText="Close"
-            cancelButtonProps={{ style: { display: 'none' } }}
-            closable={false}
-            maskClosable={true}
-        >
-            {content}
-        </Modal>;
-    }
-}
 
 @observer
 class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
@@ -1262,11 +1294,11 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
     };
 }
 
-
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger="click" title={popTitle} content={content} overlayClassName="noArrow" overlayStyle={{ maxWidth: '600px' }}
-    >
-        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>{title}</Button>
+    <Popover key={title} trigger="click" hideCloseButton title={popTitle} content={<Box maxW="600px">{content}</Box>} size="auto">
+        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>
+            {title}
+        </Button>
     </Popover>
 );
 
@@ -1393,81 +1425,53 @@ class MessageSearchFilterBar extends Component {
             }
 
 
+            <Modal isOpen={this.currentFilter !== null} onClose={() => this.currentFilter = null}>
+                <ModalOverlay />
+                <ModalContent minW="4xl">
+                    <ModalHeader>
+                        Edit Filter
+                    </ModalHeader>
+                    <ModalBody>
+                        {this.currentFilter && <Flex gap={4} flexDirection="column">
+                            <Label text="Display Name">
+                                <Input
+                                    style={{ padding: '2px 8px' }}
+                                    value={this.currentFilter!.name}
+                                    onChange={e => {
+                                        this.currentFilter!.name = e.target.value;
+                                        this.hasChanges = true;
+                                    }}
+                                    placeholder="will be shown instead of the code"
+                                    size="small" />
+                            </Label>
 
+                            {/* Code Box */}
+                            <Label text="Filter Code">
+                                <FilterEditor
+                                    value={this.currentFilter!.code}
+                                    onValueChange={(code, transpiled) => {
+                                        this.currentFilter!.code = code;
+                                        this.currentFilter!.transpiledCode = transpiled;
+                                        this.hasChanges = true;
+                                    }}
+                                />
+                            </Label>
 
-            {/* Editor */}
-            <Modal centered open={this.currentFilter != null}
-                //title='Edit Filter'
-                closable={false}
-                title={null}
-                onOk={() => this.currentFilter = null}
-                onCancel={() => this.currentFilter = null}
+                            {/* Help Bar */}
+                            <Text fontSize="sm" color="gray.700" fontWeight={300}>Help: {helpEntries}</Text>
 
-                destroyOnClose={true}
-                // footer={null}
-
-                okText="Close"
-                cancelButtonProps={{ style: { display: 'none' } }}
-                maskClosable={true}
-                footer={<div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                    <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
-                        Changes are saved automatically
-                    </div>
-                    <Button variant="solid" onClick={() => this.currentFilter = null} >Close</Button>
-                </div>}
-
-                bodyStyle={{ paddingTop: '18px', paddingBottom: '12px', display: 'flex', gap: '12px', flexDirection: 'column' }}
-            >
-                {this.currentFilter && <>
-
-                    {/* Title */}
-                    <span style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '8px' }}>
-                        <span className="h3" style={{ marginRight: '0.3em' }}>Edit Filter</span>
-                        <Button style={{
-                            opacity: this.hasChanges ? 1 : 0,
-                            transform: this.hasChanges ? '' : 'translate(-10px 0px)',
-                            transition: 'all 0.4s ease-out',
-                            fontFamily: '"Open Sans", sans-serif',
-                            fontSize: '73%',
-                        }}
-                            colorScheme="red" variant="outline" size="small"
-                            onClick={() => this.revertChanges()}
-                        >
-                            Revert Changes
-                        </Button>
-                    </span>
-
-                    {/* Name */}
-                    <Label text="Display Name">
-                        <Input
-                            style={{ padding: '2px 8px' }}
-                            value={this.currentFilter!.name}
-                            onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }}
-                            placeholder="will be shown instead of the code"
-                            size="small" />
-                    </Label>
-
-                    {/* Code Box */}
-                    <Label text="Filter Code">
-                        <>
-                            <FilterEditor
-                                value={this.currentFilter!.code}
-                                onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true; }}
-
-                            />
-                        </>
-                    </Label>
-
-                    {/* Help Bar */}
-                    <Alert status="info" style={{ margin: '0px', padding: '3px 8px', }}>
-                        <AlertIcon />
-                        <span style={{ fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', color: '#0009' }}>
-                            <span>Help:</span>
-                            {helpEntries}
-                        </span>
-                    </Alert>
-
-                </>}
+                        </Flex>}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Box display="flex" gap={4} alignItems="center" justifyContent="flex-end">
+                            <Text fontSize="xs" color="gray.500">
+                                Changes are saved automatically
+                            </Text>
+                            {this.hasChanges && <Button variant="outline" colorScheme="red" onClick={() => this.revertChanges()}>Revert Changes</Button>}
+                            <Button onClick={() => this.currentFilter = null}>Close</Button>
+                        </Box>
+                    </ModalFooter>
+                </ModalContent>
             </Modal>
         </div>;
     }
@@ -1514,43 +1518,17 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
         );
 
     return (
-        <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>
+        <MenuItem key={key} isDisabled={!isEnabled} onClick={onClick}>
             {content}
-        </Menu.Item>
+        </MenuItem>
     );
-}
-
-// we can only write text to the clipboard, so rawKey/rawValue have been removed for now
-function copyMessage(record: TopicMessage, field: 'jsonKey' | 'jsonValue' | 'timestamp') {
-    switch (field) {
-        case 'jsonKey':
-            typeof record.key.payload === 'string'
-                ? navigator.clipboard.writeText(record.key.payload as string)
-                : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
-            message.success('Key copied to clipboard', 5);
-            break;
-        case 'jsonValue':
-            typeof record.value.payload === 'string'
-                ? navigator.clipboard.writeText(record.value.payload as string)
-                : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
-            message.success('Value copied to clipboard', 5);
-            break;
-        case 'timestamp':
-            navigator.clipboard.writeText(record.timestamp.toString());
-            message.success('Epoch Timestamp copied to clipboard', 5);
-            break;
-        default:
-        // empty
-    }
 }
 
 function createPublishRecordsModal(parent: TopicMessageView) {
     return createAutoModal({
         modalProps: {
             title: 'Produce Message',
-            width: '80%',
-            style: { minWidth: '690px', maxWidth: '1000px' },
-            bodyStyle: { paddingTop: '1em' },
+            style: { width: '80%', minWidth: '690px', maxWidth: '1000px' },
             centered: true,
 
             okText: 'Publish',

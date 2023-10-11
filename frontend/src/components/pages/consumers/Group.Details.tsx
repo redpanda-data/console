@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Tag, Collapse, Popover, Empty } from 'antd';
+import { Table, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -23,13 +23,12 @@ import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, Ques
 import { TablePaginationConfig } from 'antd/lib/table';
 import { OptionGroup, QuickTable, DefaultSkeleton, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
-import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
 import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from './Modals';
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tooltip } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag, Tooltip, Popover, Accordion, Text } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
@@ -134,12 +133,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     <Section py={4}>
                         <div className="statisticsBar">
                             <Flex gap="2rem">
-                                <HideStatisticsBarButton
-                                    onClick={() =>
-                                    (uiSettings.consumerGroupDetails.showStatisticsBar =
-                                        false)
-                                    }
-                                />
                                 <Statistic
                                     title="State"
                                     value={<GroupState group={group} />}
@@ -273,41 +266,48 @@ class GroupByTopics extends Component<{
             if (g.partitions.length == 0)
                 return null;
 
-            return <Collapse.Panel key={g.topicName}
-                header={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {/* Title */}
-                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{g.topicName}</span>
+            return {
+                heading:
+                    <Flex justifyContent="space-between">
+                        <Flex alignItems="center" gap={1}>
+                            {/* Title */}
+                            <Text fontWeight={600} fontSize="lg">{g.topicName}</Text>
 
-                        {/* EditButtons */}
-                        <div style={{ width: '2px' }} />
+                            {/* EditButtons */}
+                            <div style={{width: '2px'}}/>
 
-                        <IconButton onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} disabledReason={cannotEditGroupReason(this.props.group)}>
-                            <PencilIcon />
-                        </IconButton>
-                        <IconButton onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
-                            <TrashIcon />
-                        </IconButton>
+                            <IconButton onClick={e => {
+                                p.onEditOffsets(g.partitions);
+                                e.stopPropagation();
+                            }} disabledReason={cannotEditGroupReason(this.props.group)}>
+                                <PencilIcon/>
+                            </IconButton>
+                            <IconButton onClick={e => {
+                                p.onDeleteOffsets(g.partitions, 'topic');
+                                e.stopPropagation();
+                            }} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)}>
+                                <TrashIcon/>
+                            </IconButton>
 
-                        {/* InfoTags */}
-                        <Tooltip placement="top" label="Summed lag of all partitions of the topic" hasArrow>
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="rgb(225, 66, 38)">
-                                lag: {numberToThousandsString(totalLagAll)}
-                            </Tag>
-                        </Tooltip>
-                        <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
-                            <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
-                        </Tooltip>
+                            <Flex ml={2} gap={1}>
+                                {/* InfoTags */}
+                                <Tooltip placement="top" label="Summed lag of all partitions of the topic" hasArrow>
+                                    <Tag colorScheme="brand" variant="solid">
+                                        lag: {numberToThousandsString(totalLagAll)}
+                                    </Tag>
+                                </Tooltip>
+                                <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
+                                    <Tag colorScheme="brand" variant="solid">assigned partitions: {partitionsAssigned}</Tag>
+                                </Tooltip>
+                            </Flex>
+                        </Flex>
                         <Button
                             variant="outline"
                             size="sm"
-                            style={{ marginLeft: 'auto' }}
                             onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(g.topicName)}`)}
                         >View Topic</Button>
-                    </div>
-                }>
-
-                <Table
+                    </Flex>,
+                description: <Table
                     size="middle"
                     showSorterTooltip={false}
                     pagination={this.pageConfig}
@@ -345,24 +345,23 @@ class GroupByTopics extends Component<{
                             //         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                             //     </Tooltip>
                             // },
-                            render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
+                            render: (text, record) => <Flex pr={2} gap={1}>
                                 <IconButton onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
                                     <PencilIcon />
                                 </IconButton>
                                 <IconButton onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
                                     <TrashIcon />
                                 </IconButton>
-                            </div>,
+                            </Flex>,
                         },
                     ]}
                 />
-
-            </Collapse.Panel>
+            }
         });
 
-        const defaultExpand =
-            lagGroupsByTopic.length == 1
-                ? lagGroupsByTopic[0].topicName // only one -> expand
+        const defaultExpand: number | undefined =
+            lagGroupsByTopic.length === 1
+                ? 0 // only one -> expand
                 : undefined; // more than one -> collapse
 
         const nullEntries = topicEntries.filter(e => e == null).length;
@@ -379,10 +378,9 @@ class GroupByTopics extends Component<{
                 </Empty>
             );
 
+
         return (
-            <Collapse bordered={false} defaultActiveKey={defaultExpand}>
-                {topicEntries}
-            </Collapse>
+            <Accordion items={topicEntries.filterNull()} defaultIndex={defaultExpand} />
         );
     }
 }
@@ -431,25 +429,23 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                 if (assignmentsFlat.length == 0)
                     return null;
 
-                return <Collapse.Panel key={m.id} forceRender={false}
-                    header={
-                        <Flex alignItems="baseline" gap="2">
-                            <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
-                            <Tooltip placement="top" label="Host of the member" hasArrow>
-                                <Tag style={{ marginLeft: '1em' }} color="blue">
-                                    host: {m.clientHost}
-                                </Tag>
-                            </Tooltip>
-                            <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
-                                <Tag color="rgb(225, 66, 38)">partitions: {totalPartitions}</Tag>
-                            </Tooltip>
-                            <Tooltip placement="top" label="Summed lag over all assigned partitions of all topics" hasArrow>
-                                <Tag color="rgb(225, 66, 38)">lag: {totalLag}</Tag>
-                            </Tooltip>
-                        </Flex>
-                    }>
 
-                    <Table
+                return ({
+                    heading: <Flex alignItems="baseline" gap="1">
+                        <Text fontWeight={600} fontSize="lg" mr={4}>{renderMergedID(m.id, m.clientId)}</Text>
+                        <Tooltip placement="top" label="Host of the member" hasArrow>
+                            <Tag colorScheme="blue">
+                                host: {m.clientHost}
+                            </Tag>
+                        </Tooltip>
+                        <Tooltip placement="top" label="Number of assigned partitions" hasArrow>
+                            <Tag variant="solid" colorScheme="brand">partitions: {totalPartitions}</Tag>
+                        </Tooltip>
+                        <Tooltip placement="top" label="Summed lag over all assigned partitions of all topics" hasArrow>
+                            <Tag variant="solid" colorScheme="brand">lag: {totalLag}</Tag>
+                        </Tooltip>
+                    </Flex>,
+                    description: <Table
                         size="small"
                         pagination={this.pageConfig}
                         dataSource={assignmentsFlat}
@@ -463,16 +459,16 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                                     {record.topicName}
                                 </div>
                             },
-                            { title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
-                            { title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
+                            {title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId')},
+                            {title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend'},
                         ]}
                     />
-                </Collapse.Panel>
+                })
             });
 
-        const defaultExpand =
+        const defaultExpandIndex: number | undefined =
             p.group.members.length == 1
-                ? p.group.members[0].id // if only one entry, expand it
+                ? 0 // if only one entry, expand it
                 : undefined; // more than one -> collapse
 
         const nullEntries = memberEntries.filter(e => e == null).length;
@@ -485,14 +481,12 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                         padding: '1.5em'
                     }}
                 >
-                    {p.onlyShowPartitionsWithLag ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span> : null}
-                </Empty>
+                    {p.onlyShowPartitionsWithLag ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span> : null} </Empty>
             );
 
+
         return (
-            <Collapse bordered={false} defaultActiveKey={defaultExpand}>
-                {memberEntries}
-            </Collapse>
+            <Accordion items={memberEntries.filterNull()} defaultIndex={defaultExpandIndex}/>
         );
     }
 }
@@ -545,7 +539,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
     const icon = stateIcons.get(state);
 
     return (
-        <Popover content={consumerGroupStateTable} placement="right">
+        <Popover trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
             <span>
                 {icon}
                 <span> {p.group.state}</span>

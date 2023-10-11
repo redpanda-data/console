@@ -70,21 +70,6 @@ tasks:
     status:
       - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/ifacemaker >/dev/null 2>&1"
 
-  install-buf:
-    desc: install buf
-    vars:
-      BUF_VERSION: 1.25.0
-      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-{{ARCH}}
-    cmds:
-      - mkdir -p {{.BUILD_ROOT}}/bin
-      - platforms: [arm64]
-        cmd: curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-arm64 -o '{{.BUILD_ROOT}}/bin/buf'
-      - platforms: [386]
-        cmd: curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-x86_64 -o '{{.BUILD_ROOT}}/bin/buf'
-      - chmod +x '{{.BUILD_ROOT}}/bin/buf'
-    status:
-      - "[[ $({{ .BUILD_ROOT }}/bin/buf --version) == '{{.BUF_VERSION}}' ]]"
-
   fmt:
     desc: Format Go code
     deps:
@@ -111,20 +96,11 @@ tasks:
     deps:
       - install-gomock
       - install-ifacemaker
-      - install-buf
     cmds:
       - |
         export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
         GOBIN={{ .BUILD_ROOT }}/bin/go go generate ./...
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf format -w pkg/kafka/testdata/proto
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf lint --config buf.yaml pkg/kafka/testdata/proto
-      - |
-        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
-        {{ .BUILD_ROOT }}/bin/buf generate pkg/kafka/testdata/proto
+      - task: ':proto:generate'
       - task: 'fmt'
 
   test-unit:

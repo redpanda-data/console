@@ -10,8 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Box, Divider, Heading, Link, Text } from '@redpanda-data/ui';
-import { Collapse } from 'antd';
+import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from '../../../../state/connect/state';
 import { TopicInput } from './forms/TopicInput';
@@ -40,33 +39,27 @@ export const PropertyGroupComponent = observer((props: {
         return (
             <div className="dynamicInputs">
                 {filteredProperties.map((p) => (
-                    <PropertyComponent key={p.name} property={p} />
+                    <PropertyComponent key={p.name} property={p}/>
                 ))}
 
-                <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
-                    <Collapse ghost bordered={false}>
-                        {subGroups.map((subGroup) => (
-                            <Collapse.Panel
-                                className={subGroup.propertiesWithErrors.length > 0 ? 'hasErrors' : ''}
-                                key={subGroup.group.name ?? '<null>'}
-                                header={
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
-                                        <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>
+                <div style={{gridColumn: 'span 4', paddingLeft: '8px'}}>
+                    <Accordion items={subGroups.map((subGroup) => ({
+                        heading: <Flex alignItems="center" gap={4}>
+                                        <span style={{fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans'}}>
                                             {subGroup.group.name}
                                         </span>
-                                        <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
-                                    </div>
-                                }
-                            >
-                                <PropertyGroupComponent
-                                    group={subGroup}
-                                    allGroups={props.allGroups}
-                                    showAdvancedOptions={props.showAdvancedOptions}
-                                    connectorType={props.connectorType}
-                                />
-                            </Collapse.Panel>
-                        ))}
-                    </Collapse>
+                            <span style={{fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans'}}>
+                                            {subGroup.group.name}
+                                        </span>
+                            <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
+                        </Flex>,
+                        description: <PropertyGroupComponent
+                            group={subGroup}
+                            allGroups={props.allGroups}
+                            showAdvancedOptions={props.showAdvancedOptions}
+                            connectorType={props.connectorType}
+                        />
+                    }))}/>
                 </div>
             </div>
         );

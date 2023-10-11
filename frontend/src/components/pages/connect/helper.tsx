@@ -10,18 +10,18 @@
  */
 
 
-
-import { Alert, Empty, message, Modal, Popover } from 'antd';
-import { observer } from 'mobx-react';
-import React, { Component, CSSProperties, useState } from 'react';
+import { Alert, Empty } from 'antd';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
-import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
 import MongoDBLogo from '../../../assets/connectors/mongodb.png';
 import IcebergLogo from '../../../assets/connectors/iceberg.png';
+import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
 import DebeziumLogo from '../../../assets/connectors/debezium.png';
 import ConfluentLogo from '../../../assets/connectors/confluent.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -40,12 +40,12 @@ import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
 import TwitterLogo from '../../../assets/connectors/twitter.svg';
 import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
-import { action, makeObservable, observable, runInAction } from 'mobx';
+import { action, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button } from '@redpanda-data/ui';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -261,7 +261,44 @@ const connectorMetadata: ConnectorMetadata[] = [
         author: 'Tabular',
         friendlyName: 'Iceberg',
         description: 'Exports messages to Iceberg tables',
-        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-iceberg-sink-connector/'
+    } as const,
+
+    // JMS Connectors
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Exports messages to JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'MacroNova',
+        friendlyName: 'JMS',
+        description: 'Imports messages from JMS queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-source-connector/'
+    } as const,
+
+
+    // IBM MQ Connectors
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Exports messages to IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-sink-connector/'
+    } as const,
+    {
+        classNamePrefix: 'com.ibm.eventstreams.connect.mqsource.MQSourceConnector',
+        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        author: 'IBM Messaging',
+        friendlyName: 'IBM MQ',
+        description: 'Imports messages from IBM MQ queue',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-source-connector/'
     } as const,
 
     // Community Connector
@@ -359,26 +396,21 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     const meta = findConnectorMetadata(c);
     const displayName = meta?.friendlyName ?? removeNamespace(c);
 
-    return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-        {meta && meta.logo &&
-            <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <ZeroSizeWrapper width="22px" transform="translateY(-1px)" >
-                    <div style={{ width: '22px', height: '22px' }}>
-                        {meta.logo}
-                    </div>
-                </ZeroSizeWrapper>
-            </span>
-        }
+    return (
+        <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+            {meta && meta.logo && (
+                <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
+                    <ZeroSizeWrapper width="22px" transform="translateY(-1px)">
+                        <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
+                    </ZeroSizeWrapper>
+                </span>
+            )}
 
-        <Popover placement="right" overlayClassName="popoverSmall"
-            getPopupContainer={findPopupContainer}
-            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                {c}
-            </div>}
-        >
-            {displayName}
-        </Popover>
-    </div>
+            <Popover placement="right" size="stretch" hideCloseButton={true} content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}>
+                {displayName}
+            </Popover>
+        </div>
+    );
 });
 
 export function removeNamespace(className: string): string {
@@ -469,8 +501,7 @@ export function NotConfigured() {
     );
 }
 
-@observer
-export class ConfirmModal<T> extends Component<{
+type ConfirmModalProps<T> = {
     target: () => T | null, // when set, dialog is shown
     clearTarget: () => void, // called when the dialog is done
 
@@ -478,83 +509,24 @@ export class ConfirmModal<T> extends Component<{
     successMessage: (target: T) => JSX.Element, // "x done successfully"
 
     onOk: (target: T) => Promise<void>,
-}> {
-    @observable isPending = false;
-    @observable error: string | Error | null = null;
+}
 
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
+export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
+    const $state = useLocalObservable<{isPending: boolean; error: string | Error | null}>(() => ({
+        isPending: false,
+        error: null
+    }))
+    const cancelRef = useRef<HTMLButtonElement | null>(null)
 
-    @action.bound async onOk() {
-        this.isPending = true;
-        const target = this.props.target()!;
-        try {
-            await this.props.onOk(target);
-            this.success(target);
-        } catch (err) {
-            this.error = err as any;
-        } finally {
-            this.isPending = false;
-        }
-    }
+    const toast = useToast()
 
-    @action.bound success(target: T) {
-        const messageContent = this.props.successMessage(target);
-        const msg = message.success({ content: messageContent, onClick: () => msg?.() });
-
-        this.cancel();
-    }
-
-    @action.bound cancel() {
-        runInAction(() => {
-            this.isPending = false;
-            this.error = null;
-            this.props.clearTarget();
-        })
-
-    }
-
-    render() {
-        const target = this.props.target();
-        const err = this.renderError();
-
-        const content = target && this.props.content(target);
-
-        return <Modal
-            className="confirmModal"
-            open={target != null}
-            centered closable={false} maskClosable={!this.isPending} keyboard={!this.isPending}
-            okText={this.error ? 'Retry' : 'Yes'}
-            confirmLoading={this.isPending}
-            okType="danger"
-            cancelText="No"
-            cancelButtonProps={{ disabled: this.isPending }}
-            onCancel={this.cancel}
-            onOk={this.onOk}
-        >
-            <>
-                <div>
-                    {content}
-                </div>
-                {err && <Alert
-                    type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
-                    message={err.title}
-                    description={err.content}
-                />}
-
-            </>
-        </Modal>
-    }
-
-    renderError(): { title: JSX.Element, content: JSX.Element } | undefined {
-        if (!this.error)
+    const renderError: () => { title: string, content: string } | undefined = () => {
+        if (!$state.error)
             return undefined;
 
-        const txt = typeof this.error == 'string'
-            ? this.error
-            : this.error.message;
+        const txt = typeof $state.error == 'string'
+            ? $state.error
+            : $state.error.message;
 
         // try parsing as json
         let apiErr: ApiError | undefined;
@@ -569,20 +541,77 @@ export class ConfirmModal<T> extends Component<{
         // return text only
         if (!apiErr)
             return {
-                title: <>Error</>,
-                content: <>{txt}</>
+                title: 'Error',
+                content: txt
             };
 
         // render error object
         return {
-            title: <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
-                <span>Error</span>
-                <span style={{ fontSize: '75%', opacity: 0.7 }}>- {apiErr.statusCode}</span>
-            </div>,
-            content: <div className="codeBox" style={{ mixBlendMode: 'multiply' }}>{apiErr.message}</div>
+            title: `${apiErr.statusCode}`,
+            content: apiErr.message
         };
     }
-}
+
+    const cancel = action(() => {
+        runInAction(() => {
+            $state.isPending = false;
+            $state.error = null;
+            props.clearTarget();
+        })
+    })
+
+    const success = action((target: T) => {
+        const messageContent = props.successMessage(target);
+        toast({
+            status: 'success',
+            description: messageContent,
+        });
+
+        cancel();
+    })
+
+    const onOk = action(async () => {
+        $state.isPending = true;
+        const target = props.target()!;
+        try {
+            await props.onOk(target);
+            success(target);
+        } catch (err) {
+            $state.error = err as any;
+        } finally {
+            $state.isPending = false;
+        }
+    })
+
+    const target = props.target();
+    const err = renderError();
+
+    const content = target && props.content(target);
+
+    return <AlertDialog
+        isOpen={target != null}
+        leastDestructiveRef={cancelRef}
+        onClose={cancel}
+    >
+        <AlertDialogOverlay>
+        <AlertDialogContent>
+            <AlertDialogHeader>Confirm</AlertDialogHeader>
+            <AlertDialogBody>
+                {content}
+                {err && <Box mt={4}><Alert
+                    type="error"
+                    message={err.title}
+                    description={err.content}
+                /></Box>}
+            </AlertDialogBody>
+            <AlertDialogFooter gap={2}>
+                <Button onClick={cancel} ref={cancelRef} variant="outline">No</Button>
+                <Button onClick={onOk} isLoading={$state.isPending}>{$state.error ? 'Retry' : 'Yes'}</Button>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+        </AlertDialogOverlay>
+    </AlertDialog>
+})
 
 // Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
 // or an array of connectors (in which case it will show the sum)
@@ -672,21 +701,29 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
         </Button>
 
         const close = () => showErr(undefined);
-        errModal = <Modal open={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
-            bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
-            centered
-            closable={false} maskClosable={true}
-            okText="Close" width="60%"
-        >
-            <>
-                {
-                    task.taskId == null
-                        ? <h3>Error in Connector</h3>
-                        : <h3>{`Error trace of task ${task.taskId}`}</h3>
-                }
-                <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
-            </>
-        </Modal>;
+        errModal = (
+            <Modal
+                isOpen={err != null}
+                onClose={close}
+            >
+                <ModalOverlay />
+                <ModalContent minW="5xl">
+                    <ModalHeader>
+                        {
+                            task.taskId == null
+                                ? 'Error in Connector'
+                                : `Error trace of task ${task.taskId}`
+                        }
+                    </ModalHeader>
+                    <ModalBody>
+                        <Box px={2} py={3} w="full" className="codeBox" style={{whiteSpace: 'pre', overflow: 'scroll'}}>{err}</Box>
+                    </ModalBody>
+                    <ModalFooter gap={2}>
+                        <Button onClick={close}>Close</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        );
 
         stateContent = errBtn;
     }

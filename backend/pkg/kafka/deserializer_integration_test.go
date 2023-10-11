@@ -13,10 +13,14 @@ package kafka
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -1176,6 +1180,394 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 
 		assert.Equal(int32(1), rOrder.GetRevision())
 	})
+
+	t.Run("schema registry protobuf update", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_update")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv1.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv1.Order))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*shopv1.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2023, time.July, 11, 13, 0, 0, 0, time.UTC)
+		msg := shopv1.Order{
+			Id:        "222",
+			CreatedAt: timestamppb.New(orderCreatedAt),
+		}
+
+		msgData, err := serde.Encode(&msg)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: orderCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+		rOrder := shopv1.Order{}
+		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
+		require.NoError(err)
+		assert.Equal("222", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		// franz-go serde
+		rOrder = shopv1.Order{}
+		err = serde.Decode(record.Value, &rOrder)
+		require.NoError(err)
+		assert.Equal("222", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+
+		// update schema
+		protoFile, err = os.ReadFile("testdata/proto_update/shop/v1/order.proto")
+		require.NoError(err)
+
+		ss2, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss2)
+
+		// verify update
+		srRes, err := rcl.Schemas(ctx, testTopicName+"-value", sr.ShowDeleted)
+		require.NoError(err)
+		assert.Len(srRes, 2)
+		assert.Equal(ss.ID, srRes[0].ID)
+		assert.Equal(ss2.ID, srRes[1].ID)
+
+		msg2ID := "333"
+		order2CreatedAt := time.Date(2023, time.July, 11, 14, 0, 0, 0, time.UTC)
+		order2CreatedAtStr := order2CreatedAt.Format(time.DateTime)
+		order2CreateInput := fmt.Sprintf(`{"id":"%s","version":22,"created_at":"%s","order_value":3456}`, msg2ID, order2CreatedAtStr)
+		msgData, err = serializeShopV1_2(order2CreateInput, ss2.ID)
+		require.NoError(err)
+
+		r = &kgo.Record{
+			Key:       []byte(msg2ID),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: order2CreatedAt,
+		}
+
+		produceCtx, produceCancel = context.WithTimeout(context.Background(), 3*time.Second)
+		defer produceCancel()
+
+		results = s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel = context.WithTimeout(context.Background(), 2*time.Second)
+		defer consumeCancel()
+
+		// create a new client to get the records again
+		cl = s.consumerClientForTopic(testTopicName)
+
+		records := make([]*kgo.Record, 0, 2)
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && len(records) != 2 {
+				record = iter.Next()
+				records = append(records, record)
+			}
+		}
+
+		require.NotEmpty(records)
+		require.Len(records, 2)
+
+		// proto schema rediscovery is on a timer... this forces a new refresh
+		svc2, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc2.Start()
+
+		for _, cr := range records {
+			cr := cr
+
+			if string(cr.Key) == msg.Id {
+				dr := svc2.Deserializer.DeserializeRecord(cr)
+				require.NotNil(dr)
+				assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+				assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+				ov1 := shopv1.Order{}
+				err = protojson.Unmarshal(dr.Value.Payload.Payload, &ov1)
+				require.NoError(err)
+				assert.Equal("222", ov1.Id)
+				assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), ov1.GetCreatedAt().GetSeconds())
+
+				// franz-go serde
+				o2 := shopv1.Order{}
+				err = serde.Decode(cr.Value, &o2)
+				require.NoError(err)
+				assert.Equal("222", o2.Id)
+				assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), o2.GetCreatedAt().GetSeconds())
+			} else if string(cr.Key) == msg2ID {
+				dr := svc2.Deserializer.DeserializeRecord(cr)
+				require.NotNil(dr)
+				assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+				assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+				// the JSON tags have to match shopv_1 Order protojson tags
+				type v1_2Order struct {
+					Version    int32     `json:"version,omitempty"`
+					Id         string    `json:"id,omitempty"`
+					CreatedAt  time.Time `json:"createdAt,omitempty"`
+					OrderValue int32     `json:"orderValue,omitempty"`
+				}
+
+				ov12 := v1_2Order{}
+				err = json.Unmarshal(dr.Value.Payload.Payload, &ov12)
+				require.NoError(err)
+				assert.Equal("333", ov12.Id)
+				assert.Equal(int32(3456), ov12.OrderValue)
+				assert.Equal(int32(22), ov12.Version)
+				assert.Equal(order2CreatedAt.Unix(), ov12.CreatedAt.Unix())
+
+				objStr, err := deserializeShopV1_2(cr.Value, ss2.ID)
+				require.NoError(err)
+
+				o2 := v1_2Order{}
+				err = json.Unmarshal([]byte(objStr), &o2)
+				require.NoError(err)
+				assert.Equal("333", o2.Id)
+				assert.Equal(int32(3456), o2.OrderValue)
+				assert.Equal(int32(22), o2.Version)
+				assert.Equal(order2CreatedAt.Unix(), o2.CreatedAt.Unix())
+			} else {
+				assert.Fail("unknown record:" + string(cr.Key))
+			}
+		}
+	})
+
+	t.Run("numeric key", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("deserializer_numeric_key")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		keyBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(keyBytes, 160)
+		r := &kgo.Record{
+			Key:   keyBytes,
+			Value: []byte("my text value"),
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingText, dr.Value.Payload.RecognizedEncoding)
+		assert.Equal("my text value", dr.Value.Object)
+		assert.Equal([]byte("my text value"), dr.Value.Payload.Payload)
+
+		assert.Equal(messageEncodingUint, dr.Key.Payload.RecognizedEncoding)
+		assert.Equal(uint32(160), dr.Key.Object)
+		assert.Equal([]byte("160"), dr.Key.Payload.Payload)
+	})
+
+	t.Run("ambiguous numeric key as text", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("deserializer_numeric_key_text")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		keyBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(keyBytes, 1952807028)
+		r := &kgo.Record{
+			Key:   keyBytes,
+			Value: []byte("my text value"),
+			Topic: testTopicName,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingText, dr.Value.Payload.RecognizedEncoding)
+		assert.Equal("my text value", dr.Value.Object)
+		assert.Equal([]byte("my text value"), dr.Value.Payload.Payload)
+
+		assert.Equal(messageEncodingText, dr.Key.Payload.RecognizedEncoding)
+		assert.Equal("text", dr.Key.Object)
+		assert.Equal([]byte("text"), dr.Key.Payload.Payload)
+	})
 }
 
 func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
@@ -1190,4 +1582,63 @@ func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat
 	}
 
 	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
+}
+
+// We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
+// Both packages define the same protobuf types in terms of fully qualified name and proto package name.
+// Since Proto types do a global registration, names are expectant to be globally unique within process.
+// This makes it difficult to use both generated packages within same test.
+// So we have a utility CLI helper to do our serialization and deserialization for us out of test process.
+// See: https://protobuf.dev/reference/go/faq#namespace-conflict
+func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
+	cmdPath, err := filepath.Abs("./testdata/proto_update/msgbin/main.go")
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(
+		"go",
+		"run",
+		cmdPath,
+		"-cmd=serialize",
+		"-input="+jsonInput,
+		"-schema-id="+strconv.Itoa(schemaID),
+	)
+	var out strings.Builder
+	cmd.Stdout = &out
+	err = cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+	output := out.String()
+	return base64.StdEncoding.DecodeString(output)
+}
+
+func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
+	cmdPath, err := filepath.Abs("./testdata/proto_update/msgbin/main.go")
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command(
+		"go",
+		"run",
+		cmdPath,
+		"-cmd=deserialize",
+		"-input="+base64.StdEncoding.EncodeToString(binInput),
+		"-schema-id="+strconv.Itoa(schemaID),
+	)
+	var out strings.Builder
+	cmd.Stdout = &out
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	err = cmd.Run()
+	if err != nil {
+		errOutput := errOut.String()
+		if errOutput != "" {
+			return "", fmt.Errorf("%s: %w", errOutput, err)
+		}
+		return "", err
+	}
+	return out.String(), nil
 }

@@ -19,8 +19,10 @@ func NewMirrorCheckpointGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "org.apache.kafka.connect.mirror.MirrorCheckpointConnector",
-		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Regexes of topics to import",

@@ -9,3 +9,4 @@ vars:
 
 includes:
   backend: taskfiles/backend.yaml
+  proto: taskfiles/proto.yaml

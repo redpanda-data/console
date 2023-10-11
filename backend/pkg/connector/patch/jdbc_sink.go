@@ -18,15 +18,15 @@ import (
 )
 
 // ConfigPatchJdbcSink is a config patch that includes changes that shall be applied to the
-// BigQuery sink connector.
+// JDBC sink connector.
 type ConfigPatchJdbcSink struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
-var _ ConfigPatch = (*ConfigPatchBigQuery)(nil)
+var _ ConfigPatch = (*ConfigPatchJdbcSink)(nil)
 
-// NewConfigPatchJdbcSink returns a new Patch for the BigQuery sink connector.
+// NewConfigPatchJdbcSink returns a new Patch for the JDBC sink connector.
 func NewConfigPatchJdbcSink() *ConfigPatchJdbcSink {
 	return &ConfigPatchJdbcSink{
 		ConfigurationKeySelector: IncludeExcludeSelector{

@@ -24,7 +24,7 @@ import './assets/fonts/inter.css';
 
 import { BrowserRouter } from 'react-router-dom';
 import { observer } from 'mobx-react';
-import { Container, Grid, Sidebar } from '@redpanda-data/ui';
+import { Container, Grid, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from './state/ui';
 import { createVisibleSidebarItems } from './components/routes';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
@@ -53,14 +53,14 @@ const App = () => {
     return (
         <BrowserRouter basename={getBasePath()}>
             <HistorySetter />
-            <ChakraProvider theme={redpandaTheme}>
+            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
                 <ErrorBoundary>
                     <RequireAuth>
                         {isEmbedded()
                             ? <AppContent />
                             : <Grid templateColumns="auto 1fr" minH="100vh">
                                 <AppSidebar />
-                                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12" zIndex={1}>
+                                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
                                     <AppContent />
                                 </Container>
                             </Grid>

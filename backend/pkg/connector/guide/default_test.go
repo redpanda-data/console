@@ -8,19 +8,39 @@ import (
 )
 
 func TestDefaultGuide_ConsoleToKafkaConnect(t *testing.T) {
-	g := &DefaultGuide{}
-
 	tests := []struct {
-		name    string
-		configs map[string]any
-		want    map[string]any
+		name       string
+		configs    map[string]any
+		injections map[string]injectedValue
+		want       map[string]any
 	}{
+		{
+			name:    "Inject configs",
+			configs: map[string]any{"topics": "topic"},
+			injections: map[string]injectedValue{
+				"injectedKey1": {
+					Value:           "injectedValue1",
+					IsAuthoritative: false,
+				},
+			},
+			want: map[string]any{
+				"topics":       "topic",
+				"injectedKey1": "injectedValue1",
+			},
+		},
 		{
 			name:    "Add placeholder for topics.regex for sink connector",
 			configs: map[string]any{"connector.class": "com.redpanda.kafka.connect.s3.S3SinkConnector"},
+			injections: map[string]injectedValue{
+				"injectedKey1": {
+					Value:           "injectedValue1",
+					IsAuthoritative: false,
+				},
+			},
 			want: map[string]any{
 				"connector.class": "com.redpanda.kafka.connect.s3.S3SinkConnector",
 				"topics.regex":    "__TOPICS_REGEX_PLACEHOLDER",
+				"injectedKey1":    "injectedValue1",
 			},
 		},
 		{
@@ -90,6 +110,11 @@ func TestDefaultGuide_ConsoleToKafkaConnect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			g := &DefaultGuide{
+				options: Options{
+					injectedValues: tt.injections,
+				},
+			}
 			if got := g.ConsoleToKafkaConnect(tt.configs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ConsoleToKafkaConnect() = %v, want %v", got, tt.want)
 			}
@@ -97,7 +122,7 @@ func TestDefaultGuide_ConsoleToKafkaConnect(t *testing.T) {
 	}
 }
 
-func TestDefaultGuide_KafkaConnectToConsole(t *testing.T) {
+func TestDefaultGuide_KafkaConnectValidateToConsole(t *testing.T) {
 	g := &DefaultGuide{}
 	type args struct {
 		pluginClassName string
@@ -170,7 +195,58 @@ func TestDefaultGuide_KafkaConnectToConsole(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := g.KafkaConnectToConsole(tt.args.pluginClassName, tt.args.patchedConfigs, tt.args.originalConfig); !reflect.DeepEqual(got, tt.want) {
+			if got := g.KafkaConnectValidateToConsole(tt.args.pluginClassName, tt.args.patchedConfigs, tt.args.originalConfig); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("KafkaConnectValidateToConsole() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDefaultGuide_KafkaConnectToConsole(t *testing.T) {
+	g := &DefaultGuide{
+		options: Options{
+			injectedValues: map[string]injectedValue{
+				"injectedKey1": {
+					Value:           "injectedValue1",
+					IsAuthoritative: false,
+				},
+				"injectedKey2": {
+					Value:           "injectedValue2",
+					IsAuthoritative: false,
+				},
+				"injectedKey3": {
+					Value:           "injectedValue3",
+					IsAuthoritative: false,
+				},
+			},
+		},
+	}
+	type args struct {
+		configs map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			name: "Should remove injections",
+			args: args{
+				configs: map[string]string{
+					"injectedKey1": "injectedValue1",
+					"injectedKey2": "non injected value",
+					"otherKey":     "value",
+				},
+			},
+			want: map[string]string{
+				"injectedKey2": "non injected value",
+				"otherKey":     "value",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := g.KafkaConnectToConsole(tt.args.configs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("KafkaConnectToConsole() = %v, want %v", got, tt.want)
 			}
 		})

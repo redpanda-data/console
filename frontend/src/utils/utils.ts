@@ -12,8 +12,6 @@
 import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
-import { message } from 'antd';
-import { MessageType } from 'antd/lib/message';
 import { TopicMessage } from '../state/restInterfaces';
 import { Base64 } from 'js-base64';
 
@@ -620,59 +618,6 @@ export function titleCase(str: string): string {
     return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
-
-type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
-export class Message {
-    private key: string;
-    private hideFunc: MessageType;
-    private duration: number | undefined;
-
-    constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = '') {
-        this.key = randomId();
-        if (type == 'loading')
-            this.duration = 0; // loading stays open until changed
-        else
-            this.duration = undefined; // others disappear automatically
-        this.update();
-    }
-
-    private update() {
-        this.hideFunc = message.open({
-            content: this.text + this.suffix,
-            key: this.key,
-            type: this.type,
-            duration: this.duration,
-        });
-    }
-
-    hide() {
-        this.hideFunc();
-    }
-
-    setLoading(text?: string, suffix?: string) {
-        if (text) this.text = text;
-        if (suffix) this.suffix = suffix;
-        this.type = 'loading';
-        this.duration = 0;
-        this.update();
-    }
-
-    setSuccess(text?: string, suffix?: string) {
-        if (text) this.text = text;
-        if (suffix) this.suffix = suffix;
-        this.type = 'success';
-        this.duration = 2.5;
-        this.update();
-    }
-
-    setError(text?: string, suffix?: string) {
-        if (text) this.text = text;
-        if (suffix) this.suffix = suffix;
-        this.type = 'error';
-        this.duration = 2.5;
-        this.update();
-    }
-}
 
 /**
  * Scroll the main content region

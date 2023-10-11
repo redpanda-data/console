@@ -117,7 +117,7 @@ const KafkaConnectorMain = observer(
                         key: 'overview',
                         name: 'Overview',
                         component: <Box mt="8">
-                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
+                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector}/>
                         </Box>
                     },
                     {
@@ -125,30 +125,28 @@ const KafkaConnectorMain = observer(
                         name: 'Configuration',
                         component: <Box mt="8">
                             <Box maxWidth="800px">
-                                <ConfigPage connectorStore={connectorStore} />
+                                <ConfigPage connectorStore={connectorStore} context="EDIT" />
                             </Box>
 
                             {/* Update Config Button */}
-                            <div style={{ marginTop: '1em' }}>
-                                <div style={{ display: 'flex', margin: '1em 0', marginBottom: '1.5em' }}>
-                                        <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                                            <Button
-                                                variant="outline"
-                                                style={{ width: '200px' }}
-                                                disabled={(() => {
-                                                    if (!canEdit) return true;
-                                                    if (!connector) return true;
-                                                    if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
-                                                })()}
-                                                onClick={() => {
-                                                    $state.updatingConnector = { clusterName, connectorName };
-                                                }}
-                                            >
-                                                Update Config
-                                            </Button>
-                                        </Tooltip>
-                                </div>
-                            </div>
+                            <Flex m={4} mb={6}>
+                                <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
+                                    <Button
+                                        variant="outline"
+                                        style={{width: '200px'}}
+                                        disabled={(() => {
+                                            if (!canEdit) return true;
+                                            if (!connector) return true;
+                                            if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
+                                        })()}
+                                        onClick={() => {
+                                            $state.updatingConnector = {clusterName, connectorName};
+                                        }}
+                                    >
+                                        Update Config
+                                    </Button>
+                                </Tooltip>
+                            </Flex>
                         </Box>
                     }
                 ]}
@@ -384,7 +382,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                 <ModalBody>
                     <CodeBlock language="json" codeString={p.error.content} showScroll={false} />
                 </ModalBody>
-                <ModalFooter>
+                <ModalFooter gap={2}>
                     {hasConnectorLogs &&
                         <Button onClick={() => appGlobal.history.push('/topics/__redpanda.connectors_logs')} mr="auto">
                             Show Logs

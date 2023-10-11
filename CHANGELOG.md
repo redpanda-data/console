@@ -1,6 +1,18 @@
 # Changelog
 
-## Master / to be released
+## v2.3.4 / 2023-10-10
+
+- [FIX] Build with latest Alpine image to address CVE-2023-38039.
+
+## v2.3.3 / 2023-09-14
+
+- [BUGFIX] Get all schemas for protobuf compilation in order to support records of multiple versions of same schema.
+- [IMPROVEMENT] Add numeric values to the deserializer. Console will attempt to deserialize payloads as big endian uints.
+
+## v2.3.2 / 2023-09-05
+
+- [BUGFIX] Fix base64 decoding of 'utf8WithControlChars' in frontend
+- [ENHANCEMENT] Update Avro dependency
 
 ## v2.3.1 / 2023-08-01
 

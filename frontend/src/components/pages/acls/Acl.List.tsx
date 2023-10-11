@@ -8,9 +8,10 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/* eslint-disable */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, message, Dropdown, Menu, Modal } from 'antd';
+import { Empty, Input } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +31,18 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Badge, Button, Icon, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList } from '@redpanda-data/ui';
+import React, { FC, useRef } from 'react';
+
+// TODO - once AclList is migrated to FC, we could should move this code to use useToast()
+const { ToastContainer, toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: {
+        ...redpandaToastOptions.defaultOptions,
+        isClosable: false,
+        duration: 2000
+    }
+})
 
 @observer
 class AclList extends PageComponent {
@@ -48,7 +60,7 @@ class AclList extends PageComponent {
                     ? 'User Group'
                     : record.principalType;
                 return (
-                    <>
+                    <div className="hoverLink">
                         <Badge variant="subtle" mr="2">{principalType}</Badge>
                         <span>{record.principalName}</span>
                         {showWarning && (
@@ -58,7 +70,7 @@ class AclList extends PageComponent {
                                 </span>
                             </Tooltip>
                         )}
-                    </>
+                    </div>
                 );
             },
             defaultSortOrder: 'ascend'
@@ -86,28 +98,32 @@ class AclList extends PageComponent {
                                 operation: 'Any',
                                 permissionType: 'Any',
                             });
-                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                            toast({
+                                status: 'success',
+                                description: <Text as="span">Deleted ACLs for <Code>{record.principalName}</Code></Text>
+                            });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
-                            Modal.error({
-                                title: 'Delete ACLs failed',
-                                content: <div className="codeBox">{toJson(err)}</div>,
-                            });
+                            this.aclFailed = {
+                                err,
+                            }
                         }
                     }
 
                     if (user) {
                         try {
                             await api.deleteServiceAccount(record.principalName);
-                            message.success(<>Deleted user <Code>{record.principalName}</Code></>);
+                            toast({
+                                status: 'success',
+                                description: <Text as="span">Deleted user <Code>{record.principalName}</Code></Text>
+                            });
                         } catch (err: unknown) {
                             console.error('failed to delete acls', { error: err });
 
-                            Modal.error({
-                                title: 'Delete ACLs failed',
-                                content: <div className="codeBox">{toJson(err)}</div>,
-                            });
+                            this.aclFailed = {
+                                err,
+                            }
                         }
                     }
 
@@ -115,35 +131,46 @@ class AclList extends PageComponent {
                 }
 
 
-                return <Dropdown trigger={['click']} overlay={
-                    <Menu>
-                        <Menu.Item key="1" disabled={!userExists || !Features.deleteUser || !hasAcls} onClick={async () => {
-                            onDelete(true, true);
-                        }}>
+                return <Menu>
+                    <MenuButton as={Button} variant="ghost" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}>
+                        <Icon as={TrashIcon} />
+                    </MenuButton>
+                    <MenuList>
+                        <MenuItem
+                            isDisabled={!userExists || !Features.deleteUser || !hasAcls}
+                            onClick={(e) => {
+                                void onDelete(true, true);
+                                e.stopPropagation()
+                            }}
+                        >
                             Delete (User and ACLs)
-                        </Menu.Item>
-
-                        <Menu.Item key="2" disabled={!userExists || !Features.deleteUser} onClick={async () => {
-                            onDelete(true, false);
-                        }}>
+                        </MenuItem>
+                        <MenuItem
+                            isDisabled={!userExists || !Features.deleteUser}
+                            onClick={(e) => {
+                                void onDelete(true, false);
+                                e.stopPropagation()
+                            }}
+                        >
                             Delete (User only)
-                        </Menu.Item>
-
-                        <Menu.Item key="3" disabled={!hasAcls} onClick={async () => {
-                            onDelete(false, true);
-                        }}>
+                        </MenuItem>
+                        <MenuItem
+                            isDisabled={!hasAcls}
+                            onClick={(e) => {
+                                void onDelete(false, true);
+                                e.stopPropagation()
+                            }}
+                        >
                             Delete (ACLs only)
-                        </Menu.Item>
-                    </Menu>}>
-                    <Button variant="ghost" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}>
-                        <Icon as={TrashIcon} fontSize="24px" />
-                    </Button>
-                </Dropdown>
+                        </MenuItem>
+                    </MenuList>
+                </Menu>
             }
         },
     ];
 
     editorType: 'create' | 'edit' = 'create';
+    @observable aclFailed: { err: unknown } | null = null;
     @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
     CreateServiceAccountModal;
@@ -156,9 +183,7 @@ class AclList extends PageComponent {
         const m = createAutoModal({
             modalProps: {
                 title: 'Create User',
-                width: '80%',
-                style: { minWidth: '400px', maxWidth: '600px', top: '50px' },
-                bodyStyle: { paddingTop: '1em' },
+                style: { width: '80%', minWidth: '400px', maxWidth: '600px', top: '50px' },
 
                 okText: 'Create',
                 successTitle: 'User Created',
@@ -170,7 +195,7 @@ class AclList extends PageComponent {
 
             onCreate: () => observable({
                 username: '',
-                password: generatePassword(30),
+                password: generatePassword(30, false),
                 mechanism: 'SCRAM-SHA-256',
             } as CreateUserRequest),
 
@@ -254,6 +279,10 @@ class AclList extends PageComponent {
         const groups = this.principalGroups;
 
         return <>
+            <AlertDeleteFailed aclFailed={this.aclFailed} onClose={() => {
+                this.aclFailed = null
+            }}/>
+            <ToastContainer />
             <PageContent>
 
                 {this.edittingPrincipalGroup &&
@@ -282,7 +311,6 @@ class AclList extends PageComponent {
 
                         rowKey={x => x.principalType + ' :: ' + x.principalName + ' :: ' + x.host}
 
-                        rowClassName="hoverLink"
                         onRow={r => ({
                             onClick: e => {
                                 // iterate upwards from 'target' (svg or btn) to 'currentTarget' (tr)
@@ -454,6 +482,27 @@ function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
     }
 
     return false;
+}
+
+const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null, onClose: () => void }> = ({aclFailed, onClose}) => {
+    const ref = useRef(null)
+    return (
+        <AlertDialog isOpen={aclFailed !== null} onClose={onClose} leastDestructiveRef={ref}>
+            <AlertDialogOverlay>
+                <AlertDialogContent>
+                    <AlertDialogHeader>Delete ACLs failed</AlertDialogHeader>
+                    <AlertDialogBody>
+                        <div className="codeBox">{aclFailed !== null && toJson(aclFailed.err)}</div>
+                    </AlertDialogBody>
+                    <AlertDialogFooter>
+                        <Button ref={ref} onClick={onClose}>
+                            Cancel
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialogOverlay>
+        </AlertDialog>
+    )
 }
 
 

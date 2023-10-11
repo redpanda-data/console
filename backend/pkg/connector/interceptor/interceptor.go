@@ -57,6 +57,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchJdbcSink(),
 		patch.NewConfigPatchJdbcSource(),
 		patch.NewConfigPatchHTTPSource(),
+		patch.NewConfigPatchIcebergSink(),
 		patch.NewConfigPatchMirrorSource(),
 		patch.NewConfigPatchMirrorHeartbeat(),
 		patch.NewConfigPatchMongoDB(),
@@ -71,34 +72,39 @@ func CommunityPatches() []patch.ConfigPatch {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
-		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
+		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
+		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
 		guide.NewDebeziumPostgresGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectDebeziumPostgresConfigsHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleCloudEventsConverterHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleCloudEventsConverterHook),
 		),
-		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleCloudEventsConverterHook)),
-		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
+		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleCloudEventsConverterHook)),
+		guide.NewIcebergSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleIcebergSinkHook)),
+		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewBigQuerySinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectBigQueryHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
 		guide.NewJdbcSinkGuide(opts...),
-		guide.NewJdbcSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleTopicCreationHook)),
+		guide.NewJdbcSourceGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleTopicCreationHook)),
 		guide.NewHTTPSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectHTTPSourceHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleHTTPSourceHook)),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleHTTPSourceHook)),
 		guide.NewMirrorSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectValidateToConsoleMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 		guide.NewMirrorCheckpointGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectValidateToConsoleMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 		guide.NewMirrorHeartbeatGuide(opts...),
 		guide.NewMongoSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMongoDBHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectValidateToConsoleMongoDBHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook)),
 		guide.NewMongoSinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMongoDBHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectValidateToConsoleMongoDBHook),
+			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook)),
 	}
 }
 
@@ -139,10 +145,21 @@ func (in *Interceptor) ConsoleToKafkaConnect(pluginClassName string, configs map
 	return g.ConsoleToKafkaConnect(configs)
 }
 
-// KafkaConnectToConsole is called after we retrieved a connector's validate response from
+// KafkaConnectToConsole is called after we retrieved a connector's configuration from
+// the target Kafka connect cluster. We apply modifications based on that response so
+// that the injected configuration is skipped.
+func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, configs map[string]string) map[string]string {
+	g, exists := in.guidesByClassName[pluginClassName]
+	if !exists {
+		return in.defaultGuide.KafkaConnectToConsole(configs)
+	}
+	return g.KafkaConnectToConsole(configs)
+}
+
+// KafkaConnectValidateToConsole is called after we retrieved a connector's validate response from
 // the target Kafka connect cluster. We apply modifications based on that response so
 // that the configuration properties are presented in a more user-friendly fashion.
-func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response connect.ConnectorValidationResult, configs map[string]any) model.ValidationResponse {
+func (in *Interceptor) KafkaConnectValidateToConsole(pluginClassName string, response connect.ConnectorValidationResult, configs map[string]any) model.ValidationResponse {
 	// 1. Run all patches on each configuration
 	patchedConfigs := make([]model.ConfigDefinition, len(response.Configs))
 	for i, config := range response.Configs {
@@ -153,10 +170,10 @@ func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response co
 
 	// 2. Apply response patch from guide
 	if g, exists := in.guidesByClassName[pluginClassName]; exists {
-		return g.KafkaConnectToConsole(pluginClassName, patchedConfigs, configs)
+		return g.KafkaConnectValidateToConsole(pluginClassName, patchedConfigs, configs)
 	}
 
-	return in.defaultGuide.KafkaConnectToConsole(pluginClassName, patchedConfigs, configs)
+	return in.defaultGuide.KafkaConnectValidateToConsole(pluginClassName, patchedConfigs, configs)
 }
 
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {

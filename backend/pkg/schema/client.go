@@ -208,6 +208,25 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 	return parsed, nil
 }
 
+// GetSchemasBySubject gets all versioned schemas for a given subject.
+func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse, error) {
+	versionRes, err := c.GetSubjectVersions(subject)
+	if err != nil {
+		return nil, err
+	}
+
+	results := []SchemaVersionedResponse{}
+	for _, sv := range versionRes.Versions {
+		sr, err := c.GetSchemaBySubject(subject, strconv.FormatInt(int64(sv), 10))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
+		}
+		results = append(results, *sr)
+	}
+
+	return results, nil
+}
+
 // SubjectsResponse is the schema for the GET /subjects endpoint.
 type SubjectsResponse struct {
 	Subjects []string // Subject names
@@ -673,7 +692,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	}
 
 	type chRes struct {
-		schemaRes *SchemaVersionedResponse
+		schemaRes []SchemaVersionedResponse
 		err       error
 	}
 	ch := make(chan chRes, len(subjectsRes.Subjects))
@@ -681,9 +700,9 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
 		go func(s string) {
-			r, err := c.GetSchemaBySubject(ctx, s, "latest", showSoftDeleted)
+			srRes, err := c.GetSchemasBySubject(s)
 			ch <- chRes{
-				schemaRes: r,
+				schemaRes: srRes,
 				err:       err,
 			}
 		}(subject)
@@ -695,7 +714,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		if res.err != nil {
 			return nil, fmt.Errorf("failed to fetch at least one schema: %w", res.err)
 		}
-		schemas = append(schemas, *res.schemaRes)
+		schemas = append(schemas, res.schemaRes...)
 	}
 
 	return schemas, nil
