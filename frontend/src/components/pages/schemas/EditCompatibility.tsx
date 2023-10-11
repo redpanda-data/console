@@ -23,7 +23,7 @@ import PageContent from '../../misc/PageContent';
 import { Box, Button, CodeBlock, Flex, Grid, GridItem, Link, Stack, useToast } from '@redpanda-data/ui';
 import { Text } from '@redpanda-data/ui';
 import { Radio, RadioGroup } from '@chakra-ui/react';
-import { SchemaRegistryCompatabilityMode } from '../../../state/restInterfaces';
+import { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
 function renderNotConfigured() {
@@ -52,12 +52,12 @@ function renderNotConfigured() {
 }
 
 @observer
-class EditSchemaCompatabilityPage extends PageComponent<{ subjectName: string }> {
+class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }> {
 
     initPage(p: PageInitHelper): void {
-        p.title = 'Edit Schema Compatability';
+        p.title = 'Edit Schema Compatibility';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb('Edit Compatability', '/schema-registry');
+        p.addBreadcrumb('Edit Compatibility', '/schema-registry');
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
@@ -84,11 +84,11 @@ class EditSchemaCompatabilityPage extends PageComponent<{ subjectName: string }>
         return (
             <PageContent key="b">
 
-                <EditSchemaCompatability
+                <EditSchemaCompatibility
                     subjectName={subjectName}
                     onClose={() => {
                         // Navigate back to the "caller" of the page, depending on what
-                        // variant of the editCompatability page we are on(can be global, or subject)
+                        // variant of the editCompatibility page we are on(can be global, or subject)
                         if (subjectName)
                             appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
                         else
@@ -99,9 +99,9 @@ class EditSchemaCompatabilityPage extends PageComponent<{ subjectName: string }>
         );
     }
 }
-export default EditSchemaCompatabilityPage;
+export default EditSchemaCompatibilityPage;
 
-function EditSchemaCompatability(p: {
+function EditSchemaCompatibility(p: {
     subjectName?: string;
     onClose: () => void, // called after save/cancel
 }) {
@@ -112,7 +112,7 @@ function EditSchemaCompatability(p: {
         : undefined;
     const schema = subject?.schemas.first(x => x.version == subject.latestActiveVersion);
 
-    // type should be just "SchemaRegistryCompatabilityMode"
+    // type should be just "SchemaRegistryCompatibilityMode"
     const [configMode, setConfigMode] = useState(subjectName
         ? subject?.compatibility
         : api.schemaConfig
@@ -140,14 +140,14 @@ function EditSchemaCompatability(p: {
 
     const onSave = () => {
         const changeReq = subjectName
-            ? api.setSchemaRegistrySubjectCompatabilityMode(subjectName, configMode as SchemaRegistryCompatabilityMode)
-            : api.setSchemaRegistryCompatabilityMode(configMode as SchemaRegistryCompatabilityMode)
+            ? api.setSchemaRegistrySubjectCompatibilityMode(subjectName, configMode as SchemaRegistryCompatibilityMode)
+            : api.setSchemaRegistryCompatibilityMode(configMode as SchemaRegistryCompatibilityMode)
 
         changeReq
             .then(async () => {
                 toast({
                     status: 'success', duration: 4000, isClosable: false,
-                    title: 'Compatability mode updated to ' + configMode,
+                    title: 'Compatibility mode updated to ' + configMode,
                 });
 
                 if (subjectName)
@@ -160,7 +160,7 @@ function EditSchemaCompatability(p: {
             .catch(err => {
                 toast({
                     status: 'error', duration: null, isClosable: true,
-                    title: 'Failed to update compatability mode',
+                    title: 'Failed to update compatibility mode',
                     description: String(err),
                 })
             });

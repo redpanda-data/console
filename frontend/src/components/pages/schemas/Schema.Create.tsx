@@ -16,12 +16,12 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Text } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
 import { DeleteIcon } from '@chakra-ui/icons';
-import { openSwitchSchemaFormatModal, openValidationResultModal } from './modals';
+import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import { SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
 import { useState } from 'react';
 
@@ -135,6 +135,7 @@ const SchemaPageButtons = observer((p: {
     parentSubjectName?: string, // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
     editorState: SchemaEditorStateHelper
 }) => {
+    const toast = useToast();
     const [isValidating, setValidating] = useState(false);
     const [isCreating, setCreating] = useState(false);
     const { editorState } = p;
@@ -151,10 +152,14 @@ const SchemaPageButtons = observer((p: {
                 const validationResponse = await validateSchema(editorState)
                     .finally(() => setValidating(false));
 
-
                 if (!validationResponse.isValid || validationResponse.isCompatible === false) {
                     // Something is wrong with the schema, abort
-
+                    toast({
+                        status: 'error', duration: 4000, isClosable: false,
+                        title: 'Error',
+                        description: 'Schema validation failed'
+                    });
+                    return;
                 }
 
 
@@ -176,9 +181,12 @@ const SchemaPageButtons = observer((p: {
                 } catch (err) {
                     // error: open modal
                     console.log('failed to create schema', { err });
+                    toast({
+                        status: 'error', duration: undefined, isClosable: true,
+                        title: 'Error creating schema',
+                        description: String(err)
+                    });
                 }
-
-
             }}>
             Save
         </Button>
@@ -192,7 +200,14 @@ const SchemaPageButtons = observer((p: {
                 const r = await validateSchema(editorState)
                     .finally(() => setValidating(false));
 
-                openValidationResultModal(r);
+                if (r.isValid) {
+                    toast({
+                        status: 'success', duration: 4000, isClosable: false,
+                        title: 'Schema validated successfully'
+                    });
+                } else {
+                    openValidationErrorsModal(r);
+                }
             }}>
             Validate
         </Button>
@@ -364,7 +379,10 @@ const SchemaEditor = observer((p: {
                 language={state.format == 'PROTOBUF' ? 'proto' : 'json'}
             />
 
-            <FormField label="References" helpText="This is an example help text about the references list, to be updated later" />
+            <Heading variant="lg" mt="8">
+                Schema definition
+            </Heading>
+            <Text>This is an example help text about the references list, to be updated later</Text>
 
             <ReferencesEditor state={state} />
 

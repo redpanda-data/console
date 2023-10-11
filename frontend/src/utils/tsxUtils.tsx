@@ -517,7 +517,7 @@ export function LabelTooltip(p: { children?: React.ReactNode; width?: number; ma
     );
 }
 
-export type ButtonProps = Omit<RpButtonProps, 'disabled'> & { disabledReason?: string };
+export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
     if (!p.disabledReason) return <RpButton {...p} />;
 

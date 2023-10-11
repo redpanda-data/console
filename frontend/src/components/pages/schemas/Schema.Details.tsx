@@ -28,6 +28,8 @@ import { SingleSelect } from '../../misc/Select';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { KowlDiffEditor } from '../../misc/KowlEditor';
 import { uiState } from '../../../state/uiState';
+import { createStandaloneToast } from '@chakra-ui/react';
+const { ToastContainer, toast } = createStandaloneToast()
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
@@ -100,17 +102,21 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
 
+        const isSoftDeleted = api.schemaSubjects?.find(x => x.name == this.subjectNameRaw)?.isSoftDeleted;
+
         const subject = api.schemaDetails.get(this.subjectNameRaw);
         if (!subject) return DefaultSkeleton;
 
         return (
             <PageContent key="b">
+                <ToastContainer />
+
                 {/* Statistics Bar */}
                 <Flex gap="1rem" alignItems="center">
                     <SmallStat title="Format">{subject.type}</SmallStat>
                     <Divider height="2ch" orientation="vertical" />
 
-                    <SmallStat title="Compatability">{subject.compatibility}</SmallStat>
+                    <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
                     <Divider height="2ch" orientation="vertical" />
 
                     <SmallStat title="Active Versions">{subject.schemas.count(x => !x.isSoftDeleted)}</SmallStat>
@@ -118,9 +124,48 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
                 {/* Buttons */}
                 <Flex gap="2">
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatability`)}>Edit Compatability</Button>
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)}>Edit Compatibility</Button>
                     <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}>Add new version</Button>
-                    <Button variant="outline">Delete subject</Button>
+                    <Button variant="outline" onClick={() => {
+                        if (isSoftDeleted) {
+                            openPermanentDeleteModal(this.subjectNameRaw, () => {
+                                api.deleteSchemaSubject(this.subjectNameRaw, true)
+                                    .then(async () => {
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: 'Subject permanently deleted'
+                                        });
+                                        api.refreshSchemaSubjects(true);
+                                        appGlobal.history.push('/schema-registry/');
+                                    })
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: 'Failed to permanently delete subject',
+                                            description: String(err),
+                                        })
+                                    });
+                            })
+                        } else {
+                            openDeleteModal(this.subjectNameRaw, () => {
+                                api.deleteSchemaSubject(this.subjectNameRaw, false)
+                                    .then(async () => {
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: 'Subject soft-deleted'
+                                        });
+                                        api.refreshSchemaSubjects(true);
+                                    })
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: 'Failed to soft-delete subject',
+                                            description: String(err),
+                                        })
+                                    });
+                            })
+                        }
+                    }}>Delete subject</Button>
                 </Flex>
 
                 {/* Definition / Diff */}

@@ -1508,14 +1508,14 @@ export type SchemaRegistryModeResponse = {
 };
 
 // GET /schema-registry/config
-export type SchemaRegistryCompatabilityMode = 'NONE' | 'BACKWARD' | 'BACKWARD_TRANSITIVE' | 'FORWARD' | 'FORWARD_TRANSITIVE' | 'FULL' | 'FULL_TRANSITIVE';
+export type SchemaRegistryCompatibilityMode = 'NONE' | 'BACKWARD' | 'BACKWARD_TRANSITIVE' | 'FORWARD' | 'FORWARD_TRANSITIVE' | 'FULL' | 'FULL_TRANSITIVE';
 export type SchemaRegistryConfigResponse = {
-    compatibility: SchemaRegistryCompatabilityMode;
+    compatibility: SchemaRegistryCompatibilityMode;
 };
 
 // PUT /schema-registry/config
-export type SchemaRegistrySetCompatabilityModeRequest = {
-    compatibility: SchemaRegistryCompatabilityMode;
+export type SchemaRegistrySetCompatibilityModeRequest = {
+    compatibility: SchemaRegistryCompatibilityMode;
 }
 
 // GET /schema-registry/subjects
@@ -1534,7 +1534,7 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
     name: string;
     type: SchemaType;
-    compatibility: 'DEFAULT' | SchemaRegistryCompatabilityMode;
+    compatibility: 'DEFAULT' | SchemaRegistryCompatibilityMode;
     versions: SchemaRegistrySubjectDetailsVersion[];
     latestActiveVersion: number;
     schemas: SchemaRegistryVersionedSchema[];
@@ -1598,6 +1598,12 @@ export type SchemaReferencedByEntry = {
     usages: SchemaReferencedByUsage[];
 }
 export type SchemaReferencedByUsage = {
+    subject: string;
+    version: number;
+}
+
+// GET /schema-registry/schemas/ids/{id}/versions
+export type SchemaVersion = {
     subject: string;
     version: number;
 }

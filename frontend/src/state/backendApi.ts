@@ -55,10 +55,11 @@ import {
     SchemaRegistryCreateSchema,
     SchemaRegistryDeleteSubjectVersionResponse,
     SchemaRegistryDeleteSubjectResponse,
-    SchemaRegistryCompatabilityMode,
-    SchemaRegistrySetCompatabilityModeRequest,
+    SchemaRegistryCompatibilityMode,
+    SchemaRegistrySetCompatibilityModeRequest,
     SchemaReferencedByEntry,
-    SchemaRegistryValidateSchemaResponse
+    SchemaRegistryValidateSchemaResponse,
+    SchemaVersion
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -251,6 +252,7 @@ const apiStore = {
     schemaTypes: undefined as string[] | undefined,
     schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
     schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
+    schemaUsagesById: new Map<number, SchemaVersion[]>(),
 
     topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
@@ -999,7 +1001,7 @@ const apiStore = {
 
     refreshSchemaReferencedBy(subjectName: string, version: number, force?: boolean) {
 
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`, force) as Promise<SchemaReferencedByEntry[]>;
+        const rq = cachedApiRequest<SchemaReferencedByEntry[]>(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`, force);
 
         return rq.then(references => {
             let subjectVersions = this.schemaReferencedBy.get(subjectName);
@@ -1022,18 +1024,25 @@ const apiStore = {
         }).catch(() => { });
     },
 
-    async setSchemaRegistryCompatabilityMode(mode: SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
+    refreshSchemaUsagesById(schemaId: number, force?: boolean) {
+        cachedApiRequest<SchemaVersion[]>(`${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, force)
+            .then(r => {
+                this.schemaUsagesById.set(schemaId, r);
+            }, addError);
+    },
+
+    async setSchemaRegistryCompatibilityMode(mode: SchemaRegistryCompatibilityMode): Promise<SchemaRegistryConfigResponse> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
             ],
-            body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatabilityModeRequest),
+            body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
         });
         return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
     },
 
-    async setSchemaRegistrySubjectCompatabilityMode(subjectName: string, mode: 'DEFAULT' | SchemaRegistryCompatabilityMode): Promise<SchemaRegistryConfigResponse> {
+    async setSchemaRegistrySubjectCompatibilityMode(subjectName: string, mode: 'DEFAULT' | SchemaRegistryCompatibilityMode): Promise<SchemaRegistryConfigResponse> {
         if (mode === 'DEFAULT') {
             const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
                 method: 'DELETE',
@@ -1046,7 +1055,7 @@ const apiStore = {
                 headers: [
                     ['Content-Type', 'application/json']
                 ],
-                body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatabilityModeRequest),
+                body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
             });
             return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
         }

@@ -50,6 +50,8 @@ import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Bo
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
+import { Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -1074,7 +1076,7 @@ function getControlCharacterName(code: number): string {
 
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
-    const data = {
+    const data: { [k: string]: any } = {
         'Key': msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
         'Value': msg.value.isPayloadNull ? 'Null' : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
@@ -1082,6 +1084,10 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
         'Transactional': msg.isTransactional ? 'true' : 'false',
         // "Producer ID": "(msg.producerId)",
     };
+
+    if (msg.value.schemaId) {
+        data['Schema'] = <MessageSchema schemaId={msg.value.schemaId} />
+    }
 
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
         {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
@@ -1091,6 +1097,24 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
             </div>
         </React.Fragment>)}
     </div>;
+});
+
+const MessageSchema = observer((p: { schemaId: number }) => {
+
+    const subjects = api.schemaUsagesById.get(p.schemaId);
+    if (!subjects || subjects.length == 0) {
+        api.refreshSchemaUsagesById(p.schemaId);
+        return <>
+            ID {p.schemaId} (unknown subject)
+        </>;
+    }
+
+    const s = subjects[0];
+    return <>
+        <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
+            {s.subject} (version {s.version})
+        </Link>
+    </>
 });
 
 const MessageHeaders = observer((props: { msg: TopicMessage; }) => {

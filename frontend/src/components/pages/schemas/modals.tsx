@@ -1,7 +1,8 @@
 import { observer } from 'mobx-react';
 import { openModal } from '../../../utils/ModalContainer';
-import { Alert, AlertIcon, Box, Button, Flex, Input, Link, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, Input, Link, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, ThemeTypings } from '@redpanda-data/ui';
 import { useState } from 'react';
+import { WarningIcon } from '@chakra-ui/icons';
 
 
 const GenericModal = observer((p: {
@@ -12,6 +13,8 @@ const GenericModal = observer((p: {
 
     onPrimaryButton: (closeModal: () => void) => void,
     onSecondaryButton: (closeModal: () => void) => void,
+
+    primaryColorScheme?: ThemeTypings['colorSchemes']
 
     closeModal: () => void;
 }) => {
@@ -26,7 +29,7 @@ const GenericModal = observer((p: {
             </ModalBody>
 
             <ModalFooter>
-                <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+                <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
                     {p.primaryButtonContent}
                 </Button>
                 <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
@@ -62,12 +65,12 @@ const ExplicitConfirmModal = observer((p: {
 
                 <Box mt="4">
                     To confirm this action, type 'delete' in the box below:
-                    <Input onChange={e => setConfirmBoxText(e.target.value)} />
+                    <Input onChange={e => setConfirmBoxText(e.target.value)} autoFocus />
                 </Box>
             </ModalBody>
 
             <ModalFooter>
-                <Button mr={3} isDisabled={!isConfirmEnabled} onClick={() => p.onPrimaryButton(p.closeModal)}>
+                <Button mr={3} isDisabled={!isConfirmEnabled} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme="red">
                     {p.primaryButtonContent}
                 </Button>
                 <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
@@ -122,38 +125,28 @@ export function openInfoModal(p: {
     });
 }
 
-export function openValidationResultModal(result: {
+export function openValidationErrorsModal(result: {
     isValid: boolean;
     errorDetails?: string | undefined;
     isCompatible?: boolean | undefined;
 }) {
     const { isValid, errorDetails, isCompatible } = result;
 
-    const validBox = isValid
-        ? <Alert status="success" variant="subtle">
-            <AlertIcon />
-            Schema validated successfully
-        </Alert>
-        : <Alert status="error" variant="subtle">
-            <AlertIcon />
-            Schema validation failed
-        </Alert>
-
-    const compatBox = isCompatible == undefined
+    const compatBox = (isCompatible == undefined || isValid == false)
         ? <></>
         : isCompatible
             ? <Alert status="success" variant="subtle">
                 <AlertIcon />
-                No compatability issues
+                No compatibility issues
             </Alert>
             : <Alert status="error" variant="subtle">
                 <AlertIcon />
-                Compatability issues found
+                Compatibility issues found
             </Alert>
 
     const errDetailsBox = errorDetails
         ? <Box>
-            <Box maxHeight="400px" overflowY="auto" p="4" background="gray.100">
+            <Box maxHeight="400px" overflowY="auto" p="6" background="gray.100" fontFamily="monospace" letterSpacing="-0.5px">
                 {errorDetails?.trim()}
             </Box>
         </Box>
@@ -161,10 +154,15 @@ export function openValidationResultModal(result: {
 
 
     openInfoModal({
-        title: <>Schema validation</>,
+        title: <>
+            <Text color="red.500" display="flex" alignItems="center">
+                <WarningIcon fontSize="1.18em" mr="3" />
+                Schema validation error
+            </Text>
+        </>,
         body: <>
+            <Text mb="3">Schema validation failed due to the following error.</Text>
             <Flex direction="column" gap="4">
-                {validBox}
                 {compatBox}
                 {errDetailsBox}
             </Flex>
@@ -187,6 +185,8 @@ export function openDeleteModal(
             Are you sure?
         </>,
         primaryButtonContent: <>Delete</>,
+        primaryColorScheme: 'red',
+
         secondaryButtonContent: <>Cancel</>,
 
         onPrimaryButton: (closeModal) => {
