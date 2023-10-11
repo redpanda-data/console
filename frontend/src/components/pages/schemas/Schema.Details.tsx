@@ -294,6 +294,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                                             title: 'Schema version permanently deleted'
                                         });
 
+                                        api.refreshSchemaSubjects(true);
                                         await api.refreshSchemaDetails(subject.name, true);
                                         setSelectedVersion(api.schemaDetails.get(subject.name)!.latestActiveVersion);
                                     })
@@ -321,7 +322,9 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                                             status: 'success', duration: 4000, isClosable: false,
                                             title: `Schema ${subject.name} ${schema.version} has been recovered`,
                                             description: 'Schema ID: ' + r.id,
-                                        })
+                                        });
+                                        api.refreshSchemaSubjects(true);
+                                        api.refreshSchemaDetails(subject.name, true);
                                     })
                                     .catch(err => {
                                         toast({
@@ -338,13 +341,14 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         <Button variant="outline" ml="auto" onClick={() => openDeleteModal(`${subject.name} version ${schema.version}`, () => {
                             api.deleteSchemaSubjectVersion(subject.name, schema.version, false)
                                 .then(() => {
-                                    api.refreshSchemaDetails(subject.name, true);
-
                                     toast({
                                         status: 'success', duration: 4000, isClosable: false,
                                         title: 'Schema version deleted',
                                         description: 'You can recover or permanently delete it.',
                                     });
+
+                                    api.refreshSchemaDetails(subject.name, true);
+                                    api.refreshSchemaSubjects(true);
                                 })
                                 .catch(err => {
                                     toast({
