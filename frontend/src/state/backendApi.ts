@@ -470,15 +470,14 @@ const apiStore = {
                         this.messageSearchPhase = null;
                         break;
                     case 'error':
-                        // error doesn't necessarily mean the whole request is done
-                        console.info('backend error: ' + res.controlMessage.value.message);
-                        const notificationKey = `errorNotification-${Date.now()}`;
-                        notification['error']({
-                            key: notificationKey,
-                            message: 'Backend Error',
+                           // error doesn't necessarily mean the whole request is done
+                        console.info('ws backend error: ' + res.controlMessage.value.message);
+                        toast({
+                            title: 'Backend Error',
                             description: res.controlMessage.value.message,
-                            duration: 5,
+                            status: 'error'
                         });
+
                         break;
                     case 'data':
                         // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
