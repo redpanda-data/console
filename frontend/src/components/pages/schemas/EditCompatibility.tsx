@@ -15,12 +15,11 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-
+import { DefaultSkeleton, Button } from '../../../utils/tsxUtils';
 import './Schema.List.scss';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Box, Button, CodeBlock, Flex, Grid, GridItem, Link, Stack, useToast } from '@redpanda-data/ui';
+import { Box, CodeBlock, Flex, Grid, GridItem, Link, Stack, useToast } from '@redpanda-data/ui';
 import { Text } from '@redpanda-data/ui';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
@@ -243,7 +242,9 @@ function EditSchemaCompatibility(p: {
         </Grid>
 
         <Flex gap="4">
-            <Button colorScheme="brand" onClick={onSave}>Save</Button>
+            <Button colorScheme="brand" onClick={onSave} disabledReason={api.userData?.canManageSchemaRegistry === false ? 'You don\'t have the \'canManageSchemaRegistry\' permission' : undefined}>
+                Save
+            </Button>
             <Button variant="link" onClick={p.onClose}>Cancel</Button>
         </Flex>
     </>

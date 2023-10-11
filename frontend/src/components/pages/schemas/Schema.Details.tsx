@@ -14,11 +14,11 @@ import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent } from '../Page';
-import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label, Button } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, CodeBlock, Divider, Flex, Grid, GridItem, ListItem, Tabs, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, CodeBlock, Divider, Flex, Grid, GridItem, ListItem, Tabs, UnorderedList, useToast } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
 import { Text } from '@redpanda-data/ui';
@@ -125,47 +125,54 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 {/* Buttons */}
                 <Flex gap="2">
                     <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)}>Edit Compatibility</Button>
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}>Add new version</Button>
-                    <Button variant="outline" onClick={() => {
-                        if (isSoftDeleted) {
-                            openPermanentDeleteModal(this.subjectNameRaw, () => {
-                                api.deleteSchemaSubject(this.subjectNameRaw, true)
-                                    .then(async () => {
-                                        toast({
-                                            status: 'success', duration: 4000, isClosable: false,
-                                            title: 'Subject permanently deleted'
-                                        });
-                                        api.refreshSchemaSubjects(true);
-                                        appGlobal.history.push('/schema-registry/');
-                                    })
-                                    .catch(err => {
-                                        toast({
-                                            status: 'error', duration: null, isClosable: true,
-                                            title: 'Failed to permanently delete subject',
-                                            description: String(err),
+                    <Button variant="outline"
+                        onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
+                        disabledReason={api.userData?.canCreateSchemas === false ? 'You don\'t have the \'canCreateSchemas\' permission' : undefined}
+                    >
+                        Add new version
+                    </Button>
+                    <Button variant="outline"
+                        disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
+                        onClick={() => {
+                            if (isSoftDeleted) {
+                                openPermanentDeleteModal(this.subjectNameRaw, () => {
+                                    api.deleteSchemaSubject(this.subjectNameRaw, true)
+                                        .then(async () => {
+                                            toast({
+                                                status: 'success', duration: 4000, isClosable: false,
+                                                title: 'Subject permanently deleted'
+                                            });
+                                            api.refreshSchemaSubjects(true);
+                                            appGlobal.history.push('/schema-registry/');
                                         })
-                                    });
-                            })
-                        } else {
-                            openDeleteModal(this.subjectNameRaw, () => {
-                                api.deleteSchemaSubject(this.subjectNameRaw, false)
-                                    .then(async () => {
-                                        toast({
-                                            status: 'success', duration: 4000, isClosable: false,
-                                            title: 'Subject soft-deleted'
+                                        .catch(err => {
+                                            toast({
+                                                status: 'error', duration: null, isClosable: true,
+                                                title: 'Failed to permanently delete subject',
+                                                description: String(err),
+                                            })
                                         });
-                                        api.refreshSchemaSubjects(true);
-                                    })
-                                    .catch(err => {
-                                        toast({
-                                            status: 'error', duration: null, isClosable: true,
-                                            title: 'Failed to soft-delete subject',
-                                            description: String(err),
+                                })
+                            } else {
+                                openDeleteModal(this.subjectNameRaw, () => {
+                                    api.deleteSchemaSubject(this.subjectNameRaw, false)
+                                        .then(async () => {
+                                            toast({
+                                                status: 'success', duration: 4000, isClosable: false,
+                                                title: 'Subject soft-deleted'
+                                            });
+                                            api.refreshSchemaSubjects(true);
                                         })
-                                    });
-                            })
-                        }
-                    }}>Delete subject</Button>
+                                        .catch(err => {
+                                            toast({
+                                                status: 'error', duration: null, isClosable: true,
+                                                title: 'Failed to soft-delete subject',
+                                                description: String(err),
+                                            })
+                                        });
+                                })
+                            }
+                        }}>Delete subject</Button>
                 </Flex>
 
                 {/* Definition / Diff */}
@@ -286,6 +293,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                     ? <>
                         <Button
                             variant="outline" ml="auto"
+                            disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
                             onClick={() => openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
                                 api.deleteSchemaSubjectVersion(subject.name, schema.version, true)
                                     .then(async () => {
@@ -311,6 +319,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
                         <Button
                             variant="outline"
+                            disabledReason={api.userData?.canCreateSchemas === false ? 'You don\'t have the \'canCreateSchemas\' permission' : undefined}
                             onClick={() => {
                                 api.createSchema(subject.name, {
                                     references: schema.references,
@@ -338,26 +347,28 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         </Button>
                     </>
                     : <>
-                        <Button variant="outline" ml="auto" onClick={() => openDeleteModal(`${subject.name} version ${schema.version}`, () => {
-                            api.deleteSchemaSubjectVersion(subject.name, schema.version, false)
-                                .then(() => {
-                                    toast({
-                                        status: 'success', duration: 4000, isClosable: false,
-                                        title: 'Schema version deleted',
-                                        description: 'You can recover or permanently delete it.',
-                                    });
+                        <Button variant="outline" ml="auto"
+                            disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
+                            onClick={() => openDeleteModal(`${subject.name} version ${schema.version}`, () => {
+                                api.deleteSchemaSubjectVersion(subject.name, schema.version, false)
+                                    .then(() => {
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: 'Schema version deleted',
+                                            description: 'You can recover or permanently delete it.',
+                                        });
 
-                                    api.refreshSchemaDetails(subject.name, true);
-                                    api.refreshSchemaSubjects(true);
-                                })
-                                .catch(err => {
-                                    toast({
-                                        status: 'error', duration: null, isClosable: true,
-                                        title: 'Failed to delete schema version',
-                                        description: String(err),
+                                        api.refreshSchemaDetails(subject.name, true);
+                                        api.refreshSchemaSubjects(true);
                                     })
-                                });
-                        })}>Delete</Button>
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: 'Failed to delete schema version',
+                                            description: String(err),
+                                        })
+                                    });
+                            })}>Delete</Button>
                     </>}
             </Flex>
 

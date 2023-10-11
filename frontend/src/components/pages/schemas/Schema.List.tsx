@@ -16,7 +16,7 @@ import { api } from '../../../state/backendApi';
 import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
-import { DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, InlineSkeleton, Button } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
@@ -25,7 +25,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button, Checkbox, Divider, Flex, Skeleton } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Checkbox, Divider, Flex, Skeleton } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
@@ -123,7 +123,10 @@ class SchemaList extends PageComponent<{}> {
                     <SmallStat title="Compatibility">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
                 </Flex>
 
-                <Button variant="outline" mb="4" width="fit-content" onClick={() => appGlobal.history.push('/schema-registry/edit-compatibility')}>
+                <Button variant="outline" mb="4" width="fit-content"
+                    onClick={() => appGlobal.history.push('/schema-registry/edit-compatibility')}
+                    disabledReason={api.userData?.canManageSchemaRegistry === false ? 'You don\'t have the \'canManageSchemaRegistry\' permission' : undefined}
+                >
                     Edit compatibility
                 </Button>
 
@@ -139,7 +142,12 @@ class SchemaList extends PageComponent<{}> {
 
                 <Section>
                     <Flex justifyContent={'space-between'} pb={3}>
-                        <Button colorScheme="brand" onClick={() => appGlobal.history.push('/schema-registry/create')}>Create new schema</Button>
+                        <Button colorScheme="brand"
+                            onClick={() => appGlobal.history.push('/schema-registry/create')}
+                            disabledReason={api.userData?.canCreateSchemas === false ? 'You don\'t have the \'canCreateSchemas\' permission' : undefined}
+                        >
+                            Create new schema
+                        </Button>
                         <Checkbox
                             isChecked={uiSettings.schemaList.showSoftDeleted}
                             onChange={e => uiSettings.schemaList.showSoftDeleted = e.target.checked}
@@ -159,6 +167,7 @@ class SchemaList extends PageComponent<{}> {
                                 title: '', render: (_, r) =>
                                     <Button variant="icon"
                                         height="21px" color="gray.500"
+                                        disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
                                         onClick={e => {
                                             e.stopPropagation();
                                             e.preventDefault();
