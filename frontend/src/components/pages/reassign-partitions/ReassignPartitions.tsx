@@ -11,7 +11,6 @@
 
 import React from 'react';
 import { observer } from 'mobx-react';
-import { Steps } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -37,11 +36,11 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions, Step, Stepper, Box, StepIndicator, StepStatus, StepIcon, StepNumber } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
+import { StepSeparator } from '@chakra-ui/react';
 
 
-const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
@@ -221,9 +220,21 @@ class ReassignPartitions extends PageComponent {
                 <Section id="wizard">
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
-                        <Steps current={this.currentStep}>
-                            {steps.map(item => <Step key={item.title} title={item.title} icon={item.icon} />)}
-                        </Steps>
+                        <Stepper index={this.currentStep} colorScheme="brand">
+                            {steps.map((item, index) => <Step key={index} title={item.title}>
+                                <StepIndicator>
+                                    <StepStatus
+                                        complete={<StepIcon/>}
+                                        incomplete={<StepNumber/>}
+                                        active={<StepNumber/>}
+                                    />
+                                </StepIndicator>
+                                <Box>
+                                    {item.title}
+                                </Box>
+                                <StepSeparator />
+                            </Step>)}
+                        </Stepper>
                     </div>
 
                     {/* Content */}

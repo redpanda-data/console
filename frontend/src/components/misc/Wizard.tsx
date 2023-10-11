@@ -10,28 +10,13 @@
  */
 
 import styles from './Wizard.module.scss';
-import { Steps } from 'antd';
 import { Button } from '@redpanda-data/ui';
 import React from 'react';
 
-const { Step } = Steps;
-
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
-    const [currentStepKey, currentStep] = state.getCurrentStep();
+    const [, currentStep] = state.getCurrentStep();
     return (
         <div className={styles.wizard}>
-            <Steps current={currentStepKey} size={'small'} className={styles.steps}>
-                {state.getSteps().map((step, i) => (
-                    <Step
-                        key={i}
-                        title={step.title}
-                        description={step.description}
-                        icon={step.icon}
-                        className={styles.step}
-                        {...{ children: step.content }}
-                    />
-                ))}
-            </Steps>
             <div className={styles.content}>{currentStep.content}</div>
             <div className={styles.footer}>
                 {currentStep.nextButtonLabel !== null &&
