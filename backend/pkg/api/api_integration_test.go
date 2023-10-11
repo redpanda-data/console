@@ -494,6 +494,38 @@ func (a *assertHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error)
 	return rv.BoolValue, rv.Err
 }
 
+func (a *assertHooks) CanViewSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanCreateSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanDeleteSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
 func (a *assertHooks) IsProtectedKafkaUser(_ string) bool {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)

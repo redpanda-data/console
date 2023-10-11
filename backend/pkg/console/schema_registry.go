@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -126,8 +127,8 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 	}
 
 	// Sort for stable results in UI
-	slices.SortFunc(result, func(a, b SchemaRegistrySubject) bool {
-		return a.Name < b.Name
+	slices.SortFunc(result, func(a, b SchemaRegistrySubject) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return result, nil
@@ -305,8 +306,8 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 			IsSoftDeleted: !exists,
 		})
 	}
-	slices.SortFunc(response, func(a, b SchemaRegistrySubjectDetailsVersion) bool {
-		return a.Version < b.Version
+	slices.SortFunc(response, func(a, b SchemaRegistrySubjectDetailsVersion) int {
+		return a.Version - b.Version
 	})
 
 	return response, nil

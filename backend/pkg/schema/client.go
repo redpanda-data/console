@@ -209,15 +209,15 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 }
 
 // GetSchemasBySubject gets all versioned schemas for a given subject.
-func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse, error) {
-	versionRes, err := c.GetSubjectVersions(subject)
+func (c *Client) GetSchemasBySubject(ctx context.Context, subject string, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
+	versionRes, err := c.GetSubjectVersions(ctx, subject, showSoftDeleted)
 	if err != nil {
 		return nil, err
 	}
 
 	results := []SchemaVersionedResponse{}
 	for _, sv := range versionRes.Versions {
-		sr, err := c.GetSchemaBySubject(subject, strconv.FormatInt(int64(sv), 10))
+		sr, err := c.GetSchemaBySubject(ctx, subject, strconv.FormatInt(int64(sv), 10), showSoftDeleted)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
 		}
@@ -700,7 +700,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
 		go func(s string) {
-			srRes, err := c.GetSchemasBySubject(s)
+			srRes, err := c.GetSchemasBySubject(ctx, s, showSoftDeleted)
 			ch <- chRes{
 				schemaRes: srRes,
 				err:       err,
