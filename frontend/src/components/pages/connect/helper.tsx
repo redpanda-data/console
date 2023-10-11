@@ -10,10 +10,9 @@
  */
 
 
-
-import { Alert, Empty, Modal } from 'antd';
+import { Alert, Empty } from 'antd';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { CSSProperties, useState } from 'react';
+import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
@@ -46,7 +45,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { Button, Popover, useToast } from '@redpanda-data/ui';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -262,7 +261,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         author: 'Tabular',
         friendlyName: 'Iceberg',
         description: 'Exports messages to Iceberg tables',
-        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-iceberg-sink-connector/'
     } as const,
 
     // JMS Connectors
@@ -517,9 +516,11 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
         isPending: false,
         error: null
     }))
+    const cancelRef = useRef<HTMLButtonElement | null>(null)
+
     const toast = useToast()
 
-    const renderError: () => { title: JSX.Element, content: JSX.Element } | undefined = () => {
+    const renderError: () => { title: string, content: string } | undefined = () => {
         if (!$state.error)
             return undefined;
 
@@ -540,17 +541,14 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
         // return text only
         if (!apiErr)
             return {
-                title: <>Error</>,
-                content: <>{txt}</>
+                title: 'Error',
+                content: txt
             };
 
         // render error object
         return {
-            title: <div style={{display: 'inline-flex', alignItems: 'center', gap: '0.3em'}}>
-                <span>Error</span>
-                <span style={{fontSize: '75%', opacity: 0.7}}>- {apiErr.statusCode}</span>
-            </div>,
-            content: <div className="codeBox" style={{mixBlendMode: 'multiply'}}>{apiErr.message}</div>
+            title: `${apiErr.statusCode}`,
+            content: apiErr.message
         };
     }
 
@@ -590,30 +588,29 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
 
     const content = target && props.content(target);
 
-    return <Modal
-        className="confirmModal"
-        open={target != null}
-        centered closable={false} maskClosable={!$state.isPending} keyboard={!$state.isPending}
-        okText={$state.error ? 'Retry' : 'Yes'}
-        confirmLoading={$state.isPending}
-        okType="danger"
-        cancelText="No"
-        cancelButtonProps={{ disabled: $state.isPending }}
-        onCancel={cancel}
-        onOk={onOk}
+    return <AlertDialog
+        isOpen={target != null}
+        leastDestructiveRef={cancelRef}
+        onClose={cancel}
     >
-        <>
-            <div>
+        <AlertDialogOverlay>
+        <AlertDialogContent>
+            <AlertDialogHeader>Confirm</AlertDialogHeader>
+            <AlertDialogBody>
                 {content}
-            </div>
-            {err && <Alert
-                type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
-                message={err.title}
-                description={err.content}
-            />}
-
-        </>
-    </Modal>
+                {err && <Box mt={4}><Alert
+                    type="error"
+                    message={err.title}
+                    description={err.content}
+                /></Box>}
+            </AlertDialogBody>
+            <AlertDialogFooter gap={2}>
+                <Button onClick={cancel} ref={cancelRef} variant="outline">No</Button>
+                <Button onClick={onOk} isLoading={$state.isPending}>{$state.error ? 'Retry' : 'Yes'}</Button>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+        </AlertDialogOverlay>
+    </AlertDialog>
 })
 
 // Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
@@ -704,21 +701,29 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
         </Button>
 
         const close = () => showErr(undefined);
-        errModal = <Modal open={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
-            bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
-            centered
-            closable={false} maskClosable={true}
-            okText="Close" width="60%"
-        >
-            <>
-                {
-                    task.taskId == null
-                        ? <h3>Error in Connector</h3>
-                        : <h3>{`Error trace of task ${task.taskId}`}</h3>
-                }
-                <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
-            </>
-        </Modal>;
+        errModal = (
+            <Modal
+                isOpen={err != null}
+                onClose={close}
+            >
+                <ModalOverlay />
+                <ModalContent minW="5xl">
+                    <ModalHeader>
+                        {
+                            task.taskId == null
+                                ? 'Error in Connector'
+                                : `Error trace of task ${task.taskId}`
+                        }
+                    </ModalHeader>
+                    <ModalBody>
+                        <Box px={2} py={3} w="full" className="codeBox" style={{whiteSpace: 'pre', overflow: 'scroll'}}>{err}</Box>
+                    </ModalBody>
+                    <ModalFooter gap={2}>
+                        <Button onClick={close}>Close</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        );
 
         stateContent = errBtn;
     }

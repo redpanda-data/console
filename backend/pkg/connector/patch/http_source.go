@@ -18,15 +18,15 @@ import (
 )
 
 // ConfigPatchHTTPSource is a config patch that includes changes that shall be applied to the
-// BigQuery source connector.
+// HTTP source connector.
 type ConfigPatchHTTPSource struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
-var _ ConfigPatch = (*ConfigPatchBigQuery)(nil)
+var _ ConfigPatch = (*ConfigPatchHTTPSource)(nil)
 
-// NewConfigPatchHTTPSource returns a new Patch for the BigQuery source connector.
+// NewConfigPatchHTTPSource returns a new Patch for the HTTP source connector.
 func NewConfigPatchHTTPSource() *ConfigPatchHTTPSource {
 	return &ConfigPatchHTTPSource{
 		ConfigurationKeySelector: IncludeExcludeSelector{

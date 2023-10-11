@@ -23,7 +23,6 @@ import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, Ques
 import { TablePaginationConfig } from 'antd/lib/table';
 import { OptionGroup, QuickTable, DefaultSkeleton, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
-import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
 import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from './Modals';
 import { ShortNum } from '../../misc/ShortNum';
@@ -134,12 +133,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     <Section py={4}>
                         <div className="statisticsBar">
                             <Flex gap="2rem">
-                                <HideStatisticsBarButton
-                                    onClick={() =>
-                                    (uiSettings.consumerGroupDetails.showStatisticsBar =
-                                        false)
-                                    }
-                                />
                                 <Statistic
                                     title="State"
                                     value={<GroupState group={group} />}

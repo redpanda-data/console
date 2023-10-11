@@ -1,15 +1,14 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, Icon, SearchField, AlertIcon, Tooltip, Popover, Grid, GridItem, Text, Box, redpandaTheme, ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
-import { Input, message, Modal, Radio, Select } from 'antd';
+import { Alert, AlertIcon, Box, Button, Grid, GridItem, Icon, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Popover, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Input, Select, Radio } from 'antd';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
 import { FC } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
-import { ModalFunc } from 'antd/lib/modal/confirm';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
@@ -22,146 +21,27 @@ type ConfigurationEditorProps = {
 }
 
 const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
+    const toast = useToast()
     const $state = useLocalObservable<{
         isEditing: boolean;
         filter?: string;
+        initialValueType?: 'default' | 'custom';
         modalValueType: 'default' | 'custom';
         modalError: string | null,
-        modal: ReturnType<ModalFunc> | null;
+        editedEntry: ConfigEntryExtended | null;
     }>(() => ({
         isEditing: false,
         modalValueType: 'default',
         modalError: null,
-        modal: null,
+        editedEntry: null,
     }))
 
     const editConfig = (configEntry: ConfigEntryExtended) => {
-        if ($state.modal) {
-            $state.modal.destroy();
-        }
-
         configEntry.currentValue = configEntry.value;
+        $state.initialValueType = configEntry.isExplicitlySet ? 'custom' : 'default';
 
-        const defaultEntry = configEntry.synonyms?.last();
-        const defaultValue = defaultEntry?.value ?? configEntry.value;
-        const defaultSource = defaultEntry?.source ?? configEntry.source;
-        const friendlyDefault = formatConfigValue(configEntry.name, defaultValue, 'friendly');
-        const initialValueType = configEntry.isExplicitlySet ? 'custom' : 'default';
-        $state.modalValueType = initialValueType;
-        $state.modalError = null;
-
-        $state.modal = Modal.confirm({
-            title: <><Icon as={AdjustmentsIcon}/> {'Edit ' + configEntry.name}</>,
-            width: '80%',
-            style: {minWidth: '400px', maxWidth: '600px', top: '50px'},
-            bodyStyle: {paddingTop: '1em'},
-            className: 'configModal',
-
-            okText: 'Save changes',
-
-            closable: false,
-            keyboard: false,
-            maskClosable: false,
-            icon: null,
-
-            content: <Observer>{() => {
-                const isCustom = $state.modalValueType == 'custom';
-
-                return (
-                    <ChakraProvider
-                        theme={redpandaTheme}
-                        toastOptions={redpandaToastOptions}
-                        disableGlobalStyle={true}
-                        disableEnvironment={true}
-                    >
-                        <div>
-                            <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{props.targetTopic}</code>.</p>
-                            <div style={{
-                                padding: '1em',
-                                background: 'rgb(238, 238, 238)',
-                                color: 'hsl(0deg 0% 50%)',
-                                borderRadius: '8px',
-                                margin: '1em 0'
-                            }}>{configEntry.documentation}</div>
-
-                            <div style={{fontWeight: 'bold', marginBottom: '0.5em'}}>Value</div>
-                            <Radio.Group className="valueRadioGroup" value={$state.modalValueType} onChange={e => $state.modalValueType = e.target.value}>
-                                <Radio value="default">
-                                    <span>Default: </span>
-                                    <span style={{fontWeight: 'bold'}}>{friendlyDefault}</span>
-                                    <div className="subText">Inherited from {defaultSource}</div>
-                                </Radio>
-                                <Radio value="custom">
-                                    <span>Custom</span>
-                                    <div className="subText">Set at topic configuration</div>
-                                    <div style={{position: 'relative', zIndex: 2}} onClick={e => {
-                                        if (isCustom) {
-                                            // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
-                                            // otherwise they will steal focus, closing any select/dropdowns
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                        }
-                                    }}>
-                                        <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry}/>
-                                    </div>
-                                </Radio>
-                            </Radio.Group>
-
-                            {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
-                                <AlertIcon/>
-                                {$state.modalError}
-                            </Alert>}
-                        </div>
-                    </ChakraProvider>
-                )
-            }}</Observer>,
-            onOk: async () => {
-
-                // When do we need to apply?
-                // -> When the "type" changed (from default to custom or vice-versa)
-                // -> When type is "custom" and "currentValue" changed
-                // So this excludes the case where value was changed, but the type was "default" before and after
-                let needToApply = false;
-                if ($state.modalValueType != initialValueType)
-                    needToApply = true;
-                if ($state.modalValueType == 'custom' && configEntry.value != configEntry.currentValue)
-                    needToApply = true;
-
-                if (!needToApply)
-                    return;
-
-                const operation = $state.modalValueType == 'custom'
-                    ? 'SET'
-                    : 'DELETE';
-
-                try {
-                    await api.changeTopicConfig(props.targetTopic, [
-                        {
-                            key: configEntry.name,
-                            op: operation,
-                            value: (operation == 'SET')
-                                ? String(configEntry.currentValue)
-                                : undefined,
-                        }
-                    ]);
-                    // TODO - do after modals migration
-                    message.success(<>Successfully updated config <code>{configEntry.name}</code></>)
-                    // toast({
-                    //     status: 'success',
-                    //     description: <span>Successfully updated config <code>{configEntry.name}</code></span>,
-                    // })
-                } catch (err) {
-                    console.error('error while applying config change', {err, configEntry});
-                    $state.modalError = (err instanceof Error)
-                        ? err.message
-                        : String(err);
-                    // we must to throw an error to keep the modal open
-                    throw err;
-                }
-
-                props.onForceRefresh()
-            },
-        });
+        $state.modalValueType = $state.initialValueType;
+        $state.editedEntry = configEntry;
     }
 
     const topic = props.targetTopic;
@@ -190,8 +70,129 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
     const categories = entries.groupInto(x => x.category);
     for (const e of categories) if (!e.key) e.key = 'Other';
 
+
     return (
         <Box pt={4}>
+            <Modal isOpen={$state.editedEntry !== null} onClose={() => $state.editedEntry = null}>
+                {$state.editedEntry !== null &&
+                    <ModalContent minW="2xl">
+                        <ModalHeader><Icon as={AdjustmentsIcon}/> {'Edit ' + $state.editedEntry.name}</ModalHeader>
+                        <ModalBody>
+                            <Observer>{() => {
+                                const isCustom = $state.modalValueType == 'custom';
+
+                                if ($state.editedEntry === null) {
+                                    return null
+                                }
+
+                                const configEntry = $state.editedEntry
+                                const defaultEntry = $state.editedEntry.synonyms?.last();
+                                const defaultValue = defaultEntry?.value ?? $state.editedEntry.value;
+                                const defaultSource = defaultEntry?.source ?? $state.editedEntry.source;
+                                const friendlyDefault = formatConfigValue($state.editedEntry.name, defaultValue, 'friendly');
+
+
+                                return (
+                                    <div>
+                                        <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{props.targetTopic}</code>.</p>
+                                        <div style={{
+                                            padding: '1em',
+                                            background: 'rgb(238, 238, 238)',
+                                            color: 'hsl(0deg 0% 50%)',
+                                            borderRadius: '8px',
+                                            margin: '1em 0'
+                                        }}>{configEntry.documentation}</div>
+
+                                        <div style={{fontWeight: 'bold', marginBottom: '0.5em'}}>Value</div>
+                                        <Radio.Group className="valueRadioGroup" value={$state.modalValueType} onChange={e => $state.modalValueType = e.target.value}>
+                                            <Radio value="default">
+                                                <span>Default: </span>
+                                                <span style={{fontWeight: 'bold'}}>{friendlyDefault}</span>
+                                                <div className="subText">Inherited from {defaultSource}</div>
+                                            </Radio>
+                                            <Radio value="custom">
+                                                <span>Custom</span>
+                                                <div className="subText">Set at topic configuration</div>
+                                                <div style={{position: 'relative', zIndex: 2}} onClick={e => {
+                                                    if (isCustom) {
+                                                        // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
+                                                        // otherwise they will steal focus, closing any select/dropdowns
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                    }
+                                                }}>
+                                                    <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry}/>
+                                                </div>
+                                            </Radio>
+                                        </Radio.Group>
+
+                                        {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
+                                            <AlertIcon/>
+                                            {$state.modalError}
+                                        </Alert>}
+                                    </div>
+                                )
+                            }}</Observer>
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button variant="ghost" onClick={() => {
+                                $state.editedEntry = null
+                            }}>Cancel</Button>
+                            <Button variant="solid" onClick={async () => {
+                                if ($state.editedEntry === null) {
+                                    return null
+                                }
+
+                                // When do we need to apply?
+                                // -> When the "type" changed (from default to custom or vice-versa)
+                                // -> When type is "custom" and "currentValue" changed
+                                // So this excludes the case where value was changed, but the type was "default" before and after
+                                let needToApply = false;
+                                if ($state.modalValueType != $state.initialValueType)
+                                    needToApply = true;
+                                if ($state.modalValueType == 'custom' && $state.editedEntry.value != $state.editedEntry.currentValue)
+                                    needToApply = true;
+
+                                if (!needToApply) {
+                                    $state.editedEntry = null
+                                    return;
+                                }
+
+                                const operation = $state.modalValueType == 'custom'
+                                    ? 'SET'
+                                    : 'DELETE';
+
+                                try {
+                                    await api.changeTopicConfig(props.targetTopic, [
+                                        {
+                                            key: $state.editedEntry.name,
+                                            op: operation,
+                                            value: (operation == 'SET')
+                                                ? String($state.editedEntry.currentValue)
+                                                : undefined,
+                                        }
+                                    ]);
+                                    toast({
+                                        status: 'success',
+                                        description: <span>Successfully updated config <code>{$state.editedEntry.name}</code></span>,
+                                    })
+                                    $state.editedEntry = null
+                                } catch (err) {
+                                    console.error('error while applying config change', {err, configEntry: $state.editedEntry});
+                                    $state.modalError = (err instanceof Error)
+                                        ? err.message
+                                        : String(err);
+                                    // we must to throw an error to keep the modal open
+                                    throw err;
+                                }
+
+
+                                props.onForceRefresh()
+                            }}>Save changes</Button>
+                        </ModalFooter>
+                    </ModalContent>
+                }
+            </Modal>
             <div className="configGroupTable">
                 <SearchField searchText={$state.filter || ''} placeholderText="Filter" setSearchText={value => ($state.filter = value)} icon="filter"/>
                 {categories.map(x => (

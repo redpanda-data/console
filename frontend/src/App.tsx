@@ -52,19 +52,14 @@ const App = () => {
     return (
         <BrowserRouter basename={getBasePath()}>
             <HistorySetter />
-            {/*
-                Setting portalZIndex to 1001 allows popovers, tooltips and any component that uses portals
-                to render _above_ Ant's modal component (which sets its z-index to 1000) when they're
-                inside an Ant modal.
-             */}
-            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} portalZIndex={1001}>
+            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
                 <ErrorBoundary>
                     <RequireAuth>
                         {isEmbedded()
                             ? <AppContent />
                             : <Grid templateColumns="auto 1fr" minH="100vh">
                                 <AppSidebar />
-                                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12" zIndex={1}>
+                                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
                                     <AppContent />
                                 </Container>
                             </Grid>

@@ -18,15 +18,15 @@ import (
 )
 
 // ConfigPatchJdbcSource is a config patch that includes changes that shall be applied to the
-// BigQuery source connector.
+// JDBC source connector.
 type ConfigPatchJdbcSource struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
-var _ ConfigPatch = (*ConfigPatchBigQuery)(nil)
+var _ ConfigPatch = (*ConfigPatchJdbcSource)(nil)
 
-// NewConfigPatchJdbcSource returns a new Patch for the BigQuery source connector.
+// NewConfigPatchJdbcSource returns a new Patch for the JDBC source connector.
 func NewConfigPatchJdbcSource() *ConfigPatchJdbcSource {
 	return &ConfigPatchJdbcSource{
 		ConfigurationKeySelector: IncludeExcludeSelector{

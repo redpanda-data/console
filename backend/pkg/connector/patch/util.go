@@ -14,7 +14,8 @@ import (
 	"strings"
 )
 
-var awsRegions = []string{
+// AwsRegions static list of AWS regions used in connectors configs UI dropdowns
+var AwsRegions = []string{
 	"us-east-1",
 	"us-east-2",
 	"us-west-1",

@@ -51,7 +51,7 @@ import {
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
-import { createStandaloneToast } from '@redpanda-data/ui';
+import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -62,7 +62,10 @@ import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../pro
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
-const { toast } = createStandaloneToast()
+const { toast } = createStandaloneToast({
+    theme: redpandaTheme,
+    defaultOptions: redpandaToastOptions.defaultOptions
+})
 
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
