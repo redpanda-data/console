@@ -465,6 +465,19 @@ func updateUsers(doc3 *openapi3.T) {
 		response := &v1alpha1.DeleteUserResponse{}
 		responseExample := toExample(response, "Delete User", "Delete user", true)
 		doc3.Paths["/v1alpha1/users/{name}"].Delete.Responses.Get(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
+
+		notFoundExample := toExample(
+			connectErrorToErrorStatus(
+				apierrors.NewConnectError(
+					connect.CodeNotFound,
+					fmt.Errorf("user not found"),
+					apierrors.NewErrorInfo(apierrors.ReasonResourceNotFound),
+				),
+			),
+			"Bad Request",
+			"Bad Request",
+			true)
+		doc3.Paths["/v1alpha1/users/{name}"].Delete.Responses.Get(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
 	}
 }
 

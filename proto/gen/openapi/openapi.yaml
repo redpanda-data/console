@@ -1546,6 +1546,14 @@ paths:
         "404":
           content:
             application/json:
+              example:
+                code: NOT_FOUND
+                details:
+                  - '@type': type.googleapis.com/google.rpc.ErrorInfo
+                    domain: redpanda.com/dataplane
+                    metadata: {}
+                    reason: RESOURCE_NOT_FOUND
+                message: user not found
               schema:
                 $ref: '#/components/schemas/Status'
           description: Not Found
