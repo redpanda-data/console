@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Result, Typography } from 'antd';
+import { Typography } from 'antd';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -35,7 +35,7 @@ import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Tooltip, Popover } from '@redpanda-data/ui';
+import { Button, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 
 const { Text } = Typography;
@@ -326,11 +326,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             <Result
                 status={404}
                 title="404"
-                subTitle={
-                    <>
-                        The topic <Text code>{name}</Text> does not exist.
-                    </>
-                }
+                userMessage={<div>The topic <Text code>{name}</Text> does not exist.</div>}
                 extra={
                     <Button variant="solid" onClick={() => appGlobal.history.goBack()}>
                         Go Back
