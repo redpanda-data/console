@@ -224,7 +224,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	close(schemasCh)
 
 	// Send requests to retrieve schemas
-	schemas := make([]*SchemaRegistryVersionedSchema, 0)
+	schemas := make([]*SchemaRegistryVersionedSchema, 0, len(versionsToRetrieve))
 	for schemaRes := range schemasCh {
 		schemas = append(schemas, schemaRes)
 	}
@@ -256,8 +256,11 @@ type SchemaRegistrySubjectDetailsVersion struct {
 // This is done to retrieve a list with all versions including a flag whether it's
 // a soft-deleted or active version.
 func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
-	activeVersions := make(map[int]struct{})
-	versionsWithSoftDeleted := make(map[int]struct{})
+	type chResponse struct {
+		Res             *schema.SubjectVersionsResponse
+		WithSoftDeleted bool
+	}
+	ch := make(chan chResponse, 2)
 
 	g, _ := errgroup.WithContext(ctx)
 
@@ -273,9 +276,9 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 			}
 			return fmt.Errorf("failed to retrieve subject versions (without soft-deleted): %w", err)
 		}
-
-		for _, v := range versionsRes.Versions {
-			activeVersions[v] = struct{}{}
+		ch <- chResponse{
+			Res:             versionsRes,
+			WithSoftDeleted: false,
 		}
 		return nil
 	})
@@ -287,8 +290,9 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 			return fmt.Errorf("failed to retrieve subject versions (with soft-deleted): %w", err)
 		}
 
-		for _, v := range versionsRes.Versions {
-			versionsWithSoftDeleted[v] = struct{}{}
+		ch <- chResponse{
+			Res:             versionsRes,
+			WithSoftDeleted: true,
 		}
 		return nil
 	})
@@ -296,6 +300,21 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 	err := g.Wait()
 	if err != nil {
 		return nil, err
+	}
+	close(ch)
+
+	activeVersions := make(map[int]struct{})
+	versionsWithSoftDeleted := make(map[int]struct{})
+	for res := range ch {
+		if res.WithSoftDeleted {
+			for _, v := range res.Res.Versions {
+				versionsWithSoftDeleted[v] = struct{}{}
+			}
+		} else {
+			for _, v := range res.Res.Versions {
+				activeVersions[v] = struct{}{}
+			}
+		}
 	}
 
 	// 3. Construct response where we can tell what activeVersions are soft-deleted and which aren't
@@ -380,6 +399,7 @@ func (s *Service) GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subje
 
 	ch := make(chan SchemaReference, len(schemaRefs.SchemaIDs))
 	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
 	for _, schemaID := range schemaRefs.SchemaIDs {
 		schemaIDCpy := schemaID
 		grp.Go(func() error {
