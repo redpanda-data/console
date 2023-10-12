@@ -26,6 +26,7 @@ import { SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state
 import { useState } from 'react';
 
 
+@observer
 export class SchemaCreatePage extends PageComponent<{}> {
 
     initPage(p: PageInitHelper): void {
@@ -56,6 +57,7 @@ export class SchemaCreatePage extends PageComponent<{}> {
     }
 }
 
+@observer
 export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
 
     initPage(p: PageInitHelper): void {
@@ -377,6 +379,11 @@ const SchemaEditor = observer((p: {
                 height="400px"
 
                 language={state.format == 'PROTOBUF' ? 'proto' : 'json'}
+                onMount={editor => {
+                    const formatAction = editor.getAction('editor.action.formatDocument');
+                    if (formatAction)
+                        formatAction.run();
+                }}
             />
 
             <Heading variant="lg" mt="8">
