@@ -179,6 +179,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	var compatLevel schema.CompatibilityLevel
 
 	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
 
 	grp.Go(func() error {
 		// 2. Retrieve subject config (subject compatibility level)
