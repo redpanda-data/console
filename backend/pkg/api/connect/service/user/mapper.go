@@ -24,7 +24,7 @@ func saslMechanismToRedpandaAdminAPIString(mechanism dataplanev1alpha1.SASLMecha
 	case dataplanev1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256:
 		return adminapi.ScramSha256, nil
 	case dataplanev1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512:
-		return adminapi.ScramSha256, nil
+		return adminapi.ScramSha512, nil
 	default:
 		return "", fmt.Errorf("unable to convert %q to a known string that can be handled by the Redpanda Admin API", mechanism.String())
 	}
