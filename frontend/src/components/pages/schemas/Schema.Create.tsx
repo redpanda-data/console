@@ -410,9 +410,24 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
             <FormField label="Subject">
                 <SingleSelect
                     value={ref.subject}
-                    onChange={e => {
+                    onChange={async e => {
                         ref.subject = e;
-                        api.refreshSchemaDetails(e, true);
+
+                        let details = api.schemaDetails.get(e);
+                        if (!details) {
+                            await api.refreshSchemaDetails(e, true);
+                            details = api.schemaDetails.get(e);
+                        }
+
+                        if (!details)
+                            return; // failed to get details
+
+                        // Need to make sure that, after refreshing, the subject is still the same
+                        // otherwise, when the user switches between subjects very quickly, we might refresh 3 subjectDetails,
+                        // and when the first one completes, we're setting its latest version, which now isn't valid for the outdated subject
+                        if (ref.subject == e) {
+                            ref.version = details.latestActiveVersion;
+                        }
                     }}
                     options={api.schemaSubjects?.filter(x => !x.isSoftDeleted).map(x => ({ value: x.name })) ?? []}
                 />
