@@ -1008,23 +1008,24 @@ const apiStore = {
         const rq = cachedApiRequest<SchemaReferencedByEntry[]>(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`, force);
 
         return rq.then(references => {
+
+            const cleanedReferences = [] as SchemaReferencedByEntry[];
+            for (const ref of references) {
+                if (ref.error) {
+                    console.error('error in refreshSchemaReferencedBy, reference entry has error', { subjectName, version, error: ref.error, refRaw: ref });
+                    continue;
+                }
+                cleanedReferences.push(ref);
+            }
+
+
             let subjectVersions = this.schemaReferencedBy.get(subjectName);
             if (!subjectVersions) {
-                subjectVersions = new Map<number, SchemaReferencedByEntry[]>();
+                subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
                 this.schemaReferencedBy.set(subjectName, subjectVersions);
             }
 
-            subjectVersions.set(version, [] as SchemaReferencedByEntry[]);
-            const versionReferences = subjectVersions.get(version)!;
-
-            for (const ref of references) {
-                if (ref.error) {
-                    console.error('error in refreshSchemaReferencedBy', { subjectName, version, error: ref.error });
-                    continue;
-                }
-                versionReferences.push(ref);
-            }
-            // Todo: maybe add another array of "refrencedBy errors" that can be used in the ui
+            subjectVersions.set(version, cleanedReferences);
         }).catch(() => { });
     },
 

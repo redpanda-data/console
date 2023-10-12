@@ -326,14 +326,18 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                                     schema: schema.schema,
                                     schemaType: schema.type,
                                 })
-                                    .then(r => {
+                                    .then(async r => {
                                         toast({
                                             status: 'success', duration: 4000, isClosable: false,
                                             title: `Schema ${subject.name} ${schema.version} has been recovered`,
                                             description: 'Schema ID: ' + r.id,
                                         });
                                         api.refreshSchemaSubjects(true);
-                                        api.refreshSchemaDetails(subject.name, true);
+                                        await api.refreshSchemaDetails(subject.name, true);
+
+                                        const updatedDetails = api.schemaDetails.get(subject.name);
+                                        if (updatedDetails)
+                                            appGlobal.history.push(`/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`);
                                     })
                                     .catch(err => {
                                         toast({
