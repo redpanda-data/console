@@ -539,7 +539,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
     const icon = stateIcons.get(state);
 
     return (
-        <Popover trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
+        <Popover isInPortal trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
             <span>
                 {icon}
                 <span> {p.group.state}</span>
