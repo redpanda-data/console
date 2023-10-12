@@ -93,7 +93,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 			return nil, fmt.Errorf("failed to create schema service: %w", err)
 		}
 
-		err := schemaSvc.CheckConnectivity()
+		err := schemaSvc.CheckConnectivity(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to verify connectivity to schema registry: %w", err)
 		}

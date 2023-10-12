@@ -10,6 +10,7 @@
 package schema
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestService_GetAvroSchemaByID(t *testing.T) {
 			})
 		})
 
-	actual, err := s.GetAvroSchemaByID(1000)
+	actual, err := s.GetAvroSchemaByID(context.Background(), 1000)
 	expectedSchemaString := "{\"name\":\"parent.schema\",\"type\":\"record\",\"fields\":[{\"name\":\"reference\",\"type\":{\"name\":\"referenced.schema\",\"type\":\"enum\",\"symbols\":[\"FOO\"]}}]}"
 	assert.NoError(t, err, "expected no error when fetching avro schema by id")
 	assert.Equal(t, actual.String(), expectedSchemaString)

@@ -8,6 +8,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
@@ -39,8 +40,6 @@ type Servicer interface {
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
 	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionType int8) ProduceRecordsResponse
-	GetSchemaDetails(_ context.Context, subject string, version string) (*SchemaDetails, error)
-	GetSchemaOverview(ctx context.Context) (*SchemaOverview, error)
 	Start() error
 	Stop()
 	IsHealthy(ctx context.Context) error
@@ -51,4 +50,19 @@ type Servicer interface {
 	GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error)
 	GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error)
 	GetTopicDetails(ctx context.Context, topicNames []string) ([]TopicDetails, *rest.Error)
+
+	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
+	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
+	PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
+	PutSchemaRegistrySubjectConfig(ctx context.Context, subject string, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
+	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)
+	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
+	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
+	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName, version string) ([]SchemaReference, error)
+	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
+	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
+	GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error)
+	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema schema.Schema) (*CreateSchemaResponse, error)
+	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version string, schema schema.Schema) *SchemaRegistrySchemaValidation
+	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
 }

@@ -10,16 +10,17 @@
  */
 
 import React from 'react';
-import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
+import Editor, { EditorProps, Monaco, DiffEditor, DiffEditorProps } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
+type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, Monaco }
 
-export type KowlEditorProps = EditorProps & {
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco }
 
-};
+export type KowlEditorProps = EditorProps & {};
+export type KowlDiffEditorProps = DiffEditorProps & {};
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
     minimap: {
@@ -55,6 +56,20 @@ export default function KowlEditor(props: KowlEditorProps) {
         loading={<LoadingPlaceholder />}
         wrapperProps={{ className: 'kowlEditor' }}
         defaultValue={''}
+        options={options}
+        {...rest}
+    />
+}
+
+
+export function KowlDiffEditor(props: KowlDiffEditorProps) {
+    const { options: givenOptions, ...rest } = props
+    const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+
+
+    return <DiffEditor
+        loading={<LoadingPlaceholder />}
+        wrapperProps={{ className: 'kowlEditor' }}
         options={options}
         {...rest}
     />

@@ -38,14 +38,27 @@ import {
     PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest,
     PartitionReassignments, PartitionReassignmentsResponse,
     PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse,
-    PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails,
-    SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType,
+    PublishRecordsRequest, QuotaResponse, ResourceConfig,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
-    OverviewNewsEntry
+    OverviewNewsEntry,
+    SchemaRegistrySubject,
+    SchemaRegistrySubjectDetails,
+    SchemaRegistryModeResponse,
+    SchemaRegistryConfigResponse,
+    SchemaRegistrySchemaTypesResponse,
+    SchemaRegistryCreateSchemaResponse,
+    SchemaRegistryCreateSchema,
+    SchemaRegistryDeleteSubjectVersionResponse,
+    SchemaRegistryDeleteSubjectResponse,
+    SchemaRegistryCompatibilityMode,
+    SchemaRegistrySetCompatibilityModeRequest,
+    SchemaReferencedByEntry,
+    SchemaRegistryValidateSchemaResponse,
+    SchemaVersion
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -236,9 +249,15 @@ const apiStore = {
 
     adminInfo: undefined as (AdminInfo | undefined | null),
 
-    schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
-    schemaDetails: null as (SchemaDetails | null),
+
+    schemaMode: undefined as string | null | undefined,  // undefined = not yet known, null = got not configured response
+    schemaConfig: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
+    schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
+    schemaTypes: undefined as string[] | undefined,
+    schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
+    schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
+    schemaUsagesById: new Map<number, SchemaVersion[]>(),
 
     topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
@@ -286,6 +305,10 @@ const apiStore = {
                     canListQuotas: true,
                     canPatchConfigs: true,
                     canReassignPartitions: true,
+                    canCreateSchemas: true,
+                    canDeleteSchemas: true,
+                    canManageSchemaRegistry: true,
+                    canViewSchemas: true,
                     seat: null as any,
                     user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                 };
@@ -917,34 +940,171 @@ const apiStore = {
             }, addError);
     },
 
-    refreshSchemaOverview(force?: boolean) {
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas`, force) as Promise<SchemaOverviewResponse>;
+    refreshSchemaMode(force?: boolean) {
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/mode`, force) as Promise<SchemaRegistryModeResponse>;
         return rq
-            .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
+            .then(r => {
+                if (typeof r.mode == 'undefined') {
+                    this.schemaOverviewIsConfigured = false;
+                    this.schemaMode = null;
+                } else {
+                    this.schemaOverviewIsConfigured = true;
+                    this.schemaMode = r.mode;
+                }
+            })
             .catch(addError);
     },
 
-    refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
-        if (version == null) version = 'latest';
-
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
-
+    refreshSchemaConfig(force?: boolean) {
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/config`, force) as Promise<SchemaRegistryConfigResponse>;
         return rq
-            .then(({ schemaDetails }) => {
-                if (schemaDetails && typeof schemaDetails.schema === 'string' && schemaDetails.type != SchemaType.PROTOBUF) {
-                    schemaDetails.schema = JSON.parse(schemaDetails.schema);
+            .then(r => {
+                if (typeof r.compatibility == 'undefined') {
+                    this.schemaOverviewIsConfigured = false;
+                    this.schemaConfig = null;
+                } else {
+                    this.schemaOverviewIsConfigured = true;
+                    this.schemaConfig = r.compatibility;
                 }
-
-                if (schemaDetails && schemaDetails.schema) {
-                    if (typeof schemaDetails.schema === 'string')
-                        schemaDetails.rawSchema = schemaDetails.schema;
-                    else
-                        schemaDetails.rawSchema = JSON.stringify(schemaDetails.schema);
-                }
-
-                this.schemaDetails = schemaDetails;
             })
             .catch(addError);
+    },
+
+    refreshSchemaSubjects(force?: boolean) {
+        cachedApiRequest<SchemaRegistrySubject[]>(`${appConfig.restBasePath}/schema-registry/subjects`, force)
+            .then(subjects => {
+                // could also be a "not configured" response
+                if (Array.isArray(subjects)) {
+                    this.schemaSubjects = subjects;
+                }
+            }, addError);
+    },
+
+    refreshSchemaTypes(force?: boolean) {
+        cachedApiRequest<SchemaRegistrySchemaTypesResponse>(`${appConfig.restBasePath}/schema-registry/schemas/types`, force)
+            .then(types => {
+                // could also be a "not configured" response
+                if (types.schemaTypes) {
+                    this.schemaTypes = types.schemaTypes;
+                }
+            }, addError);
+    },
+
+    refreshSchemaDetails(subjectName: string, force?: boolean) {
+        // Always refresh all versions, otherwise we cannot know wether or not we have to refresh with 'all,
+        // If we refresh with 'latest' or specific number, we'd need to keep track of what information we're missing
+        const version = 'all';
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaRegistrySubjectDetails>;
+
+        return rq
+            .then(details => {
+                this.schemaDetails.set(subjectName, details);
+            })
+            .catch(addError);
+    },
+
+    refreshSchemaReferencedBy(subjectName: string, version: number, force?: boolean) {
+
+        const rq = cachedApiRequest<SchemaReferencedByEntry[]>(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`, force);
+
+        return rq.then(references => {
+
+            const cleanedReferences = [] as SchemaReferencedByEntry[];
+            for (const ref of references) {
+                if (ref.error) {
+                    console.error('error in refreshSchemaReferencedBy, reference entry has error', { subjectName, version, error: ref.error, refRaw: ref });
+                    continue;
+                }
+                cleanedReferences.push(ref);
+            }
+
+
+            let subjectVersions = this.schemaReferencedBy.get(subjectName);
+            if (!subjectVersions) {
+                subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
+                this.schemaReferencedBy.set(subjectName, subjectVersions);
+            }
+
+            subjectVersions.set(version, cleanedReferences);
+        }).catch(() => { });
+    },
+
+    refreshSchemaUsagesById(schemaId: number, force?: boolean) {
+        cachedApiRequest<SchemaVersion[]>(`${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, force)
+            .then(r => {
+                this.schemaUsagesById.set(schemaId, r);
+            }, addError);
+    },
+
+    async setSchemaRegistryCompatibilityMode(mode: SchemaRegistryCompatibilityMode): Promise<SchemaRegistryConfigResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+        });
+        return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+    },
+
+    async setSchemaRegistrySubjectCompatibilityMode(subjectName: string, mode: 'DEFAULT' | SchemaRegistryCompatibilityMode): Promise<SchemaRegistryConfigResponse> {
+        if (mode === 'DEFAULT') {
+            const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
+                method: 'DELETE',
+            });
+            return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+        }
+        else {
+            const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
+                method: 'PUT',
+                headers: [
+                    ['Content-Type', 'application/json']
+                ],
+                body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+            });
+            return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+        }
+    },
+
+    async validateSchema(subjectName: string, version: number | 'latest', request: SchemaRegistryCreateSchema): Promise<SchemaRegistryValidateSchemaResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
+    },
+    async createSchema(subjectName: string, request: SchemaRegistryCreateSchema): Promise<SchemaRegistryCreateSchemaResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
+    },
+
+    async deleteSchemaSubject(subjectName: string, permanent: boolean): Promise<SchemaRegistryDeleteSubjectResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}?permanent=${permanent ? 'true' : 'false'}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
+    },
+
+    async deleteSchemaSubjectVersion(subjectName: string, version: 'latest' | number, permanent: boolean): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
     },
 
     refreshPartitionReassignments(force?: boolean): Promise<void> {
@@ -1568,12 +1728,6 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
     // api error?
     if (isApiError(obj))
         throw new WrappedApiError(response, obj);
-
-    // server/proxy error?
-    if (!response.ok) {
-        text = text?.trim() ?? '';
-        throw new Error(`${response.status} (${text ?? response.statusText})`);
-    }
 
     // server/proxy error?
     if (!response.ok) {

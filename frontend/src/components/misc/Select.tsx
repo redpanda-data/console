@@ -12,6 +12,8 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
     const options = p.options;
 
     return <RPSelect<T>
+        {...p}
+
         formatOptionLabel={(data) => {
             // Bug: data.label has the same value as data.value instead of the proper label
             // so we must find the actual option again based on the value

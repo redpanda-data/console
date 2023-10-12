@@ -41,6 +41,10 @@ export class WrappedApiError extends Error {
             this.path = response.url;
         }
     }
+
+    toString() {
+        return `${this.message} (Status ${this.statusCode})`;
+    }
 }
 
 
@@ -510,6 +514,11 @@ export interface UserData {
     canListQuotas: boolean;
     canReassignPartitions: boolean;
     canPatchConfigs: boolean;
+
+    canViewSchemas: boolean;
+    canCreateSchemas: boolean;
+    canDeleteSchemas: boolean;
+    canManageSchemaRegistry: boolean;
 }
 export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
@@ -815,85 +824,10 @@ export interface QuotaResponseSetting {
     value: number;
 }
 
-export interface SchemaOverviewResponse {
-    schemaOverview: SchemaOverview;
-    isConfigured: boolean;
-}
-
-export interface SchemaOverview {
-    mode: string;
-    compatibilityLevel: string;
-    subjects: string[];
-    requestErrors: SchemaOverviewRequestError[];
-}
-
-export interface SchemaOverviewRequestError {
-    requestDescription: string;
-    errorMessage: string;
-}
-
-export interface SchemaDetailsResponse {
-    schemaDetails: SchemaDetails;
-}
-
 export enum SchemaType {
     AVRO = 'AVRO',
     JSON = 'JSON',
     PROTOBUF = 'PROTOBUF',
-}
-
-export interface SchemaDetails {
-    string: string;
-    schemaId: number;
-    version: number;
-    compatibility: string;
-    type: SchemaType;
-    schema: Schema | JsonSchema;
-    registeredVersions: number[];
-
-    // added by frontend:
-    // 'schema' is (in some cases, like JSON schema) converted from string to object
-    // however, we want to keep the original
-    rawSchema: string;
-}
-
-export interface Schema {
-    doc: string;
-    name: string;
-    namespace: string;
-    type: string;
-    fields: SchemaField[];
-}
-
-export enum JsonFieldType {
-    STRING = 'string',
-    NUMBER = 'number',
-    INTEGER = 'integer',
-    OBJECT = 'object',
-    ARRAY = 'array',
-    BOOLEAN = 'boolean',
-    NULL = 'null'
-}
-
-export interface JsonSchema {
-    $id: string;
-    type: JsonFieldType;
-    title: string;
-    description: string;
-    properties?: Record<string, JsonField>;
-}
-
-export interface JsonField {
-    type: string;
-    items?: JsonField;
-    properties?: Record<string, JsonField>;
-}
-
-export interface SchemaField {
-    name: string;
-    type: string | Record<string, unknown> | null | undefined;
-    doc?: string | null | undefined;
-    default?: string | Record<string, unknown> | null | undefined;
 }
 
 
@@ -1566,3 +1500,110 @@ export type OverviewNewsEntry = {
     intendedAudience: 'all' | 'apache' | 'redpanda';
     badge?: 'new';
 };
+
+
+// GET /schema-registry/mode
+export type SchemaRegistryModeResponse = {
+    mode: string;
+};
+
+// GET /schema-registry/config
+export type SchemaRegistryCompatibilityMode = 'NONE' | 'BACKWARD' | 'BACKWARD_TRANSITIVE' | 'FORWARD' | 'FORWARD_TRANSITIVE' | 'FULL' | 'FULL_TRANSITIVE';
+export type SchemaRegistryConfigResponse = {
+    compatibility: SchemaRegistryCompatibilityMode;
+};
+
+// PUT /schema-registry/config
+export type SchemaRegistrySetCompatibilityModeRequest = {
+    compatibility: SchemaRegistryCompatibilityMode;
+}
+
+// GET /schema-registry/subjects
+export type SchemaRegistrySubject = {
+    name: string;
+    isSoftDeleted: boolean;
+};
+
+// GET /schema-registry/schemas/types
+export type SchemaRegistrySchemaTypesResponse = {
+    schemaTypes: string[];
+};
+
+// GET /schema-registry/subjects/{subject}/versions/{version}
+// version can be 'all' or 'latest'
+export type SchemaRegistrySubjectDetails = {
+    name: string;
+    type: SchemaType;
+    compatibility: 'DEFAULT' | SchemaRegistryCompatibilityMode;
+    versions: SchemaRegistrySubjectDetailsVersion[];
+    latestActiveVersion: number;
+    schemas: SchemaRegistryVersionedSchema[];
+};
+
+export type SchemaRegistrySubjectDetailsVersion = {
+    version: number;
+    isSoftDeleted: boolean;
+};
+
+export type SchemaRegistryVersionedSchema = {
+    id: number;
+    version: number;
+    isSoftDeleted: boolean;
+    type: SchemaType;
+    schema: string;
+    references: SchemaReference[];
+};
+
+export type SchemaReference = {
+    name: string;
+    subject: string;
+    version: number;
+};
+
+// DELETE /schema-registry/subjects/{subject}/versions/{version}
+export type SchemaRegistryDeleteSubjectVersionResponse = {
+    deletedVersion: number;
+}
+
+// DELETE /schema-registry/subjects/{subject}?permanent=false
+export type SchemaRegistryDeleteSubjectResponse = {
+    deletedVersions: number[];
+}
+
+
+// POST /schema-registry/subjects/{subject}/versions
+export type SchemaRegistryCreateSchema = {
+    schema: string;
+    schemaType: SchemaType;
+    references: SchemaReference[];
+};
+
+export type SchemaRegistryCreateSchemaResponse = {
+    id: number;
+}
+
+// POST /schema-registry/subjects/{subject}/versions/{version}/validate
+export type SchemaRegistryValidateSchemaResponse = {
+    compatibility: {
+        isCompatible: boolean;
+    };
+    parsingError?: string;
+    isValid: boolean;
+}
+
+// GET /schema-registry/subjects/{subject}/versions/{version}/referencedby
+export type SchemaReferencedByEntry = {
+    schemaId: number;
+    error?: string;
+    usages: SchemaReferencedByUsage[];
+}
+export type SchemaReferencedByUsage = {
+    subject: string;
+    version: number;
+}
+
+// GET /schema-registry/schemas/ids/{id}/versions
+export type SchemaVersion = {
+    subject: string;
+    version: number;
+}

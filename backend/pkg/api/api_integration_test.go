@@ -71,6 +71,8 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 
 	seedBroker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(err)
+	schemaRegistryAddress, err := container.SchemaRegistryAddress(ctx)
+	require.NoError(err)
 
 	s.testSeedBroker = seedBroker
 
@@ -87,6 +89,8 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 		},
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
+	s.cfg.Kafka.Schema.Enabled = true
+	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
 	s.api = New(s.cfg)
 
 	go s.api.Start()
@@ -483,6 +487,38 @@ func (a *assertHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error)
 }
 
 func (a *assertHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanViewSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanCreateSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanDeleteSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}

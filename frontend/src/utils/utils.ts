@@ -726,3 +726,9 @@ export function retrier<T>(operation: () => Promise<T>, { attempts = Infinity, d
             });
     });
 }
+
+/**
+ * https://stackoverflow.com/a/59187769 Extract the type of an element of an array/tuple without
+ * performing indexing
+ */
+export type ElementOf<T> = T extends (infer E)[] ? E : T extends readonly (infer F)[] ? F : never;
