@@ -747,7 +747,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 		cfg.Kafka.Protobuf.Enabled = true
 		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
 		cfg.Kafka.Schema.Enabled = true
-		cfg.Kafka.Schema.URLs = []string{"http://" + registryAddr}
+		cfg.Kafka.Schema.URLs = []string{registryAddr}
 	}
 
 	svc, err := NewService(&cfg, log, nil, nil)

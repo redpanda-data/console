@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -26,7 +27,7 @@ func (NoneSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (NoneSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) != 0 {
@@ -41,7 +42,7 @@ func (NoneSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-func (NoneSerde) SerializeObject(obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
+func (NoneSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
 	emptyData := []byte{}
 
 	// TODO should we handle empty JSON for none?

@@ -48,6 +48,9 @@ import { Alert, AlertIcon, Box, Button, Flex, Input, InputGroup, Menu, MenuButto
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
+import { Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
+
 const { Option } = Select;
 
 interface TopicMessageViewProps {
@@ -63,7 +66,7 @@ interface TopicMessageViewProps {
 
 const getStringValue = (value: string | TopicMessage): string => typeof value === 'string' ? value : JSON.stringify(value, null, 4)
 
-const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({record, onSaveToFile}) => {
+const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
     const toast = useToast()
     return (
         <Menu>
@@ -1104,7 +1107,7 @@ function getControlCharacterName(code: number): string {
 
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
-    const data = {
+    const data: { [k: string]: any } = {
         'Key': msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
         'Value': msg.value.isPayloadNull ? 'Null' : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
@@ -1112,6 +1115,10 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
         'Transactional': msg.isTransactional ? 'true' : 'false',
         // "Producer ID": "(msg.producerId)",
     };
+
+    if (msg.value.schemaId) {
+        data['Schema'] = <MessageSchema schemaId={msg.value.schemaId} />
+    }
 
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
         {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
@@ -1121,6 +1128,24 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
             </div>
         </React.Fragment>)}
     </div>;
+});
+
+const MessageSchema = observer((p: { schemaId: number }) => {
+
+    const subjects = api.schemaUsagesById.get(p.schemaId);
+    if (!subjects || subjects.length == 0) {
+        api.refreshSchemaUsagesById(p.schemaId);
+        return <>
+            ID {p.schemaId} (unknown subject)
+        </>;
+    }
+
+    const s = subjects[0];
+    return <>
+        <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
+            {s.subject} (version {s.version})
+        </Link>
+    </>
 });
 
 const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
@@ -1176,53 +1201,53 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
-const ColumnSettings: FC<{getShowDialog: () => boolean; setShowDialog: (val: boolean) => void}> = observer(({ getShowDialog, setShowDialog }) =>
-    (
-        <Modal isOpen={getShowDialog()} onClose={() => {
-            setShowDialog(false);
-        }}>
-            <ModalOverlay/>
-            <ModalContent minW="4xl">
-                <ModalHeader>
-                    Column Settings
-                </ModalHeader>
-                <ModalCloseButton/>
-                <ModalBody>
-                    <Paragraph>
-                        <Text>
-                            Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
-                        </Text>
-                    </Paragraph>
-                    <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
-                        <ColumnOptions tags={uiState.topicSettings.previewColumnFields}/>
+const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) =>
+(
+    <Modal isOpen={getShowDialog()} onClose={() => {
+        setShowDialog(false);
+    }}>
+        <ModalOverlay />
+        <ModalContent minW="4xl">
+            <ModalHeader>
+                Column Settings
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+                <Paragraph>
+                    <Text>
+                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                    </Text>
+                </Paragraph>
+                <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
+                    <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
+                </Box>
+                <Box mt="1em">
+                    <Text mb={2}>More Settings</Text>
+                    <Box>
+                        <OptionGroup
+                            label="Timestamp"
+                            options={{
+                                'Local DateTime': 'default',
+                                'Unix DateTime': 'unixTimestamp',
+                                'Relative': 'relative',
+                                'Local Date': 'onlyDate',
+                                'Local Time': 'onlyTime',
+                                'Unix Seconds': 'unixSeconds',
+                            }}
+                            value={uiState.topicSettings.previewTimestamps}
+                            onChange={e => uiState.topicSettings.previewTimestamps = e}
+                        />
                     </Box>
-                    <Box mt="1em">
-                        <Text mb={2}>More Settings</Text>
-                        <Box>
-                            <OptionGroup
-                                label="Timestamp"
-                                options={{
-                                    'Local DateTime': 'default',
-                                    'Unix DateTime': 'unixTimestamp',
-                                    'Relative': 'relative',
-                                    'Local Date': 'onlyDate',
-                                    'Local Time': 'onlyTime',
-                                    'Unix Seconds': 'unixSeconds',
-                                }}
-                                value={uiState.topicSettings.previewTimestamps}
-                                onChange={e => uiState.topicSettings.previewTimestamps = e}
-                            />
-                        </Box>
-                    </Box>
-                </ModalBody>
-                <ModalFooter gap={2}>
-                    <Button onClick={() => {
-                        setShowDialog(false)
-                    }} colorScheme="red">Close</Button>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
-    ));
+                </Box>
+            </ModalBody>
+            <ModalFooter gap={2}>
+                <Button onClick={() => {
+                    setShowDialog(false)
+                }} colorScheme="red">Close</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+));
 
 
 @observer
@@ -1410,14 +1435,14 @@ class MessageSearchFilterBar extends Component {
                         {this.currentFilter && <Flex gap={4} flexDirection="column">
                             <Label text="Display Name">
                                 <Input
-                                    style={{padding: '2px 8px'}}
+                                    style={{ padding: '2px 8px' }}
                                     value={this.currentFilter!.name}
                                     onChange={e => {
                                         this.currentFilter!.name = e.target.value;
                                         this.hasChanges = true;
                                     }}
                                     placeholder="will be shown instead of the code"
-                                    size="small"/>
+                                    size="small" />
                             </Label>
 
                             {/* Code Box */}

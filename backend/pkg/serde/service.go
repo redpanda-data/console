@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -49,7 +50,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 
 // DeserializeRecord tries to deserialize a Kafka record into a struct that
 // can be processed by the Frontend.
-func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOptions) *Record {
+func (s *Service) DeserializeRecord(ctx context.Context, record *kgo.Record, opts DeserializationOptions) *Record {
 	// defaults
 	if opts.MaxPayloadSize <= 0 {
 		opts.MaxPayloadSize = defaultMaxPayloadSize
@@ -64,8 +65,8 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 	}
 
 	// 2. Deserialize key & value separately
-	key := s.deserializePayload(record, PayloadTypeKey, &opts)
-	val := s.deserializePayload(record, PayloadTypeValue, &opts)
+	key := s.deserializePayload(ctx, record, PayloadTypeKey, &opts)
+	val := s.deserializePayload(ctx, record, PayloadTypeValue, &opts)
 	headers := recordHeaders(record)
 
 	return &Record{
@@ -77,7 +78,7 @@ func (s *Service) DeserializeRecord(record *kgo.Record, opts DeserializationOpti
 
 // deserializePayload deserializes either the key or value of a Kafka record by trying
 // the pre-defined deserialization strategies.
-func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) *RecordPayload {
+func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) *RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
 	var originalPayload []byte
@@ -113,7 +114,7 @@ func (s *Service) deserializePayload(record *kgo.Record, payloadType PayloadType
 			}
 		}
 
-		rp, err = serde.DeserializePayload(record, payloadType)
+		rp, err = serde.DeserializePayload(ctx, record, payloadType)
 		if err == nil {
 			// found the matching serde
 			break
@@ -186,7 +187,7 @@ type DeserializationOptions struct {
 }
 
 // SerializeRecord will serialize the input.
-func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error) {
+func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*SerializeOutput, error) {
 	var keySerResult RecordPayloadSerializeResult
 	var valueSerResult RecordPayloadSerializeResult
 
@@ -207,7 +208,7 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 
 		found = true
 
-		bytes, serErr := serde.SerializeObject(input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+		bytes, serErr := serde.SerializeObject(ctx, input.Key.Payload, PayloadTypeKey, input.Key.Options...)
 		if serErr == nil {
 			err = nil
 			keySerResult.Encoding = serde.Name()
@@ -248,7 +249,7 @@ func (s *Service) SerializeRecord(input SerializeInput) (*SerializeOutput, error
 
 		found = true
 
-		bytes, serErr := serde.SerializeObject(input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+		bytes, serErr := serde.SerializeObject(ctx, input.Value.Payload, PayloadTypeValue, input.Value.Options...)
 		if serErr == nil {
 			err = nil
 			valueSerResult.Encoding = serde.Name()

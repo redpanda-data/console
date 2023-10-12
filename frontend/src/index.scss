@@ -3788,3 +3788,8 @@ $borderRadius: 8px;
 
     user-select: none;
 }
+
+.subjectSoftDeleted {
+    background: #FAFAFA;
+    color: var(--chakra-colors-gray-400);
+}

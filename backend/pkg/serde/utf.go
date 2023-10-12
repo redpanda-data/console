@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -30,7 +31,7 @@ func (UTF8Serde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (UTF8Serde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -61,7 +62,7 @@ func (UTF8Serde) DeserializePayload(record *kgo.Record, payloadType PayloadType)
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-func (UTF8Serde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (UTF8Serde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

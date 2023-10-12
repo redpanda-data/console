@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -114,7 +115,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -238,7 +239,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("no schema id", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue)
+		b, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue)
 		require.Error(t, err)
 		assert.Equal(t, "no schema id specified", err.Error())
 		assert.Nil(t, b)
@@ -249,7 +250,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(5567))
+		b, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(5567))
 		require.Error(t, err)
 		assert.Equal(t, "getting json schema from registry '5567': get schema by id request failed: Status code 404", err.Error())
 		assert.Nil(t, b)
@@ -260,7 +261,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		actualData, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Nil(t, actualData)
 		assert.Equal(t, "error validating json schema: jsonschema: '/price' does not validate with https://example.com/product.schema.json#/properties/price/exclusiveMinimum: must be > 0 but found 0", err.Error())
@@ -284,7 +285,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25}, PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25}, PayloadTypeValue, WithSchemaID(1000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -308,7 +309,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(`{"productId":11,"productName":"foo","price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(context.Background(), `{"productId":11,"productName":"foo","price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -319,7 +320,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(`{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), `{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `error validating json schema: jsonschema: '' does not validate with https://example.com/product.schema.json#/required: missing properties: 'productName'`, err.Error())
 		assert.Nil(t, b)
@@ -328,7 +329,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("string empty", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(``, PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), ``, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
 		assert.Nil(t, b)
@@ -337,7 +338,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("string trim", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject("\r\n", PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), "\r\n", PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
 		assert.Nil(t, b)
@@ -346,7 +347,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("string invalid format", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(`foo`, PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), `foo`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `first byte indicates this it not valid JSON, expected brackets`, err.Error())
 		assert.Nil(t, b)
@@ -370,7 +371,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject([]byte(`{"productId":11,"productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
+		actualData, err := serde.SerializeObject(context.Background(), []byte(`{"productId":11,"productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -381,7 +382,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject([]byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), []byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `error validating json schema: jsonschema: '/productId' does not validate with https://example.com/product.schema.json#/properties/productId/type: expected integer, but got string`, err.Error())
 		assert.Nil(t, b)
@@ -390,7 +391,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("byte empty", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject([]byte{}, PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), []byte{}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
 		assert.Nil(t, b)
@@ -399,7 +400,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("byte trim", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject([]byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), []byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
 		assert.Nil(t, b)
@@ -408,7 +409,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	t.Run("byte invalid format", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject([]byte("foo"), PayloadTypeValue, WithSchemaID(1000))
+		b, err := serde.SerializeObject(context.Background(), []byte("foo"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Equal(t, `first byte indicates this it not valid JSON, expected brackets`, err.Error())
 		assert.Nil(t, b)

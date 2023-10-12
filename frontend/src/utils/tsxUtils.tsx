@@ -23,6 +23,7 @@ import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { InfoIcon } from '@primer/octicons-react';
 import colors from '../colors';
+import { SkeletonText } from '@chakra-ui/react';
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -479,6 +480,10 @@ export const DefaultSkeleton = (
     </motion.div>
 );
 
+export const InlineSkeleton = (p: { width: string | number }) => (
+    <SkeletonText noOfLines={1} skeletonHeight="2" width={p.width} display="flex" alignItems="center" />
+);
+
 // Single line string, no wrapping, will not overflow and display ellipsis instead
 // const ellipsisDivStyle: CSSProperties = {
 //     display: 'inline-block',
@@ -532,7 +537,7 @@ export function LabelTooltip(p: { children?: React.ReactNode; width?: number; ma
     );
 }
 
-export type ButtonProps = Omit<RpButtonProps, 'disabled'> & { disabledReason?: string };
+export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
     if (!p.disabledReason) return <RpButton {...p} />;
 

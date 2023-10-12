@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,7 +40,7 @@ func (ProtobufSchemaSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
 		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
 	}
@@ -108,7 +109,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(record *kgo.Record, payloadType 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 //
 //nolint:gocognit,cyclop // lots of supported inputs.
-func (d ProtobufSchemaSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

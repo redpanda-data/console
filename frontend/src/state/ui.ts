@@ -224,6 +224,7 @@ const defaultUiSettings = {
     schemaList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',
+        showSoftDeleted: false,
     },
 
     schemaDetails: {

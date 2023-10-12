@@ -11,7 +11,7 @@ export type PageContentProps = {
 function PageContent(props: PageContentProps) {
   return (
     <motion.div {...animProps} className={props.className}>
-      <Stack gap={6}>
+      <Stack gap={3}>
         {props.children}
       </Stack>
     </motion.div>

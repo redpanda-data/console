@@ -100,6 +100,12 @@ type AuthorizationHooks interface {
 	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	IsProtectedKafkaUser(userName string) bool
+
+	// Schema Registry Hooks
+	CanViewSchemas(ctx context.Context) (bool, *rest.Error)
+	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
+	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
+	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
@@ -280,6 +286,22 @@ func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) 
 
 func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
 	return false
+}
+
+func (*defaultHooks) CanViewSchemas(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanCreateSchemas(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanDeleteSchemas(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
+	return true, nil
 }
 
 // Console hooks

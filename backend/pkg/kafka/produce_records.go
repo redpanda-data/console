@@ -122,7 +122,7 @@ func (s *Service) PublishRecord(ctx context.Context,
 	useTransactions bool,
 	compressionType int8,
 ) (*ProduceRecordResponse, error) {
-	data, err := s.SerdeService.SerializeRecord(serde.SerializeInput{
+	data, err := s.SerdeService.SerializeRecord(ctx, serde.SerializeInput{
 		Topic: topic,
 		Key:   *key,
 		Value: *value,

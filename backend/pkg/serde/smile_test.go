@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -69,7 +70,7 @@ func TestSmileSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}

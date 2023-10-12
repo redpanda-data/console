@@ -140,8 +140,20 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/operations/configs", api.handlePatchConfigs())
 
 				// Schema Registry
-				r.Get("/schemas", api.handleGetSchemaOverview())
-				r.Get("/schemas/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
+				r.Get("/schema-registry/mode", api.handleGetSchemaRegistryMode())
+				r.Get("/schema-registry/config", api.handleGetSchemaRegistryConfig())
+				r.Put("/schema-registry/config", api.handlePutSchemaRegistryConfig())
+				r.Put("/schema-registry/config/{subject}", api.handlePutSchemaRegistrySubjectConfig())
+				r.Delete("/schema-registry/config/{subject}", api.handleDeleteSchemaRegistrySubjectConfig())
+				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())
+				r.Get("/schema-registry/schemas/types", api.handleGetSchemaRegistrySchemaTypes())
+				r.Get("/schema-registry/schemas/ids/{id}/versions", api.handleGetSchemaUsagesByID())
+				r.Delete("/schema-registry/subjects/{subject}", api.handleDeleteSubject())
+				r.Post("/schema-registry/subjects/{subject}/versions", api.handleCreateSchema())
+				r.Post("/schema-registry/subjects/{subject}/versions/{version}/validate", api.handleValidateSchema())
+				r.Delete("/schema-registry/subjects/{subject}/versions/{version}", api.handleDeleteSubjectVersion())
+				r.Get("/schema-registry/subjects/{subject}/versions/{version}", api.handleGetSchemaSubjectDetails())
+				r.Get("/schema-registry/subjects/{subject}/versions/{version}/referencedby", api.handleGetSchemaReferencedBy())
 
 				// Kafka Connect
 				r.Get("/kafka-connect/connectors", api.handleGetConnectors())

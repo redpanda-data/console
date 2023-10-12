@@ -10,6 +10,7 @@
 package schema
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -49,6 +50,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 		SetBaseURL(registryURL).
 		SetHeader("User-Agent", "Redpanda Console").
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
+		SetHeader("Content-Type", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
 		SetTimeout(5 * time.Second)
 
@@ -121,22 +123,19 @@ func newClient(cfg config.Schema) (*Client, error) {
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
-	Schema     string      `json:"schema"`
-	References []Reference `json:"references,omitempty"`
-}
-
-// Reference describes a reference to a different schema stored in the schema registry.
-type Reference struct {
-	Name    string `json:"name"`
-	Subject string `json:"subject"`
-	Version int    `json:"version"`
+	Schema     string            `json:"schema"`
+	References []SchemaReference `json:"references,omitempty"`
 }
 
 // GetSchemaByID returns the schema string identified by the input ID.
 // id (int) – the globally unique identifier of the schema
-func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
+func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse, error) {
 	url := fmt.Sprintf("/schemas/ids/%d", id)
-	res, err := c.client.R().SetResult(&SchemaResponse{}).Get(url)
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult(&SchemaResponse{})
+
+	res, err := req.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("get schema by id request failed: %w", err)
 	}
@@ -162,12 +161,12 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaVersionedResponse struct {
-	Subject    string      `json:"subject"`
-	SchemaID   int         `json:"id"`
-	Version    int         `json:"version"`
-	Schema     string      `json:"schema"`
-	Type       string      `json:"schemaType"`
-	References []Reference `json:"references"`
+	Subject    string            `json:"subject"`
+	SchemaID   int               `json:"id"`
+	Version    int               `json:"version"`
+	Schema     string            `json:"schema"`
+	Type       SchemaType        `json:"schemaType"`
+	References []SchemaReference `json:"references"`
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
@@ -176,11 +175,19 @@ type SchemaVersionedResponse struct {
 //
 //	the string “latest”, which returns the last registered schema under the specified subject.
 //	Note that there may be a new latest schema that gets registered right after this request is served.
-func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
-	res, err := c.client.R().SetResult(&SchemaVersionedResponse{}).SetPathParams(map[string]string{
-		"subjects": subject,
-		"version":  version,
-	}).Get("/subjects/{subjects}/versions/{version}")
+func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string, showSoftDeleted bool) (*SchemaVersionedResponse, error) {
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult(&SchemaVersionedResponse{}).
+		SetPathParams(map[string]string{
+			"subjects": subject,
+			"version":  version,
+		})
+	if showSoftDeleted {
+		req.SetQueryParam("deleted", "true")
+	}
+
+	res, err := req.Get("/subjects/{subjects}/versions/{version}")
 	if err != nil {
 		return nil, fmt.Errorf("get schema by subject request failed: %w", err)
 	}
@@ -197,23 +204,20 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 	if !ok {
 		return nil, fmt.Errorf("failed to parse schema by subject response")
 	}
-	if parsed.Type == "" {
-		parsed.Type = "AVRO"
-	}
 
 	return parsed, nil
 }
 
 // GetSchemasBySubject gets all versioned schemas for a given subject.
-func (c *Client) GetSchemasBySubject(subject string) ([]SchemaVersionedResponse, error) {
-	versionRes, err := c.GetSubjectVersions(subject)
+func (c *Client) GetSchemasBySubject(ctx context.Context, subject string, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
+	versionRes, err := c.GetSubjectVersions(ctx, subject, showSoftDeleted)
 	if err != nil {
 		return nil, err
 	}
 
 	results := []SchemaVersionedResponse{}
 	for _, sv := range versionRes.Versions {
-		sr, err := c.GetSchemaBySubject(subject, strconv.FormatInt(int64(sv), 10))
+		sr, err := c.GetSchemaBySubject(ctx, subject, strconv.FormatInt(int64(sv), 10), showSoftDeleted)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
 		}
@@ -229,18 +233,18 @@ type SubjectsResponse struct {
 }
 
 // GetSubjects returns a list of registered subjects.
-func (c *Client) GetSubjects() (*SubjectsResponse, error) {
-	res, err := c.client.R().SetResult([]string{}).Get("/subjects")
-	if err != nil {
-		return nil, fmt.Errorf("get subjects request failed: %w", err)
+func (c *Client) GetSubjects(ctx context.Context, showSoftDeleted bool) (*SubjectsResponse, error) {
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult([]string{})
+
+	if showSoftDeleted {
+		req.SetQueryParam("deleted", "true")
 	}
 
-	if res.IsError() {
-		restErr, ok := res.Error().(*RestError)
-		if !ok {
-			return nil, fmt.Errorf("get subjects request failed: Status code %d", res.StatusCode())
-		}
-		return nil, restErr
+	res, err := req.Get("/subjects")
+	if err != nil {
+		return nil, fmt.Errorf("get subjects request failed: %w", err)
 	}
 
 	result := res.Result()
@@ -261,10 +265,17 @@ type SubjectVersionsResponse struct {
 }
 
 // GetSubjectVersions returns a schema subject's registered versions.
-func (c *Client) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
-	res, err := c.client.R().SetResult([]int{}).
-		SetPathParam("subject", subject).
-		Get("/subjects/{subject}/versions")
+func (c *Client) GetSubjectVersions(ctx context.Context, subject string, showSoftDeleted bool) (*SubjectVersionsResponse, error) {
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult([]int{}).
+		SetPathParam("subject", subject)
+
+	if showSoftDeleted {
+		req.SetQueryParam("deleted", "true")
+	}
+
+	res, err := req.Get("/subjects/{subject}/versions")
 	if err != nil {
 		return nil, fmt.Errorf("get subject versions request failed: %w", err)
 	}
@@ -294,8 +305,11 @@ type ModeResponse struct {
 }
 
 // GetMode returns the current mode for Schema Registry at a global level.
-func (c *Client) GetMode() (*ModeResponse, error) {
-	res, err := c.client.R().SetResult(&ModeResponse{}).Get("/mode")
+func (c *Client) GetMode(ctx context.Context) (*ModeResponse, error) {
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&ModeResponse{}).
+		Get("/mode")
 	if err != nil {
 		return nil, fmt.Errorf("get mode request failed: %w", err)
 	}
@@ -320,12 +334,15 @@ func (c *Client) GetMode() (*ModeResponse, error) {
 type ConfigResponse struct {
 	// Global compatibility level. Will be one of:
 	// BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE, DEFAULT (only for subject configs)
-	Compatibility string `json:"compatibilityLevel"`
+	Compatibility CompatibilityLevel `json:"compatibilityLevel"`
 }
 
 // GetConfig gets global compatibility level.
-func (c *Client) GetConfig() (*ConfigResponse, error) {
-	res, err := c.client.R().SetResult(&ConfigResponse{}).Get("/config")
+func (c *Client) GetConfig(ctx context.Context) (*ConfigResponse, error) {
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&ConfigResponse{}).
+		Get("/config")
 	if err != nil {
 		return nil, fmt.Errorf("get config failed: %w", err)
 	}
@@ -346,14 +363,56 @@ func (c *Client) GetConfig() (*ConfigResponse, error) {
 	return parsed, nil
 }
 
+// PutConfigResponse is almost identical to ConfigResponse, but they use different
+// keys for compatibility in the JSON response.
+type PutConfigResponse struct {
+	// Compatibility after setting the compat level.
+	Compatibility CompatibilityLevel `json:"compatibility"`
+}
+
+// PutConfig sets the global compatibility level.
+func (c *Client) PutConfig(ctx context.Context, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	type requestPayload struct {
+		Compatibility CompatibilityLevel `json:"compatibility"`
+	}
+	payload := requestPayload{Compatibility: compatLevel}
+
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&PutConfigResponse{}).
+		SetBody(&payload).
+		Put("/config")
+	if err != nil {
+		return nil, fmt.Errorf("put config failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("put config failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*PutConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
 // GetSubjectConfig gets compatibility level for a given subject.
 // If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
 // error code. For example, if you run the same command for the subject Kafka-value, for which you have not set
 // subject-specific compatibility, you get: {"error_code":40401,"message":"Subject 'Kafka-value' not found."}
-func (c *Client) GetSubjectConfig(subject string) (*ConfigResponse, error) {
-	url := fmt.Sprintf("/config/%s", subject)
-	params := map[string]string{"defaultToGlobal": "true"}
-	res, err := c.client.R().SetResult(&ConfigResponse{}).SetPathParams(params).Get(url)
+func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&ConfigResponse{}).
+		SetPathParam("subject", subject).
+		SetPathParam("defaultToGlobal", "true").
+		Get("/config/{subject}")
 	if err != nil {
 		return nil, fmt.Errorf("get config for subject failed: %w", err)
 	}
@@ -364,9 +423,9 @@ func (c *Client) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 			return nil, fmt.Errorf("get config for subject failed: Status code %d", res.StatusCode())
 		}
 
-		if restErr.ErrorCode == codeSubjectNotFound {
+		if restErr.ErrorCode == CodeSubjectNotFound || restErr.ErrorCode == CodeSubjectCompatibilityNotConfigured {
 			return &ConfigResponse{
-				Compatibility: "DEFAULT",
+				Compatibility: CompatDefault,
 			}, nil
 		}
 		return nil, restErr
@@ -380,10 +439,144 @@ func (c *Client) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 	return parsed, nil
 }
 
+// PutSubjectConfig sets compatibility level for a given subject.
+// If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
+// error code.
+func (c *Client) PutSubjectConfig(ctx context.Context, subject string, compatLevel CompatibilityLevel) (*PutConfigResponse, error) {
+	type requestPayload struct {
+		Compatibility CompatibilityLevel `json:"compatibility"`
+	}
+	payload := requestPayload{Compatibility: compatLevel}
+
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&PutConfigResponse{}).
+		SetBody(&payload).
+		SetPathParam("subject", subject).
+		Put("/config/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("put config for subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("put config for subject failed: Status code %d", res.StatusCode())
+		}
+
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*PutConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
+// DeleteSubjectConfig deletes compatibility level for a given subject.
+// If the subject you ask about does not have a subject-specific compatibility level set, this command returns an
+// error code.
+func (c *Client) DeleteSubjectConfig(ctx context.Context, subject string) (*ConfigResponse, error) {
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&ConfigResponse{}).
+		SetPathParam("subject", subject).
+		Delete("/config/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("delete config for subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("delete config for subject failed: Status code %d", res.StatusCode())
+		}
+
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().(*ConfigResponse)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse config for subject response")
+	}
+
+	return parsed, nil
+}
+
+// DeleteSubjectResponse describes the response to deleting a whole subject.
+type DeleteSubjectResponse struct {
+	Versions []int
+}
+
+// DeleteSubject deletes the specified subject and its associated compatibility level if registered.
+// If deletePermanently is set to true, a hard delete will be sent which removes all the associated
+// metadata including the schema ids that belong to this subject. To perform a hard-delete you must
+// soft-delete the subject first.
+func (c *Client) DeleteSubject(ctx context.Context, subject string, deletePermanently bool) (*DeleteSubjectResponse, error) {
+	var deletedVersions []int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&deletedVersions).
+		SetPathParam("subject", subject).
+		SetQueryParam("permanent", strconv.FormatBool(deletePermanently)).
+		Delete("/subjects/{subject}")
+	if err != nil {
+		return nil, fmt.Errorf("delete subject failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("delete subject failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &DeleteSubjectResponse{deletedVersions}, nil
+}
+
+// DeleteSubjectVersionResponse describes the response to deleting a subject version.
+type DeleteSubjectVersionResponse struct {
+	Version int
+}
+
+// DeleteSubjectVersion deletes a specific version of the subject. Unless you delete permanently,
+// this only deletes the version, leaving the schema ID intact and making it still possible to
+// decode data using the schema ID.
+func (c *Client) DeleteSubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*DeleteSubjectVersionResponse, error) {
+	var deletedVersion int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&deletedVersion).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		SetQueryParam("permanent", strconv.FormatBool(deletePermanently)).
+		Delete("/subjects/{subject}/versions/{version}")
+	if err != nil {
+		return nil, fmt.Errorf("delete subject version failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("delete subject version failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &DeleteSubjectVersionResponse{deletedVersion}, nil
+}
+
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)
-func (c *Client) GetSchemaTypes() ([]string, error) {
+func (c *Client) GetSchemaTypes(ctx context.Context) ([]string, error) {
 	var supportedTypes []string
-	res, err := c.client.R().SetResult(&supportedTypes).Get("/schemas/types")
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult(&supportedTypes)
+
+	res, err := req.Get("/schemas/types")
 	if err != nil {
 		return nil, fmt.Errorf("get schema types failed: %w", err)
 	}
@@ -400,9 +593,17 @@ func (c *Client) GetSchemaTypes() ([]string, error) {
 }
 
 // GetSchemas retrieves all stored schemas from a schema registry.
-func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
+func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
 	var schemas []SchemaVersionedResponse
-	res, err := c.client.R().SetResult(&schemas).Get("/schemas")
+	req := c.client.R().
+		SetContext(ctx).
+		SetResult(&schemas)
+
+	if showSoftDeleted {
+		req.SetQueryParam("deleted", "true")
+	}
+
+	res, err := req.Get("/schemas")
 	if err != nil {
 		return nil, fmt.Errorf("get schemas failed: %w", err)
 	}
@@ -410,7 +611,7 @@ func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
 	if res.StatusCode() == http.StatusNotFound {
 		// The /schemas endpoint has been introduced with v6.0.0, so instead we could achieve the same by querying
 		// every subject one by one
-		return c.GetSchemasIndividually()
+		return c.GetSchemasIndividually(ctx, showSoftDeleted)
 	}
 
 	if res.IsError() {
@@ -424,10 +625,68 @@ func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
 	return schemas, nil
 }
 
+// Schema is the object form of a schema for the HTTP API.
+type Schema struct {
+	// Schema is the actual unescaped text of a schema.
+	Schema string `json:"schema"`
+
+	// Type is the type of a schema. The default type is avro.
+	Type SchemaType `json:"schemaType,omitempty"`
+
+	// References declares other schemas this schema references. See the
+	// docs on SchemaReference for more details.
+	References []SchemaReference `json:"references,omitempty"`
+}
+
+// SchemaReference is a way for a one schema to reference another. The details
+// for how referencing is done are type specific; for example, JSON objects
+// that use the key "$ref" can refer to another schema via URL. For more details
+// on references, see the following link:
+//
+//	https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#schema-references
+//	https://docs.confluent.io/platform/current/schema-registry/develop/api.html
+//
+//nolint:revive // The name reference would be too generic in this case.
+type SchemaReference struct {
+	Name    string `json:"name"`
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// CreateSchemaResponse is the response to creating a schema.
+type CreateSchemaResponse struct {
+	ID int `json:"id"`
+}
+
+// CreateSchema registers a new schema under the specified subject.
+func (c *Client) CreateSchema(ctx context.Context, subjectName string, schema Schema) (*CreateSchemaResponse, error) {
+	var createSchemaRes CreateSchemaResponse
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&createSchemaRes).
+		SetPathParam("subject", subjectName).
+		SetQueryParam("normalize", "true").
+		SetBody(&schema).
+		Post("/subjects/{subject}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("create schema failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("create schema failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &createSchemaRes, nil
+}
+
 // GetSchemasIndividually returns all schemas by describing all schemas one by one. This may be used against
 // schema registry that don't support the /schemas endpoint that returns a list of all registered schemas.
-func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
-	subjectsRes, err := c.GetSubjects()
+func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
+	subjectsRes, err := c.GetSubjects(ctx, showSoftDeleted)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
 	}
@@ -441,7 +700,7 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
 		go func(s string) {
-			srRes, err := c.GetSchemasBySubject(s)
+			srRes, err := c.GetSchemasBySubject(ctx, s, showSoftDeleted)
 			ch <- chRes{
 				schemaRes: srRes,
 				err:       err,
@@ -461,10 +720,102 @@ func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
 	return schemas, nil
 }
 
+// GetSchemaReferencesResponse is the response to fetching schema references.
+type GetSchemaReferencesResponse struct {
+	SchemaIDs []int `json:"schemaIds"`
+}
+
+// GetSchemaReferences returns all schema ids that references the input
+// subject-version. You can use -1 or 'latest' to check the latest version.
+func (c *Client) GetSchemaReferences(ctx context.Context, subject, version string) (*GetSchemaReferencesResponse, error) {
+	var schemaIDs []int
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&schemaIDs).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		Get("/subjects/{subject}/versions/{version}/referencedby")
+	if err != nil {
+		return nil, fmt.Errorf("get schema references failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schema references failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &GetSchemaReferencesResponse{SchemaIDs: schemaIDs}, nil
+}
+
+// CheckCompatibilityResponse is the response to a compatibility check for a schema.
+type CheckCompatibilityResponse struct {
+	IsCompatible bool `json:"is_compatible"`
+}
+
+// CheckCompatibility checks if a schema is compatible with the given version
+// that exists. You can use 'latest' to check compatibility with the latest version.
+func (c *Client) CheckCompatibility(ctx context.Context, subject string, version string, schema Schema) (*CheckCompatibilityResponse, error) {
+	var checkCompatRes CheckCompatibilityResponse
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&checkCompatRes).
+		SetPathParam("subject", subject).
+		SetPathParam("version", version).
+		SetQueryParam("verbose", "true").
+		SetBody(&schema).
+		Post("/compatibility/subjects/{subject}/versions/{version}")
+	if err != nil {
+		return nil, fmt.Errorf("check compatibility failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("check compatibility failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return &checkCompatRes, nil
+}
+
+// SubjectVersion is a schema's subject name and version.
+type SubjectVersion struct {
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
+}
+
+// GetSchemaUsagesByID returns all usages of a given schema ID. A single schema
+// can be reused in multiple subject versions.
+func (c *Client) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SubjectVersion, error) {
+	var subjectVersions []SubjectVersion
+	res, err := c.client.R().
+		SetContext(ctx).
+		SetResult(&subjectVersions).
+		SetPathParam("id", strconv.Itoa(schemaID)).
+		Get("/schemas/ids/{id}/versions")
+	if err != nil {
+		return nil, fmt.Errorf("get schema usages failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schema usages failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return subjectVersions, nil
+}
+
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects
-func (c *Client) CheckConnectivity() error {
+func (c *Client) CheckConnectivity(ctx context.Context) error {
 	url := "subjects"
-	res, err := c.client.R().Get(url)
+	res, err := c.client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return err
 	}

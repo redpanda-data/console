@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -37,7 +38,7 @@ func (AvroSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.SchemaSvc == nil {
 		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
@@ -57,7 +58,7 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
-	schema, err := d.SchemaSvc.GetAvroSchemaByID(schemaID)
+	schema, err := d.SchemaSvc.GetAvroSchemaByID(ctx, schemaID)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
@@ -84,7 +85,7 @@ func (d AvroSerde) DeserializePayload(record *kgo.Record, payloadType PayloadTyp
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 //
 //nolint:gocognit,cyclop // lots of supported inputs
-func (d AvroSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -94,7 +95,7 @@ func (d AvroSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]
 		return nil, errors.New("no schema id specified")
 	}
 
-	schema, err := d.SchemaSvc.GetAvroSchemaByID(so.schemaID)
+	schema, err := d.SchemaSvc.GetAvroSchemaByID(ctx, so.schemaID)
 	if err != nil {
 		return nil, fmt.Errorf("getting avro schema from registry: %w", err)
 	}

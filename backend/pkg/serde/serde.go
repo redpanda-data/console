@@ -12,6 +12,7 @@
 package serde
 
 import (
+	"context"
 	"encoding/binary"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -83,14 +84,14 @@ type Serde interface {
 	// DeserializePayload is a method to deserialize either the
 	// key or value into our own Record format that can be processed by the
 	// Console frontend.
-	DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error)
+	DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error)
 
 	// For completeness we can define an interface that can be implemented by each Serde so that
 	// serialization could also be implemented. These would then be used when we want to produce
 	// records via Console. This may be a little trickier to define as the common
 	// requirements across all strategies for serializing records are less known. For example
 	// some serializers may want to write metadata in Record Headers
-	SerializeObject(obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error)
+	SerializeObject(ctx context.Context, obj any, payloadType PayloadType, opts ...SerdeOpt) ([]byte, error)
 }
 
 // from franz-go

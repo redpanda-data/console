@@ -68,6 +68,10 @@ export default class RequireAuth extends Component<{children: ReactNode}> {
                         canListQuotas: true,
                         canPatchConfigs: true,
                         canReassignPartitions: true,
+                        canCreateSchemas: true,
+                        canDeleteSchemas: true,
+                        canManageSchemaRegistry: true,
+                        canViewSchemas: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };

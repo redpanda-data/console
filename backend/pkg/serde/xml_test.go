@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -80,7 +81,7 @@ func TestXMLSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -167,7 +168,7 @@ func TestXMLSerde_SerializeObject(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			data, err := serde.SerializeObject(test.input, test.payloadType, test.options...)
+			data, err := serde.SerializeObject(context.Background(), test.input, test.payloadType, test.options...)
 			test.validationFunc(t, data, err)
 		})
 	}

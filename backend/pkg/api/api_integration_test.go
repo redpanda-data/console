@@ -29,7 +29,6 @@ import (
 
 	connect_go "connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
-	"github.com/docker/go-connections/nat"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,17 +83,16 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 
 	seedBroker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(err)
+	registryAddr, err := container.SchemaRegistryAddress(ctx)
+	require.NoError(err)
 
 	s.testSeedBroker = seedBroker
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := testutil.GetMappedHostPort(ctx, container, nat.Port("8081/tcp"))
-	require.NoError(err)
-
 	s.registryAddr = registryAddr
 
-	rcl, err := sr.NewClient(sr.URLs("http://" + registryAddr))
+	rcl, err := sr.NewClient(sr.URLs(registryAddr))
 	require.NoError(err)
 	s.kafkaSRClient = rcl
 
@@ -113,7 +111,7 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	s.cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
 	s.cfg.Kafka.Protobuf.SchemaRegistry.RefreshInterval = 2 * time.Second
 	s.cfg.Kafka.Schema.Enabled = true
-	s.cfg.Kafka.Schema.URLs = []string{"http://" + registryAddr}
+	s.cfg.Kafka.Schema.URLs = []string{registryAddr}
 
 	// proto message mapping
 	absProtoPath, err := filepath.Abs("../testutil/testdata/proto")
@@ -545,6 +543,38 @@ func (a *assertHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error)
 }
 
 func (a *assertHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanViewSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanCreateSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanDeleteSchemas(ctx context.Context) (bool, *rest.Error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	rv := a.getCallReturnValue("any")
+	return rv.BoolValue, rv.Err
+}
+
+func (a *assertHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}

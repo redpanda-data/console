@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -163,7 +164,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -211,7 +212,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		// serde
 		serde := ProtobufSerde{}
 
-		actualData, err := serde.SerializeObject(msg, PayloadTypeValue)
+		actualData, err := serde.SerializeObject(context.Background(), msg, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		expectData, err := proto.Marshal(msg)
@@ -255,7 +256,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 
 		serde := ProtobufSerde{}
 
-		actualData, err := serde.SerializeObject(msg, PayloadTypeValue)
+		actualData, err := serde.SerializeObject(context.Background(), msg, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -276,7 +277,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -289,7 +290,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue)
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue)
 			assert.Error(t, err)
 			assert.Equal(t, "no topic specified", err.Error())
 			assert.Nil(t, actualData)
@@ -302,7 +303,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
 			assert.Equal(t, "failed to serialize dynamic protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
 			assert.Nil(t, actualData)
@@ -321,7 +322,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := `{"id":"543"}`
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -331,7 +332,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := `{"id":"654"}`
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue)
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue)
 			assert.Error(t, err)
 			assert.Equal(t, "no topic specified", err.Error())
 			assert.Nil(t, actualData)
@@ -341,7 +342,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := `{"id":"765"}`
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
 			assert.Equal(t, "failed to serialize string protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
 			assert.Nil(t, actualData)
@@ -351,7 +352,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := `notjson`
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
 			assert.Error(t, err)
 			assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
 			assert.Nil(t, actualData)
@@ -370,7 +371,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := []byte(`{"id":"555"}`)
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders"))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -380,7 +381,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := []byte(`{"id":"543"}`)
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue)
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue)
 			assert.Error(t, err)
 			assert.Equal(t, "no topic specified", err.Error())
 			assert.Nil(t, actualData)
@@ -390,7 +391,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			serde := ProtobufSerde{ProtoSvc: testProtoSvc}
 
 			data := []byte(`{"id":"543"}`)
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithTopic("protobuf_serde_test_orders_asdf_xyz_0123"))
 			assert.Error(t, err)
 			assert.Equal(t, "failed to serialize json protobuf payload: no prototype found for the given topic 'protobuf_serde_test_orders_asdf_xyz_0123'. Check your configured protobuf mappings", err.Error())
 			assert.Nil(t, actualData)
@@ -411,7 +412,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(data, PayloadTypeValue)
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue)
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)

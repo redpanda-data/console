@@ -10,8 +10,8 @@
  */
 
 import { Component } from 'react';
-import { KafkaError, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
-import { Empty, Typography, Result } from 'antd';
+import { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
+import { Empty, Typography } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
@@ -24,7 +24,7 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
-import { Button, Tooltip } from '@redpanda-data/ui';
+import { Box, Button, Code, CodeBlock, Flex, Result, Tooltip } from '@redpanda-data/ui';
 
 const { Text } = Typography;
 
@@ -105,28 +105,25 @@ export class TopicConfiguration extends Component<{
 
     renderKafkaError(topicName: string, error: KafkaError) {
         return (
-            <div style={{ marginBottom: '2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column' }}>
+            <Flex my={8} flexDirection="column" alignItems="center">
+                <Flex flexDirection="column" maxWidth="4xl">
                     <Result
-                        style={{ margin: 0, padding: 0, marginTop: '1em' }}
                         status="error"
                         title="Kafka Error"
                         subTitle={
                             <>
-                                Redpanda Console received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
+                                Redpanda Console received the following error while fetching the configuration for topic <Code p={1}>{topicName}</Code> from Kafka:
                             </>
                         }
-                    ></Result>
-                    <div style={{ margin: '1.5em 0', marginTop: '1em' }}>
-                        <div className="codeBox w100" style={{ padding: '0.5em 1em' }}>
-                            {toJson(error, 4)}
-                        </div>
-                    </div>
-                    <Button variant="solid" size="lg" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }}>
+                    />
+                    <Box m={8}>
+                        <CodeBlock language="raw" codeString={toJson(error, 4)} />
+                    </Box>
+                    <Button variant="solid" size="lg" onClick={() => appGlobal.onRefresh()} style={{width: '12em', margin: '0', alignSelf: 'center'}}>
                         Retry
                     </Button>
-                </div>
-            </div>
+                </Flex>
+            </Flex>
         );
     }
 }

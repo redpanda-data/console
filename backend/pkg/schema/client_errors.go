@@ -9,27 +9,20 @@
 
 package schema
 
-import (
-	"errors"
-)
-
 const (
-	codeSubjectNotFound       = 40401
-	codeSchemaNotFound        = 40403
-	codeBackendDatastoreError = 50001
+	// CodeSubjectNotFound is the returned error code when the requested subject
+	// does not exist.
+	CodeSubjectNotFound = 40401
+
+	// CodeVersionNotFound is the returned error code when the requested version
+	// does not exist.
+	CodeVersionNotFound = 40402
+
+	// CodeSchemaNotFound is the returned error code when the requested schema
+	// does not exist.
+	CodeSchemaNotFound = 40403
+
+	// CodeSubjectCompatibilityNotConfigured is returned when retrieving a subject's
+	// compatibility level, and it's not set.
+	CodeSubjectCompatibilityNotConfigured = 40408
 )
-
-// IsSchemaNotFound can be used to determine if the returned error indicates
-// that the requested schema does not exist.
-func IsSchemaNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	var restErr RestError
-	if errors.As(err, &restErr) {
-		return restErr.ErrorCode == codeSchemaNotFound
-	}
-
-	return false
-}

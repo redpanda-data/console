@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -194,7 +195,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -303,7 +304,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 	t.Run("no schema id", func(t *testing.T) {
 		serde := AvroSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue)
+		b, err := serde.SerializeObject(context.Background(), SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue)
 		require.Error(t, err)
 		assert.Equal(t, "no schema id specified", err.Error())
 		assert.Nil(t, b)
@@ -312,7 +313,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 	t.Run("invalid schema id", func(t *testing.T) {
 		serde := AvroSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(5567))
+		b, err := serde.SerializeObject(context.Background(), SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(5567))
 		require.Error(t, err)
 		assert.Equal(t, "getting avro schema from registry: failed to get schema from registry: get schema by id request failed: Status code 404", err.Error())
 		assert.Nil(t, b)
@@ -336,7 +337,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(2000))
+		actualData, err := serde.SerializeObject(context.Background(), SimpleRecord{A: 27, B: "foo"}, PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -360,7 +361,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 27, B: "foo"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject(`{"a":27,"b":"foo"}`, PayloadTypeValue, WithSchemaID(2000))
+		actualData, err := serde.SerializeObject(context.Background(), `{"a":27,"b":"foo"}`, PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -369,7 +370,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 	t.Run("invalid json", func(t *testing.T) {
 		serde := AvroSerde{SchemaSvc: schemaSvc}
 
-		b, err := serde.SerializeObject(`{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(2000))
+		b, err := serde.SerializeObject(context.Background(), `{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(2000))
 		require.Error(t, err)
 		assert.Equal(t, `deserializing avro json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
 		assert.Nil(t, b)
@@ -393,7 +394,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		expectData, err := srSerde.Encode(&SimpleRecord{A: 12, B: "bar"})
 		require.NoError(t, err)
 
-		actualData, err := serde.SerializeObject([]byte(`{"a":12,"b":"bar"}`), PayloadTypeValue, WithSchemaID(2000))
+		actualData, err := serde.SerializeObject(context.Background(), []byte(`{"a":12,"b":"bar"}`), PayloadTypeValue, WithSchemaID(2000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)

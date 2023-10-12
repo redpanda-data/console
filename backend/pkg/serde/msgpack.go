@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -36,7 +37,7 @@ func (MsgPackSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (d MsgPackSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.MsgPackService == nil {
 		return &RecordPayload{}, fmt.Errorf("no message pack service configured")
 	}
@@ -69,7 +70,7 @@ func (d MsgPackSerde) DeserializePayload(record *kgo.Record, payloadType Payload
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 //
 //nolint:gocognit,cyclop // lots of supported inputs.
-func (MsgPackSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)

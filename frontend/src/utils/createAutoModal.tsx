@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Result } from 'antd';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { CSSProperties, ReactElement } from 'react';
 import { toJson } from './jsonUtils';
-import { Button, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
+import { Box, Button, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Result, VStack } from '@redpanda-data/ui';
 
 export type AutoModalProps = {
     title: string;
@@ -129,27 +128,28 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             </div>;
         }
 
-        return <Result style={{margin: 0, padding: 0, marginTop: '1em'}} status="error"
-                       title={title}
-        >
-            {content}
-        </Result>
+        return <Result title={title} extra={content} status="error"/>
     };
 
     const renderSuccess = (response: JSX.Element | null | undefined) =>
-        <Result style={{margin: 0, padding: 0, marginTop: '1em'}} status="success"
+        <Result status="success"
                 title={options.modalProps.successTitle ?? 'Success'}
-                subTitle={response}
                 extra={
-                    <Button
-                        variant="solid"
-                        colorScheme="brand"
-                        size="lg"
-                        style={{width: '16rem'}}
-                        onClick={() => {
-                            state.modalProps?.afterClose?.()
-                        }}
-                    >Close</Button>}
+                    <VStack>
+                        <Box>
+                            {response}
+                        </Box>
+                        <Button
+                            variant="solid"
+                            colorScheme="brand"
+                            size="lg"
+                            style={{width: '16rem'}}
+                            onClick={() => {
+                                state.modalProps?.afterClose?.()
+                            }}
+                        >Close</Button>
+                    </VStack>
+                }
         />
 
     // The component the user uses to render/mount into the jsx tree

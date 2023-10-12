@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +75,7 @@ func (s *SerdeIntegrationTestSuite) createBaseConfig() config.Config {
 	cfg.Kafka.Protobuf.Enabled = true
 	cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
 	cfg.Kafka.Schema.Enabled = true
-	cfg.Kafka.Schema.URLs = []string{"http://" + s.registryAddress}
+	cfg.Kafka.Schema.URLs = []string{s.registryAddress}
 	cfg.Kafka.MessagePack.Enabled = false
 
 	return cfg
@@ -119,7 +118,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := testutil.GetMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
+	registryAddr, err := redpandaContainer.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 	s.registryAddress = registryAddr
 
@@ -220,7 +219,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -356,7 +355,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{
 			Troubleshoot:   true,
 			IncludeRawData: true,
 			ValueEncoding:  PayloadEncodingJSON,
@@ -494,7 +493,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{
 			Troubleshoot:   true,
 			IncludeRawData: true,
 			ValueEncoding:  PayloadEncodingProtobuf,
@@ -640,7 +639,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -868,7 +867,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1012,10 +1011,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
@@ -1111,7 +1108,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1204,10 +1201,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -1315,7 +1310,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1424,10 +1419,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -1535,7 +1528,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1603,10 +1596,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		// address
@@ -1804,7 +1795,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1950,10 +1941,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
@@ -2048,7 +2037,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -2151,7 +2140,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			cr := cr
 
 			if string(cr.Key) == msg.Id {
-				dr := serdeSvc2.DeserializeRecord(cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				// check value
@@ -2165,7 +2154,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("222", obj["id"])
 			} else if string(cr.Key) == msg2ID {
-				dr := serdeSvc2.DeserializeRecord(cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
@@ -2275,7 +2264,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check key
@@ -2378,7 +2367,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check key
@@ -2423,10 +2412,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		eventDataSchemaStr := `
@@ -2666,7 +2653,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -2776,7 +2763,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("123"),
@@ -2836,7 +2823,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("111"),
@@ -2907,7 +2894,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("444"),
@@ -3013,10 +3000,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
@@ -3073,7 +3058,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"id":"222","createdAt":"2023-07-11T13:00:00Z"}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("222"),
@@ -3109,10 +3094,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -3183,7 +3166,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"identity":"gadget_0","gizmo":{"size":10,"item":{"name":"item_0","itemType":"ITEM_TYPE_PERSONAL"}},"widgets":[{"id":"wid_0"},{"id":"wid_1"}]}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("gadget_0"),
@@ -3219,10 +3202,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -3293,7 +3274,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":11,"item":{"name":"item_10","itemType":"ITEM_TYPE_PERSONAL"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte{},
@@ -3329,10 +3310,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		// address
@@ -3492,7 +3471,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"version":1,"id":"123456789","createdAt":"2023-07-12T13:00:00Z","lastUpdatedAt":"2023-07-12T14:00:00Z","deliveredAt":"2023-07-12T15:00:00Z","completedAt":"2023-07-12T16:00:00Z","customer":{"version":1,"id":"customer_0123","firstName":"Foo","lastName":"Bar","gender":"","companyName":"Redpanda","email":"foobar_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art0","name":"line0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art1","name":"line1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art2","name":"line2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_0123","method":"card"},"deliveryAddress":{"version":1,"id":"addr_0123","customer":{"customerId":"customer_0123","customerType":"business"},"type":"","firstName":"Foo","lastName":"Bar","state":"CA","houseNumber":"","city":"SomeCity","zip":"xyzyz","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-12T13:00:00Z","revision":1},"revision":1}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  map[string]interface{}{"id": "123456789"},
@@ -3528,10 +3507,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -3602,7 +3579,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("gadget_0"),
@@ -3637,9 +3614,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		productIDSchema := `{
@@ -3792,7 +3767,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
-		out, err := serdeSvc.SerializeRecord(SerializeInput{
+		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  "11",
@@ -3829,10 +3804,8 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		eventDataSchemaStr := `
@@ -3999,7 +3972,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"customer":{"email":"user1@example.com","metadata":{"event_type":"user","id":"user1_event_2345","version":"1"},"name":"user1"},"id":"order_1","metadata":{"event_type":"order","id":"order1_event_5432","version":"2"},"price":7.50,"quantity":7}`
 
-		serRes, err := serdeSvc.SerializeRecord(SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  map[string]interface{}{"id": "order_1"},

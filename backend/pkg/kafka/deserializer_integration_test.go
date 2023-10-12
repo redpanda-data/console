@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -72,7 +71,7 @@ func (s *KafkaIntegrationTestSuite) createBaseConfig() config.Config {
 	cfg.Kafka.Protobuf.Enabled = true
 	cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
 	cfg.Kafka.Schema.Enabled = true
-	cfg.Kafka.Schema.URLs = []string{"http://" + s.registryAddress}
+	cfg.Kafka.Schema.URLs = []string{s.registryAddress}
 
 	return cfg
 }
@@ -114,7 +113,7 @@ func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := testutil.GetMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
+	registryAddr, err := redpandaContainer.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 	s.registryAddress = registryAddr
 
@@ -527,10 +526,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
@@ -645,10 +642,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -789,10 +784,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -922,10 +915,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		// address
@@ -1192,10 +1183,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")

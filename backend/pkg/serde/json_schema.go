@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -37,7 +38,7 @@ func (JSONSchemaSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (JSONSchemaSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
@@ -62,7 +63,7 @@ func (JSONSchemaSerde) DeserializePayload(record *kgo.Record, payloadType Payloa
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-func (JSONSchemaSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (JSONSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -120,8 +121,8 @@ func (JSONSchemaSerde) SerializeObject(obj any, _ PayloadType, opts ...SerdeOpt)
 }
 
 //nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse) error {
-	sch, err := s.compileJSONSchema(schemaRes)
+func (s *JSONSchemaSerde) validate(ctx context.Context, data []byte, schemaRes *schema.SchemaResponse) error {
+	sch, err := s.compileJSONSchema(ctx, schemaRes)
 	if err != nil {
 		return fmt.Errorf("error compiling json schema: %w", err)
 	}
@@ -139,11 +140,11 @@ func (s *JSONSchemaSerde) validate(data []byte, schemaRes *schema.SchemaResponse
 }
 
 //nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
+func (s *JSONSchemaSerde) compileJSONSchema(ctx context.Context, schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
 	schemaName := "redpanda_json_schema_main.json"
 
-	err := s.buildJSONSchemaWithReferences(c, schemaName, schemaRes)
+	err := s.buildJSONSchemaWithReferences(ctx, c, schemaName, schemaRes)
 	if err != nil {
 		return nil, err
 	}
@@ -152,20 +153,20 @@ func (s *JSONSchemaSerde) compileJSONSchema(schemaRes *schema.SchemaResponse) (*
 }
 
 //nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) buildJSONSchemaWithReferences(compiler *jsonschema.Compiler, name string, schemaRes *schema.SchemaResponse) error {
+func (s *JSONSchemaSerde) buildJSONSchemaWithReferences(ctx context.Context, compiler *jsonschema.Compiler, name string, schemaRes *schema.SchemaResponse) error {
 	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema)); err != nil {
 		return err
 	}
 
 	for _, reference := range schemaRes.References {
-		schemaRef, err := s.SchemaSvc.GetSchemaBySubjectAndVersion(reference.Subject, strconv.Itoa(reference.Version))
+		schemaRef, err := s.SchemaSvc.GetSchemaBySubjectAndVersion(ctx, reference.Subject, strconv.Itoa(reference.Version))
 		if err != nil {
 			return err
 		}
 		if err := compiler.AddResource(reference.Name, strings.NewReader(schemaRef.Schema)); err != nil {
 			return err
 		}
-		if err := s.buildJSONSchemaWithReferences(compiler, reference.Name, &schema.SchemaResponse{
+		if err := s.buildJSONSchemaWithReferences(ctx, compiler, reference.Name, &schema.SchemaResponse{
 			Schema:     schemaRef.Schema,
 			References: schemaRef.References,
 		}); err != nil {

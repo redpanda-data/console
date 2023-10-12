@@ -36,6 +36,7 @@ import RequireAuth from './components/RequireAuth';
 import HistorySetter from './components/misc/HistorySetter';
 import { isEmbedded, setup } from './config';
 import { getBasePath } from './utils/env';
+import { ModalContainer } from './utils/ModalContainer';
 
 const AppSidebar = observer(() => {
     const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
@@ -65,6 +66,7 @@ const App = () => {
                             </Grid>
                         }
                     </RequireAuth>
+                    <ModalContainer />
                 </ErrorBoundary>
             </ChakraProvider>
         </BrowserRouter>

@@ -11,6 +11,7 @@ package serde
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,7 +31,7 @@ func (SmileSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (SmileSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
@@ -62,7 +63,7 @@ func (SmileSerde) DeserializePayload(record *kgo.Record, payloadType PayloadType
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 // This is not supported for this type for now.
-func (SmileSerde) SerializeObject(_ any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
+func (SmileSerde) SerializeObject(_ context.Context, _ any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
 	// go-smile does not support encoding yet
 	// https://github.com/zencoder/go-smile
 	return nil, errors.New("serializing for smile data format is not implemented")

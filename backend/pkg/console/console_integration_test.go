@@ -15,7 +15,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -60,12 +59,12 @@ func (s *ConsoleIntegrationTestSuite) SetupSuite() {
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := testutil.GetMappedHostPort(ctx, container, nat.Port("8081/tcp"))
+	registryAddr, err := container.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 
 	s.registryAddr = registryAddr
 
-	rcl, err := sr.NewClient(sr.URLs("http://" + registryAddr))
+	rcl, err := sr.NewClient(sr.URLs(registryAddr))
 	require.NoError(err)
 	s.kafkaSRClient = rcl
 }
