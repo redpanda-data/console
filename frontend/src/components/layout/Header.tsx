@@ -48,6 +48,7 @@ const AppPageHeader = observer(() => {
                         <BreadcrumbItem key={entry.linkTo} isCurrentPage={isCurrentPage}>
                             <BreadcrumbLink
                                 to={entry.linkTo}
+                                as={isCurrentPage ? 'span': Link}
                                 {...currentBreadcrumbProps}
                             >
                                 {entry.title}
