@@ -17,6 +17,7 @@ import (
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -61,7 +62,7 @@ func (s *Service) ListUsers(ctx context.Context, _ *connect.Request[v1alpha1.Lis
 	// 1. Check if we can list users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
-			connect.CodeUnavailable,
+			connect.CodeUnimplemented,
 			errors.New("the redpanda admin api must be configured to list users"),
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
@@ -98,7 +99,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 1. Check if we can create users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
-			connect.CodeUnavailable,
+			connect.CodeUnimplemented,
 			errors.New("the redpanda admin api must be configured to create users"),
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
@@ -108,9 +109,13 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 2. Check if requested username is a protected user name.
 	if s.isProtectedUserFn(req.Msg.User.Name) {
 		return nil, apierrors.NewConnectError(
-			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
+			connect.CodeInvalidArgument,
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
+				Field:       "user.name",
+				Description: "User name is a protected user name. Choose a different name.",
+			}),
 		)
 	}
 
@@ -148,7 +153,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 1. Check if we can update users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
-			connect.CodeUnavailable,
+			connect.CodeUnimplemented,
 			errors.New("the redpanda admin api must be configured to update users"),
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
@@ -158,9 +163,13 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 2. Check if requested username is a protected user name.
 	if s.isProtectedUserFn(req.Msg.User.Name) {
 		return nil, apierrors.NewConnectError(
-			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
+			connect.CodeInvalidArgument,
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
+				Field:       "user.name",
+				Description: "User name is a protected user name. Choose a different name.",
+			}),
 		)
 	}
 
@@ -197,7 +206,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 1. Check if we can delete users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
-			connect.CodeUnavailable,
+			connect.CodeUnimplemented,
 			errors.New("the redpanda admin api must be configured to delete users"),
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
@@ -207,9 +216,13 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 2. Check if requested username is a protected user name.
 	if s.isProtectedUserFn(req.Msg.Name) {
 		return nil, apierrors.NewConnectError(
-			connect.CodePermissionDenied, // Internal because the mechanism should already be validated
+			connect.CodeInvalidArgument,
 			fmt.Errorf("the requested username is a protected user, choose a different username"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
+				Field:       "user.name",
+				Description: "User name is a protected user name. Choose a different name.",
+			}),
 		)
 	}
 
