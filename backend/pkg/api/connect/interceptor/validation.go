@@ -92,23 +92,11 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 // WrapStreamingClient is the middleware handler for bidirectional requests from
 // the client perspective.
 func (*ValidationInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return connect.StreamingClientFunc(func(
-		ctx context.Context,
-		spec connect.Spec,
-	) connect.StreamingClientConn {
-		// To be implemented
-		return next(ctx, spec)
-	})
+	return next
 }
 
 // WrapStreamingHandler is the middleware handler for bidirectional requests from
 // the server handling perspective.
 func (in *ValidationInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return connect.StreamingHandlerFunc(func(
-		ctx context.Context,
-		conn connect.StreamingHandlerConn,
-	) error {
-		// To be implemented
-		return next(ctx, conn)
-	})
+	return next
 }
