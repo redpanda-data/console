@@ -252,6 +252,9 @@ func (a *assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (a *assertHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (a *assertHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (a *assertHooks) ConfigRouter(_ chi.Router)                    {}
+func (a *assertHooks) ConfigConnectRPC(_ ConfigConnectRPCRequest) ConfigConnectRPCResponse {
+	return ConfigConnectRPCResponse{}
+}
 
 // Authorization Hooks
 func (a *assertHooks) CanSeeTopic(_ context.Context, topic string) (bool, *rest.Error) {

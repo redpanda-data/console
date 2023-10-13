@@ -14,10 +14,12 @@ import (
 	"math"
 	"net/http"
 
+	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"github.com/redpanda-data/console/backend/pkg/connect"
+	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
@@ -29,6 +31,33 @@ type Hooks struct {
 	Route         RouteHooks
 	Authorization AuthorizationHooks
 	Console       ConsoleHooks
+}
+
+// ConfigConnectRPCRequest is the config object that is passed into the
+// hook to configure the Connect API. The hook implementation can use
+// this to control the behaviour of the connect API (e.g. change order,
+// add additional interceptors, mount more routes etc).
+type ConfigConnectRPCRequest struct {
+	BaseInterceptors []connect.Interceptor
+	GRPCGatewayMux   *runtime.ServeMux
+}
+
+// ConfigConnectRPCResponse configures connect services.
+type ConfigConnectRPCResponse struct {
+	// Instructs OSS to use these intercptors for all connect services
+	Interceptors []connect.Interceptor
+
+	// Instructs OSS to register these services in addition to the OSS ones
+	AdditionalServices []ConnectService
+}
+
+// ConnectService is a Connect handler along with its metadata
+// that is required to mount the service in the mux as well
+// as advertise it in the gRPC reflector.
+type ConnectService struct {
+	ServiceName string
+	MountPath   string
+	Handler     http.Handler
 }
 
 // RouteHooks allow you to modify the Router
@@ -49,6 +78,11 @@ type RouteHooks interface {
 	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
 	// By default we serve the frontend on these routes.
 	ConfigRouter(router chi.Router)
+
+	// ConfigConnectRPC receives the basic interceptors used by OSS.
+	// The hook can modify the interceptors slice, i.e. adding new interceptors, removing some, re-ordering, and return it in ConnectConfig.
+	// The hook can return additional connect services that shall be mounted by OSS.
+	ConfigConnectRPC(ConfigConnectRPCRequest) ConfigConnectRPCResponse
 }
 
 // AuthorizationHooks include all functions which allow you to intercept the requests at various
@@ -123,7 +157,7 @@ type ConsoleHooks interface {
 
 	// EnabledConnectClusterFeatures returns a list of features that are supported on this
 	// particular Kafka connect cluster.
-	EnabledConnectClusterFeatures(ctx context.Context, clusterName string) []connect.ClusterFeature
+	EnabledConnectClusterFeatures(ctx context.Context, clusterName string) []pkgconnect.ClusterFeature
 
 	// EndpointCompatibility returns information what endpoints are available to the frontend.
 	// This considers the active configuration (e.g. is secret store enabled), target cluster
@@ -158,6 +192,13 @@ func (*defaultHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
+func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
+func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnectRPCResponse {
+	return ConfigConnectRPCResponse{
+		Interceptors:       req.BaseInterceptors,
+		AdditionalServices: []ConnectService{},
+	}
+}
 
 // Authorization Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
@@ -316,6 +357,6 @@ func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ ListMessagesReq
 	return r.Context(), nil
 }
 
-func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []connect.ClusterFeature {
+func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
 	return nil
 }
