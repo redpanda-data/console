@@ -25,6 +25,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0
 	github.com/hamba/avro/v2 v2.13.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jcmturner/gokrb5/v8 v8.4.4
@@ -33,6 +34,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230720095300-a50bd8d65b0d
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1
@@ -46,10 +48,14 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.24.0
+	go.vallahaye.net/connect-gateway v0.3.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/net v0.17.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/text v0.13.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230920204549-e6e6cdab5c13
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c
+	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -130,8 +136,6 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
-	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
-	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sethgrid/pester v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -151,9 +155,6 @@ require (
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230920204549-e6e6cdab5c13 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
-	google.golang.org/grpc v1.58.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
