@@ -97,6 +97,6 @@ func (*ValidationInterceptor) WrapStreamingClient(next connect.StreamingClientFu
 
 // WrapStreamingHandler is the middleware handler for bidirectional requests from
 // the server handling perspective.
-func (in *ValidationInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+func (*ValidationInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return next
 }
