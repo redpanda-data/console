@@ -479,13 +479,17 @@ const apiStore = {
             for await (const res of await client.listMessages(req)) {
                 switch (res.controlMessage.case) {
                     case 'phase':
+                        console.log('phase: ' + res.controlMessage.value.phase)
                         this.messageSearchPhase = res.controlMessage.value.phase;
                         break;
                     case 'progress':
+                        console.log('progress: ' + res.controlMessage.value.messagesConsumed)
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                         break;
                     case 'done':
+                        console.log('done: ' + res.controlMessage.value.messagesConsumed + ' ' + res.controlMessage.value.elapsedMs)
+
                         this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         // this.MessageSearchCancelled = msg.isCancelled;
@@ -550,10 +554,10 @@ const apiStore = {
                         const key = res.controlMessage.value.key;
                         const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
-                        console.log('key:')
-                        console.log(key)
-                        console.log('keyPayload:')
-                        console.log(keyPayload)
+                        // console.log('key:')
+                        // console.log(key)
+                        // console.log('keyPayload:')
+                        // console.log(keyPayload)
 
                         m.key = {} as Payload
                         switch (key?.encoding) {
@@ -580,7 +584,7 @@ const apiStore = {
                         try {
                             m.key.payload = JSON.parse(keyPayload)
                         } catch (e) {
-                            console.log(e)
+                            // console.log(e)
                         }
 
                         if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
@@ -590,14 +594,16 @@ const apiStore = {
 
                         m.keyJson = JSON.stringify(m.key.payload);
 
+                        console.log(m.keyJson)
+
                         // value
                         const val = res.controlMessage.value.value;
                         const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
 
-                        console.log('val:')
-                        console.log(val)
-                        console.log('valuePayload:')
-                        console.log(valuePayload)
+                        // console.log('val:')
+                        // console.log(val)
+                        // console.log('valuePayload:')
+                        // console.log(valuePayload)
 
                         m.value = {} as Payload
                         switch (val?.encoding) {
@@ -624,7 +630,7 @@ const apiStore = {
                         try {
                             m.value.payload = JSON.parse(valuePayload)
                         } catch (e) {
-                            console.log(e)
+                            // console.log(e)
                         }
 
                         if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
@@ -634,7 +640,7 @@ const apiStore = {
                 
                         m.valueJson = JSON.stringify(m.value.payload);
 
-                        console.log(m)
+                        // console.log(m)
 
                         this.messages.push(m);
                         break;
