@@ -62,7 +62,7 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     }
 
     refreshData(force?: boolean) {
-        api.refreshSchemaConfig(force);
+        api.refreshSchemaCompatibilityConfig(force);
         api.refreshSchemaMode(force);
         const subjectName = this.props.subjectName
             ? decodeURIComponent(this.props.subjectName)
@@ -73,8 +73,8 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     }
 
     render() {
-        if (!api.schemaMode) return DefaultSkeleton; // request in progress
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
+        if (!api.schemaMode) return DefaultSkeleton; // request in progress
 
         const subjectName = this.props.subjectName
             ? decodeURIComponent(this.props.subjectName)
@@ -114,7 +114,7 @@ function EditSchemaCompatibility(p: {
     // type should be just "SchemaRegistryCompatibilityMode"
     const [configMode, setConfigMode] = useState(subjectName
         ? subject?.compatibility
-        : api.schemaConfig
+        : api.schemaCompatibility
     );
 
     if (!configMode && subject) {
@@ -123,7 +123,7 @@ function EditSchemaCompatibility(p: {
         setConfigMode(subject.compatibility);
         return null;
     }
-    const globalDefault = api.schemaConfig;
+    const globalDefault = api.schemaCompatibility;
     if (!configMode && !subjectName && globalDefault) {
         // configMode is still undefined because we haven't gotten a response to the global default yet.
         // Now the global default is loaded, so lets set it
@@ -152,7 +152,7 @@ function EditSchemaCompatibility(p: {
                 if (subjectName)
                     await api.refreshSchemaDetails(subjectName, true);
                 else
-                    await api.refreshSchemaConfig(true);
+                    await api.refreshSchemaCompatibilityConfig(true);
 
                 p.onClose();
             })

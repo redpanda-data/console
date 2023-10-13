@@ -95,7 +95,7 @@ class SchemaList extends PageComponent<{}> {
     }
 
     refreshData(force?: boolean) {
-        api.refreshSchemaConfig(force);
+        api.refreshSchemaCompatibilityConfig(force);
         api.refreshSchemaMode(force);
         api.refreshSchemaSubjects(force);
         api.refreshSchemaTypes(force);
@@ -106,8 +106,8 @@ class SchemaList extends PageComponent<{}> {
     }
 
     render() {
-        if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
+        if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
 
         const filteredSubjects = api.schemaSubjects
             .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
@@ -118,9 +118,9 @@ class SchemaList extends PageComponent<{}> {
                 <ToastContainer />
                 {/* Statistics Bar */}
                 <Flex gap="1rem" alignItems="center">
-                    <SmallStat title="Mode">{api.schemaConfig ?? <InlineSkeleton width="100px" />}</SmallStat>
+                    <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
                     <Divider height="2ch" orientation="vertical" />
-                    <SmallStat title="Compatibility">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
+                    <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
                 </Flex>
 
                 <Button variant="outline" mb="4" width="fit-content"
