@@ -380,13 +380,17 @@ const apiStore = {
 
                 switch (res.controlMessage.case) {
                     case 'phase':
+                        console.log('phase: ' + res.controlMessage.value.phase)
                         this.messageSearchPhase = res.controlMessage.value.phase;
                         break;
                     case 'progress':
+                        console.log('progress: ' + res.controlMessage.value.messagesConsumed)
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                         break;
                     case 'done':
+                        console.log('done: ' + res.controlMessage.value.messagesConsumed + ' ' + res.controlMessage.value.elapsedMs)
+
                         this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         // this.MessageSearchCancelled = msg.isCancelled;
@@ -498,6 +502,8 @@ const apiStore = {
                         }
 
                         m.keyJson = JSON.stringify(m.key.payload);
+
+                        console.log(m.keyJson)
 
                         // value
                         const val = res.controlMessage.value.value;
