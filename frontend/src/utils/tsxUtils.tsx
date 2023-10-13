@@ -433,7 +433,8 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             })
         } else {
             toast.update(this.toastRef, {
-                description: content
+                description: content,
+                duration: null,
             })
         }
     }
