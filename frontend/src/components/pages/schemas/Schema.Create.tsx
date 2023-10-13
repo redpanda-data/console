@@ -16,7 +16,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Text, Alert, AlertIcon } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
@@ -286,6 +286,11 @@ const SchemaEditor = observer((p: {
         <Heading variant="lg">
             Settings
         </Heading>
+
+        {isAddVersion && <Alert status="info">
+            <AlertIcon />
+            When adding a new schema version, the only thing that can be changed is the schema definition and its references. The rest of the fields have been disabled.
+        </Alert>}
 
         <Flex direction="column" gap="8" maxWidth="650px">
             <Flex gap="8">
