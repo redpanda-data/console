@@ -428,8 +428,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" lineHeight="0">
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
                     <SettingOutlined style={{ fontSize: '1rem' }} />
                     <span style={{ marginLeft: '.3em' }}>Preview</span>
                     {(() => {

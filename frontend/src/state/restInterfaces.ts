@@ -177,7 +177,7 @@ export interface TopicMessage {
     value: Payload,
 
     // Added by the frontend
-    valueJson: string,
+    valueJson: string,  // Value json is what is used for (local) filtering
     valueBinHexPreview: string,
     keyJson: string,
     keyBinHexPreview: string,
