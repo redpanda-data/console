@@ -25,6 +25,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/schema/embed"
 )
 
 // Service for fetching schemas from a schema registry. It has to provide an interface for other packages which is safe
@@ -152,7 +153,19 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 		return nil, err
 	}
 
-	// 2. Parse schema to descriptor file
+	// 2. Add common proto types
+	commonProtoMap, err := embed.CommonProtoFileMap()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load common protobuf types: %w", err)
+	}
+
+	for commonPath, commonSchema := range commonProtoMap {
+		if _, exists := schemasByPath[commonPath]; !exists {
+			schemasByPath[commonPath] = commonSchema
+		}
+	}
+
+	// 3. Parse schema to descriptor file
 	errorReporter := func(err protoparse.ErrorWithPos) error {
 		position := err.GetPosition()
 		s.logger.Warn("failed to parse proto schema to descriptor",

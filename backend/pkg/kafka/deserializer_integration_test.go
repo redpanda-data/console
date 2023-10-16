@@ -36,11 +36,19 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/type/color"
+	"google.golang.org/genproto/googleapis/type/dayofweek"
+	"google.golang.org/genproto/googleapis/type/decimal"
+	"google.golang.org/genproto/googleapis/type/fraction"
+	"google.golang.org/genproto/googleapis/type/latlng"
+	"google.golang.org/genproto/googleapis/type/money"
+	"google.golang.org/genproto/googleapis/type/month"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/common"
 	indexv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/index/v1"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v1"
 	shopv2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/shop/v2"
@@ -574,6 +582,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
@@ -582,7 +591,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -632,6 +641,166 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+	})
+
+	t.Run("schema registry protobuf common", func(t *testing.T) {
+		// create the topic
+		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_common")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		registryURL := "http://" + s.registryAddress
+
+		// register the protobuf schema
+		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/common/common.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		metricName := testutil.MetricNameForTest(strings.ReplaceAll("deserializer", " ", ""))
+
+		svc, err := NewService(&cfg, s.log, metricName)
+		require.NoError(err)
+
+		svc.Start()
+
+		// Set up Serde
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&common.CommonMessage{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*common.CommonMessage))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return proto.Unmarshal(b, v.(*common.CommonMessage))
+			}),
+			sr.Index(0),
+		)
+
+		messageCreatedAt := time.Date(2023, time.July, 11, 13, 0, 0, 0, time.UTC)
+		msg := common.CommonMessage{
+			Id: "345",
+			DecVal: &decimal.Decimal{
+				Value: "-1.50",
+			},
+			Color: &color.Color{
+				Red:   0.1,
+				Green: 0.2,
+				Blue:  0.3,
+			},
+			Dow: dayofweek.DayOfWeek_FRIDAY,
+			Fraction: &fraction.Fraction{
+				Numerator:   10,
+				Denominator: 20,
+			},
+			Latlng: &latlng.LatLng{
+				Latitude:  45.45,
+				Longitude: 12.34,
+			},
+			Price: &money.Money{
+				CurrencyCode: "USD",
+				Units:        100,
+			},
+			Month: month.Month_JANUARY,
+		}
+
+		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: messageCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := svc.Deserializer.DeserializeRecord(record)
+		require.NotNil(dr)
+		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
+		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+
+		cm := common.CommonMessage{}
+		err = protojson.Unmarshal(dr.Value.Payload.Payload, &cm)
+		require.NoError(err)
+		assert.Equal("345", cm.Id)
+		assert.Equal("-1.50", cm.GetDecVal().GetValue())
+		assert.Equal(float32(0.1), cm.GetColor().GetRed())
+		assert.Equal(float32(0.2), cm.GetColor().GetGreen())
+		assert.Equal(float32(0.3), cm.GetColor().GetBlue())
+		assert.Equal(int64(10), cm.GetFraction().GetNumerator())
+		assert.Equal(int64(20), cm.GetFraction().GetDenominator())
+		assert.Equal(45.45, cm.GetLatlng().GetLatitude())
+		assert.Equal(12.34, cm.GetLatlng().GetLongitude())
+		assert.Equal("USD", cm.GetPrice().GetCurrencyCode())
+		assert.Equal(int64(100), cm.GetPrice().GetUnits())
+		assert.Equal("JANUARY", cm.GetMonth().String())
+
+		// franz-go serde
+		cm = common.CommonMessage{}
+		err = serde.Decode(record.Value, &cm)
+		require.NoError(err)
+		assert.Equal("345", cm.Id)
+		assert.Equal("-1.50", cm.GetDecVal().GetValue())
+		assert.Equal(float32(0.1), cm.GetColor().GetRed())
+		assert.Equal(float32(0.2), cm.GetColor().GetGreen())
+		assert.Equal(float32(0.3), cm.GetColor().GetBlue())
+		assert.Equal(int64(10), cm.GetFraction().GetNumerator())
+		assert.Equal(int64(20), cm.GetFraction().GetDenominator())
+		assert.Equal(45.45, cm.GetLatlng().GetLatitude())
+		assert.Equal(12.34, cm.GetLatlng().GetLongitude())
+		assert.Equal("USD", cm.GetPrice().GetCurrencyCode())
+		assert.Equal(int64(100), cm.GetPrice().GetUnits())
+		assert.Equal("JANUARY", cm.GetMonth().String())
 	})
 
 	t.Run("schema registry protobuf multi", func(t *testing.T) {
@@ -705,6 +874,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:   []byte(msg.GetIdentity()),
@@ -857,7 +1027,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1071,6 +1241,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
@@ -1239,6 +1410,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
