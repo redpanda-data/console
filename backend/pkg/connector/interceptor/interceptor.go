@@ -82,7 +82,7 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		),
 		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook),
 			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleCloudEventsConverterHook)),
-		guide.NewIcebergSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleIcebergSinkHook)),
+		guide.NewIcebergSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectValidateToConsoleIcebergSinkHook)),
 		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewBigQuerySinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectBigQueryHook),
 			guide.WithKafkaConnectValidateToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
