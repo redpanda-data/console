@@ -261,7 +261,7 @@ const apiStore = {
     schemaOverviewIsConfigured: undefined as boolean | undefined,
 
     schemaMode: undefined as string | null | undefined,  // undefined = not yet known, null = got not configured response
-    schemaConfig: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
+    schemaCompatibility: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
     schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
     schemaTypes: undefined as string[] | undefined,
     schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
@@ -1088,7 +1088,7 @@ const apiStore = {
         const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/mode`, force) as Promise<SchemaRegistryModeResponse>;
         return rq
             .then(r => {
-                if (typeof r.mode == 'undefined') {
+                if (r.isConfigured == false) {
                     this.schemaOverviewIsConfigured = false;
                     this.schemaMode = null;
                 } else {
@@ -1099,16 +1099,16 @@ const apiStore = {
             .catch(addError);
     },
 
-    refreshSchemaConfig(force?: boolean) {
+    refreshSchemaCompatibilityConfig(force?: boolean) {
         const rq = cachedApiRequest(`${appConfig.restBasePath}/schema-registry/config`, force) as Promise<SchemaRegistryConfigResponse>;
         return rq
             .then(r => {
-                if (typeof r.compatibility == 'undefined') {
+                if (r.isConfigured == false) {
                     this.schemaOverviewIsConfigured = false;
-                    this.schemaConfig = null;
+                    this.schemaCompatibility = null;
                 } else {
                     this.schemaOverviewIsConfigured = true;
-                    this.schemaConfig = r.compatibility;
+                    this.schemaCompatibility = r.compatibility;
                 }
             })
             .catch(addError);

@@ -1,0 +1,261 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message Topic {
+  message Configuration {
+    enum Source {
+      SOURCE_UNSPECIFIED = 0;
+      SOURCE_DYNAMIC_TOPIC_CONFIG = 1;
+      SOURCE_DYNAMIC_BROKER_CONFIG = 2;
+      SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG = 3;
+      SOURCE_STATIC_BROKER_CONFIG = 4;
+      SOURCE_DEFAULT_CONFIG = 5;
+      SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG = 6;
+    }
+
+    string name = 1;
+    string type = 2;
+    string value = 3;
+    Source source = 4; // Enum ?
+    bool is_read_only = 5;
+    bool is_sensitive = 6;
+
+    message ConfigSynonym {
+      string name = 1;
+      string value = 2;
+      Configuration.Source source = 3; // Enum?
+    }
+    repeated ConfigSynonym config_synonyms = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    string documentation = 8;
+  }
+  string name = 1;
+  bool is_internal = 2;
+  int32 partition_count = 3;
+  int32 replication_factor = 4;
+  // configurations is omitted in ListTopics.
+  repeated Configuration configuration = 5;
+  // redpanda.api.common.v1alpha1.ErrorStatus x = 7;
+}
+
+message CreateTopicRequest {
+  Topic topic = 1; // TBD if we want to use separate message for Topic in CreateTopic.
+}
+
+message CreateTopicResponse {
+  Topic topic = 1;
+}
+
+message ListTopicsRequest {
+  message Filter {
+    string name = 1;
+  }
+  Filter filter = 1;
+  int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Limit the paginated response to a number of items.",
+    minimum: 1,
+    maximum: 100
+  }];
+  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+message ListTopicsResponse {
+  repeated Topic topics = 1;
+  string next_page_token = 2;
+}
+
+message DeleteTopicRequest {
+  string name = 1;
+}
+
+message DeleteTopicResponse {}
+
+message GetTopicConfigurationRequest {
+  string topic_name = 1;
+}
+
+message GetTopicConfigurationResponse {
+  repeated Topic.Configuration configuration = 1;
+}
+
+message UpdateTopicConfigurationRequest {
+  message UpdateConfiguration {
+    string key = 1;
+    string value = 2;
+    enum Operation {
+      OPERATION_UNSPECIFIED = 0;
+      OPERATION_SET = 1;
+      OPERATION_DELETE = 2;
+      OPERATION_APPEND = 3;
+      OPERATION_SUBTRACT = 4;
+    }
+    Operation operation = 3;
+  }
+  string topic_name = 1;
+  repeated UpdateConfiguration configuration = 2;
+}
+
+message UpdateTopicConfigurationResponse {
+  // Topic's complete set of configurations after this partial patch has been applied.
+  repeated Topic.Configuration configuration = 1;
+}
+
+message SetTopicConfigurationRequest {
+  message SetConfiguration {
+    string key = 1;
+    string value = 2;
+  }
+  string topic_name = 1;
+  repeated SetConfiguration configuration = 2;
+}
+
+message SetTopicConfigurationResponse {
+  repeated Topic.Configuration configuration = 1;
+}
+
+service TopicService {
+  rpc CreateTopic(CreateTopicRequest) returns (CreateTopicResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/topics"
+      body: "topic"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Topic"
+      description: "Create a Topic."
+      responses: {
+        key: "201"
+        value: {
+          description: "Topic Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.Topic"}
+          }
+        }
+      }
+    };
+  }
+  rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/topics"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Topics"
+      description: "List Topics"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTopicsResponse"}
+          }
+        }
+      }
+    };
+  }
+  rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/topics/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Topic"
+      description: "Delete Topic."
+      responses: {
+        key: "204"
+        value: {
+          description: "Topic was deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc GetTopicConfiguration(GetTopicConfigurationRequest) returns (GetTopicConfigurationResponse) {
+    option (google.api.http) = {get: "/v1alpha1/topics/{topic_name}/configuration"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Topic Configuration"
+      description: "Get Topic Configuration."
+      responses: {
+        key: "200"
+        value: {
+          description: "Ok"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTopicConfigurationResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc UpdateTopicConfiguration(UpdateTopicConfigurationRequest) returns (UpdateTopicConfigurationResponse) {
+    option (google.api.http) = {
+      patch: "/v1alpha1/topics/{topic_name}/configuration"
+      body: "configuration"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update Topic Configuration"
+      description: "Updates a subset of the topic configuration."
+      responses: {
+        key: "200"
+        value: {
+          description: "Ok"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc SetTopicConfiguration(SetTopicConfigurationRequest) returns (SetTopicConfigurationResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha1/topics/{topic_name}/configuration"
+      body: "configuration"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Set Topic Configuration"
+      description: "Set the entire configuration of a topic. Config entries not provided in the request are removed."
+      responses: {
+        key: "200"
+        value: {
+          description: "Ok"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}

@@ -27,6 +27,7 @@ tasks:
     desc: generate protos
     deps:
       - install-buf
+      - install-connect-gateway
     vars:
       BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update {{.BACKEND_ROOT}}/pkg/serde/testdata/proto {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
     cmds:
@@ -37,21 +38,53 @@ tasks:
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - task: lint
       - task: format
+      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
       - for: { var: BUF_INPUTS }
         cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
       - task: :backend:fmt
+      - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
+
+  generate-openapi3:
+    desc: generate protos
+    deps:
+      - install-buf
+      - install-yq
+    cmds:
+      - rm -rf ./proto/gen/openapi
+      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane
+      - cd backend && go run ./pkg/tools/openapi-generator -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
+      - 'yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml'
+      - rm -f ./proto/gen/openapi/apidocs.swagger.json
+
 
   install-buf:
     desc: install buf
     vars:
       BUF_VERSION: 1.26.1
-      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-{{ARCH}}
+      BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
-      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-arm64 -o '{{.BUILD_ROOT}}/bin/buf'
-      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-{{OS}}-x86_64 -o '{{.BUILD_ROOT}}/bin/buf'
+      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 {{.BUF_URL}} -o '{{.BUILD_ROOT}}/bin/buf'
       - chmod +x '{{.BUILD_ROOT}}/bin/buf'
     status:
       - test -f '{{.BUILD_ROOT}}/bin/buf'
-      - "[[ $({{ .BUILD_ROOT }}/bin/buf --version) == '{{.BUF_VERSION}}' ]]"
+      - '[[ $({{ .BUILD_ROOT }}/bin/buf --version) == {{.BUF_VERSION}} ]]'
+
+  install-yq:
+    desc: install yq
+    vars:
+      YQ_VERSION: 4.35.1
+    cmds:
+      - 'go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
+    status:
+      - '[[ $(yq --version) == *"{{.YQ_VERSION}}"* ]]'
+
+  install-connect-gateway:
+    desc: install connect-gateway
+    vars:
+      VERSION: 0.2.2
+    cmds:
+      - 'go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@d941a13c0fbf10931098de2fd084d3ee8d0bd1e4'
+    status:
+      - '[[ $(protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'

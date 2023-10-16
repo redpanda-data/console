@@ -94,6 +94,17 @@ func (s *Service) CreateUser(ctx context.Context, username, password, mechanism 
 	return nil
 }
 
+// UpdateUser updates a user with the given username and password using the given
+// mechanism (SCRAM-SHA-256, SCRAM-SHA-512). The api call will error out if no
+// default mechanism is given.
+func (s *Service) UpdateUser(ctx context.Context, username, password, mechanism string) error {
+	err := s.adminClient.UpdateUser(ctx, username, password, mechanism)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
+}
+
 // DeleteUser deletes a user (also known as principal) from the Redpanda cluster.
 func (s *Service) DeleteUser(ctx context.Context, username string) error {
 	err := s.adminClient.DeleteUser(ctx, username)

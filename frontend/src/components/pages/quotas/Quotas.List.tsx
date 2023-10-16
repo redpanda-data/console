@@ -10,7 +10,6 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -19,13 +18,13 @@ import { computed, makeObservable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
-import { LockIcon, SkipIcon } from '@primer/octicons-react';
+import { SkipIcon } from '@primer/octicons-react';
 import { toJson } from '../../../utils/jsonUtils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import { QuotaType } from '../../../state/restInterfaces';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Result } from '@redpanda-data/ui';
 
 @observer
 class QuotasList extends PageComponent {
@@ -102,20 +101,17 @@ class QuotasList extends PageComponent {
 const PermissionDenied = <>
     <PageContent key="quotasNoPerms">
         <Section>
-            <Empty description={null}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
-                    <p>
-                        You are not allowed to view this page.
-                        <br />
-                        Contact the administrator if you think this is an error.
-                    </p>
-                </div>
-
-                <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+            <Result
+                title="Forbidden"
+                status={403}
+                userMessage={<p>You are not allowed to view this page.
+                    <br/>
+                    Contact the administrator if you think this is an error.</p>
+                }
+                extra={<a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
                     <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
-                </a>
-            </Empty>
+                </a>}
+            />
         </Section>
     </PageContent>
 </>

@@ -13,7 +13,6 @@ import React, { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton, InlineSkeleton, Button } from '../../../utils/tsxUtils';
@@ -25,7 +24,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Checkbox, Divider, Flex, Skeleton } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Checkbox, Divider, Empty, Flex, Skeleton, VStack, Text } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
@@ -56,22 +55,19 @@ function renderNotConfigured() {
     return (
         <PageContent>
             <Section>
-                <Empty description={null}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h2>Not Configured</h2>
-
-                        <p>
-                            Schema Registry is not configured in Redpanda Console.
-                            <br />
-                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
-                        </p>
-                    </div>
+                <VStack gap={4}>
+                    <Empty description="Not Configured" />
+                    <Text textAlign="center">
+                        Schema Registry is not configured in Redpanda Console.
+                        <br/>
+                        To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
+                    </Text>
 
                     {/* todo: fix link once we have a better guide */}
                     <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
                         <Button variant="solid">Redpanda Console Config Documentation</Button>
                     </a>
-                </Empty>
+                </VStack>
             </Section>
         </PageContent>
     );
@@ -95,7 +91,7 @@ class SchemaList extends PageComponent<{}> {
     }
 
     refreshData(force?: boolean) {
-        api.refreshSchemaConfig(force);
+        api.refreshSchemaCompatibilityConfig(force);
         api.refreshSchemaMode(force);
         api.refreshSchemaSubjects(force);
         api.refreshSchemaTypes(force);
@@ -106,8 +102,8 @@ class SchemaList extends PageComponent<{}> {
     }
 
     render() {
-        if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
+        if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
 
         const filteredSubjects = api.schemaSubjects
             .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
@@ -118,9 +114,9 @@ class SchemaList extends PageComponent<{}> {
                 <ToastContainer />
                 {/* Statistics Bar */}
                 <Flex gap="1rem" alignItems="center">
-                    <SmallStat title="Mode">{api.schemaConfig ?? <InlineSkeleton width="100px" />}</SmallStat>
+                    <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
                     <Divider height="2ch" orientation="vertical" />
-                    <SmallStat title="Compatibility">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
+                    <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
                 </Flex>
 
                 <Button variant="outline" mb="4" width="fit-content"

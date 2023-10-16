@@ -8,10 +8,9 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-/* eslint-disable */
 
 import { observer } from 'mobx-react';
-import { Empty, Input } from 'antd';
+import { Input } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -22,7 +21,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
-import { LockIcon, QuestionIcon } from '@primer/octicons-react';
+import { QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
 import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, collectTransactionalIdAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
@@ -31,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result } from '@redpanda-data/ui';
 import React, { FC, useRef } from 'react';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -287,6 +286,7 @@ class AclList extends PageComponent {
 
                 {this.edittingPrincipalGroup &&
                     <AclPrincipalGroupEditor
+                        // @ts-ignore
                         principalGroup={this.edittingPrincipalGroup}
                         type={this.editorType}
                         onClose={() => {
@@ -509,20 +509,19 @@ const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null, onClose: () =>
 const PermissionDenied = <>
     <PageContent key="aclNoPerms">
         <Section>
-            <Empty description={null}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
-                    <p>
-                        You are not allowed to view this page.
-                        <br />
-                        Contact the administrator if you think this is an error.
-                    </p>
-                </div>
-
-                <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+            <Result
+                title="Permission Denied"
+                status={403}
+                userMessage={<Text>
+                    You are not allowed to view this page.
+                    <br/>
+                    Contact the administrator if you think this is an error.
+                </Text>
+                }
+                extra={<a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
                     <Button>Redpanda Console documentation</Button>
-                </a>
-            </Empty>
+                </a>}
+            />
         </Section>
     </PageContent>
 </>

@@ -1,0 +1,35 @@
+// Copyright 2022 Redpanda Data, Inc.
+//
+// Use of this software is governed by the Business Source License
+// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+//
+// As of the Change Date specified in that file, in accordance with
+// the Business Source License, use of this software will be governed
+// by the Apache License, Version 2.0
+
+syntax = "proto3";
+
+package common;
+
+import "google/type/decimal.proto";
+import "google/type/color.proto";
+import "google/type/dayofweek.proto";
+import "google/type/fraction.proto";
+import "google/type/latlng.proto";
+import "google/type/money.proto";
+import "google/type/month.proto";
+import "google/type/phone_number.proto";
+
+option go_package = "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/common";
+
+message CommonMessage {
+  string id = 1;
+  google.type.Decimal dec_val = 2;
+  google.type.Color color = 3;
+  google.type.DayOfWeek dow = 4;
+  google.type.Fraction fraction = 5;
+  google.type.LatLng latlng = 6;
+  google.type.Money price = 7;
+  google.type.Month month = 8;
+  google.type.PhoneNumber phone_number = 9;
+}

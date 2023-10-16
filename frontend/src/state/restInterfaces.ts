@@ -1504,12 +1504,14 @@ export type OverviewNewsEntry = {
 
 // GET /schema-registry/mode
 export type SchemaRegistryModeResponse = {
+    isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
     mode: string;
 };
 
 // GET /schema-registry/config
 export type SchemaRegistryCompatibilityMode = 'NONE' | 'BACKWARD' | 'BACKWARD_TRANSITIVE' | 'FORWARD' | 'FORWARD_TRANSITIVE' | 'FULL' | 'FULL_TRANSITIVE';
 export type SchemaRegistryConfigResponse = {
+    isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
     compatibility: SchemaRegistryCompatibilityMode;
 };
 
@@ -1526,6 +1528,7 @@ export type SchemaRegistrySubject = {
 
 // GET /schema-registry/schemas/types
 export type SchemaRegistrySchemaTypesResponse = {
+    isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
     schemaTypes: string[];
 };
 

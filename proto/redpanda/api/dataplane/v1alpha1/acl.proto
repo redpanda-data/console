@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message ACL {
+  enum ResourceType {
+    RESOURCE_TYPE_UNSPECIFIED = 0;
+    RESOURCE_TYPE_ANY = 1;
+    RESOURCE_TYPE_TOPIC = 2;
+    RESOURCE_TYPE_GROUP = 3;
+    RESOURCE_TYPE_CLUSTER = 4;
+    RESOURCE_TYPE_TRANSACTIONAL_ID = 5;
+    RESOURCE_TYPE_DELEGATION_TOKEN = 6;
+    RESOURCE_TYPE_USER = 7;
+  }
+
+  enum ResourcePatternType {
+    RESOURCE_PATTERN_TYPE_UNSPECIFIED = 0;
+    RESOURCE_PATTERN_TYPE_ANY = 1;
+    RESOURCE_PATTERN_TYPE_MATCH = 2;
+    RESOURCE_PATTERN_TYPE_LITERAL = 3;
+    RESOURCE_PATTERN_TYPE_PREFIXED = 4;
+  }
+
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_ANY = 1;
+    OPERATION_ALL = 2;
+    OPERATION_READ = 3;
+    OPERATION_WRITE = 4;
+    OPERATION_CREATE = 5;
+    OPERATION_DELETE = 6;
+    OPERATION_ALTER = 7;
+    OPERATION_DESCRIBE = 8;
+    OPERATION_CLUSTER_ACTION = 9;
+    OPERATION_DESCRIBE_CONFIGS = 10;
+    OPERATION_ALTER_CONFIGS = 11;
+    OPERATION_IDEMPOTENT_WRITE = 12;
+    OPERATION_CREATE_TOKENS = 13;
+    OPERATION_DESCRIBE_TOKENS = 14;
+  }
+
+  enum PermissionType {
+    PERMISSION_TYPE_UNSPECIFIED = 0;
+    PERMISSION_TYPE_ANY = 1;
+    PERMISSION_TYPE_DENY = 2;
+    PERMISSION_TYPE_ALLOW = 3;
+  }
+}
+
+message ListACLsRequest {
+  message Filter {
+    ACL.ResourceType resource_type = 1;
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    string principal = 4;
+    string host = 5;
+    ACL.Operation operation = 6;
+    ACL.PermissionType permission_type = 7;
+  }
+
+  Filter filter = 1;
+  int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Limit the paginated response to a number of items.",
+    minimum: 1,
+    maximum: 100
+  }];
+  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+message ListACLsResponse {
+  message Policy {
+    string principal = 1;
+    string host = 2;
+    ACL.Operation operation = 3;
+    ACL.PermissionType permission_type = 4;
+  }
+
+  ACL.ResourceType resource_type = 1;
+  string resource_name = 2;
+  ACL.ResourcePatternType resource_pattern_type = 3;
+  repeated Policy acls = 4;
+}
+
+message CreateACLRequest {
+  ACL.ResourceType resource_type = 1;
+  string resource_name = 2;
+  ACL.ResourcePatternType resource_pattern_type = 3;
+  string principal = 4;
+  string host = 5;
+  ACL.Operation operation = 6;
+  ACL.PermissionType permission_type = 7;
+}
+
+message CreateACLResponse {}
+
+message DeleteACLsRequest {
+  message Filter {
+    ACL.ResourceType resource_type = 1;
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    string principal = 4;
+    string host = 5;
+    ACL.Operation operation = 6;
+    ACL.PermissionType permission_type = 7;
+  }
+
+  Filter filter = 1;
+}
+
+message DeleteACLsResponse {
+  message MatchingACL {
+    ACL.ResourceType resource_type = 1;
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    string principal = 4;
+    string host = 5;
+    ACL.Operation operation = 6;
+    ACL.PermissionType permission_type = 7;
+    int32 error_code = 8;
+    string error_message = 9;
+  }
+
+  repeated MatchingACL matching_acls = 1;
+}
+
+service ACLService {
+  rpc ListACLs(ListACLsRequest) returns (ListACLsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List ACLs"
+      description: "List ACLs"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListACLsResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc CreateACL(CreateACLRequest) returns (CreateACLResponse) {
+    option (google.api.http) = {post: "/v1alpha1/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create ACL"
+      description: "Create ACL"
+      responses: {
+        key: "201"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateACLResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc DeleteACLs(DeleteACLsRequest) returns (DeleteACLsResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete ACLs"
+      description: "Delete all ACLs that match the given filter"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.DeleteACLsResponse"}
+          }
+        }
+      }
+    };
+  }
+}

@@ -10,11 +10,9 @@
 package api
 
 import (
-	"context"
-	"errors"
 	"net/http"
 
-	connect_go "connectrpc.com/connect"
+	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
@@ -22,13 +20,91 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/reflect/protoreflect"
+	connectgateway "go.vallahaye.net/connect-gateway"
+	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
+	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
+
+// Setup connect and grpc-gateway
+func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+
+	// Setup Interceptors
+	v, err := protovalidate.New()
+	if err != nil {
+		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+	}
+
+	// Base baseInterceptors configured in OSS.
+	baseInterceptors := []connect.Interceptor{
+		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
+	}
+
+	// Setup gRPC-Gateway
+	gwMux := runtime.NewServeMux(
+		runtime.WithErrorHandler(NiceHTTPErrorHandler),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
+			Marshaler: &runtime.JSONPb{
+				MarshalOptions: protojson.MarshalOptions{
+					UseProtoNames:   true, // use snake_case
+					EmitUnpopulated: true, // output zero values e.g. 0, "", false
+				},
+				UnmarshalOptions: protojson.UnmarshalOptions{
+					DiscardUnknown: true,
+				},
+			},
+		}),
+	)
+	r.Mount("/v1alpha1", gwMux) // Dataplane API
+
+	// Call Hook
+	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
+		BaseInterceptors: baseInterceptors,
+		GRPCGatewayMux:   gwMux,
+	})
+
+	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
+	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleServicePath, consoleServiceHandler := consolev1alphaconnect.NewConsoleServiceHandler(api, connect.WithInterceptors(hookOutput.Interceptors...))
+
+	ossServices := []ConnectService{
+		{
+			ServiceName: dataplanev1alpha1connect.UserServiceName,
+			MountPath:   userSvcPath,
+			Handler:     userSvcHandler,
+		},
+		{
+			ServiceName: consolev1alphaconnect.ConsoleServiceName,
+			MountPath:   consoleServicePath,
+			Handler:     consoleServiceHandler,
+		},
+	}
+
+	// Order matters. OSS services first, so Enterprise handlers override OSS.
+	//nolint:gocritic // It's okay to use append here, since we no longer need to access both given slices anymore
+	allServices := append(ossServices, hookOutput.AdditionalServices...)
+
+	var reflectServiceNames []string
+	for _, svc := range allServices {
+		reflectServiceNames = append(reflectServiceNames, svc.ServiceName)
+		r.Mount(svc.MountPath, svc.Handler)
+	}
+
+	// Register gRPC-Gateway Handlers of OSS. Enterprise handlers are directly registered in the hook via the *runtime.ServeMux passed.
+	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+
+	reflector := grpcreflect.NewStaticReflector(reflectServiceNames...)
+	r.Mount(grpcreflect.NewHandlerV1(reflector))
+	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
+}
 
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
@@ -56,6 +132,8 @@ func (api *API) routes() *chi.Mux {
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
+
+	api.setupConnectWithGRPCGateway(baseRouter)
 
 	baseRouter.Group(func(router chi.Router) {
 		// Init middlewares - Do set up of any shared/third-party middleware and handlers
@@ -173,8 +251,6 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
 
-			api.configRPCRoutes(r)
-
 			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
 
@@ -196,52 +272,4 @@ func (api *API) routes() *chi.Mux {
 	})
 
 	return baseRouter
-}
-
-func (api *API) configRPCRoutes(r chi.Router) {
-	// Connect RPC
-	v, err := protovalidate.New()
-	if err != nil {
-		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
-	}
-
-	// we want the actual request validation after all authorization and permission checks
-	interceptors := []connect_go.Interceptor{
-		NewRequestValidationInterceptor(api.Logger, v),
-	}
-
-	// Connect service(s)
-	r.Mount(consolev1alphaconnect.NewConsoleServiceHandler(
-		api,
-		connect_go.WithInterceptors(interceptors...),
-	))
-
-	// Connect reflection
-	reflector := grpcreflect.NewStaticReflector(consolev1alphaconnect.ConsoleServiceName)
-	r.Mount(grpcreflect.NewHandlerV1(reflector))
-	r.Mount(grpcreflect.NewHandlerV1Alpha(reflector))
-}
-
-// NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
-func NewRequestValidationInterceptor(_ *zap.Logger, validator *protovalidate.Validator) connect_go.UnaryInterceptorFunc {
-	interceptor := func(next connect_go.UnaryFunc) connect_go.UnaryFunc {
-		return connect_go.UnaryFunc(func(
-			ctx context.Context,
-			req connect_go.AnyRequest,
-		) (connect_go.AnyResponse, error) {
-			msg, ok := req.Any().(protoreflect.ProtoMessage)
-			if !ok {
-				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, errors.New("request is not a protocol buffer message"))
-			}
-
-			err := validator.Validate(msg)
-			if err != nil {
-				return nil, connect_go.NewError(connect_go.CodeInvalidArgument, err)
-			}
-
-			return next(ctx, req)
-		})
-	}
-
-	return connect_go.UnaryInterceptorFunc(interceptor)
 }
