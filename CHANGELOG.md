@@ -2,7 +2,7 @@
 
 ## v2.3.5 / 2023-10-16
 
-- [FIX] Add Redpanda common protobuf types to support automatic deserialization.
+- [FIX] Add commonly pre-registered protobuf types to support automatic deserialization.
 
 ## v2.3.4 / 2023-10-10
 
