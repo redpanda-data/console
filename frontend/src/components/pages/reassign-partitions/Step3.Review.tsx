@@ -11,7 +11,7 @@
 
 import { Component } from 'react';
 import { observer } from 'mobx-react';
-import { Empty, Table } from 'antd';
+import { Table } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { api } from '../../../state/backendApi';
 import { makePaginationConfig } from '../../misc/common';
@@ -23,6 +23,7 @@ import { BrokerList } from '../../misc/BrokerList';
 import ReassignPartitions, { PartitionSelection, } from './ReassignPartitions';
 import { uiSettings } from '../../../state/ui';
 import { BandwidthSlider } from './components/BandwidthSlider';
+import { Empty } from '@redpanda-data/ui';
 
 export type PartitionWithMoves = Partition & {
     brokersBefore: number[],

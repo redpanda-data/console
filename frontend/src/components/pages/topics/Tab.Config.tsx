@@ -11,7 +11,6 @@
 
 import { Component } from 'react';
 import { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
-import { Empty, Typography } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
@@ -24,9 +23,7 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
-import { Box, Button, Code, CodeBlock, Flex, Result, Tooltip } from '@redpanda-data/ui';
-
-const { Text } = Typography;
+import { Box, Button, Code, CodeBlock, Empty, Flex, Result, Tooltip } from '@redpanda-data/ui';
 
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?
@@ -90,15 +87,7 @@ export class TopicConfiguration extends Component<{
 
         if (config === null || config.configEntries.length == 0) {
             // config===null should never happen, so we catch it together with empty
-            const desc = (
-                <>
-                    <Text type="secondary" strong style={{ fontSize: '125%' }}>
-                        No config entries
-                    </Text>
-                    <br />
-                </>
-            );
-            return <Empty description={desc} />;
+            return <Empty description="No config entries" />;
         }
         return null;
     }
