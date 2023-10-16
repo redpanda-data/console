@@ -9,6 +9,17 @@
 
 // Package embed provides common protobuf files and any other support files
 // for the schema package.
+//
+// Redpanda automatically includes the Google Well known types
+// and other sommon types.
+// https://protobuf.dev/reference/protobuf/google.protobuf/
+// https://github.com/protocolbuffers/protobuf/tree/main/src/google/protobuf
+// https://github.com/redpanda-data/redpanda/tree/dev/src/v/pandaproxy/schema_registry/protobuf
+// https://github.com/redpanda-data/redpanda/blob/dev/src/v/pandaproxy/schema_registry/test/compatibility_protobuf.cc
+//
+// The well known types are automatically added in the protoreflect protoparse package
+// but we need to match and support the other types Redpanda automatically includes.
+// This packaged embeds the other common types and adds supporting utility functions.
 package embed
 
 import (
