@@ -8,33 +8,34 @@ import (
 // KafkaConnectToConsoleIcebergSinkHook adds Iceberg sink specific config options
 // missing in Validate Kafka Connect response
 func KafkaConnectToConsoleIcebergSinkHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
-	response.Configs = append(response.Configs, model.ConfigDefinition{
-		Definition: model.ConfigDefinitionKey{
-			Name:          "iceberg.catalog.type",
-			Type:          "STRING",
-			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceHigh,
-			Required:      false,
-			DisplayName:   "Iceberg catalog type",
-			Documentation: "To set the catalog type. For other catalog types, you need to instead set 'iceberg.catalog.catalog-impl' to the name of the catalog class",
-			Dependents:    []string{},
-		},
-		Value: model.ConfigDefinitionValue{
-			Name:              "iceberg.catalog.type",
-			Value:             "rest",
-			RecommendedValues: []string{},
-			Visible:           true,
-			Errors:            []string{},
-		},
-		Metadata: model.ConfigDefinitionMetadata{
-			ComponentType: model.ComponentRadioGroup,
-			RecommendedValues: []model.RecommendedValueWithMetadata{
-				{Value: "rest", DisplayName: "REST"},
-				{Value: "hive", DisplayName: "HIVE"},
-				{Value: "hadoop", DisplayName: "HADOOP"},
+	response.Configs = append(response.Configs,
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "iceberg.catalog.type",
+				Type:          "STRING",
+				DefaultValue:  "",
+				Importance:    model.ConfigDefinitionImportanceHigh,
+				Required:      false,
+				DisplayName:   "Iceberg catalog type",
+				Documentation: "To set the catalog type. For other catalog types, you need to instead set 'iceberg.catalog.catalog-impl' to the name of the catalog class",
+				Dependents:    []string{},
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "iceberg.catalog.type",
+				Value:             "rest",
+				RecommendedValues: []string{},
+				Visible:           true,
+				Errors:            []string{},
+			},
+			Metadata: model.ConfigDefinitionMetadata{
+				ComponentType: model.ComponentRadioGroup,
+				RecommendedValues: []model.RecommendedValueWithMetadata{
+					{Value: "rest", DisplayName: "REST"},
+					{Value: "hive", DisplayName: "HIVE"},
+					{Value: "hadoop", DisplayName: "HADOOP"},
+				},
 			},
 		},
-	},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
 				Name:          "iceberg.catalog.uri",
@@ -42,8 +43,8 @@ func KafkaConnectToConsoleIcebergSinkHook(response model.ValidationResponse, con
 				DefaultValue:  "",
 				Importance:    model.ConfigDefinitionImportanceHigh,
 				Required:      false,
-				DisplayName:   "Iceberg catalog uri",
-				Documentation: "Iceberg REST catalog uri",
+				DisplayName:   "Iceberg REST catalog URI",
+				Documentation: "Use for Iceberg REST catalog type. Use JSON configuration for other catalog types",
 				Dependents:    []string{},
 			},
 			Value: model.ConfigDefinitionValue{
@@ -183,25 +184,6 @@ func KafkaConnectToConsoleIcebergSinkHook(response model.ValidationResponse, con
 				Value:             "",
 				RecommendedValues: []string{},
 				Visible:           true,
-				Errors:            []string{},
-			},
-		},
-		model.ConfigDefinition{
-			Definition: model.ConfigDefinitionKey{
-				Name:          "iceberg.catalog.uri",
-				Type:          "STRING",
-				DefaultValue:  "",
-				Importance:    model.ConfigDefinitionImportanceHigh,
-				Required:      false,
-				DisplayName:   "Iceberg REST catalog URI",
-				Documentation: "Use for Iceberg REST catalog type. Use JSON configuration for other catalog types",
-				Dependents:    []string{},
-			},
-			Value: model.ConfigDefinitionValue{
-				Name:              "iceberg.catalog.uri",
-				Value:             "",
-				RecommendedValues: []string{},
-				Visible:           isRestCatalogType(response.Configs),
 				Errors:            []string{},
 			},
 		},
