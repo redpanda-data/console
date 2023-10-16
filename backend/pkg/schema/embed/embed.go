@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package embed provides common protobuf files and any other support files
+// for the schema package.
 package embed
 
 import (
@@ -17,17 +19,20 @@ import (
 )
 
 //go:embed all:protobuf
-var Content embed.FS
+var content embed.FS
 
 var (
 	once     sync.Once
 	protoMap map[string]string
 )
 
+// CommonProtoFiles returns the file system representation of the common protobuf types.
 func CommonProtoFiles() (fs.FS, error) {
-	return fs.Sub(Content, "protobuf")
+	return fs.Sub(content, "protobuf")
 }
 
+// CommonProtoFileMap returns the map representation of the common protobuf types.
+// This is useful for protoreflect parsting.
 func CommonProtoFileMap() (map[string]string, error) {
 	protoFS, err := CommonProtoFiles()
 	if err != nil {
