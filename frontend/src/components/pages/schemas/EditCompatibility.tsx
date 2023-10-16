@@ -143,6 +143,7 @@ function EditSchemaCompatibility(p: {
                 toast({
                     status: 'success', duration: 4000, isClosable: false,
                     title: 'Compatibility mode updated to ' + configMode,
+                    position: 'top-right',
                 });
 
                 if (subjectName)
@@ -157,6 +158,7 @@ function EditSchemaCompatibility(p: {
                     status: 'error', duration: null, isClosable: true,
                     title: 'Failed to update compatibility mode',
                     description: String(err),
+                    position: 'top-right',
                 })
             });
     };
