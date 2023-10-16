@@ -29,6 +29,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema/embed"
 )
 
 // RecordPropertyType determines whether the to be recorded payload is either a
@@ -485,6 +486,21 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		} else {
 			filesStr[trimmedFilepath] = string(file.Payload)
 			filePaths = append(filePaths, trimmedFilepath)
+		}
+	}
+
+	// Add common proto types
+	// The well known types are automatically added in the protoreflect protoparse package.
+	// But we need to support the other types Redpanda automatically includes.
+	// These are added in the embed package, and here we add them to the map for parsing.
+	commonProtoMap, err := embed.CommonProtoFileMap()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load common protobuf types: %w", err)
+	}
+
+	for commonPath, commonSchema := range commonProtoMap {
+		if _, exists := filesStr[commonPath]; !exists {
+			filesStr[commonPath] = commonSchema
 		}
 	}
 
