@@ -359,6 +359,9 @@ const SchemaEditor = observer((p: {
                 <RadioGroup name="format"
                     value={state.format}
                     onChange={e => {
+                        if (state.format == e)
+                            return;
+
                         // Let user confirm
                         openSwitchSchemaFormatModal(() => {
                             state.format = e;
@@ -448,7 +451,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
 
         <Button variant="outline"
             size="sm"
-            width="12rem"
+            width="fit-content"
             onClick={() => refs.push({ name: '', subject: '', version: 1 })}
         >
             Add reference
