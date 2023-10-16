@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.3.5 / 2023-10-10
+## v2.3.5 / 2023-10-16
 
 - [FIX] Add Redpanda common protobuf types to support automatic deserialization.
 
