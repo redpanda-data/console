@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Empty } from 'antd';
+import { Table } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -28,7 +28,7 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tag, Tooltip, Popover, Accordion, Text } from '@redpanda-data/ui';
+import { Flex, Section, Tabs, Tag, Tooltip, Popover, Accordion, Text, Empty } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
@@ -365,18 +365,11 @@ class GroupByTopics extends Component<{
                 : undefined; // more than one -> collapse
 
         const nullEntries = topicEntries.filter(e => e == null).length;
-        if (topicEntries.length == 0 || topicEntries.length == nullEntries)
+        if (topicEntries.length == 0 || topicEntries.length == nullEntries) {
             return (
-                <Empty
-                    style={{
-                        background: 'radial-gradient(hsl(0deg 0% 100%) 40%, hsl(0deg 0% 97%) 90%)',
-                        borderRadius: '5px',
-                        padding: '1.5em'
-                    }}
-                >
-                    {p.onlyShowPartitionsWithLag ? <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span> : null}
-                </Empty>
+                <Empty description={p.onlyShowPartitionsWithLag ? <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span> : 'No data found'}/>
             );
+        }
 
 
         return (
@@ -472,17 +465,9 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                 : undefined; // more than one -> collapse
 
         const nullEntries = memberEntries.filter(e => e == null).length;
-        if (memberEntries.length == 0 || memberEntries.length == nullEntries)
-            return (
-                <Empty
-                    style={{
-                        background: 'radial-gradient(hsl(0deg 0% 100%) 40%, hsl(0deg 0% 97%) 90%)',
-                        borderRadius: '5px',
-                        padding: '1.5em'
-                    }}
-                >
-                    {p.onlyShowPartitionsWithLag ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span> : null} </Empty>
-            );
+        if (memberEntries.length == 0 || memberEntries.length == nullEntries) {
+            return <Empty description={p.onlyShowPartitionsWithLag ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span> : 'No data found'}/>
+        }
 
 
         return (

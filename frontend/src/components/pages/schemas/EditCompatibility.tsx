@@ -13,14 +13,12 @@ import { useState } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Empty, } from 'antd';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton, Button } from '../../../utils/tsxUtils';
 import './Schema.List.scss';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Box, CodeBlock, Flex, Grid, GridItem, Link, Stack, useToast } from '@redpanda-data/ui';
-import { Text } from '@redpanda-data/ui';
+import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Link, Stack, useToast, VStack, Text } from '@redpanda-data/ui';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
@@ -29,22 +27,20 @@ function renderNotConfigured() {
     return (
         <PageContent>
             <Section>
-                <Empty description={null}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h2>Not Configured</h2>
-
-                        <p>
-                            Schema Registry is not configured in Redpanda Console.
-                            <br />
-                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
-                        </p>
-                    </div>
-
+                <VStack gap={4}>
+                    <Empty
+                        description="Not Configured"
+                    />
+                    <Text textAlign="center">
+                        Schema Registry is not configured in Redpanda Console.
+                        <br />
+                        To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
+                    </Text>
                     {/* todo: fix link once we have a better guide */}
                     <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
                         <Button variant="solid">Redpanda Console Config Documentation</Button>
                     </a>
-                </Empty>
+                </VStack>
             </Section>
         </PageContent>
     );

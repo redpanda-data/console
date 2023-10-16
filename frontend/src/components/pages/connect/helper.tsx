@@ -10,7 +10,7 @@
  */
 
 
-import { Alert, Empty } from 'antd';
+import { Alert } from 'antd';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
@@ -45,7 +45,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast } from '@redpanda-data/ui';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast, VStack, Text, Empty } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -481,21 +481,17 @@ export function NotConfigured() {
     return (
         <PageContent key="b">
             <Section>
-                <Empty description={null}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h2>Not Configured</h2>
-
-                        <p>
-                            Kafka Connect is not configured in Redpanda Console.
-                            <br />
-                            Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and control all your connectors and tasks.
-                        </p>
-                    </div>
-
+                <VStack gap={4}>
+                    <Empty description="Not Configured" />
+                    <Text textAlign="center">
+                        Kafka Connect is not configured in Redpanda Console.
+                        <br />
+                        Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and control all your connectors and tasks.
+                    </Text>
                     <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
                         <Button variant="solid">Redpanda Console Config Documentation</Button>
                     </a>
-                </Empty>
+                </VStack>
             </Section>
         </PageContent>
     );
