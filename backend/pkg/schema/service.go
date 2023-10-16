@@ -391,13 +391,31 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 		}
 		schemasByPath[ref.Name] = schemaRefRes.Schema
 	}
+
+	// Add common proto types
+	// The well known types are automatically added in the protoreflect protoparse package.
+	// But we need to support the other types Redpanda automatically includes.
+	// These are added in the embed package, and here we add them to the map for parsing.
+	commonProtoMap, err := embed.CommonProtoFileMap()
+	if err != nil {
+		return fmt.Errorf("failed to load common protobuf types: %w", err)
+	}
+
+	for commonPath, commonSchema := range commonProtoMap {
+		if _, exists := schemasByPath[commonPath]; !exists {
+			schemasByPath[commonPath] = commonSchema
+		}
+	}
+
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
 	}
-	_, err := parser.ParseFiles(name)
+
+	_, err = parser.ParseFiles(name)
+
 	return err
 }
 

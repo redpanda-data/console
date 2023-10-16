@@ -570,15 +570,6 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		}
 	}
 
-	errorReporter := func(err protoparse.ErrorWithPos) error {
-		position := err.GetPosition()
-		s.logger.Warn("failed to parse proto file to descriptor",
-			zap.String("file", position.Filename),
-			zap.Int("line", position.Line),
-			zap.Error(err))
-		return nil
-	}
-
 	// Add common proto types
 	// The well known types are automatically added in the protoreflect protoparse package.
 	// But we need to support the other types Redpanda automatically includes.
@@ -592,6 +583,15 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		if _, exists := filesStr[commonPath]; !exists {
 			filesStr[commonPath] = commonSchema
 		}
+	}
+
+	errorReporter := func(err protoparse.ErrorWithPos) error {
+		position := err.GetPosition()
+		s.logger.Warn("failed to parse proto file to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
 	}
 
 	parser := protoparse.Parser{

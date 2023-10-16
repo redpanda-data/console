@@ -73,6 +73,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+
 	consoleServicePath, consoleServiceHandler := consolev1alphaconnect.NewConsoleServiceHandler(api, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
