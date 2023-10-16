@@ -481,7 +481,7 @@ export function NotConfigured() {
     return (
         <PageContent key="b">
             <Section>
-                <VStack>
+                <VStack gap={4}>
                     <Empty description="Not Configured" />
                     <Text textAlign="center">
                         Kafka Connect is not configured in Redpanda Console.

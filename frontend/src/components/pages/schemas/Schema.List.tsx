@@ -55,7 +55,7 @@ function renderNotConfigured() {
     return (
         <PageContent>
             <Section>
-                <VStack>
+                <VStack gap={4}>
                     <Empty description="Not Configured" />
                     <Text textAlign="center">
                         Schema Registry is not configured in Redpanda Console.

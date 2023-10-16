@@ -658,7 +658,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         </ul> : null;
 
         return (
-            <VStack>
+            <VStack gap={4}>
                 <Empty description="No messages" />
                 {hintBox}
             </VStack>

@@ -117,7 +117,7 @@ const errorEmpty = renderDocuError('Empty', <>
 function renderDocuError(title: string, body: JSX.Element) {
     return (
         <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
-            <VStack>
+            <VStack gap={4}>
                 <Empty
                     description={title}
                 />
