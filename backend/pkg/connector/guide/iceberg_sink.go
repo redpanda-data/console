@@ -19,6 +19,9 @@ func NewIcebergSinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
+		DefaultGuide: DefaultGuide{
+			options: o,
+		},
 		className: "io.tabular.iceberg.connect.IcebergSinkConnector",
 		wizardSteps: []model.ValidationResponseStep{
 			{
