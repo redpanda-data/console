@@ -16,7 +16,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
@@ -390,9 +390,9 @@ const SchemaEditor = observer((p: {
             />
 
             <Heading variant="lg" mt="8">
-                Schema definition
+                Schema references
             </Heading>
-            <Text>This is an example help text about the references list, to be updated later</Text>
+            {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
 
             <ReferencesEditor state={state} />
 
