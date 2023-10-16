@@ -5,9 +5,9 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/patch"
 )
 
-// KafkaConnectToConsoleIcebergSinkHook adds Iceberg sink specific config options
+// KafkaConnectValidateToConsoleIcebergSinkHook adds Iceberg sink specific config options
 // missing in Validate Kafka Connect response
-func KafkaConnectToConsoleIcebergSinkHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
+func KafkaConnectValidateToConsoleIcebergSinkHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs,
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
