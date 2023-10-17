@@ -124,7 +124,12 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
                 {/* Buttons */}
                 <Flex gap="2">
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)}>Edit compatibility</Button>
+                    <Button variant="outline"
+                        onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)}
+                        disabledReason={api.userData?.canManageSchemaRegistry === false ? 'You don\'t have the \'canManageSchemaRegistry\' permission' : undefined}
+                    >
+                        Edit compatibility
+                    </Button>
                     <Button variant="outline"
                         onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
                         disabledReason={api.userData?.canCreateSchemas === false ? 'You don\'t have the \'canCreateSchemas\' permission' : undefined}
