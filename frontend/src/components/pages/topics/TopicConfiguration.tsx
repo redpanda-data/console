@@ -377,7 +377,7 @@ export const ConfigEntryEditor = observer((p: {
 function getConfigSourceExplanation(source: string) {
     switch (source) {
         case 'DEFAULT_CONFIG':
-            return 'Built-in default when the setting is not overriden anywhere';
+            return 'This default value is used if the setting is not overwritten.';
 
         case 'DYNAMIC_BROKER_CONFIG':
         case 'DYNAMIC_BROKER_LOGGER_CONFIG':
