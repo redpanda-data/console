@@ -412,21 +412,6 @@ const apiStore = {
                         // this is my hacky way of attempting to get things working by converting the Connect types
                         // to the rest interface types that are hooked up to other things
 
-                        /////////////////
-                        const v = res.controlMessage.value.value!;
-                        v.encoding = PayloadEncoding.BINARY;
-
-                        const exampleMessage = 'AAAAAAEAggEEZGRkZOIEAwoBM+oEBmpqa2prag==';
-
-                        const binaryString = atob(exampleMessage);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        v.normalizedPayload = bytes;
-                        /////////////////
-
-
                         const m = {} as TopicMessage;
                         m.partitionID = res.controlMessage.value.partitionId
 
