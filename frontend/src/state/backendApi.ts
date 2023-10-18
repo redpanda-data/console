@@ -81,6 +81,12 @@ const { toast } = createStandaloneToast({
     defaultOptions: redpandaToastOptions.defaultOptions
 })
 
+const rpcTransport = createConnectTransport({
+    baseUrl: 'http://localhost:9090', // TODO: fix to correct backend URL
+})
+
+const consoleClient = createPromiseClient(ConsoleService, rpcTransport);
+
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
     - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
@@ -361,12 +367,6 @@ const apiStore = {
         this.messages.length = 0;
         this.messagesElapsedMs = null;
 
-        // do it
-        const transport = createConnectTransport({
-            baseUrl: window.location.origin,
-        });
-
-        const client = createPromiseClient(ConsoleService, transport);
 
         const req = new ListMessagesRequest()
         req.topic = searchRequest.topicName
@@ -374,9 +374,10 @@ const apiStore = {
         req.partitionId = searchRequest.partitionId
         req.maxResults = searchRequest.maxResults
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
+        // TODO: need to be able to set req.startTimestamp to correct value
 
         try {
-            for await (const res of await client.listMessages(req)) {
+            for await (const res of await consoleClient.listMessages(req)) {
 
                 switch (res.controlMessage.case) {
                     case 'phase':
