@@ -194,13 +194,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     <AlertIcon />
                     <div>Backend API Error</div>
                     <Flex flexDirection="column" gap={2}>
-                        <span>Please check and modify the request before resubmitting.</span>
+                        <Text as="span">Please check and modify the request before resubmitting.</Text>
                         <Code>{((this.fetchError as Error).message ?? String(this.fetchError))}</Code>
-                        <div>
+                        <Box>
                             <Button onClick={() => this.executeMessageSearch()}>
                                 Retry Search
                             </Button>
-                        </div>
+                        </Box>
                     </Flex>
                 </Alert>
                 : <>
