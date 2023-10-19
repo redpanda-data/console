@@ -18,7 +18,7 @@ import { DefaultSkeleton, Button } from '../../../utils/tsxUtils';
 import './Schema.List.scss';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Link, Stack, useToast, VStack, Text } from '@redpanda-data/ui';
+import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Stack, useToast, VStack, Text } from '@redpanda-data/ui';
 import { Radio, RadioGroup } from '@chakra-ui/react';
 import { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
@@ -164,7 +164,10 @@ function EditSchemaCompatibility(p: {
     };
 
     return <>
-        <Text>Compatibility determines how schema validation occurs when producers are sending messages to Redpanda. <Link>Learn more.</Link></Text>
+        <Text>
+            Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.
+            {/* <Link>Learn more.</Link> */}
+        </Text>
 
         <Grid templateColumns="1fr 1fr" gap="4rem">
             <GridItem mt="4" mb="8">

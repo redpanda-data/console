@@ -512,7 +512,8 @@ const SchemaReferences = observer((p: { subject: SchemaRegistrySubjectDetails, s
     return <>
         <Text mt="20" fontSize="lg" fontWeight="bold">References</Text>
         <Text mb="6">
-            Schemas that are required by this version. <Link as={ReactRouterLink} to="/home">Learn More</Link>
+            Schemas that are required by this version.
+            {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
         </Text>
 
         {schema.references.length > 0
@@ -528,7 +529,8 @@ const SchemaReferences = observer((p: { subject: SchemaRegistrySubjectDetails, s
 
         <Text mt="20" fontSize="lg" fontWeight="bold">Referenced By</Text>
         <Text mb="6">
-            Schemas that reference this version. <Link as={ReactRouterLink} to="/home">Learn More</Link>
+            Schemas that reference this version.
+            {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
         </Text>
 
         {referencedBy && referencedBy.length > 0
