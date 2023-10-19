@@ -442,7 +442,7 @@ class AclList extends PageComponent {
 
                 <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                     <Button variant="outline" isDisabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
-                        Create User
+                        Create user
                     </Button>
                 </Tooltip>
 
