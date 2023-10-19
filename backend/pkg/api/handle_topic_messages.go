@@ -203,10 +203,6 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
 func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest], stream *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
-	logger := api.Logger
-
-	logger.Info("ListMessages handler")
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

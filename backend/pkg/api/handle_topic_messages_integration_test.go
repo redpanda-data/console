@@ -468,7 +468,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.NoError(valueErr)
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
-			assert.Equal("dataplane.api.redpanda.com", errInfo.GetDomain())
+			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
 			assert.Contains(errInfo.GetReason(), "failed to serialize string protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
 		}
 
@@ -477,7 +477,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.NoError(valueErr)
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
-			assert.Equal("dataplane.api.redpanda.com", errInfo.GetDomain())
+			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
 			assert.Contains(errInfo.GetReason(), "protobuf:no schema id specified")
 		}
 

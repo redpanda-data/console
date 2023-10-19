@@ -51,9 +51,6 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
 
-	// TODO: For more confidence we could just ask the schema service for the given
-	// schema and based on the response we can check the schema type (avro, json, ..)
-
 	r, err := jsonDeserializePayload(payload[5:])
 	if r != nil {
 		r.SchemaID = &schemaID

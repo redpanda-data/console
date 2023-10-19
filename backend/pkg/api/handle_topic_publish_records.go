@@ -20,6 +20,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
 	"github.com/redpanda-data/console/backend/pkg/serde"
@@ -189,7 +190,7 @@ func (api *API) PublishMessage(ctx context.Context, req *connect.Request[v1alpha
 
 				for _, ktr := range prRes.KeyTroubleshooting {
 					errInfo := &errdetails.ErrorInfo{
-						Domain: "dataplane.api.redpanda.com", // TODO correct domain
+						Domain: apierrors.DomainDataplane,
 						Reason: ktr.SerdeName + ":" + ktr.Message,
 					}
 
@@ -204,7 +205,7 @@ func (api *API) PublishMessage(ctx context.Context, req *connect.Request[v1alpha
 
 				for _, vtr := range prRes.ValueTroubleshooting {
 					errInfo := &errdetails.ErrorInfo{
-						Domain: "dataplane.api.redpanda.com", // TODO correct domain
+						Domain: apierrors.DomainDataplane,
 						Reason: vtr.SerdeName + ":" + vtr.Message,
 					}
 
