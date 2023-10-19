@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -219,13 +220,19 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 	// Check if logged in user is allowed to list messages for the given request
 	canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(ctx, &lmq)
 	if restErr != nil || !canViewMessages {
-		return connect.NewError(connect.CodePermissionDenied, restErr.Err)
+		if restErr != nil {
+			return connect.NewError(connect.CodeInternal, restErr.Err)
+		}
+		return connect.NewError(connect.CodePermissionDenied, errors.New("you don't have permissions to view Kafka topic messages"))
 	}
 
 	if len(lmq.FilterInterpreterCode) > 0 {
 		canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(ctx, &lmq)
 		if restErr != nil || !canUseMessageSearchFilters {
-			return connect.NewError(connect.CodePermissionDenied, restErr.Err)
+			if restErr != nil {
+				return connect.NewError(connect.CodeInternal, restErr.Err)
+			}
+			return connect.NewError(connect.CodePermissionDenied, errors.New("you don't have permissions to use search filters"))
 		}
 	}
 
