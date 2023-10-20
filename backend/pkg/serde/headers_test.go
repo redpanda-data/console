@@ -157,11 +157,9 @@ func TestJsonSchemaSerde_recordHeaders(t *testing.T) {
 	}
 
 	for _, test := range tests {
-
 		t.Run(test.name, func(t *testing.T) {
 			headers := recordHeaders(test.record)
 			assert.Equal(t, test.expected, headers)
 		})
 	}
-
 }

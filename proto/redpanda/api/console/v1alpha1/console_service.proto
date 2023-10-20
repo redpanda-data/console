@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package redpanda.api.console.v1alpha;
+package redpanda.api.console.v1alpha1;
 
-import "redpanda/api/console/v1alpha/list_messages.proto";
-import "redpanda/api/console/v1alpha/publish_messages.proto";
+import "redpanda/api/console/v1alpha1/list_messages.proto";
+import "redpanda/api/console/v1alpha1/publish_messages.proto";
 
 // ConsoleService represents the Console API service.
 service ConsoleService {

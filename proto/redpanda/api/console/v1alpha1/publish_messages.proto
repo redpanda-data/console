@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package redpanda.api.console.v1alpha;
+package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
-import "redpanda/api/console/v1alpha/common.proto";
+import "redpanda/api/console/v1alpha1/common.proto";
 
 // PublishMessageRequest is the request for PublishMessage call.
 message PublishMessageRequest {

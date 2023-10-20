@@ -30,8 +30,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	v1pb "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha"
-	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
+	v1pb "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
+	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )

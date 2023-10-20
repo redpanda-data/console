@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: redpanda/api/console/v1alpha/console_service.proto
+// source: redpanda/api/console/v1alpha1/console_service.proto
 
-package consolev1alpha
+package consolev1alpha1
 
 import (
 	context "context"
@@ -20,8 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConsoleService_ListMessages_FullMethodName   = "/redpanda.api.console.v1alpha.ConsoleService/ListMessages"
-	ConsoleService_PublishMessage_FullMethodName = "/redpanda.api.console.v1alpha.ConsoleService/PublishMessage"
+	ConsoleService_ListMessages_FullMethodName   = "/redpanda.api.console.v1alpha1.ConsoleService/ListMessages"
+	ConsoleService_PublishMessage_FullMethodName = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
 )
 
 // ConsoleServiceClient is the client API for ConsoleService service.
@@ -160,7 +160,7 @@ func _ConsoleService_PublishMessage_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ConsoleService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "redpanda.api.console.v1alpha.ConsoleService",
+	ServiceName: "redpanda.api.console.v1alpha1.ConsoleService",
 	HandlerType: (*ConsoleServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -175,5 +175,5 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "redpanda/api/console/v1alpha/console_service.proto",
+	Metadata: "redpanda/api/console/v1alpha1/console_service.proto",
 }

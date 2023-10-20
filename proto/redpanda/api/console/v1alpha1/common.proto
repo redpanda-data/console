@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package redpanda.api.console.v1alpha;
+package redpanda.api.console.v1alpha1;
 
 // KafkaRecordHeader is the record header.
 message KafkaRecordHeader {

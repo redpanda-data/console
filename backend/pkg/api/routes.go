@@ -28,7 +28,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
-	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
+	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
@@ -74,7 +74,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 
-	consoleServicePath, consoleServiceHandler := consolev1alphaconnect.NewConsoleServiceHandler(api, connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleServicePath, consoleServiceHandler := v1ac.NewConsoleServiceHandler(api, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -83,7 +83,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			Handler:     userSvcHandler,
 		},
 		{
-			ServiceName: consolev1alphaconnect.ConsoleServiceName,
+			ServiceName: v1ac.ConsoleServiceName,
 			MountPath:   consoleServicePath,
 			Handler:     consoleServiceHandler,
 		},
