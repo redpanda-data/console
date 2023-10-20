@@ -29,7 +29,7 @@ type PublishMessageRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Topic           string                        `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`                                                                // The topics to publish to.
-	PartitionId     int32                         `protobuf:"varint,2,opt,name=partition_id,json=partitionId,proto3" json:"partition_id,omitempty"`                                // -1 for all partition ids
+	PartitionId     int32                         `protobuf:"varint,2,opt,name=partition_id,json=partitionId,proto3" json:"partition_id,omitempty"`                                // -1 for automatic partition assignment.
 	Compression     CompressionType               `protobuf:"varint,3,opt,name=compression,proto3,enum=redpanda.api.console.v1alpha.CompressionType" json:"compression,omitempty"` // The compression to be used.
 	UseTransactions bool                          `protobuf:"varint,4,opt,name=use_transactions,json=useTransactions,proto3" json:"use_transactions,omitempty"`                    // Use transactions.
 	Headers         []*KafkaRecordHeader          `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty"`                                                            // Kafka record headers.
@@ -124,7 +124,7 @@ type PublishMessagePayloadOptions struct {
 	unknownFields protoimpl.UnknownFields
 
 	Encoding PayloadEncoding `protobuf:"varint,1,opt,name=encoding,proto3,enum=redpanda.api.console.v1alpha.PayloadEncoding" json:"encoding,omitempty"` // Payload encoding to use.
-	Data     string          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`                                                            // Data.
+	Data     []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`                                                            // Data.
 	SchemaId *int32          `protobuf:"varint,9,opt,name=schema_id,json=schemaId,proto3,oneof" json:"schema_id,omitempty"`                             // Optional schema ID.
 	Index    *int32          `protobuf:"varint,10,opt,name=index,proto3,oneof" json:"index,omitempty"`                                                  // Optional index. Useful for Protobuf messages.
 }
@@ -168,11 +168,11 @@ func (x *PublishMessagePayloadOptions) GetEncoding() PayloadEncoding {
 	return PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED
 }
 
-func (x *PublishMessagePayloadOptions) GetData() string {
+func (x *PublishMessagePayloadOptions) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
-	return ""
+	return nil
 }
 
 func (x *PublishMessagePayloadOptions) GetSchemaId() int32 {
@@ -302,7 +302,7 @@ var file_redpanda_api_console_v1alpha_publish_messages_proto_rawDesc = []byte{
 	0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2e, 0x76, 0x31,
 	0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x45, 0x6e, 0x63,
 	0x6f, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x08, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x12,
-	0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64,
+	0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64,
 	0x61, 0x74, 0x61, 0x12, 0x20, 0x0a, 0x09, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x69, 0x64,
 	0x18, 0x09, 0x20, 0x01, 0x28, 0x05, 0x48, 0x00, 0x52, 0x08, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
 	0x49, 0x64, 0x88, 0x01, 0x01, 0x12, 0x19, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x0a,

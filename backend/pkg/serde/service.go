@@ -188,11 +188,13 @@ type DeserializationOptions struct {
 
 // SerializeRecord will serialize the input.
 func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*SerializeOutput, error) {
-	var keySerResult RecordPayloadSerializeResult
-	var valueSerResult RecordPayloadSerializeResult
+	keySerResult := RecordPayloadSerializeResult{}
+	valueSerResult := RecordPayloadSerializeResult{}
 
 	var err error
 	sr := SerializeOutput{}
+	sr.Key = &keySerResult
+	sr.Value = &valueSerResult
 
 	// key
 	if input.Topic != "" {
@@ -224,8 +226,6 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	}
 
 	keySerResult.Troubleshooting = keyTS
-
-	sr.Key = &keySerResult
 
 	if !found {
 		err = fmt.Errorf("invalid encoding for key: %s", input.Key.Encoding)
@@ -266,8 +266,6 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	}
 
 	valueSerResult.Troubleshooting = valueTS
-
-	sr.Value = &valueSerResult
 
 	if !found {
 		err = fmt.Errorf("invalid encoding for value: %s", input.Value.Encoding)

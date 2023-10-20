@@ -21,7 +21,7 @@ export class PublishMessageRequest extends Message<PublishMessageRequest> {
   topic = "";
 
   /**
-   * -1 for all partition ids
+   * -1 for automatic partition assignment.
    *
    * @generated from field: int32 partition_id = 2;
    */
@@ -106,9 +106,9 @@ export class PublishMessagePayloadOptions extends Message<PublishMessagePayloadO
   /**
    * Data.
    *
-   * @generated from field: string data = 2;
+   * @generated from field: bytes data = 2;
    */
-  data = "";
+  data = new Uint8Array(0);
 
   /**
    * Optional schema ID.
@@ -133,7 +133,7 @@ export class PublishMessagePayloadOptions extends Message<PublishMessagePayloadO
   static readonly typeName = "redpanda.api.console.v1alpha.PublishMessagePayloadOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "encoding", kind: "enum", T: proto3.getEnumType(PayloadEncoding) },
-    { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 9, name: "schema_id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 10, name: "index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);

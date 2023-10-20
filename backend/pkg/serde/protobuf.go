@@ -148,7 +148,11 @@ func (d ProtobufSerde) SerializeObject(_ context.Context, obj any, payloadType P
 		binData = b
 	case []byte:
 		trimmed := bytes.TrimLeft(v, " \t\r\n")
-		if len(trimmed) != 0 && trimmed[0] == '[' || trimmed[0] == '{' {
+		if len(trimmed) == 0 {
+			return nil, errors.New("byte payload is empty")
+		}
+
+		if trimmed[0] == '[' || trimmed[0] == '{' {
 			if so.topic == "" {
 				return nil, errors.New("no topic specified")
 			}

@@ -11,7 +11,7 @@ message PublishMessageRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128
   ]; // The topics to publish to.
-  int32 partition_id = 2 [(buf.validate.field).int32 = {gte: -1}]; // -1 for all partition ids
+  int32 partition_id = 2 [(buf.validate.field).int32 = {gte: -1}]; // -1 for automatic partition assignment.
   CompressionType compression = 3; // The compression to be used.
   bool use_transactions = 4; // Use transactions.
   repeated KafkaRecordHeader headers = 5; // Kafka record headers.
@@ -21,7 +21,7 @@ message PublishMessageRequest {
 
 message PublishMessagePayloadOptions {
   PayloadEncoding encoding = 1; // Payload encoding to use.
-  string data = 2; // Data.
+  bytes data = 2; // Data.
   optional int32 schema_id = 9; // Optional schema ID.
   optional int32 index = 10; // Optional index. Useful for Protobuf messages.
 }

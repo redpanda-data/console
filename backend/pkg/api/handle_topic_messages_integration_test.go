@@ -309,11 +309,11 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 				},
 			},
 			Key: &v1pb.PublishMessagePayloadOptions{
-				Data:     "123",
+				Data:     []byte("123"),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
 			},
 			Value: &v1pb.PublishMessagePayloadOptions{
-				Data:     `{"id": 123,"name":"foo"}`,
+				Data:     []byte(`{"id": 123,"name":"foo"}`),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON,
 			},
 		}))
@@ -367,11 +367,11 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 				},
 			},
 			Key: &v1pb.PublishMessagePayloadOptions{
-				Data:     "321",
+				Data:     []byte("321"),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
 			},
 			Value: &v1pb.PublishMessagePayloadOptions{
-				Data:     `{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00.0Z"}`,
+				Data:     []byte(`{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00.0Z"}`),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
 			},
 		}))
@@ -444,11 +444,11 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 				},
 			},
 			Key: &v1pb.PublishMessagePayloadOptions{
-				Data:     "321",
+				Data:     []byte("321"),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
 			},
 			Value: &v1pb.PublishMessagePayloadOptions{
-				Data:     `{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00"}`, // incorrect format
+				Data:     []byte(`{"id":"321", "name":"item_0", "version":1, "createdAt":"2023-09-12T10:00:00"}`), // incorrect format
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
 			},
 		}))
@@ -469,7 +469,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
 			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
-			assert.Contains(errInfo.GetReason(), "failed to serialize string protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
+			assert.Contains(errInfo.GetReason(), "failed to serialize json protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
 		}
 
 		detail = details[1]
@@ -516,11 +516,11 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 				},
 			},
 			Key: &v1pb.PublishMessagePayloadOptions{
-				Data:     "543",
+				Data:     []byte("543"),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT,
 			},
 			Value: &v1pb.PublishMessagePayloadOptions{
-				Data:     `{"id":"543", "name":"item_sr_0", "version":2, "createdAt":"2023-09-12T11:00:00.0Z"}`,
+				Data:     []byte(`{"id":"543", "name":"item_sr_0", "version":2, "createdAt":"2023-09-12T11:00:00.0Z"}`),
 				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
 				SchemaId: &ssID,
 				Index:    &index,

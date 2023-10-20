@@ -70,6 +70,8 @@ import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/console_service_connect'
 import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
+import { PublishMessageRequest, PublishMessagePayloadOptions } from '../protogen/redpanda/api/console/v1alpha/publish_messages_pb'
+import { KafkaRecordHeader } from '../protogen/redpanda/api/console/v1alpha/common_pb'
 import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/common_pb'
 import { proto3 } from '@bufbuild/protobuf';
 
@@ -1600,7 +1602,42 @@ const apiStore = {
             ],
             body: JSON.stringify(request),
         });
+
+        this.publishRecords2(request)
+
         return parseOrUnwrap<ProduceRecordsResponse>(response, null);
+    },
+
+    async publishRecords2(request: PublishRecordsRequest) {
+        console.log(request)
+
+        const req = new PublishMessageRequest()
+
+        const record = request.records[0]
+        const headers = new Array<KafkaRecordHeader>(0)
+        record.headers.forEach(rh => {
+            const header = new KafkaRecordHeader()
+            header.fromJson(rh)
+            headers.push(header)
+        })
+        
+        req.topic = request.topicNames[0]
+        req.headers = headers
+        req.key = new PublishMessagePayloadOptions()
+        req.key.fromJson({
+            encoding: PayloadEncoding.TEXT,
+            data: record.key
+        })
+
+        req.value = new PublishMessagePayloadOptions()
+        req.value.fromJson({
+            encoding: PayloadEncoding.JSON,
+            data: record.value
+        })
+
+        const res = await consoleClient.publishMessage(req)
+        console.log(res.toJson())
+        console.log(res.toJsonString())
     },
 
     async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
