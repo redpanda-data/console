@@ -48,7 +48,7 @@ func (s *ConsoleIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.2.6"))
+	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.6"))
 	require.NoError(err)
 	s.redpandaContainer = container
 
@@ -74,10 +74,4 @@ func (s *ConsoleIntegrationTestSuite) TearDownSuite() {
 	assert := require.New(t)
 
 	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
-}
-
-func withImage(image string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Image = image
-	}
 }

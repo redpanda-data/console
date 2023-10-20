@@ -166,7 +166,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "payload size is < 5", err.Error())
+				assert.Equal(t, "payload size is <= 5", err.Error())
 			},
 		},
 		{

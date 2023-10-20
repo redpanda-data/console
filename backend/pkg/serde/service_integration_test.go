@@ -103,19 +103,13 @@ func (s *SerdeIntegrationTestSuite) consumerClientForTopic(topicName string) *kg
 	return cl
 }
 
-func withImage(image string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Image = image
-	}
-}
-
 func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.2.6"))
+	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.6"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
@@ -276,7 +270,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_plain_json'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
@@ -414,7 +408,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_plain_json_deserializer_option'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
@@ -547,7 +541,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_plain_json_bad_value_deser'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
@@ -710,7 +704,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype mapping found for the record key of topic 'test.redpanda.console.serde_plain_protobuf'", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
@@ -995,7 +989,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype mapping found for the record key of topic 'test.redpanda.console.serde_plain_protobuf_ref'", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)
@@ -1185,7 +1179,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Key.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Key.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Key.Troubleshooting[4].SerdeName)
-		assert.Equal("payload size is < 5", dr.Key.Troubleshooting[4].Message)
+		assert.Equal("payload size is <= 5", dr.Key.Troubleshooting[4].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Key.Troubleshooting[5].Message)
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Key.Troubleshooting[6].SerdeName)

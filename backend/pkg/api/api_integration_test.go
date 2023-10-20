@@ -66,18 +66,12 @@ func TestSuite(t *testing.T) {
 	suite.Run(t, &APIIntegrationTestSuite{})
 }
 
-func withImage(image string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Image = image
-	}
-}
-
 func (s *APIIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.2.6"))
+	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.6"))
 	require.NoError(err)
 	s.redpandaContainer = container
 

@@ -98,19 +98,13 @@ func (s *KafkaIntegrationTestSuite) consumerClientForTopic(topicName string) *kg
 	return cl
 }
 
-func withImage(image string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Image = image
-	}
-}
-
 func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.1.13"))
+	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.1.13"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
