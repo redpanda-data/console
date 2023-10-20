@@ -15,6 +15,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -25,8 +26,6 @@ import (
 type Service struct {
 	SerDes []Serde
 }
-
-const defaultMaxPayloadSize = 1_000_000 // 1 MB
 
 // NewService creates the new serde service.
 func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
@@ -53,7 +52,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 func (s *Service) DeserializeRecord(ctx context.Context, record *kgo.Record, opts DeserializationOptions) *Record {
 	// defaults
 	if opts.MaxPayloadSize <= 0 {
-		opts.MaxPayloadSize = defaultMaxPayloadSize
+		opts.MaxPayloadSize = config.DefaultMaxDeserializationPayloadSize
 	}
 
 	// 1. Test if it's a known binary Format

@@ -14,6 +14,9 @@ import (
 	"fmt"
 )
 
+// DefaultMaxDeserializationPayloadSize is the maximum payload size deserialization responses.
+const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
+
 // Console contains all configuration options for features that are generic,
 // such as documentation plumbing.
 type Console struct {
@@ -28,7 +31,7 @@ type Console struct {
 func (c *Console) SetDefaults() {
 	c.Enabled = true
 	c.TopicDocumentation.SetDefaults()
-	c.MaxDeserializationPayloadSize = 1_000_000
+	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
 }
 
 // RegisterFlags for sensitive Console configurations.
