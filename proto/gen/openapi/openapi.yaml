@@ -1,5 +1,25 @@
 components:
   schemas:
+    ACL.Filter:
+      properties:
+        host:
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          nullable: true
+          type: string
+        resource_name:
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
     ACL.Operation:
       enum:
         - OPERATION_ANY
@@ -93,23 +113,6 @@ components:
           $ref: '#/components/schemas/SASLMechanism'
         name:
           type: string
-      type: object
-    DeleteACLsRequest.Filter:
-      properties:
-        host:
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          type: string
-        resource_name:
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
       type: object
     DeleteACLsResponse:
       properties:
@@ -263,35 +266,12 @@ components:
           description: The URL of the link.
           type: string
       type: object
-    ListACLsRequest.Filter:
-      properties:
-        host:
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          type: string
-        resource_name:
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     ListACLsResponse:
       properties:
-        acls:
+        resources:
           items:
-            $ref: '#/components/schemas/Policy'
+            $ref: '#/components/schemas/Resource'
           type: array
-        resource_name:
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
       type: object
     ListSecretsRequest.Filter:
       properties:
@@ -423,6 +403,19 @@ components:
             For example, "clientip:<ip address of client>" or "project:<Google
             developer project id>".
           type: string
+      type: object
+    Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/Policy'
+          type: array
+        resource_name:
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     ResourcePatternType:
       enum:
@@ -811,7 +804,9 @@ paths:
           schema:
             format: int32
             type: integer
-        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
           in: query
           name: page_token
           schema:
