@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"sort"
 	"unicode/utf8"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -32,5 +33,10 @@ func recordHeaders(record *kgo.Record) []RecordHeader {
 			Encoding: encoding,
 		}
 	}
+
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].Key < headers[j].Key
+	})
+
 	return headers
 }
