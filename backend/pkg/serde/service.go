@@ -95,7 +95,7 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		}
 	}
 
-	troubleshooting := make([]TroubleshootingReport, 0)
+	troubleshooting := make([]TroubleshootingReport, 0, len(s.SerDes))
 
 	serdeEncoding := opts.KeyEncoding
 	if payloadType == PayloadTypeValue {
