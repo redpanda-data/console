@@ -50,7 +50,7 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return &RecordPayload{}, fmt.Errorf("payload size is < 5")
+		return &RecordPayload{}, fmt.Errorf("payload size is <= 5")
 	}
 
 	if payload[0] != byte(0) {
