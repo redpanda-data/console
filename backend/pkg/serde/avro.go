@@ -39,12 +39,8 @@ func (AvroSerde) Name() PayloadEncoding {
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
-	if d.SchemaSvc == nil {
+	if d.SchemaSvc == nil || !d.SchemaSvc.IsEnabled() {
 		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
-	}
-
-	if !d.SchemaSvc.IsEnabled() {
-		return &RecordPayload{}, fmt.Errorf("schema registry configuration disabled")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
