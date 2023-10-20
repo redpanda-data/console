@@ -11,7 +11,11 @@
 package errors
 
 import (
+	"errors"
+	"strconv"
+
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/proto"
 )
@@ -64,4 +68,30 @@ func NewErrorInfo(reason string, metadata ...KeyVal) *errdetails.ErrorInfo {
 		Domain:   DomainDataplane,
 		Metadata: md,
 	}
+}
+
+// KeyValsFromKafkaError tries to check if a given error is a Kafka error.
+// If this is the case, this function extracts the Kafka error code (int16)
+// as well as the string enum of this error code and returns a Key-Value
+// pair for each. These Key-Value pairs can be attached to the connect errors.
+func KeyValsFromKafkaError(err error) []KeyVal {
+	if err == nil {
+		return []KeyVal{}
+	}
+
+	var kafkaErr *kerr.Error
+	if errors.As(err, &kafkaErr) {
+		return []KeyVal{
+			{
+				Key:   "kafka_error_code",
+				Value: strconv.Itoa(int(kafkaErr.Code)),
+			},
+			{
+				Key:   "kafka_error_message",
+				Value: kafkaErr.Message,
+			},
+		}
+	}
+
+	return []KeyVal{}
 }
