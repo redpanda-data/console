@@ -160,7 +160,7 @@ func (s *Service) Start() error {
 	return nil
 }
 
-func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([]byte, int, error) {
+func (s *Service) unmarshalConfluentMessage(payload []byte) ([]byte, int, error) {
 	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
 	// Confluent's KafakProtobuf serialization format.
 	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
@@ -169,12 +169,12 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 	}
 	schemaID := int(wrapper.SchemaID)
 
-	md, cleanPayload, err := s.getMessageDescriptorFromConfluentMessage(wrapper, topicName)
+	md, err := s.GetMessageDescriptorForSchema(int(wrapper.SchemaID), wrapper.IndexArray)
 	if err != nil {
 		return nil, schemaID, err
 	}
 
-	jsonBytes, err := s.DeserializeProtobufMessageToJSON(cleanPayload, md)
+	jsonBytes, err := s.DeserializeProtobufMessageToJSON(wrapper.ProtoPayload, md)
 	if err != nil {
 		return nil, schemaID, err
 	}
@@ -279,7 +279,7 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {
 	// 1. First let's try if we can deserialize this message with schema registry (if configured)
 	if s.cfg.SchemaRegistry.Enabled {
-		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload, topicName)
+		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload)
 		if err == nil {
 			return jsonBytes, schemaID, nil
 		}
@@ -302,36 +302,6 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 // IsProtobufSchemaRegistryEnabled returns whether the schema registry is enabled in the configuration.
 func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
 	return s.cfg.SchemaRegistry.Enabled
-}
-
-// getMessageDescriptorFromConfluentMessage try to find the right message descriptor of a message that has been serialized
-// according to Confluent's ProtobufSerializer. If successful it will return the found message descriptor along with
-// the protobuf payload (without the bytes that carry the metadata such as schema id), so that this can be used
-// for deserializing the content.
-func (s *Service) getMessageDescriptorFromConfluentMessage(wrapper *confluentEnvelope, topicName string) (*desc.MessageDescriptor, []byte, error) {
-	fd, exists := s.GetFileDescriptorBySchemaID(int(wrapper.SchemaID))
-	if !exists {
-		return nil, nil, fmt.Errorf("could not find a file descriptor that matches the decoded schema id '%v'", wrapper.SchemaID)
-	}
-
-	// Traverse the messagetypes until we found the right message type as navigated to via the message
-	// array index. The message array index is an array of ints. Each (nested) type gets indexed level
-	// by level. Root level types will be the first number in the array, 2nd level types the second etc.
-	messageTypes := fd.GetMessageTypes()
-	var msgType *desc.MessageDescriptor
-	for _, idx := range wrapper.IndexArray {
-		if idx > int64(len(messageTypes)) {
-			// This should never happen
-			s.logger.Debug("the message index is larger than the message types array length",
-				zap.Int64("index", idx),
-				zap.Int("array_length", len(messageTypes)),
-				zap.String("topic_name", topicName))
-			return nil, nil, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
-		}
-		msgType = messageTypes[idx]
-		messageTypes = msgType.GetNestedMessageTypes()
-	}
-	return msgType, wrapper.ProtoPayload, nil
 }
 
 // GetMessageDescriptor tries to find the apr
@@ -372,7 +342,7 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 
 type confluentEnvelope struct {
 	SchemaID     uint32
-	IndexArray   []int64
+	IndexArray   []int
 	ProtoPayload []byte
 }
 
@@ -421,7 +391,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
-	msgTypeIDs := make([]int64, arrLength)
+	msgTypeIDs := make([]int, arrLength)
 	// If there is just one msgtype (default index - 0) the array won't be sent at all
 	if arrLength == 0 {
 		msgTypeIDs = append(msgTypeIDs, 0)
@@ -432,7 +402,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		if err != nil {
 			return nil, fmt.Errorf("failed to read msgTypeID: %w", err)
 		}
-		msgTypeIDs[i] = id
+		msgTypeIDs[i] = int(id)
 	}
 
 	remainingPayload := make([]byte, buf.Len())
