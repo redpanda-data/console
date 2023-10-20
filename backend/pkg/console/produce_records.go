@@ -41,8 +41,8 @@ type ProduceRecordResponse struct {
 // ProduceRecords produces one or more records. This might involve multiple topics or a just a single topic.
 // If multiple records shall be produced the user can opt in for using transactions so that either none or all
 // records will be produced successfully.
-func (s *Service) ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionType int8) ProduceRecordsResponse {
-	recordResponses, err := s.kafkaSvc.ProduceRecords(ctx, records, useTransactions, compressionType)
+func (s *Service) ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse {
+	recordResponses, err := s.kafkaSvc.ProduceRecords(ctx, records, useTransactions, compressionOpts)
 	if err != nil {
 		return ProduceRecordsResponse{
 			Records: nil,
@@ -79,9 +79,9 @@ func (s *Service) PublishRecord(
 	key *serde.RecordPayloadInput,
 	value *serde.RecordPayloadInput,
 	useTransactions bool,
-	compressionType int8,
+	compressionOpts []kgo.CompressionCodec,
 ) (*ProduceRecordResponse, error) {
-	r, err := s.kafkaSvc.PublishRecord(ctx, topic, partitionID, headers, key, value, useTransactions, compressionType)
+	r, err := s.kafkaSvc.PublishRecord(ctx, topic, partitionID, headers, key, value, useTransactions, compressionOpts)
 	res := &ProduceRecordResponse{}
 
 	if r != nil {

@@ -19,15 +19,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
-const (
-	// CompressionTypeNone means no compression.
-	CompressionTypeNone   = iota
-	CompressionTypeGzip   // CompressionTypeGzip represents Gzip compression.
-	CompressionTypeSnappy // CompressionTypeSnappy represents Snappy compression.
-	CompressionTypeLz4    // CompressionTypeLz4 represents LZ4 compression.
-	CompressionTypeZstd   // CompressionTypeZstd represents ZSTD compression.
-)
-
 // ProduceRecordResponse is the response after sending the produce request to Kafka.
 type ProduceRecordResponse struct {
 	TopicName   string
@@ -45,10 +36,10 @@ func (s *Service) ProduceRecords(
 	ctx context.Context,
 	records []*kgo.Record,
 	useTransactions bool,
-	compressionType int8,
+	compressionOpts []kgo.CompressionCodec,
 ) ([]ProduceRecordResponse, error) {
 	additionalKgoOpts := []kgo.Opt{
-		kgo.ProducerBatchCompression(compressionTypeToKgoCodec(compressionType)...),
+		kgo.ProducerBatchCompression(compressionOpts...),
 
 		// Use custom partitioner that treats
 		// - PartitionID = -1 just like the kgo.StickyKeyPartitioner() would do (round robin batch-wise)
@@ -120,7 +111,7 @@ func (s *Service) PublishRecord(ctx context.Context,
 	key *serde.RecordPayloadInput,
 	value *serde.RecordPayloadInput,
 	useTransactions bool,
-	compressionType int8,
+	compressionOpts []kgo.CompressionCodec,
 ) (*ProduceRecordResponse, error) {
 	data, err := s.SerdeService.SerializeRecord(ctx, serde.SerializeInput{
 		Topic: topic,
@@ -143,7 +134,7 @@ func (s *Service) PublishRecord(ctx context.Context,
 		Partition: partitionID,
 	}
 
-	r, err := s.ProduceRecords(ctx, []*kgo.Record{record}, useTransactions, compressionType)
+	r, err := s.ProduceRecords(ctx, []*kgo.Record{record}, useTransactions, compressionOpts)
 	if err != nil {
 		if len(r) > 0 {
 			return &r[0], err
@@ -153,24 +144,4 @@ func (s *Service) PublishRecord(ctx context.Context,
 	}
 
 	return &r[0], nil
-}
-
-// compressionTypeToKgoCodec receives the compressionType as an int8 enum and returns a slice of compression
-// codecs which contains the compression codecs in preference order. It will always return the specified
-// compressionType as highest preference and add "None" as fallback codec.
-func compressionTypeToKgoCodec(compressionType int8) []kgo.CompressionCodec {
-	switch compressionType {
-	case CompressionTypeNone:
-		return []kgo.CompressionCodec{kgo.NoCompression()}
-	case CompressionTypeGzip:
-		return []kgo.CompressionCodec{kgo.GzipCompression(), kgo.NoCompression()}
-	case CompressionTypeSnappy:
-		return []kgo.CompressionCodec{kgo.SnappyCompression(), kgo.NoCompression()}
-	case CompressionTypeLz4:
-		return []kgo.CompressionCodec{kgo.Lz4Compression(), kgo.NoCompression()}
-	case CompressionTypeZstd:
-		return []kgo.CompressionCodec{kgo.ZstdCompression(), kgo.NoCompression()}
-	default:
-		return []kgo.CompressionCodec{kgo.NoCompression()}
-	}
 }

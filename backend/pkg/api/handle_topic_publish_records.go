@@ -21,7 +21,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -34,6 +33,14 @@ type recordsRequest struct {
 	// PartitionID into which the record(s) shall be produced to. May be -1 for auto partitioning.
 	PartitionID int32 `json:"partitionId"`
 }
+
+const (
+	compressionTypeNone = iota
+	compressionTypeGzip
+	compressionTypeSnappy
+	compressionTypeLz4
+	compressionTypeZstd
+)
 
 // KgoRecordHeaders return the headers request as part of the to be produced Kafka record.
 func (r *recordsRequest) KgoRecordHeaders() []kgo.RecordHeader {
@@ -143,7 +150,7 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 		}
 
 		// 3. Submit publish topic records request
-		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, req.CompressionType)
+		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, compressionTypeToKgoCodec(req.CompressionType))
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, publishRes)
 	}
@@ -170,7 +177,7 @@ func (api *API) PublishMessage(ctx context.Context, req *connect.Request[v1alpha
 
 	keyInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetKey())
 	valueInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetValue())
-	compression := rpcCompressionTypeToInternalEnum(msg.GetCompression())
+	compression := rpcCompressionTypeToKgoCodec(msg.GetCompression())
 
 	prRes, prErr := api.ConsoleSvc.PublishRecord(ctx, msg.GetTopic(), msg.GetPartitionId(), recordHeaders,
 		keyInput, valueInput, req.Msg.GetUseTransactions(), compression)
@@ -282,17 +289,39 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 	return input
 }
 
-func rpcCompressionTypeToInternalEnum(compressionType v1alpha.CompressionType) int8 {
+func rpcCompressionTypeToKgoCodec(compressionType v1alpha.CompressionType) []kgo.CompressionCodec {
 	switch compressionType {
+	case v1alpha.CompressionType_COMPRESSION_TYPE_UNCOMPRESSED, v1alpha.CompressionType_COMPRESSION_TYPE_UNSPECIFIED:
+		return []kgo.CompressionCodec{kgo.NoCompression()}
 	case v1alpha.CompressionType_COMPRESSION_TYPE_GZIP:
-		return kafka.CompressionTypeGzip
+		return []kgo.CompressionCodec{kgo.GzipCompression(), kgo.NoCompression()}
 	case v1alpha.CompressionType_COMPRESSION_TYPE_SNAPPY:
-		return kafka.CompressionTypeSnappy
+		return []kgo.CompressionCodec{kgo.SnappyCompression(), kgo.NoCompression()}
 	case v1alpha.CompressionType_COMPRESSION_TYPE_LZ4:
-		return kafka.CompressionTypeLz4
+		return []kgo.CompressionCodec{kgo.Lz4Compression(), kgo.NoCompression()}
 	case v1alpha.CompressionType_COMPRESSION_TYPE_ZSTD:
-		return kafka.CompressionTypeZstd
+		return []kgo.CompressionCodec{kgo.ZstdCompression(), kgo.NoCompression()}
 	default:
-		return kafka.CompressionTypeNone
+		return []kgo.CompressionCodec{kgo.NoCompression()}
+	}
+}
+
+// compressionTypeToKgoCodec receives the compressionType as an int8 enum and returns a slice of compression
+// codecs which contains the compression codecs in preference order. It will always return the specified
+// compressionType as highest preference and add "None" as fallback codec.
+func compressionTypeToKgoCodec(compressionType int8) []kgo.CompressionCodec {
+	switch compressionType {
+	case compressionTypeNone:
+		return []kgo.CompressionCodec{kgo.NoCompression()}
+	case compressionTypeGzip:
+		return []kgo.CompressionCodec{kgo.GzipCompression(), kgo.NoCompression()}
+	case compressionTypeSnappy:
+		return []kgo.CompressionCodec{kgo.SnappyCompression(), kgo.NoCompression()}
+	case compressionTypeLz4:
+		return []kgo.CompressionCodec{kgo.Lz4Compression(), kgo.NoCompression()}
+	case compressionTypeZstd:
+		return []kgo.CompressionCodec{kgo.ZstdCompression(), kgo.NoCompression()}
+	default:
+		return []kgo.CompressionCodec{kgo.NoCompression()}
 	}
 }
