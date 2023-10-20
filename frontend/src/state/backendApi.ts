@@ -68,11 +68,11 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha/console_service_connect'
-import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha/list_messages_pb'
-import { PublishMessageRequest, PublishMessagePayloadOptions } from '../protogen/redpanda/api/console/v1alpha/publish_messages_pb'
-import { KafkaRecordHeader } from '../protogen/redpanda/api/console/v1alpha/common_pb'
-import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha/common_pb'
+import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect'
+import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb'
+import { PublishMessageRequest, PublishMessagePayloadOptions } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb'
+import { KafkaRecordHeader } from '../protogen/redpanda/api/console/v1alpha1/common_pb'
+import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb'
 import { proto3 } from '@bufbuild/protobuf';
 
 const REST_TIMEOUT_SEC = 25;
