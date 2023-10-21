@@ -11,11 +11,11 @@ https://user-images.githubusercontent.com/23424570/220130537-7b0b8596-0a06-4132-
 ## Features
 
 - **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages. Supported encodings are: JSON, Avro, Protobuf, XML, MessagePack, Text and Binary (hex view). The used encoding (except Protobuf) is recognized automatically.
-- **Consumer groups:** List all your active consumer groups along with their active group offsets, edit group offsets (by group, topic or partition) or delete a consumer group.
-- **Topic overview:** Browse through the list of your Kafka topics, check their configuration, space usage, list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...), embed topic documentation from a git repository and more.
-- **Cluster overview:** List ACLs, available brokers, their space usage, rack id and other information to get a high level overview of your brokers in your cluster.
-- **Schema Registry:** List all Avro, Protobuf or JSON schemas within your schema registry.
-- **Kafka connect:** Manage connectors from multiple connect clusters, patch configs, view their current state or restart tasks.
+- **Consumer groups:** List all your active consumer groups along with their active group offsets, edit group offsets (by group, topic, or partition) or delete a consumer group.
+- **Topic overview:** Browse through the list of your Kafka topics, check their configuration, and space usage, and list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...), embed topic documentation from a git repository and more.
+- **Cluster overview:** List ACLs, available brokers, their space usage, rack ID, and other information to get a high-level overview of your brokers in your cluster.
+- **Schema Registry:** List all Avro, Protobuf, or JSON schemas within your schema registry.
+- **Kafka connect:** Manage connectors from multiple connect clusters, patch configs, view their current state, or restart tasks.
 
 ## Getting Started
 
@@ -26,7 +26,7 @@ https://user-images.githubusercontent.com/23424570/220130537-7b0b8596-0a06-4132-
 
 ### Installing
 
-We offer pre built docker images for RP Console, a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](https://docs.redpanda.com/docs/console/installation/).
+We offer pre-built docker images for RP Console, a Helm chart, and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](https://docs.redpanda.com/docs/console/installation/).
 
 ### Quick Start
 
@@ -34,13 +34,13 @@ Do you just want to test RP Console against one of your Kafka clusters without s
 
 #### Redpanda/Kafka is running locally
 
-Since Console runs in its own container (which has its own network scope), we have to use host.docker.internal as a bootstrap server. That DNS resolves to the host system's ip address. However since the brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
+Since the Console runs in its own container (which has its own network scope), we have to use host.docker.internal as a bootstrap server. That DNS resolves to the host system's ip address. However since the brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
 
 ```shell
 docker run -p 8080:8080 -e KAFKA_BROKERS=host.docker.internal:9092 docker.redpanda.com/redpandadata/console:latest
 ```
 
-Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as an advertised listener and use the host network namespace instead. Console will then be run as it would be executed on the host machine.
+Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as an advertised listener and use the host network namespace instead. The console will then be run as it would be executed on the host machine.
 
 ```shell
 docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 docker.redpanda.com/redpandadata/console:latest
@@ -60,9 +60,9 @@ We maintain a docker-compose file that launches Redpanda and Console: [/docs/loc
 
 # Community
 
-[Slack](https://redpanda.com/slack) is the main way the community interacts with one another in real time :)
+[Slack](https://redpanda.com/slack) is the main way the community interacts with one another in real-time :)
 
-[GitHub Issues](https://github.com/redpanda-data/console/issues) can be used for issues, questions and feature requests.
+[GitHub Issues](https://github.com/redpanda-data/console/issues) can be used for issues, questions, and feature requests.
 
 [Code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md) code of conduct for the community
 
