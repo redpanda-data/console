@@ -3581,7 +3581,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
-				Payload:  []byte{},
+				Payload:  nil,
 				Encoding: PayloadEncodingNone,
 			},
 			Value: RecordPayloadInput{
@@ -3597,7 +3597,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.NoError(err)
 		require.NotNil(serRes)
 
-		assert.Equal([]byte{}, serRes.Key.Payload)
+		assert.Equal([]byte(nil), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingNone, serRes.Key.Encoding)
 		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)

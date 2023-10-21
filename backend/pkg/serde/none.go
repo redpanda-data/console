@@ -43,30 +43,9 @@ func (NoneSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 func (NoneSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
-	emptyData := []byte{}
-
-	// TODO should we handle empty JSON for none?
-
-	if obj == nil {
-		return emptyData, nil
+	if obj != nil {
+		return nil, fmt.Errorf("input not nil")
 	}
 
-	switch v := obj.(type) {
-	case string:
-		if v != "" && v != "{}" {
-			return nil, fmt.Errorf("input not empty")
-		}
-	case []byte:
-		if len(v) != 0 && string(v) != "{}" {
-			return nil, fmt.Errorf("input not empty")
-		}
-	case map[string]interface{}:
-		if len(v) != 0 {
-			return nil, fmt.Errorf("input not empty")
-		}
-	default:
-		return nil, fmt.Errorf("unsupported type %+T for serialization", obj)
-	}
-
-	return emptyData, nil
+	return nil, nil
 }

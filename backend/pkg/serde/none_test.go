@@ -28,6 +28,25 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
+			name: "nil",
+			record: &kgo.Record{
+				Value: nil,
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				require.NoError(t, err)
+				assert.Nil(t, payload.Troubleshooting)
+				assert.Nil(t, payload.SchemaID)
+				assert.Equal(t, PayloadEncodingNone, payload.Encoding)
+
+				assert.Equal(t, `{}`, string(payload.NormalizedPayload))
+
+				val, ok := (payload.DeserializedPayload).([]byte)
+				require.Truef(t, ok, "parsed payload is not of type string")
+				assert.Equal(t, "", string(val))
+			},
+		},
+		{
 			name: "empty",
 			record: &kgo.Record{
 				Value: []byte(""),
@@ -77,12 +96,12 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 		validationFunc func(*testing.T, []byte, error)
 	}{
 		{
-			name:        "empty byte",
+			name:        "empty string byte",
 			input:       []byte(""),
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
-				require.NoError(t, err)
-				assert.Empty(t, res)
+				require.Error(t, err)
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -91,7 +110,7 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "input not empty", err.Error())
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -99,8 +118,8 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			input:       []byte("{}"),
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
-				require.NoError(t, err)
-				assert.Empty(t, res)
+				require.Error(t, err)
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -108,8 +127,8 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			input:       "",
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
-				require.NoError(t, err)
-				assert.Empty(t, res)
+				require.Error(t, err)
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -118,7 +137,7 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "input not empty", err.Error())
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -126,8 +145,8 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			input:       "{}",
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
-				require.NoError(t, err)
-				assert.Empty(t, res)
+				require.Error(t, err)
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -135,8 +154,8 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			input:       map[string]interface{}{},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
-				require.NoError(t, err)
-				assert.Empty(t, res)
+				require.Error(t, err)
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -145,7 +164,7 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "input not empty", err.Error())
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
@@ -154,7 +173,7 @@ func TestNoneSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "unsupported type int for serialization", err.Error())
+				assert.Equal(t, "input not nil", err.Error())
 			},
 		},
 		{
