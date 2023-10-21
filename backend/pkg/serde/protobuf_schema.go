@@ -136,7 +136,7 @@ func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ Paylo
 		}
 		binData = b
 	case map[string]any:
-		if !so.schemaIDSet {
+		if so.schemaID == 0 {
 			return nil, errors.New("no schema id specified")
 		}
 
@@ -152,7 +152,7 @@ func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ Paylo
 
 		binData = b
 	case string:
-		if !so.schemaIDSet {
+		if so.schemaID == 0 {
 			return nil, errors.New("no schema id specified")
 		}
 
@@ -176,7 +176,7 @@ func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ Paylo
 	case []byte:
 		trimmed := bytes.TrimLeft(v, " \t\r\n")
 		if len(trimmed) != 0 && trimmed[0] == '[' || trimmed[0] == '{' {
-			if !so.schemaIDSet {
+			if so.schemaID == 0 {
 				return nil, errors.New("no schema id specified")
 			}
 
@@ -186,7 +186,7 @@ func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ Paylo
 			}
 			binData = b
 		} else {
-			if !so.schemaIDSet {
+			if so.schemaID == 0 {
 				return nil, errors.New("no schema id specified")
 			}
 

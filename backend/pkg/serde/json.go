@@ -43,7 +43,7 @@ func (JSONSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 		o.apply(&so)
 	}
 
-	if so.schemaIDSet {
+	if so.schemaID > 0 {
 		return nil, errors.New("skipping plain json as schema id is set")
 	}
 

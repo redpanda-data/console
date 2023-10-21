@@ -87,7 +87,7 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 		o.apply(&so)
 	}
 
-	if !so.schemaIDSet {
+	if so.schemaID == 0 {
 		return nil, errors.New("no schema id specified")
 	}
 

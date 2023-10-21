@@ -19,8 +19,7 @@ import (
 )
 
 type serdeCfg struct {
-	schemaID    uint32
-	schemaIDSet bool
+	schemaID uint32
 
 	schemaPath string
 
@@ -52,8 +51,9 @@ func WithIndex(index ...int) SerdeOpt {
 // WithSchemaID adds a schema ID to serde options.
 func WithSchemaID(id uint32) SerdeOpt {
 	return serdeOpt{func(t *serdeCfg) {
-		t.schemaID = id
-		t.schemaIDSet = true
+		if id > 0 {
+			t.schemaID = id
+		}
 	}}
 }
 

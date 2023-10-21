@@ -130,7 +130,7 @@ func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, o
 	}
 
 	// TODO does it even make sense to have schema ID for msgpack?
-	if so.schemaIDSet {
+	if so.schemaID > 0 {
 		var index []int
 		if so.indexSet {
 			index = so.index
