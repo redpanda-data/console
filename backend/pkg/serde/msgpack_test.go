@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -136,30 +135,6 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		require.Nil(t, actual)
 	})
 
-	t.Run("string json with schema", func(t *testing.T) {
-		item := Item{Foo: "bar"}
-
-		var srSerde sr.Serde
-		srSerde.Register(
-			1000,
-			&Item{},
-			sr.EncodeFn(func(v any) ([]byte, error) {
-				return msgpack.Marshal(v.(*Item))
-			}),
-			sr.DecodeFn(func(b []byte, v any) error {
-				return msgpack.Unmarshal(b, v.(*Item))
-			}),
-		)
-
-		expected, err := srSerde.Encode(&item)
-		require.NoError(t, err)
-
-		actual, err := serde.SerializeObject(context.Background(), `{"Foo":"bar"}`, PayloadTypeValue, WithSchemaID(1000))
-		assert.NoError(t, err)
-
-		assert.Equal(t, expected, actual)
-	})
-
 	t.Run("string json map type", func(t *testing.T) {
 		item := map[string]interface{}{
 			"Foo": "bar",
@@ -197,30 +172,6 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
-	t.Run("struct with schema", func(t *testing.T) {
-		item := Item{Foo: "bar"}
-
-		var srSerde sr.Serde
-		srSerde.Register(
-			1000,
-			&Item{},
-			sr.EncodeFn(func(v any) ([]byte, error) {
-				return msgpack.Marshal(v.(*Item))
-			}),
-			sr.DecodeFn(func(b []byte, v any) error {
-				return msgpack.Unmarshal(b, v.(*Item))
-			}),
-		)
-
-		expected, err := srSerde.Encode(&item)
-		require.NoError(t, err)
-
-		actual, err := serde.SerializeObject(context.Background(), item, PayloadTypeValue, WithSchemaID(1000))
-		assert.NoError(t, err)
-
-		assert.Equal(t, expected, actual)
-	})
-
 	t.Run("byte json", func(t *testing.T) {
 		item := Item{Foo: "bar"}
 		expected, err := msgpack.Marshal(item)
@@ -237,30 +188,6 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		require.NoError(t, err)
 
 		actual, err := serde.SerializeObject(context.Background(), []byte(`["foo","bar"]`), PayloadTypeValue)
-		assert.NoError(t, err)
-
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("byte json with schema", func(t *testing.T) {
-		item := Item{Foo: "bar"}
-
-		var srSerde sr.Serde
-		srSerde.Register(
-			1000,
-			&Item{},
-			sr.EncodeFn(func(v any) ([]byte, error) {
-				return msgpack.Marshal(v.(*Item))
-			}),
-			sr.DecodeFn(func(b []byte, v any) error {
-				return msgpack.Unmarshal(b, v.(*Item))
-			}),
-		)
-
-		expected, err := srSerde.Encode(&item)
-		require.NoError(t, err)
-
-		actual, err := serde.SerializeObject(context.Background(), []byte(`{"Foo":"bar"}`), PayloadTypeValue, WithSchemaID(1000))
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)

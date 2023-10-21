@@ -68,8 +68,6 @@ func (d MsgPackSerde) DeserializePayload(_ context.Context, record *kgo.Record, 
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-//
-//nolint:gocognit,cyclop // lots of supported inputs.
 func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
@@ -126,25 +124,6 @@ func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, o
 			return nil, fmt.Errorf("failed to serialize messagepack payload: %w", err)
 		}
 
-		binData = b
-	}
-
-	// TODO does it even make sense to have schema ID for msgpack?
-	if so.schemaID > 0 {
-		var index []int
-		if so.indexSet {
-			index = so.index
-			if len(index) == 0 {
-				index = []int{0}
-			}
-		}
-
-		b, err := appendEncode(nil, int(so.schemaID), index)
-		if err != nil {
-			return nil, fmt.Errorf("failed encode binary messagepack payload: %w", err)
-		}
-
-		b = append(b, binData...)
 		binData = b
 	}
 
