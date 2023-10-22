@@ -18,10 +18,10 @@ import (
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
+	dataplane "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
@@ -196,10 +196,9 @@ func (api *API) PublishMessage(ctx context.Context, req *connect.Request[v1alpha
 				code = connect.CodeInvalidArgument
 
 				for _, ktr := range prRes.KeyTroubleshooting {
-					errInfo := &errdetails.ErrorInfo{
-						Domain: apierrors.DomainDataplane,
-						Reason: ktr.SerdeName + ":" + ktr.Message,
-					}
+					errInfo := apierrors.NewErrorInfo(dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+						Key: ktr.SerdeName, Value: ktr.Message,
+					})
 
 					if detail, detailErr := connect.NewErrorDetail(errInfo); detailErr == nil {
 						details = append(details, detail)
@@ -211,10 +210,9 @@ func (api *API) PublishMessage(ctx context.Context, req *connect.Request[v1alpha
 				code = connect.CodeInvalidArgument
 
 				for _, vtr := range prRes.ValueTroubleshooting {
-					errInfo := &errdetails.ErrorInfo{
-						Domain: apierrors.DomainDataplane,
-						Reason: vtr.SerdeName + ":" + vtr.Message,
-					}
+					errInfo := apierrors.NewErrorInfo(dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+						Key: vtr.SerdeName, Value: vtr.Message,
+					})
 
 					if detail, detailErr := connect.NewErrorDetail(errInfo); detailErr == nil {
 						details = append(details, detail)

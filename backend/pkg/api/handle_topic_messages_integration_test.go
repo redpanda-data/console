@@ -32,6 +32,7 @@ import (
 
 	v1pb "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	dataplane "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )
@@ -469,7 +470,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
 			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
-			assert.Contains(errInfo.GetReason(), "failed to serialize json protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
+			assert.Contains(errInfo.GetReason(), dataplane.Reason_REASON_CONSOLE_ERROR.String())
 		}
 
 		detail = details[1]
@@ -478,7 +479,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
 			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
-			assert.Contains(errInfo.GetReason(), "protobuf:no schema id specified")
+			assert.Contains(errInfo.GetReason(), dataplane.Reason_REASON_CONSOLE_ERROR.String())
 		}
 
 		require.True(seenInfo)

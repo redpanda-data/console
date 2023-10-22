@@ -23,7 +23,9 @@ import (
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -221,18 +223,30 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 	canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(ctx, &lmq)
 	if restErr != nil || !canViewMessages {
 		if restErr != nil {
-			return connect.NewError(connect.CodeInternal, restErr.Err)
+			err := errors.New("you don't have permissions to view Kafka topic messages")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
 		}
-		return connect.NewError(connect.CodePermissionDenied, errors.New("you don't have permissions to view Kafka topic messages"))
 	}
 
 	if len(lmq.FilterInterpreterCode) > 0 {
 		canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(ctx, &lmq)
 		if restErr != nil || !canUseMessageSearchFilters {
-			if restErr != nil {
-				return connect.NewError(connect.CodeInternal, restErr.Err)
+			err := errors.New("you don't have permissions to use search filters")
+			if restErr.Err != nil {
+				err = restErr.Err
 			}
-			return connect.NewError(connect.CodePermissionDenied, errors.New("you don't have permissions to use search filters"))
+			return apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
 		}
 	}
 
