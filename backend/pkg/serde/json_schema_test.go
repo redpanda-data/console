@@ -331,7 +331,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(context.Background(), ``, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
-		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Equal(t, `payload is empty after trimming whitespace`, err.Error())
 		assert.Nil(t, b)
 	})
 
@@ -340,7 +340,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(context.Background(), "\r\n", PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
-		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Equal(t, `payload is empty after trimming whitespace`, err.Error())
 		assert.Nil(t, b)
 	})
 
@@ -393,7 +393,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(context.Background(), []byte{}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
-		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Equal(t, `payload is empty after trimming whitespace`, err.Error())
 		assert.Nil(t, b)
 	})
 
@@ -402,7 +402,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(context.Background(), []byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
-		assert.Equal(t, `after trimming whitespaces there were no characters left`, err.Error())
+		assert.Equal(t, `payload is empty after trimming whitespace`, err.Error())
 		assert.Nil(t, b)
 	})
 

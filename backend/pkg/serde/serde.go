@@ -12,8 +12,11 @@
 package serde
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
+	"strings"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -122,4 +125,24 @@ func appendEncode(b []byte, id int, index []int) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+func trimJSONInputString(v string) (string, bool, error) {
+	trimmed := strings.TrimLeft(v, " \t\r\n")
+
+	if trimmed == "" {
+		return "", false, errors.New("string payload is empty after trimming whitespace")
+	}
+
+	return trimmed, trimmed[0] == '[' || trimmed[0] == '{', nil
+}
+
+func trimJSONInput(v []byte) ([]byte, bool, error) {
+	trimmed := bytes.TrimLeft(v, " \t\r\n")
+
+	if len(trimmed) == 0 {
+		return nil, false, errors.New("payload is empty after trimming whitespace")
+	}
+
+	return trimmed, trimmed[0] == '[' || trimmed[0] == '{', nil
 }

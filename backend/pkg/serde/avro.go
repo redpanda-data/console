@@ -10,13 +10,11 @@
 package serde
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/hamba/avro/v2"
 	"github.com/linkedin/goavro"
@@ -80,7 +78,7 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 //
-//nolint:gocognit,cyclop // lots of supported inputs
+//nolint:cyclop // lots of supported inputs
 func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
@@ -96,49 +94,44 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 		return nil, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
 
-	avroObj := obj
 	switch v := obj.(type) {
 	case []byte:
-		trimmed := bytes.TrimLeft(v, " \t\r\n")
-
-		if len(trimmed) == 0 {
-			return nil, errors.New("payload is empty")
+		trimmed, startsWithJSON, err := trimJSONInput(v)
+		if err != nil {
+			return nil, err
 		}
 
-		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if startsWithJSON {
 			codec, err := goavro.NewCodec(schema.String())
 			if err != nil {
 				return nil, fmt.Errorf("parsing avro schema: %w", err)
 			}
 
-			avroObj, _, err = codec.NativeFromTextual(trimmed)
+			obj, _, err = codec.NativeFromTextual(trimmed)
 			if err != nil {
 				return nil, fmt.Errorf("deserializing avro json: %w", err)
 			}
 		}
 	case string:
-		trimmed := strings.TrimLeft(v, " \t\r\n")
-
-		if trimmed == "" {
-			return nil, errors.New("string payload is empty")
+		trimmed, startsWithJSON, err := trimJSONInputString(v)
+		if err != nil {
+			return nil, err
 		}
 
-		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if startsWithJSON {
 			codec, err := goavro.NewCodec(schema.String())
 			if err != nil {
 				return nil, fmt.Errorf("parsing avro schema: %w", err)
 			}
 
-			avroObj, _, err = codec.NativeFromTextual([]byte(trimmed))
+			obj, _, err = codec.NativeFromTextual([]byte(trimmed))
 			if err != nil {
 				return nil, fmt.Errorf("deserializing avro json: %w", err)
 			}
 		}
 	}
 
-	b, err := avro.Marshal(schema, avroObj)
+	b, err := avro.Marshal(schema, obj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize avro: %w", err)
 	}

@@ -10,7 +10,6 @@
 package serde
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -84,13 +83,11 @@ func (JSONSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType
 		byteData = encoded
 	}
 
-	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
-
-	if len(trimmed) == 0 {
-		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+	trimmed, startsWithJSON, err := trimJSONInput(byteData)
+	if err != nil {
+		return nil, err
 	}
 
-	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 	if !startsWithJSON {
 		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}

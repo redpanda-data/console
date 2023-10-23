@@ -107,7 +107,7 @@ func TestJsonSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Equal(t, "payload is empty after trimming whitespace", err.Error())
 				assert.Nil(t, res)
 			},
 		},
@@ -117,7 +117,7 @@ func TestJsonSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Equal(t, "payload is empty after trimming whitespace", err.Error())
 				assert.Nil(t, res)
 			},
 		},
@@ -127,7 +127,7 @@ func TestJsonSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Equal(t, "payload is empty after trimming whitespace", err.Error())
 				assert.Nil(t, res)
 			},
 		},
@@ -137,7 +137,7 @@ func TestJsonSerde_SerializeObject(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)
-				assert.Equal(t, "after trimming whitespaces there were no characters left", err.Error())
+				assert.Equal(t, "payload is empty after trimming whitespace", err.Error())
 				assert.Nil(t, res)
 			},
 		},

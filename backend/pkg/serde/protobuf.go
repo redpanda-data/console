@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // intentional import of old module
 	"github.com/jhump/protoreflect/dynamic"
@@ -129,13 +128,10 @@ func (d ProtobufSerde) SerializeObject(_ context.Context, obj any, payloadType P
 			return nil, errors.New("no topic specified")
 		}
 
-		trimmed := strings.TrimLeft(v, " \t\r\n")
-
-		if trimmed == "" {
-			return nil, errors.New("string payload is empty")
+		trimmed, startsWithJSON, err := trimJSONInputString(v)
+		if err != nil {
+			return nil, err
 		}
-
-		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if !startsWithJSON {
 			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 		}
