@@ -175,7 +175,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
-		api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
+		api.Hooks.Authorization.PrintListMessagesAuditLog(ctx, r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 45 * time.Second
@@ -266,7 +266,7 @@ func (api *API) ListMessages(ctx context.Context, req *connect.Request[v1alpha.L
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
 	}
 
-	api.Hooks.Authorization.PrintRPCViewMessageAuditLog(ctx, req, &listReq)
+	api.Hooks.Authorization.PrintListMessagesAuditLog(ctx, req, &listReq)
 
 	// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 	duration := 45 * time.Second

@@ -101,8 +101,7 @@ type AuthorizationHooks interface {
 	CanUseMessageSearchFilters(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(r *http.Request, req *console.ListMessageRequest)
-	PrintRPCViewMessageAuditLog(ctx context.Context, r connect.AnyRequest, req *console.ListMessageRequest)
+	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
@@ -250,8 +249,8 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
-func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {}
-func (*defaultHooks) PrintRPCViewMessageAuditLog(_ context.Context, _ connect.AnyRequest, _ *console.ListMessageRequest) {
+
+func (*defaultHooks) PrintListMessagesAuditLog(_ context.Context, _ any, _ *console.ListMessageRequest) {
 }
 
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
