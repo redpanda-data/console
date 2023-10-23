@@ -457,24 +457,15 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Nil(res)
 
 		require.Error(err)
-		assert.Contains(err.Error(), "invalid_argument: no schema id specified")
+		assert.Contains(err.Error(), "invalid_argument: failed to serialize json protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
 		var connectErr *connect.Error
 		require.True(errors.As(err, &connectErr))
 		details := connectErr.Details()
-		assert.Len(details, 2)
+		require.Len(details, 1)
 
 		seenInfo := false
 		detail := details[0]
 		msg, valueErr := detail.Value()
-		assert.NoError(valueErr)
-		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
-			seenInfo = true
-			assert.Equal("redpanda.com/dataplane", errInfo.GetDomain())
-			assert.Contains(errInfo.GetReason(), dataplane.Reason_REASON_CONSOLE_ERROR.String())
-		}
-
-		detail = details[1]
-		msg, valueErr = detail.Value()
 		assert.NoError(valueErr)
 		if errInfo, ok := msg.(*errdetails.ErrorInfo); ok {
 			seenInfo = true
@@ -522,7 +513,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 			},
 			Value: &v1pb.PublishMessagePayloadOptions{
 				Data:     []byte(`{"id":"543", "name":"item_sr_0", "version":2, "createdAt":"2023-09-12T11:00:00.0Z"}`),
-				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF,
+				Encoding: v1pb.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_SCHEMA,
 				SchemaId: &ssID,
 				Index:    &index,
 			},

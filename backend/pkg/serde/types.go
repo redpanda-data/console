@@ -21,8 +21,12 @@ const (
 	PayloadEncodingAvro PayloadEncoding = "avro"
 	// PayloadEncodingProtobuf is the enum of protobuf encoded types.
 	PayloadEncodingProtobuf PayloadEncoding = "protobuf"
+	// PayloadEncodingProtobufSchema is the enum of protobuf encoded types using schema registry.
+	PayloadEncodingProtobufSchema PayloadEncoding = "protobufSchema"
 	// PayloadEncodingJSON is the enum of JSON encoded types.
 	PayloadEncodingJSON PayloadEncoding = "json"
+	// PayloadEncodingJSONSchema is the enum of JSON encoded types using schema registry.
+	PayloadEncodingJSONSchema PayloadEncoding = "jsonSchema"
 	// PayloadEncodingXML is the enum of XML encoded types.
 	PayloadEncodingXML PayloadEncoding = "xml"
 	// PayloadEncodingText is the enum of text types.

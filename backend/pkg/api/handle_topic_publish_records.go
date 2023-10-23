@@ -251,8 +251,12 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		encoding = serde.PayloadEncodingAvro
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF:
 		encoding = serde.PayloadEncodingProtobuf
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_SCHEMA:
+		encoding = serde.PayloadEncodingProtobufSchema
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON:
 		encoding = serde.PayloadEncodingJSON
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON_SCHEMA:
+		encoding = serde.PayloadEncodingJSONSchema
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_XML:
 		encoding = serde.PayloadEncodingXML
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_TEXT:

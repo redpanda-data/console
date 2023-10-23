@@ -36,7 +36,7 @@ type ProtobufSchemaSerde struct {
 
 // Name returns the name of the serde payload encoding.
 func (ProtobufSchemaSerde) Name() PayloadEncoding {
-	return PayloadEncodingProtobuf
+	return PayloadEncodingProtobufSchema
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.

@@ -34,7 +34,7 @@ type JSONSchemaSerde struct {
 
 // Name returns the name of the serde payload encoding.
 func (JSONSchemaSerde) Name() PayloadEncoding {
-	return PayloadEncodingJSON
+	return PayloadEncodingJSONSchema
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.

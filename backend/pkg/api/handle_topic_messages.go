@@ -300,8 +300,12 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO
 	case serde.PayloadEncodingProtobuf:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF
+	case serde.PayloadEncodingProtobufSchema:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_SCHEMA
 	case serde.PayloadEncodingJSON:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON
+	case serde.PayloadEncodingJSONSchema:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON_SCHEMA
 	case serde.PayloadEncodingXML:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_XML
 	case serde.PayloadEncodingText:
@@ -335,8 +339,12 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 		encoding = serde.PayloadEncodingAvro
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF:
 		encoding = serde.PayloadEncodingProtobuf
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_SCHEMA:
+		encoding = serde.PayloadEncodingProtobufSchema
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON:
 		encoding = serde.PayloadEncodingJSON
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_JSON_SCHEMA:
+		encoding = serde.PayloadEncodingJSONSchema
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_XML:
 		encoding = serde.PayloadEncodingXML
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_TEXT:
