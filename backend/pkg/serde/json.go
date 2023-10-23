@@ -33,7 +33,16 @@ func (JSONSerde) Name() PayloadEncoding {
 func (JSONSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
-	return jsonDeserializePayload(payload)
+	obj, err := jsonDeserializePayload(payload)
+	if err != nil {
+		return &RecordPayload{}, err
+	}
+
+	return &RecordPayload{
+		NormalizedPayload:   payload,
+		DeserializedPayload: obj,
+		Encoding:            PayloadEncodingJSON,
+	}, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
@@ -73,27 +82,23 @@ func (JSONSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 	return trimmed, nil
 }
 
-func jsonDeserializePayload(payload []byte) (*RecordPayload, error) {
+func jsonDeserializePayload(payload []byte) (any, error) {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 	if !startsWithJSON {
-		return &RecordPayload{}, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}
 
 	var obj any
 	err := json.Unmarshal(payload, &obj)
 	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("failed to parse JSON payload: %w", err)
+		return nil, fmt.Errorf("failed to parse JSON payload: %w", err)
 	}
 
-	return &RecordPayload{
-		NormalizedPayload:   payload,
-		DeserializedPayload: obj,
-		Encoding:            PayloadEncodingJSON,
-	}, nil
+	return obj, nil
 }

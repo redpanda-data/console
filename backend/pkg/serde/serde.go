@@ -127,6 +127,9 @@ func appendEncode(b []byte, id int, index []int) ([]byte, error) {
 	return b, nil
 }
 
+// trimJSONInputString trims the input string of whitespace characters and returns the trimmed value
+// if the trimmed value is empty error is returned
+// if the trimmed value is not valid JSON, false it returned
 func trimJSONInputString(v string) (string, bool, error) {
 	trimmed := strings.TrimLeft(v, " \t\r\n")
 
@@ -137,6 +140,9 @@ func trimJSONInputString(v string) (string, bool, error) {
 	return trimmed, trimmed[0] == '[' || trimmed[0] == '{', nil
 }
 
+// trimJSONInput trims the input bytes value of whitespace characters and returns the trimmed value
+// if the trimmed value is empty error is returned
+// if the trimmed value is not valid JSON, false it returned
 func trimJSONInput(v []byte) ([]byte, bool, error) {
 	trimmed := bytes.TrimLeft(v, " \t\r\n")
 

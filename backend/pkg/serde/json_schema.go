@@ -50,12 +50,18 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
 
-	r, err := jsonDeserializePayload(payload[5:])
-	if r != nil {
-		r.SchemaID = &schemaID
+	jsonPayload := payload[5:]
+	obj, err := jsonDeserializePayload(jsonPayload)
+	if err != nil {
+		return &RecordPayload{}, err
 	}
 
-	return r, err
+	return &RecordPayload{
+		NormalizedPayload:   jsonPayload,
+		DeserializedPayload: obj,
+		Encoding:            PayloadEncodingJSONSchema,
+		SchemaID:            &schemaID,
+	}, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
