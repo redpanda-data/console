@@ -190,7 +190,6 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	keySerResult := RecordPayloadSerializeResult{}
 	valueSerResult := RecordPayloadSerializeResult{}
 
-	var err error
 	sr := SerializeOutput{}
 	sr.Key = &keySerResult
 	sr.Value = &valueSerResult
@@ -202,26 +201,26 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 
 	keyTS := make([]TroubleshootingReport, 0)
 	found := false
+	var err error
+	var bytes []byte
 	for _, serde := range s.SerDes {
 		if input.Key.Encoding != serde.Name() {
 			continue
 		}
 
 		found = true
-
-		bytes, serErr := serde.SerializeObject(ctx, input.Key.Payload, PayloadTypeKey, input.Key.Options...)
-		if serErr == nil {
-			err = nil
+		bytes, err = serde.SerializeObject(ctx, input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+		if err != nil {
+			keyTS = append(keyTS, TroubleshootingReport{
+				SerdeName: string(serde.Name()),
+				Message:   err.Error(),
+			})
+		} else {
 			keySerResult.Encoding = serde.Name()
 			keySerResult.Payload = bytes
-			break
 		}
-		err = serErr
 
-		keyTS = append(keyTS, TroubleshootingReport{
-			SerdeName: string(serde.Name()),
-			Message:   serErr.Error(),
-		})
+		break
 	}
 
 	keySerResult.Troubleshooting = keyTS
@@ -241,27 +240,25 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 
 	valueTS := make([]TroubleshootingReport, 0)
 	found = false
+	err = nil
 	for _, serde := range s.SerDes {
 		if input.Value.Encoding != serde.Name() {
 			continue
 		}
 
 		found = true
-
-		bytes, serErr := serde.SerializeObject(ctx, input.Value.Payload, PayloadTypeValue, input.Value.Options...)
-		if serErr == nil {
-			err = nil
+		bytes, err = serde.SerializeObject(ctx, input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+		if err != nil {
+			valueTS = append(valueTS, TroubleshootingReport{
+				SerdeName: string(serde.Name()),
+				Message:   err.Error(),
+			})
+		} else {
 			valueSerResult.Encoding = serde.Name()
 			valueSerResult.Payload = bytes
-			break
 		}
 
-		err = serErr
-
-		valueTS = append(valueTS, TroubleshootingReport{
-			SerdeName: string(serde.Name()),
-			Message:   serErr.Error(),
-		})
+		break
 	}
 
 	valueSerResult.Troubleshooting = valueTS
