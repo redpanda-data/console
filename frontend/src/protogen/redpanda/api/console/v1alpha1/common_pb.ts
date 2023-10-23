@@ -75,49 +75,59 @@ export enum PayloadEncoding {
   PROTOBUF = 3,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_JSON = 4;
+   * @generated from enum value: PAYLOAD_ENCODING_PROTOBUF_SCHEMA = 4;
    */
-  JSON = 4,
+  PROTOBUF_SCHEMA = 4,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_XML = 5;
+   * @generated from enum value: PAYLOAD_ENCODING_JSON = 5;
    */
-  XML = 5,
+  JSON = 5,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_TEXT = 6;
+   * @generated from enum value: PAYLOAD_ENCODING_JSON_SCHEMA = 6;
    */
-  TEXT = 6,
+  JSON_SCHEMA = 6,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_UTF8 = 7;
+   * @generated from enum value: PAYLOAD_ENCODING_XML = 7;
    */
-  UTF8 = 7,
+  XML = 7,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_MESSAGE_PACK = 8;
+   * @generated from enum value: PAYLOAD_ENCODING_TEXT = 8;
    */
-  MESSAGE_PACK = 8,
+  TEXT = 8,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_SMILE = 9;
+   * @generated from enum value: PAYLOAD_ENCODING_UTF8 = 9;
    */
-  SMILE = 9,
+  UTF8 = 9,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_BINARY = 10;
+   * @generated from enum value: PAYLOAD_ENCODING_MESSAGE_PACK = 10;
    */
-  BINARY = 10,
+  MESSAGE_PACK = 10,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_UINT = 11;
+   * @generated from enum value: PAYLOAD_ENCODING_SMILE = 11;
    */
-  UINT = 11,
+  SMILE = 11,
 
   /**
-   * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 12;
+   * @generated from enum value: PAYLOAD_ENCODING_BINARY = 12;
    */
-  CONSUMER_OFFSETS = 12,
+  BINARY = 12,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_UINT = 13;
+   */
+  UINT = 13,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 14;
+   */
+  CONSUMER_OFFSETS = 14,
 }
 // Retrieve enum metadata with: proto3.getEnumType(PayloadEncoding)
 proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha1.PayloadEncoding", [
@@ -125,15 +135,17 @@ proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha1.PayloadE
   { no: 1, name: "PAYLOAD_ENCODING_NONE" },
   { no: 2, name: "PAYLOAD_ENCODING_AVRO" },
   { no: 3, name: "PAYLOAD_ENCODING_PROTOBUF" },
-  { no: 4, name: "PAYLOAD_ENCODING_JSON" },
-  { no: 5, name: "PAYLOAD_ENCODING_XML" },
-  { no: 6, name: "PAYLOAD_ENCODING_TEXT" },
-  { no: 7, name: "PAYLOAD_ENCODING_UTF8" },
-  { no: 8, name: "PAYLOAD_ENCODING_MESSAGE_PACK" },
-  { no: 9, name: "PAYLOAD_ENCODING_SMILE" },
-  { no: 10, name: "PAYLOAD_ENCODING_BINARY" },
-  { no: 11, name: "PAYLOAD_ENCODING_UINT" },
-  { no: 12, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
+  { no: 4, name: "PAYLOAD_ENCODING_PROTOBUF_SCHEMA" },
+  { no: 5, name: "PAYLOAD_ENCODING_JSON" },
+  { no: 6, name: "PAYLOAD_ENCODING_JSON_SCHEMA" },
+  { no: 7, name: "PAYLOAD_ENCODING_XML" },
+  { no: 8, name: "PAYLOAD_ENCODING_TEXT" },
+  { no: 9, name: "PAYLOAD_ENCODING_UTF8" },
+  { no: 10, name: "PAYLOAD_ENCODING_MESSAGE_PACK" },
+  { no: 11, name: "PAYLOAD_ENCODING_SMILE" },
+  { no: 12, name: "PAYLOAD_ENCODING_BINARY" },
+  { no: 13, name: "PAYLOAD_ENCODING_UINT" },
+  { no: 14, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
 ]);
 
 /**

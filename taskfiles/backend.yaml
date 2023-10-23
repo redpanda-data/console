@@ -135,5 +135,6 @@ tasks:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run lint and tests
     cmds: 
+      - task: 'generate'
       - task: 'lint'
       - task: 'cover'
