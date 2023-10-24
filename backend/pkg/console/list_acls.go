@@ -22,6 +22,10 @@ import (
 type ACLOverview struct {
 	ACLResources        []*ACLResource `json:"aclResources"`
 	IsAuthorizerEnabled bool           `json:"isAuthorizerEnabled"`
+
+	// KafkaResponse is the original Kafka response. This is used by the connect
+	// RPC API as this API has its own mapping logic.
+	KafkaResponse *kmsg.DescribeACLsResponse `json:"-"`
 }
 
 // ACLResource is all information we get when listing ACLs
@@ -55,7 +59,7 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 				IsAuthorizerEnabled: false,
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get ACLs from Kafka: %v", kafkaErr.Error())
+		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", kafkaErr)
 	}
 
 	resources := make([]*ACLResource, len(aclResponses.Resources))
@@ -83,5 +87,6 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 	return &ACLOverview{
 		ACLResources:        resources,
 		IsAuthorizerEnabled: true,
+		KafkaResponse:       aclResponses,
 	}, nil
 }

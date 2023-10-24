@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package redpanda.api.dataplane.v1alpha1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -49,26 +50,27 @@ message ACL {
     PERMISSION_TYPE_DENY = 2;
     PERMISSION_TYPE_ALLOW = 3;
   }
+
+  message Filter {
+    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum.defined_only = true];
+    optional string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3 [(buf.validate.field).enum.defined_only = true];
+    optional string principal = 4;
+    optional string host = 5;
+    ACL.Operation operation = 6 [(buf.validate.field).enum.defined_only = true];
+    ACL.PermissionType permission_type = 7 [(buf.validate.field).enum.defined_only = true];
+  }
 }
 
 message ListACLsRequest {
-  message Filter {
-    ACL.ResourceType resource_type = 1;
-    string resource_name = 2;
-    ACL.ResourcePatternType resource_pattern_type = 3;
-    string principal = 4;
-    string host = 5;
-    ACL.Operation operation = 6;
-    ACL.PermissionType permission_type = 7;
-  }
-
-  Filter filter = 1;
+  ACL.Filter filter = 1;
   int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Limit the paginated response to a number of items.",
     minimum: 1,
     maximum: 100
   }];
-  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
   string page_token = 3;
 }
 
@@ -80,10 +82,14 @@ message ListACLsResponse {
     ACL.PermissionType permission_type = 4;
   }
 
-  ACL.ResourceType resource_type = 1;
-  string resource_name = 2;
-  ACL.ResourcePatternType resource_pattern_type = 3;
-  repeated Policy acls = 4;
+  message Resource {
+    ACL.ResourceType resource_type = 1;
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    repeated Policy acls = 4;
+  }
+
+  repeated Resource resources = 1;
 }
 
 message CreateACLRequest {
@@ -99,17 +105,7 @@ message CreateACLRequest {
 message CreateACLResponse {}
 
 message DeleteACLsRequest {
-  message Filter {
-    ACL.ResourceType resource_type = 1;
-    string resource_name = 2;
-    ACL.ResourcePatternType resource_pattern_type = 3;
-    string principal = 4;
-    string host = 5;
-    ACL.Operation operation = 6;
-    ACL.PermissionType permission_type = 7;
-  }
-
-  Filter filter = 1;
+  ACL.Filter filter = 1;
 }
 
 message DeleteACLsResponse {
