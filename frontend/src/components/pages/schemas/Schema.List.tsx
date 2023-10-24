@@ -177,6 +177,7 @@ class SchemaList extends PageComponent<{}> {
                                                                 title: 'Subject permanently deleted'
                                                             });
                                                             api.refreshSchemaSubjects(true);
+                                                            appGlobal.history.push('/schema-registry/');
                                                         })
                                                         .catch(err => {
                                                             toast({

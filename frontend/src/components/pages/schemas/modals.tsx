@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react';
 import { openModal } from '../../../utils/ModalContainer';
-import { Alert, AlertIcon, Box, Button, Flex, Input, Link, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, ThemeTypings } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, ThemeTypings } from '@redpanda-data/ui';
 import { useState } from 'react';
 import { WarningIcon } from '@chakra-ui/icons';
 
@@ -179,7 +179,7 @@ export function openDeleteModal(
         title: <>Delete schema version {schemaVersionName}</>,
         body: <>
             This is a soft-delete operation. This schema version will remain readable. It can also be permanently deleted or recovered.
-            {' '}<Link>Learn more</Link>
+            {' '}{/* <Link>Learn more</Link> */}
             <br />
             <br />
             Are you sure?

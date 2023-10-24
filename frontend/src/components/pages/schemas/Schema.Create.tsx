@@ -110,6 +110,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
             this.editorState.format = schema.type as 'AVRO' | 'PROTOBUF';
             this.editorState.keyOrValue = undefined;
 
+            if (schema.type == SchemaType.AVRO || schema.type == SchemaType.JSON)
+                schema.schema = JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+
             this.editorState.schemaText = schema.schema;
             this.editorState.references = schema.references;
             this.editorState.strategy = 'CUSTOM';
@@ -382,11 +385,6 @@ const SchemaEditor = observer((p: {
                 height="400px"
 
                 language={state.format == 'PROTOBUF' ? 'proto' : 'json'}
-                onMount={editor => {
-                    const formatAction = editor.getAction('editor.action.formatDocument');
-                    if (formatAction)
-                        formatAction.run();
-                }}
             />
 
             <Heading variant="lg" mt="8">
