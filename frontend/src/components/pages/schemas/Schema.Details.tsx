@@ -18,7 +18,7 @@ import { DefaultSkeleton, Label, Button } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, CodeBlock, Divider, Flex, Grid, GridItem, ListItem, Tabs, UnorderedList, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, CodeBlock, Divider, Flex, Grid, GridItem, ListItem, Tabs, UnorderedList, useToast, Skeleton } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
 import { Text } from '@redpanda-data/ui';
@@ -533,15 +533,20 @@ const SchemaReferences = observer((p: { subject: SchemaRegistrySubjectDetails, s
             {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
         </Text>
 
-        {referencedBy && referencedBy.length > 0
-            ? <UnorderedList>
-                {referencedBy.flatMap(x => x.usages).map(ref => {
-                    return <ListItem key={ref.subject + ref.version}>
-                        <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(ref.subject)}?version=${ref.version}`}>{ref.subject}</Link>
-                    </ListItem>
-                })}
-            </UnorderedList>
-            : <Text>This schema has no incoming references.</Text>
+        {(!referencedBy)
+            ? <Flex gap="2" direction="column">
+                <Skeleton height="20px" />
+                <Skeleton height="20px" />
+            </Flex>
+            : referencedBy.length > 0
+                ? <UnorderedList>
+                    {referencedBy.flatMap(x => x.usages).map(ref => {
+                        return <ListItem key={ref.subject + ref.version}>
+                            <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(ref.subject)}?version=${ref.version}`}>{ref.subject}</Link>
+                        </ListItem>
+                    })}
+                </UnorderedList>
+                : <Text>This schema has no incoming references.</Text>
         }
     </>
 })
