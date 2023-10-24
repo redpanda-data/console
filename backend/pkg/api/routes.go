@@ -27,7 +27,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
+	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
+	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
@@ -36,6 +38,7 @@ import (
 // Setup connect and grpc-gateway
 func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
 
 	// Setup Interceptors
 	v, err := protovalidate.New()
@@ -66,17 +69,16 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	r.Mount("/v1alpha1", gwMux) // Dataplane API
 
 	// Call Hook
-	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
+	hookOutput := api.Hooks.Route.ConfigConnectRPC(hooks.ConfigConnectRPCRequest{
 		BaseInterceptors: baseInterceptors,
 		GRPCGatewayMux:   gwMux,
 	})
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleServicePath, consoleServiceHandler := v1ac.NewConsoleServiceHandler(consoleSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 
-	consoleServicePath, consoleServiceHandler := v1ac.NewConsoleServiceHandler(api, connect.WithInterceptors(hookOutput.Interceptors...))
-
-	ossServices := []ConnectService{
+	ossServices := []hooks.ConnectService{
 		{
 			ServiceName: dataplanev1alpha1connect.UserServiceName,
 			MountPath:   userSvcPath,

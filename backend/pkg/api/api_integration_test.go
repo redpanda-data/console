@@ -38,6 +38,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
+	"github.com/redpanda-data/console/backend/pkg/api/hooks"
+	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -295,8 +297,8 @@ func (a *assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (a *assertHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (a *assertHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (a *assertHooks) ConfigRouter(_ chi.Router)                    {}
-func (a *assertHooks) ConfigConnectRPC(_ ConfigConnectRPCRequest) ConfigConnectRPCResponse {
-	return ConfigConnectRPCResponse{}
+func (a *assertHooks) ConfigConnectRPC(_ hooks.ConfigConnectRPCRequest) hooks.ConfigConnectRPCResponse {
+	return hooks.ConfigConnectRPCResponse{}
 }
 
 // Authorization Hooks
@@ -366,7 +368,7 @@ func (a *assertHooks) CanViewTopicConfig(_ context.Context, topic string) (bool,
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
@@ -374,7 +376,7 @@ func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *ListMessagesReq
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, r *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
@@ -610,7 +612,7 @@ func (a *assertHooks) EnabledConnectClusterFeatures(_ context.Context, _ string)
 	return nil
 }
 
-func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req ListMessagesRequest) (context.Context, error) {
+func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
