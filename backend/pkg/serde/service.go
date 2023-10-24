@@ -43,6 +43,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			UTF8Serde{},
 			TextSerde{},
 			UintSerde{},
+			BinarySerde{},
 		},
 	}
 }
@@ -125,17 +126,6 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		})
 	}
 
-	addTS := opts.Troubleshoot
-	if rp == nil || err != nil || (rp != nil && rp.Encoding == "") {
-		// Anything else is considered binary
-		rp = &RecordPayload{
-			Encoding: PayloadEncodingBinary,
-		}
-
-		// if we failed to find a successful serde always add troubleshooting info
-		addTS = true
-	}
-
 	rp.PayloadSizeBytes = len(payload)
 	rp.IsPayloadNull = payload == nil
 
@@ -148,7 +138,7 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		rp.NormalizedPayload = nil
 	}
 
-	if addTS {
+	if opts.Troubleshoot || rp.Encoding == PayloadEncodingBinary {
 		rp.Troubleshooting = troubleshooting
 	}
 
