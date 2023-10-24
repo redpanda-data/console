@@ -103,7 +103,7 @@ func (k *kafkaClientMapper) describeACLsResponseResourceACLToProto(resource kmsg
 	}, nil
 }
 
-func (k *kafkaClientMapper) aclOperationToKafka(operation v1alpha1.ACL_Operation) (kmsg.ACLOperation, error) {
+func (*kafkaClientMapper) aclOperationToKafka(operation v1alpha1.ACL_Operation) (kmsg.ACLOperation, error) {
 	switch operation {
 	case v1alpha1.ACL_OPERATION_ANY:
 		return kmsg.ACLOperationAny, nil
@@ -138,7 +138,7 @@ func (k *kafkaClientMapper) aclOperationToKafka(operation v1alpha1.ACL_Operation
 	}
 }
 
-func (k *kafkaClientMapper) aclOperationToProto(operation kmsg.ACLOperation) (v1alpha1.ACL_Operation, error) {
+func (*kafkaClientMapper) aclOperationToProto(operation kmsg.ACLOperation) (v1alpha1.ACL_Operation, error) {
 	switch operation {
 	case kmsg.ACLOperationAny:
 		return v1alpha1.ACL_OPERATION_ANY, nil
@@ -173,7 +173,7 @@ func (k *kafkaClientMapper) aclOperationToProto(operation kmsg.ACLOperation) (v1
 	}
 }
 
-func (k *kafkaClientMapper) aclPermissionTypeToKafka(permissionType v1alpha1.ACL_PermissionType) (kmsg.ACLPermissionType, error) {
+func (*kafkaClientMapper) aclPermissionTypeToKafka(permissionType v1alpha1.ACL_PermissionType) (kmsg.ACLPermissionType, error) {
 	switch permissionType {
 	case v1alpha1.ACL_PERMISSION_TYPE_ANY:
 		return kmsg.ACLPermissionTypeAny, nil
@@ -186,7 +186,7 @@ func (k *kafkaClientMapper) aclPermissionTypeToKafka(permissionType v1alpha1.ACL
 	}
 }
 
-func (k *kafkaClientMapper) aclPermissionTypeToProto(permissionType kmsg.ACLPermissionType) (v1alpha1.ACL_PermissionType, error) {
+func (*kafkaClientMapper) aclPermissionTypeToProto(permissionType kmsg.ACLPermissionType) (v1alpha1.ACL_PermissionType, error) {
 	switch permissionType {
 	case kmsg.ACLPermissionTypeAny:
 		return v1alpha1.ACL_PERMISSION_TYPE_ANY, nil
@@ -199,7 +199,7 @@ func (k *kafkaClientMapper) aclPermissionTypeToProto(permissionType kmsg.ACLPerm
 	}
 }
 
-func (k *kafkaClientMapper) aclResourcePatternTypeToKafka(patternType v1alpha1.ACL_ResourcePatternType) (kmsg.ACLResourcePatternType, error) {
+func (*kafkaClientMapper) aclResourcePatternTypeToKafka(patternType v1alpha1.ACL_ResourcePatternType) (kmsg.ACLResourcePatternType, error) {
 	switch patternType {
 	case v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY:
 		return kmsg.ACLResourcePatternTypeAny, nil
@@ -214,7 +214,7 @@ func (k *kafkaClientMapper) aclResourcePatternTypeToKafka(patternType v1alpha1.A
 	}
 }
 
-func (k *kafkaClientMapper) aclResourcePatternTypeToProto(patternType kmsg.ACLResourcePatternType) (v1alpha1.ACL_ResourcePatternType, error) {
+func (*kafkaClientMapper) aclResourcePatternTypeToProto(patternType kmsg.ACLResourcePatternType) (v1alpha1.ACL_ResourcePatternType, error) {
 	switch patternType {
 	case kmsg.ACLResourcePatternTypeAny:
 		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, nil
@@ -229,7 +229,7 @@ func (k *kafkaClientMapper) aclResourcePatternTypeToProto(patternType kmsg.ACLRe
 	}
 }
 
-func (k *kafkaClientMapper) aclResourceTypeToKafka(resourceType v1alpha1.ACL_ResourceType) (kmsg.ACLResourceType, error) {
+func (*kafkaClientMapper) aclResourceTypeToKafka(resourceType v1alpha1.ACL_ResourceType) (kmsg.ACLResourceType, error) {
 	switch resourceType {
 	case v1alpha1.ACL_RESOURCE_TYPE_ANY:
 		return kmsg.ACLResourceTypeAny, nil
@@ -248,7 +248,7 @@ func (k *kafkaClientMapper) aclResourceTypeToKafka(resourceType v1alpha1.ACL_Res
 	}
 }
 
-func (k *kafkaClientMapper) aclResourceTypeToProto(resourceType kmsg.ACLResourceType) (v1alpha1.ACL_ResourceType, error) {
+func (*kafkaClientMapper) aclResourceTypeToProto(resourceType kmsg.ACLResourceType) (v1alpha1.ACL_ResourceType, error) {
 	switch resourceType {
 	case kmsg.ACLResourceTypeAny:
 		return v1alpha1.ACL_RESOURCE_TYPE_ANY, nil
