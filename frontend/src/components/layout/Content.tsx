@@ -18,6 +18,7 @@ import AppPageHeader from '../layout/Header';
 import { ErrorDisplay } from '../misc/ErrorDisplay';
 import { renderErrorModals } from '../misc/ErrorModal';
 import { RouteView } from '../routes';
+import { ModalContainer } from '../../utils/ModalContainer';
 
 
 @observer
@@ -87,9 +88,9 @@ class LicenseNotification extends Component {
 
 export const AppContent = observer(() =>
     <div id="mainLayout">
-
         {/* Page */}
         <LicenseNotification />
+        <ModalContainer />
 
         <AppPageHeader />
 
