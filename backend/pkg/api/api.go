@@ -14,6 +14,8 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"io/fs"
 	"math"
 
@@ -135,4 +137,13 @@ func (api *API) Start() {
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
 	}
+}
+
+// Stop gracefully stops the API.
+func (api *API) Stop(ctx context.Context) error {
+	err := api.server.Server.Shutdown(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to shutdown HTTP server: %w", err)
+	}
+	return nil
 }
