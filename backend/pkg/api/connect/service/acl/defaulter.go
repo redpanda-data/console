@@ -23,7 +23,7 @@ func (d *defaulter) applyListACLsRequest(req *v1alpha1.ListACLsRequest) {
 	d.applyListACLsRequestFilter(req.Filter)
 }
 
-func (d *defaulter) applyListACLsRequestFilter(filter *v1alpha1.ACL_Filter) {
+func (*defaulter) applyListACLsRequestFilter(filter *v1alpha1.ACL_Filter) {
 	if filter.ResourceType == v1alpha1.ACL_RESOURCE_TYPE_UNSPECIFIED {
 		filter.ResourceType = v1alpha1.ACL_RESOURCE_TYPE_ANY
 	}

@@ -7,6 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package acl contains all handlers for the ACL endpoints.
 package acl
 
 import (
@@ -26,6 +27,7 @@ import (
 
 var _ dataplanev1alpha1connect.ACLServiceHandler = (*Service)(nil)
 
+// Service implements the handlers for ACL endpoints.
 type Service struct {
 	cfg        *config.Config
 	logger     *zap.Logger
@@ -115,12 +117,20 @@ func (s *Service) ListACLs(ctx context.Context, req *connect.Request[v1alpha1.Li
 	return connect.NewResponse(&v1alpha1.ListACLsResponse{Resources: resources}), nil
 }
 
-func (s *Service) CreateACL(ctx context.Context, c *connect.Request[v1alpha1.CreateACLRequest]) (*connect.Response[v1alpha1.CreateACLResponse], error) {
-	// TODO implement me
-	panic("implement me")
+// CreateACL implements the handler for the create ACL endpoint.
+func (*Service) CreateACL(context.Context, *connect.Request[v1alpha1.CreateACLRequest]) (*connect.Response[v1alpha1.CreateACLResponse], error) {
+	return nil, apierrors.NewConnectError(
+		connect.CodeUnimplemented,
+		errors.New("endpoint is not implemented"),
+		apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+	)
 }
 
-func (s *Service) DeleteACLs(ctx context.Context, c *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
-	// TODO implement me
-	panic("implement me")
+// DeleteACLs implements the handler for the delete ACL endpoint.
+func (*Service) DeleteACLs(context.Context, *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
+	return nil, apierrors.NewConnectError(
+		connect.CodeUnimplemented,
+		errors.New("endpoint is not implemented"),
+		apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+	)
 }
