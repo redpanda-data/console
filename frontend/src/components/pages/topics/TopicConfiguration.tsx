@@ -110,7 +110,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                                         </Alert>
 
                                         <Label text="Value">
-                                            <RadioGroup name="valueType" defaultValue={$state.modalValueType} value={$state.modalValueType} onChange={value => {
+                                            <RadioGroup name="valueType" value={$state.modalValueType} onChange={value => {
                                                 $state.modalValueType = value;
                                             }} options={[
                                                 {

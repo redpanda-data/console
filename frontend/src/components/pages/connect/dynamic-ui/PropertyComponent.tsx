@@ -51,8 +51,9 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                         : recValues.map((v) => ({ value: v, label: String(v).toUpperCase() }));
                 inputComp = (
                     <RadioGroup
-                        value={String(v)}
-                        onChange={(e) => (p.value = e)}
+                        onChange={(e) => {
+                            p.value = String(e)
+                        }}
                         options={options}
                         name={p.name}
                         defaultValue={String(v || def.default_value)}
