@@ -16,7 +16,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Text, Alert, AlertIcon } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Alert, AlertIcon } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
@@ -109,6 +109,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
             this.editorState = createSchemaState();
             this.editorState.format = schema.type as 'AVRO' | 'PROTOBUF';
             this.editorState.keyOrValue = undefined;
+
+            if (schema.type == SchemaType.AVRO || schema.type == SchemaType.JSON)
+                schema.schema = JSON.stringify(JSON.parse(schema.schema), undefined, 4);
 
             this.editorState.schemaText = schema.schema;
             this.editorState.references = schema.references;
@@ -364,6 +367,9 @@ const SchemaEditor = observer((p: {
                 <RadioGroup name="format"
                     value={state.format}
                     onChange={e => {
+                        if (state.format == e)
+                            return;
+
                         // Let user confirm
                         openSwitchSchemaFormatModal(() => {
                             state.format = e;
@@ -384,17 +390,12 @@ const SchemaEditor = observer((p: {
                 height="400px"
 
                 language={state.format == 'PROTOBUF' ? 'proto' : 'json'}
-                onMount={editor => {
-                    const formatAction = editor.getAction('editor.action.formatDocument');
-                    if (formatAction)
-                        formatAction.run();
-                }}
             />
 
             <Heading variant="lg" mt="8">
-                Schema definition
+                Schema references
             </Heading>
-            <Text>This is an example help text about the references list, to be updated later</Text>
+            {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
 
             <ReferencesEditor state={state} />
 
@@ -453,7 +454,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
 
         <Button variant="outline"
             size="sm"
-            width="12rem"
+            width="fit-content"
             onClick={() => refs.push({ name: '', subject: '', version: 1 })}
         >
             Add reference

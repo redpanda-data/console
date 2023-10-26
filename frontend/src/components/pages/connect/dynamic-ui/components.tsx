@@ -63,7 +63,6 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
             <Box mb="8">
                 <RadioGroup name="settingsMode"
                     value={connectorStore.viewMode}
-                    defaultValue={connectorStore.viewMode}
                     onChange={x => connectorStore.viewMode = x}
                     options={[
                         { value: 'form', label: <Box mx="4">Form</Box> },

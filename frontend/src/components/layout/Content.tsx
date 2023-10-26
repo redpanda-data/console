@@ -18,6 +18,7 @@ import AppPageHeader from '../layout/Header';
 import { ErrorDisplay } from '../misc/ErrorDisplay';
 import { renderErrorModals } from '../misc/ErrorModal';
 import { RouteView } from '../routes';
+import { ModalContainer } from '../../utils/ModalContainer';
 
 
 @observer
@@ -90,7 +91,7 @@ export const AppContent = observer(() =>
 
         {/* Page */}
         <LicenseNotification />
-
+        <ModalContainer />
         <AppPageHeader />
 
         <ErrorDisplay>

@@ -115,7 +115,7 @@ class TopicList extends PageComponent {
             <PageContent>
                 <Section py={4}>
                     <Flex>
-                        <Statistic title="Total Topics" value={topics.length} />
+                        <Statistic title="Total topics" value={topics.length} />
                         <Popover
                             title="Partition Details"
                             content={partitionDetails}
@@ -133,7 +133,7 @@ class TopicList extends PageComponent {
                                 }}
                             >
                                 <Statistic
-                                    title="Total Partitions"
+                                    title="Total partitions"
                                     value={
                                         partitionCountReal + partitionCountOnlyReplicated
                                     }
@@ -151,7 +151,7 @@ class TopicList extends PageComponent {
                             onClick={() => this.showCreateTopicModal()}
                             style={{ minWidth: '160px', marginBottom: '12px' }}
                         >
-                            Create Topic
+                            Create topic
                         </Button>
 
                         {!isServerless() &&

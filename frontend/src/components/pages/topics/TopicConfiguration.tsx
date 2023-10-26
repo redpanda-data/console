@@ -1,8 +1,7 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, AlertIcon, Box, Button, Grid, GridItem, Icon, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Popover, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
-import { Input, Select, Radio } from 'antd';
+import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
 import { FC } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
@@ -12,6 +11,8 @@ import './TopicConfiguration.scss';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
+import { SingleSelect } from '../../misc/Select';
+import { Label } from '../../../utils/tsxUtils';
 
 
 type ConfigurationEditorProps = {
@@ -74,6 +75,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
     return (
         <Box pt={4}>
             <Modal isOpen={$state.editedEntry !== null} onClose={() => $state.editedEntry = null}>
+                <ModalOverlay />
                 {$state.editedEntry !== null &&
                     <ModalContent minW="2xl">
                         <ModalHeader><Icon as={AdjustmentsIcon}/> {'Edit ' + $state.editedEntry.name}</ModalHeader>
@@ -95,36 +97,46 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                                 return (
                                     <div>
                                         <p>Edit <code>{configEntry.name}</code> configuration for topic <code>{props.targetTopic}</code>.</p>
-                                        <div style={{
-                                            padding: '1em',
-                                            background: 'rgb(238, 238, 238)',
-                                            color: 'hsl(0deg 0% 50%)',
-                                            borderRadius: '8px',
-                                            margin: '1em 0'
-                                        }}>{configEntry.documentation}</div>
+                                        <Alert
+                                            bg="blue.50"
+                                            status="info"
+                                            variant="left-accent"
+                                            my={4}
+                                        >
+                                            <AlertIcon />
+                                            <AlertDescription>
+                                                {configEntry.documentation}
+                                            </AlertDescription>
+                                        </Alert>
 
-                                        <div style={{fontWeight: 'bold', marginBottom: '0.5em'}}>Value</div>
-                                        <Radio.Group className="valueRadioGroup" value={$state.modalValueType} onChange={e => $state.modalValueType = e.target.value}>
-                                            <Radio value="default">
-                                                <span>Default: </span>
-                                                <span style={{fontWeight: 'bold'}}>{friendlyDefault}</span>
-                                                <div className="subText">Inherited from {defaultSource}</div>
-                                            </Radio>
-                                            <Radio value="custom">
-                                                <span>Custom</span>
-                                                <div className="subText">Set at topic configuration</div>
-                                                <div style={{position: 'relative', zIndex: 2}} onClick={e => {
-                                                    if (isCustom) {
-                                                        // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
-                                                        // otherwise they will steal focus, closing any select/dropdowns
-                                                        e.stopPropagation();
-                                                        e.preventDefault();
-                                                    }
-                                                }}>
+                                        <Label text="Value">
+                                            <RadioGroup name="valueType" value={$state.modalValueType} onChange={value => {
+                                                $state.modalValueType = value;
+                                            }} options={[
+                                                {
+                                                    value: 'default',
+                                                    label: 'Default'
+                                                },
+                                                {
+                                                    value: 'custom',
+                                                    label: 'Custom'
+                                                }
+                                            ]} />
+                                        </Label>
+
+                                        <Flex flexDirection="column" my={8}>
+                                            {$state.modalValueType === 'default' && <>
+                                                <Text fontWeight="bold">{friendlyDefault}</Text>
+                                                <Text>Inherited from {defaultSource}</Text>
+                                            </>}
+
+                                            {$state.modalValueType === 'custom' && <>
+                                                <Text fontWeight="bold">Set at topic configuration</Text>
+                                                <Box maxWidth={300}>
                                                     <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry}/>
-                                                </div>
-                                            </Radio>
-                                        </Radio.Group>
+                                                </Box>
+                                            </>}
+                                        </Flex>
 
                                         {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
                                             <AlertIcon/>
@@ -310,25 +322,24 @@ export const ConfigEntryEditor = observer((p: {
     const entry = p.entry;
     switch (entry.frontendFormat) {
         case 'BOOLEAN':
-            return <Select value={entry.currentValue} onChange={c => entry.currentValue = c} className={p.className}
-                           options={[
-                               {value: 'false', label: 'False'},
-                               {value: 'true', label: 'True'},
-                           ]}
+            return <SingleSelect
+                options={[
+                    {value: 'false', label: 'False'},
+                    {value: 'true', label: 'True'},
+                ]}
+                value={entry.currentValue}
+                onChange={c => entry.currentValue = c}
             />
 
         case 'SELECT':
-            return <Select value={entry.currentValue} onChange={e => entry.currentValue = e} className={p.className}>
-                {(entry.enumValues ?? []).map(v => <Select.Option key={v}>
-                    {v}
-                </Select.Option>)}
-            </Select>
-        case 'MULTI_SELECT':
-            return <Select value={entry.currentValue} onChange={e => entry.currentValue = e} mode="multiple" className={p.className}>
-                {(entry.enumValues ?? []).map(v => <Select.Option key={v}>
-                    {v}
-                </Select.Option>)}
-            </Select>
+            return <SingleSelect
+                value={entry.currentValue}
+                onChange={e => entry.currentValue = e} className={p.className}
+                options={entry.enumValues?.map(value => ({
+                    value,
+                    label: value
+                })) ?? []}
+            />
 
         case 'BYTE_SIZE':
             return <DataSizeSelect
@@ -359,14 +370,14 @@ export const ConfigEntryEditor = observer((p: {
 
         case 'STRING':
         default:
-            return <Input value={String(entry.currentValue)} onChange={e => entry.currentValue = e.target.value} className={p.className}/>
+            return <Input value={String(entry.currentValue)} onChange={e => entry.currentValue = e.target.value} />
     }
 });
 
 function getConfigSourceExplanation(source: string) {
     switch (source) {
         case 'DEFAULT_CONFIG':
-            return 'Built-in default when the setting is not overriden anywhere';
+            return 'This default value is used if the setting is not overwritten.';
 
         case 'DYNAMIC_BROKER_CONFIG':
         case 'DYNAMIC_BROKER_LOGGER_CONFIG':

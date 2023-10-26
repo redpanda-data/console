@@ -11,10 +11,9 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon, KebabHorizontalIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio, Select, Table, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Radio, Select, Table } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
-import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
@@ -27,7 +26,7 @@ import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRe
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
+import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -44,7 +43,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Empty, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Code, Empty, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -188,20 +187,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     render() {
         return <>
-            <this.SearchControlsBar />
-
+            <this.SearchControlsBar/>
             {/* Message Table (or error display) */}
             {this.fetchError
-                ? <Alert status="error">
+                ? <Alert status="error" my={2} gap={4}>
                     <AlertIcon />
                     <div>Backend API Error</div>
-                    <div>
-                        <Typography.Text>Please check and modify the request before resubmitting.</Typography.Text>
-                        <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
-                        <Button onClick={() => this.executeMessageSearch()}>
-                            Retry Search
-                        </Button>
-                    </div>
+                    <Flex flexDirection="column" gap={2}>
+                        <Text as="span">Please check and modify the request before resubmitting.</Text>
+                        <Code>{((this.fetchError as Error).message ?? String(this.fetchError))}</Code>
+                        <Box>
+                            <Button onClick={() => this.executeMessageSearch()}>
+                                Retry Search
+                            </Button>
+                        </Box>
+                    </Flex>
                 </Alert>
                 : <>
                     <this.MessageTable />
@@ -398,26 +398,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return false;
     }
 
-    FilterSummary() {
-
-        if (this && this.messageSource && this.messageSource.data) {
-            // todo
-        }
-        else {
-            return null;
-        }
-
-        const displayText = this.messageSource.data.length == api.messages.length
-            ? 'Filter matched all messages'
-            : <><b>{this.messageSource.data.length}</b> results</>;
-
-        return <div style={{ marginRight: '1em' }}>
-            <MotionDiv identityKey={displayText}>
-                <Typography.Text type="secondary">{displayText}</Typography.Text>
-            </MotionDiv>
-        </div>;
-    }
-
     @computed
     get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
@@ -429,7 +409,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
+                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px" height="22px" transform="translateY(2px)">
                     <SettingOutlined style={{ fontSize: '1rem' }} />
                     <span style={{ marginLeft: '.3em' }}>Preview</span>
                     {(() => {
@@ -1213,11 +1193,9 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Paragraph>
-                    <Text>
-                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
-                    </Text>
-                </Paragraph>
+                <Text my={4}>
+                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
+                </Text>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>

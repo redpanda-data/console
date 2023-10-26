@@ -111,24 +111,6 @@
             }
         }
 
-        .valueRadioGroup {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-
-            .subText {
-                color: hsl(0deg 0% 60%);
-            }
-
-            .configEntryEditor {
-                width: 300px;
-            }
-
-            .configEntryEditor.disabled {
-                pointer-events: none;
-                opacity: .5;
-            }
-        }
     }
 
     .ant-modal-confirm-btns {
