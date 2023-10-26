@@ -102,18 +102,19 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		serdeEncoding = opts.ValueEncoding
 	}
 
-	doCustomEncoding := serdeEncoding != PayloadEncodingUnspecified && serdeEncoding != ""
+	// When deserializing, clients can optionally specify the deseired encoding
+	doSpecificEncoding := serdeEncoding != PayloadEncodingUnspecified && serdeEncoding != ""
 
 	// Try all registered SerDes in the order they were registered
 	var rp *RecordPayload
-	var err error
 	for _, serde := range s.SerDes {
-		if doCustomEncoding {
+		if doSpecificEncoding {
 			if serdeEncoding != serde.Name() {
 				continue
 			}
 		}
 
+		var err error
 		rp, err = serde.DeserializePayload(ctx, record, payloadType)
 		if err == nil {
 			// found the matching serde
