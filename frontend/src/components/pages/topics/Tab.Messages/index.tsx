@@ -1364,11 +1364,10 @@ class MessageSearchFilterBar extends Component {
                             borderWidth="0px 1px"
                             px="6px"
                             textDecoration={e.isActive ? '' : 'line-through'}
-                            opacity={e.isActive ? 1 : 0.5}
                         >
                             {e.name ? e.name : (e.code ? e.code : 'New Filter')}
                         </TagLabel>
-                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" />
+                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
 

@@ -9,8 +9,7 @@
 * by the Apache License, Version 2.0
 */
 
-import { FormControl, FormErrorMessage, FormHelperText, Input, Checkbox, Grid } from '@redpanda-data/ui';
-import { Select } from 'antd';
+import { Checkbox, FormControl, FormErrorMessage, FormHelperText, Grid, Input, isMultiValue, Select } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../../../state/backendApi';
 import { Property } from '../../../../../state/connect/state';
@@ -79,17 +78,24 @@ export const TopicInput = observer((p: { properties: Property[], connectorType: 
 
                 {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
                 {(state.isRegex || p.connectorType == 'source')
-                    ? <Input value={String(state.property.value)} onChange={(e) => (state.property.value = e.target.value)} spellCheck={false} autoComplete="off" />
-                    : <Select style={{ width: '100%', minWidth: '300px' }}
-                        mode="multiple"
-                        allowClear showArrow showSearch
-                        options={api.topics?.map(x => ({ value: x.topicName })) ?? []}
+                    ? <Input value={String(state.property.value)}
+                             onChange={(e) => (state.property.value = e.target.value)} spellCheck={false}
+                             autoComplete="off"/>
+                    :
+                    <Select
+                        isMulti
+                        options={api.topics?.map(x => ({value: x.topicName, label: x.topicName})) ?? []}
                         value={state.property.value
-                            ? state.property.value?.toString().split(',')
+                            ? state.property.value?.toString().split(',').map((val) => ({
+                                value: val,
+                                label: val,
+                            }))
                             : []
                         }
-                        onChange={(v: string[]) => {
-                            state.property.value = v.join(',');
+                        onChange={(v) => {
+                            if (isMultiValue(v)) {
+                                state.property.value = v.map(({value}) => value)?.join(',') ?? []
+                            }
                         }}
                     />
                 }
