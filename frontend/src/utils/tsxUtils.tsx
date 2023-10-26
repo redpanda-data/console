@@ -13,7 +13,8 @@ import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
 import { Radio, Skeleton } from 'antd';
-import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
+import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress,
+    RadioGroup, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
@@ -251,7 +252,7 @@ export const InfoText = (p: {
     );
 };
 
-export class OptionGroup<T> extends Component<{
+export class OptionGroup<T extends string> extends Component<{
     label?: string;
     options: { [key: string]: any };
     value: T;
@@ -275,7 +276,19 @@ export class OptionGroup<T> extends Component<{
 
         if (!p.label) return radioGroup;
 
-        return <Label text={p.label}>{radioGroup}</Label>;
+        return <Label text={p.label}>
+            <RadioGroup
+                name={p.label}
+                value={p.value}
+                onChange={(val) => {
+                    p.onChange(val);
+                }}
+                options={ObjToKv(p.options).map(kv => ({
+                    value: kv.value,
+                    label: kv.key
+                }))}
+            />
+        </Label>;
     }
 }
 

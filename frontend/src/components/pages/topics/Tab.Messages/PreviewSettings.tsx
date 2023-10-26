@@ -200,7 +200,10 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
                 <div className="previewTagsSettings" >
-                    <OptionGroup label="Matching" options={{ 'Ignore Case': false, 'Case Sensitive': true }} size="small"
+                    <OptionGroup<'caseSensitive' | 'ignoreCase'>
+                        label="Matching"
+                        options={{'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive'}}
+                        size="small"
                         value={uiState.topicSettings.previewTagsCaseSensitive}
                         onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
                     />
@@ -311,7 +314,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
     const ar: React.ReactNode[] = [];
 
     const results: { prop: CollectedProperty, tag: PreviewTagV2, fullPath: string }[] = [];
-    const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive;
+    const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
     for (const t of tags) {
         if (t.pattern.length == 0) continue;
