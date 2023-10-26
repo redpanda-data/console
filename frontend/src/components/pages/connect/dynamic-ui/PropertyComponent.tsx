@@ -121,7 +121,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
     inputComp = <ErrorWrapper property={p} input={inputComp} />;
     // Wrap name and input element
-    return <Box className={inputSizeToClass[def.width]} mt="6">{inputComp} .......... {def.type}</Box>;
+    return <Box className={inputSizeToClass[def.width]} mt="6">{inputComp}</Box>;
 });
 
 const inputSizeToClass = {
