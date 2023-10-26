@@ -19,14 +19,14 @@ import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { appGlobal } from '../../../state/appGlobal';
 import { ClusterConnectors, ConnectorValidationResult } from '../../../state/restInterfaces';
-import { Alert, Select, Skeleton, Table } from 'antd';
+import { Select, Skeleton, Table } from 'antd';
 import { HiddenRadioList } from '../../misc/HiddenRadioList';
 import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
 import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast, useDisclosure } from '@redpanda-data/ui';
+import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast, useDisclosure, Alert, AlertDescription, AlertIcon } from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
 const { Option } = Select;
@@ -539,41 +539,50 @@ function Review({
 
                     {validationFailure ? (
                         <Alert
-                            style={{ marginTop: '2rem' }}
-                            type="error"
-                            message={
-                                <>
-                                    <strong>Validation attempt failed</strong>
-                                    <p>{String(validationFailure)}</p>
-                                </>
-                            }
-                        />
+                            status="error"
+                            variant="left-accent"
+                            my={4}
+                        >
+                            <AlertIcon />
+                            <AlertDescription>
+                                <Box>
+                                    <Text as="h3">Validation attempt failed</Text>
+                                    <Text as="p">{String(validationFailure)}</Text>
+                                </Box>
+                            </AlertDescription>
+                        </Alert>
                     ) : null}
 
                     {creationFailure ? (
                         <Alert
-                            style={{ marginTop: '2rem' }}
-                            type="error"
-                            message={
-                                <>
-                                    <strong>Creation attempt failed</strong>
-                                    <p>{String(creationFailure)}</p>
-                                </>
-                            }
-                        />
+                            status="error"
+                            variant="left-accent"
+                            my={4}
+                        >
+                            <AlertIcon/>
+                            <AlertDescription>
+                                <Box>
+                                    <Text as="h3">Creation attempt failed</Text>
+                                    <Text as="p">{String(creationFailure)}</Text>
+                                </Box>
+                            </AlertDescription>
+                        </Alert>
                     ) : null}
 
                     {genericFailure ? (
                         <Alert
-                            style={{ marginTop: '2rem' }}
-                            type="error"
-                            message={
-                                <>
-                                    <strong>An error occurred</strong>
-                                    <p>{String(genericFailure)}</p>
-                                </>
-                            }
-                        />
+                            status="error"
+                            variant="left-accent"
+                            my={4}
+                        >
+                            <AlertIcon/>
+                            <AlertDescription>
+                                <Box>
+                                    <Text as="h3">An error occurred</Text>
+                                    <Text as="p">{String(genericFailure)}</Text>
+                                </Box>
+                            </AlertDescription>
+                        </Alert>
                     ) : null}
 
                     <Heading as="h2" mt="4" fontSize="1.4em" fontWeight="500">Connector Properties</Heading>
@@ -599,12 +608,13 @@ function getDataSource(validationResult: ConnectorValidationResult) {
 function ValidationDisplay({ validationResult }: { validationResult: ConnectorValidationResult }) {
     return (
         <Alert
-            style={{ marginTop: '2rem' }}
-            type="warning"
-            message={
-                <>
-                    <h3>Submitted configuration is invalid</h3>
-
+            status="warning"
+            variant="left-accent"
+            my={4}
+        >
+            <AlertDescription>
+                <Box>
+                    <Text as="h3" mb={4}>Submitted configuration is invalid</Text>
                     <Table
                         pagination={false}
                         size={'small'}
@@ -628,10 +638,10 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
                         ]}
                         rowKey={(record) => record.name}
                     />
-                </>
-            }
-        />
-    );
+                </Box>
+            </AlertDescription>
+        </Alert>
+    )
 }
 
 export default CreateConnector;

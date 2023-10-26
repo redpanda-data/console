@@ -10,7 +10,6 @@
  */
 
 
-import { Alert } from 'antd';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
@@ -45,7 +44,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
-import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast, VStack, Text, Empty } from '@redpanda-data/ui';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast, VStack, Text, Empty, AlertDescription, AlertIcon, Alert } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
@@ -594,11 +593,20 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
             <AlertDialogHeader>Confirm</AlertDialogHeader>
             <AlertDialogBody>
                 {content}
-                {err && <Box mt={4}><Alert
-                    type="error"
-                    message={err.title}
-                    description={err.content}
-                /></Box>}
+                {err && <Box mt={4}>
+                     <Alert
+                         status="error"
+                         variant="left-accent"
+                     >
+                         <AlertIcon />
+                         <AlertDescription>
+                             <Box>
+                                 <Text as="h3">{err.title}</Text>
+                                 <Text as="p">{err.content}</Text>
+                             </Box>
+                         </AlertDescription>
+                     </Alert>
+                 </Box>}
             </AlertDialogBody>
             <AlertDialogFooter gap={2}>
                 <Button onClick={cancel} ref={cancelRef} variant="outline">No</Button>
