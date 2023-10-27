@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,7 +65,22 @@ func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.R
 		return &RecordPayload{}, fmt.Errorf("decoding schema id: %w", err)
 	}
 
-	index, remainingData, err := srSerde.DecodeIndex(remainingData, 128)
+	arrLength, n := binary.Varint(remainingData)
+	if n <= 0 {
+		var err error
+		if n == 0 {
+			err = errors.New("buffer is too small")
+		} else {
+			err = errors.New("buffer overflow")
+		}
+		return &RecordPayload{}, fmt.Errorf("decoding protobuf index: %w", err)
+	}
+
+	if arrLength > 128 || arrLength < 0 {
+		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
+	}
+
+	index, remainingData, err := srSerde.DecodeIndex(remainingData, int(arrLength))
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding protobuf index: %w", err)
 	}
