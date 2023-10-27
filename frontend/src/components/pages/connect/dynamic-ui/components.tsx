@@ -9,15 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
-import { Skeleton } from 'antd';
 // import { IsDev } from '../../../../utils/env';
 // import { DebugEditor } from './DebugEditor';
 import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
 import { observer } from 'mobx-react';
 import { ConnectorStepComponent } from './ConnectorStep';
 import { ConnectorStep } from '../../../../state/restInterfaces';
-import { Box, RadioGroup, Switch } from '@redpanda-data/ui';
+import { Box, RadioGroup, SkeletonText, Switch } from '@redpanda-data/ui';
 import KowlEditor from '../../../misc/KowlEditor';
 import { api } from '../../../../state/backendApi';
 import { clone } from '../../../../utils/jsonUtils';
@@ -38,12 +36,11 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
             </div>
         );
 
-    if (connectorStore.initPending)
+    if (connectorStore.initPending) {
         return (
-            <div>
-                <Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} />
-            </div>
+            <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
         );
+    }
 
     if (connectorStore.allGroups.length == 0) return <div>debug: no groups</div>;
 
