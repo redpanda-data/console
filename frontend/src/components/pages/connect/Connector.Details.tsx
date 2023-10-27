@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
-import { Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
@@ -28,7 +26,7 @@ import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, SkeletonText } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
@@ -68,12 +66,9 @@ const KafkaConnectorMain = observer(
             restartingTask: null,
             deletingConnector: null,
         }));
-        if (!connectClusterStore.isInitialized)
-            return (
-                <div>
-                    <Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} />
-                </div>
-            );
+        if (!connectClusterStore.isInitialized) {
+            return <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
+        }
 
         const connectorStore = connectClusterStore.getConnectorStore(connectorName);
 
