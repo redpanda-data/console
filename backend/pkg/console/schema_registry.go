@@ -46,17 +46,17 @@ func (s *Service) GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMod
 	if err != nil {
 		return nil, err
 	}
-	return &SchemaRegistryMode{Mode: mode.Mode}, nil
+	return &SchemaRegistryMode{Mode: mode}, nil
 }
 
 // GetSchemaRegistryConfig returns the schema registry config which currently
 // only contains the global compatibility config (e.g. "BACKWARD").
 func (s *Service) GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error) {
-	config, err := s.kafkaSvc.SchemaService.GetConfig(ctx)
+	compat, err := s.kafkaSvc.SchemaService.GetConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
+	return &SchemaRegistryConfig{Compatibility: compat}, nil
 }
 
 // PutSchemaRegistryConfig sets the global compatibility level.

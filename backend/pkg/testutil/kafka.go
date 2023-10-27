@@ -139,7 +139,7 @@ func ProduceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 			}
 		})
 
-	rcl.SetCompatibilityLevel(ctx, sr.CompatNone, topic+"-value")
+	rcl.SetCompatibility(ctx, sr.SetCompatibility{Level: sr.CompatNone}, topic+"-value")
 
 	ov := 1
 	version := int32(1)

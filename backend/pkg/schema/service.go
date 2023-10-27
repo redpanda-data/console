@@ -11,6 +11,7 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -36,6 +38,7 @@ type Service struct {
 	requestGroup singleflight.Group
 
 	registryClient *Client
+	srClient       *sr.Client
 
 	// schemaBySubjectVersion caches schema response by subject and version. Caching schemas
 	// by subjects is needed to lookup references in avro schemas.
@@ -50,11 +53,17 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
 	}
 
+	srClient, err := newSRClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
+	}
+
 	return &Service{
 		cfg:                    cfg,
 		logger:                 logger,
 		requestGroup:           singleflight.Group{},
 		registryClient:         client,
+		srClient:               srClient,
 		avroSchemaByID:         cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 		schemaBySubjectVersion: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
@@ -239,13 +248,31 @@ func (s *Service) GetSchemaBySubject(ctx context.Context, subject, version strin
 }
 
 // GetMode returns the current mode for Schema Registry at a global level.
-func (s *Service) GetMode(ctx context.Context) (*ModeResponse, error) {
-	return s.registryClient.GetMode(ctx)
+func (s *Service) GetMode(ctx context.Context) (string, error) {
+	modes := s.srClient.Mode(ctx)
+	if len(modes) == 0 {
+		return "", errors.New("no modes from server")
+	}
+
+	if modes[0].Err != nil {
+		return "", modes[0].Err
+	}
+
+	return modes[0].Mode.String(), nil
 }
 
 // GetConfig gets global compatibility level.
-func (s *Service) GetConfig(ctx context.Context) (*ConfigResponse, error) {
-	return s.registryClient.GetConfig(ctx)
+func (s *Service) GetConfig(ctx context.Context) (CompatibilityLevel, error) {
+	cr := s.srClient.Compatibility(ctx)
+	if len(cr) == 0 {
+		return CompatNone, errors.New("no config from server")
+	}
+
+	if cr[0].Err != nil {
+		return CompatNone, cr[0].Err
+	}
+
+	return FromSRCompatibilityLevel(cr[0].Level), nil
 }
 
 // PutConfig sets the global compatibility level.

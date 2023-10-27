@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/twmb/franz-go/pkg/sr"
+	"github.com/twmb/tlscfg"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -40,6 +42,39 @@ type RestError struct {
 
 func (e RestError) Error() string {
 	return fmt.Sprintf("schema registry request failed: %d - %s", e.ErrorCode, e.Message)
+}
+
+func newSRClient(cfg config.Schema) (*sr.Client, error) {
+	opts := []sr.Opt{sr.URLs(cfg.URLs...)}
+
+	if cfg.Username != "" {
+		opts = append(opts, sr.BasicAuth(cfg.Username, cfg.Password))
+	}
+
+	// TODO: add header support to SR client
+	// if cfg.BearerToken != "" {
+	// }
+
+	if cfg.TLS.Enabled {
+		tlsConfig, err := tlscfg.New(
+			tlscfg.MaybeWithDiskCA(cfg.TLS.CaFilepath, tlscfg.ForClient),
+			tlscfg.MaybeWithDiskKeyPair(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath),
+			tlscfg.WithSystemCertPool(),
+			tlscfg.WithOverride(func(cfg *tls.Config) error {
+				cfg.CurvePreferences = nil
+				return nil
+			}),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig.InsecureSkipVerify = cfg.TLS.InsecureSkipTLSVerify
+
+		opts = append(opts, sr.DialTLSConfig(tlsConfig))
+	}
+
+	return sr.NewClient(opts...)
 }
 
 func newClient(cfg config.Schema) (*Client, error) {
@@ -296,38 +331,6 @@ func (c *Client) GetSubjectVersions(ctx context.Context, subject string, showSof
 	return &SubjectVersionsResponse{
 		Versions: *parsed,
 	}, nil
-}
-
-// ModeResponse is the schema of the GET /mode endpoint.
-type ModeResponse struct {
-	// Possible values are: IMPORT, READONLY, READWRITE
-	Mode string `json:"mode"`
-}
-
-// GetMode returns the current mode for Schema Registry at a global level.
-func (c *Client) GetMode(ctx context.Context) (*ModeResponse, error) {
-	res, err := c.client.R().
-		SetContext(ctx).
-		SetResult(&ModeResponse{}).
-		Get("/mode")
-	if err != nil {
-		return nil, fmt.Errorf("get mode request failed: %w", err)
-	}
-
-	if res.IsError() {
-		restErr, ok := res.Error().(*RestError)
-		if !ok {
-			return nil, fmt.Errorf("get mode request failed: Status code %d", res.StatusCode())
-		}
-		return nil, restErr
-	}
-
-	parsed, ok := res.Result().(*ModeResponse)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse mode response")
-	}
-
-	return parsed, nil
 }
 
 // ConfigResponse is the response schema for the schema registry's /config endpoint.

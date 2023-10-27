@@ -12,6 +12,8 @@ package schema
 import (
 	"fmt"
 	"strings"
+
+	"github.com/twmb/franz-go/pkg/sr"
 )
 
 // SchemaType as an enum representing schema types. The default schema type
@@ -112,6 +114,31 @@ func (l CompatibilityLevel) String() string {
 		return "FULL_TRANSITIVE"
 	default:
 		return ""
+	}
+}
+
+// FromSRCompatibilityLevel creates CompatibilityLevel from franz-go one
+func FromSRCompatibilityLevel(l sr.CompatibilityLevel) CompatibilityLevel {
+	switch l {
+	// TODO Default?
+	// case sr.CompatBackward:
+	// 	return "DEFAULT"
+	case sr.CompatNone:
+		return CompatNone
+	case sr.CompatBackward:
+		return CompatBackward
+	case sr.CompatBackwardTransitive:
+		return CompatBackwardTransitive
+	case sr.CompatForward:
+		return CompatForward
+	case sr.CompatForwardTransitive:
+		return CompatForwardTransitive
+	case sr.CompatFull:
+		return CompatFull
+	case sr.CompatFullTransitive:
+		return CompatFullTransitive
+	default:
+		return CompatNone
 	}
 }
 
