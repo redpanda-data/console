@@ -12,7 +12,7 @@
 import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
-import { Radio, Skeleton } from 'antd';
+import { Radio } from 'antd';
 import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -474,7 +474,7 @@ export class ZeroSizeWrapper extends Component<{ width?: string, height?: string
 
 
 const defaultSkeletonStyle = { margin: '2rem' };
-const innerSkeleton = <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
+const innerSkeleton = <SkeletonText noOfLines={8} spacing={5} skeletonHeight={4} />
 export const DefaultSkeleton = (
     <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
         {innerSkeleton}
