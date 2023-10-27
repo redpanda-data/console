@@ -78,7 +78,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 			PartitionID:   record.Partition,
 			Offset:        record.Offset,
 			Timestamp:     record.Timestamp,
-			Key:           deserializedRec.Key.DeserializedPayload, // TODO should this be deserialized payload / like an object?
+			Key:           deserializedRec.Key.DeserializedPayload,
 			Value:         deserializedRec.Value.DeserializedPayload,
 			HeadersByKey:  headersByKey,
 			KeySchemaID:   deserializedRec.Key.SchemaID,
