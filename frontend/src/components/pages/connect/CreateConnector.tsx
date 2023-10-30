@@ -19,16 +19,34 @@ import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { appGlobal } from '../../../state/appGlobal';
 import { ClusterConnectors, ConnectorValidationResult } from '../../../state/restInterfaces';
-import { Alert, Skeleton, Table } from 'antd';
+import { Alert, Table } from 'antd';
 import { HiddenRadioList } from '../../misc/HiddenRadioList';
 import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
 import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner, useToast, useDisclosure } from '@redpanda-data/ui';
+import {
+    Box,
+    Flex,
+    Heading,
+    Link,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    SearchField,
+    SkeletonText,
+    Spinner,
+    Tabs,
+    Text,
+    useDisclosure,
+    useToast
+} from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
+
 import { SingleSelect } from '../../misc/Select';
 
 const ConnectorType = observer(
@@ -419,12 +437,11 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
     const isLast = () => currentStep === steps.length - 1;
 
-    if (!connectClusterStore.isInitialized)
+    if (!connectClusterStore.isInitialized) {
         return (
-            <div>
-                <Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} />
-            </div>
+            <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
         );
+    }
 
     return <>
         <Wizard
@@ -526,9 +543,7 @@ function Review({
             ) : null}
 
             {isCreating ? (
-                <>
-                    <Skeleton loading={true} active={true} paragraph={{ rows: 5, width: '100%' }} style={{ marginTop: 20 }} />
-                </>
+                <SkeletonText mt={5} noOfLines={6} spacing={5} skeletonHeight={4} />
             ) : (
                 <>
                     {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}

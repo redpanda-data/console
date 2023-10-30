@@ -10,7 +10,6 @@
  */
 
 import { observer } from 'mobx-react';
-import { Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -25,7 +24,7 @@ import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Heading, Icon, Link, Button, Flex, Tooltip } from '@redpanda-data/ui';
+import { Button, Flex, Heading, Icon, Link, SkeletonText, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
@@ -213,20 +212,23 @@ class Overview extends PageComponent {
                             </ul>
 
                             <ul className="resource-list">
-                                {news
-                                    ? news.map((x, i) => <li key={i}>
-                                        <a href={x.url} rel="noopener noreferrer" target="_blank" className="resource-link">
+                                <SkeletonText
+                                    isLoaded={Boolean(news)}
+                                    noOfLines={4}
+                                    spacing={5}
+                                    skeletonHeight={4}
+                                >
+                                    {news?.map((x, i) => <li key={i}>
+                                        <a href={x.url} rel="noopener noreferrer" target="_blank"
+                                           className="resource-link">
                                             <span className="dot">&bull;</span>
                                             <span>
                                                 {x.title}
-                                                <ResourcesBadge type={x.badge} />
+                                                <ResourcesBadge type={x.badge}/>
                                             </span>
                                         </a>
-                                    </li>)
-                                    : <>
-                                        <Skeleton loading={true} active={true} paragraph={{ rows: 3 }} />
-                                    </>
-                                }
+                                    </li>)}
+                                </SkeletonText>
                             </ul>
                         </div>
 
@@ -261,8 +263,10 @@ const ResourcesBadge = (p: { type?: string | undefined }) => {
 function ClusterDetails() {
     const overview = api.clusterOverview;
     const brokers = api.brokers;
-    if (!overview || !brokers)
-        return <Skeleton paragraph={{ rows: 16 }} />
+
+    if (!overview || !brokers) {
+        return <SkeletonText mt={5} noOfLines={13} spacing={5} skeletonHeight={4} speed={0} />
+    }
 
     const totalStorageBytes = brokers.sum(x => x.totalLogDirSizeBytes ?? 0);
     const totalPrimaryStorageBytes = brokers.sum(x => x.totalPrimaryLogDirSizeBytes ?? 0);
