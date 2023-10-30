@@ -1,11 +1,11 @@
 import { ReloadOutlined } from '@ant-design/icons';
-import { Select } from 'antd';
 import { Button, Input, Flex, Checkbox } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { CreateUserRequest } from '../../../state/restInterfaces';
 import { Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { Tooltip } from '@redpanda-data/ui';
+import { SingleSelect } from '../../misc/Select';
 
 export const CreateServiceAccountEditor = observer((p: { state: CreateUserRequest }) => {
     const state = p.state;
@@ -72,22 +72,15 @@ export const CreateServiceAccountEditor = observer((p: { state: CreateUserReques
                 </Label>
 
                 <Label text="Mechanism">
-                    {/* <Select options={[
-                    { label: 'SCRAM-SHA-256', value: 'SCRAM-SHA-256' },
-                    { label: 'SCRAM-SHA-512', value: 'SCRAM-SHA-512' },
-                ]}
-                    value={state.mechanism}
-                    onChange={e => state.mechanism = e}
-                /> */}
-
-                <Select
-                    style={{ width: '300px' }}
-                    value={state.mechanism}
-                    onChange={e => state.mechanism = e}
-                >
-                    <Select.Option value="SCRAM-SHA-256">SCRAM-SHA-256</Select.Option>
-                    <Select.Option value="SCRAM-SHA-512">SCRAM-SHA-512</Select.Option>
-                </Select>
+                    <SingleSelect<'SCRAM-SHA-256' | 'SCRAM-SHA-512'> options={[{
+                        value: 'SCRAM-SHA-256',
+                        label: 'SCRAM-SHA-256',
+                    }, {
+                        value: 'SCRAM-SHA-512',
+                        label: 'SCRAM-SHA-512',
+                    }]} value={state.mechanism} onChange={e => {
+                        state.mechanism = e;
+                    }}/>
             </Label>
 
             </div>

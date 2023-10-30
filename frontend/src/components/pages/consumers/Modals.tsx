@@ -13,7 +13,7 @@
 import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
 import { InfoText, numberToThousandsString, RadioOptionGroup } from '../../../utils/tsxUtils';
-import { Radio, Select, Table } from 'antd';
+import { Radio, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -26,6 +26,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { SingleSelect } from '../../misc/Select';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -191,15 +192,26 @@ export class EditOffsetsModal extends Component<{
                         content: (
                             <>
                                 <div
+                                    // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
+                                    // fixes immediately self closing Select drop down after an option has already been selected
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
                                     style={{
                                         display: 'flex',
                                         gap: '.5em',
                                         flexDirection: 'column',
                                         paddingTop: '12px',
-                                        marginLeft: '-1px'
+                                        marginLeft: '-1px',
                                     }}
                                 >
-                                    <Select style={{minWidth: '260px'}} placeholder="Select another consumer group..." showSearch options={this.otherConsumerGroups.map(g => ({value: g.groupId, label: g.groupId, title: g.groupId}))} value={this.selectedGroup} onChange={x => (this.selectedGroup = x)} disabled={this.isLoadingTimestamps}/>
+                                    <SingleSelect
+                                        options={this.otherConsumerGroups.map(g => ({value: g.groupId, label: g.groupId}))}
+                                        value={this.selectedGroup}
+                                        onChange={x => (this.selectedGroup = x)}
+                                        isDisabled={this.isLoadingTimestamps}
+                                    />
 
                                     <Radio.Group
                                         defaultValue="onlyExisting"
@@ -418,7 +430,7 @@ export class EditOffsetsModal extends Component<{
         const disableContinue = this.selectedOption == 'otherGroup' && !this.selectedGroup;
         const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
 
-        if (this.page == 0) return <div>
+        if (this.page == 0) return <Flex gap={2}>
             <Button key="cancel" onClick={this.props.onClose}>Cancel</Button>
 
             <Button key="next" variant="solid" onClick={() => this.setPage(1)}
@@ -428,8 +440,8 @@ export class EditOffsetsModal extends Component<{
                 <span>Review</span>
                 <span><ChevronRightIcon/></span>
             </Button>
-        </div>;
-        else return <>
+        </Flex>;
+        else return <Flex gap={2}>
             <Button key="back" onClick={() => this.setPage(0)} style={{paddingRight: '18px'}}
                     isDisabled={disableNav}
             >
@@ -447,7 +459,7 @@ export class EditOffsetsModal extends Component<{
             >
                 <span>Apply</span>
             </Button>
-        </>;
+        </Flex>;
     }
 
     updateVisible(visible: boolean) {

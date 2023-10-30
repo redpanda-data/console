@@ -9,26 +9,33 @@
 * by the Apache License, Version 2.0
 */
 
-import { CSSProperties } from 'react';
+import { CSSProperties, FC, ReactElement, ReactNode } from 'react';
 import { observer } from 'mobx-react';
-import { Select } from 'antd';
 import { AclOperation, AclStrPermission } from '../../../state/restInterfaces';
-import { CheckIcon, XIcon, MinusIcon } from '@heroicons/react/solid';
-const { Option } = Select;
-
+import { SingleSelect } from '../../misc/Select';
+import { CheckIcon, CloseIcon, MinusIcon } from '@chakra-ui/icons';
+import { Flex } from '@redpanda-data/ui';
+import { Label } from '../../../utils/tsxUtils';
 
 const icons = {
     minus: <MinusIcon color="grey" />,
     check: <CheckIcon color="green" />,
-    cross: <XIcon color="red" />,
+    cross: <CloseIcon color="red" />,
 }
 
+const OptionContent: FC<{
+    children: ReactNode,
+    icon: ReactElement,
+}> = ({children, icon}) => <Flex gap={2} alignItems="center" pointerEvents="none">
+    {icon}
+    <span>{children}</span>
+</Flex>
 
 export const Operation = observer((p: {
     operation: string | AclOperation,
     value: AclStrPermission,
     disabled?: boolean,
-    onChange?: (v: AclStrPermission) => void,
+    onChange: (v: AclStrPermission) => void,
     style?: CSSProperties
 }) => {
     const disabled = p.disabled ?? false;
@@ -37,39 +44,30 @@ export const Operation = observer((p: {
         ? p.operation
         : AclOperation[p.operation];
 
-    const optionContent = (icon: JSX.Element, text: string) => <>
-        <div className="iconSelectOption">
-            {icon}
-            <span>{text}</span>
-        </div>
-    </>
-
-    return <Select
-        className="aclOperationSelect"
-        style={Object.assign({}, p.style, { pointerEvents: disabled ? 'none' : undefined })}
-        bordered={!disabled}
-        disabled={disabled}
-
-        size="middle"
-        showArrow={false}
-        value={p.value}
-        onChange={p.onChange}
-        virtual={false}
-        defaultValue="Any"
-
-        dropdownMatchSelectWidth={false}
-
-        optionLabelProp="label"
-
-    >
-        <Option value="Any" label={optionContent(icons.minus, operationName)}>
-            {optionContent(icons.minus, 'Not set')}
-        </Option>
-        <Option value="Allow" label={optionContent(icons.check, operationName)}>
-            {optionContent(icons.check, 'Allow')}
-        </Option>
-        <Option value="Deny" label={optionContent(icons.cross, operationName)}>
-            {optionContent(icons.cross, 'Deny')}
-        </Option>
-    </Select>
+    return (
+        <Label text={operationName}>
+            <SingleSelect<AclStrPermission>
+                components={{
+                    DropdownIndicator: null,
+                }}
+                options={[
+                    {
+                        value: 'Any',
+                        label: <OptionContent icon={icons.minus}>Not set</OptionContent>
+                    },
+                    {
+                        value: 'Allow',
+                        label: <OptionContent icon={icons.check}>Allow</OptionContent>
+                    },
+                    {
+                        value: 'Deny',
+                        label: <OptionContent icon={icons.cross}>Deny</OptionContent>
+                    },
+                ]}
+                value={p.value}
+                onChange={p.onChange}
+                isDisabled={disabled}
+            />
+        </Label>
+    )
 });
