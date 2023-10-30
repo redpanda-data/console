@@ -133,7 +133,6 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                                             {$state.modalValueType === 'custom' && <>
                                                 <Text fontWeight="bold">Set at topic configuration</Text>
                                                 <Box maxWidth={300}>
-                                                    ....{configEntry.frontendFormat}
                                                     <ConfigEntryEditor
                                                         className={'configEntryEditor ' + (isCustom ? '' : 'disabled')}
                                                         entry={configEntry}/>
