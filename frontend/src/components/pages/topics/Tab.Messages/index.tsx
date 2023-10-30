@@ -10,8 +10,8 @@
  */
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon, KebabHorizontalIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio, Select, Table } from 'antd';
+import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
+import { ConfigProvider, DatePicker, Radio, Table } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
@@ -43,14 +43,11 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Code, Empty, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Code, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
-import { Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
-
-const { Option } = Select;
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -1238,29 +1235,32 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
         { title: 'Key', dataIndex: 'key' },
         // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
+        { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     render() {
-        const defaultValues = uiState.topicSettings.previewColumnFields.map(column => column.title);
-        const children = this.defaultColumnList.map((column: ColumnList) =>
-            <Option value={column.dataIndex} key={column.dataIndex}>{column.title}</Option>
-        );
+        const value = uiState.topicSettings.previewColumnFields.map(column => ({
+            label: column.title,
+            value: column.dataIndex
+        }));
 
-        return <>
-            <Select
-                mode="multiple"
-                style={{ width: '100%' }}
-                placeholder="Currently on default View, please select"
-                defaultValue={defaultValues}
+        return (
+            <Select<ColumnList['dataIndex']>
+                isMulti
+                options={this.defaultColumnList.map((column: ColumnList) => ({
+                    label: column.title,
+                    value: column.dataIndex,
+                }))}
+                defaultValue={value}
+                value={value}
+                // @ts-ignore
                 onChange={this.handleColumnListChange}
-            >
-                {children}
-            </Select>
-        </>;
+            />
+        )
     }
 
-    handleColumnListChange = (values: string[]) => {
+    handleColumnListChange = (newValue: Array<{value: string}>) => {
+        const values: string[] = newValue.map(({value}) => value)
         if (!values.length) {
             uiState.topicSettings.previewColumnFields = [];
         } else {
@@ -1364,11 +1364,10 @@ class MessageSearchFilterBar extends Component {
                             borderWidth="0px 1px"
                             px="6px"
                             textDecoration={e.isActive ? '' : 'line-through'}
-                            opacity={e.isActive ? 1 : 0.5}
                         >
                             {e.name ? e.name : (e.code ? e.code : 'New Filter')}
                         </TagLabel>
-                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" />
+                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
 

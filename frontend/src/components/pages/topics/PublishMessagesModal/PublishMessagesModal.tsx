@@ -10,7 +10,6 @@
  */
 
 import { EditorProps, Monaco } from '@monaco-editor/react';
-import { Select } from 'antd';
 import { action, computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
@@ -20,7 +19,8 @@ import { Label } from '../../../../utils/tsxUtils';
 import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 import Tabs, { Tab } from '../../../misc/tabs/Tabs';
 import HeadersEditor from './Headers';
-import { Box, Tooltip } from '@redpanda-data/ui';
+import { Box, Flex, isMultiValue, Select, Tooltip } from '@redpanda-data/ui';
+import { SingleSelect } from '../../../misc/Select';
 
 type Props = {
     state: {
@@ -60,59 +60,74 @@ export class PublishMessagesModalContent extends Component<Props> {
 
     render() {
         return (
-            <div className="publishMessagesModal">
-                <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
+            <Flex gap={4} flexDirection="column">
+                <Box>
                     <Label text="Topics">
-                        <Select
-                            style={{ minWidth: '300px' }}
-                            mode="multiple"
-                            allowClear
-                            showArrow
-                            showSearch
+                        <Select<string>
+                            isMulti
+                            // TODO - change type of value to only contain values instead of objects with labels
+                            value={this.props.state.topics.map((name) => ({
+                                label: name,
+                                value: name,
+                            }))}
                             options={this.availableTopics}
-                            value={this.props.state.topics}
-                            onChange={action((v: string[]) => {
-                                this.props.state.topics = v;
-                                if (this.availablePartitions.length == 2)
-                                    // auto + one partition
-                                    this.props.state.partition = 0; // partition 0
-                                if (this.availablePartitions.length == 1) this.props.state.partition = -1; // auto
+                            onChange={action((v) => {
+                                // TODO - improve TS support to take isMulti into account
+                                if (isMultiValue(v)) {
+                                    this.props.state.topics = v.map(({value}) => value);
+                                    if (this.availablePartitions.length == 2) {
+                                        // auto + one partition
+                                        this.props.state.partition = 0; // partition 0
+                                    }
+                                    if (this.availablePartitions.length == 1) {
+                                        this.props.state.partition = -1; // auto
+                                    }
+                                }
                             })}
                         />
                     </Label>
+                </Box>
 
-                    <Label text="Partition">
-                        <Select
-                            style={{ minWidth: '140px' }}
-                            disabled={this.availablePartitions.length <= 1}
-                            options={this.availablePartitions}
-                            value={this.props.state.partition}
-                            onChange={(v, d) => {
-                                this.props.state.partition = v;
-                                console.log('selected partition change: ', { v: v, d: d });
-                            }}
-                        />
-                    </Label>
+                <Flex gap={4} flexWrap="wrap">
 
-                    <Label text="Compression Type">
-                        <Select style={{ minWidth: '160px' }} options={this.availableCompressionTypes} value={this.props.state.compressionType} onChange={(v, _d) => (this.props.state.compressionType = v)} />
-                    </Label>
+                    <Box width={160}>
+                        <Label text="Partition">
+                            <SingleSelect
+                                options={this.availablePartitions}
+                                value={this.props.state.partition}
+                                onChange={(v) => {
+                                    this.props.state.partition = v;
+                                }}
+                            />
+                        </Label>
+                    </Box>
 
-                    <Label text="Type">
-                        <Select<EncodingType> value={this.props.state.encodingType} onChange={e => (this.props.state.encodingType = e)} style={{ minWidth: '150px' }} virtual={false}>
-                            {encodingOptions.map(x => (
-                                <Select.Option key={x.value} value={x.value}>
+                    <Box width={180}>
+                        <Label text="Compression Type">
+                            <SingleSelect<CompressionType>
+                                options={this.availableCompressionTypes}
+                                value={this.props.state.compressionType}
+                                onChange={(v) => (this.props.state.compressionType = v)}
+                            />
+                        </Label>
+                    </Box>
+
+                    <Box width={160}>
+                        <Label text="Type">
+                            <SingleSelect<EncodingType> options={encodingOptions.map(x => ({
+                                label: (
                                     <Tooltip label={x.tooltip} placement="right" hasArrow>
-                                        <div>{x.label}</div>
+                                        {x.label}
                                     </Tooltip>
-                                </Select.Option>
-                            ))}
-                        </Select>
-                    </Label>
-                </div>
+                                ),
+                                value: x.value
+                            }))} value={this.props.state.encodingType} onChange={e => (this.props.state.encodingType = e)} />
+                        </Label>
+                    </Box>
+                </Flex>
 
                 <Tabs tabs={this.tabs} defaultSelectedTabKey="value" />
-            </div>
+            </Flex>
         );
     }
 

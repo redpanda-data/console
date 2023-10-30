@@ -19,7 +19,7 @@ import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { appGlobal } from '../../../state/appGlobal';
 import { ClusterConnectors, ConnectorValidationResult } from '../../../state/restInterfaces';
-import { Alert, Select, Table } from 'antd';
+import { Alert, Table } from 'antd';
 import { HiddenRadioList } from '../../misc/HiddenRadioList';
 import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
 import { ConfigPage } from './dynamic-ui/components';
@@ -47,7 +47,7 @@ import {
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
 
-const { Option } = Select;
+import { SingleSelect } from '../../misc/Select';
 
 const ConnectorType = observer(
     (p: {
@@ -118,20 +118,16 @@ const ConnectorType = observer(
                 {p.connectClusters.length > 1 && (
                     <>
                         <h2>Installation Target</h2>
-                        <Select<string>
-                            style={{ minWidth: '400px' }}
-                            placeholder="Choose Connect Cluster…"
-                            onChange={(clusterName) => {
-                                p.onActiveClusterChange(clusterName);
-                            }}
-                            value={p.activeCluster ?? undefined}
-                        >
-                            {p.connectClusters.map(({ clusterName }) => (
-                                <Option key={clusterName} value={clusterName}>
-                                    {clusterName}
-                                </Option>
-                            ))}
-                        </Select>
+                        <Box maxWidth={400}>
+                            <SingleSelect<string | undefined>
+                                options={p.connectClusters.map(({clusterName}) => ({
+                                    value: clusterName,
+                                    label: clusterName,
+                                }))}
+                                value={p.activeCluster ?? undefined}
+                                onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
+                            />
+                        </Box>
                     </>
                 )}
 

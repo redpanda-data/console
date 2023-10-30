@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Input, Select, Slider } from 'antd';
+import { Input, Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,7 +20,8 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
-import { Alert, AlertIcon, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Flex, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Text, useToast } from '@redpanda-data/ui';
+import { SingleSelect } from '../../../misc/Select';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -54,11 +55,13 @@ function SelectPartitionStep({
     selectedPartitionOption,
     onPartitionOptionSelected,
     onPartitionSpecified: onSpecificPartitionSelected,
+    specificPartition,
     partitions,
 }: {
     selectedPartitionOption: PartitionOption;
     onPartitionOptionSelected: (v: PartitionOption) => void;
-    onPartitionSpecified: (v: null | number) => void;
+    onPartitionSpecified: (v: number | null) => void;
+    specificPartition: number | null;
     partitions: Array<number>;
 }): JSX.Element {
     return (
@@ -99,19 +102,16 @@ function SelectPartitionStep({
                                     e.stopPropagation();
                                 }}
                             >
-                                <Select<number>
-                                    size="middle"
-                                    className={styles.partitionSelect}
-                                    onChange={onSpecificPartitionSelected}
-                                    defaultActiveFirstOption={false}
+                                <SingleSelect<number | undefined>
+                                    size="md"
+                                    options={partitions.map(i => ({
+                                        label: `Partition ${i}`,
+                                        value: i
+                                    }))}
+                                    value={specificPartition ?? undefined}
+                                    onChange={onSpecificPartitionSelected as (v: number | undefined) => void}
                                     placeholder="Choose Partition…"
-                                >
-                                    {partitions.map((i) => (
-                                        <Select.Option key={i} value={i}>
-                                            Partition {i.toString()}
-                                        </Select.Option>
-                                    ))}
-                                </Select>
+                                />
                             </span>
                         ),
                     },
@@ -465,11 +465,13 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     {hasErrors && (
                         <Alert status="error" mb={2}>
                             <AlertIcon />
-                            <p>
-                                Errors have occurred when processing your request. Please contact your Kafka
-                                Administrator.
-                            </p>
-                            <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
+                            <Flex flexDirection="column" gap={4} p={2}>
+                                <Text>
+                                    Errors have occurred when processing your request. Please contact your Kafka
+                                    Administrator.
+                                </Text>
+                                <List>{errors.map((e, i) => <ListItem key={String(i)}>{e}</ListItem>)}</List>
+                            </Flex>
                         </Alert>
                     )}
                     {!hasErrors && step === 1 && (
@@ -477,6 +479,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                             partitions={range(0, topic.partitionCount)}
                             onPartitionOptionSelected={setPartitionOption}
                             selectedPartitionOption={partitionOption}
+                            specificPartition={specifiedPartition}
                             onPartitionSpecified={setSpecifiedPartition}
                         />
                     )}

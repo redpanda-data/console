@@ -10,15 +10,14 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Select } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyWidth } from '../../../../state/restInterfaces';
-import { findPopupContainer } from '../../../../utils/tsxUtils';
 import { Property } from '../../../../state/connect/state';
 import { CommaSeparatedStringList } from './List';
 import { SecretInput } from './forms/SecretInput';
 import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
 import { ErrorWrapper } from './forms/ErrorWrapper';
+import { SingleSelect } from '../../../misc/Select';
 
 export const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
@@ -64,14 +63,13 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                 // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
                 inputComp = (
-                    <Select
-                        value={v}
-                        onChange={(e) => (p.value = e)}
-                        options={options}
-                        getPopupContainer={findPopupContainer}
-                        {...{ spellCheck: false }}
-                        style={{ minWidth: '260px' }}
-                    />
+                    <Box maxWidth={260}>
+                        <SingleSelect
+                            value={v}
+                            onChange={(e) => (p.value = e)}
+                            options={options}
+                        />
+                    </Box>
                 );
             } else {
                 // Input
