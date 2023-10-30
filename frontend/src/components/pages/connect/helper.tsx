@@ -602,7 +602,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
                          <AlertDescription>
                              <Box>
                                  <Text as="h3">{err.title}</Text>
-                                 <Text as="p">{err.content}</Text>
+                                 <Text>{err.content}</Text>
                              </Box>
                          </AlertDescription>
                      </Alert>

@@ -547,7 +547,7 @@ function Review({
                             <AlertDescription>
                                 <Box>
                                     <Text as="h3">Validation attempt failed</Text>
-                                    <Text as="p">{String(validationFailure)}</Text>
+                                    <Text>{String(validationFailure)}</Text>
                                 </Box>
                             </AlertDescription>
                         </Alert>
@@ -563,7 +563,7 @@ function Review({
                             <AlertDescription>
                                 <Box>
                                     <Text as="h3">Creation attempt failed</Text>
-                                    <Text as="p">{String(creationFailure)}</Text>
+                                    <Text>{String(creationFailure)}</Text>
                                 </Box>
                             </AlertDescription>
                         </Alert>
@@ -579,7 +579,7 @@ function Review({
                             <AlertDescription>
                                 <Box>
                                     <Text as="h3">An error occurred</Text>
-                                    <Text as="p">{String(genericFailure)}</Text>
+                                    <Text>{String(genericFailure)}</Text>
                                 </Box>
                             </AlertDescription>
                         </Alert>
