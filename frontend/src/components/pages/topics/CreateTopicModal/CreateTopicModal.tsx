@@ -1,5 +1,5 @@
 import { PlusIcon, XIcon } from '@primer/octicons-react';
-import { InputNumber, Slider } from 'antd';
+import { Slider } from 'antd';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useEffect, useState } from 'react';
@@ -7,7 +7,17 @@ import { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import './CreateTopicModal.scss';
-import { Box, Button, Input, InputGroup, InputLeftAddon, InputRightAddon, Select, isSingleValue } from '@redpanda-data/ui';
+import {
+    Box,
+    Button,
+    Input,
+    InputGroup,
+    InputLeftAddon,
+    InputRightAddon,
+    isSingleValue,
+    NumberInput,
+    Select
+} from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 import { api } from '../../../../state/backendApi';
 import { isServerless } from '../../../../config';
@@ -590,15 +600,15 @@ export function RatioInput(p: {
             onChange={x => p.onChange(x / 100)}
             tooltip={{ formatter: null }}
         />
-        <InputNumber
+        <NumberInput
             min={0} max={100}
-            value={Math.round(p.value * 100)}
+            value={Math.round(p.value * 100) + '%'}
             onChange={x => {
-                if (x === null) return;
-                p.onChange(x / 100);
+                if (x === null) {
+                    return;
+                }
+                p.onChange(Number(x) / 100);
             }}
-            addonAfter="%"
-            controls={false}
             size="small"
         />
     </div>

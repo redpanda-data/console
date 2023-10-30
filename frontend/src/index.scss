@@ -2205,35 +2205,6 @@ mark {
     padding-right: 3em;
 }
 
-.tableInlineSearchBox {
-    .ant-input-affix-wrapper {
-        // transform-origin: right 50%;
-        transform-origin: center center;
-        // ease-out ^3
-        animation: visible 120ms cubic-bezier(0.19, 1, 0.22, 1) 0ms 1;
-
-        $zoom: 0.96;
-        $aspectRatio: 5;
-        $initialScale: $zoom,
-        (($zoom - 1) * $aspectRatio)+1;
-
-
-        @keyframes visible {
-            from {
-                opacity: 0;
-                // transform: scale(0.95, 0.8) perspective(900px) rotateX(45deg) translateY(8px);
-                transform: scale($initialScale);
-            }
-
-            to {
-                opacity: 1;
-                // transform: scale(1.0) perspective(900px) rotateX(0deg) translateY(0px);
-                transform: scale(1);
-            }
-        }
-
-    }
-}
 
 .devOnly {
     padding: 1em;
@@ -2804,8 +2775,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     background: rgba(200, 205, 210, 0.16);
 
     max-height: 300px;
-    overflow: hidden;
-    overflow-y: auto;
 
     .moveHandle {
         display: inline-flex;

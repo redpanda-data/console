@@ -10,7 +10,6 @@
  */
 
 import { observer } from 'mobx-react';
-import { Input } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +29,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result, PasswordInput } from '@redpanda-data/ui';
 import React, { FC, useRef } from 'react';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -224,7 +223,7 @@ class AclList extends PageComponent {
                         <Code>{state.username}</Code>
                     </span>
                     <span>Password:</span><span style={{ justifySelf: 'start' }}>
-                        <Input.Password value={state.password} readOnly />
+                        <PasswordInput value={state.password} isReadOnly />
                     </span>
                     <span>Mechanism:</span><span style={{ justifySelf: 'start' }}>
                         <Code>{state.mechanism}</Code>

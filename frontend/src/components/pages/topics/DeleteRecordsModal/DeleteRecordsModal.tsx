@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Input, Slider } from 'antd';
+import { Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,7 +20,8 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
-import { Alert, AlertIcon, Button, Flex, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Text, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Flex,
+    Input, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Text, useToast } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 
 type AllPartitions = 'allPartitions';
@@ -277,7 +278,7 @@ const ManualOffsetContent = observer(
                     className={styles.slider}
                 />
                 <Input
-                    className={styles.sliderValue}
+                    maxWidth={124}
                     value={sliderValue}
                     onChange={(e) => {
                         const { value } = e.target;

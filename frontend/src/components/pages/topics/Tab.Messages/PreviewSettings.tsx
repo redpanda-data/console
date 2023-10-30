@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Input } from 'antd';
 import { arrayMoveMutable } from 'array-move';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -23,7 +22,8 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import { Box, Button, Checkbox, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, Flex,
+    Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 
 
@@ -271,7 +271,10 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                 content={<div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }} >
 
                     <Label text="Display Name" style={{ marginBottom: '.5em' }}>
-                        <Input size="small" style={{ flexGrow: 1, flexBasis: '50px' }}
+                        <Input
+                            size="sm"
+                            flexGrow={1}
+                            flexBasis={50}
                             value={tag.customName}
                             onChange={e => tag.customName = e.target.value}
                             autoComplete={randomId()}
