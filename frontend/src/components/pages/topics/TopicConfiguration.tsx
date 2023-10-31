@@ -133,15 +133,17 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                                             {$state.modalValueType === 'custom' && <>
                                                 <Text fontWeight="bold">Set at topic configuration</Text>
                                                 <Box maxWidth={300}>
-                                                    <ConfigEntryEditor className={'configEntryEditor ' + (isCustom ? '' : 'disabled')} entry={configEntry}/>
+                                                    <ConfigEntryEditor
+                                                        className={'configEntryEditor ' + (isCustom ? '' : 'disabled')}
+                                                        entry={configEntry}/>
                                                 </Box>
                                             </>}
-                                        </Flex>
 
-                                        {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
-                                            <AlertIcon/>
-                                            {$state.modalError}
-                                        </Alert>}
+                                            {$state.modalError && <Alert status="error" style={{margin: '1em 0'}}>
+                                                <AlertIcon/>
+                                                {$state.modalError}
+                                            </Alert>}
+                                        </Flex>
                                     </div>
                                 )
                             }}</Observer>

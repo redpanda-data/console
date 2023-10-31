@@ -11,12 +11,11 @@
 
 import React, { Component, FC, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
-import { Input, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 import { transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
-import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text, Tabs } from '@redpanda-data/ui';
+import { Button, Checkbox, Flex, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useToast, Text, Tabs, Input, NumberInput } from '@redpanda-data/ui';
 
 type SettingsTabKeys = 'statisticsBar' | 'jsonViewer' | 'importExport' | 'autoRefresh'
 
@@ -96,16 +95,19 @@ class JsonViewerTab extends Component {
 
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
                 <Label text="Font Size">
-                    <Input value={settings.fontSize} onChange={e => settings.fontSize = e.target.value} style={{ maxWidth: '150px' }} />
+                    <Input value={settings.fontSize} onChange={e => settings.fontSize = e.target.value} maxWidth={150} />
                 </Label>
                 <Label text="Line Height">
-                    <Input value={settings.lineHeight} onChange={e => settings.lineHeight = e.target.value} style={{ maxWidth: '150px' }} />
+                    <Input value={settings.lineHeight} onChange={e => settings.lineHeight = e.target.value} maxWidth={150} />
                 </Label>
                 <Label text="Maximum string length before collapsing">
-                    <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = (e ?? 200)} min={0} max={10000} style={{ maxWidth: '150px' }} />
+                    <NumberInput
+                        value={settings.maxStringLength}
+                        onChange={e => settings.maxStringLength = Number(e ?? 200)} min={0} max={10000}
+                        maxWidth={150}/>
                 </Label>
                 <Label text="Maximum depth before collapsing nested objects">
-                    <InputNumber value={settings.collapsed} onChange={e => settings.collapsed = (e ?? 2)} min={1} max={50} style={{ maxWidth: '150px' }} />
+                    <NumberInput value={settings.collapsed} onChange={e => settings.collapsed = Number(e ?? 2)} min={1} max={50} maxWidth={150} />
                 </Label>
             </div>
         </div>;
@@ -121,16 +123,15 @@ const ImportExportTab: FC = observer(() => {
         importCode: '',
         resetConfirm: ''
     }))
-    return <>
+    return <Flex flexDirection="column" gap={2}>
         <Label text="Import">
-            <Flex>
+            <Flex gap={2}>
                 <Input
-                    style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }}
+                    maxWidth={360}
                     spellCheck={false}
                     placeholder="Paste a previously exported settings string..."
                     value={$state.importCode}
                     onChange={e => $state.importCode = e.target.value}
-                    size="small"
                 />
                 <Button onClick={() => {
                     try {
@@ -181,11 +182,14 @@ const ImportExportTab: FC = observer(() => {
         </Label>
 
         <Label text="Reset">
-            <>
-                <Input style={{maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em'}} spellCheck={false}
-                       placeholder='type "reset" here to confirm and enable the button'
-                       value={$state.resetConfirm}
-                       onChange={str => $state.resetConfirm = str.target.value}/>
+            <Flex gap={2} alignItems="center">
+                <Input
+                    maxWidth={360}
+                    spellCheck={false}
+                    placeholder='type "reset" here to confirm and enable the button'
+                    value={$state.resetConfirm}
+                    onChange={str => $state.resetConfirm = str.target.value}
+                />
                 <Button onClick={() => {
                     clearSettings();
                     toast({
@@ -195,9 +199,9 @@ const ImportExportTab: FC = observer(() => {
                     $state.resetConfirm = '';
                 }} colorScheme="red" isDisabled={$state.resetConfirm !== 'reset'}>Reset</Button>
                 <span className="smallText">Clear all your user settings, resetting them to the default values</span>
-            </>
+            </Flex>
         </Label>
-    </>;
+    </Flex>;
 })
 
 @observer
@@ -207,15 +211,15 @@ class AutoRefreshTab extends Component {
             <p>Settings for the Auto Refresh Button</p>
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
                 <Label text="Interval in seconds">
-                    <InputNumber
+                    <NumberInput
                         value={uiSettings.autoRefreshIntervalSecs}
                         onChange={e => {
                             if (e) {
-                                uiSettings.autoRefreshIntervalSecs = e;
+                                uiSettings.autoRefreshIntervalSecs = Number(e);
                             }
                         }}
                         min={5} max={300}
-                        style={{ maxWidth: '150px' }}
+                        maxWidth={150}
                     />
                 </Label>
             </div>
