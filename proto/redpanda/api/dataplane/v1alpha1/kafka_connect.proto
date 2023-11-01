@@ -1,0 +1,314 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// The following states are possible for a connector or one of its tasks
+// implement the state interface described in the Kafka connect API @see
+// https://docs.confluent.io/platform/current/connect/monitoring.html#connector-and-task-status
+// this includes holistic unified connector status that takes into account not
+// just the connector instance state, but also state of all the tasks within the
+// connector
+enum ConnectorHolisticState {
+  CONNECTOR_HOLISTIC_STATE_UNSPECIFIED = 0;
+  // PAUSED: The connector/task has been administratively paused.
+  CONNECTOR_HOLISTIC_STATE_PAUSED = 1;
+  // RESTARTING: he connector/task is restarting.
+  CONNECTOR_HOLISTIC_STATE_RESTARTING = 2;
+  // DESTROYED: Connector is in destroyed state, regardless of any tasks.
+  CONNECTOR_HOLISTIC_STATE_DESTROYED = 3;
+  // STOPPED: The connector/task has been stopped.
+  CONNECTOR_HOLISTIC_STATE_STOPPED = 4;
+  // The connector/task has not yet been assigned to a worker
+  // UNASSIGNED: Connector is in unassigned state.
+  //    Or Connector is in running state, and there are unassigned tasks.
+  CONNECTOR_HOLISTIC_STATE_UNASSIGNED = 5;
+  // HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
+  CONNECTOR_HOLISTIC_STATE_HEALTHY = 6;
+  // UNHEALTHY: Connector is failed state.
+  //			Or Connector is in running state but has 0 tasks.
+  // 			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
+  CONNECTOR_HOLISTIC_STATE_UNHEALTHY = 7;
+  // DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
+  CONNECTOR_HOLISTIC_STATE_DEGRADED = 8;
+  // UNKNOWN: The connector/task could no be determined
+  CONNECTOR_HOLISTIC_STATE_UNKNOWN = 9;
+}
+
+message ConnectorPlugin {
+  string type = 1;
+  string version = 2;
+  string class = 3;
+}
+
+message ConnectCluster {
+  message Info {
+    string version = 1;
+    string commit = 2;
+    string kafka_cluster_id = 3;
+  }
+  string name = 1;
+  string address = 2;
+  Info info = 3;
+  repeated ConnectorPlugin plugins = 4;
+}
+
+message ConnectorStatus {
+  message Connector {
+    string state = 1;
+    string worker_id = 2;
+  }
+  string name = 1;
+  Connector connector = 2;
+  repeated TaskStatus tasks = 3;
+  string type = 4;
+  string trace = 5;
+}
+
+message TaskStatus {
+  int32 id = 1;
+  string state = 2;
+  string worker_id = 3;
+  string trace = 4;
+}
+
+message TaskInfo {
+  string connector = 1;
+  int32 task = 2;
+}
+
+// ConnectorError is the error of a connector, this is holistic error
+// abstraction, made parsing the error trace of connector or Task
+message ConnectorError {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_ERROR = 1;
+    TYPE_WARNING = 2;
+  }
+  Type type = 1;
+  string title = 2;
+  string content = 3;
+}
+
+// ConectorInfo is the spec of the connector, as defined in the Kafka connect
+// API, it can be used as input of the connector creation or output of the
+// connectors
+message ConnectorSpec {
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  map<string, string> config = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  repeated TaskInfo tasks = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string type = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message ListConnectorsRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  string page_token = 2;
+}
+
+message RestartConnectorRequest {
+  message Options {
+    bool include_tasks = 1;
+    bool only_failed = 2;
+  }
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  Options options = 3;
+}
+
+message DeleteConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message PauseConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message ResumeConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message CreateConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  ConnectorSpec connector = 2;
+}
+
+message GetConnectorResponse {
+  ConnectorSpec connector = 1;
+  ConnectorHolisticState holistic_state = 4;
+  repeated ConnectorError errors = 5;
+}
+
+message CreateConnectorResponse {
+  ConnectorSpec connector = 1;
+}
+
+message ListConnectorsResponse {
+  message ConnectorInfoStatus {
+    // name is the connector name
+    string name = 1;
+    ConnectorSpec info = 2;
+    ConnectorStatus status = 3;
+    // holistic_state of all the tasks within the connector this is our internal
+    // holistic state concept
+    ConnectorHolisticState holistic_state = 4;
+    // Errors is list of parsed connectors' and tasks' errors
+    repeated ConnectorError errors = 5;
+  }
+
+  // connectors is the list of connectors the key is the connector name
+  repeated ConnectorInfoStatus connectors = 1;
+  string next_page_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint."}];
+}
+
+message GetConnectClusterRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetConnectClusterResponse {
+  ConnectCluster cluster = 1;
+}
+
+message ListConnectClustersRequest {}
+
+message ListConnectClustersResponse {
+  repeated ConnectCluster clusters = 1;
+}
+
+// KafkaConnectService is the service for the Kafka connect, it exposes the
+// Kafka Connect API, you can set multiple Kafka connect services and all of
+// them can be managed using this service definition, the request is not only
+// proxied but also enriched with better error handling and custom
+// documentation and configuration
+service KafkaConnectService {
+  rpc ListConnectClusters(ListConnectClustersRequest) returns (ListConnectClustersResponse) {
+    option (google.api.http) = {get: "/v1alpha1/kafka-connect/clusters"};
+  }
+  // GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+  // Connect equivalent REST endpoint
+  rpc GetConnectCluster(GetConnectClusterRequest) returns (GetConnectClusterResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/kafka-connect/clusters/{cluster_name}"
+      response_body: "cluster"
+    };
+  }
+  // ListConnectors implements the list connectors method, exposes a Kafka
+  // Connect equivalent REST endpoint
+  rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List connectors"
+      description: "List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file."
+    };
+  }
+  // CreateConnector implements the create connector method, and exposes an
+  // equivalent REST endpoint as the Kafka connect API endpoint
+  rpc CreateConnector(CreateConnectorRequest) returns (CreateConnectorResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"
+      body: "connector"
+      response_body: "connector"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create connector"
+      description: "Attempt to create a connector with the specific configuration"
+    };
+  }
+  // RestartConnector implements the restart connector method, exposes a Kafka
+  // Connect equivalent REST endpoint
+  rpc RestartConnector(RestartConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart"
+      body: "options"
+    };
+  }
+  // GetConnector implements the get connector method, exposes a Kafka
+  // Connect equivalent REST endpoint
+  rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"
+      response_body: "connector"
+    };
+  }
+  // PauseConnector implements the pause connector method, exposes a Kafka
+  // connect equivalent REST endpoint
+  rpc PauseConnector(PauseConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"
+      body: "*"
+    };
+  }
+  // ResumeConnector implements the resume connector method, exposes a Kafka
+  // connect equivalent REST endpoint
+  rpc ResumeConnector(ResumeConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"
+      body: "*"
+    };
+  }
+  // DeleteConnector implements the delete connector method, exposes a Kafka
+  // connect equivalent REST endpoint
+  rpc DeleteConnector(DeleteConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"};
+  }
+}

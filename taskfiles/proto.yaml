@@ -37,9 +37,9 @@ tasks:
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - task: lint
       - task: format
-      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
+      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH:{{ .BUILD_ROOT }}/bin/go buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
       - for: { var: BUF_INPUTS }
-        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
+        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH:{{ .BUILD_ROOT }}/bin/go buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
@@ -82,8 +82,10 @@ tasks:
   install-connect-gateway:
     desc: install connect-gateway
     vars:
-      VERSION: 0.2.2
+      VERSION: 0.3.1
     cmds:
-      - 'go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@d941a13c0fbf10931098de2fd084d3ee8d0bd1e4'
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
     status:
-      - '[[ $(protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'
+      - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway >/dev/null 2>&1"
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'
