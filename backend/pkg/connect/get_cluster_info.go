@@ -25,6 +25,8 @@ type ClusterInfo struct {
 	Name            string                        `json:"clusterName"`
 	Host            string                        `json:"host"`
 	Version         string                        `json:"clusterVersion"`
+	Commit          string                        `json:"clusterCommit"`
+	KafkaClusterID  string                        `json:"kafkaClusterId"`
 	Plugins         []connect.ConnectorPluginInfo `json:"plugins"`
 	EnabledFeatures []ClusterFeature              `json:"enabledFeatures,omitempty"`
 }
@@ -59,10 +61,12 @@ func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (Clust
 	}
 
 	return ClusterInfo{
-		Name:    c.Cfg.Name,
-		Host:    c.Cfg.URL,
-		Version: rootInfo.Version,
-		Plugins: plugins,
+		Name:           c.Cfg.Name,
+		Host:           c.Cfg.URL,
+		Version:        rootInfo.Version,
+		Commit:         rootInfo.Commit,
+		KafkaClusterID: rootInfo.KafkaClusterID,
+		Plugins:        plugins,
 		// EnabledFeatures may be extended inside the HTTP handler, which has access
 		// to the hooks.
 		EnabledFeatures: nil,

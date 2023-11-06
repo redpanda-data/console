@@ -50,7 +50,7 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 	if err != nil {
 		return con.ConnectorInfo{}, &rest.Error{
 			Err:          fmt.Errorf("failed to create connector: %w", err),
-			Status:       http.StatusOK,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to create Connector: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
 			IsSilent:     false,

@@ -40,15 +40,31 @@ const (
 type connectorStatus = string
 
 const (
-	connectorStatusHealthy    connectorStatus = "HEALTHY"
-	connectorStatusUnhealthy  connectorStatus = "UNHEALTHY"
-	connectorStatusDegraded   connectorStatus = "DEGRADED"
-	connectorStatusPaused     connectorStatus = "PAUSED"
-	connectorStatusStopped    connectorStatus = "STOPPED"
-	connectorStatusRestarting connectorStatus = "RESTARTING"
-	connectorStatusUnassigned connectorStatus = "UNASSIGNED"
-	connectorStatusDestroyed  connectorStatus = "DESTROYED"
-	connectorStatusUnknown    connectorStatus = "UNKNOWN"
+	// ConnectorStatusHealthy Connector is in running state, > 0 tasks, all of
+	// them in running state.
+	ConnectorStatusHealthy connectorStatus = "HEALTHY"
+	// ConnectorStatusUnhealthy Connector is failed state.
+	//   Or Connector is in running state but has 0 tasks.
+	//   Or Connector is in running state, has > 0 tasks, and all tasks are in
+	//   failed state.
+	ConnectorStatusUnhealthy connectorStatus = "UNHEALTHY"
+	// ConnectorStatusDegraded Connector is in running state, has > 0 tasks, but
+	// has at least one state in failed state, but not all tasks are failed.
+	ConnectorStatusDegraded connectorStatus = "DEGRADED"
+	// ConnectorStatusPaused Connector is administratively paused
+	ConnectorStatusPaused connectorStatus = "PAUSED"
+	// ConnectorStatusStopped Connector has been stopped
+	ConnectorStatusStopped connectorStatus = "STOPPED"
+	// ConnectorStatusRestarting Connector is either actively restarting or is
+	// expected to restart soon
+	ConnectorStatusRestarting connectorStatus = "RESTARTING"
+	// ConnectorStatusUnassigned Connector is in unassigned state. Or Connector
+	// is in running state, and there are unassigned tasks.
+	ConnectorStatusUnassigned connectorStatus = "UNASSIGNED"
+	// ConnectorStatusDestroyed Connector is in destroyed state, regardless of any tasks.
+	ConnectorStatusDestroyed connectorStatus = "DESTROYED"
+	// ConnectorStatusUnknown Connector statate coudn't be determined
+	ConnectorStatusUnknown connectorStatus = "UNKNOWN"
 )
 
 // ClusterConnectors contains all available information about the deployed connectors
@@ -77,6 +93,7 @@ type ClusterConnectorInfo struct {
 	Topic        string                      `json:"topic"` // Kafka Topic name
 	State        connectorState              `json:"state"` // Running, ..
 	Status       connectorStatus             `json:"status"`
+	WorkerID     string                      `json:"workerId"`
 	TotalTasks   int                         `json:"totalTasks"`
 	RunningTasks int                         `json:"runningTasks"`
 	Trace        string                      `json:"trace,omitempty"`
@@ -304,7 +321,7 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 			pausedTasks++
 		case connectorStateRestarting:
 			restartingTasks++
-		case connectorStatusUnassigned:
+		case ConnectorStatusUnassigned:
 			unassignedTasks++
 		}
 	}
@@ -326,10 +343,10 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
 	if (c.Status.Connector.State == connectorStateRunning) &&
 		totalTasks > 0 && runningTasks == totalTasks {
-		connStatus = connectorStatusHealthy
+		connStatus = ConnectorStatusHealthy
 	} else if (c.Status.Connector.State == connectorStateFailed) ||
 		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
-		connStatus = connectorStatusUnhealthy
+		connStatus = ConnectorStatusUnhealthy
 
 		if c.Status.Connector.State == connectorStateFailed {
 			errDetailedContent = "Connector " + c.Info.Name + " is in failed state."
@@ -339,32 +356,32 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state. All tasks are in failed state."
 		}
 	} else if (c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
-		connStatus = connectorStatusDegraded
+		connStatus = ConnectorStatusDegraded
 		errDetailedContent = fmt.Sprintf("Connector %s is in %s state but has %d / %d failed tasks.",
 			c.Info.Name, strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
 	} else if c.Status.Connector.State == connectorStatePaused {
-		connStatus = connectorStatusPaused
+		connStatus = ConnectorStatusPaused
 	} else if c.Status.Connector.State == connectorStateStopped {
-		connStatus = connectorStatusStopped
+		connStatus = ConnectorStatusStopped
 	} else if (c.Status.Connector.State == connectorStateRestarting) ||
 		(totalTasks > 0 && restartingTasks > 0) {
-		connStatus = connectorStatusRestarting
+		connStatus = ConnectorStatusRestarting
 	} else if (c.Status.Connector.State == connectorStateUnassigned) ||
 		((c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && unassignedTasks > 0)) {
-		connStatus = connectorStatusUnassigned
+		connStatus = ConnectorStatusUnassigned
 	} else if c.Status.Connector.State == connectorStateDestroyed {
-		connStatus = connectorStatusDestroyed
+		connStatus = ConnectorStatusDestroyed
 	} else {
-		connStatus = connectorStatusUnknown
+		connStatus = ConnectorStatusUnknown
 		errDetailedContent = fmt.Sprintf("Unknown connector status. Connector %s is in %s state.",
 			c.Info.Name, strings.ToLower(c.Status.Connector.State))
 	}
 
 	connectorErrors := make([]ClusterConnectorInfoError, 0)
-	if connStatus == connectorStatusUnhealthy ||
-		connStatus == connectorStatusDegraded {
+	if connStatus == ConnectorStatusUnhealthy ||
+		connStatus == ConnectorStatusDegraded {
 		stateStr := "unhealthy"
-		if connStatus == connectorStatusDegraded {
+		if connStatus == ConnectorStatusDegraded {
 			stateStr = "degraded"
 		}
 
@@ -404,6 +421,7 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 		Config:       configHook(connectorClass, c.Info.Config),
 		Type:         c.Info.Type,
 		State:        c.Status.Connector.State,
+		WorkerID:     c.Status.Connector.WorkerID,
 		Status:       connStatus,
 		Tasks:        tasks,
 		Trace:        c.Status.Connector.Trace,
