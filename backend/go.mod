@@ -4,11 +4,12 @@ go 1.20
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20230830185350-7a34d6557349.1
-	connectrpc.com/connect v1.11.1
+	connectrpc.com/connect v1.12.0
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bufbuild/protovalidate-go v0.3.1
+	github.com/carlmjohnson/requests v0.23.5
 	github.com/cloudhut/common v0.10.0
 	github.com/cloudhut/connect-client v0.0.0-20230417124247-963e5bcdfee7
 	github.com/docker/docker v24.0.4+incompatible
@@ -22,7 +23,8 @@ require (
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
-	github.com/google/uuid v1.3.0
+	github.com/google/go-cmp v0.6.0
+	github.com/google/uuid v1.3.1
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0
@@ -48,7 +50,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.24.0
-	go.vallahaye.net/connect-gateway v0.3.0
+	go.vallahaye.net/connect-gateway v0.3.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/net v0.17.0
 	golang.org/x/sync v0.3.0
@@ -56,7 +58,7 @@ require (
 	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97
 	google.golang.org/genproto/googleapis/api v0.0.0-20230920204549-e6e6cdab5c13
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c
-	google.golang.org/grpc v1.58.3
+	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -68,7 +70,6 @@ require (
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230512164433-5d1fd1a340c9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/carlmjohnson/requests v0.23.5 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
@@ -89,7 +90,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/cel-go v0.18.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/pprof v0.0.0-20230705174524-200ffdc848b8 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

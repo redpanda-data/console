@@ -28,6 +28,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	apiaclsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl"
+	apikafkaconnectsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha/consolev1alphaconnect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
@@ -49,6 +50,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	// Setup gRPC-Gateway
 	gwMux := runtime.NewServeMux(
+		runtime.WithForwardResponseOption(GetHTTPResponseModifier()),
 		runtime.WithErrorHandler(NiceHTTPErrorHandler),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
 			Marshaler: &runtime.JSONPb{
@@ -73,10 +75,12 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
+	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	aclSvcPath, aclSvcHandler := dataplanev1alpha1connect.NewACLServiceHandler(aclSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	consoleServicePath, consoleServiceHandler := consolev1alphaconnect.NewConsoleServiceHandler(consolev1alphaconnect.UnimplementedConsoleServiceHandler{}, connect.WithInterceptors(hookOutput.Interceptors...))
+	kafkaConnectPath, kafkaConnectHandler := dataplanev1alpha1connect.NewKafkaConnectServiceHandler(kafkaConnectSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -94,6 +98,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   consoleServicePath,
 			Handler:     consoleServiceHandler,
 		},
+		{
+			ServiceName: dataplanev1alpha1connect.KafkaConnectServiceName,
+			MountPath:   kafkaConnectPath,
+			Handler:     kafkaConnectHandler,
+		},
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
@@ -109,6 +118,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Register gRPC-Gateway Handlers of OSS. Enterprise handlers are directly registered in the hook via the *runtime.ServeMux passed.
 	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha1connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1alpha1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	reflector := grpcreflect.NewStaticReflector(reflectServiceNames...)
 	r.Mount(grpcreflect.NewHandlerV1(reflector))
