@@ -12,6 +12,7 @@ import (
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
+// It may also be used to virtualize Console to serve many virtual clusters with a single Console deployment.
 type Servicer interface {
 	GetAPIVersions(ctx context.Context) ([]APIVersion, error)
 	GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConfig, error)
@@ -65,4 +66,14 @@ type Servicer interface {
 	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema schema.Schema) (*CreateSchemaResponse, error)
 	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version string, schema schema.Schema) *SchemaRegistrySchemaValidation
 	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
+
+	// ------------------------------------------------------------------
+	// Plain Kafka requests, used by Connect API.
+	// The Console service was supposed to be a translation layer between the API (REST)
+	// and the Kafka package, but it's also used for virtualizing Console. Thus, even
+	// plain Kafka requests need to go through this package.
+	// ------------------------------------------------------------------
+
+	// CreateACLs proxies the request/response to CreateACLs via the Kafka API.
+	CreateACLs(ctx context.Context, createReq kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error)
 }

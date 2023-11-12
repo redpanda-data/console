@@ -93,13 +93,26 @@ message ListACLsResponse {
 }
 
 message CreateACLRequest {
-  ACL.ResourceType resource_type = 1;
+  ACL.ResourceType resource_type = 1 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
+
   string resource_name = 2;
-  ACL.ResourcePatternType resource_pattern_type = 3;
+  ACL.ResourcePatternType resource_pattern_type = 3 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
   string principal = 4;
   string host = 5;
-  ACL.Operation operation = 6;
-  ACL.PermissionType permission_type = 7;
+  ACL.Operation operation = 6 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
+  ACL.PermissionType permission_type = 7 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
 }
 
 message CreateACLResponse {}
