@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Pagination, Table } from 'antd';
+import { Pagination, Table as AntdTable } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
 import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
@@ -218,7 +218,7 @@ export class KowlTable<T extends object = any> extends Component<{
     @action updateCustomColumns(cols: KowlColumnType<T>[]) {
         // console.count('table update columns');
         this.customColumns = cols.map(col => {
-            if (Object.is(col, Table.EXPAND_COLUMN) || Object.is(col, Table.SELECTION_COLUMN))
+            if (Object.is(col, AntdTable.EXPAND_COLUMN) || Object.is(col, AntdTable.SELECTION_COLUMN))
                 return col;
             return Object.assign({}, col);
         }) as KowlColumnTypeInternal<T>[];
@@ -381,32 +381,36 @@ export class KowlTable<T extends object = any> extends Component<{
         const unused3 = this.currentDataSource?.length;
         const unused4 = this.displayData?.length;
         /* eslint-enable @typescript-eslint/no-unused-vars*/
-        return <Table<T>
-            style={{ margin: '0', padding: '0' }}
-            size="middle"
-            showSorterTooltip={false}
-            className={styles.kowlTable + ' ' + (p.className ?? '')}
 
-            dataSource={this.displayData}
-            columns={this.customColumns}
+        // return <div>{JSON.stringify(this.customColumns)}</div>
 
-            rowKey={p.rowKey}
-            rowClassName={p.rowClassName}
-            onRow={p.onRow}
+        return (
+            <AntdTable<T>
+                style={{margin: '0', padding: '0'}}
+                size="middle"
+                showSorterTooltip={false}
+                className={styles.kowlTable + ' ' + (p.className ?? '')}
 
-            pagination={pagination}
+                dataSource={this.displayData}
+                columns={this.customColumns}
+
+                rowKey={p.rowKey}
+                rowClassName={p.rowClassName}
+                onRow={p.onRow}
+
+                pagination={pagination}
 
 
+                getPopupContainer={findPopupContainer}
+                expandable={p.expandable}
+                footer={this.renderFooter}
+                onChange={(_pagination: TablePaginationConfig, _filters: Record<string, FilterValue | null>, _sorter: SorterResult<T> | SorterResult<T>[], _extra: TableCurrentDataSource<T>) => {
+                    //
+                }}
 
-            getPopupContainer={findPopupContainer}
-            expandable={p.expandable}
-            footer={this.renderFooter}
-            onChange={(_pagination: TablePaginationConfig, _filters: Record<string, FilterValue | null>, _sorter: SorterResult<T> | SorterResult<T>[], _extra: TableCurrentDataSource<T>) => {
-                //
-            }}
-
-            locale={p.emptyText ? { emptyText: p.emptyText } : undefined}
-        />
+                locale={p.emptyText ? {emptyText: p.emptyText} : undefined}
+            />
+        )
     }
 
     @computed get filterIcon() {

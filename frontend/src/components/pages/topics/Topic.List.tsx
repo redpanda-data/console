@@ -18,18 +18,18 @@ import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../sta
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
-import { KowlTable } from '../../misc/KowlTable';
+import { makePaginationConfig, renderLogDirSummary } from '../../misc/common';
 import { PageComponent, PageInitHelper } from '../Page';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Button, Checkbox, Flex, Icon, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Box, Button, Checkbox, DataTable, Flex, Icon, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
+import { Link } from 'react-router-dom';
 
 @observer
 class TopicList extends PageComponent {
@@ -164,87 +164,58 @@ class TopicList extends PageComponent {
                         }
                         <this.CreateTopicModal />
                     </div>
-                    <KowlTable
-                        dataSource={topics}
-                        rowKey={(x) => x.topicName}
-                        columns={[
-                            {
-                                title: 'Name',
-                                dataIndex: 'topicName',
-                                render: (t, r) => renderName(r),
-                                sorter: sortField('topicName'),
-                                className: 'whiteSpaceDefault',
-                                defaultSortOrder: 'ascend',
-                            },
-                            {
-                                title: 'Partitions',
-                                dataIndex: 'partitions',
-                                render: (t, r) => r.partitionCount,
-                                sorter: (a, b) => a.partitionCount - b.partitionCount,
-                                width: 1,
-                            },
-                            {
-                                title: 'Replicas',
-                                dataIndex: 'replicationFactor',
-                                sorter: sortField('replicationFactor'),
-                                width: 1,
-                            },
-                            {
-                                title: 'CleanupPolicy',
-                                dataIndex: 'cleanupPolicy',
-                                width: 1,
-                                filterType: {
-                                    type: 'enum',
-                                    optionClassName: 'capitalize',
+                    <Box my={4}>
+                        <DataTable<Topic>
+                            data={topics}
+                            showPagination
+                            columns={[
+                                {
+                                    header: 'Name',
+                                    accessorKey: 'topicName',
+                                    cell: ({row: {original: topic}}) => <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>,
+                                    size: Infinity,
                                 },
-                                sorter: sortField('cleanupPolicy'),
-                            },
-                            {
-                                title: 'Size',
-                                render: (t, r) => renderLogDirSummary(r.logDirSummary),
-                                sorter: (a, b) =>
-                                    a.logDirSummary.totalSizeBytes -
-                                    b.logDirSummary.totalSizeBytes,
-                                width: '140px',
-                            },
-                            {
-                                width: 1,
-                                title: ' ',
-                                key: 'action',
-                                className: 'msgTableActionColumn',
-                                render: (text, record) => (
-                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                        <DeleteDisabledTooltip topic={record}>
-                                            <Button
-                                                variant="ghost"
-                                                className="iconButton"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    this.topicToDelete = record;
-                                                }}
-                                            >
-                                                <Icon as={HiOutlineTrash} fontSize="22px" />
-                                            </Button>
-                                        </DeleteDisabledTooltip>
-                                    </div>
-                                ),
-                            },
-                        ]}
-                        search={{
-                            searchColumnIndex: 0,
-                            isRowMatch: (row, regex) => {
-                                if (regex.test(row.topicName)) return true;
-                                if (regex.test(row.cleanupPolicy)) return true;
-                                return false;
-                            },
-                        }}
-                        observableSettings={uiSettings.topicList}
-                        onRow={(record) => ({
-                            onClick: () =>
-                                appGlobal.history.push(`/topics/${encodeURIComponent(record.topicName)}`),
-                        })}
-                        rowClassName="hoverLink"
-                    />
+                                {
+                                    header: 'Partitions',
+                                    accessorKey: 'partitions',
+                                    cell: ({row: {original: topic}}) => topic.partitionCount,
+                                },
+                                {
+                                    header: 'Replicas',
+                                    accessorKey: 'replicationFactor',
+                                },
+                                {
+                                    header: 'CleanupPolicy',
+                                    accessorKey: 'cleanupPolicy',
+                                },
+                                {
+                                    header: 'Size',
+                                    accessorKey: 'size',
+                                    cell: ({row: {original: topic}}) => renderLogDirSummary(topic.logDirSummary),
+                                },
+                                {
+                                    id: 'action',
+                                    header: '',
+                                    cell: ({row: {original: record}}) => (
+                                        <Flex gap={1}>
+                                            <DeleteDisabledTooltip topic={record}>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="iconButton"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        this.topicToDelete = record;
+                                                    }}
+                                                >
+                                                    <Icon as={HiOutlineTrash} fontSize="22px"/>
+                                                </Button>
+                                            </DeleteDisabledTooltip>
+                                        </Flex>
+                                    ),
+                                },
+                            ]}
+                        />
+                    </Box>
                 </Section>
 
                 <ConfirmDeletionModal

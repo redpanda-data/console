@@ -14,28 +14,24 @@ import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { GroupMemberDescription, GroupDescription } from '../../../state/restInterfaces';
-import { makePaginationConfig, sortField } from '../../misc/common';
+import { GroupDescription } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { GroupState } from './Group.Details';
 import { autorun, IReactionDisposer } from 'mobx';
-import { containsIgnoreCase } from '../../../utils/utils';
 import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { ShortNum } from '../../misc/ShortNum';
-import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Flex, SearchField, Tag } from '@redpanda-data/ui';
+import { DataTable, Flex, SearchField, Tag } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
+import { Link } from 'react-router-dom';
 
 
 @observer
 class GroupList extends PageComponent {
-
-    pageConfig = makePaginationConfig(uiSettings.consumerGroupList.pageSize);
     quickSearchReaction: IReactionDisposer;
 
     initPage(p: PageInitHelper): void {
@@ -74,7 +70,6 @@ class GroupList extends PageComponent {
 
         const groups = Array.from(api.consumerGroups.values());
         const stateGroups = groups.groupInto(g => g.state);
-        const tableSettings = uiSettings.consumerGroupList ?? {};
 
         return (
             <>
@@ -124,60 +119,45 @@ class GroupList extends PageComponent {
                         */}
                         </div>
                         {/* Content */}
-                        <KowlTable
-                            dataSource={groups}
+                        <DataTable<GroupDescription>
+                            data={groups}
+                            size="md"
                             columns={[
                                 {
-                                    title: 'State',
-                                    dataIndex: 'state',
-                                    width: '130px',
-                                    sorter: sortField('state'),
-                                    render: (t, r) => <GroupState group={r} />,
-                                    filterType: { type: 'enum' },
+                                    header: 'State',
+                                    accessorKey: 'state',
+                                    size: 130,
+                                    cell: ({ row: { original } }) => <GroupState group={original} />
                                 },
                                 {
-                                    title: 'ID',
-                                    dataIndex: 'groupId',
-                                    sorter: sortField('groupId'),
-                                    filteredValue: [tableSettings.quickSearch],
-                                    onFilter: (filterValue, record: GroupDescription) =>
-                                        !filterValue ||
-                                        containsIgnoreCase(
-                                            record.groupId,
-                                            String(filterValue)
-                                        ),
-                                    render: (t, r) => <this.GroupId group={r} />,
-                                    className: 'whiteSpaceDefault',
+                                    header: 'ID',
+                                    accessorKey: 'groupId',
+                                    cell: ({ row: { original } }) => <Link to={`/groups/${encodeURIComponent(original.groupId)}`}><this.GroupId group={original} /></Link>,
+                                    size: Infinity,
                                 },
                                 {
-                                    title: 'Coordinator',
-                                    dataIndex: 'coordinatorId',
-                                    width: 1,
-                                    render: (x: number) => <BrokerList brokerIds={[x]} />,
-                                },
-                                { title: 'Protocol', dataIndex: 'protocol', width: 1 },
-                                {
-                                    title: 'Members',
-                                    dataIndex: 'members',
-                                    width: 1,
-                                    render: (t: GroupMemberDescription[]) => t.length,
-                                    sorter: (a, b) => a.members.length - b.members.length,
-                                    defaultSortOrder: 'descend',
+                                    header: 'Coordinator',
+                                    accessorKey: 'coordinatorId',
+                                    size: 1,
+                                    cell: ({ row: { original } }) => <BrokerList brokerIds={[original.coordinatorId]} />
                                 },
                                 {
-                                    title: 'Lag (Sum)',
-                                    dataIndex: 'lagSum',
-                                    render: (v) => ShortNum({ value: v }),
-                                    sorter: (a, b) => a.lagSum - b.lagSum,
+                                    header: 'Protocol',
+                                    accessorKey: 'protocol',
+                                    size: 1
                                 },
+                                {
+                                    header: 'Members',
+                                    accessorKey: 'members',
+                                    size: 1,
+                                    cell: ({ row: { original } }) => original.members.length
+                                },
+                                {
+                                    header: 'Lag (Sum)',
+                                    accessorKey: 'lagSum',
+                                    cell: ({ row: { original } }) => ShortNum({ value: original.lagSum })
+                                }
                             ]}
-                            observableSettings={tableSettings}
-                            rowKey={(x) => x.groupId}
-                            rowClassName="hoverLink"
-                            onRow={(record) => ({
-                                onClick: () =>
-                                    appGlobal.history.push(`/groups/${encodeURIComponent(record.groupId)}`),
-                            })}
                         />
                     </Section>
                 </PageContent>
@@ -197,10 +177,10 @@ class GroupList extends PageComponent {
 
         if (protocol == 'consumer') return <>{p.group.groupId}</>;
 
-        return <>
+        return <Flex alignItems="center" gap={2}>
             <Tag>Protocol: {protocol}</Tag>
-            <span> {p.group.groupId}</span>
-        </>;
+            <span>{p.group.groupId}</span>
+        </Flex>;
     }
 }
 

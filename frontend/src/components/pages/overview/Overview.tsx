@@ -12,23 +12,21 @@
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { sortField } from '../../misc/common';
 import { BrokerWithConfigAndStorage, OverviewStatus, RedpandaLicense } from '../../../state/restInterfaces';
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, Flex, Heading, Icon, Link, SkeletonText, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, Icon, Link, SkeletonText, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
 import { Statistic } from '../../misc/Statistic';
+import { Row } from '@tanstack/react-table';
 
 @observer
 class Overview extends PageComponent {
@@ -69,57 +67,14 @@ class Overview extends PageComponent {
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
             return (
-                <>
+                <Flex alignItems="center" gap={4}>
                     {text}
                     <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
                         <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                     </Tooltip>
-                </>
+                </Flex>
             );
         };
-
-        const columns: KowlColumnType<BrokerWithConfigAndStorage>[] = [
-            {
-                width: '80px',
-                title: 'ID',
-                dataIndex: 'brokerId',
-                render: renderIdColumn,
-                sorter: sortField('brokerId'),
-                defaultSortOrder: 'ascend'
-            },
-            {
-                width: 'auto',
-                title: 'Status',
-                render: (_, _r) => {
-                    return (
-                        <>
-                            <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500" />
-                            Running
-                        </>
-                    );
-                }
-            },
-            {
-                width: '120px',
-                title: 'Size',
-                dataIndex: 'totalLogDirSizeBytes',
-                render: (t: number) => prettyBytesOrNA(t),
-                sorter: sortField('totalLogDirSizeBytes')
-            },
-            {
-                width: '100px',
-                title: '',
-                render: (_, r) => {
-                    return (
-                        <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
-                            View
-                        </Button>
-                    );
-                }
-            }
-        ];
-
-        if (this.hasRack) columns.splice(3, 0, { width: '100px', title: 'Rack', render: (_, r) => r.rack });
 
         const version = overview.redpanda.version ?? overview.kafka.version;
         const news = api.news?.filter(e => {
@@ -184,15 +139,47 @@ class Overview extends PageComponent {
 
                     <Section py={4} gridArea="broker">
                         <Heading as="h3" >Broker Details</Heading>
-                        <KowlTable
-                            dataSource={brokers}
-                            columns={columns}
-                            observableSettings={uiSettings.brokerList}
-                            rowKey={(x) => x.brokerId.toString()}
-                            rowClassName={() => 'pureDisplayRow'}
-                            pagination={{
-                                visible: false
-                            }}
+                        <DataTable<BrokerWithConfigAndStorage>
+                            data={brokers}
+                            enableSorting={false}
+                            columns={[
+                                {
+                                    size: 80,
+                                    header: 'ID',
+                                    accessorKey: 'brokerId',
+                                    cell: ({row: {original: broker}}) => renderIdColumn(`${broker.brokerId}`, broker),
+                                },
+                                {
+                                    header: 'Status',
+                                    cell: () =>
+                                        (
+                                            <>
+                                                <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500"/>
+                                                Running
+                                            </>
+                                        ),
+                                    size: Infinity
+                                },
+                                {
+                                    size: 120,
+                                    header: 'Size',
+                                    accessorKey: 'totalLogDirSizeBytes',
+                                    cell: ({row: {original: {totalLogDirSizeBytes}}}) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
+                                },
+                                {
+                                    id: 'view',
+                                    size: 100,
+                                    header: '',
+                                    cell: ({row: {original: broker}}) => {
+                                        return (
+                                            <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}>
+                                                View
+                                            </Button>
+                                        );
+                                    }
+                                },
+                                ...(this.hasRack ? [{ size: 100, header: 'Rack', cell: ({row: {original: broker}}: {row: Row<BrokerWithConfigAndStorage>}) => broker.rack }] : [])
+                            ]}
                         />
                     </Section>
 

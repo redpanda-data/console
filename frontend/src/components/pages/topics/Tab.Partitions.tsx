@@ -12,22 +12,17 @@
 import { Component } from 'react';
 import React from 'react';
 import { Partition, Topic, } from '../../../state/restInterfaces';
-import { Table } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
-import { sortField, makePaginationConfig } from '../../misc/common';
 import '../../../utils/arrayExtensions';
-import { uiState } from '../../../state/uiState';
 import { numberToThousandsString, DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { WarningTwoTone } from '@ant-design/icons';
-import { Alert, AlertIcon, Popover } from '@redpanda-data/ui';
+import { Alert, AlertIcon, DataTable, Popover } from '@redpanda-data/ui';
 
 
 @observer
 export class TopicPartitions extends Component<{ topic: Topic }> {
-
-    pageConfig = makePaginationConfig(100); // makePaginationConfig(uiSettings.topics.partitionPageSize);
 
     render() {
         const topic = this.props.topic;
@@ -42,55 +37,44 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                 Topic cleanupPolicy is 'compact'. Message Count is an estimate!
             </Alert>
 
-        const table = <Table
-            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
-            showSorterTooltip={false}
-            pagination={this.pageConfig}
-            onChange={(pagination) => {
-                if (pagination.pageSize) uiState.topicSettings.partitionPageSize = pagination.pageSize;
-                this.pageConfig.current = pagination.current;
-                this.pageConfig.pageSize = pagination.pageSize;
-            }}
-            dataSource={partitions}
-            rowKey={x => x.id.toString()}
-            columns={[
-                {
-                    title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend',
-                    render: (v, p) => !p.hasErrors
-                        ? v
-                        : <span style={{ display: 'inline-flex', width: '100%' }}>
-                            <span>{v}</span>
-                            <span style={{ marginLeft: 'auto', marginRight: '2px', display: 'inline-block' }}>{renderPartitionError(p)}</span>
-                        </span>
-                },
-                {
-                    title: <InfoText tooltip="Low Water Mark" tooltipOverText>Low</InfoText>,
-                    dataIndex: 'waterMarkLow',
-                    render: (value, p) => !p.hasErrors && numberToThousandsString(value),
-                    sorter: sortField('waterMarkLow'),
-                },
-                {
-                    title: <InfoText tooltip="High Water Mark" tooltipOverText>High</InfoText>,
-                    dataIndex: 'waterMarkHigh',
-                    render: (value, p) => !p.hasErrors && numberToThousandsString(value),
-                    sorter: sortField('waterMarkHigh')
-                },
-                {
-                    title: 'Messages', key: 'msgCount',
-                    render: (_, p) => !p.hasErrors && numberToThousandsString(p.waterMarkHigh - p.waterMarkLow),
-                    sorter: (p1, p2) => (p1.waterMarksError || p2.waterMarksError)
-                        ? 0
-                        : (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
-                },
-                {
-                    title: 'Brokers',
-                    render: (v, r) => <BrokerList partition={r} />
-                }
-            ]} />
-
         return <>
             {warning}
-            {table}
+            <DataTable<Partition>
+                defaultPageSize={100}
+                showPagination
+                data={partitions}
+                columns={[
+                    {
+                        header: 'Partition ID',
+                        accessorKey: 'id',
+                        cell: ({row: {original: partition}}) => partition.hasErrors ? <span style={{ display: 'inline-flex', width: '100%' }}>
+                            <span>{partition.id}</span>
+                            <span style={{ marginLeft: 'auto', marginRight: '2px', display: 'inline-block' }}>{renderPartitionError(partition)}</span>
+                        </span> : partition.id
+                    },
+                    {
+                        id: 'waterMarkLow',
+                        header: () => <InfoText tooltip="Low Water Mark" tooltipOverText>Low</InfoText>,
+                        accessorKey: 'waterMarkLow',
+                        cell: ({row: {original: partition}}) => !partition.hasErrors && numberToThousandsString(partition.waterMarkLow),
+
+                    },
+                    {
+                        id: 'waterMarkHigh',
+                        header: () => <InfoText tooltip="High Water Mark" tooltipOverText>High</InfoText>,
+                        accessorKey: 'waterMarkHigh',
+                        cell: ({row: {original: partition}}) => !partition.hasErrors && numberToThousandsString(partition.waterMarkHigh),
+                    },
+                    {
+                        header: 'Messages',
+                        cell: ({row: {original: partition}}) => !partition.hasErrors && numberToThousandsString(partition.waterMarkHigh - partition.waterMarkLow),
+                    },
+                    {
+                        header: 'Brokers',
+                        cell: ({row: {original: partition}}) => <BrokerList partition={partition} />
+                    }
+                ]}
+            />
         </>
     }
 }
@@ -100,7 +84,7 @@ function renderPartitionError(partition: Partition) {
 
     return <Popover
         title="Partition Error"
-        placement="right-start" 
+        placement="right-start"
         size="auto"
         hideCloseButton
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
