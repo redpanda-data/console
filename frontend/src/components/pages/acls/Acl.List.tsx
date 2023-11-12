@@ -198,9 +198,13 @@ class AclList extends PageComponent {
             } as CreateUserRequest),
 
             isOkEnabled: state => {
-                const noWhitespaceRegex = /^\S+$/;
-                if (!noWhitespaceRegex.test(state.username))
+                if (state.username.length === 0) return false
+                if (state.password.length <= 3 || state.password.length > 64) return false
+
+                // Check that the username only contains allowed characters (alphanumeric, hypen, underscore, at symbol)
+                if (/[^a-zA-Z0-9._@-]+/.test(state.username))
                     return false;
+
                 return true;
             },
             onOk: async state => {
