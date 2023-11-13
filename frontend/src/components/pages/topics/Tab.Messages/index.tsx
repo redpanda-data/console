@@ -11,9 +11,10 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon, KebabHorizontalIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio, Select, Table } from 'antd';
+import { ConfigProvider, DatePicker, Radio, Select, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
+import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
@@ -22,11 +23,11 @@ import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from '../../../../state/backendApi';
-import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
+import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
+import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -43,12 +44,14 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Code, Empty, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Empty, Flex, Input, InputGroup, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
 import { Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 const { Option } = Select;
 
@@ -187,21 +190,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     render() {
         return <>
-            <this.SearchControlsBar/>
+            <this.SearchControlsBar />
+
             {/* Message Table (or error display) */}
             {this.fetchError
-                ? <Alert status="error" my={2} gap={4}>
+                ? <Alert status="error">
                     <AlertIcon />
                     <div>Backend API Error</div>
-                    <Flex flexDirection="column" gap={2}>
-                        <Text as="span">Please check and modify the request before resubmitting.</Text>
-                        <Code>{((this.fetchError as Error).message ?? String(this.fetchError))}</Code>
-                        <Box>
-                            <Button onClick={() => this.executeMessageSearch()}>
-                                Retry Search
-                            </Button>
-                        </Box>
-                    </Flex>
+                    <div>
+                        <Typography.Text>Please check and modify the request before resubmitting.</Typography.Text>
+                        <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
+                        <Button onClick={() => this.executeMessageSearch()}>
+                            Retry Search
+                        </Button>
+                    </div>
                 </Alert>
                 : <>
                     <this.MessageTable />
@@ -398,6 +400,26 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return false;
     }
 
+    FilterSummary() {
+
+        if (this && this.messageSource && this.messageSource.data) {
+            // todo
+        }
+        else {
+            return null;
+        }
+
+        const displayText = this.messageSource.data.length == api.messages.length
+            ? 'Filter matched all messages'
+            : <><b>{this.messageSource.data.length}</b> results</>;
+
+        return <div style={{ marginRight: '1em' }}>
+            <MotionDiv identityKey={displayText}>
+                <Typography.Text type="secondary">{displayText}</Typography.Text>
+            </MotionDiv>
+        </div>;
+    }
+
     @computed
     get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
@@ -409,7 +431,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px" height="22px" transform="translateY(2px)">
+                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
                     <SettingOutlined style={{ fontSize: '1rem' }} />
                     <span style={{ marginLeft: '.3em' }}>Preview</span>
                     {(() => {
@@ -1193,9 +1215,11 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Text my={4}>
-                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
-                </Text>
+                <Paragraph>
+                    <Text>
+                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                    </Text>
+                </Paragraph>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
@@ -1517,61 +1541,62 @@ function createPublishRecordsModal(parent: TopicMessageView) {
         },
         onCreate: (showArg: { topicName: string; }) => {
             return observable({
-                topics: [showArg.topicName],
+                topic: showArg.topicName,
                 partition: -1, // -1 = auto
-                compressionType: CompressionType.Uncompressed,
+                compressionType: CompressionType.UNCOMPRESSED,
                 encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
 
-                key: '',
-                value: '',
+                key: {
+                    data: '',
+                    encoding: PayloadEncoding.TEXT,
+                },
+                value: {
+                    data: '',
+                    encoding: PayloadEncoding.TEXT,
+                },
                 headers: [{ key: '', value: '' }],
             } as PublishMessageModalProps['state']);
         },
-        isOkEnabled: s => s.topics.length >= 1,
         onOk: async state => {
 
-            if (state.encodingType === 'json')
-                // try parsing just to make sure its actually json
-                JSON.parse(state.value);
+            // todo: previously we had a JSON.parse() call here when the encoding was set to json
+            // The idea was to checking if its valid json, by simply trying to parse it (so we didn't want the result, just the "error checking")
+            // Maybe we want to reintroduce this later
 
-            const convert: { [key in EncodingType]: (x: string) => string | null } = {
-                'none': () => null,
-                'base64': x => x.trim(),
-                'json': x => encodeBase64(x.trim()),
-                'utf8': x => encodeBase64(x),
-            };
-            const value = convert[state.encodingType](state.value);
+            const req = new PublishMessageRequest();
+            req.topic = state.topic;
+            req.partitionId = state.partition;
+            req.compression = state.compressionType;
+            // req.useTransactions =
 
-            const record: PublishRecord = {
-                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: encodeBase64(h.value) })),
-                key: encodeBase64(state.key),
-                partitionId: state.partition,
-                value: value,
-            };
+            // Headers
+            for (const h of state.headers) {
+                if (!h.value && !h.value)
+                    continue;
+                const kafkaHeader = new KafkaRecordHeader();
+                kafkaHeader.key = h.key;
+                kafkaHeader.value = new TextEncoder().encode(h.value);
+                req.headers.push(kafkaHeader);
+            }
 
-            const result = await api.publishRecords({
-                compressionType: compressionTypeToNum(state.compressionType),
-                records: [record],
-                topicNames: state.topics,
-                useTransactions: false,
-            });
+            // Key
+
+            // Value
+            if (state.value.encoding != PayloadEncoding.NONE) {
+                req.value = new PublishMessagePayloadOptions();
+                req.value.data = new TextEncoder().encode(state.value.data);
+                req.value.encoding = state.value.encoding as PayloadEncoding;
+                req.value.schemaId = state.value.schemaId;
+                req.value.index = state.value.protobufIndex;
+            }
 
 
-            const errors = [
-                result.error,
-                ...result.records.filter(x => x.error).map(r => `Topic "${r.topicName}": \n${r.error}`)
-            ].filterFalsy();
+            // Send request
+            const result = await api.publishMessage(req);
 
-            if (errors.length)
-                throw new Error(errors.join('\n\n'));
-
-            if (result.records.length == 1)
-                return <>Record published on partition <span className="codeBox">{result.records[0].partitionId}</span> with offset <span className="codeBox">{result.records[0].offset}</span></>
-            return <>{result.records.length} records published successfully</>;
-
+            return <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>
         },
-        onSuccess: (state) => {
-            uiState.topicSettings.produceRecordEncoding = state.encodingType;
+        onSuccess: (_state) => {
             parent.props.refreshTopicData(true);
             parent.searchFunc('auto');
         },

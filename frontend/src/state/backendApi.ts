@@ -40,13 +40,12 @@ import {
     PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse,
     PublishRecordsRequest, QuotaResponse, ResourceConfig,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
-    TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
+    TopicDocumentation, TopicDocumentationResponse, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
     OverviewNewsEntry,
     Payload,
-    CompressionType,
     SchemaRegistrySubject,
     SchemaRegistrySubjectDetails,
     SchemaRegistryModeResponse,
@@ -60,7 +59,9 @@ import {
     SchemaRegistrySetCompatibilityModeRequest,
     SchemaReferencedByEntry,
     SchemaRegistryValidateSchemaResponse,
-    SchemaVersion
+    SchemaVersion,
+    TopicMessage,
+    CompressionType
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -68,12 +69,11 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect'
-import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb'
-import { PublishMessageRequest, PublishMessagePayloadOptions } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb'
-import { KafkaRecordHeader } from '../protogen/redpanda/api/console/v1alpha1/common_pb'
-import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb'
 import { proto3 } from '@bufbuild/protobuf';
+import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect';
+import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -82,12 +82,6 @@ const { toast } = createStandaloneToast({
     theme: redpandaTheme,
     defaultOptions: redpandaToastOptions.defaultOptions
 })
-
-const rpcTransport = createConnectTransport({
-    baseUrl: 'http://localhost:9090', // TODO: fix to correct backend URL
-})
-
-const consoleClient = createPromiseClient(ConsoleService, rpcTransport);
 
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
@@ -369,17 +363,22 @@ const apiStore = {
         this.messages.length = 0;
         this.messagesElapsedMs = null;
 
+        // do it
+        const transport = createConnectTransport({
+            baseUrl: window.location.origin,
+        });
 
-        const req = new ListMessagesRequest()
+        const client = createPromiseClient(ConsoleService, transport);
+
+        const req = new ListMessagesRequest();
         req.topic = searchRequest.topicName
         req.startOffset = BigInt(searchRequest.startOffset)
         req.partitionId = searchRequest.partitionId
         req.maxResults = searchRequest.maxResults
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
-        // TODO: need to be able to set req.startTimestamp to correct value
 
         try {
-            for await (const res of await consoleClient.listMessages(req)) {
+            for await (const res of await client.listMessages(req)) {
 
                 switch (res.controlMessage.case) {
                     case 'phase':
@@ -1602,42 +1601,23 @@ const apiStore = {
             ],
             body: JSON.stringify(request),
         });
-
-        this.publishRecords2(request)
-
         return parseOrUnwrap<ProduceRecordsResponse>(response, null);
     },
 
-    async publishRecords2(request: PublishRecordsRequest) {
-        console.log(request)
-
-        const req = new PublishMessageRequest()
-
-        const record = request.records[0]
-        const headers = new Array<KafkaRecordHeader>(0)
-        record.headers.forEach(rh => {
-            const header = new KafkaRecordHeader()
-            header.fromJson(rh)
-            headers.push(header)
-        })
-        
-        req.topic = request.topicNames[0]
-        req.headers = headers
-        req.key = new PublishMessagePayloadOptions()
-        req.key.fromJson({
-            encoding: PayloadEncoding.TEXT,
-            data: record.key
+    // New version of "publishRecords"
+    async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
+        console.log('creating connect transport', {
+            windowOrigin: window.location.origin,
+            restBase: appConfig.restBasePath,
         })
 
-        req.value = new PublishMessagePayloadOptions()
-        req.value.fromJson({
-            encoding: PayloadEncoding.JSON,
-            data: record.value
-        })
+        const transport = createConnectTransport({
+            baseUrl: window.location.origin,
+        });
+        const client = createPromiseClient(ConsoleService, transport);
+        const r = await client.publishMessage(request);
 
-        const res = await consoleClient.publishMessage(req)
-        console.log(res.toJson())
-        console.log(res.toJsonString())
+        return r;
     },
 
     async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {

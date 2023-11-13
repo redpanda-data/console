@@ -11,58 +11,59 @@
 
 import { EditorProps, Monaco } from '@monaco-editor/react';
 import { Select } from 'antd';
-import { action, computed } from 'mobx';
+import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
-import { CompressionType, EncodingType } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 import Tabs, { Tab } from '../../../misc/tabs/Tabs';
 import HeadersEditor from './Headers';
-import { Box, Tooltip } from '@redpanda-data/ui';
+import { Box, Flex, Heading, Tooltip } from '@redpanda-data/ui';
+import { titleCase } from '../../../../utils/utils';
+import { CompressionType, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { proto3 } from '@bufbuild/protobuf';
+
+type PayloadOptions = {
+    encoding: PayloadEncoding | 'base64';
+    data: string;
+
+    // Schema name
+    schemaName?: string;
+    schemaVersion?: number;
+    schemaId?: number;
+
+    protobufIndex?: number; // if encoding is protobuf, we also need an index
+}
 
 type Props = {
     state: {
-        topics: string[];
+        topic: string;
         partition: number;
         compressionType: CompressionType;
 
-        encodingType: EncodingType;
-
-        key: string;
-        // keyEncoding?: EncodingType;
-
-        value: string;
-        // valueEncoding?: EncodingType;
-
         headers: { key: string; value: string; }[];
+
+        key: PayloadOptions;
+        value: PayloadOptions;
     }
 };
 
 export type { Props as PublishMessageModalProps };
 
-type EncodingOption = {
-    value: EncodingType,
-    label: string,
-    tooltip: string, // React.ReactNode | (() => React.ReactNode),
-};
-const encodingOptions: EncodingOption[] = [
-    { value: 'none', label: 'None (Tombstone)', tooltip: 'Message value will be null' },
-    { value: 'utf8', label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
-    { value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor' },
-    { value: 'json', label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as raw' }
-];
+
 
 @observer
 export class PublishMessagesModalContent extends Component<Props> {
-    availableCompressionTypes = Object.entries(CompressionType).map(([label, value]) => ({ label, value })).filter(t => t.value != CompressionType.Unknown);
+    compressionTypes = proto3.getEnumType(CompressionType).values
+        // .filter(x => x.no != CompressionType.UNSPECIFIED)
+        .map(x => ({ label: x.localName, value: x.no as CompressionType }))
 
     render() {
         return (
             <div className="publishMessagesModal">
                 <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
-                    <Label text="Topics">
+                    {/* <Label text="Topics">
                         <Select
                             style={{ minWidth: '300px' }}
                             mode="multiple"
@@ -79,7 +80,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                                 if (this.availablePartitions.length == 1) this.props.state.partition = -1; // auto
                             })}
                         />
-                    </Label>
+                    </Label> */}
 
                     <Label text="Partition">
                         <Select
@@ -95,19 +96,12 @@ export class PublishMessagesModalContent extends Component<Props> {
                     </Label>
 
                     <Label text="Compression Type">
-                        <Select style={{ minWidth: '160px' }} options={this.availableCompressionTypes} value={this.props.state.compressionType} onChange={(v, _d) => (this.props.state.compressionType = v)} />
-                    </Label>
-
-                    <Label text="Type">
-                        <Select<EncodingType> value={this.props.state.encodingType} onChange={e => (this.props.state.encodingType = e)} style={{ minWidth: '150px' }} virtual={false}>
-                            {encodingOptions.map(x => (
-                                <Select.Option key={x.value} value={x.value}>
-                                    <Tooltip label={x.tooltip} placement="right" hasArrow>
-                                        <div>{x.label}</div>
-                                    </Tooltip>
-                                </Select.Option>
-                            ))}
-                        </Select>
+                        <Select
+                            style={{ minWidth: '160px' }}
+                            options={this.compressionTypes}
+                            value={this.props.state.compressionType}
+                            onChange={v => (this.props.state.compressionType = v)}
+                        />
                     </Label>
                 </div>
 
@@ -125,12 +119,7 @@ export class PublishMessagesModalContent extends Component<Props> {
             { label: 'Auto (CRC32)', value: -1 },
         ];
 
-        if (this.props.state.topics.length != 1) {
-            // multiple topics, must use 'auto'
-            return partitions;
-        }
-
-        const count = api.topics?.first(t => t.topicName == this.props.state.topics[0])?.partitionCount;
+        const count = api.topics?.first(t => t.topicName == this.props.state.topic)?.partitionCount;
         if (count == undefined) {
             // topic not found
             return partitions;
@@ -149,23 +138,20 @@ export class PublishMessagesModalContent extends Component<Props> {
     }
 
     renderEditor(tab: 'headers' | 'key' | 'value') {
-        const common = { path: tab, onMount: setTheme } as EditorProps;
         const r = this.props.state;
-
-        const valueLanguage = (r.encodingType === 'json')
-            ? 'json'
-            : undefined;
 
         let result = <></>
 
         if (tab === 'headers')
             result = <><HeadersEditor items={r.headers} /></>
+        else
+            result = <>
+                <MessagePayloadEditor
+                    title={titleCase(tab)}
+                    payload={tab == 'key' ? r.key : r.value}
+                />
+            </>
 
-        if (tab === 'key')
-            result = <><KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} /></>
-
-        if (tab === 'value')
-            result = <><KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language={valueLanguage} /></>
 
         // wrapperStyle={{ marginTop: '1em', minHeight: '320px' }}
         // tabButtonStyle={{ maxWidth: '150px' }}
@@ -184,6 +170,77 @@ export class PublishMessagesModalContent extends Component<Props> {
         { key: 'value', title: 'Value', content: () => this.renderEditor('value') }
     ];
 }
+
+
+function encodingToLanguage(encoding: PayloadEncoding | 'base64') {
+    if (encoding == PayloadEncoding.AVRO) return 'json';
+    if (encoding == PayloadEncoding.JSON) return 'json';
+    if (encoding == PayloadEncoding.PROTOBUF) return 'protobuf';
+    return undefined;
+}
+
+
+const MessagePayloadEditor = observer((p: {
+    title: string,
+    payload: PayloadOptions,
+}) => {
+
+    const payload = p.payload;
+
+
+    return <Flex>
+        <Heading>{p.title}</Heading>
+
+        <Box>
+            <Label text="Type">
+                <Select<PayloadEncoding | 'base64'>
+                    value={payload.encoding}
+                    onChange={e => payload.encoding = e}
+                    style={{ minWidth: '150px' }}
+                    virtual={false}
+                >
+                    {encodingOptions.map(x => (
+                        <Select.Option key={x.value} value={x.value}>
+                            <Tooltip label={x.tooltip} placement="right" hasArrow>
+                                <div>{x.label}</div>
+                            </Tooltip>
+                        </Select.Option>
+                    ))}
+                </Select>
+            </Label>
+
+            <Label text="Schema">
+                <div>placeholder</div>
+
+            </Label>
+        </Box>
+
+
+        <KowlEditor
+            key={p.title}
+            {...{ path: p.title, onMount: setTheme } as EditorProps}
+            value={payload.data}
+            onChange={x => payload.data = x ?? ''}
+            language={encodingToLanguage(payload.encoding)}
+        />
+    </Flex>
+});
+
+type EncodingOption = {
+    value: PayloadEncoding | 'base64',
+    label: string,
+    tooltip: string, // React.ReactNode | (() => React.ReactNode),
+};
+const encodingOptions: EncodingOption[] = [
+    { value: PayloadEncoding.NONE, label: 'None (Tombstone)', tooltip: 'Message value will be null' },
+    { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
+    { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
+
+    { value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema' },
+    { value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema' },
+
+    { value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor' },
+];
 
 function setTheme(editor: IStandaloneCodeEditor, monaco: Monaco) {
     monaco.editor.defineTheme('kowl', {
