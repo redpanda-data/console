@@ -93,24 +93,85 @@ message ListACLsResponse {
 }
 
 message CreateACLRequest {
+  option (buf.validate.message).cel = {
+    id: "resource_name_must_be_set_except_for_cluster_resource_type",
+    expression:
+      "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
+      ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
+      ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
+      ": ''",
+  };
+
+  // ResourceType determines the type of the resource (Topic, ConsumerGroup etc) this
+  // ACL shall target.
   ACL.ResourceType resource_type = 1 [
-    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
     (buf.validate.field).required = true
   ];
 
+  // ResourceName is the name of the resource this acl entry will be on.
+  // For requests with resource_type CLUSTER, this will default to the expected
+  // value "kafka-cluster".
   string resource_name = 2;
+
+  // ResourcePattern type determines the strategy how the provided resource_name
+  // is matched (exact match, prefixed, ...) against the actual resource names.
   ACL.ResourcePatternType resource_pattern_type = 3 [
-    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      in: [
+        3,
+        4
+      ], // Only allow: LITERAL or PREFIXED
+    },
     (buf.validate.field).required = true
   ];
-  string principal = 4;
-  string host = 5;
+
+  // Principal is the user to apply this acl for. With the Kafka simple
+  // authorizer, this must begin with "User:".
+  string principal = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "User:"
+  ];
+
+  // Host is the host address to use for this acl. Each host to allow
+  // the principal access from must be specified as a new creation.
+  string host = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "wildcard_or_ip_address",
+      message: "Field host must be either wildcard (*) or a valid IP address.",
+      expression: "this == '*' ? true : this.isIp()"
+    }
+  ];
+
+  // Operation is the operation that shall be allowed (e.g. READ).
   ACL.Operation operation = 6 [
-    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
     (buf.validate.field).required = true
   ];
+
+  // PermissionType determines whether the operation should be allowed or denied.
   ACL.PermissionType permission_type = 7 [
-    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      in: [
+        2,
+        3
+      ] /* Allow or Deny */
+    },
     (buf.validate.field).required = true
   ];
 }
