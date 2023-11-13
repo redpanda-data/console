@@ -1053,7 +1053,10 @@ paths:
       description: Create ACL
       operationId: ACLService_CreateACL
       parameters:
-        - in: query
+        - description: |-
+            ResourceType determines the type of the resource (Topic, ConsumerGroup etc) this
+            ACL shall target.
+          in: query
           name: resource_type
           schema:
             enum:
@@ -1065,11 +1068,18 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - in: query
+        - description: |-
+            ResourceName is the name of the resource this acl entry will be on.
+            For requests with resource_type CLUSTER, this will default to the expected
+            value "kafka-cluster".
+          in: query
           name: resource_name
           schema:
             type: string
-        - in: query
+        - description: |-
+            ResourcePattern type determines the strategy how the provided resource_name
+            is matched (exact match, prefixed, ...) against the actual resource names.
+          in: query
           name: resource_pattern_type
           schema:
             enum:
@@ -1078,15 +1088,22 @@ paths:
               - RESOURCE_PATTERN_TYPE_LITERAL
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
-        - in: query
+        - description: |-
+            Principal is the user to apply this acl for. With the Kafka simple
+            authorizer, this must begin with "User:".
+          in: query
           name: principal
           schema:
             type: string
-        - in: query
+        - description: |-
+            Host is the host address to use for this acl. Each host to allow
+            the principal access from must be specified as a new creation.
+          in: query
           name: host
           schema:
             type: string
-        - in: query
+        - description: Operation is the operation that shall be allowed (e.g. READ).
+          in: query
           name: operation
           schema:
             enum:
@@ -1105,7 +1122,8 @@ paths:
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
             type: string
-        - in: query
+        - description: PermissionType determines whether the operation should be allowed or denied.
+          in: query
           name: permission_type
           schema:
             enum:
