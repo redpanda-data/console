@@ -670,6 +670,10 @@ export function base64FromUInt8Array(ar: Uint8Array) {
     return fromUint8Array(ar);
 }
 
+export function base64ToUInt8Array(base64: string) {
+    return Base64.toUint8Array(base64);
+}
+
 export function base64ToHexString(base64: string): string {
     try {
         const binary = Base64.atob(base64);
