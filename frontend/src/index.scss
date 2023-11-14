@@ -3480,25 +3480,6 @@ input::placeholder {
     }
 }
 
-.expiringLicenses {
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-
-    margin: 1em;
-    padding: 0.5em;
-    border: solid 2px #e142267a;
-    background: #e1422638;
-    color: #ff2f00;
-    font-weight: 500;
-
-
-    a {
-        text-decoration: underline 1px solid;
-    }
-}
-
-
 .iconSelectOption {
     display: flex;
     align-items: center;
