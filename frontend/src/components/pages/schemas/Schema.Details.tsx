@@ -309,7 +309,13 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
                                         api.refreshSchemaSubjects(true);
                                         await api.refreshSchemaDetails(subject.name, true);
-                                        setSelectedVersion(api.schemaDetails.get(subject.name)!.latestActiveVersion);
+
+                                        const newDetails = api.schemaDetails.get(subject.name);
+                                        if (!newDetails || !newDetails.latestActiveVersion) {
+                                            appGlobal.history.push('/schema-registry/');
+                                        } else {
+                                            setSelectedVersion(newDetails.latestActiveVersion);
+                                        }
                                     })
                                     .catch(err => {
                                         toast({
