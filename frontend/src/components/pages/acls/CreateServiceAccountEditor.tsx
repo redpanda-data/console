@@ -1,94 +1,73 @@
 import { ReloadOutlined } from '@ant-design/icons';
-import { Select } from 'antd';
-import { Button, Input, Flex, Checkbox } from '@redpanda-data/ui';
+import { Button, Input, Flex, Checkbox, FormField, CopyButton } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { CreateUserRequest } from '../../../state/restInterfaces';
-import { Label, LabelTooltip } from '../../../utils/tsxUtils';
-import { Tooltip } from '@redpanda-data/ui';
+import { Tooltip, PasswordInput } from '@redpanda-data/ui';
+import { SingleSelect } from '../../misc/Select';
 
 export const CreateServiceAccountEditor = observer((p: { state: CreateUserRequest }) => {
     const state = p.state;
-    const [showPw, setShowPw] = useState(false);
     const [allowSpecialChars, setAllowSpecialChars] = useState(false);
-    const toggleShowPw = () => setShowPw(!showPw);
 
     return (
         <div>
             <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
-                <Label
-                    text="Username"
-                    textSuffix={
-                        <LabelTooltip nowrap left maxW={500}>
-                            The username of the service account to be created.
-                            <br />
-                            Must not be empty, must not contain any whitespace (space, tab, ...)
-                        </LabelTooltip>
-                    }
-                >
+                <FormField
+                    description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
+                    label="Username"
+                    isInvalid={ /[^a-zA-Z0-9._@-]+/.test(state.username) }
+                    errorText="The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.">
+
                     <Input
                         value={state.username}
-                        onChange={v => {
-                            const newName = v.target.value;
-                            if (newName.includes(':')) return;
-                            state.username = newName;
-                        }}
+                        onChange={v => state.username = v.target.value}
                         width="100%"
                         autoFocus
                         spellCheck={false}
                         placeholder="Username"
                         autoComplete="off"
                     />
-                </Label>
+                </FormField>
 
-                <Label
-                    text="Password"
-                    textSuffix={
-                        <LabelTooltip nowrap left maxW={500}>
-                            The password for the service account.
-                            <br />
-                            You can either use the randomly generated password or specify a custom one.
-                            <br />
-                            The password should not exceed 64 characters.
-                        </LabelTooltip>
-                    }
-                >
+                <FormField
+                    description="Must be at least 4 characters and should not exceed 64 characters."
+                    label="Password">
+
                     <Flex direction="column" gap="2">
                         <Flex alignItems="center" gap="2">
-                            <Input type={showPw ? 'text' : 'password'} value={state.password} onChange={e => (state.password = e.target.value)} spellCheck={false} {...{ autocomplete: 'off' }} style={{ width: 'calc(100% - 45px)' }} />
-
-                            <Button h="2rem" w="5rem" onClick={toggleShowPw}>
-                                {showPw ? 'Hide' : 'Show'}
-                            </Button>
+                            <PasswordInput 
+                                name="test" 
+                                value={state.password} 
+                                onChange={e => (state.password = e.target.value)} 
+                                isInvalid={state.password.length <= 3 || state.password.length > 64}
+                                /> 
 
                             <Tooltip label={'Generate new random password'} placement="top" hasArrow>
                                 <Button onClick={() => state.password = generatePassword(30, allowSpecialChars)} variant="ghost" width="35px" display="inline-flex">
                                     <ReloadOutlined />
                                 </Button>
                             </Tooltip>
+                            <Tooltip label={'Copy password'} placement="top" hasArrow>
+                                <CopyButton content={state.password} variant="ghost"/>
+                            </Tooltip>
                         </Flex>
                         <Checkbox isChecked={allowSpecialChars} onChange={(e) => {setAllowSpecialChars(e.target.checked); state.password = generatePassword(30, e.target.checked)}}>Generate with special characters</Checkbox>
                     </Flex>
-                </Label>
+                </FormField>
 
-                <Label text="Mechanism">
-                    {/* <Select options={[
-                    { label: 'SCRAM-SHA-256', value: 'SCRAM-SHA-256' },
-                    { label: 'SCRAM-SHA-512', value: 'SCRAM-SHA-512' },
-                ]}
-                    value={state.mechanism}
-                    onChange={e => state.mechanism = e}
-                /> */}
 
-                <Select
-                    style={{ width: '300px' }}
-                    value={state.mechanism}
-                    onChange={e => state.mechanism = e}
-                >
-                    <Select.Option value="SCRAM-SHA-256">SCRAM-SHA-256</Select.Option>
-                    <Select.Option value="SCRAM-SHA-512">SCRAM-SHA-512</Select.Option>
-                </Select>
-            </Label>
+                <FormField label="SASL Mechanism">
+                    <SingleSelect<'SCRAM-SHA-256' | 'SCRAM-SHA-512'> options={[{
+                        value: 'SCRAM-SHA-256',
+                        label: 'SCRAM-SHA-256',
+                    }, {
+                        value: 'SCRAM-SHA-512',
+                        label: 'SCRAM-SHA-512',
+                    }]} value={state.mechanism} onChange={e => {
+                        state.mechanism = e;
+                    }}/>
+                </FormField>
 
             </div>
         </div>

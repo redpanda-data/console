@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Input, InputRef, Pagination, Table } from 'antd';
+import { Pagination, Table } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
 import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
@@ -21,7 +21,7 @@ import { clone } from '../../utils/jsonUtils';
 import { SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import { findPopupContainer } from '../../utils/tsxUtils';
-import { Checkbox } from '@redpanda-data/ui';
+import { Box, Checkbox, Input } from '@redpanda-data/ui';
 
 type EnumFilter = {
     type: 'enum',
@@ -539,7 +539,7 @@ export class SearchTitle extends Component<{
     observableSettings: { quickSearch: string },
 }>
 {
-    inputRef = React.createRef<InputRef>(); // reference to input, used to focus it
+    inputRef = React.createRef<HTMLInputElement>(); // reference to input, used to focus it
 
     constructor(p: any) {
         super(p);
@@ -560,15 +560,14 @@ export class SearchTitle extends Component<{
         setTimeout(this.focusInput);
 
         return <span>
-            <span >{this.props.title}</span>
-            <div className="tableInlineSearchBox"
+            {!props.observableFilterOpen.filterOpen && <span>{this.props.title}</span>}
+            <Box
                 onClick={e => e.stopPropagation()}
                 onMouseDown={e => e.stopPropagation()}
                 onMouseUp={e => e.stopPropagation()}
                 style={{
                     position: 'absolute', inset: '0px 0px 0px -8px',
-                    display: 'flex', placeContent: 'center', placeItems: 'center',
-                    padding: '4px 6px',
+                    display: 'flex', placeContent: 'center', placeItems: 'center'
                 }}
             >
                 <Input
@@ -586,17 +585,15 @@ export class SearchTitle extends Component<{
                         }
                     }}
                     onKeyDown={this.onKeyDown}
-                    allowClear={true}
                     placeholder="Enter search term/regex"
                     value={props.observableSettings.quickSearch}
 
                     onChange={e => {
                         props.observableSettings.quickSearch = e.target.value;
                     }}
-                    style={{ borderRadius: '3px' }}
                     spellCheck={false}
                 />
-            </div>
+            </Box>
         </span>
     }
 

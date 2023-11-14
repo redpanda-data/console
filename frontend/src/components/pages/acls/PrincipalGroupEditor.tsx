@@ -18,7 +18,7 @@ import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Box, Button, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
+import { Box, Button, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 
@@ -311,24 +311,9 @@ const ResourceACLsEditor = observer((p: {
                 </Label>
             )}
 
-            <Label text="Operations">
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        rowGap: '8px',
-                        columnGap: '20px',
-                        flexWrap: 'wrap',
-                        width: '100%',
-                        maxHeight: '60px',
-                        alignItems: 'flex-start'
-                    }}
-                >
+            <Label text="Operations" style={{width: '100%'}}>
+                <Grid templateColumns="repeat(auto-fill, minmax(110px, 1fr))" gap={6} width="full">
                     <Operation
-                        style={{
-                            marginBottom: '30px', // force 'all' to appear separate
-                            marginRight: '16px'
-                        }}
                         operation={AclOperation.All}
                         value={res.all}
                         onChange={p => (res.all = p)}
@@ -339,7 +324,7 @@ const ResourceACLsEditor = observer((p: {
                         .map(([operation, permission]) => (
                             <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
                         ))}
-                </div>
+                </Grid>
             </Label>
 
             {p.onDelete && (

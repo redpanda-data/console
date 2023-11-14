@@ -112,7 +112,7 @@ export class TopicDetailsSettings {
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
 
     @observable previewTags = [] as PreviewTagV2[];
-    @observable previewTagsCaseSensitive = false;
+    @observable previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase' = 'ignoreCase';
 
     @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
     @observable previewDisplayMode = 'wrap' as 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result

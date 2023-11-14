@@ -36,7 +36,7 @@ import { Statistic } from '../../misc/Statistic';
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
-    @observable onlyShowPartitionsWithLag: boolean = false;
+    @observable filterMode: 'showAll' | 'withLag' = 'showAll';
 
     @observable edittingOffsets: GroupOffset[] | null = null;
 
@@ -82,11 +82,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     <OptionGroup
                         label="Filter"
                         options={{
-                            'Show All': false,
-                            'With Lag': true
+                            'Show All': 'showAll',
+                            'With Lag': 'withLag'
                         }}
-                        value={this.onlyShowPartitionsWithLag}
-                        onChange={s => (this.onlyShowPartitionsWithLag = s)}
+                        value={this.filterMode}
+                        onChange={s => (this.filterMode = s)}
                     />
 
                     <span style={{ marginLeft: 'auto' }} />
@@ -101,11 +101,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                 {/* Main Content */}
                 {this.viewMode == 'member' ? (
-                    <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                    <GroupByMembers group={group} onlyShowPartitionsWithLag={this.filterMode === 'withLag'}/>
                 ) : (
                     <GroupByTopics
                         group={group}
-                        onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
+                        onlyShowPartitionsWithLag={this.filterMode === 'withLag'}
                         onEditOffsets={g => (this.edittingOffsets = g)}
                         onDeleteOffsets={(offsets, mode) => {
                             this.deletingMode = mode;
