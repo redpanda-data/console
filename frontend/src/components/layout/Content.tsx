@@ -19,6 +19,7 @@ import { ErrorDisplay } from '../misc/ErrorDisplay';
 import { renderErrorModals } from '../misc/ErrorModal';
 import { RouteView } from '../routes';
 import { ModalContainer } from '../../utils/ModalContainer';
+import { Alert, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 
 
 @observer
@@ -62,26 +63,29 @@ class LicenseNotification extends Component {
         });
 
         const warnings = withRemainingTime.filter(x => x.isExpiringSoon || x.isExpired);
-        if (!warnings.length)
+        if (!warnings.length) {
             return null;
+        }
 
-        return <div className="expiringLicenses">
-            {warnings.map(e =>
-                <div key={e.source}>
-                    <div>
-                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>)
-                        {e.isExpired
-                            ? <> has expired <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} ago)</>
-                            : <> will expire <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} remaining)</>
-                        }
-                    </div>
-                    <div>
-                        To renew your license key, request a new/trial license at:{' '}
-                        <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
-                    </div>
-                </div>
+        return <Box>
+            {warnings.map(e => <Alert key={e.source} status="warning" mb={4}>
+                    <AlertIcon/>
+                    <Flex flexDirection="column">
+                        <Box>
+                            Your Redpanda Enterprise license (<Text textTransform="capitalize" display="inline">{e.sourceDisplayName}</Text>)
+                            {e.isExpired
+                                ? <> has expired <span>{e.prettyDateTime}</span> ({e.prettyDuration} ago)</>
+                                : <> will expire <span>{e.prettyDateTime}</span> ({e.prettyDuration} remaining)</>
+                            }
+                        </Box>
+                        <Box>
+                            To renew your license key, request a new/trial license at:{' '}
+                            <Link href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</Link>
+                        </Box>
+                    </Flex>
+                </Alert>
             )}
-        </div>
+        </Box>
     }
 }
 
