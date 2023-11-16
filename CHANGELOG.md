@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.6 / 2023-11-16
+
+- [SECURITY] Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363
+
 ## v2.3.5 / 2023-10-16
 
 - [FIX] Add commonly pre-registered protobuf types to support automatic deserialization.
