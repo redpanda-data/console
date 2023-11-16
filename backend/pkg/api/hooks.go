@@ -49,6 +49,10 @@ type ConfigConnectRPCResponse struct {
 
 	// Instructs OSS to register these services in addition to the OSS ones
 	AdditionalServices []ConnectService
+
+	// HTTPMiddlewares are middlewares that shall be used for the router
+	// that serves all ConnectRPC requests.
+	HTTPMiddlewares []func(http.Handler) http.Handler
 }
 
 // ConnectService is a Connect handler along with its metadata
