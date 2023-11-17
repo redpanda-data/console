@@ -1,8 +1,12 @@
 # Changelog
 
+## v2.3.7 / 2023-11-17
+
+- [SECURITY] Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363. The previous v2.3.6 did in fact not fix this CVE.
+
 ## v2.3.6 / 2023-11-16
 
-- [SECURITY] Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363
+- [SECURITY] ~~Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363~~
 
 ## v2.3.5 / 2023-10-16
 
