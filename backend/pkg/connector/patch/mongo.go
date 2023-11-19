@@ -74,6 +74,9 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		if strings.HasSuffix(connectorClass, "SourceConnector") {
 			d.SetDocumentation("Format of the " + converterType + " in the Redpanda topic. Use AVRO or JSON for schematic output, STRING for plain JSON or BYTES for BSON")
 		}
+		if strings.HasSuffix(connectorClass, "SinkConnector") {
+			d.AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF")
+		}
 	case "output.schema.infer.value":
 		d.SetDocumentation("Infer the schema for the value. Each Document will be processed in isolation, which may lead to multiple schema definitions for the data. Only applied when Redpanda message value format is set to AVRO or JSON")
 	case "change.stream.full.document",
