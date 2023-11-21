@@ -14,22 +14,23 @@ import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
-import { sortField } from '../../misc/common';
-import { DefaultSkeleton, InlineSkeleton, Button } from '../../../utils/tsxUtils';
+import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
 import { makeObservable, observable } from 'mobx';
-import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Checkbox, Divider, Empty, Flex, Skeleton, VStack, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Checkbox, DataTable, Divider, Empty, Flex, Skeleton, Text, VStack } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 import { createStandaloneToast } from '@chakra-ui/react';
+import { SchemaRegistrySubject } from '../../../state/restInterfaces';
+import { Link } from 'react-router-dom';
+
 const { ToastContainer, toast } = createStandaloneToast()
 
 function renderRequestErrors(requestErrors?: string[]) {
@@ -152,74 +153,70 @@ class SchemaList extends PageComponent<{}> {
                         </Checkbox>
                     </Flex>
 
-                    <KowlTable
-                        dataSource={filteredSubjects}
+                    <DataTable<SchemaRegistrySubject>
+                        data={filteredSubjects}
+                        size="md"
                         columns={[
-                            { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            { title: 'Type', render: (_, r) => <SchemaTypeColumn name={r.name} />, width: 200 },
-                            { title: 'Compatibility', render: (_, r) => <SchemaCompatibilityColumn name={r.name} />, width: 200 },
-                            { title: 'Latest Version', render: (_, r) => <LatestVersionColumn name={r.name} />, width: 100 },
+                            { header: 'Name', accessorKey: 'name', size: 400, cell: ({row: {original: {name}}}) => <Link to={`/schema-registry/subjects/${encodeURIComponent(name)}?version=latest`}>{name}</Link>},
+                            { header: 'Type', cell: ({row: {original: r}}) => <SchemaTypeColumn name={r.name} />, size: 100 },
+                            { header: 'Compatibility', cell: ({row: {original: r}}) => <SchemaCompatibilityColumn name={r.name} />, size: 100 },
+                            { header: 'Latest Version', cell: ({row: {original: r}}) => <LatestVersionColumn name={r.name} />, size: 100 },
                             {
-                                title: '', render: (_, r) =>
+                                header: '',
+                                id: 'actions',
+                                cell: ({row: {original: r}}) =>
                                     <Button variant="icon"
-                                        height="21px" color="gray.500"
-                                        disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
+                                            height="21px" color="gray.500"
+                                            disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
 
-                                            if (r.isSoftDeleted) {
-                                                openPermanentDeleteModal(r.name, () => {
-                                                    api.deleteSchemaSubject(r.name, true)
-                                                        .then(async () => {
-                                                            toast({
-                                                                status: 'success', duration: 4000, isClosable: false,
-                                                                title: 'Subject permanently deleted'
-                                                            });
-                                                            api.refreshSchemaSubjects(true);
-                                                            appGlobal.history.push('/schema-registry/');
-                                                        })
-                                                        .catch(err => {
-                                                            toast({
-                                                                status: 'error', duration: null, isClosable: true,
-                                                                title: 'Failed to permanently delete subject',
-                                                                description: String(err),
+                                                if (r.isSoftDeleted) {
+                                                    openPermanentDeleteModal(r.name, () => {
+                                                        api.deleteSchemaSubject(r.name, true)
+                                                            .then(async () => {
+                                                                toast({
+                                                                    status: 'success', duration: 4000, isClosable: false,
+                                                                    title: 'Subject permanently deleted'
+                                                                });
+                                                                api.refreshSchemaSubjects(true);
+                                                                appGlobal.history.push('/schema-registry/');
                                                             })
-                                                        });
-                                                })
-                                            } else {
-                                                openDeleteModal(r.name, () => {
-                                                    api.deleteSchemaSubject(r.name, false)
-                                                        .then(async () => {
-                                                            toast({
-                                                                status: 'success', duration: 4000, isClosable: false,
-                                                                title: 'Subject soft-deleted'
+                                                            .catch(err => {
+                                                                toast({
+                                                                    status: 'error', duration: null, isClosable: true,
+                                                                    title: 'Failed to permanently delete subject',
+                                                                    description: String(err),
+                                                                })
                                                             });
-                                                            api.refreshSchemaSubjects(true);
-                                                        })
-                                                        .catch(err => {
-                                                            toast({
-                                                                status: 'error', duration: null, isClosable: true,
-                                                                title: 'Failed to soft-delete subject',
-                                                                description: String(err),
+                                                    })
+                                                } else {
+                                                    openDeleteModal(r.name, () => {
+                                                        api.deleteSchemaSubject(r.name, false)
+                                                            .then(async () => {
+                                                                toast({
+                                                                    status: 'success', duration: 4000, isClosable: false,
+                                                                    title: 'Subject soft-deleted'
+                                                                });
+                                                                api.refreshSchemaSubjects(true);
                                                             })
-                                                        });
-                                                })
-                                            }
+                                                            .catch(err => {
+                                                                toast({
+                                                                    status: 'error', duration: null, isClosable: true,
+                                                                    title: 'Failed to soft-delete subject',
+                                                                    description: String(err),
+                                                                })
+                                                            });
+                                                    })
+                                                }
 
-                                        }}>
+                                            }}>
                                         <TrashIcon />
                                     </Button>,
-                                width: 1
+                                size: 1
                             },
                         ]}
-
-                        observableSettings={uiSettings.schemaList}
-                        rowClassName={(record) => record.isSoftDeleted ? 'hoverLink subjectSoftDeleted' : 'hoverLink'}
-                        rowKey="name"
-                        onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/subjects/${encodeURIComponent(name)}?version=latest`),
-                        })}
                     />
                 </Section>
             </PageContent>

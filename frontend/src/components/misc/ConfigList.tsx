@@ -18,9 +18,10 @@ import { equalsIgnoreCase } from '../../utils/utils';
 import { sortField } from './common';
 
 import styles from './ConfigList.module.scss';
-import { KowlColumnType, KowlTable } from './KowlTable';
+import { KowlColumnType } from './KowlTable';
 
-import { Tooltip } from '@redpanda-data/ui';
+import { DataTable, Tooltip } from '@redpanda-data/ui';
+import { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
     const columns: KowlColumnType<ConfigEntry>[] = [
@@ -93,32 +94,89 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
         columns.removeAll(x => x.dataIndex == 'type');
     }
 
+    const tableColumns: ColumnDef<ConfigEntry>[] = [
+        {
+            header: 'Configuration',
+            accessorKey: 'name',
+            cell: ({row: {original: record}}) => {
+                let name = (
+                    <div style={{ display: 'flex' }} className={styles.nameText}>
+                        {record.name}
+                    </div>
+                );
+                if (renderTooltip) name = renderTooltip(record, name);
+
+                const sensitive = record.isSensitive && (
+                    <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
+                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange} />
+                    </Tooltip>
+                );
+
+                return (
+                    <div className={styles.name}>
+                        {name}
+                        <span className={styles.configFlags}>{sensitive}</span>
+                    </div>
+                );
+            }
+        },
+        {
+            header: 'Value',
+            accessorKey: 'value',
+            cell: ({row: {original: record}}) => <span className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</span>
+        },
+        {
+            header: 'Type',
+            size: 120,
+            accessorKey: 'type',
+            cell: ({row: {original: {type}}}) => <span className={styles.type}>{type?.toLowerCase()}</span>
+        },
+        {
+            id: 'source',
+            header: () => (
+                <span className={styles.sourceHeader}>
+                Source
+                <Tooltip
+                    label={
+                        <>
+                            <p>Resources can be configured at different levels. Example: A topic config may be inherited from the static broker config.</p>
+                            <p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger and Default config.</p>
+                        </>
+                    }
+                    placement="left"
+                    hasArrow
+                >
+                    <InfoCircleFilled style={{color: '#bbbbbb'}}/>
+                </Tooltip>
+            </span>
+            ),
+            size: 180,
+            accessorKey: 'source',
+            cell: ({row: {original: {source}}}) => <span className={styles.source}>{source?.toLowerCase().split('_').join(' ')}</span>
+        }
+    ]
+
     return (
-        <KowlTable className={styles.configEntryTable}
-
-            dataSource={configEntries}
-            columns={columns}
-
-            pagination={{
-                visible: false,
-                defaultPageSize: 10000,
-            }}
-
-            expandable={{
-                childrenColumnName: 'synonyms',
-                indentSize: 20,
-            }}
-            search={{
-                searchColumnIndex: 0,
-                isRowMatch: (row, regex) => {
-                    if (row.name && regex.test(row.name)) return true;
-                    if (row.value && regex.test(row.value)) return true;
-                    return false;
+        <DataTable<ConfigEntry>
+            data={configEntries}
+            showPagination={false}
+            enableSorting={false}
+            defaultPageSize={10000}
+            size="md"
+            getRowCanExpand={row => (row.original.synonyms?.length ?? 0) > 0 }
+            // getSubRows={row => row.synonyms as ConfigEntry[]}
+            subComponent={({row}) => {
+                if(!row.original.synonyms?.length) {
+                    return null
                 }
+                return <DataTable<ConfigEntry>
+                    // @ts-ignore TODO - we need to fix types here and find a shared interface
+                    data={row.original.synonyms}
+                    columns={tableColumns}
+                />
             }}
-
-            rowKey={record => record.name + '--' + record.source}
-            rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
+            rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
+            columns={tableColumns}
         />
     );
 }

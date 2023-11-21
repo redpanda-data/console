@@ -18,7 +18,7 @@ import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../sta
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { makePaginationConfig, renderLogDirSummary } from '../../misc/common';
+import { renderLogDirSummary } from '../../misc/common';
 import { PageComponent, PageInitHelper } from '../Page';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
@@ -33,7 +33,6 @@ import { Link } from 'react-router-dom';
 
 @observer
 class TopicList extends PageComponent {
-    pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
 
     @observable topicToDelete: null | Topic = null;
