@@ -16,7 +16,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Alert, AlertIcon } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
@@ -171,17 +171,21 @@ const SchemaPageButtons = observer((p: {
                 // try to create the schema
                 setCreating(true);
                 try {
+                    const subjectName = editorState.computedSubjectName;
                     const r = await api.createSchema(editorState.computedSubjectName, {
                         schemaType: editorState.format as SchemaType,
                         schema: editorState.schemaText,
                         references: editorState.references.filter(x => x.name && x.subject)
                     }).finally(() => setCreating(false));
 
+
+                    await api.refreshSchemaDetails(subjectName, true);
+
                     // success: navigate to details
+                    const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
                     console.log('schema created', { response: r });
-                    const subjectName = editorState.computedSubjectName;
-                    console.log('navigating to details', { subjectName });
-                    appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+                    console.log('navigating to details', { subjectName, latestVersion });
+                    appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`);
 
                 } catch (err) {
                     // error: open modal
@@ -290,6 +294,11 @@ const SchemaEditor = observer((p: {
             Settings
         </Heading>
 
+        {isAddVersion && <Alert status="info">
+            <AlertIcon />
+            When adding a new schema version, the only thing that can be changed is the schema definition and its references. The rest of the fields have been disabled.
+        </Alert>}
+
         <Flex direction="column" gap="8" maxWidth="650px">
             <Flex gap="8">
                 <FormField label="Strategy">
@@ -315,7 +324,7 @@ const SchemaEditor = observer((p: {
                             isDisabled={isAddVersion}
                             value={state.userInput}
                             onChange={e => state.userInput = e}
-                            options={api.topics?.map(x => ({ value: x.topicName })) ?? []}
+                            options={api.topics?.filter(x => !x.topicName.startsWith('_')).map(x => ({ value: x.topicName })) ?? []}
                         />
                     </FormField>
                     // We don't want "Strategy" to expand
