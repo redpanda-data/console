@@ -249,9 +249,12 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
     const subject = p.subject;
 
     const queryVersion = getVersionFromQuery();
-    const defaultVersion = !queryVersion || queryVersion == 'latest'
-        ? subject.latestActiveVersion
-        : queryVersion;
+    const defaultVersion = queryVersion && queryVersion != 'latest'
+        ? queryVersion
+        : (subject.latestActiveVersion == -1 // if we don't have a latestActiveVersion, use the last version there is
+            ? subject.schemas.last()?.version
+            : subject.latestActiveVersion
+        );
     const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
     const schema = subject.schemas.first(x => x.version == selectedVersion)!;
@@ -422,7 +425,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
     const subject = p.subject;
 
     const defaultVersionLeft = subject.versions[0].version;
-    const defaultVersionRight = subject.latestActiveVersion;
+    const defaultVersionRight = (subject.latestActiveVersion == -1 ? defaultVersionLeft : subject.latestActiveVersion);
 
     const [selectedVersionLeft, setSelectedVersionLeft] = useState(defaultVersionLeft);
     const [selectedVersionRight, setSelectedVersionRight] = useState(defaultVersionRight);
