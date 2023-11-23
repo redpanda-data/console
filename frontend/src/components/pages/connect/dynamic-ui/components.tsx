@@ -15,7 +15,7 @@ import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/conne
 import { observer } from 'mobx-react';
 import { ConnectorStepComponent } from './ConnectorStep';
 import { ConnectorStep } from '../../../../state/restInterfaces';
-import { Box, RadioGroup, SkeletonText, Switch } from '@redpanda-data/ui';
+import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
 import KowlEditor from '../../../misc/KowlEditor';
 import { api } from '../../../../state/backendApi';
 import { clone } from '../../../../utils/jsonUtils';
@@ -38,7 +38,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
 
     if (connectorStore.initPending) {
         return (
-            <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
+            <Skeleton mt={5} noOfLines={20} height={4} />
         );
     }
 
