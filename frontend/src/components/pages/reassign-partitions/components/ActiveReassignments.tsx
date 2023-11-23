@@ -23,7 +23,7 @@ import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverCloseButton, PopoverArrow, PopoverContent, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useDisclosure, useToast, PopoverFooter, PopoverBody, ButtonGroup, SkeletonText } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverCloseButton, PopoverArrow, PopoverContent, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useDisclosure, useToast, PopoverFooter, PopoverBody, ButtonGroup, Skeleton } from '@redpanda-data/ui';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -374,7 +374,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 {/* Cancel */}
                 <CancelReassignmentButton onConfirm={() => this.cancelReassignment()}/>
             </Flex>
-        ) : <SkeletonText mt={5} noOfLines={5} spacing={5} skeletonHeight={4} />
+        ) : <Skeleton mt={5} noOfLines={5} height={4} />
 
         return (
             <Modal isOpen={visible} onClose={this.props.onClose}>
