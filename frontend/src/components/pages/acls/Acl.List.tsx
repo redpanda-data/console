@@ -263,6 +263,7 @@ class AclList extends PageComponent {
     render() {
         if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
         if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+        if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
         const warning = api.ACLs === null
             ? <Alert status="warning" style={{ marginBottom: '1em' }}>

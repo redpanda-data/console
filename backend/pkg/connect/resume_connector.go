@@ -31,7 +31,7 @@ func (s *Service) ResumeConnector(ctx context.Context, clusterName string, conne
 	if err != nil {
 		return &rest.Error{
 			Err:          err,
-			Status:       http.StatusServiceUnavailable,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
 			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
 			IsSilent:     false,

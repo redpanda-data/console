@@ -289,7 +289,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 						RecognizedEncoding: messageEncodingMsgP,
 					},
 					IsPayloadNull:      payload == nil,
-					Object:             string(payload),
+					Object:             obj,
 					RecognizedEncoding: messageEncodingMsgP,
 					Size:               len(payload),
 				}
