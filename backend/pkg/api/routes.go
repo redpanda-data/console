@@ -64,13 +64,18 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			},
 		}),
 	)
-	r.Mount("/v1alpha1", gwMux) // Dataplane API
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
 		BaseInterceptors: baseInterceptors,
 		GRPCGatewayMux:   gwMux,
 	})
+
+	// Use HTTP Middlewares that are configured by the Hook
+	if len(hookOutput.HTTPMiddlewares) > 0 {
+		r.Use(hookOutput.HTTPMiddlewares...)
+	}
+	r.Mount("/v1alpha1", gwMux) // Dataplane API
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
@@ -152,7 +157,10 @@ func (api *API) routes() *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	api.setupConnectWithGRPCGateway(baseRouter)
+	// Fork a new router so that we can inject middlewares that are specific to the Connect API
+	baseRouter.Group(func(router chi.Router) {
+		api.setupConnectWithGRPCGateway(router)
+	})
 
 	baseRouter.Group(func(router chi.Router) {
 		// Init middlewares - Do set up of any shared/third-party middleware and handlers
