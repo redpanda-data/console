@@ -31,7 +31,6 @@ import (
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apikafkaconnectsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
-	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"

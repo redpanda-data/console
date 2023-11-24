@@ -33,6 +33,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jhump/protoreflect v1.14.1
 	github.com/knadh/koanf v1.5.0
+	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230720095300-a50bd8d65b0d
@@ -93,6 +94,7 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/cel-go v0.18.0 // indirect
 	github.com/google/pprof v0.0.0-20230705174524-200ffdc848b8 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -168,6 +170,7 @@ require (
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
+	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
