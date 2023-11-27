@@ -507,6 +507,7 @@ const apiStore = {
                         const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
 
                         m.value = {} as Payload;
+                        m.value.payload = valuePayload;
 
                         switch (val?.encoding) {
                             case PayloadEncoding.AVRO:
@@ -522,7 +523,7 @@ const apiStore = {
                                 m.value.encoding = 'text'
                                 break;
                             case PayloadEncoding.UTF8:
-                                m.value.encoding = 'utf8WithControlChars'
+                                m.value.encoding = 'utf8WithControlChars';
                                 break;
                             default:
                                 console.log('unhandled value encoding type', {
@@ -532,16 +533,6 @@ const apiStore = {
                                 })
                         }
 
-                        if (IsDev)
-                            console.log('value encoding type', {
-                                encoding: val?.encoding,
-                                PayloadEncodingEnum: proto3.getEnumType(PayloadEncoding),
-                                message: res,
-
-                                'val.decodedText': valuePayload,
-                                binHexPreview: uint8ArrayToHexString(val?.normalizedPayload ?? new Uint8Array()),
-                            });
-
                         m.value.schemaId = val?.schemaId ?? 0;
                         m.value.isPayloadNull = val?.payloadSize == 0;
                         m.valueJson = valuePayload;
@@ -550,12 +541,9 @@ const apiStore = {
                             m.value.payload = JSON.parse(valuePayload);
                         } catch { }
 
-                        if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
-                            console.log('decoding val because encoding', { encoding: val.encoding, 'mValuePayload': m.value.payload });
+                        if (val?.encoding == PayloadEncoding.BINARY) {
                             m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload) : '';
                             m.value.payload = decodeBase64(m.value.payload);
-
-                            console.log('after decoding:', { encoding: val.encoding, 'mValuePayload': m.value.payload });
                         }
 
                         m.valueJson = JSON.stringify(m.value.payload);

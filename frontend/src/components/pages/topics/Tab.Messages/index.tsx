@@ -901,8 +901,6 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-
-
             if (value.isPayloadNull) {
                 if (!this.props.isCompactTopic) {
                     return renderEmptyIcon('Value is null');
@@ -911,8 +909,8 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             }
             else if (value.payload == null || value.payload.length == 0)
                 return null;
-            else if (msg.value.encoding == 'binary' || msg.value.encoding == 'utf8WithControlChars') {
-                // If the original data was binary or had control characters, display as hex dump
+            else if (msg.value.encoding == 'binary') {
+                // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
             }
             else if (isPrimitive) {
@@ -1055,7 +1053,11 @@ function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
                 elements.push(<>{sequentialChars}</>)
                 sequentialChars = ''
             }
-            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>)
+            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
+            if (code == 10)
+                // LineFeed (\n) should be rendered properly
+                elements.push(<br />);
+
         } else {
             sequentialChars += char;
         }
