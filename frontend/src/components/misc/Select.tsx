@@ -1,5 +1,6 @@
 import { Select as RPSelect } from '@redpanda-data/ui';
-import { SelectProps as RPSelectProps, isSingleSelectOptions, isSingleValue } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
+import { isSingleSelectOptions, isSingleValue } from '@redpanda-data/ui';
+import { SelectProps as RPSelectProps } from '@redpanda-data/ui/dist/components/Inputs/Select/Select'
 
 
 type SingleSelectProps<T> = Omit<RPSelectProps<T>, 'value' | 'onChange'> & {

@@ -82,7 +82,7 @@ class ReassignPartitions extends PageComponent {
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
     @observable _debug_brokers: Broker[] | null = null;
 
-    refreshTopicConfigsTimer: NodeJS.Timer | null = null;
+    refreshTopicConfigsTimer: NodeJS.Timeout | null = null;
     refreshTopicConfigsRequestsInProgress: number = 0;
 
     @observable topicsWithThrottle: string[] = [];

@@ -69,8 +69,8 @@ export interface ReassignmentState {
 
 
 export class ReassignmentTracker {
-    clusterTimer: NodeJS.Timer | null = null;
-    reassignTimer: NodeJS.Timer | null = null;
+    clusterTimer: NodeJS.Timeout | null = null;
+    reassignTimer: NodeJS.Timeout | null = null;
 
     @observable trackingReassignments: ReassignmentState[] = [];
 
