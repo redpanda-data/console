@@ -362,28 +362,35 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     searchFunc = (source: 'auto' | 'manual') => {
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
+        const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
+        const phase = untracked(() => api.messageSearchPhase);
 
         if (this.currentSearchRun) {
-            if (IsDev) console.warn(`searchFunc: function already in progress (trigger:${source})`);
-            return;
-        }
+            if (IsDev) console.warn('searchFunc: function already in progress', {
+                newParams: searchParams,
+                oldParams: this.currentSearchRun,
+                currentSearchPhase: phase,
+                trigger: source
+            });
 
-        const phase = untracked(() => api.messageSearchPhase);
-        if (phase) {
-            if (IsDev) console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
-            return;
+            if (searchParams == this.currentSearchRun) {
+                if (IsDev) console.log('won\'t restart, parameters are the same!');
+                return;
+            } else {
+                if (IsDev) console.log('cancelling search, restarting, parameters have changed')
+                this.cancelSearch();
+            }
         }
 
         try {
             this.currentSearchRun = searchParams;
 
             if (this.fetchError == null)
-                untracked(() => this.executeMessageSearch());
+                untracked(() => this.executeMessageSearch()).finally(() => {
+                    untracked(() => this.currentSearchRun = null);
+                });
         } catch (error) {
             console.error(error);
-        } finally {
-            this.currentSearchRun = null;
         }
     };
 
@@ -630,10 +637,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
         //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
-        transaction(async () => {
+        await transaction(async () => {
             try {
                 this.fetchError = null;
-                api.startMessageSearchNew(request);
+                await api.startMessageSearchNew(request);
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;

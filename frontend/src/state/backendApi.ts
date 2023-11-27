@@ -246,7 +246,7 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
 }
 
 
-let currentWS: WebSocket | null = null;
+let messageSearchAbortController: AbortController | null = null;
 
 //
 // BackendAPI
@@ -372,6 +372,7 @@ const apiStore = {
         this.messagesElapsedMs = null;
 
         // do it
+        const abortController = messageSearchAbortController = new AbortController();
         const transport = createConnectTransport({
             baseUrl: getConnectTransportBaseUrl(),
         });
@@ -386,7 +387,9 @@ const apiStore = {
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
 
         try {
-            for await (const res of await client.listMessages(req)) {
+            for await (const res of await client.listMessages(req, { signal: abortController.signal })) {
+                if (abortController.signal.aborted)
+                    break;
 
                 switch (res.controlMessage.case) {
                     case 'phase':
@@ -548,8 +551,11 @@ const apiStore = {
                         } catch { }
 
                         if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
+                            console.log('decoding val because encoding', { encoding: val.encoding, 'mValuePayload': m.value.payload });
                             m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload) : '';
                             m.value.payload = decodeBase64(m.value.payload);
+
+                            console.log('after decoding:', { encoding: val.encoding, 'mValuePayload': m.value.payload });
                         }
 
                         m.valueJson = JSON.stringify(m.value.payload);
@@ -561,7 +567,13 @@ const apiStore = {
             }
         } catch (e) {
             // https://connectrpc.com/docs/web/errors
-            console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+            if (abortController.signal.aborted) {
+                console.log('startMessageSearchNew: cooperatively aborted by user or automatic restart. abortController reason: ' + abortController.signal.reason);
+                messageSearchAbortController = null;
+
+            } else {
+                console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+            }
         }
 
         // one done
@@ -569,9 +581,9 @@ const apiStore = {
     },
 
     stopMessageSearch() {
-        if (currentWS) {
-            currentWS.close();
-            currentWS = null;
+        if (messageSearchAbortController) {
+            messageSearchAbortController.abort('aborted by user');
+            messageSearchAbortController = null;
         }
 
         if (this.messageSearchPhase != null) {
