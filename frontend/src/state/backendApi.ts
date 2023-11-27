@@ -78,6 +78,14 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
+function getConnectTransportBaseUrl() {
+    if (IsDev) {
+        return 'http://localhost:9090'; // Replace with whatever you have in package.json "proxy"
+    } else {
+        return window.location.origin;
+    }
+}
+
 const { toast } = createStandaloneToast({
     theme: redpandaTheme,
     defaultOptions: redpandaToastOptions.defaultOptions
@@ -365,7 +373,7 @@ const apiStore = {
 
         // do it
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: getConnectTransportBaseUrl(),
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -391,8 +399,6 @@ const apiStore = {
                         this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                         break;
                     case 'done':
-                        console.log('done: ' + res.controlMessage.value.messagesConsumed + ' ' + res.controlMessage.value.elapsedMs)
-
                         this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         // this.MessageSearchCancelled = msg.isCancelled;
@@ -1608,13 +1614,8 @@ const apiStore = {
 
     // New version of "publishRecords"
     async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
-        console.log('creating connect transport', {
-            windowOrigin: window.location.origin,
-            restBase: appConfig.restBasePath,
-        })
-
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: getConnectTransportBaseUrl(),
         });
         const client = createPromiseClient(ConsoleService, transport);
         const r = await client.publishMessage(request);
