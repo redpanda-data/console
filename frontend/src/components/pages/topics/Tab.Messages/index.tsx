@@ -1194,7 +1194,10 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     },
                 ]}
                 expandable={{
-                    rowExpandable: header => (typeof header.value?.payload === 'object' && header.value?.payload != null) || typeof header.value?.payload === 'string', // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
+                    rowExpandable: header =>
+                        (typeof header.value?.payload === 'object' && header.value?.payload != null) // expandable when object
+                        || (typeof header.value?.payload === 'string' // or if it's a string (longer than 20ch, or includes linebreak)
+                            && (header.value.payload.length > 20 || header.value.payload.includes('\n'))), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
                     expandedRowRender: header => typeof header.value?.payload !== 'object'
