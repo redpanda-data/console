@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-wait-for-multiple-assertions */
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *

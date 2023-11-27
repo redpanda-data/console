@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-globals */
+
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -66,8 +68,8 @@ describe('findFunction', () => {
         const nested = find('nested') as object;
         expect(() => nested != null);
         expect(() => nested.find('score') === 1);
-        expect(() => nested.find((obj, prop) => prop == 'score') === 1);
-        expect(() => nested.find((obj, prop) => false) === undefined);
+        expect(() => nested.find((_, prop) => prop == 'score') === 1);
+        expect(() => nested.find(() => false) === undefined);
         expect(() => nested.find('asdasfa') === undefined);
     })
     

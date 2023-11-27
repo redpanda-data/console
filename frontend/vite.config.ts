@@ -28,7 +28,13 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     plugins: [
-      react(),
+      react({ // Needed to keep using MobX with legacy decorator patterns enabled
+        babel: {
+          parserOpts: {
+            plugins: ['decorators-legacy', 'classProperties']
+          }
+        }
+      }),
       envCompatible({ prefix: ENV_PREFIX }),
       checker({
         overlay: false,

@@ -7,11 +7,12 @@
     },
     "plugins": [
         "@typescript-eslint",
-        "react"
+        "react",
+        "jest",
+        "jest-extended"
     ],
     "extends": [
         "react-app",
-        "react-app/jest",
         "plugin:react/recommended",
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:react-hooks/recommended"
