@@ -15,9 +15,7 @@
     "serve": "vite preview --port 3004",
     "test": "TZ=GMT jest --coverage --watchAll=false",
     "test:dev": "TZ=GMT jest --coverage --watchAll",
-    "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
-    "linter": "eslint",
     "fetch-monaco": "node scripts/fetch-monaco.mjs",
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
     "prepare": "npm run fetch-monaco"
