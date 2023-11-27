@@ -476,8 +476,8 @@ const apiStore = {
                                 break;
                         }
 
-                        m.key.isPayloadNull = key?.payloadSize == 0
-                        m.key.payload = keyPayload
+                        m.key.isPayloadNull = key?.payloadSize == 0;
+                        m.key.payload = keyPayload;
 
                         try {
                             m.key.payload = JSON.parse(keyPayload);
@@ -489,8 +489,9 @@ const apiStore = {
                         }
 
                         m.keyJson = JSON.stringify(m.key.payload);
+                        m.key.size = Number(key?.payloadSize);
 
-                        console.log(m.keyJson)
+                        // console.log(m.keyJson)
 
                         // value
                         const val = res.controlMessage.value.value;
@@ -546,6 +547,7 @@ const apiStore = {
                         }
 
                         m.valueJson = JSON.stringify(m.value.payload);
+                        m.value.size = Number(val?.payloadSize);
 
                         this.messages.push(m);
                         break;
