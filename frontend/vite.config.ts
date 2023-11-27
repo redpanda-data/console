@@ -19,6 +19,7 @@ import checker from 'vite-plugin-checker';
 import svgrPlugin from 'vite-plugin-svgr';
 import { createHtmlPlugin } from 'vite-plugin-html';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import muteWarningsPlugin, { warningsToIgnore } from './vite/muteWarningsPlugin';
 const ENV_PREFIX = 'REACT_APP_';
 
 // https://vitejs.dev/config/
@@ -66,6 +67,7 @@ export default defineConfig(({ mode }) => {
       tsconfigPaths({
         ignoreConfigErrors: true,
       }),
+      muteWarningsPlugin(warningsToIgnore),
     ],
     assetsInclude: ['**/*.md'],
     server: {
@@ -77,6 +79,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'build',
+      sourcemap: true,
+       // TODO: we need to look at how Vite/Rollup sets source maps vs CRA.
+      // Can we differentiate between production vs dev build?
     },
   };
 });
