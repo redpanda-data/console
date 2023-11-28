@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Flex, FormControl, Grid, GridItem, Heading, HStack, IconButton, Input, Link, Text, useToast } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
-import { computed } from 'mobx';
+import { autorun, computed } from 'mobx';
 import { api } from '../../../state/backendApi';
 import { observer } from 'mobx-react';
 import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
@@ -135,32 +135,20 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
     })
 
     useEffect(() => {
-        api.schemaSubjects
-            ?.filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
-            ?.filter(x => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()))
-            .forEach(x => {
-                void api.refreshSchemaDetails(x.name);
-            })
-    }, [api.schemaSubjects]);
+        return autorun(() => {
+            api.schemaSubjects
+                ?.filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
+                ?.filter(x => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()))
+                .forEach(x => {
+                    void api.refreshSchemaDetails(x.name);
+                })
+        })
+    }, []);
 
     const availableValues = Array.from(api.schemaDetails.values())
 
     const keySchemaName = watch('key.schemaName')
     const valueSchemaName = watch('value.schemaName')
-
-    useEffect(() => {
-        const detail = availableValues
-            .filter(value => value.name === valueSchemaName)
-            .first()
-        setValue('value.schemaVersion', detail?.latestActiveVersion)
-    }, [valueSchemaName]);
-
-    useEffect(() => {
-        const detail = availableValues
-            .filter(value => value.name === keySchemaName)
-            .first()
-        setValue('key.schemaVersion', detail?.latestActiveVersion)
-    }, [keySchemaName]);
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const req = new PublishMessageRequest();
@@ -300,7 +288,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         <SingleSelect<string | undefined>
                                             options={availableValues.map((value) => ({key: value.name, value: value.name}))}
                                             value={value}
-                                            onChange={onChange}
+                                            onChange={newVal => {
+                                                onChange(newVal);
+
+                                                const detail = availableValues
+                                                    .filter(value => value.name === newVal)
+                                                    .first()
+                                                setValue('key.schemaVersion', detail?.latestActiveVersion)
+                                            }}
                                         />
                                     )}
                                 />
@@ -387,7 +382,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         <SingleSelect<string | undefined>
                                             options={availableValues.map((value) => ({key: value.name, value: value.name}))}
                                             value={value}
-                                            onChange={onChange}
+                                            onChange={newVal => {
+                                                onChange(newVal);
+
+                                                const detail = availableValues
+                                                    .filter(value => value.name === newVal)
+                                                    .first()
+                                                setValue('value.schemaVersion', detail?.latestActiveVersion)
+                                            }}
                                         />
                                     )}
                                 />
