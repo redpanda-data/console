@@ -449,7 +449,7 @@ const apiStore = {
                                     encoding: 'text',
                                     schemaId: 0,
                                     size: h.value.length,
-                                    isPayloadNull: h.value == null
+                                    isPayloadNull: h.value == null,
                                 }
                             })
                         })
@@ -516,8 +516,11 @@ const apiStore = {
                             m.key.payload = decodeBase64(m.key.payload);
                         }
 
+                        m.key.troubleshootReport = key?.troubleshootReport;
+                        m.key.schemaId = key?.schemaId ?? 0;
                         m.keyJson = JSON.stringify(m.key.payload);
                         m.key.size = Number(key?.payloadSize);
+                        m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
 
                         // console.log(m.keyJson)
 
@@ -574,8 +577,10 @@ const apiStore = {
                         }
 
                         m.value.schemaId = val?.schemaId ?? 0;
+                        m.value.troubleshootReport = val?.troubleshootReport;
                         m.value.isPayloadNull = val?.payloadSize == 0;
                         m.valueJson = valuePayload;
+                        m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
                         try {
                             m.value.payload = JSON.parse(valuePayload);
