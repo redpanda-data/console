@@ -166,6 +166,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             req.headers.push(kafkaHeader);
         }
 
+        // Key
+        if (data.key.encoding != PayloadEncoding.NONE) {
+            req.key = new PublishMessagePayloadOptions();
+            req.key.data = new TextEncoder().encode(data.key.data);
+            req.key.encoding = data.key.encoding as PayloadEncoding;
+            req.key.schemaId = data.key.schemaId;
+            req.key.index = data.key.protobufIndex;
+        }
+
         // Value
         if (data.value.encoding != PayloadEncoding.NONE) {
             req.value = new PublishMessagePayloadOptions();
@@ -259,7 +268,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
                 <Grid templateColumns="repeat(5, 1fr)" gap={2}>
                     <GridItem colSpan={2}>
-                        <Label text="Type">
+                        <Label text="Key Type">
                             <Controller
                                 control={control}
                                 name="key.encoding"
@@ -354,7 +363,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                 <Flex gap={2} flexDirection="column">
                     <Grid templateColumns="repeat(5, 1fr)" gap={2}>
                         <GridItem colSpan={2}>
-                            <Label text="Type">
+                            <Label text="Value Type">
                                 <Controller
                                     control={control}
                                     name="value.encoding"
