@@ -13,7 +13,7 @@
 /*eslint block-scoped-var: "error"*/
 
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures, IsDev, getBasePath } from '../utils/env';
+import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
@@ -77,14 +77,6 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
-
-function getConnectTransportBaseUrl() {
-    if (IsDev) {
-        return 'http://localhost:9090'; // Replace with whatever you have in package.json "proxy"
-    } else {
-        return window.location.origin;
-    }
-}
 
 const { toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -374,7 +366,7 @@ const apiStore = {
         // do it
         const abortController = messageSearchAbortController = new AbortController();
         const transport = createConnectTransport({
-            baseUrl: getConnectTransportBaseUrl(),
+            baseUrl: window.location.origin,
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -1615,7 +1607,7 @@ const apiStore = {
     // New version of "publishRecords"
     async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
         const transport = createConnectTransport({
-            baseUrl: getConnectTransportBaseUrl(),
+            baseUrl: window.location.origin,
         });
         const client = createPromiseClient(ConsoleService, transport);
         const r = await client.publishMessage(request);
