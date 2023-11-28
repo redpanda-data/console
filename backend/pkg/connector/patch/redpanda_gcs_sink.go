@@ -54,9 +54,21 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 	case "gcs.credentials.json":
 		d.SetDocumentation("")
 	case keyConverter:
-		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
+		d.ClearRecommendedValuesWithMetadata().
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTEARRAY").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
+			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case valueConverter:
-		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
+		d.ClearRecommendedValuesWithMetadata().
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTEARRAY").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
+			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case formatOutputType:
 		d.SetDisplayName("GCS file format").
 			SetDocumentation("Format of the key coming from the Redpanda topic").

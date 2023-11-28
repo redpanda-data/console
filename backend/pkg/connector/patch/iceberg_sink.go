@@ -54,11 +54,13 @@ func (*ConfigPatchIcebergSink) PatchDefinition(d model.ConfigDefinition, _ strin
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case name:
 		d.SetDefaultValue("iceberg-sink-connector-" + strings.ToLower(random.String(4)))
