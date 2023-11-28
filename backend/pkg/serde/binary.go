@@ -27,9 +27,13 @@ func (BinarySerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (BinarySerde) DeserializePayload(_ context.Context, _ *kgo.Record, _ PayloadType) (*RecordPayload, error) {
+func (BinarySerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+	payload := payloadFromRecord(record, payloadType)
+
 	return &RecordPayload{
-		Encoding: PayloadEncodingBinary,
+		DeserializedPayload: payload,
+		NormalizedPayload:   payload, // The frontend will render these bytes
+		Encoding:            PayloadEncodingBinary,
 	}, nil
 }
 

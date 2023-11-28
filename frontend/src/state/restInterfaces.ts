@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+
 export interface ApiError {
     statusCode: number;
     message: string;
@@ -142,7 +144,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack';
+export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile';
 export enum CompressionType {
     Unknown = 'unknown',
 
@@ -159,6 +161,9 @@ export interface Payload {
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
     schemaId: number,
     size: number,
+
+    troubleshootReport?: TroubleshootReport[];
+    isPayloadTooLarge?: boolean;
 }
 
 export interface TopicMessage {

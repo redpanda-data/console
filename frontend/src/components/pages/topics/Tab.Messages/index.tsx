@@ -44,7 +44,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -52,6 +52,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
+import { WarningIcon } from '@chakra-ui/icons';
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -897,6 +898,20 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         const msg = this.props.msg;
         const value = msg.value;
 
+        if (value.troubleshootReport && value.troubleshootReport.length > 0) {
+            return <Flex color="red.600" alignItems="center" gap="4">
+                <WarningIcon fontSize="1.25em" />
+                There were issues deserializing the value
+            </Flex>
+        }
+
+        if (value.isPayloadNull) {
+            return <Flex color="orange.600" alignItems="center" gap="4">
+                <WarningIcon fontSize="1.25em" />
+                Message content is too large and has been omitted
+            </Flex>
+        }
+
         const isPrimitive =
             typeof value.payload === 'string' ||
             typeof value.payload === 'number' ||
@@ -953,8 +968,6 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
-
-        {/* .ant-tabs-nav { width: ??; } */}
         <RpTabs
             size="lg"
             defaultIndex={1}
@@ -963,12 +976,18 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
                     key: 'key',
                     name: <Box minWidth="6rem">Key</Box>,
                     isDisabled: msg.key == null || msg.key.size == 0,
-                    component: renderPayload(msg.key, shouldExpand)
+                    component: <>
+                        <TroubleshootReportViewer payload={msg.key} />
+                        {renderPayload(msg.key, shouldExpand)}
+                    </>
                 },
                 {
                     key: 'value',
                     name: <Box minWidth="6rem">Value</Box>,
-                    component: renderPayload(msg.value, shouldExpand)
+                    component: <>
+                        <TroubleshootReportViewer payload={msg.value} />
+                        {renderPayload(msg.value, shouldExpand)}
+                    </>
                 },
                 {
                     key: 'headers',
@@ -1116,6 +1135,25 @@ function getControlCharacterName(code: number): string {
         default: return '';
     }
 };
+
+const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
+    const report = props.payload.troubleshootReport;
+    if (!report) return null;
+    if (report.length == 0) return null;
+
+    return <Box mb="4">
+        <Heading as="h4">Deserialization Troubleshoot Report</Heading>
+
+        {report.map(e => <Alert key={e.serdeName} status="error" variant="left-accent" my={4}>
+            <AlertIcon />
+            <Box>
+                <AlertTitle>{e.serdeName}</AlertTitle>
+                <AlertDescription fontFamily="monospace" whiteSpace="pre-wrap">{e.message}</AlertDescription>
+            </Box>
+        </Alert>)}
+    </Box>
+
+});
 
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
