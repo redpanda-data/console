@@ -1,4 +1,4 @@
-import { Box, Button, Flex, FormControl, Grid, GridItem, Heading, HStack, IconButton, Input, Link, Text } from '@redpanda-data/ui';
+import { Alert, Box, Button, Flex, FormControl, Grid, GridItem, Heading, HStack, IconButton, Input, Link, Text, useToast } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { computed } from 'mobx';
 import { api } from '../../../state/backendApi';
@@ -60,6 +60,8 @@ type Inputs = {
 }
 
 const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
+    const toast = useToast()
+
     const {
         control,
         register,
@@ -95,6 +97,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
     const keyPayloadOptions = watch('key')
     const valuePayloadOptions = watch('value')
+
+    const showKeySchemaSelection = keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF
+    const showValueSchemaSelection = valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF
 
     const compressionTypes = proto3.getEnumType(CompressionType).values
         // .filter(x => x.no != CompressionType.UNSPECIFIED)
@@ -152,8 +157,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         setValue('key.schemaVersion', detail?.latestActiveVersion)
     }, [keySchemaName]);
 
-    const values = watch()
-
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const req = new PublishMessageRequest();
         req.topic = topicName
@@ -184,7 +187,16 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             setError('root.serverError', {
                 message: err.rawMessage,
             })
-        });
+        })
+
+        if(result) {
+            toast({
+                status: 'success',
+                description: <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>,
+                duration: 3000
+            })
+            appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}`)
+        }
 
         console.log(result)
         // return <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>
@@ -193,7 +205,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
             <Grid width={['100%', '100%', 600]} gap={4} flexDirection="column">
-                {JSON.stringify(values)}
                 <Flex gap={4} flexDirection="row">
                     <Box flexGrow={1}>
                         <Label text="Partition">
@@ -276,24 +287,26 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                         </Label>
                     </GridItem>
                     <GridItem colSpan={2}>
-                        <Label text="Schema">
-                            <Controller
-                                control={control}
-                                name="key.schemaName"
-                                render={({
-                                             field: {onChange, value,},
-                                         }) => (
-                                    <SingleSelect<string | undefined>
-                                        options={availableValues.map((value) => ({key: value.name, value: value.name}))}
-                                        value={value}
-                                        onChange={onChange}
-                                    />
-                                )}
-                            />
-                        </Label>
+                        {showKeySchemaSelection &&
+                            <Label text="Schema">
+                                <Controller
+                                    control={control}
+                                    name="key.schemaName"
+                                    render={({
+                                                 field: {onChange, value,},
+                                             }) => (
+                                        <SingleSelect<string | undefined>
+                                            options={availableValues.map((value) => ({key: value.name, value: value.name}))}
+                                            value={value}
+                                            onChange={onChange}
+                                        />
+                                    )}
+                                />
+                            </Label>
+                        }
                     </GridItem>
                     <GridItem colSpan={1}>
-                        <Label text="Version">
+                        {showKeySchemaSelection && <Label text="Version">
                             <Controller
                                 control={control}
                                 name="key.schemaVersion"
@@ -313,7 +326,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                     />
                                 )}
                             />
-                        </Label>
+                        </Label>}
                     </GridItem>
                 </Grid>
 
@@ -355,7 +368,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             </Label>
                         </GridItem>
                         <GridItem colSpan={2}>
-                            <Label text="Schema">
+                            {showValueSchemaSelection && <Label text="Schema">
                                 <Controller
                                     control={control}
                                     name="value.schemaName"
@@ -369,10 +382,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         />
                                     )}
                                 />
-                            </Label>
+                            </Label>}
                         </GridItem>
                         <GridItem colSpan={1}>
-                            <Label text="Version">
+                            {showValueSchemaSelection && <Label text="Version">
                                 <Controller
                                     control={control}
                                     name="value.schemaVersion"
@@ -392,7 +405,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         />
                                     )}
                                 />
-                            </Label>
+                            </Label>}
                         </GridItem>
                     </Grid>
                     <Label text="Data">
@@ -415,9 +428,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                 </Flex>
 
                 {!!errors?.root?.serverError &&
-                    <Box>
+                    <Alert status="error">
                         {errors.root.serverError.message}
-                    </Box>}
+                    </Alert>}
 
                 <Flex gap={4} alignItems="center">
                     <Button type="submit" colorScheme="brand" isLoading={isSubmitting}>Produce</Button>
