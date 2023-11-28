@@ -460,21 +460,48 @@ const apiStore = {
 
                         m.key = {} as Payload
                         switch (key?.encoding) {
+                            case PayloadEncoding.NONE:
+                                m.key.encoding = 'none';
+                                break;
+                            case PayloadEncoding.BINARY:
+                                m.key.encoding = 'binary';
+                                break;
+                            case PayloadEncoding.XML:
+                                m.key.encoding = 'xml';
+                                break;
                             case PayloadEncoding.AVRO:
-                                m.key.encoding = 'avro'
+                                m.key.encoding = 'avro';
                                 break;
                             case PayloadEncoding.JSON:
-                                m.key.encoding = 'json'
+                                m.key.encoding = 'json';
                                 break;
                             case PayloadEncoding.PROTOBUF:
-                                m.key.encoding = 'protobuf'
+                                m.key.encoding = 'protobuf';
+                                break;
+                            case PayloadEncoding.MESSAGE_PACK:
+                                m.key.encoding = 'msgpack';
                                 break;
                             case PayloadEncoding.TEXT:
-                                m.key.encoding = 'text'
+                                m.key.encoding = 'text';
                                 break;
                             case PayloadEncoding.UTF8:
-                                m.key.encoding = 'utf8WithControlChars'
+                                m.key.encoding = 'utf8WithControlChars';
                                 break;
+                            case PayloadEncoding.UINT:
+                                m.key.encoding = 'uint';
+                                break;
+                            case PayloadEncoding.SMILE:
+                                m.key.encoding = 'smile';
+                                break;
+                            case PayloadEncoding.CONSUMER_OFFSETS:
+                                m.key.encoding = 'consumerOffsets';
+                                break;
+                            default:
+                                console.log('unhandled key encoding type', {
+                                    encoding: key?.encoding,
+                                    encodingName: key?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName : undefined,
+                                    message: res,
+                                })
                         }
 
                         m.key.isPayloadNull = key?.payloadSize == 0;
@@ -502,20 +529,41 @@ const apiStore = {
                         m.value.payload = valuePayload;
 
                         switch (val?.encoding) {
+                            case PayloadEncoding.NONE:
+                                m.value.encoding = 'none';
+                                break;
+                            case PayloadEncoding.BINARY:
+                                m.value.encoding = 'binary';
+                                break;
+                            case PayloadEncoding.XML:
+                                m.value.encoding = 'xml';
+                                break;
                             case PayloadEncoding.AVRO:
-                                m.value.encoding = 'avro'
+                                m.value.encoding = 'avro';
                                 break;
                             case PayloadEncoding.JSON:
-                                m.value.encoding = 'json'
+                                m.value.encoding = 'json';
                                 break;
                             case PayloadEncoding.PROTOBUF:
-                                m.value.encoding = 'protobuf'
+                                m.value.encoding = 'protobuf';
+                                break;
+                            case PayloadEncoding.MESSAGE_PACK:
+                                m.value.encoding = 'msgpack';
                                 break;
                             case PayloadEncoding.TEXT:
-                                m.value.encoding = 'text'
+                                m.value.encoding = 'text';
                                 break;
                             case PayloadEncoding.UTF8:
                                 m.value.encoding = 'utf8WithControlChars';
+                                break;
+                            case PayloadEncoding.UINT:
+                                m.value.encoding = 'uint';
+                                break;
+                            case PayloadEncoding.SMILE:
+                                m.value.encoding = 'smile';
+                                break;
+                            case PayloadEncoding.CONSUMER_OFFSETS:
+                                m.value.encoding = 'consumerOffsets';
                                 break;
                             default:
                                 console.log('unhandled value encoding type', {
