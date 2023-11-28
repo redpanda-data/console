@@ -362,28 +362,35 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     searchFunc = (source: 'auto' | 'manual') => {
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
+        const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
+        const phase = untracked(() => api.messageSearchPhase);
 
         if (this.currentSearchRun) {
-            if (IsDev) console.warn(`searchFunc: function already in progress (trigger:${source})`);
-            return;
-        }
+            if (IsDev) console.warn('searchFunc: function already in progress', {
+                newParams: searchParams,
+                oldParams: this.currentSearchRun,
+                currentSearchPhase: phase,
+                trigger: source
+            });
 
-        const phase = untracked(() => api.messageSearchPhase);
-        if (phase) {
-            if (IsDev) console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
-            return;
+            if (searchParams == this.currentSearchRun) {
+                if (IsDev) console.log('won\'t restart, parameters are the same!');
+                return;
+            } else {
+                if (IsDev) console.log('cancelling search, restarting, parameters have changed')
+                this.cancelSearch();
+            }
         }
 
         try {
             this.currentSearchRun = searchParams;
 
             if (this.fetchError == null)
-                untracked(() => this.executeMessageSearch());
+                untracked(() => this.executeMessageSearch()).finally(() => {
+                    untracked(() => this.currentSearchRun = null);
+                });
         } catch (error) {
             console.error(error);
-        } finally {
-            this.currentSearchRun = null;
         }
     };
 
@@ -630,10 +637,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
         //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
-        transaction(async () => {
+        await transaction(async () => {
             try {
                 this.fetchError = null;
-                api.startMessageSearchNew(request);
+                await api.startMessageSearchNew(request);
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;
@@ -894,8 +901,6 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-
-
             if (value.isPayloadNull) {
                 if (!this.props.isCompactTopic) {
                     return renderEmptyIcon('Value is null');
@@ -904,8 +909,8 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             }
             else if (value.payload == null || value.payload.length == 0)
                 return null;
-            else if (msg.value.encoding == 'binary' || msg.value.encoding == 'utf8WithControlChars') {
-                // If the original data was binary or had control characters, display as hex dump
+            else if (msg.value.encoding == 'binary') {
+                // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
             }
             else if (isPrimitive) {
@@ -1048,7 +1053,11 @@ function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
                 elements.push(<>{sequentialChars}</>)
                 sequentialChars = ''
             }
-            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>)
+            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
+            if (code == 10)
+                // LineFeed (\n) should be rendered properly
+                elements.push(<br />);
+
         } else {
             sequentialChars += char;
         }
@@ -1185,7 +1194,10 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     },
                 ]}
                 expandable={{
-                    rowExpandable: header => (typeof header.value?.payload === 'object' && header.value?.payload != null) || typeof header.value?.payload === 'string', // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
+                    rowExpandable: header =>
+                        (typeof header.value?.payload === 'object' && header.value?.payload != null) // expandable when object
+                        || (typeof header.value?.payload === 'string' // or if it's a string (longer than 20ch, or includes linebreak)
+                            && (header.value.payload.length > 20 || header.value.payload.includes('\n'))), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
                     expandedRowRender: header => typeof header.value?.payload !== 'object'

@@ -21,18 +21,18 @@ import (
 )
 
 // RestartConnector restarts the connector. Return 409 (Conflict) if rebalance is in process.
-func (s *Service) RestartConnector(ctx context.Context, clusterName string, connector string, restartTasks bool) *rest.Error {
+func (s *Service) RestartConnector(ctx context.Context, clusterName string, connector string, restartTasks bool, restartOnlyFailed bool) *rest.Error {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
 		return restErr
 	}
 
-	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{IncludeTasks: restartTasks})
+	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{IncludeTasks: restartTasks, OnlyFailed: restartOnlyFailed})
 	if err != nil {
 		return &rest.Error{
 			Err:          err,
-			Status:       http.StatusServiceUnavailable,
-			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
+			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
+			Message:      fmt.Sprintf("Failed to restart connector: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
 			IsSilent:     false,
 		}

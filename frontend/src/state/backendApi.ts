@@ -78,6 +78,14 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
+function getConnectTransportBaseUrl() {
+    if (IsDev) {
+        return 'http://localhost:9090'; // Replace with whatever you have in package.json "proxy"
+    } else {
+        return window.location.origin;
+    }
+}
+
 const { toast } = createStandaloneToast({
     theme: redpandaTheme,
     defaultOptions: redpandaToastOptions.defaultOptions
@@ -238,7 +246,7 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
 }
 
 
-let currentWS: WebSocket | null = null;
+let messageSearchAbortController: AbortController | null = null;
 
 //
 // BackendAPI
@@ -364,8 +372,9 @@ const apiStore = {
         this.messagesElapsedMs = null;
 
         // do it
+        const abortController = messageSearchAbortController = new AbortController();
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: getConnectTransportBaseUrl(),
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -378,7 +387,9 @@ const apiStore = {
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
 
         try {
-            for await (const res of await client.listMessages(req)) {
+            for await (const res of await client.listMessages(req, { signal: abortController.signal })) {
+                if (abortController.signal.aborted)
+                    break;
 
                 switch (res.controlMessage.case) {
                     case 'phase':
@@ -391,8 +402,6 @@ const apiStore = {
                         this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                         break;
                     case 'done':
-                        console.log('done: ' + res.controlMessage.value.messagesConsumed + ' ' + res.controlMessage.value.elapsedMs)
-
                         this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                         this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                         // this.MessageSearchCancelled = msg.isCancelled;
@@ -476,8 +485,8 @@ const apiStore = {
                                 break;
                         }
 
-                        m.key.isPayloadNull = key?.payloadSize == 0
-                        m.key.payload = keyPayload
+                        m.key.isPayloadNull = key?.payloadSize == 0;
+                        m.key.payload = keyPayload;
 
                         try {
                             m.key.payload = JSON.parse(keyPayload);
@@ -489,14 +498,16 @@ const apiStore = {
                         }
 
                         m.keyJson = JSON.stringify(m.key.payload);
+                        m.key.size = Number(key?.payloadSize);
 
-                        console.log(m.keyJson)
+                        // console.log(m.keyJson)
 
                         // value
                         const val = res.controlMessage.value.value;
                         const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
 
                         m.value = {} as Payload;
+                        m.value.payload = valuePayload;
 
                         switch (val?.encoding) {
                             case PayloadEncoding.AVRO:
@@ -512,7 +523,7 @@ const apiStore = {
                                 m.value.encoding = 'text'
                                 break;
                             case PayloadEncoding.UTF8:
-                                m.value.encoding = 'utf8WithControlChars'
+                                m.value.encoding = 'utf8WithControlChars';
                                 break;
                             default:
                                 console.log('unhandled value encoding type', {
@@ -522,16 +533,6 @@ const apiStore = {
                                 })
                         }
 
-                        if (IsDev)
-                            console.log('value encoding type', {
-                                encoding: val?.encoding,
-                                PayloadEncodingEnum: proto3.getEnumType(PayloadEncoding),
-                                message: res,
-
-                                'val.decodedText': valuePayload,
-                                binHexPreview: uint8ArrayToHexString(val?.normalizedPayload ?? new Uint8Array()),
-                            });
-
                         m.value.schemaId = val?.schemaId ?? 0;
                         m.value.isPayloadNull = val?.payloadSize == 0;
                         m.valueJson = valuePayload;
@@ -540,12 +541,13 @@ const apiStore = {
                             m.value.payload = JSON.parse(valuePayload);
                         } catch { }
 
-                        if (val?.encoding == PayloadEncoding.BINARY || val?.encoding == PayloadEncoding.UTF8) {
+                        if (val?.encoding == PayloadEncoding.BINARY) {
                             m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload) : '';
                             m.value.payload = decodeBase64(m.value.payload);
                         }
 
                         m.valueJson = JSON.stringify(m.value.payload);
+                        m.value.size = Number(val?.payloadSize);
 
                         this.messages.push(m);
                         break;
@@ -553,7 +555,13 @@ const apiStore = {
             }
         } catch (e) {
             // https://connectrpc.com/docs/web/errors
-            console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+            if (abortController.signal.aborted) {
+                console.log('startMessageSearchNew: cooperatively aborted by user or automatic restart. abortController reason: ' + abortController.signal.reason);
+                messageSearchAbortController = null;
+
+            } else {
+                console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+            }
         }
 
         // one done
@@ -561,9 +569,9 @@ const apiStore = {
     },
 
     stopMessageSearch() {
-        if (currentWS) {
-            currentWS.close();
-            currentWS = null;
+        if (messageSearchAbortController) {
+            messageSearchAbortController.abort('aborted by user');
+            messageSearchAbortController = null;
         }
 
         if (this.messageSearchPhase != null) {
@@ -1606,13 +1614,8 @@ const apiStore = {
 
     // New version of "publishRecords"
     async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
-        console.log('creating connect transport', {
-            windowOrigin: window.location.origin,
-            restBase: appConfig.restBasePath,
-        })
-
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: getConnectTransportBaseUrl(),
         });
         const client = createPromiseClient(ConsoleService, transport);
         const r = await client.publishMessage(request);
