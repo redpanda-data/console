@@ -22,15 +22,21 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    { value: PayloadEncoding.NONE, label: 'None (Tombstone)', tooltip: 'Message value will be null' },
-    { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
-    { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
+    {value: PayloadEncoding.NONE, label: 'None (Tombstone)', tooltip: 'Message value will be null'},
+    {value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes'},
+    {value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text'},
 
-    { value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema' },
-    { value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema' },
+    {value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema'},
+    {value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema'},
 
-    { value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor' },
+    {value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor'},
 ];
+
+const protoBufInfoElement = <Text>
+    Protobuf schemas can define multiple types. Specify which type you want to use for this
+    message.
+    <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">Learn more here.</Link>
+</Text>
 
 function encodingToLanguage(encoding: PayloadEncoding | 'base64') {
     if (encoding == PayloadEncoding.AVRO) return 'json';
@@ -54,7 +60,7 @@ type PayloadOptions = {
 type Inputs = {
     partition: number;
     compressionType: CompressionType;
-    headers: {key: string; value: string}[];
+    headers: { key: string; value: string }[];
     key: PayloadOptions;
     value: PayloadOptions;
 }
@@ -77,7 +83,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         defaultValues: {
             partition: -1,
             compressionType: CompressionType.UNCOMPRESSED,
-            headers: [{ key: '', value: '' }],
+            headers: [{key: '', value: ''}],
             key: {
                 data: '',
                 encoding: PayloadEncoding.TEXT,
@@ -89,7 +95,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
     })
 
-    const { fields, append, remove } = useFieldArray({
+    const {fields, append, remove} = useFieldArray({
         control,
         name: 'headers',
     });
@@ -103,11 +109,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
     const compressionTypes = proto3.getEnumType(CompressionType).values
         // .filter(x => x.no != CompressionType.UNSPECIFIED)
-        .map(x => ({ label: x.localName, value: x.no as CompressionType }))
+        .map(x => ({label: x.localName, value: x.no as CompressionType}))
 
     const availablePartitions = computed(() => {
         const partitions: { label: string, value: number; }[] = [
-            { label: 'Auto (CRC32)', value: -1 },
+            {label: 'Auto (CRC32)', value: -1},
         ];
 
         const count = api.topics?.first(t => t.topicName == topicName)?.partitionCount;
@@ -122,12 +128,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
 
         for (let i = 0; i < count; i++) {
-            partitions.push({ label: `Partition ${i}`, value: i });
+            partitions.push({label: `Partition ${i}`, value: i});
         }
 
         return partitions;
     })
-
 
     useEffect(() => {
         api.schemaSubjects
@@ -189,7 +194,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             })
         })
 
-        if(result) {
+        if (result) {
             toast({
                 status: 'success',
                 description: <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>,
@@ -197,9 +202,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             })
             appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}`)
         }
-
-        console.log(result)
-        // return <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>
     }
 
     return (
@@ -330,6 +332,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                     </GridItem>
                 </Grid>
 
+                {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
+                    <>
+                        {protoBufInfoElement}
+                        <Input my={2} type="number" {...register('key.protobufIndex')} />
+                    </>
+                </Label>}
+
                 <Label text="Data">
                     <Controller
                         control={control}
@@ -408,6 +417,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             </Label>}
                         </GridItem>
                     </Grid>
+
+                    {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
+                        <>
+                            {protoBufInfoElement}
+                            <Input my={2} type="number" {...register('value.protobufIndex')} />
+                        </>
+                    </Label>}
+
                     <Label text="Data">
                         <Controller
                             control={control}
