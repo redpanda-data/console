@@ -51,6 +51,7 @@ import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { appGlobal } from '../../../../state/appGlobal';
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -310,7 +311,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             </MenuButton>
                             <MenuList>
                                 <MenuItem
-                                    onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}
+                                    onClick={() => {
+                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/publish`);
+                                        // return this.showPublishRecordsModal({topicName: this.props.topic.topicName});
+                                    }}
                                 >
                                     Publish Message
                                 </MenuItem>
