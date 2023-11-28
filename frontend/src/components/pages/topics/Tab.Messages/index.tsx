@@ -314,7 +314,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 <MenuItem
                                     onClick={() => {
                                         appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/publish`);
-                                        // return this.showPublishRecordsModal({topicName: this.props.topic.topicName});
                                     }}
                                 >
                                     Publish Message

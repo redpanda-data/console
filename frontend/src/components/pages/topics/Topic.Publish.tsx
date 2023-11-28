@@ -34,8 +34,7 @@ const encodingOptions: EncodingOption[] = [
 
 const protoBufInfoElement = <Text>
     Protobuf schemas can define multiple types. Specify which type you want to use for this
-    message.
-    <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">Learn more here.</Link>
+    message. <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">Learn more here.</Link>
 </Text>
 
 function encodingToLanguage(encoding: PayloadEncoding | 'base64') {
