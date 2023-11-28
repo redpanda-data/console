@@ -904,7 +904,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             </Flex>
         }
 
-        if (value.isPayloadNull) {
+        if (value.isPayloadTooLarge) {
             return <Flex color="orange.600" alignItems="center" gap="4">
                 <WarningIcon fontSize="1.25em" />
                 Message content is too large and has been omitted
