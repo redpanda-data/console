@@ -149,7 +149,11 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.Use(basePath.Wrap)
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, _ string) bool {
-			return checkOriginFn(r)
+			isAllowed := checkOriginFn(r)
+			if !isAllowed {
+				api.Logger.Debug("CORS check failed", zap.String("request_origin", r.Header.Get("Origin")))
+			}
+			return isAllowed
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
