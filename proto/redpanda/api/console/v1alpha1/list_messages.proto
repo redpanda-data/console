@@ -85,10 +85,10 @@ message ListMessagesResponse {
 
 // KafkaRecordPayload is record payload representation.
 message KafkaRecordPayload {
-  bytes original_payload = 1; // Original raw binary payload.
-  bytes normalized_payload = 2; // Normilized user friendly representation of the payload.
+  optional bytes original_payload = 1; // Original raw binary payload.
+  optional bytes normalized_payload = 2; // Normalized user friendly representation of the payload.
   PayloadEncoding encoding = 3; // Payload encoding if we have been able to detect.
-  int32 schema_id = 4; // Optionally, the schema ID used to deserialized the message.
+  optional int32 schema_id = 4; // Optionally, the schema ID used to deserialized the message.
   int32 payload_size = 5; // Payload size in bytes.
   bool is_payload_too_large = 6; // If payload is too large for deserialization.
   repeated TroubleshootReport troubleshoot_report = 7; // Troubleshooting data for debugging.
