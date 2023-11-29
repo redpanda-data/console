@@ -587,7 +587,7 @@ const apiStore = {
                         } catch { }
 
                         if (val?.encoding == PayloadEncoding.BINARY) {
-                            m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload) : '';
+                            m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload!) : '';
                             m.value.payload = decodeBase64(m.value.payload);
                         }
 
