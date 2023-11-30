@@ -15,6 +15,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
+import { base64ToUInt8Array } from '../../../utils/utils';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -169,11 +170,29 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             req.headers.push(kafkaHeader);
         }
 
+        const encodeData = function(data: string, encoding: PayloadEncoding): Uint8Array {
+            if (encoding == PayloadEncoding.BINARY) {
+                // This will throw an exception if data is not base64.
+                // We want to catch exceptions so that we can show an error.
+                window.atob(data)
+                return base64ToUInt8Array(data)
+            }
+
+            return new TextEncoder().encode(data)
+        }
+
         // Key
         if (data.key.encoding != PayloadEncoding.NONE) {
             req.key = new PublishMessagePayloadOptions();
-            req.key.data = new TextEncoder().encode(data.key.data);
-            req.key.encoding = data.key.encoding as PayloadEncoding;
+            try {
+                req.key.data = encodeData(data.key.data, data.key.encoding);
+            } catch (err) {
+                // TODO: Handle error
+                console.error(err)
+                return
+            }
+            req.key.data = encodeData(data.key.data, data.key.encoding);
+            req.key.encoding = data.key.encoding;
             req.key.schemaId = data.key.schemaId;
             req.key.index = data.key.protobufIndex;
         }
@@ -181,8 +200,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         // Value
         if (data.value.encoding != PayloadEncoding.NONE) {
             req.value = new PublishMessagePayloadOptions();
-            req.value.data = new TextEncoder().encode(data.value.data);
-            req.value.encoding = data.value.encoding as PayloadEncoding;
+            try {
+                req.value.data = encodeData(data.value.data, data.value.encoding);
+            } catch (err) {
+                // TODO: Handle error
+                console.error(err)
+                return
+            }
+            req.value.encoding = data.value.encoding;
             req.value.schemaId = data.value.schemaId;
             req.value.index = data.value.protobufIndex;
         }
