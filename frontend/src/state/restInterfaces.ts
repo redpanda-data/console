@@ -164,6 +164,7 @@ export interface Payload {
 
     troubleshootReport?: TroubleshootReport[];
     isPayloadTooLarge?: boolean;
+    rawBytes?: Uint8Array;
 }
 
 export interface TopicMessage {

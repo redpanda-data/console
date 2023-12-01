@@ -458,7 +458,10 @@ const apiStore = {
                         const key = res.controlMessage.value.key;
                         const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
-                        m.key = {} as Payload
+                        m.key = {} as Payload;
+                        m.key.rawBytes = (key?.originalPayload && key.originalPayload.byteLength > 0)
+                            ? key.originalPayload : (key?.normalizedPayload ?? key?.originalPayload);
+
                         switch (key?.encoding) {
                             case PayloadEncoding.NONE:
                                 m.key.encoding = 'none';
@@ -530,6 +533,8 @@ const apiStore = {
 
                         m.value = {} as Payload;
                         m.value.payload = valuePayload;
+                        m.value.rawBytes = (val?.originalPayload && val.originalPayload.byteLength > 0)
+                            ? val.originalPayload : (val?.normalizedPayload ?? val?.originalPayload);
 
                         switch (val?.encoding) {
                             case PayloadEncoding.NONE:

@@ -1013,20 +1013,28 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         if (payload.encoding == 'binary') {
-            const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
+            const mode = 'hex' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
             }
             else if (mode == 'hex') {
-                const str = String(val);
-                let hex = '';
-                for (let i = 0; i < str.length; i++) {
-                    let n = str.charCodeAt(i).toString(16);
-                    if (n.length == 1) n = '0' + n;
-                    hex += n + ' ';
-                }
+                const rawBytes = payload.rawBytes;
 
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>;
+                if (rawBytes) {
+                    let result = '';
+                    rawBytes.forEach((n) => {
+                        result += n.toString(16).padStart(2, '0') + ' ';
+                    });
+
+                    console.log('rendering hex bytes', {
+                        rawBytes,
+                        result
+                    })
+
+                    return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
+                } else {
+                    return <div>Raw bytes not available</div>;
+                }
             }
             else {
                 const str = String(val);
