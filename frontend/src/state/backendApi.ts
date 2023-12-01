@@ -74,6 +74,7 @@ import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/consol
 import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { PartitionOffsetOrigin } from './ui';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -378,8 +379,16 @@ const apiStore = {
         req.maxResults = searchRequest.maxResults
         req.filterInterpreterCode = searchRequest.filterInterpreterCode
 
+        // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
+        // from 30s to 30 minutes before ending the request gracefully.
+        let timeoutMs = 30 * 1000;
+        if (searchRequest.startOffset == PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
+            const minuteMs = 60 * 1000;
+            timeoutMs = 30 * minuteMs;
+        }
+
         try {
-            for await (const res of await client.listMessages(req, { signal: abortController.signal })) {
+            for await (const res of await client.listMessages(req, { signal: abortController.signal, timeoutMs })) {
                 if (abortController.signal.aborted)
                     break;
 
