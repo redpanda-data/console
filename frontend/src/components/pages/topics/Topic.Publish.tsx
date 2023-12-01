@@ -15,6 +15,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
+import { base64ToUInt8Array } from '../../../utils/utils';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -22,14 +23,16 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    {value: PayloadEncoding.NONE, label: 'None (Tombstone)', tooltip: 'Message value will be null'},
+    {value: PayloadEncoding.NONE, label: 'Null', tooltip: 'Message value will be null'},
     {value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes'},
     {value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text'},
 
     {value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema'},
-    {value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema'},
+    // We hide Protobuf until we can provide a better UX with selecting types rather than having users
+    // specify an index that points to the type within the proto schema.
+    // {value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema'},
 
-    {value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor'},
+    {value: PayloadEncoding.BINARY, label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor'},
 ];
 
 const protoBufInfoElement = <Text>
@@ -37,15 +40,16 @@ const protoBufInfoElement = <Text>
     message. <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">Learn more here.</Link>
 </Text>
 
-function encodingToLanguage(encoding: PayloadEncoding | 'base64') {
+function encodingToLanguage(encoding: PayloadEncoding) {
     if (encoding == PayloadEncoding.AVRO) return 'json';
     if (encoding == PayloadEncoding.JSON) return 'json';
     if (encoding == PayloadEncoding.PROTOBUF) return 'protobuf';
+    if (encoding == PayloadEncoding.BINARY) return 'plaintext';
     return undefined;
 }
 
 type PayloadOptions = {
-    encoding: PayloadEncoding | 'base64';
+    encoding: PayloadEncoding;
     data: string;
 
     // Schema name
@@ -81,8 +85,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
     } = useForm<Inputs>({
         defaultValues: {
             partition: -1,
-            compressionType: CompressionType.UNCOMPRESSED,
-            headers: [{key: '', value: ''}],
+            compressionType: CompressionType.SNAPPY,
+            headers: [],
             key: {
                 data: '',
                 encoding: PayloadEncoding.TEXT,
@@ -107,7 +111,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
     const showValueSchemaSelection = valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF
 
     const compressionTypes = proto3.getEnumType(CompressionType).values
-        // .filter(x => x.no != CompressionType.UNSPECIFIED)
+        .filter(x => x.no != CompressionType.UNSPECIFIED)
         .map(x => ({label: x.localName, value: x.no as CompressionType}))
 
     const availablePartitions = computed(() => {
@@ -166,11 +170,29 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             req.headers.push(kafkaHeader);
         }
 
+        const encodeData = function(data: string, encoding: PayloadEncoding): Uint8Array {
+            if (encoding == PayloadEncoding.BINARY) {
+                // This will throw an exception if data is not base64.
+                // We want to catch exceptions so that we can show an error.
+                window.atob(data)
+                return base64ToUInt8Array(data)
+            }
+
+            return new TextEncoder().encode(data)
+        }
+
         // Key
         if (data.key.encoding != PayloadEncoding.NONE) {
             req.key = new PublishMessagePayloadOptions();
-            req.key.data = new TextEncoder().encode(data.key.data);
-            req.key.encoding = data.key.encoding as PayloadEncoding;
+            try {
+                req.key.data = encodeData(data.key.data, data.key.encoding);
+            } catch (err) {
+                // TODO: Handle error
+                console.error(err)
+                return
+            }
+            req.key.data = encodeData(data.key.data, data.key.encoding);
+            req.key.encoding = data.key.encoding;
             req.key.schemaId = data.key.schemaId;
             req.key.index = data.key.protobufIndex;
         }
@@ -178,8 +200,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         // Value
         if (data.value.encoding != PayloadEncoding.NONE) {
             req.value = new PublishMessagePayloadOptions();
-            req.value.data = new TextEncoder().encode(data.value.data);
-            req.value.encoding = data.value.encoding as PayloadEncoding;
+            try {
+                req.value.data = encodeData(data.value.data, data.value.encoding);
+            } catch (err) {
+                // TODO: Handle error
+                console.error(err)
+                return
+            }
+            req.value.encoding = data.value.encoding;
             req.value.schemaId = data.value.schemaId;
             req.value.index = data.value.protobufIndex;
         }

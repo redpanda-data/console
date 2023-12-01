@@ -495,16 +495,16 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   /**
    * Original raw binary payload.
    *
-   * @generated from field: bytes original_payload = 1;
+   * @generated from field: optional bytes original_payload = 1;
    */
-  originalPayload = new Uint8Array(0);
+  originalPayload?: Uint8Array;
 
   /**
-   * Normilized user friendly representation of the payload.
+   * Normalized user friendly representation of the payload.
    *
-   * @generated from field: bytes normalized_payload = 2;
+   * @generated from field: optional bytes normalized_payload = 2;
    */
-  normalizedPayload = new Uint8Array(0);
+  normalizedPayload?: Uint8Array;
 
   /**
    * Payload encoding if we have been able to detect.
@@ -516,9 +516,9 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   /**
    * Optionally, the schema ID used to deserialized the message.
    *
-   * @generated from field: int32 schema_id = 4;
+   * @generated from field: optional int32 schema_id = 4;
    */
-  schemaId = 0;
+  schemaId?: number;
 
   /**
    * Payload size in bytes.
@@ -549,10 +549,10 @@ export class KafkaRecordPayload extends Message<KafkaRecordPayload> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.KafkaRecordPayload";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "original_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    { no: 2, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: "original_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */, opt: true },
+    { no: 2, name: "normalized_payload", kind: "scalar", T: 12 /* ScalarType.BYTES */, opt: true },
     { no: 3, name: "encoding", kind: "enum", T: proto3.getEnumType(PayloadEncoding) },
-    { no: 4, name: "schema_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "schema_id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 5, name: "payload_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "is_payload_too_large", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "troubleshoot_report", kind: "message", T: TroubleshootReport, repeated: true },

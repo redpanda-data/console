@@ -51,7 +51,15 @@ func NewService(logger *zap.Logger,
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
 func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest], stream *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
-	ctx, cancel := context.WithCancel(ctx)
+	timeout := 35 * time.Second
+	if req.Msg.GetFilterInterpreterCode() != "" || req.Msg.GetStartOffset() == console.StartOffsetNewest {
+		// Push-down filters and StartOffset = Newest may be long-running streams.
+		// There's already a client-side provided timeout which we usually trust.
+		// But additionally we want to ensure it never takes much longer than that.
+		timeout = 31 * time.Minute
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	lmq := httptypes.ListMessagesRequest{
@@ -113,17 +121,8 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 
 	api.authHooks.PrintListMessagesAuditLog(ctx, req, &listReq)
 
-	// Use 30min duration if we want to search a whole topic or forward messages as they arrive
-	duration := 45 * time.Second
-	if listReq.FilterInterpreterCode != "" || listReq.StartOffset == console.StartOffsetNewest {
-		duration = 30 * time.Minute
-	}
-
-	childCtx, cancel := context.WithTimeout(ctx, duration)
-	defer cancel()
-
 	progress := &streamProgressReporter{
-		ctx:              childCtx,
+		ctx:              ctx,
 		logger:           api.logger,
 		request:          &listReq,
 		stream:           stream,
@@ -132,7 +131,7 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 	}
 	progress.Start()
 
-	return api.consoleSvc.ListMessages(childCtx, listReq, progress)
+	return api.consoleSvc.ListMessages(ctx, listReq, progress)
 }
 
 // PublishMessage serialized and produces the records.
