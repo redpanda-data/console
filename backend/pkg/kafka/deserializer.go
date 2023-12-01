@@ -522,7 +522,8 @@ func (*deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserialize
 
 func (*deserializer) containsControlChars(b []byte) bool {
 	for _, v := range b {
-		if (v <= 31) || (v >= 127 && v <= 159) {
+		// Ignore LF(\n)/HT(\t)
+		if (v <= 31 && v != 10 && v != 9) || (v >= 127 && v <= 159) {
 			return true
 		}
 	}
