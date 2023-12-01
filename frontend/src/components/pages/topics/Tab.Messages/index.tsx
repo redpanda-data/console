@@ -1025,12 +1025,6 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
                     rawBytes.forEach((n) => {
                         result += n.toString(16).padStart(2, '0') + ' ';
                     });
-
-                    console.log('rendering hex bytes', {
-                        rawBytes,
-                        result
-                    })
-
                     return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
                 } else {
                     return <div>Raw bytes not available</div>;
