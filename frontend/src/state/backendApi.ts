@@ -18,7 +18,7 @@ import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { base64ToHexString, decodeBase64, TimeSince, uint8ArrayToHexString } from '../utils/utils';
+import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
     GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
@@ -392,224 +392,219 @@ const apiStore = {
                 if (abortController.signal.aborted)
                     break;
 
-                switch (res.controlMessage.case) {
-                    case 'phase':
-                        console.log('phase: ' + res.controlMessage.value.phase)
-                        this.messageSearchPhase = res.controlMessage.value.phase;
-                        break;
-                    case 'progress':
-                        console.log('progress: ' + res.controlMessage.value.messagesConsumed)
-                        this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                        this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
-                        break;
-                    case 'done':
-                        this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
-                        this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                        // this.MessageSearchCancelled = msg.isCancelled;
-                        this.messageSearchPhase = 'Done';
-                        this.messageSearchPhase = null;
-                        break;
-                    case 'error':
-                        // error doesn't necessarily mean the whole request is done
-                        console.info('ws backend error: ' + res.controlMessage.value.message);
-                        toast({
-                            title: 'Backend Error',
-                            description: res.controlMessage.value.message,
-                            status: 'error'
-                        });
+                try {
+                    switch (res.controlMessage.case) {
+                        case 'phase':
+                            console.log('phase: ' + res.controlMessage.value.phase)
+                            this.messageSearchPhase = res.controlMessage.value.phase;
+                            break;
+                        case 'progress':
+                            console.log('progress: ' + res.controlMessage.value.messagesConsumed)
+                            this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                            this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
+                            break;
+                        case 'done':
+                            this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
+                            this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                            // this.MessageSearchCancelled = msg.isCancelled;
+                            this.messageSearchPhase = 'Done';
+                            this.messageSearchPhase = null;
+                            break;
+                        case 'error':
+                            // error doesn't necessarily mean the whole request is done
+                            console.info('ws backend error: ' + res.controlMessage.value.message);
+                            toast({
+                                title: 'Backend Error',
+                                description: res.controlMessage.value.message,
+                                status: 'error'
+                            });
 
-                        break;
-                    case 'data':
+                            break;
+                        case 'data':
                         // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
                         // this is my hacky way of attempting to get things working by converting the Connect types
                         // to the rest interface types that are hooked up to other things
 
-                        const m = {} as TopicMessage;
-                        m.partitionID = res.controlMessage.value.partitionId
+                            const m = {} as TopicMessage;
+                            m.partitionID = res.controlMessage.value.partitionId
 
-                        m.compression = CompressionType.Unknown
-                        switch (res.controlMessage.value.compression) {
-                            case ProtoCompressionType.UNCOMPRESSED:
-                                m.compression = CompressionType.Uncompressed;
-                                break;
-                            case ProtoCompressionType.GZIP:
-                                m.compression = CompressionType.GZip;
-                                break;
-                            case ProtoCompressionType.SNAPPY:
-                                m.compression = CompressionType.Snappy;
-                                break;
-                            case ProtoCompressionType.LZ4:
-                                m.compression = CompressionType.LZ4;
-                                break;
-                            case ProtoCompressionType.ZSTD:
-                                m.compression = CompressionType.ZStd;
-                                break;
-                        }
+                            m.compression = CompressionType.Unknown
+                            switch (res.controlMessage.value.compression) {
+                                case ProtoCompressionType.UNCOMPRESSED:
+                                    m.compression = CompressionType.Uncompressed;
+                                    break;
+                                case ProtoCompressionType.GZIP:
+                                    m.compression = CompressionType.GZip;
+                                    break;
+                                case ProtoCompressionType.SNAPPY:
+                                    m.compression = CompressionType.Snappy;
+                                    break;
+                                case ProtoCompressionType.LZ4:
+                                    m.compression = CompressionType.LZ4;
+                                    break;
+                                case ProtoCompressionType.ZSTD:
+                                    m.compression = CompressionType.ZStd;
+                                    break;
+                            }
 
-                        m.offset = Number(res.controlMessage.value.offset)
-                        m.timestamp = Number(res.controlMessage.value.timestamp)
-                        m.isTransactional = res.controlMessage.value.isTransactional
-                        m.headers = [];
-                        res.controlMessage.value.headers.forEach(h => {
-                            m.headers.push({
-                                key: h.key,
-                                value: {
-                                    payload: JSON.stringify(new TextDecoder().decode(h.value)),
-                                    encoding: 'text',
-                                    schemaId: 0,
-                                    size: h.value.length,
-                                    isPayloadNull: h.value == null,
-                                }
+                            m.offset = Number(res.controlMessage.value.offset)
+                            m.timestamp = Number(res.controlMessage.value.timestamp)
+                            m.isTransactional = res.controlMessage.value.isTransactional
+                            m.headers = [];
+                            res.controlMessage.value.headers.forEach(h => {
+                                m.headers.push({
+                                    key: h.key,
+                                    value: {
+                                        payload: JSON.stringify(new TextDecoder().decode(h.value)),
+                                        encoding: 'text',
+                                        schemaId: 0,
+                                        size: h.value.length,
+                                        isPayloadNull: h.value == null,
+                                    }
+                                })
                             })
-                        })
 
-                        // key
-                        const key = res.controlMessage.value.key;
-                        const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
+                            // key
+                            const key = res.controlMessage.value.key;
+                            const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
-                        m.key = {} as Payload;
-                        m.key.rawBytes = (key?.originalPayload && key.originalPayload.byteLength > 0)
-                            ? key.originalPayload : (key?.normalizedPayload ?? key?.originalPayload);
+                            m.key = {} as Payload;
+                            m.key.rawBytes = (key?.originalPayload && key.originalPayload.byteLength > 0)
+                                ? key.originalPayload : (key?.normalizedPayload ?? key?.originalPayload);
 
-                        switch (key?.encoding) {
-                            case PayloadEncoding.NONE:
-                                m.key.encoding = 'none';
-                                break;
-                            case PayloadEncoding.BINARY:
-                                m.key.encoding = 'binary';
-                                break;
-                            case PayloadEncoding.XML:
-                                m.key.encoding = 'xml';
-                                break;
-                            case PayloadEncoding.AVRO:
-                                m.key.encoding = 'avro';
-                                break;
-                            case PayloadEncoding.JSON:
-                                m.key.encoding = 'json';
-                                break;
-                            case PayloadEncoding.PROTOBUF:
-                                m.key.encoding = 'protobuf';
-                                break;
-                            case PayloadEncoding.MESSAGE_PACK:
-                                m.key.encoding = 'msgpack';
-                                break;
-                            case PayloadEncoding.TEXT:
-                                m.key.encoding = 'text';
-                                break;
-                            case PayloadEncoding.UTF8:
-                                m.key.encoding = 'utf8WithControlChars';
-                                break;
-                            case PayloadEncoding.UINT:
-                                m.key.encoding = 'uint';
-                                break;
-                            case PayloadEncoding.SMILE:
-                                m.key.encoding = 'smile';
-                                break;
-                            case PayloadEncoding.CONSUMER_OFFSETS:
-                                m.key.encoding = 'consumerOffsets';
-                                break;
-                            default:
-                                console.log('unhandled key encoding type', {
-                                    encoding: key?.encoding,
-                                    encodingName: key?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName : undefined,
-                                    message: res,
-                                })
-                        }
+                            switch (key?.encoding) {
+                                case PayloadEncoding.NONE:
+                                    m.key.encoding = 'none';
+                                    break;
+                                case PayloadEncoding.BINARY:
+                                    m.key.encoding = 'binary';
+                                    break;
+                                case PayloadEncoding.XML:
+                                    m.key.encoding = 'xml';
+                                    break;
+                                case PayloadEncoding.AVRO:
+                                    m.key.encoding = 'avro';
+                                    break;
+                                case PayloadEncoding.JSON:
+                                    m.key.encoding = 'json';
+                                    break;
+                                case PayloadEncoding.PROTOBUF:
+                                    m.key.encoding = 'protobuf';
+                                    break;
+                                case PayloadEncoding.MESSAGE_PACK:
+                                    m.key.encoding = 'msgpack';
+                                    break;
+                                case PayloadEncoding.TEXT:
+                                    m.key.encoding = 'text';
+                                    break;
+                                case PayloadEncoding.UTF8:
+                                    m.key.encoding = 'utf8WithControlChars';
+                                    break;
+                                case PayloadEncoding.UINT:
+                                    m.key.encoding = 'uint';
+                                    break;
+                                case PayloadEncoding.SMILE:
+                                    m.key.encoding = 'smile';
+                                    break;
+                                case PayloadEncoding.CONSUMER_OFFSETS:
+                                    m.key.encoding = 'consumerOffsets';
+                                    break;
+                                default:
+                                    console.log('unhandled key encoding type', {
+                                        encoding: key?.encoding,
+                                        encodingName: key?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName : undefined,
+                                        message: res,
+                                    })
+                            }
 
-                        m.key.isPayloadNull = key?.payloadSize == 0;
-                        m.key.payload = keyPayload;
+                            m.key.isPayloadNull = key?.payloadSize == 0;
+                            m.key.payload = keyPayload;
 
-                        try {
-                            m.key.payload = JSON.parse(keyPayload);
-                        } catch { }
+                            try {
+                                m.key.payload = JSON.parse(keyPayload);
+                            } catch { }
 
-                        if (key?.encoding == PayloadEncoding.BINARY || key?.encoding == PayloadEncoding.UTF8) {
-                            m.keyBinHexPreview = base64ToHexString(m.key.payload);
-                            m.key.payload = decodeBase64(m.key.payload);
-                        }
+                            m.key.troubleshootReport = key?.troubleshootReport;
+                            m.key.schemaId = key?.schemaId ?? 0;
+                            m.keyJson = JSON.stringify(m.key.payload);
+                            m.key.size = Number(key?.payloadSize);
+                            m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
 
-                        m.key.troubleshootReport = key?.troubleshootReport;
-                        m.key.schemaId = key?.schemaId ?? 0;
-                        m.keyJson = JSON.stringify(m.key.payload);
-                        m.key.size = Number(key?.payloadSize);
-                        m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
+                            // console.log(m.keyJson)
 
-                        // console.log(m.keyJson)
+                            // value
+                            const val = res.controlMessage.value.value;
+                            const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
 
-                        // value
-                        const val = res.controlMessage.value.value;
-                        const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+                            m.value = {} as Payload;
+                            m.value.payload = valuePayload;
+                            m.value.rawBytes = (val?.originalPayload && val.originalPayload.byteLength > 0)
+                                ? val.originalPayload : (val?.normalizedPayload ?? val?.originalPayload);
 
-                        m.value = {} as Payload;
-                        m.value.payload = valuePayload;
-                        m.value.rawBytes = (val?.originalPayload && val.originalPayload.byteLength > 0)
-                            ? val.originalPayload : (val?.normalizedPayload ?? val?.originalPayload);
+                            switch (val?.encoding) {
+                                case PayloadEncoding.NONE:
+                                    m.value.encoding = 'none';
+                                    break;
+                                case PayloadEncoding.BINARY:
+                                    m.value.encoding = 'binary';
+                                    break;
+                                case PayloadEncoding.XML:
+                                    m.value.encoding = 'xml';
+                                    break;
+                                case PayloadEncoding.AVRO:
+                                    m.value.encoding = 'avro';
+                                    break;
+                                case PayloadEncoding.JSON:
+                                    m.value.encoding = 'json';
+                                    break;
+                                case PayloadEncoding.PROTOBUF:
+                                    m.value.encoding = 'protobuf';
+                                    break;
+                                case PayloadEncoding.MESSAGE_PACK:
+                                    m.value.encoding = 'msgpack';
+                                    break;
+                                case PayloadEncoding.TEXT:
+                                    m.value.encoding = 'text';
+                                    break;
+                                case PayloadEncoding.UTF8:
+                                    m.value.encoding = 'utf8WithControlChars';
+                                    break;
+                                case PayloadEncoding.UINT:
+                                    m.value.encoding = 'uint';
+                                    break;
+                                case PayloadEncoding.SMILE:
+                                    m.value.encoding = 'smile';
+                                    break;
+                                case PayloadEncoding.CONSUMER_OFFSETS:
+                                    m.value.encoding = 'consumerOffsets';
+                                    break;
+                                default:
+                                    console.log('unhandled value encoding type', {
+                                        encoding: val?.encoding,
+                                        encodingName: val?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName : undefined,
+                                        message: res,
+                                    })
+                            }
 
-                        switch (val?.encoding) {
-                            case PayloadEncoding.NONE:
-                                m.value.encoding = 'none';
-                                break;
-                            case PayloadEncoding.BINARY:
-                                m.value.encoding = 'binary';
-                                break;
-                            case PayloadEncoding.XML:
-                                m.value.encoding = 'xml';
-                                break;
-                            case PayloadEncoding.AVRO:
-                                m.value.encoding = 'avro';
-                                break;
-                            case PayloadEncoding.JSON:
-                                m.value.encoding = 'json';
-                                break;
-                            case PayloadEncoding.PROTOBUF:
-                                m.value.encoding = 'protobuf';
-                                break;
-                            case PayloadEncoding.MESSAGE_PACK:
-                                m.value.encoding = 'msgpack';
-                                break;
-                            case PayloadEncoding.TEXT:
-                                m.value.encoding = 'text';
-                                break;
-                            case PayloadEncoding.UTF8:
-                                m.value.encoding = 'utf8WithControlChars';
-                                break;
-                            case PayloadEncoding.UINT:
-                                m.value.encoding = 'uint';
-                                break;
-                            case PayloadEncoding.SMILE:
-                                m.value.encoding = 'smile';
-                                break;
-                            case PayloadEncoding.CONSUMER_OFFSETS:
-                                m.value.encoding = 'consumerOffsets';
-                                break;
-                            default:
-                                console.log('unhandled value encoding type', {
-                                    encoding: val?.encoding,
-                                    encodingName: val?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName : undefined,
-                                    message: res,
-                                })
-                        }
+                            m.value.schemaId = val?.schemaId ?? 0;
+                            m.value.troubleshootReport = val?.troubleshootReport;
+                            m.value.isPayloadNull = val?.payloadSize == 0;
+                            m.valueJson = valuePayload;
+                            m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
-                        m.value.schemaId = val?.schemaId ?? 0;
-                        m.value.troubleshootReport = val?.troubleshootReport;
-                        m.value.isPayloadNull = val?.payloadSize == 0;
-                        m.valueJson = valuePayload;
-                        m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
+                            try {
+                                m.value.payload = JSON.parse(valuePayload);
+                            } catch { }
 
-                        try {
-                            m.value.payload = JSON.parse(valuePayload);
-                        } catch { }
+                            m.valueJson = JSON.stringify(m.value.payload);
+                            m.value.size = Number(val?.payloadSize);
 
-                        if (val?.encoding == PayloadEncoding.BINARY) {
-                            m.valueBinHexPreview = val ? uint8ArrayToHexString(val.normalizedPayload!) : '';
-                            m.value.payload = decodeBase64(m.value.payload);
-                        }
-
-                        m.valueJson = JSON.stringify(m.value.payload);
-                        m.value.size = Number(val?.payloadSize);
-
-                        this.messages.push(m);
-                        break;
+                            this.messages.push(m);
+                            break;
+                    }
+                }
+                catch (e) {
+                    console.error('error in listMessages loop', { error: e });
                 }
             }
         } catch (e) {
