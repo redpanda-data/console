@@ -274,7 +274,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
-    MakeRoute<{ topicName: string }>('/topics/:topicName/produce', TopicProducePage, 'Produce Record'),
+    MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
     MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),

@@ -513,10 +513,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 export class TopicProducePage extends PageComponent<{ topicName: string }> {
     initPage(p: PageInitHelper): void {
         const topicName = this.props.topicName;
-        p.title = 'Publish'
+        p.title = 'Produce'
         p.addBreadcrumb('Topics', '/topics');
         p.addBreadcrumb(topicName, '/topics/' + topicName);
-        p.addBreadcrumb('Produce record', '/produce')
+        p.addBreadcrumb('Produce record', '/produce-record')
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }

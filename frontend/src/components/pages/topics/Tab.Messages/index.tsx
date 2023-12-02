@@ -313,7 +313,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <MenuList>
                                 <MenuItem
                                     onClick={() => {
-                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce`);
+                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
                                     }}
                                 >
                                     Produce Record
