@@ -313,10 +313,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <MenuList>
                                 <MenuItem
                                     onClick={() => {
-                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/publish`);
+                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
                                     }}
                                 >
-                                    Publish Message
+                                    Produce Record
                                 </MenuItem>
                                 {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
                             </MenuList>

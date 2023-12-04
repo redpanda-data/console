@@ -42,7 +42,7 @@ import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaCreatePage, SchemaAddVersionPage } from './pages/schemas/Schema.Create';
-import { TopicPublishPage } from './pages/topics/Topic.Publish';
+import { TopicProducePage } from './pages/topics/Topic.Produce';
 
 //
 //	Route Types
@@ -274,7 +274,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
-    MakeRoute<{ topicName: string }>('/topics/:topicName/publish', TopicPublishPage, 'Publish Message'),
+    MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
     MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),

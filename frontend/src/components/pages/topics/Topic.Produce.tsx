@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Flex, FormControl, Grid, GridItem, Heading, HStack, IconButton, Input, Link, Text, useToast } from '@redpanda-data/ui';
+import { Alert, Box, Button, Divider, Flex, FormControl, Grid, GridItem, Heading, HStack, IconButton, Input, Link, SectionHeading, Text, useToast } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { autorun, computed } from 'mobx';
 import { api } from '../../../state/backendApi';
@@ -230,7 +230,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
-            <Grid width={['100%', '100%', 600]} gap={4} flexDirection="column">
+            <Grid width={['100%', '100%', 600]} gap={6} flexDirection="column">
                 <Flex gap={4} flexDirection="row">
                     <Box flexGrow={1}>
                         <Label text="Partition">
@@ -268,136 +268,47 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                     </Box>
                 </Flex>
 
-                <Label text="Headers">
-                    <>
-                        <Flex gap={4} flexDirection="column">
-                            {fields.map((field, index) => (
-                                <HStack key={field.id} spacing={2}>
-                                    <FormControl>
-                                        <Input {...register(`headers.${index}.key`)} placeholder="Key"/>
-                                    </FormControl>
-                                    <FormControl>
-                                        <Input {...register(`headers.${index}.value`)} placeholder="Value"/>
-                                    </FormControl>
-                                    <IconButton
-                                        icon={<HiOutlineTrash/>}
-                                        aria-label="Remove item"
-                                        variant="outline"
-                                        onClick={() => remove(index)}
-                                    />
-                                </HStack>
-                            ))}
-                        </Flex>
-                        <Button type="button" variant="outline" onClick={() => append({key: '', value: ''})} size="sm" my={2}>
+                <Divider />
+
+                <Flex gap={4} flexDirection="column">
+                    <SectionHeading>Headers</SectionHeading>
+                    
+                    {fields.map((field, index) => (
+                        <HStack key={field.id} spacing={2}>
+                            <FormControl>
+                                <Input {...register(`headers.${index}.key`)} placeholder="Key"/>
+                            </FormControl>
+                            <FormControl>
+                                <Input {...register(`headers.${index}.value`)} placeholder="Value"/>
+                            </FormControl>
+                            <IconButton
+                                icon={<HiOutlineTrash/>}
+                                aria-label="Remove item"
+                                variant="outline"
+                                onClick={() => remove(index)}
+                            />
+                        </HStack>))}
+
+                    <Box>
+                        <Button type="button" variant="outline" onClick={() => append({key: '', value: ''})} size="sm">
                             Add row
                         </Button>
-                    </>
-                </Label>
+                    </Box>
+                </Flex>
 
-                <Grid templateColumns="repeat(5, 1fr)" gap={2}>
-                    <GridItem colSpan={2}>
-                        <Label text="Key Type">
-                            <Controller
-                                control={control}
-                                name="key.encoding"
-                                render={({
-                                             field: {onChange, value,},
-                                         }) => (
-                                    <SingleSelect<PayloadEncoding | 'base64'>
-                                        options={encodingOptions}
-                                        value={value}
-                                        onChange={onChange}
-                                    />
-                                )}
-                            />
-                        </Label>
-                    </GridItem>
-                    <GridItem colSpan={2}>
-                        {showKeySchemaSelection &&
-                            <Label text="Schema">
-                                <Controller
-                                    control={control}
-                                    name="key.schemaName"
-                                    render={({
-                                                 field: {onChange, value,},
-                                             }) => (
-                                        <SingleSelect<string | undefined>
-                                            options={availableValues.map((value) => ({key: value.name, value: value.name}))}
-                                            value={value}
-                                            onChange={newVal => {
-                                                onChange(newVal);
+                <Divider />
 
-                                                const detail = availableValues
-                                                    .filter(value => value.name === newVal)
-                                                    .first()
-                                                setValue('key.schemaVersion', detail?.latestActiveVersion)
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Label>
-                        }
-                    </GridItem>
-                    <GridItem colSpan={1}>
-                        {showKeySchemaSelection && <Label text="Version">
-                            <Controller
-                                control={control}
-                                name="key.schemaVersion"
-                                render={({
-                                             field: {onChange, value,},
-                                         }) => (
-                                    <SingleSelect<number | undefined>
-                                        options={
-                                            availableValues
-                                                .filter(value => value.name === keySchemaName)
-                                                .flatMap(value => value.versions)
-                                                .sort(({version: version1}, {version: version2}) => version2 - version1)
-                                                .map(({version}) => ({label: version, value: version}))
-                                        }
-                                        value={value}
-                                        onChange={onChange}
-                                    />
-                                )}
-                            />
-                        </Label>}
-                    </GridItem>
-                </Grid>
-
-                {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
-                    <>
-                        {protoBufInfoElement}
-                        <Input my={2} type="number" {...register('key.protobufIndex')} />
-                    </>
-                </Label>}
-
-                <Label text="Data">
-                    <Controller
-                        control={control}
-                        name="key.data"
-                        render={({
-                                     field: {onChange, value},
-                                 }) => (
-                            <KowlEditor
-                                onMount={setTheme}
-                                height={300}
-                                value={value}
-                                onChange={onChange}
-                                language={encodingToLanguage(keyPayloadOptions?.encoding)}
-                            />
-                        )}
-                    />
-                </Label>
-
-                <Flex gap={2} flexDirection="column">
+                <Flex gap={4} flexDirection="column">
+                    <SectionHeading>Key</SectionHeading>
                     <Grid templateColumns="repeat(5, 1fr)" gap={2}>
                         <GridItem colSpan={2}>
-                            <Label text="Value Type">
+                            <Label text="Type">
                                 <Controller
                                     control={control}
-                                    name="value.encoding"
+                                    name="key.encoding"
                                     render={({
-                                                 field: {onChange, value,},
-                                             }) => (
+                                                field: {onChange, value,},
+                                            }) => (
                                         <SingleSelect<PayloadEncoding | 'base64'>
                                             options={encodingOptions}
                                             value={value}
@@ -408,41 +319,43 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             </Label>
                         </GridItem>
                         <GridItem colSpan={2}>
-                            {showValueSchemaSelection && <Label text="Schema">
-                                <Controller
-                                    control={control}
-                                    name="value.schemaName"
-                                    render={({
-                                                 field: {onChange, value,},
-                                             }) => (
-                                        <SingleSelect<string | undefined>
-                                            options={availableValues.map((value) => ({key: value.name, value: value.name}))}
-                                            value={value}
-                                            onChange={newVal => {
-                                                onChange(newVal);
+                            {showKeySchemaSelection &&
+                                <Label text="Schema">
+                                    <Controller
+                                        control={control}
+                                        name="key.schemaName"
+                                        render={({
+                                                    field: {onChange, value,},
+                                                }) => (
+                                            <SingleSelect<string | undefined>
+                                                options={availableValues.map((value) => ({key: value.name, value: value.name}))}
+                                                value={value}
+                                                onChange={newVal => {
+                                                    onChange(newVal);
 
-                                                const detail = availableValues
-                                                    .filter(value => value.name === newVal)
-                                                    .first()
-                                                setValue('value.schemaVersion', detail?.latestActiveVersion)
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Label>}
+                                                    const detail = availableValues
+                                                        .filter(value => value.name === newVal)
+                                                        .first()
+                                                    setValue('key.schemaVersion', detail?.latestActiveVersion)
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </Label>
+                            }
                         </GridItem>
                         <GridItem colSpan={1}>
-                            {showValueSchemaSelection && <Label text="Version">
+                            {showKeySchemaSelection && <Label text="Version">
                                 <Controller
                                     control={control}
-                                    name="value.schemaVersion"
+                                    name="key.schemaVersion"
                                     render={({
-                                                 field: {onChange, value,},
-                                             }) => (
+                                                field: {onChange, value,},
+                                            }) => (
                                         <SingleSelect<number | undefined>
                                             options={
                                                 availableValues
-                                                    .filter(value => value.name === valueSchemaName)
+                                                    .filter(value => value.name === keySchemaName)
                                                     .flatMap(value => value.versions)
                                                     .sort(({version: version1}, {version: version2}) => version2 - version1)
                                                     .map(({version}) => ({label: version, value: version}))
@@ -456,30 +369,129 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                         </GridItem>
                     </Grid>
 
-                    {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
+                    {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
                         <>
                             {protoBufInfoElement}
-                            <Input my={2} type="number" {...register('value.protobufIndex')} />
+                            <Input my={2} type="number" {...register('key.protobufIndex')} />
                         </>
                     </Label>}
 
                     <Label text="Data">
                         <Controller
                             control={control}
-                            name="value.data"
+                            name="key.data"
                             render={({
-                                         field: {onChange, value},
-                                     }) => (
+                                        field: {onChange, value},
+                                    }) => (
                                 <KowlEditor
                                     onMount={setTheme}
                                     height={300}
                                     value={value}
                                     onChange={onChange}
-                                    language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                                    language={encodingToLanguage(keyPayloadOptions?.encoding)}
                                 />
                             )}
                         />
                     </Label>
+                </Flex>
+
+                <Divider />
+
+                <Flex gap={4} flexDirection="column">
+                    <SectionHeading>Value</SectionHeading>
+                    <Flex gap={2} flexDirection="column">
+                        <Grid templateColumns="repeat(5, 1fr)" gap={2}>
+                            <GridItem colSpan={2}>
+                                <Label text="Type">
+                                    <Controller
+                                        control={control}
+                                        name="value.encoding"
+                                        render={({
+                                                    field: {onChange, value,},
+                                                }) => (
+                                            <SingleSelect<PayloadEncoding | 'base64'>
+                                                options={encodingOptions}
+                                                value={value}
+                                                onChange={onChange}
+                                            />
+                                        )}
+                                    />
+                                </Label>
+                            </GridItem>
+                            <GridItem colSpan={2}>
+                                {showValueSchemaSelection && <Label text="Schema">
+                                    <Controller
+                                        control={control}
+                                        name="value.schemaName"
+                                        render={({
+                                                    field: {onChange, value,},
+                                                }) => (
+                                            <SingleSelect<string | undefined>
+                                                options={availableValues.map((value) => ({key: value.name, value: value.name}))}
+                                                value={value}
+                                                onChange={newVal => {
+                                                    onChange(newVal);
+
+                                                    const detail = availableValues
+                                                        .filter(value => value.name === newVal)
+                                                        .first()
+                                                    setValue('value.schemaVersion', detail?.latestActiveVersion)
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </Label>}
+                            </GridItem>
+                            <GridItem colSpan={1}>
+                                {showValueSchemaSelection && <Label text="Version">
+                                    <Controller
+                                        control={control}
+                                        name="value.schemaVersion"
+                                        render={({
+                                                    field: {onChange, value,},
+                                                }) => (
+                                            <SingleSelect<number | undefined>
+                                                options={
+                                                    availableValues
+                                                        .filter(value => value.name === valueSchemaName)
+                                                        .flatMap(value => value.versions)
+                                                        .sort(({version: version1}, {version: version2}) => version2 - version1)
+                                                        .map(({version}) => ({label: version, value: version}))
+                                                }
+                                                value={value}
+                                                onChange={onChange}
+                                            />
+                                        )}
+                                    />
+                                </Label>}
+                            </GridItem>
+                        </Grid>
+
+                        {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && <Label text="Index">
+                            <>
+                                {protoBufInfoElement}
+                                <Input my={2} type="number" {...register('value.protobufIndex')} />
+                            </>
+                        </Label>}
+
+                        <Label text="Data">
+                            <Controller
+                                control={control}
+                                name="value.data"
+                                render={({
+                                            field: {onChange, value},
+                                        }) => (
+                                    <KowlEditor
+                                        onMount={setTheme}
+                                        height={300}
+                                        value={value}
+                                        onChange={onChange}
+                                        language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                                    />
+                                )}
+                            />
+                        </Label>
+                    </Flex>
                 </Flex>
 
                 {!!errors?.root?.serverError &&
@@ -498,13 +510,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
 
 @observer
-export class TopicPublishPage extends PageComponent<{ topicName: string }> {
+export class TopicProducePage extends PageComponent<{ topicName: string }> {
     initPage(p: PageInitHelper): void {
         const topicName = this.props.topicName;
-        p.title = 'Publish'
+        p.title = 'Produce'
         p.addBreadcrumb('Topics', '/topics');
         p.addBreadcrumb(topicName, '/topics/' + topicName);
-        p.addBreadcrumb('Publish', '/publish')
+        p.addBreadcrumb('Produce record', '/produce-record')
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
@@ -516,8 +528,8 @@ export class TopicPublishPage extends PageComponent<{ topicName: string }> {
     render() {
         return (
             <Box>
-                <Heading as="h1" noOfLines={1} py={2}>Produce message</Heading>
-                <Text fontSize="lg">This will produce a single message to the <strong>{this.props.topicName}</strong> topic.</Text>
+                <Heading as="h1" noOfLines={1} py={2}>Produce Kafka record</Heading>
+                <Text fontSize="lg">This will produce a single record to the <strong>{this.props.topicName}</strong> topic.</Text>
 
                 <Box my={6}>
                     <PublishTopicForm topicName={this.props.topicName}/>
