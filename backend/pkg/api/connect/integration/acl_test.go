@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/protocmp"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
@@ -60,6 +61,177 @@ func (s *APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, res
 			},
 		},
 	}
+}
+
+func (s *APISuite) TestCreateACL() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("create ACL with default request (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create ACL via Connect API call
+		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
+		createReq := &v1alpha1.CreateACLRequest{
+			ResourceType:        v1alpha1.ACL_RESOURCE_TYPE_TOPIC,
+			ResourceName:        "*",
+			ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_LITERAL,
+			Principal:           "User:console-create-acl-test-connect-go",
+			Host:                "*",
+			Operation:           v1alpha1.ACL_OPERATION_ALL,
+			PermissionType:      v1alpha1.ACL_PERMISSION_TYPE_ALLOW,
+		}
+		_, err := client.CreateACL(ctx, connect.NewRequest(createReq))
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.DeleteAllACLs(ctx)
+			assert.NoError(err, "failed to delete all ACLs")
+		}()
+
+		// 2. List ACLs via Kafka API
+		describeReq := kadm.NewACLs().
+			Allow("User:console-create-acl-test-connect-go").
+			AllowHosts("*").
+			ResourcePatternType(kadm.ACLPatternLiteral).
+			Operations(kadm.OpAll).
+			Topics("*")
+		describeResults, err := s.kafkaAdminClient.DescribeACLs(ctx, describeReq)
+		require.NoError(err)
+		require.Len(describeResults, 1)
+		describeResult := describeResults[0]
+		assert.NoError(describeResult.Err)
+		assert.Equal(describeResult.Name, kadm.StringPtr("*"))
+		assert.Equal(describeResult.Operation, kadm.OpAll)
+		assert.Equal(*describeResult.Principal, "User:console-create-acl-test-connect-go")
+		assert.Equal(*describeResult.Host, "*")
+		assert.Equal(describeResult.Type, kmsg.ACLResourceTypeTopic)
+		assert.Equal(describeResult.Pattern, kmsg.ACLResourcePatternTypeLiteral)
+		assert.Equal(describeResult.Permission, kmsg.ACLPermissionTypeAllow)
+	})
+
+	t.Run("create ACL with default request (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create one ACL via HTTP API
+		type createACLRequest struct {
+			Host                string `json:"host"`
+			Operation           string `json:"operation"`
+			PermissionType      string `json:"permission_type"`
+			Principal           string `json:"principal"`
+			ResourceName        string `json:"resource_name"`
+			ResourcePatternType string `json:"resource_pattern_type"`
+			ResourceType        string `json:"resource_type"`
+		}
+
+		httpReq := createACLRequest{
+			Host:                "*",
+			Operation:           "OPERATION_ALL",
+			PermissionType:      "PERMISSION_TYPE_ALLOW",
+			Principal:           "User:console-create-acl-test-http",
+			ResourceName:        "*",
+			ResourcePatternType: "RESOURCE_PATTERN_TYPE_LITERAL",
+			ResourceType:        "RESOURCE_TYPE_TOPIC",
+		}
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1alpha1/acls").
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusCreated), // Allows 2xx otherwise
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.DeleteAllACLs(ctx)
+			assert.NoError(err, "failed to delete all ACLs")
+		}()
+
+		// 2. List ACLs via Kafka API
+		describeReq := kadm.NewACLs().
+			Allow("User:console-create-acl-test-http").
+			AllowHosts("*").
+			ResourcePatternType(kadm.ACLPatternLiteral).
+			Operations(kadm.OpAll).
+			Topics("*")
+		describeResults, err := s.kafkaAdminClient.DescribeACLs(ctx, describeReq)
+		require.NoError(err)
+		require.Len(describeResults, 1)
+		describeResult := describeResults[0]
+		assert.NoError(describeResult.Err)
+		assert.Equal(*describeResult.Name, "*")
+		assert.Equal(describeResult.Operation, kadm.OpAll)
+		assert.Equal(*describeResult.Principal, "User:console-create-acl-test-http")
+		assert.Equal(*describeResult.Host, "*")
+		assert.Equal(describeResult.Type, kmsg.ACLResourceTypeTopic)
+		assert.Equal(describeResult.Pattern, kmsg.ACLResourcePatternTypeLiteral)
+		assert.Equal(describeResult.Permission, kmsg.ACLPermissionTypeAllow)
+	})
+
+	t.Run("create bad ACL create request (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// Send incomplete ACL create request via HTTP API
+		type createACLRequest struct {
+			Host                string `json:"host"`
+			Operation           string `json:"operation"`
+			PermissionType      string `json:"permission_type"`
+			Principal           string `json:"principal"`
+			ResourceName        string `json:"resource_name"`
+			ResourcePatternType string `json:"resource_pattern_type"`
+			ResourceType        string `json:"resource_type"`
+		}
+
+		httpReq := createACLRequest{
+			Host:                "*",
+			Operation:           "OPERATION_ALL",
+			PermissionType:      "PERMISSION_TYPE_ALLOW",
+			Principal:           "User:console-create-acl-test-http",
+			ResourceName:        "*",
+			ResourcePatternType: "RESOURCE_PATTERN_TYPE_LITERAL",
+			// Omit the ResourceType - all of these fields are mandatory
+			// ResourceType:        "RESOURCE_TYPE_TOPIC",
+		}
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1alpha1/acls").
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				func(res *http.Response) error {
+					assert.Equal(http.StatusBadRequest, res.StatusCode)
+					if res.StatusCode != http.StatusCreated {
+						return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+					}
+					return nil
+				},
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Error(err)
+		assert.NotEmpty(errResponse)
+		// Field name indicator is the most important information
+		assert.Contains(errResponse, "resource_type")
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.DeleteAllACLs(ctx)
+			assert.NoError(err, "failed to delete all ACLs")
+		}()
+	})
 }
 
 func (s *APISuite) TestListACLs() {
@@ -217,12 +389,17 @@ func (s *APISuite) TestListACLs() {
 			} `json:"resources"`
 		}
 		var response listAclsResponse
+		var errResponse string
 		err = requests.
 			URL(s.httpAddress() + "/v1alpha1/").
 			Path("acls").
-			CheckStatus(http.StatusOK). // Allows 2xx otherwise
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
 			ToJSON(&response).
 			Fetch(ctx)
+		assert.Empty(errResponse)
 		require.NoError(err)
 		assert.GreaterOrEqual(len(response.Resources), 4)
 	})
