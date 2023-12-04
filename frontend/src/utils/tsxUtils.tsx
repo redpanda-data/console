@@ -54,16 +54,16 @@ export function numberToThousandsString(n: number): JSX.Element {
 }
 
 @observer
-export class TimestampDisplay extends Component<{ unixEpochSecond: number, format: TimestampDisplayFormat }>{
+export class TimestampDisplay extends Component<{ unixEpochMillisecond: number, format: TimestampDisplayFormat }>{
     render() {
-        const { unixEpochSecond: ts, format } = this.props;
+        const { unixEpochMillisecond: ts, format } = this.props;
         if (format == 'relative') DebugTimerStore.Instance.useSeconds();
 
         switch (format) {
             case 'unixTimestamp': return new Date(ts).toUTCString();
             case 'onlyDate': return new Date(ts).toLocaleDateString();
             case 'onlyTime': return new Date(ts).toLocaleTimeString();
-            case 'unixSeconds': return ts.toString();
+            case 'unixMillis': return ts.toString();
             case 'relative': return prettyMilliseconds(Date.now() - ts, { compact: true }) + ' ago';
         }
 
