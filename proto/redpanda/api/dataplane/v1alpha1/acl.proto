@@ -217,7 +217,10 @@ service ACLService {
   }
 
   rpc CreateACL(CreateACLRequest) returns (CreateACLResponse) {
-    option (google.api.http) = {post: "/v1alpha1/acls"};
+    option (google.api.http) = {
+      post: "/v1alpha1/acls",
+      body: "*"
+    };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create ACL"
       description: "Create ACL"
