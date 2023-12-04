@@ -13,6 +13,7 @@ package acl
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
@@ -148,7 +149,10 @@ func (s *Service) CreateACL(ctx context.Context, req *connect.Request[v1alpha1.C
 		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
 	}
 
-	return connect.NewResponse(&v1alpha1.CreateACLResponse{}), nil
+	connectResponse := connect.NewResponse(&v1alpha1.CreateACLResponse{})
+	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusCreated))
+
+	return connectResponse, nil
 }
 
 // DeleteACLs implements the handler for the delete ACL endpoint.
