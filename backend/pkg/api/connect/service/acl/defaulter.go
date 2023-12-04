@@ -16,7 +16,7 @@ import v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/
 // set of fields, and still retrieve or delete an ACL.
 type defaulter struct{}
 
-func (d *defaulter) applyCreateACLRequest(req *v1alpha1.CreateACLRequest) {
+func (*defaulter) applyCreateACLRequest(req *v1alpha1.CreateACLRequest) {
 	if req.ResourceType == v1alpha1.ACL_RESOURCE_TYPE_CLUSTER && req.ResourceName == "" {
 		req.ResourceName = "kafka-cluster"
 	}
