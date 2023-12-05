@@ -75,12 +75,6 @@ func (TextSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 		return nil, fmt.Errorf("unsupported type %+T for text serialization", obj)
 	}
 
-	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
-
-	if len(trimmed) == 0 {
-		return byteData, nil
-	}
-
 	isUTF8 := utf8.Valid(byteData)
 	if !isUTF8 {
 		return nil, fmt.Errorf("payload is not UTF8")
