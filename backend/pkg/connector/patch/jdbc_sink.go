@@ -50,11 +50,13 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 	// Misc patches
 	switch d.Definition.Name {
 	case keyConverter:
-		d.SetImportance(model.ConfigDefinitionImportanceHigh)
+		d.SetImportance(model.ConfigDefinitionImportanceHigh).
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF")
 	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case "insert.mode":
 		d.SetDisplayName("Insert Mode").

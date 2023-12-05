@@ -476,7 +476,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochMillisecond={t} format={tsFormat} /> },
             {
                 width: hasKeyTags ? '30%' : 1, title: 'Key', dataIndex: 'key',
                 render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />,
@@ -1298,7 +1298,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                                 'Relative': 'relative',
                                 'Local Date': 'onlyDate',
                                 'Local Time': 'onlyTime',
-                                'Unix Seconds': 'unixSeconds',
+                                'Unix Millis': 'unixMillis',
                             }}
                             value={uiState.topicSettings.previewTimestamps}
                             onChange={e => uiState.topicSettings.previewTimestamps = e}

@@ -38,7 +38,9 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			CheckOriginFunc: originsCheckFunc(api.Cfg.REST.AllowedOrigins),
 		}
 		if err := wsClient.upgrade(w, r); err != nil {
-			api.Logger.Error("failed to upgrade HTTP connection to websocket connection", zap.Error(err))
+			api.Logger.Error("failed to upgrade HTTP connection to websocket connection",
+				zap.String("request_origin", r.Header.Get("Origin")),
+				zap.Error(err))
 			return
 		}
 		defer wsClient.sendClose()
