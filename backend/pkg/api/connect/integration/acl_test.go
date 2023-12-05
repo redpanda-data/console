@@ -191,7 +191,7 @@ func (s *APISuite) TestCreateACL() {
 			Principal           string `json:"principal"`
 			ResourceName        string `json:"resource_name"`
 			ResourcePatternType string `json:"resource_pattern_type"`
-			ResourceType        string `json:"resource_type"`
+			ResourceType        string `json:"resource_type,omitempty"` // Omitempty to simulate the bad request with missing Resource Type
 		}
 
 		httpReq := createACLRequest{
