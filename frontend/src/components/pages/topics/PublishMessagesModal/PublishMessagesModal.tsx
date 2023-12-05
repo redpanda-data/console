@@ -232,7 +232,7 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    { value: PayloadEncoding.NONE, label: 'None (Tombstone)', tooltip: 'Message value will be null' },
+    { value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null' },
     { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
     { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
 

@@ -20,8 +20,8 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 	encoding := serde.PayloadEncodingBinary
 
 	switch po.GetEncoding() {
-	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NONE:
-		encoding = serde.PayloadEncodingNone
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NULL:
+		encoding = serde.PayloadEncodingNull
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO:
 		encoding = serde.PayloadEncodingAvro
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF:
@@ -87,8 +87,8 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 
 	switch serdeEncoding {
-	case serde.PayloadEncodingNone:
-		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NONE
+	case serde.PayloadEncodingNull:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NULL
 	case serde.PayloadEncodingAvro:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO
 	case serde.PayloadEncodingProtobuf:
@@ -126,8 +126,8 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 	encoding := serde.PayloadEncodingUnspecified
 
 	switch protoEncoding {
-	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NONE:
-		encoding = serde.PayloadEncodingNone
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_NULL:
+		encoding = serde.PayloadEncodingNull
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO:
 		encoding = serde.PayloadEncodingAvro
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF:

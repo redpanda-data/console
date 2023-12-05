@@ -23,7 +23,7 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    {value: PayloadEncoding.NONE, label: 'Null', tooltip: 'Message value will be null'},
+    {value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null'},
     {value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes'},
     {value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text'},
 
@@ -182,7 +182,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
 
         // Key
-        if (data.key.encoding != PayloadEncoding.NONE) {
+        if (data.key.encoding != PayloadEncoding.NULL) {
             req.key = new PublishMessagePayloadOptions();
             try {
                 req.key.data = encodeData(data.key.data, data.key.encoding);
@@ -198,7 +198,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
 
         // Value
-        if (data.value.encoding != PayloadEncoding.NONE) {
+        if (data.value.encoding != PayloadEncoding.NULL) {
             req.value = new PublishMessagePayloadOptions();
             try {
                 req.value.data = encodeData(data.value.data, data.value.encoding);

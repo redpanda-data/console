@@ -1652,7 +1652,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
             // Key
 
             // Value
-            if (state.value.encoding != PayloadEncoding.NONE) {
+            if (state.value.encoding != PayloadEncoding.NULL) {
                 req.value = new PublishMessagePayloadOptions();
                 req.value.data = new TextEncoder().encode(state.value.data);
                 req.value.encoding = state.value.encoding as PayloadEncoding;

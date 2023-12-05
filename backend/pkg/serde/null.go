@@ -16,18 +16,18 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-var _ Serde = (*NoneSerde)(nil)
+var _ Serde = (*NullSerde)(nil)
 
-// NoneSerde represents the serde for dealing with nil types.
-type NoneSerde struct{}
+// NullSerde represents the serde for dealing with nil types.
+type NullSerde struct{}
 
 // Name returns the name of the serde payload encoding.
-func (NoneSerde) Name() PayloadEncoding {
-	return PayloadEncodingNone
+func (NullSerde) Name() PayloadEncoding {
+	return PayloadEncodingNull
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (NoneSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (NullSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
 	if payload != nil {
@@ -35,11 +35,11 @@ func (NoneSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 	}
 
 	return &RecordPayload{
-		Encoding: PayloadEncodingNone,
+		Encoding: PayloadEncodingNull,
 	}, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-func (NoneSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
+func (NullSerde) SerializeObject(_ context.Context, _ any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
 	return nil, nil
 }

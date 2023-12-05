@@ -90,7 +90,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		deserializedKey = &RecordPayload{
 			OriginalPayload:  record.Key,
 			PayloadSizeBytes: len(record.Key),
-			Encoding:         PayloadEncodingNone,
+			Encoding:         PayloadEncodingNull,
 		}
 	}
 	if deserializedVal == nil {
@@ -98,7 +98,7 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		deserializedVal = &RecordPayload{
 			OriginalPayload:  record.Value,
 			PayloadSizeBytes: len(record.Value),
-			Encoding:         PayloadEncodingNone,
+			Encoding:         PayloadEncodingNull,
 		}
 	}
 

@@ -243,7 +243,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 1)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 
 		// check key
@@ -261,7 +261,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -399,7 +399,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -532,7 +532,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -668,7 +668,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 5)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -695,7 +695,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -953,7 +953,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 5)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -980,7 +980,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -1141,7 +1141,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -1170,7 +1170,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -1537,7 +1537,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -1566,7 +1566,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -1742,7 +1742,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -1756,7 +1756,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_nest'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		assert.Equal(PayloadEncodingNone, dr.Key.Encoding)
+		assert.Equal(PayloadEncodingNull, dr.Key.Encoding)
 		assert.Equal(true, dr.Key.IsPayloadNull)
 		assert.Equal(false, dr.Key.IsPayloadTooLarge)
 		assert.Empty(dr.Key.OriginalPayload)
@@ -2059,7 +2059,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 6)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -2088,7 +2088,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -2854,7 +2854,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// value troubleshooting
 		require.Len(dr.Value.Troubleshooting, 4)
-		assert.Equal(string(PayloadEncodingNone), dr.Value.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Value.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Value.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Value.Troubleshooting[1].Message)
@@ -2879,7 +2879,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		// key troubleshooting
 		require.Len(dr.Key.Troubleshooting, 10)
-		assert.Equal(string(PayloadEncodingNone), dr.Key.Troubleshooting[0].SerdeName)
+		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not empty as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
 		assert.Equal("first byte indicates this it not valid JSON, expected brackets", dr.Key.Troubleshooting[1].Message)
@@ -3576,7 +3576,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  nil,
-				Encoding: PayloadEncodingNone,
+				Encoding: PayloadEncodingNull,
 			},
 			Value: RecordPayloadInput{
 				Payload:  inputData,
@@ -3592,7 +3592,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NotNil(serRes)
 
 		assert.Equal([]byte(nil), serRes.Key.Payload)
-		assert.Equal(PayloadEncodingNone, serRes.Key.Encoding)
+		assert.Equal(PayloadEncodingNull, serRes.Key.Encoding)
 		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingProtobufSchema, serRes.Value.Encoding)
 	})

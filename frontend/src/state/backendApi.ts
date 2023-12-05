@@ -473,8 +473,8 @@ const apiStore = {
                                 ? key.originalPayload : (key?.normalizedPayload ?? key?.originalPayload);
 
                             switch (key?.encoding) {
-                                case PayloadEncoding.NONE:
-                                    m.key.encoding = 'none';
+                                case PayloadEncoding.NULL:
+                                    m.key.encoding = 'null';
                                     break;
                                 case PayloadEncoding.BINARY:
                                     m.key.encoding = 'binary';
@@ -542,8 +542,8 @@ const apiStore = {
                                 ? val.originalPayload : (val?.normalizedPayload ?? val?.originalPayload);
 
                             switch (val?.encoding) {
-                                case PayloadEncoding.NONE:
-                                    m.value.encoding = 'none';
+                                case PayloadEncoding.NULL:
+                                    m.value.encoding = 'null';
                                     break;
                                 case PayloadEncoding.BINARY:
                                     m.value.encoding = 'binary';

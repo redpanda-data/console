@@ -31,7 +31,7 @@ type Service struct {
 func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
-			NoneSerde{},
+			NullSerde{},
 			JSONSerde{},
 			JSONSchemaSerde{SchemaSvc: schemaService},
 			XMLSerde{},

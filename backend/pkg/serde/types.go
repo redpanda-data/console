@@ -15,8 +15,8 @@ type PayloadEncoding string
 const (
 	// PayloadEncodingUnspecified is for when encoding is not specified.
 	PayloadEncodingUnspecified PayloadEncoding = "unspecified"
-	// PayloadEncodingNone is the enum of none types.
-	PayloadEncodingNone PayloadEncoding = "none"
+	// PayloadEncodingNull is the enum of none types.
+	PayloadEncodingNull PayloadEncoding = "null"
 	// PayloadEncodingAvro is the enum of Avro encoded types.
 	PayloadEncodingAvro PayloadEncoding = "avro"
 	// PayloadEncodingProtobuf is the enum of protobuf encoded types.

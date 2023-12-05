@@ -19,7 +19,7 @@ import (
 )
 
 func TestNoneSerde_DeserializePayload(t *testing.T) {
-	serde := NoneSerde{}
+	serde := NullSerde{}
 
 	tests := []struct {
 		name           string
@@ -37,7 +37,7 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, PayloadEncodingNone, payload.Encoding)
+				assert.Equal(t, PayloadEncodingNull, payload.Encoding)
 
 				assert.Equal(t, `{}`, string(payload.NormalizedPayload))
 
@@ -56,7 +56,7 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Nil(t, payload.SchemaID)
-				assert.Equal(t, PayloadEncodingNone, payload.Encoding)
+				assert.Equal(t, PayloadEncodingNull, payload.Encoding)
 
 				assert.Equal(t, `{}`, string(payload.NormalizedPayload))
 
@@ -86,7 +86,7 @@ func TestNoneSerde_DeserializePayload(t *testing.T) {
 }
 
 func TestNoneSerde_SerializeObject(t *testing.T) {
-	serde := NoneSerde{}
+	serde := NullSerde{}
 
 	tests := []struct {
 		name           string
