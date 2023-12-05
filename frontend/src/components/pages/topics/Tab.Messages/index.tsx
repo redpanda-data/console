@@ -754,11 +754,15 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
         const cleanPayload = function (p: Payload): Payload {
             if (!p) return undefined as any;
-            return {
+            const cleanedPayload = {
                 payload: p.payload,
                 encoding: p.encoding,
-                schemaId: p.schemaId,
             } as any as Payload;
+
+            if (p.schemaId && p.schemaId != 0)
+                cleanedPayload.schemaId = p.schemaId;
+
+            return cleanedPayload;
         };
 
         for (const src of messages) {
