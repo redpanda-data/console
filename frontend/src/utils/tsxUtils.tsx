@@ -63,7 +63,7 @@ export class TimestampDisplay extends Component<{ unixEpochMillisecond: number, 
             case 'unixTimestamp': return new Date(ts).toUTCString();
             case 'onlyDate': return new Date(ts).toLocaleDateString();
             case 'onlyTime': return new Date(ts).toLocaleTimeString();
-            case 'unixSeconds': return (ts / 1000).toString();
+            case 'unixMillis': return ts.toString();
             case 'relative': return prettyMilliseconds(Date.now() - ts, { compact: true }) + ' ago';
         }
 
