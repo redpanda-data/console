@@ -70,7 +70,7 @@ const getStringValue = (value: string | TopicMessage): string => typeof value ==
 const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
     const toast = useToast()
     return (
-        <Menu>
+        <Menu computePositionOnMount>
             <MenuButton as={Button} variant="link" className="iconButton">
                 <KebabHorizontalIcon />
             </MenuButton>
