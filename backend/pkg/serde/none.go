@@ -30,22 +30,16 @@ func (NoneSerde) Name() PayloadEncoding {
 func (NoneSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	payload := payloadFromRecord(record, payloadType)
 
-	if len(payload) != 0 {
-		return &RecordPayload{}, fmt.Errorf("payload is not empty as expected for none encoding")
+	if payload != nil {
+		return &RecordPayload{}, fmt.Errorf("payload is not null as expected for none encoding")
 	}
 
 	return &RecordPayload{
-		NormalizedPayload:   []byte("{}"),
-		DeserializedPayload: payload,
-		Encoding:            PayloadEncodingNone,
+		Encoding: PayloadEncodingNone,
 	}, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 func (NoneSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
-	if obj != nil {
-		return nil, fmt.Errorf("input not nil")
-	}
-
 	return nil, nil
 }
