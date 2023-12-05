@@ -421,9 +421,9 @@ const apiStore = {
 
                             break;
                         case 'data':
-                        // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
-                        // this is my hacky way of attempting to get things working by converting the Connect types
-                        // to the rest interface types that are hooked up to other things
+                            // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
+                            // this is my hacky way of attempting to get things working by converting the Connect types
+                            // to the rest interface types that are hooked up to other things
 
                             const m = {} as TopicMessage;
                             m.partitionID = res.controlMessage.value.partitionId
@@ -610,8 +610,11 @@ const apiStore = {
         } catch (e) {
             // https://connectrpc.com/docs/web/errors
             if (abortController.signal.aborted) {
-                console.log('startMessageSearchNew: cooperatively aborted by user or automatic restart. abortController reason: ' + abortController.signal.reason);
                 messageSearchAbortController = null;
+                this.messageSearchPhase = 'Done';
+                this.messagesBytesConsumed = 0;
+                this.messagesTotalConsumed = 0;
+                this.messageSearchPhase = null;
 
             } else {
                 console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });

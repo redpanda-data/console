@@ -259,7 +259,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </Label>
                     <Label text="Start Offset" style={{ ...spaceStyle }}>
                         <InputGroup>
-                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => (searchParams.offsetOrigin = e)} options={startOffsetOptions} />
+                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
+                                searchParams.offsetOrigin = e;
+                                if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
+                                    searchParams.startOffset = searchParams.offsetOrigin;
+                            }} options={startOffsetOptions} />
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
                         </InputGroup>
@@ -367,35 +371,46 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
         const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
-        const phase = untracked(() => api.messageSearchPhase);
 
-        if (this.currentSearchRun) {
-            if (IsDev) console.warn('searchFunc: function already in progress', {
+        untracked(() => {
+            const phase = api.messageSearchPhase;
+
+            if (searchParams == this.currentSearchRun && source == 'auto') {
+                console.log('ignoring serach, search params are up to date, and source is auto', {
+                    newParams: searchParams,
+                    oldParams: this.currentSearchRun,
+                    currentSearchPhase: phase,
+                    trigger: source
+                });
+                return;
+            }
+
+            // Abort current search if one is running
+            if (phase != 'Done') {
+                api.stopMessageSearch();
+            }
+
+            console.log('starting a new message search', {
                 newParams: searchParams,
                 oldParams: this.currentSearchRun,
                 currentSearchPhase: phase,
                 trigger: source
             });
 
-            if (searchParams == this.currentSearchRun) {
-                if (IsDev) console.log('won\'t restart, parameters are the same!');
-                return;
-            } else {
-                if (IsDev) console.log('cancelling search, restarting, parameters have changed')
-                this.cancelSearch();
-            }
-        }
-
-        try {
+            // Start new search
             this.currentSearchRun = searchParams;
+            try {
+                this.executeMessageSearch()
+                    .finally(() => {
+                        untracked(() => {
+                            this.currentSearchRun = null
+                        })
+                    });
 
-            if (this.fetchError == null)
-                untracked(() => this.executeMessageSearch()).finally(() => {
-                    untracked(() => this.currentSearchRun = null);
-                });
-        } catch (error) {
-            console.error(error);
-        }
+            } catch (err) {
+                console.error('error in message search', { error: err });
+            }
+        });
     };
 
     cancelSearch = () => api.stopMessageSearch();
@@ -599,9 +614,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-
-        if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
-            searchParams.startOffset = searchParams.offsetOrigin;
 
         editQuery(query => {
             query['p'] = String(searchParams.partitionID); // p = partition
