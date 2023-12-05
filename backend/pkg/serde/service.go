@@ -81,20 +81,6 @@ func (s *Service) DeserializeRecord(ctx context.Context, record *kgo.Record, opt
 func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) *RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
-	var originalPayload []byte
-	if opts.IncludeRawData {
-		originalPayload = payload
-	}
-	// Check if payload is empty
-	if len(payload) == 0 {
-		return &RecordPayload{
-			OriginalPayload:  originalPayload,
-			IsPayloadNull:    payload == nil,
-			PayloadSizeBytes: 0,
-			Encoding:         PayloadEncodingNone,
-		}
-	}
-
 	troubleshooting := make([]TroubleshootingReport, 0, len(s.SerDes))
 
 	serdeEncoding := opts.KeyEncoding
