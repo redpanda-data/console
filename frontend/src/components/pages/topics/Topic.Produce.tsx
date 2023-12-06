@@ -406,7 +406,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                         </>
                     </Label>}
 
-                    <Label text="Data">
+                    {keyPayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
                         <Controller
                             control={control}
                             name="key.data"
@@ -422,7 +422,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 />
                             )}
                         />
-                    </Label>
+                    </Label>}
                     {errors?.key?.data && <Text color="red.500">{errors.key.data.message}</Text>}
                 </Flex>
 
@@ -505,7 +505,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             </>
                         </Label>}
 
-                        <Label text="Data">
+                        {valuePayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
                             <Controller
                                 control={control}
                                 name="value.data"
@@ -521,7 +521,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                     />
                                 )}
                             />
-                        </Label>
+                        </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
                     </Flex>
                 </Flex>
