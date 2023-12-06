@@ -23,7 +23,7 @@ import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, SkeletonText, DataTable } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';

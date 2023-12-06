@@ -20,7 +20,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, ButtonGroup, Checkbox, createStandaloneToast, DataTable, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, SkeletonText, Text, ToastId, UnorderedList, useDisclosure, useToast } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Checkbox, createStandaloneToast, DataTable, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Skeleton, Text, ToastId, UnorderedList, useDisclosure, useToast } from '@redpanda-data/ui';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
