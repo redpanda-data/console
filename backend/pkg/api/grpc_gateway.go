@@ -16,6 +16,7 @@ import (
 	"io"
 	"net/http"
 	"net/textproto"
+	"strconv"
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -24,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 )
@@ -140,4 +142,30 @@ func StatusToNice(s *spb.Status) *commonv1alpha1.ErrorStatus {
 	}
 
 	return &pb
+}
+
+// GetHTTPResponseModifier returns a ForwardResponseOption that
+// sets a specific http status code, based on a header received from the gRPC
+// handler.
+func GetHTTPResponseModifier() func(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+	return func(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+		md, ok := runtime.ServerMetadataFromContext(ctx)
+		if !ok {
+			return nil
+		}
+
+		// set http status code
+		if vals := md.HeaderMD.Get("x-http-code"); len(vals) > 0 {
+			code, err := strconv.Atoi(vals[0])
+			if err != nil {
+				return err
+			}
+			// delete the headers to not expose any grpc-metadata in http response
+			delete(md.HeaderMD, "x-http-code")
+			delete(w.Header(), "Grpc-Metadata-X-Http-Code")
+			w.WriteHeader(code)
+		}
+
+		return nil
+	}
 }

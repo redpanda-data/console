@@ -24,7 +24,7 @@ import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { InfoIcon } from '@primer/octicons-react';
 import colors from '../colors';
-import { SkeletonText } from '@chakra-ui/react';
+import { Skeleton } from '@chakra-ui/react';
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -54,16 +54,16 @@ export function numberToThousandsString(n: number): JSX.Element {
 }
 
 @observer
-export class TimestampDisplay extends Component<{ unixEpochSecond: number, format: TimestampDisplayFormat }>{
+export class TimestampDisplay extends Component<{ unixEpochMillisecond: number, format: TimestampDisplayFormat }>{
     render() {
-        const { unixEpochSecond: ts, format } = this.props;
+        const { unixEpochMillisecond: ts, format } = this.props;
         if (format == 'relative') DebugTimerStore.Instance.useSeconds();
 
         switch (format) {
             case 'unixTimestamp': return new Date(ts).toUTCString();
             case 'onlyDate': return new Date(ts).toLocaleDateString();
             case 'onlyTime': return new Date(ts).toLocaleTimeString();
-            case 'unixSeconds': return ts.toString();
+            case 'unixMillis': return ts.toString();
             case 'relative': return prettyMilliseconds(Date.now() - ts, { compact: true }) + ' ago';
         }
 
@@ -487,7 +487,7 @@ export class ZeroSizeWrapper extends Component<{ width?: string, height?: string
 
 
 const defaultSkeletonStyle = { margin: '2rem' };
-const innerSkeleton = <SkeletonText noOfLines={8} spacing={5} skeletonHeight={4} />
+const innerSkeleton = <Skeleton noOfLines={8} height={4} />
 export const DefaultSkeleton = (
     <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
         {innerSkeleton}
@@ -495,7 +495,7 @@ export const DefaultSkeleton = (
 );
 
 export const InlineSkeleton = (p: { width: string | number }) => (
-    <SkeletonText noOfLines={1} skeletonHeight="2" width={p.width} display="flex" alignItems="center" />
+    <Skeleton noOfLines={1} height={2} width={p.width} display="flex" alignItems="center" />
 );
 
 // Single line string, no wrapping, will not overflow and display ellipsis instead

@@ -59,6 +59,7 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition, _ string)
 			AddRecommendedValueWithMetadata("com.snowflake.kafka.connector.records.SnowflakeAvroConverter", "SNOWFLAKE_AVRO").
 			AddRecommendedValueWithMetadata("com.snowflake.kafka.connector.records.SnowflakeAvroConverterWithoutSchemaRegistry", "SNOWFLAKE_AVRO_WITHOUT_SCHEMA_REGISTRY").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("com.redpanda.connectors.converter.protobuf.ProtobufConverter", "PROTOBUF").
 			SetDefaultValue("com.snowflake.kafka.connector.records.SnowflakeJsonConverter")
 	case "snowflake.url.name",
 		"snowflake.database.name",

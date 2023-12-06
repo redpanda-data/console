@@ -21,7 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Heading, Icon, Link, SkeletonText, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
@@ -199,11 +199,10 @@ class Overview extends PageComponent {
                             </ul>
 
                             <ul className="resource-list">
-                                <SkeletonText
+                                <Skeleton
                                     isLoaded={Boolean(news)}
                                     noOfLines={4}
-                                    spacing={5}
-                                    skeletonHeight={4}
+                                    height={4}
                                 >
                                     {news?.map((x, i) => <li key={i}>
                                         <a href={x.url} rel="noopener noreferrer" target="_blank"
@@ -215,7 +214,7 @@ class Overview extends PageComponent {
                                             </span>
                                         </a>
                                     </li>)}
-                                </SkeletonText>
+                                </Skeleton>
                             </ul>
                         </div>
 
@@ -252,7 +251,7 @@ function ClusterDetails() {
     const brokers = api.brokers;
 
     if (!overview || !brokers) {
-        return <SkeletonText mt={5} noOfLines={13} spacing={5} skeletonHeight={4} speed={0} />
+        return <Skeleton mt={5} noOfLines={13} height={4} speed={0} />
     }
 
     const totalStorageBytes = brokers.sum(x => x.totalLogDirSizeBytes ?? 0);

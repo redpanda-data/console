@@ -80,7 +80,156 @@ components:
         value:
           type: string
       type: object
+    ConnectCluster:
+      properties:
+        address:
+          type: string
+        info:
+          $ref: '#/components/schemas/ConnectCluster.Info'
+        name:
+          type: string
+        plugins:
+          items:
+            $ref: '#/components/schemas/ConnectorPlugin'
+          type: array
+      type: object
+    ConnectCluster.Info:
+      properties:
+        commit:
+          type: string
+        kafka_cluster_id:
+          type: string
+        version:
+          type: string
+      type: object
+    Connector:
+      properties:
+        state:
+          type: string
+        worker_id:
+          type: string
+      type: object
+    ConnectorError:
+      properties:
+        content:
+          type: string
+        title:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConnectorError.Type'
+      title: |-
+        ConnectorError is the error of a connector, this is holistic error
+        abstraction, made parsing the error trace of connector or Task
+      type: object
+    ConnectorError.Type:
+      enum:
+        - TYPE_ERROR
+        - TYPE_WARNING
+      type: string
+    ConnectorHolisticState:
+      description: |-
+        - CONNECTOR_HOLISTIC_STATE_PAUSED: PAUSED: The connector/task has been administratively paused.
+         - CONNECTOR_HOLISTIC_STATE_RESTARTING: RESTARTING: he connector/task is restarting.
+         - CONNECTOR_HOLISTIC_STATE_DESTROYED: DESTROYED: Connector is in destroyed state, regardless of any tasks.
+         - CONNECTOR_HOLISTIC_STATE_STOPPED: STOPPED: The connector/task has been stopped.
+         - CONNECTOR_HOLISTIC_STATE_UNASSIGNED: The connector/task has not yet been assigned to a worker
+        UNASSIGNED: Connector is in unassigned state.
+           Or Connector is in running state, and there are unassigned tasks.
+         - CONNECTOR_HOLISTIC_STATE_HEALTHY: HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
+         - CONNECTOR_HOLISTIC_STATE_UNHEALTHY: UNHEALTHY: Connector is failed state.
+        			Or Connector is in running state but has 0 tasks.
+        			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
+         - CONNECTOR_HOLISTIC_STATE_DEGRADED: DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
+         - CONNECTOR_HOLISTIC_STATE_UNKNOWN: UNKNOWN: The connector/task could no be determined
+      enum:
+        - CONNECTOR_HOLISTIC_STATE_PAUSED
+        - CONNECTOR_HOLISTIC_STATE_RESTARTING
+        - CONNECTOR_HOLISTIC_STATE_DESTROYED
+        - CONNECTOR_HOLISTIC_STATE_STOPPED
+        - CONNECTOR_HOLISTIC_STATE_UNASSIGNED
+        - CONNECTOR_HOLISTIC_STATE_HEALTHY
+        - CONNECTOR_HOLISTIC_STATE_UNHEALTHY
+        - CONNECTOR_HOLISTIC_STATE_DEGRADED
+        - CONNECTOR_HOLISTIC_STATE_UNKNOWN
+      title: |-
+        The following states are possible for a connector or one of its tasks
+        implement the state interface described in the Kafka connect API @see
+        https://docs.confluent.io/platform/current/connect/monitoring.html#connector-and-task-status
+        this includes holistic unified connector status that takes into account not
+        just the connector instance state, but also state of all the tasks within the
+        connector
+      type: string
+    ConnectorInfoStatus:
+      properties:
+        errors:
+          items:
+            $ref: '#/components/schemas/ConnectorError'
+          title: Errors is list of parsed connectors' and tasks' errors
+          type: array
+        holistic_state:
+          $ref: '#/components/schemas/ConnectorHolisticState'
+        info:
+          $ref: '#/components/schemas/ConnectorSpec'
+        name:
+          title: name is the connector name
+          type: string
+        status:
+          $ref: '#/components/schemas/ConnectorStatus'
+      type: object
+    ConnectorPlugin:
+      properties:
+        class:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+      type: object
+    ConnectorSpec:
+      properties:
+        config:
+          additionalProperties:
+            type: string
+          type: object
+        name:
+          type: string
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskInfo'
+          readOnly: true
+          type: array
+        type:
+          readOnly: true
+          type: string
+      required:
+        - name
+        - config
+      title: |-
+        ConectorInfo is the spec of the connector, as defined in the Kafka connect
+        API, it can be used as input of the connector creation or output of the
+        connectors
+      type: object
+    ConnectorStatus:
+      properties:
+        connector:
+          $ref: '#/components/schemas/Connector'
+        name:
+          type: string
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskStatus'
+          type: array
+        trace:
+          type: string
+        type:
+          type: string
+      type: object
     CreateACLResponse:
+      type: object
+    CreateConnectorResponse:
+      properties:
+        connector:
+          $ref: '#/components/schemas/ConnectorSpec'
       type: object
     CreateSecretResponse:
       properties:
@@ -234,6 +383,22 @@ components:
               value in the third `emailAddresses` message.
           type: string
       type: object
+    GetConnectClusterResponse:
+      properties:
+        cluster:
+          $ref: '#/components/schemas/ConnectCluster'
+      type: object
+    GetConnectorResponse:
+      properties:
+        connector:
+          $ref: '#/components/schemas/ConnectorSpec'
+        errors:
+          items:
+            $ref: '#/components/schemas/ConnectorError'
+          type: array
+        holistic_state:
+          $ref: '#/components/schemas/ConnectorHolisticState'
+      type: object
     GetTopicConfigurationResponse:
       properties:
         configuration:
@@ -272,6 +437,24 @@ components:
           items:
             $ref: '#/components/schemas/Resource'
           type: array
+      type: object
+    ListConnectClustersResponse:
+      properties:
+        clusters:
+          items:
+            $ref: '#/components/schemas/ConnectCluster'
+          type: array
+      type: object
+    ListConnectorsResponse:
+      properties:
+        connectors:
+          items:
+            $ref: '#/components/schemas/ConnectorInfoStatus'
+          title: connectors is the list of connectors the key is the connector name
+          type: array
+        next_page_token:
+          description: Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint.
+          type: string
       type: object
     ListSecretsRequest.Filter:
       properties:
@@ -343,6 +526,13 @@ components:
           $ref: '#/components/schemas/ResourcePatternType'
         resource_type:
           $ref: '#/components/schemas/ResourceType'
+      type: object
+    Options:
+      properties:
+        include_tasks:
+          type: boolean
+        only_failed:
+          type: boolean
       type: object
     PermissionType:
       enum:
@@ -552,6 +742,26 @@ components:
           type: array
         message:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
+          type: string
+      type: object
+    TaskInfo:
+      properties:
+        connector:
+          type: string
+        task:
+          format: int32
+          type: integer
+      type: object
+    TaskStatus:
+      properties:
+        id:
+          format: int32
+          type: integer
+        state:
+          type: string
+        trace:
+          type: string
+        worker_id:
           type: string
       type: object
     Topic:
@@ -931,6 +1141,348 @@ paths:
       summary: Create ACL
       tags:
         - ACLService
+  /v1alpha1/kafka-connect/clusters:
+    get:
+      operationId: KafkaConnectService_ListConnectClusters
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}:
+    get:
+      operationId: KafkaConnectService_GetConnectCluster
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+        Connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors:
+    get:
+      description: List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file.
+      operationId: KafkaConnectService_ListConnectors
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List connectors
+      tags:
+        - KafkaConnectService
+    post:
+      description: Attempt to create a connector with the specific configuration
+      operationId: KafkaConnectService_CreateConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorSpec'
+        required: true
+        x-originalParamName: connector
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create connector
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}:
+    delete:
+      operationId: KafkaConnectService_DeleteConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        DeleteConnector implements the delete connector method, exposes a Kafka
+        connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+    get:
+      operationId: KafkaConnectService_GetConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        GetConnector implements the get connector method, exposes a Kafka
+        Connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
+    put:
+      operationId: KafkaConnectService_PauseConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+        x-originalParamName: body
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        PauseConnector implements the pause connector method, exposes a Kafka
+        connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
+    post:
+      operationId: KafkaConnectService_RestartConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Options'
+        required: true
+        x-originalParamName: options
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        RestartConnector implements the restart connector method, exposes a Kafka
+        Connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
+    put:
+      operationId: KafkaConnectService_ResumeConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+        x-originalParamName: body
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        ResumeConnector implements the resume connector method, exposes a Kafka
+        connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
   /v1alpha1/secret/{secret.id}:
     put:
       description: Update a Secret content.
@@ -1661,6 +2213,7 @@ servers:
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
   - name: ACLService
+  - name: KafkaConnectService
   - name: SecretService
   - name: TopicService
   - name: UserService

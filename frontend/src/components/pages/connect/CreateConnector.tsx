@@ -40,7 +40,7 @@ import {
     ModalHeader,
     ModalOverlay,
     SearchField,
-    SkeletonText,
+    Skeleton,
     Spinner,
     Tabs,
     Text,
@@ -442,7 +442,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
     if (!connectClusterStore.isInitialized) {
         return (
-            <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
+            <Skeleton mt={5} noOfLines={20} height={4} />
         );
     }
 
@@ -546,7 +546,7 @@ function Review({
             ) : null}
 
             {isCreating ? (
-                <SkeletonText mt={5} noOfLines={6} spacing={5} skeletonHeight={4} />
+                <Skeleton mt={5} noOfLines={6} height={4} />
             ) : (
                 <>
                     {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}

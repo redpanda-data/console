@@ -63,9 +63,9 @@ type KafkaIntegrationTestSuite struct {
 	kafkaClient      *kgo.Client
 	kafkaAdminClient *kadm.Client
 
-	seedBroker      string
-	registryAddress string
-	log             *zap.Logger
+	seedBroker  string
+	registryURL string
+	log         *zap.Logger
 }
 
 func TestSuite(t *testing.T) {
@@ -80,7 +80,7 @@ func (s *KafkaIntegrationTestSuite) createBaseConfig() config.Config {
 	cfg.Kafka.Protobuf.Enabled = true
 	cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
 	cfg.Kafka.Schema.Enabled = true
-	cfg.Kafka.Schema.URLs = []string{"http://" + s.registryAddress}
+	cfg.Kafka.Schema.URLs = []string{s.registryURL}
 
 	return cfg
 }
@@ -99,19 +99,13 @@ func (s *KafkaIntegrationTestSuite) consumerClientForTopic(topicName string) *kg
 	return cl
 }
 
-func withImage(image string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Image = image
-	}
-}
-
 func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, withImage("redpandadata/redpanda:v23.1.13"))
+	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.1.13"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
@@ -122,9 +116,9 @@ func (s *KafkaIntegrationTestSuite) SetupSuite() {
 	s.seedBroker = seedBroker
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	registryAddr, err := getMappedHostPort(ctx, redpandaContainer, nat.Port("8081/tcp"))
+	registryAddr, err := redpandaContainer.SchemaRegistryAddress(ctx)
 	require.NoError(err)
-	s.registryAddress = registryAddr
+	s.registryURL = registryAddr
 
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
@@ -535,10 +529,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
@@ -654,10 +646,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/common/common.proto")
@@ -814,10 +804,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -959,10 +947,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
@@ -1092,10 +1078,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		// address
@@ -1363,10 +1347,8 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		registryURL := "http://" + s.registryAddress
-
 		// register the protobuf schema
-		rcl, err := sr.NewClient(sr.URLs(registryURL))
+		rcl, err := sr.NewClient(sr.URLs(s.registryURL))
 		require.NoError(err)
 
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")

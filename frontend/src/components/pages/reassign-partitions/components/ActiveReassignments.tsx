@@ -353,7 +353,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 {/* Cancel */}
                 <CancelReassignmentButton onConfirm={() => this.cancelReassignment()}/>
             </Flex>
-        ) : <SkeletonText mt={5} noOfLines={5} spacing={5} skeletonHeight={4} />
+        ) : <Skeleton mt={5} noOfLines={5} height={4} />
 
         return (
             <Modal isOpen={visible} onClose={this.props.onClose}>

@@ -64,7 +64,7 @@ const KafkaConnectorMain = observer(
             deletingConnector: null,
         }));
         if (!connectClusterStore.isInitialized) {
-            return <SkeletonText mt={5} noOfLines={20} spacing={5} skeletonHeight={4} />
+            return <Skeleton mt={5} noOfLines={20} height={4} />
         }
 
         const connectorStore = connectClusterStore.getConnectorStore(connectorName);

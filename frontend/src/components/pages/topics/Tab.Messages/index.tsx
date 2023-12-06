@@ -23,7 +23,7 @@ import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from '../../../../state/backendApi';
 import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2 } from '../../../../state/ui';
+import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
@@ -437,7 +437,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             timestamp: {
                 header: 'Timestamp',
                 accessorKey: 'timestamp',
-                cell: ({row: {original: {timestamp}}}) => <TimestampDisplay unixEpochSecond={timestamp} format={tsFormat}/>,
+                cell: ({row: {original: {timestamp}}}) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat}/>,
             },
             key: {
                 header: 'Key',
@@ -1148,7 +1148,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                 <Box mt="1em">
                     <Text mb={2}>More Settings</Text>
                     <Box>
-                        <OptionGroup
+                        <OptionGroup<TimestampDisplayFormat>
                             label="Timestamp"
                             options={{
                                 'Local DateTime': 'default',
@@ -1156,7 +1156,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                                 'Relative': 'relative',
                                 'Local Date': 'onlyDate',
                                 'Local Time': 'onlyTime',
-                                'Unix Seconds': 'unixSeconds',
+                                'Unix Millis': 'unixMillis',
                             }}
                             value={uiState.topicSettings.previewTimestamps}
                             onChange={e => uiState.topicSettings.previewTimestamps = e}
