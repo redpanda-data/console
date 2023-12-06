@@ -272,7 +272,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
                 <Flex gap={4} flexDirection="column">
                     <SectionHeading>Headers</SectionHeading>
-                    
+
                     {fields.map((field, index) => (
                         <HStack key={field.id} spacing={2}>
                             <FormControl>
@@ -376,7 +376,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                         </>
                     </Label>}
 
-                    <Label text="Data">
+                    {keyPayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
                         <Controller
                             control={control}
                             name="key.data"
@@ -392,7 +392,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 />
                             )}
                         />
-                    </Label>
+                    </Label>}
                 </Flex>
 
                 <Divider />
@@ -474,7 +474,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             </>
                         </Label>}
 
-                        <Label text="Data">
+                        {valuePayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
                             <Controller
                                 control={control}
                                 name="value.data"
@@ -490,7 +490,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                     />
                                 )}
                             />
-                        </Label>
+                        </Label>}
                     </Flex>
                 </Flex>
 
