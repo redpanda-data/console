@@ -666,6 +666,26 @@ export function encodeBase64(rawData: string) {
     return Base64.encode(rawData);
 }
 
+/**
+ * Validates whether a given string is a valid Base64 encoded string.
+ *
+ * This function tries to decode the string using the Base64.decode method from the js-base64 library.
+ * If the decoding is successful without throwing an exception, the string is considered a valid Base64 string.
+ * If an exception occurs during decoding, it is caught, and the function returns false, indicating that
+ * the string is not a valid Base64 encoded string.
+ *
+ * @param {string} str - The string to be validated as a Base64 encoded string.
+ * @returns {boolean} - Returns true if the string is a valid Base64 encoded string; false otherwise.
+ */
+export function isValidBase64(str: string): boolean {
+    try {
+        Base64.decode(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 export function base64FromUInt8Array(ar: Uint8Array) {
     return fromUint8Array(ar);
 }
