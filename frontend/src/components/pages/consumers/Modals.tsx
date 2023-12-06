@@ -13,11 +13,10 @@
 import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
 import { InfoText, numberToThousandsString, RadioOptionGroup } from '../../../utils/tsxUtils';
-import { Radio, Table } from 'antd';
+import { Radio } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
-import { sortField } from '../../misc/common';
 import { toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
@@ -25,7 +24,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, createStandaloneToast, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
@@ -264,36 +263,39 @@ export class EditOffsetsModal extends Component<{
                         </Text>
                         <Text display="inline-block" ml="auto" padding="0 1rem">{items.length} Partitions</Text>
                     </Flex>,
-                    description: <Table
-                        size="small"
-                        showSorterTooltip={false}
-                        pagination={{pageSize: 1000, position: ['none', 'none'] as any}}
-                        dataSource={items}
-                        rowKey={r => r.partitionId}
-                        rowClassName={r => (r.newOffset == null ? 'unchanged' : '')}
+                    description: <DataTable<GroupOffset>
+                        size="sm"
+                        showPagination
+                        data={items}
                         columns={[
-                            {width: 130, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), sortOrder: 'ascend'},
                             {
-                                width: 150,
-                                title: 'Offset Before',
-                                dataIndex: 'offset',
-                                render: v =>
-                                    v == null ? (
+                                size: 130,
+                                header: 'Partition',
+                                accessorKey: 'partitionId',
+                            },
+                            {
+                                size: 150,
+                                header: 'Offset Before',
+                                accessorKey: 'offset',
+                                cell: ({row: {original: {offset}}}) =>
+                                    offset == null ? (
                                         <Tooltip label="The group does not have an offset for this partition yet" openDelay={1} placement="top" hasArrow>
                                                     <span style={{opacity: 0.66, marginLeft: '2px'}}>
                                                         <SkipIcon/>
                                                     </span>
                                         </Tooltip>
                                     ) : (
-                                        numberToThousandsString(v)
+                                        numberToThousandsString(offset)
                                     )
                             },
                             {
-                                title: 'Offset After',
-                                render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r}/>
+                                header: 'Offset After',
+                                id: 'offsetAfter',
+                                size: Infinity,
+                                cell: ({row: {original}}) => <ColAfter selectedTime={this.timestampUtcMs} record={original}/>
                             }
                         ]}
-                    />
+                    />,
                 }))}/>
             </div>
         );

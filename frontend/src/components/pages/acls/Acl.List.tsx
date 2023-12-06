@@ -198,7 +198,7 @@ class AclList extends PageComponent {
                                         ? 'User Group'
                                         : record.principalType;
                                     return (
-                                        <a className="hoverLink" onClick={() => {
+                                        <button className="hoverLink" onClick={() => {
                                             this.editorType = 'edit';
                                             this.edittingPrincipalGroup = clone(record);
                                         }}>
@@ -211,7 +211,7 @@ class AclList extends PageComponent {
                                 </span>
                                                 </Tooltip>
                                             )}
-                                        </a>
+                                        </button>
                                     );
                                 },
                             },

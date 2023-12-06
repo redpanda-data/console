@@ -88,7 +88,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                     <span style={{ marginLeft: 'auto' }} />
 
-                    <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+                    <Button variant="outline" onClick={() => this.editGroup()}>
                         Edit Group
                     </Button>
                     <Button variant="outline" colorScheme="red" onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
