@@ -15,7 +15,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
-import { base64ToUInt8Array } from '../../../utils/utils';
+import { base64ToUInt8Array, isValidBase64 } from '../../../utils/utils';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -81,7 +81,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             isSubmitting,
             errors
         },
-        watch
+        watch,
+        clearErrors
     } = useForm<Inputs>({
         defaultValues: {
             partition: -1,
@@ -103,9 +104,38 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         name: 'headers',
     });
 
-
     const keyPayloadOptions = watch('key')
     const valuePayloadOptions = watch('value')
+
+    useEffect(() => {
+        if (keyPayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(keyPayloadOptions.data)) {
+            setError('key.data', {
+                type: 'manual',
+                message: 'Invalid Base64 format'
+            });
+        } else {
+            clearErrors('key.data');
+        }
+    }, [keyPayloadOptions.encoding, keyPayloadOptions.data, setError, clearErrors])
+
+    useEffect(() => {
+        if (valuePayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(valuePayloadOptions.data)) {
+            setError('value.data', {
+                type: 'manual',
+                message: 'Invalid Base64 format'
+            });
+        } else {
+            clearErrors('value.data');
+        }
+    }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors])
+
+    useEffect(() => {
+        setValue('key.data', '')
+    }, [keyPayloadOptions.encoding, setValue]);
+
+    useEffect(() => {
+        setValue('value.data', '')
+    }, [valuePayloadOptions.encoding, setValue]);
 
     const showKeySchemaSelection = keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF
     const showValueSchemaSelection = valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF
@@ -272,7 +302,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
                 <Flex gap={4} flexDirection="column">
                     <SectionHeading>Headers</SectionHeading>
-                    
+
                     {fields.map((field, index) => (
                         <HStack key={field.id} spacing={2}>
                             <FormControl>
@@ -393,6 +423,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             )}
                         />
                     </Label>
+                    {errors?.key?.data && <Text color="red.500">{errors.key.data.message}</Text>}
                 </Flex>
 
                 <Divider />
@@ -491,6 +522,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 )}
                             />
                         </Label>
+                        {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
                     </Flex>
                 </Flex>
 
