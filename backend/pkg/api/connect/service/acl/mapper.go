@@ -56,12 +56,12 @@ func (k *kafkaClientMapper) aclCreateRequestToKafka(req *v1alpha1.CreateACLReque
 	return &kafkaReq, nil
 }
 
-// aclFilterToKafka translates a proto ACL input into the kmsg.DescribeACLsRequest that is
+// aclFilterToDescribeACLKafka translates a proto ACL input into the kmsg.DescribeACLsRequest that is
 // needed by the Kafka client to retrieve the list of applied ACLs.
 // The parameter defaultToAny determines whether unspecified enum values for
 // the operation, permission type, resource pattern type or resource type
 // should be converted to ALL/ANY if not otherwise specified.
-func (k *kafkaClientMapper) aclFilterToKafka(filter *v1alpha1.ACL_Filter) (*kmsg.DescribeACLsRequest, error) {
+func (k *kafkaClientMapper) aclFilterToDescribeACLKafka(filter *v1alpha1.ACL_Filter) (*kmsg.DescribeACLsRequest, error) {
 	aclOperation, err := k.aclOperationToKafka(filter.Operation)
 	if err != nil {
 		return nil, err
@@ -138,6 +138,44 @@ func (k *kafkaClientMapper) describeACLsResponseResourceACLToProto(resource kmsg
 		Operation:      operation,
 		PermissionType: permissionType,
 	}, nil
+}
+
+// aclFilterToDeleteACLKafka translates a proto ACL input into the kmsg.DeleteACLsRequest that is
+// needed by the Kafka client to delete the list of ACLs that match the filter.
+func (k *kafkaClientMapper) aclFilterToDeleteACLKafka(filter *v1alpha1.ACL_Filter) (*kmsg.DeleteACLsRequest, error) {
+	resourceType, err := k.aclResourceTypeToKafka(filter.ResourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := k.aclOperationToKafka(filter.Operation)
+	if err != nil {
+		return nil, err
+	}
+
+	permissionType, err := k.aclPermissionTypeToKafka(filter.PermissionType)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcePatternType, err := k.aclResourcePatternTypeToKafka(filter.ResourcePatternType)
+	if err != nil {
+		return nil, err
+	}
+
+	deletionFilter := kmsg.NewDeleteACLsRequestFilter()
+	deletionFilter.Host = filter.Host
+	deletionFilter.Principal = filter.Principal
+	deletionFilter.Operation = operation
+	deletionFilter.ResourceType = resourceType
+	deletionFilter.PermissionType = permissionType
+	deletionFilter.ResourcePatternType = resourcePatternType
+	deletionFilter.ResourceName = filter.ResourceName
+
+	kafkaReq := kmsg.NewDeleteACLsRequest()
+	kafkaReq.Filters = []kmsg.DeleteACLsRequestFilter{deletionFilter}
+
+	return &kafkaReq, nil
 }
 
 func (*kafkaClientMapper) aclOperationToKafka(operation v1alpha1.ACL_Operation) (kmsg.ACLOperation, error) {

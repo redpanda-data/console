@@ -77,5 +77,7 @@ type Servicer interface {
 	// ------------------------------------------------------------------
 
 	// CreateACLs proxies the request/response to CreateACLs via the Kafka API.
-	CreateACLs(ctx context.Context, createReq kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error)
+	CreateACLs(ctx context.Context, createReq *kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error)
+	// DeleteACLsKafka proxies the request/response via the Kafka API.
+	DeleteACLsKafka(ctx context.Context, deleteReq *kmsg.DeleteACLsRequest) (*kmsg.DeleteACLsResponse, error)
 }

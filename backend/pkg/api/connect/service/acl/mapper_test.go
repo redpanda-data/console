@@ -95,7 +95,7 @@ func TestAclFilterToKafka(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := mapper.aclFilterToKafka(tt.input)
+			got, err := mapper.aclFilterToDescribeACLKafka(tt.input)
 			if tt.wantError {
 				assert.Errorf(t, err, "expected an error to be set")
 			} else {

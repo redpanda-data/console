@@ -57,7 +57,7 @@ func NewService(cfg *config.Config,
 func (s *Service) ListACLs(ctx context.Context, req *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error) {
 	s.defaulter.applyListACLsRequest(req.Msg)
 
-	kafkaReq, err := s.kafkaClientMapper.aclFilterToKafka(req.Msg.Filter)
+	kafkaReq, err := s.kafkaClientMapper.aclFilterToDescribeACLKafka(req.Msg.Filter)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
@@ -122,7 +122,7 @@ func (s *Service) CreateACL(ctx context.Context, req *connect.Request[v1alpha1.C
 		)
 	}
 
-	res, err := s.consoleSvc.CreateACLs(ctx, *kafkaReq)
+	res, err := s.consoleSvc.CreateACLs(ctx, kafkaReq)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
@@ -156,10 +156,26 @@ func (s *Service) CreateACL(ctx context.Context, req *connect.Request[v1alpha1.C
 }
 
 // DeleteACLs implements the handler for the delete ACL endpoint.
-func (*Service) DeleteACLs(context.Context, *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("endpoint is not implemented"),
-		apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-	)
+func (s *Service) DeleteACLs(ctx context.Context, req *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
+	// TODO: Ensure that neither req, req.Msg or req.Msg.Filter can never be nil
+	kafkaReq, err := s.kafkaClientMapper.aclFilterToDeleteACLKafka(req.Msg.Filter)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	res, err := s.consoleSvc.DeleteACLsKafka(ctx, kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	// TODO: Check how we want to handle multiple errors / partial success in the response
+	return nil, nil
 }

@@ -17,10 +17,7 @@ import (
 )
 
 // DeleteACLs deletes all Kafka ACLs in the target cluster that match the provided filter.
-func (s *Service) DeleteACLs(ctx context.Context, filters []kmsg.DeleteACLsRequestFilter) (*kmsg.DeleteACLsResponse, error) {
-	req := kmsg.NewDeleteACLsRequest()
-	req.Filters = filters
-
+func (s *Service) DeleteACLs(ctx context.Context, req *kmsg.DeleteACLsRequest) (*kmsg.DeleteACLsResponse, error) {
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete acls: %w", err)
