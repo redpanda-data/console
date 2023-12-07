@@ -4,6 +4,7 @@ package redpanda.api.dataplane.v1alpha1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 message ACL {
@@ -112,6 +113,7 @@ message CreateACLRequest {
         1
       ] /* Disallow: Unspecified and ANY */
     },
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
@@ -130,12 +132,14 @@ message CreateACLRequest {
         4
       ], // Only allow: LITERAL or PREFIXED
     },
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
   // Principal is the user to apply this acl for. With the Kafka simple
   // authorizer, this must begin with "User:".
   string principal = 4 [
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "User:"
   ];
@@ -143,6 +147,7 @@ message CreateACLRequest {
   // Host is the host address to use for this acl. Each host to allow
   // the principal access from must be specified as a new creation.
   string host = 5 [
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "wildcard_or_ip_address",
@@ -160,6 +165,7 @@ message CreateACLRequest {
         1
       ] /* Disallow: Unspecified and ANY */
     },
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
@@ -172,6 +178,7 @@ message CreateACLRequest {
         3
       ] /* Allow or Deny */
     },
+    (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 }
