@@ -21,12 +21,14 @@ type Console struct {
 	// implementation that satisfies the Console interface.
 	Enabled            bool                      `yaml:"enabled"`
 	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
+	API                ConsoleAPI                `yaml:"api"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.Enabled = true
 	c.TopicDocumentation.SetDefaults()
+	c.API.SetDefaults()
 }
 
 // RegisterFlags for sensitive Console configurations.
@@ -36,9 +38,12 @@ func (c *Console) RegisterFlags(f *flag.FlagSet) {
 
 // Validate Console configurations.
 func (c *Console) Validate() error {
-	err := c.TopicDocumentation.Validate()
-	if err != nil {
+	if err := c.TopicDocumentation.Validate(); err != nil {
 		return fmt.Errorf("failed to validate topic documentation config: %w", err)
+	}
+
+	if err := c.API.Validate(); err != nil {
+		return fmt.Errorf("failed to validate API config: %w", err)
 	}
 
 	return nil
