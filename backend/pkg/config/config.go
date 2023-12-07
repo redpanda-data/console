@@ -184,39 +184,3 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 
 	return cfg, nil
 }
-
-func customMerge(a, b map[string]interface{}) {
-	for key, val := range a {
-		// Does the key exist in the target map?
-		// If no, add it and move on.
-		bVal, ok := b[key]
-		if !ok {
-			b[key] = val
-			continue
-		}
-
-		if val == nil {
-			b[key] = nil
-		}
-
-		// If the incoming val is not a map, do a direct merge.
-		if _, ok := val.(map[string]interface{}); !ok {
-			b[key] = val
-			continue
-		}
-
-		// The source key and target keys are both maps. Merge them.
-		switch v := bVal.(type) {
-		case map[string]interface{}:
-			// If it is an empty map, set the value to empty.
-			if len(val.(map[string]interface{})) == 0 {
-				b[key] = map[string]interface{}{}
-				continue
-			}
-
-			customMerge(val.(map[string]interface{}), v)
-		default:
-			b[key] = val
-		}
-	}
-}
