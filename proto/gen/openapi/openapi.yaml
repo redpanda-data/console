@@ -250,6 +250,13 @@ components:
           $ref: '#/components/schemas/ResourcePatternType'
         resource_type:
           $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - principal
+        - host
+        - operation
+        - permission_type
       type: object
     CreateACLResponse:
       type: object
