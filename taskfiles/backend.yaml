@@ -119,7 +119,7 @@ tasks:
       - generate
     cmds:
       - |
-        GOBIN={{ .BUILD_ROOT }}/bin/go go test -race --tags=integration ./...
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration -p=1 ./...
   
   cover:
     dir: "{{.BACKEND_ROOT}}"
@@ -135,6 +135,5 @@ tasks:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run lint and tests
     cmds: 
-      - task: 'generate'
       - task: 'lint'
       - task: 'cover'

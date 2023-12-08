@@ -57,7 +57,7 @@ func (s *APISuite) SetupSuite() {
 	defer cancel()
 
 	// 1. Start Redpanda Docker container
-	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.12"))
+	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.17"))
 	require.NoError(err)
 	s.redpandaContainer = container
 
