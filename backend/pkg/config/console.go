@@ -14,20 +14,25 @@ import (
 	"fmt"
 )
 
+// DefaultMaxDeserializationPayloadSize is the maximum payload size deserialization responses.
+const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
+
 // Console contains all configuration options for features that are generic,
 // such as documentation plumbing.
 type Console struct {
 	// Enabled should always be true unless you use your own
 	// implementation that satisfies the Console interface.
-	Enabled            bool                      `yaml:"enabled"`
-	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
-	API                ConsoleAPI                `yaml:"api"`
+	Enabled                       bool                      `yaml:"enabled"`
+	TopicDocumentation            ConsoleTopicDocumentation `yaml:"topicDocumentation"`
+	MaxDeserializationPayloadSize int                       `yaml:"maxDeserializationPayloadSize"`
+	API                           ConsoleAPI                `yaml:"api"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.Enabled = true
 	c.TopicDocumentation.SetDefaults()
+	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
 	c.API.SetDefaults()
 }
 
