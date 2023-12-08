@@ -80,10 +80,6 @@ func (TextSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 		return nil, fmt.Errorf("payload is not UTF8")
 	}
 
-	if containsControlChars(byteData) {
-		return nil, fmt.Errorf("payload contains UTF8 control characters therefore not plain text format")
-	}
-
 	// If message encoding text is used and the byte array is empty, the user
 	// probably wants to write an empty string, rather than null.
 	if byteData == nil {
