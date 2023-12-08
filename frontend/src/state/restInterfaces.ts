@@ -164,6 +164,7 @@ export interface Payload {
 
     troubleshootReport?: TroubleshootReport[];
     isPayloadTooLarge?: boolean;
+    normalizedPayload?: Uint8Array; // used to show hex bytes if payload couldn't be decoded
     rawBytes?: Uint8Array;
 }
 

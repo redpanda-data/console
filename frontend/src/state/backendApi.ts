@@ -342,7 +342,7 @@ const apiStore = {
     messagesTotalConsumed: 0,
 
 
-    async startMessageSearchNew(_searchRequest: MessageSearchRequest): Promise<void> {
+    async startMessageSearchNew(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
         // https://connectrpc.com/docs/web/using-clients
         // https://github.com/connectrpc/connect-es
         // https://github.com/connectrpc/examples-es
@@ -373,11 +373,12 @@ const apiStore = {
         const client = createPromiseClient(ConsoleService, transport);
 
         const req = new ListMessagesRequest();
-        req.topic = searchRequest.topicName
-        req.startOffset = BigInt(searchRequest.startOffset)
-        req.partitionId = searchRequest.partitionId
-        req.maxResults = searchRequest.maxResults
-        req.filterInterpreterCode = searchRequest.filterInterpreterCode
+        req.topic = searchRequest.topicName;
+        req.startOffset = BigInt(searchRequest.startOffset);
+        req.partitionId = searchRequest.partitionId;
+        req.maxResults = searchRequest.maxResults;
+        req.filterInterpreterCode = searchRequest.filterInterpreterCode;
+        req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
 
         // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
         // from 30s to 30 minutes before ending the request gracefully.
@@ -469,8 +470,7 @@ const apiStore = {
                             const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
 
                             m.key = {} as Payload;
-                            m.key.rawBytes = (key?.originalPayload && key.originalPayload.byteLength > 0)
-                                ? key.originalPayload : (key?.normalizedPayload ?? key?.originalPayload);
+                            m.key.rawBytes = key?.originalPayload;
 
                             switch (key?.encoding) {
                                 case PayloadEncoding.NULL:
@@ -519,6 +519,7 @@ const apiStore = {
 
                             m.key.isPayloadNull = key?.payloadSize == 0;
                             m.key.payload = keyPayload;
+                            m.key.normalizedPayload = key?.normalizedPayload;
 
                             try {
                                 m.key.payload = JSON.parse(keyPayload);
@@ -538,8 +539,8 @@ const apiStore = {
 
                             m.value = {} as Payload;
                             m.value.payload = valuePayload;
-                            m.value.rawBytes = (val?.originalPayload && val.originalPayload.byteLength > 0)
-                                ? val.originalPayload : (val?.normalizedPayload ?? val?.originalPayload);
+                            m.value.normalizedPayload = val?.normalizedPayload;
+                            m.value.rawBytes = val?.originalPayload;
 
                             switch (val?.encoding) {
                                 case PayloadEncoding.NULL:
@@ -623,6 +624,7 @@ const apiStore = {
 
         // one done
         api.stopMessageSearch();
+        return this.messages;
     },
 
     stopMessageSearch() {
@@ -1918,7 +1920,8 @@ export interface MessageSearchRequest {
         redpandaCloud?: {
             accessToken: string;
         }
-    }
+    },
+    includeRawPayload?: boolean;
 }
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {

@@ -22,7 +22,7 @@ import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { api } from '../../../../state/backendApi';
+import { MessageSearchRequest, api } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat } from '../../../../state/ui';
@@ -35,7 +35,7 @@ import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelp
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
@@ -44,7 +44,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -582,7 +582,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     Save Messages
                 </Button>
 
-                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} />
+                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch(true)} />
 
                 {
                     (this.messageSource?.data?.length > 0) &&
@@ -611,7 +611,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return ta.localeCompare(tb);
     }
 
-    async executeMessageSearch(): Promise<void> {
+    async executeMessageSearch(includeRawPayload: boolean = false): Promise<TopicMessage[]> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -648,21 +648,22 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-        };
+            includeRawPayload: includeRawPayload
+        } as MessageSearchRequest;
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
         //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
-        await transaction(async () => {
+        return transaction(async () => {
             try {
                 this.fetchError = null;
-                await api.startMessageSearchNew(request);
+                return api.startMessageSearchNew(request);
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;
+                return [];
             }
         });
-
     }
 
     empty = () => {
@@ -689,9 +690,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 }
 
 @observer
-class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void; }> {
+class SaveMessagesDialog extends Component<{
+    messages: TopicMessage[] | null,
+    onClose: () => void,
+    onRequireRawPayload: () => Promise<TopicMessage[]>
+}> {
     @observable isOpen = false;
     @observable format = 'json' as 'json' | 'csv';
+    @observable isLoadingRawMessage = false;
+    @observable includeRawContent = false;
 
     radioStyle = { display: 'block', lineHeight: '30px' };
 
@@ -715,24 +722,57 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
                 <ModalOverlay />
                 <ModalContent minW="2xl">
                     <ModalHeader>{title}</ModalHeader>
-                    <ModalBody>
+                    <ModalBody display="flex" flexDirection="column" gap="4">
                         <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
-                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
+                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value} disabled={this.isLoadingRawMessage}>
                             <Radio value="json" style={this.radioStyle}>JSON</Radio>
                             <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
                         </Radio.Group>
+                        <Checkbox isChecked={this.includeRawContent} onChange={e => this.includeRawContent = e.target.checked}>
+                            Include raw data
+                        </Checkbox>
                     </ModalBody>
                     <ModalFooter gap={2}>
-                        <Button variant="outline" colorScheme="red" onClick={onClose}>Cancel</Button>
-                        <Button variant="solid" onClick={() => this.saveMessages()}>Save Messages</Button>
+                        <Button variant="outline" colorScheme="red" onClick={onClose} isDisabled={this.isLoadingRawMessage}>
+                            Cancel
+                        </Button>
+                        <Button variant="solid" onClick={() => this.saveMessages()}
+                            isDisabled={this.isLoadingRawMessage}
+                            loadingText="Save Messages"
+                            isLoading={this.isLoadingRawMessage}
+                        >
+                            Save Messages
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
         )
     }
 
-    saveMessages() {
-        const cleanMessages = this.cleanMessages(this.props.messages ?? []);
+    async saveMessages() {
+        let messages = this.props.messages;
+        if (messages == null)
+            return;
+
+        try {
+            if (this.includeRawContent) {
+                const originalUserSelection = [...messages];
+
+                // We do not have the raw content (wasn't requested initially)
+                // so we must restart the message search
+                this.isLoadingRawMessage = true;
+                messages = await this.props.onRequireRawPayload();
+
+                // Here, we do not know whether the user selected to download all messages, or only one.
+                // So we need to filter all newly downloaded messages against the original user selection
+                messages = messages.filter(m => originalUserSelection.any(x => m.partitionID == x.partitionID && m.offset == x.offset));
+            }
+        }
+        finally {
+            this.isLoadingRawMessage = false;
+        }
+
+        const cleanMessages = this.cleanMessages(messages);
 
         const json = toJson(cleanMessages, 4);
 
@@ -754,8 +794,10 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
         const cleanPayload = function (p: Payload): Payload {
             if (!p) return undefined as any;
+
             const cleanedPayload = {
                 payload: p.payload,
+                rawPayload: p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
                 encoding: p.encoding,
             } as any as Payload;
 
@@ -1034,7 +1076,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
             }
             else if (mode == 'hex') {
-                const rawBytes = payload.rawBytes;
+                const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
 
                 if (rawBytes) {
                     let result = '';
