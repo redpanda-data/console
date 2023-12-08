@@ -224,6 +224,40 @@ components:
         type:
           type: string
       type: object
+    CreateACLRequest:
+      properties:
+        host:
+          description: |-
+            Host is the host address to use for this acl. Each host to allow
+            the principal access from must be specified as a new creation.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: |-
+            Principal is the user to apply this acl for. With the Kafka simple
+            authorizer, this must begin with "User:".
+          type: string
+        resource_name:
+          description: |-
+            ResourceName is the name of the resource this acl entry will be on.
+            For requests with resource_type CLUSTER, this will default to the expected
+            value "kafka-cluster".
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - principal
+        - host
+        - operation
+        - permission_type
+      type: object
     CreateACLResponse:
       type: object
     CreateConnectorResponse:
@@ -1052,67 +1086,13 @@ paths:
     post:
       description: Create ACL
       operationId: ACLService_CreateACL
-      parameters:
-        - in: query
-          name: resource_type
-          schema:
-            enum:
-              - RESOURCE_TYPE_ANY
-              - RESOURCE_TYPE_TOPIC
-              - RESOURCE_TYPE_GROUP
-              - RESOURCE_TYPE_CLUSTER
-              - RESOURCE_TYPE_TRANSACTIONAL_ID
-              - RESOURCE_TYPE_DELEGATION_TOKEN
-              - RESOURCE_TYPE_USER
-            type: string
-        - in: query
-          name: resource_name
-          schema:
-            type: string
-        - in: query
-          name: resource_pattern_type
-          schema:
-            enum:
-              - RESOURCE_PATTERN_TYPE_ANY
-              - RESOURCE_PATTERN_TYPE_MATCH
-              - RESOURCE_PATTERN_TYPE_LITERAL
-              - RESOURCE_PATTERN_TYPE_PREFIXED
-            type: string
-        - in: query
-          name: principal
-          schema:
-            type: string
-        - in: query
-          name: host
-          schema:
-            type: string
-        - in: query
-          name: operation
-          schema:
-            enum:
-              - OPERATION_ANY
-              - OPERATION_ALL
-              - OPERATION_READ
-              - OPERATION_WRITE
-              - OPERATION_CREATE
-              - OPERATION_DELETE
-              - OPERATION_ALTER
-              - OPERATION_DESCRIBE
-              - OPERATION_CLUSTER_ACTION
-              - OPERATION_DESCRIBE_CONFIGS
-              - OPERATION_ALTER_CONFIGS
-              - OPERATION_IDEMPOTENT_WRITE
-              - OPERATION_CREATE_TOKENS
-              - OPERATION_DESCRIBE_TOKENS
-            type: string
-        - in: query
-          name: permission_type
-          schema:
-            enum:
-              - PERMISSION_TYPE_ANY
-              - PERMISSION_TYPE_DENY
-              - PERMISSION_TYPE_ALLOW
-            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateACLRequest'
+        required: true
+        x-originalParamName: body
       responses:
         "201":
           content:

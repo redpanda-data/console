@@ -19,6 +19,43 @@ import (
 
 type kafkaClientMapper struct{}
 
+// aclCreateRequestToKafka maps the proto request to create a single ACL into a kmsg.CreateACLsRequest.
+func (k *kafkaClientMapper) aclCreateRequestToKafka(req *v1alpha1.CreateACLRequest) (*kmsg.CreateACLsRequest, error) {
+	resourceType, err := k.aclResourceTypeToKafka(req.ResourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := k.aclOperationToKafka(req.Operation)
+	if err != nil {
+		return nil, err
+	}
+
+	permissionType, err := k.aclPermissionTypeToKafka(req.PermissionType)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcePatternType, err := k.aclResourcePatternTypeToKafka(req.ResourcePatternType)
+	if err != nil {
+		return nil, err
+	}
+
+	creation := kmsg.NewCreateACLsRequestCreation()
+	creation.Host = req.Host
+	creation.Principal = req.Principal
+	creation.Operation = operation
+	creation.ResourceType = resourceType
+	creation.PermissionType = permissionType
+	creation.ResourcePatternType = resourcePatternType
+	creation.ResourceName = req.ResourceName
+
+	kafkaReq := kmsg.NewCreateACLsRequest()
+	kafkaReq.Creations = []kmsg.CreateACLsRequestCreation{creation}
+
+	return &kafkaReq, nil
+}
+
 // aclFilterToKafka translates a proto ACL input into the kmsg.DescribeACLsRequest that is
 // needed by the Kafka client to retrieve the list of applied ACLs.
 // The parameter defaultToAny determines whether unspecified enum values for

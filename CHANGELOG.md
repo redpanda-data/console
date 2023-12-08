@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.8 / 2023-12-06
+
+- [SECURITY] Update a dependency that may allow to run a DoS attack
+
 ## v2.3.7 / 2023-11-17
 
 - [SECURITY] Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363. The previous v2.3.6 did in fact not fix this CVE.

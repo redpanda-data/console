@@ -5,6 +5,7 @@ deps:
   - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
   - buf.build/redpandadata/common
+name: buf.build/redpandadata/dataplane
 breaking:
   use:
     - FILE
