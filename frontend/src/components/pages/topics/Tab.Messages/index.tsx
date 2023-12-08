@@ -983,7 +983,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>;
             }
-            else if (value.payload == null || value.payload.length == 0)
+            else if (value.encoding == 'null' || value.payload == null || value.payload.length == 0)
                 return null;
             else if (msg.value.encoding == 'binary') {
                 // If the original data was binary, display as hex dump

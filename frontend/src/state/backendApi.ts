@@ -517,7 +517,7 @@ const apiStore = {
                                     })
                             }
 
-                            m.key.isPayloadNull = key?.payloadSize == 0;
+                            m.key.isPayloadNull = key?.encoding == PayloadEncoding.NULL;
                             m.key.payload = keyPayload;
                             m.key.normalizedPayload = key?.normalizedPayload;
 
@@ -589,7 +589,7 @@ const apiStore = {
 
                             m.value.schemaId = val?.schemaId ?? 0;
                             m.value.troubleshootReport = val?.troubleshootReport;
-                            m.value.isPayloadNull = val?.payloadSize == 0;
+                            m.value.isPayloadNull = val?.encoding == PayloadEncoding.NULL;
                             m.valueJson = valuePayload;
                             m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
