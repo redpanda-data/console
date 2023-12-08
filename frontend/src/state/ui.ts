@@ -65,7 +65,7 @@ export class FilterEntry {
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
 
-export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
+export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';
 export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
     switch (timestampType) {
         case 'default':

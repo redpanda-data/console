@@ -25,7 +25,7 @@ import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2 } from '../../../../state/ui';
+import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
@@ -1294,7 +1294,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                 <Box mt="1em">
                     <Text mb={2}>More Settings</Text>
                     <Box>
-                        <OptionGroup
+                        <OptionGroup<TimestampDisplayFormat>
                             label="Timestamp"
                             options={{
                                 'Local DateTime': 'default',
