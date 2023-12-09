@@ -49,12 +49,10 @@ export class AdminUsers extends Component<{}> {
                             if (row.original.internalIdentifier == api.userData?.user.internalIdentifier) {
                                 return (
                                     <span>
-                                        <>
                                         <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>
                                             <UserOutlined style={{fontSize: '16px', padding: '2px', color: '#ff9e3a'}}/>
                                         </Tooltip>{' '}
                                         {row.original.internalIdentifier}
-                                        </>
                                     </span>
                                 );
                             }

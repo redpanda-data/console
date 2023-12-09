@@ -266,6 +266,7 @@ export class EditOffsetsModal extends Component<{
                     description: <DataTable<GroupOffset>
                         size="sm"
                         showPagination
+                        defaultPageSize={1000}
                         data={items}
                         columns={[
                             {

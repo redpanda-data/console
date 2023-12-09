@@ -20,7 +20,7 @@ import { sortField } from './common';
 import styles from './ConfigList.module.scss';
 import { KowlColumnType } from './KowlTable';
 
-import { DataTable, Tooltip } from '@redpanda-data/ui';
+import { DataTable, Flex, Tooltip } from '@redpanda-data/ui';
 import { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
@@ -100,9 +100,9 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             accessorKey: 'name',
             cell: ({row: {original: record}}) => {
                 let name = (
-                    <div style={{ display: 'flex' }} className={styles.nameText}>
+                    <Flex className={styles.nameText}>
                         {record.name}
-                    </div>
+                    </Flex>
                 );
                 if (renderTooltip) name = renderTooltip(record, name);
 

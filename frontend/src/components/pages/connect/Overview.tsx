@@ -227,12 +227,10 @@ class TabTasks extends Component {
                         header: 'State',
                         accessorKey: 'state',
                         cell: ({ row: { original } }) => <TaskState observable={original} />,
-                        // Include sorting logic and filter type if necessary
                     },
                     {
                         header: 'Worker',
                         accessorKey: 'workerId',
-                        // Include sorting logic and filter type if necessary
                     },
                     {
                         header: 'Cluster',
