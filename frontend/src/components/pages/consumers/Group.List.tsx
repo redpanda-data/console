@@ -68,7 +68,11 @@ class GroupList extends PageComponent {
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
 
-        const groups = Array.from(api.consumerGroups.values());
+        const groups = Array.from(api.consumerGroups.values())
+            .filter(groupDescription =>
+                groupDescription.groupId.includes(uiSettings.consumerGroupList.quickSearch) ||
+                groupDescription.protocol.includes(uiSettings.consumerGroupList.quickSearch)
+            );
         const stateGroups = groups.groupInto(g => g.state);
 
         return (
@@ -119,6 +123,7 @@ class GroupList extends PageComponent {
                         */}
                         </div>
                         {/* Content */}
+
                         <DataTable<GroupDescription>
                             data={groups}
                             size="md"
@@ -127,7 +132,7 @@ class GroupList extends PageComponent {
                                     header: 'State',
                                     accessorKey: 'state',
                                     size: 130,
-                                    cell: ({ row: { original } }) => <GroupState group={original} />
+                                    cell: ({ row: { original } }) => <GroupState group={original} />,
                                 },
                                 {
                                     header: 'ID',

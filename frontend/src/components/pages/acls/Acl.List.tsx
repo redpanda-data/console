@@ -154,7 +154,9 @@ class AclList extends PageComponent {
             </Alert>
             : null;
 
-        const groups = this.principalGroups;
+        const groups = this.principalGroups.filter(
+            aclGroup => aclGroup.principalName.includes(uiSettings.aclList.configTable.quickSearch)
+        );
 
         return <>
             <AlertDeleteFailed aclFailed={this.aclFailed} onClose={() => {
