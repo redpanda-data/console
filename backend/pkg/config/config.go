@@ -176,6 +176,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	}
 
 	unmarshalCfg.DecoderConfig.ErrorUnused = false
+	unmarshalCfg.DecoderConfig.ZeroFields = true // Empty default slices/maps if a value is configured
 	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)
 	if err != nil {
 		return Config{}, err
