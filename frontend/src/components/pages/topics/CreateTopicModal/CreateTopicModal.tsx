@@ -1,5 +1,4 @@
 import { PlusIcon, XIcon } from '@primer/octicons-react';
-import { Slider } from 'antd';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useEffect, useState } from 'react';
@@ -16,7 +15,12 @@ import {
     InputRightAddon,
     isSingleValue,
     NumberInput,
-    Select
+    Select,
+    Slider,
+    SliderFilledTrack,
+    SliderTrack,
+    SliderThumb,
+    Flex
 } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 import { api } from '../../../../state/backendApi';
@@ -593,13 +597,13 @@ export function RatioInput(p: {
     onChange: (ratio: number) => void;
 }) {
 
-    return <div className="ratioInput">
-        <Slider
-            min={0} max={100} step={1}
-            value={Math.round(p.value * 100)}
-            onChange={x => p.onChange(x / 100)}
-            tooltip={{ formatter: null }}
-        />
+    return <Flex alignItems="center" gap={2}>
+        <Slider min={0} max={100} step={1} onChange={x => p.onChange(x / 100)} value={Math.round(p.value * 100)}>
+            <SliderTrack>
+                <SliderFilledTrack />
+            </SliderTrack>
+            <SliderThumb />
+        </Slider>
         <NumberInput
             min={0} max={100}
             value={Math.round(p.value * 100) + '%'}
@@ -611,5 +615,5 @@ export function RatioInput(p: {
             }}
             size="small"
         />
-    </div>
+    </Flex>
 }
