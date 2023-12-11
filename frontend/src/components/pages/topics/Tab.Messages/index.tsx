@@ -194,15 +194,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             {/* Message Table (or error display) */}
             {this.fetchError
                 ? <Alert status="error">
-                    <AlertIcon />
-                    <div>Backend API Error</div>
-                    <div>
-                        <Typography.Text>Please check and modify the request before resubmitting.</Typography.Text>
-                        <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
-                        <Button onClick={() => this.executeMessageSearch()}>
-                            Retry Search
-                        </Button>
-                    </div>
+                    <AlertIcon alignSelf="flex-start" />
+                    <Box>
+                        <AlertTitle>Backend Error</AlertTitle>
+                        <AlertDescription>
+                            <Box>Please check and modify the request before resubmitting.</Box>
+                            <Box mt="4">
+                                <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
+                            </Box>
+                            <Button mt="4" onClick={() => this.executeMessageSearch()}>
+                                Retry Search
+                            </Button>
+                        </AlertDescription>
+                    </Box>
                 </Alert>
                 : <>
                     <this.MessageTable />
@@ -657,7 +661,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return transaction(async () => {
             try {
                 this.fetchError = null;
-                return api.startMessageSearchNew(request);
+                return api.startMessageSearchNew(request).catch(err => {
+                    const msg = ((err as Error).message ?? String(err));
+                    console.error('error in searchTopicMessages: ' + msg);
+                    this.fetchError = err;
+                    return [];
+
+                });
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;

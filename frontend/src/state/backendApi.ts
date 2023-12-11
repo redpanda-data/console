@@ -609,16 +609,17 @@ const apiStore = {
                 }
             }
         } catch (e) {
+            messageSearchAbortController = null;
+            this.messageSearchPhase = 'Done';
+            this.messagesBytesConsumed = 0;
+            this.messagesTotalConsumed = 0;
+            this.messageSearchPhase = null;
             // https://connectrpc.com/docs/web/errors
             if (abortController.signal.aborted) {
-                messageSearchAbortController = null;
-                this.messageSearchPhase = 'Done';
-                this.messagesBytesConsumed = 0;
-                this.messagesTotalConsumed = 0;
-                this.messageSearchPhase = null;
-
+            // Do not throw, this is a user cancellation
             } else {
                 console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+                throw e;
             }
         }
 
