@@ -39,6 +39,8 @@ func NewEndpointCheckInterceptor(cfg *config.ConsoleAPI, logger *zap.Logger) *En
 
 // WrapUnary creates an interceptor to validate Connect requests.
 func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	enabledProcedures, isAllProceduresAllowed := in.cfg.GetEnabledProcedures()
+
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		procedure := req.Spec().Procedure
 
@@ -78,11 +80,11 @@ func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.Un
 		}
 
 		// Check wildcard that allows all procedures first
-		if in.cfg.AllowsAllProcedures {
+		if isAllProceduresAllowed {
 			return next(ctx, req)
 		}
 
-		_, isAllowed := in.cfg.EnabledProceduresMap[procedure]
+		_, isAllowed := enabledProcedures[procedure]
 		if !isAllowed {
 			return nil, notEnabledError
 		}
