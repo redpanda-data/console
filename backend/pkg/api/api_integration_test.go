@@ -38,7 +38,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
-	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -297,8 +296,8 @@ func (a *assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (a *assertHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (a *assertHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (a *assertHooks) ConfigRouter(_ chi.Router)                    {}
-func (a *assertHooks) ConfigConnectRPC(_ hooks.ConfigConnectRPCRequest) hooks.ConfigConnectRPCResponse {
-	return hooks.ConfigConnectRPCResponse{}
+func (a *assertHooks) ConfigConnectRPC(_ ConfigConnectRPCRequest) ConfigConnectRPCResponse {
+	return ConfigConnectRPCResponse{}
 }
 
 // Authorization Hooks
