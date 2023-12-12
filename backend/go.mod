@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20230830185350-7a34d6557349.1
-	connectrpc.com/connect v1.12.0
+	connectrpc.com/connect v1.13.0
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
