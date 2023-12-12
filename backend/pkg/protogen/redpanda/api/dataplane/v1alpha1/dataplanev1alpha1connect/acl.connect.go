@@ -20,7 +20,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ACLServiceName is the fully-qualified name of the ACLService service.
@@ -43,6 +43,14 @@ const (
 	ACLServiceDeleteACLsProcedure = "/redpanda.api.dataplane.v1alpha1.ACLService/DeleteACLs"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	aCLServiceServiceDescriptor          = v1alpha1.File_redpanda_api_dataplane_v1alpha1_acl_proto.Services().ByName("ACLService")
+	aCLServiceListACLsMethodDescriptor   = aCLServiceServiceDescriptor.Methods().ByName("ListACLs")
+	aCLServiceCreateACLMethodDescriptor  = aCLServiceServiceDescriptor.Methods().ByName("CreateACL")
+	aCLServiceDeleteACLsMethodDescriptor = aCLServiceServiceDescriptor.Methods().ByName("DeleteACLs")
+)
+
 // ACLServiceClient is a client for the redpanda.api.dataplane.v1alpha1.ACLService service.
 type ACLServiceClient interface {
 	ListACLs(context.Context, *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error)
@@ -63,17 +71,20 @@ func NewACLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 		listACLs: connect.NewClient[v1alpha1.ListACLsRequest, v1alpha1.ListACLsResponse](
 			httpClient,
 			baseURL+ACLServiceListACLsProcedure,
-			opts...,
+			connect.WithSchema(aCLServiceListACLsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		createACL: connect.NewClient[v1alpha1.CreateACLRequest, v1alpha1.CreateACLResponse](
 			httpClient,
 			baseURL+ACLServiceCreateACLProcedure,
-			opts...,
+			connect.WithSchema(aCLServiceCreateACLMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteACLs: connect.NewClient[v1alpha1.DeleteACLsRequest, v1alpha1.DeleteACLsResponse](
 			httpClient,
 			baseURL+ACLServiceDeleteACLsProcedure,
-			opts...,
+			connect.WithSchema(aCLServiceDeleteACLsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -116,17 +127,20 @@ func NewACLServiceHandler(svc ACLServiceHandler, opts ...connect.HandlerOption) 
 	aCLServiceListACLsHandler := connect.NewUnaryHandler(
 		ACLServiceListACLsProcedure,
 		svc.ListACLs,
-		opts...,
+		connect.WithSchema(aCLServiceListACLsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	aCLServiceCreateACLHandler := connect.NewUnaryHandler(
 		ACLServiceCreateACLProcedure,
 		svc.CreateACL,
-		opts...,
+		connect.WithSchema(aCLServiceCreateACLMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	aCLServiceDeleteACLsHandler := connect.NewUnaryHandler(
 		ACLServiceDeleteACLsProcedure,
 		svc.DeleteACLs,
-		opts...,
+		connect.WithSchema(aCLServiceDeleteACLsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.ACLService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

@@ -20,7 +20,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// TopicServiceName is the fully-qualified name of the TopicService service.
@@ -54,6 +54,17 @@ const (
 	TopicServiceSetTopicConfigurationProcedure = "/redpanda.api.dataplane.v1alpha1.TopicService/SetTopicConfiguration"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	topicServiceServiceDescriptor                        = v1alpha1.File_redpanda_api_dataplane_v1alpha1_topic_proto.Services().ByName("TopicService")
+	topicServiceCreateTopicMethodDescriptor              = topicServiceServiceDescriptor.Methods().ByName("CreateTopic")
+	topicServiceListTopicsMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("ListTopics")
+	topicServiceDeleteTopicMethodDescriptor              = topicServiceServiceDescriptor.Methods().ByName("DeleteTopic")
+	topicServiceGetTopicConfigurationMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("GetTopicConfiguration")
+	topicServiceUpdateTopicConfigurationMethodDescriptor = topicServiceServiceDescriptor.Methods().ByName("UpdateTopicConfiguration")
+	topicServiceSetTopicConfigurationMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfiguration")
+)
+
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1alpha1.TopicService service.
 type TopicServiceClient interface {
 	CreateTopic(context.Context, *connect.Request[v1alpha1.CreateTopicRequest]) (*connect.Response[v1alpha1.CreateTopicResponse], error)
@@ -77,32 +88,38 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 		createTopic: connect.NewClient[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse](
 			httpClient,
 			baseURL+TopicServiceCreateTopicProcedure,
-			opts...,
+			connect.WithSchema(topicServiceCreateTopicMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		listTopics: connect.NewClient[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse](
 			httpClient,
 			baseURL+TopicServiceListTopicsProcedure,
-			opts...,
+			connect.WithSchema(topicServiceListTopicsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteTopic: connect.NewClient[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse](
 			httpClient,
 			baseURL+TopicServiceDeleteTopicProcedure,
-			opts...,
+			connect.WithSchema(topicServiceDeleteTopicMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		getTopicConfiguration: connect.NewClient[v1alpha1.GetTopicConfigurationRequest, v1alpha1.GetTopicConfigurationResponse](
 			httpClient,
 			baseURL+TopicServiceGetTopicConfigurationProcedure,
-			opts...,
+			connect.WithSchema(topicServiceGetTopicConfigurationMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		updateTopicConfiguration: connect.NewClient[v1alpha1.UpdateTopicConfigurationRequest, v1alpha1.UpdateTopicConfigurationResponse](
 			httpClient,
 			baseURL+TopicServiceUpdateTopicConfigurationProcedure,
-			opts...,
+			connect.WithSchema(topicServiceUpdateTopicConfigurationMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		setTopicConfiguration: connect.NewClient[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse](
 			httpClient,
 			baseURL+TopicServiceSetTopicConfigurationProcedure,
-			opts...,
+			connect.WithSchema(topicServiceSetTopicConfigurationMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -168,32 +185,38 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 	topicServiceCreateTopicHandler := connect.NewUnaryHandler(
 		TopicServiceCreateTopicProcedure,
 		svc.CreateTopic,
-		opts...,
+		connect.WithSchema(topicServiceCreateTopicMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceListTopicsHandler := connect.NewUnaryHandler(
 		TopicServiceListTopicsProcedure,
 		svc.ListTopics,
-		opts...,
+		connect.WithSchema(topicServiceListTopicsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceDeleteTopicHandler := connect.NewUnaryHandler(
 		TopicServiceDeleteTopicProcedure,
 		svc.DeleteTopic,
-		opts...,
+		connect.WithSchema(topicServiceDeleteTopicMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceGetTopicConfigurationHandler := connect.NewUnaryHandler(
 		TopicServiceGetTopicConfigurationProcedure,
 		svc.GetTopicConfiguration,
-		opts...,
+		connect.WithSchema(topicServiceGetTopicConfigurationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceUpdateTopicConfigurationHandler := connect.NewUnaryHandler(
 		TopicServiceUpdateTopicConfigurationProcedure,
 		svc.UpdateTopicConfiguration,
-		opts...,
+		connect.WithSchema(topicServiceUpdateTopicConfigurationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceSetTopicConfigurationHandler := connect.NewUnaryHandler(
 		TopicServiceSetTopicConfigurationProcedure,
 		svc.SetTopicConfiguration,
-		opts...,
+		connect.WithSchema(topicServiceSetTopicConfigurationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.TopicService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

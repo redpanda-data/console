@@ -20,7 +20,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SecretServiceName is the fully-qualified name of the SecretService service.
@@ -49,6 +49,15 @@ const (
 	SecretServiceDeleteSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteSecret"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	secretServiceServiceDescriptor            = v1alpha1.File_redpanda_api_dataplane_v1alpha1_secret_proto.Services().ByName("SecretService")
+	secretServiceListSecretsMethodDescriptor  = secretServiceServiceDescriptor.Methods().ByName("ListSecrets")
+	secretServiceCreateSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("CreateSecret")
+	secretServiceUpdateSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("UpdateSecret")
+	secretServiceDeleteSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("DeleteSecret")
+)
+
 // SecretServiceClient is a client for the redpanda.api.dataplane.v1alpha1.SecretService service.
 type SecretServiceClient interface {
 	ListSecrets(context.Context, *connect.Request[v1alpha1.ListSecretsRequest]) (*connect.Response[v1alpha1.ListSecretsResponse], error)
@@ -70,22 +79,26 @@ func NewSecretServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 		listSecrets: connect.NewClient[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse](
 			httpClient,
 			baseURL+SecretServiceListSecretsProcedure,
-			opts...,
+			connect.WithSchema(secretServiceListSecretsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		createSecret: connect.NewClient[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse](
 			httpClient,
 			baseURL+SecretServiceCreateSecretProcedure,
-			opts...,
+			connect.WithSchema(secretServiceCreateSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		updateSecret: connect.NewClient[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse](
 			httpClient,
 			baseURL+SecretServiceUpdateSecretProcedure,
-			opts...,
+			connect.WithSchema(secretServiceUpdateSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteSecret: connect.NewClient[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse](
 			httpClient,
 			baseURL+SecretServiceDeleteSecretProcedure,
-			opts...,
+			connect.WithSchema(secretServiceDeleteSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -136,22 +149,26 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 	secretServiceListSecretsHandler := connect.NewUnaryHandler(
 		SecretServiceListSecretsProcedure,
 		svc.ListSecrets,
-		opts...,
+		connect.WithSchema(secretServiceListSecretsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	secretServiceCreateSecretHandler := connect.NewUnaryHandler(
 		SecretServiceCreateSecretProcedure,
 		svc.CreateSecret,
-		opts...,
+		connect.WithSchema(secretServiceCreateSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	secretServiceUpdateSecretHandler := connect.NewUnaryHandler(
 		SecretServiceUpdateSecretProcedure,
 		svc.UpdateSecret,
-		opts...,
+		connect.WithSchema(secretServiceUpdateSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	secretServiceDeleteSecretHandler := connect.NewUnaryHandler(
 		SecretServiceDeleteSecretProcedure,
 		svc.DeleteSecret,
-		opts...,
+		connect.WithSchema(secretServiceDeleteSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.SecretService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

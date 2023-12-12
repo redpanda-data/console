@@ -20,7 +20,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ConsoleServiceName is the fully-qualified name of the ConsoleService service.
@@ -41,6 +41,13 @@ const (
 	// ConsoleServicePublishMessageProcedure is the fully-qualified name of the ConsoleService's
 	// PublishMessage RPC.
 	ConsoleServicePublishMessageProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+)
+
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	consoleServiceServiceDescriptor              = v1alpha1.File_redpanda_api_console_v1alpha1_console_service_proto.Services().ByName("ConsoleService")
+	consoleServiceListMessagesMethodDescriptor   = consoleServiceServiceDescriptor.Methods().ByName("ListMessages")
+	consoleServicePublishMessageMethodDescriptor = consoleServiceServiceDescriptor.Methods().ByName("PublishMessage")
 )
 
 // ConsoleServiceClient is a client for the redpanda.api.console.v1alpha1.ConsoleService service.
@@ -64,12 +71,14 @@ func NewConsoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 		listMessages: connect.NewClient[v1alpha1.ListMessagesRequest, v1alpha1.ListMessagesResponse](
 			httpClient,
 			baseURL+ConsoleServiceListMessagesProcedure,
-			opts...,
+			connect.WithSchema(consoleServiceListMessagesMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		publishMessage: connect.NewClient[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse](
 			httpClient,
 			baseURL+ConsoleServicePublishMessageProcedure,
-			opts...,
+			connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -108,12 +117,14 @@ func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect.Handler
 	consoleServiceListMessagesHandler := connect.NewServerStreamHandler(
 		ConsoleServiceListMessagesProcedure,
 		svc.ListMessages,
-		opts...,
+		connect.WithSchema(consoleServiceListMessagesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	consoleServicePublishMessageHandler := connect.NewUnaryHandler(
 		ConsoleServicePublishMessageProcedure,
 		svc.PublishMessage,
-		opts...,
+		connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.console.v1alpha1.ConsoleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

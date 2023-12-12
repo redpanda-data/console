@@ -21,7 +21,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// KafkaConnectServiceName is the fully-qualified name of the KafkaConnectService service.
@@ -63,6 +63,20 @@ const (
 	// KafkaConnectServiceDeleteConnectorProcedure is the fully-qualified name of the
 	// KafkaConnectService's DeleteConnector RPC.
 	KafkaConnectServiceDeleteConnectorProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector"
+)
+
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	kafkaConnectServiceServiceDescriptor                   = v1alpha1.File_redpanda_api_dataplane_v1alpha1_kafka_connect_proto.Services().ByName("KafkaConnectService")
+	kafkaConnectServiceListConnectClustersMethodDescriptor = kafkaConnectServiceServiceDescriptor.Methods().ByName("ListConnectClusters")
+	kafkaConnectServiceGetConnectClusterMethodDescriptor   = kafkaConnectServiceServiceDescriptor.Methods().ByName("GetConnectCluster")
+	kafkaConnectServiceListConnectorsMethodDescriptor      = kafkaConnectServiceServiceDescriptor.Methods().ByName("ListConnectors")
+	kafkaConnectServiceCreateConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("CreateConnector")
+	kafkaConnectServiceRestartConnectorMethodDescriptor    = kafkaConnectServiceServiceDescriptor.Methods().ByName("RestartConnector")
+	kafkaConnectServiceGetConnectorMethodDescriptor        = kafkaConnectServiceServiceDescriptor.Methods().ByName("GetConnector")
+	kafkaConnectServicePauseConnectorMethodDescriptor      = kafkaConnectServiceServiceDescriptor.Methods().ByName("PauseConnector")
+	kafkaConnectServiceResumeConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("ResumeConnector")
+	kafkaConnectServiceDeleteConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("DeleteConnector")
 )
 
 // KafkaConnectServiceClient is a client for the redpanda.api.dataplane.v1alpha1.KafkaConnectService
@@ -109,47 +123,56 @@ func NewKafkaConnectServiceClient(httpClient connect.HTTPClient, baseURL string,
 		listConnectClusters: connect.NewClient[v1alpha1.ListConnectClustersRequest, v1alpha1.ListConnectClustersResponse](
 			httpClient,
 			baseURL+KafkaConnectServiceListConnectClustersProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceListConnectClustersMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		getConnectCluster: connect.NewClient[v1alpha1.GetConnectClusterRequest, v1alpha1.GetConnectClusterResponse](
 			httpClient,
 			baseURL+KafkaConnectServiceGetConnectClusterProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceGetConnectClusterMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		listConnectors: connect.NewClient[v1alpha1.ListConnectorsRequest, v1alpha1.ListConnectorsResponse](
 			httpClient,
 			baseURL+KafkaConnectServiceListConnectorsProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceListConnectorsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		createConnector: connect.NewClient[v1alpha1.CreateConnectorRequest, v1alpha1.CreateConnectorResponse](
 			httpClient,
 			baseURL+KafkaConnectServiceCreateConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceCreateConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		restartConnector: connect.NewClient[v1alpha1.RestartConnectorRequest, emptypb.Empty](
 			httpClient,
 			baseURL+KafkaConnectServiceRestartConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceRestartConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		getConnector: connect.NewClient[v1alpha1.GetConnectorRequest, v1alpha1.GetConnectorResponse](
 			httpClient,
 			baseURL+KafkaConnectServiceGetConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceGetConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		pauseConnector: connect.NewClient[v1alpha1.PauseConnectorRequest, emptypb.Empty](
 			httpClient,
 			baseURL+KafkaConnectServicePauseConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServicePauseConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		resumeConnector: connect.NewClient[v1alpha1.ResumeConnectorRequest, emptypb.Empty](
 			httpClient,
 			baseURL+KafkaConnectServiceResumeConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceResumeConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteConnector: connect.NewClient[v1alpha1.DeleteConnectorRequest, emptypb.Empty](
 			httpClient,
 			baseURL+KafkaConnectServiceDeleteConnectorProcedure,
-			opts...,
+			connect.WithSchema(kafkaConnectServiceDeleteConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -252,47 +275,56 @@ func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...conne
 	kafkaConnectServiceListConnectClustersHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceListConnectClustersProcedure,
 		svc.ListConnectClusters,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceListConnectClustersMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceGetConnectClusterHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceGetConnectClusterProcedure,
 		svc.GetConnectCluster,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceGetConnectClusterMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceListConnectorsHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceListConnectorsProcedure,
 		svc.ListConnectors,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceListConnectorsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceCreateConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceCreateConnectorProcedure,
 		svc.CreateConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceCreateConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceRestartConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceRestartConnectorProcedure,
 		svc.RestartConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceRestartConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceGetConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceGetConnectorProcedure,
 		svc.GetConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceGetConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServicePauseConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServicePauseConnectorProcedure,
 		svc.PauseConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServicePauseConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceResumeConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceResumeConnectorProcedure,
 		svc.ResumeConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceResumeConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	kafkaConnectServiceDeleteConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceDeleteConnectorProcedure,
 		svc.DeleteConnector,
-		opts...,
+		connect.WithSchema(kafkaConnectServiceDeleteConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

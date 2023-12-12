@@ -23,7 +23,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// DummyServiceName is the fully-qualified name of the DummyService service.
@@ -41,6 +41,12 @@ const (
 	// DummyServiceDummyMethodProcedure is the fully-qualified name of the DummyService's DummyMethod
 	// RPC.
 	DummyServiceDummyMethodProcedure = "/redpanda.api.dataplane.v1alpha1.DummyService/DummyMethod"
+)
+
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	dummyServiceServiceDescriptor           = v1alpha1.File_redpanda_api_dataplane_v1alpha1_dummy_proto.Services().ByName("DummyService")
+	dummyServiceDummyMethodMethodDescriptor = dummyServiceServiceDescriptor.Methods().ByName("DummyMethod")
 )
 
 // DummyServiceClient is a client for the redpanda.api.dataplane.v1alpha1.DummyService service.
@@ -64,7 +70,8 @@ func NewDummyServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 		dummyMethod: connect.NewClient[emptypb.Empty, v1alpha1.DummyMethodResponse](
 			httpClient,
 			baseURL+DummyServiceDummyMethodProcedure,
-			opts...,
+			connect.WithSchema(dummyServiceDummyMethodMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -97,7 +104,8 @@ func NewDummyServiceHandler(svc DummyServiceHandler, opts ...connect.HandlerOpti
 	dummyServiceDummyMethodHandler := connect.NewUnaryHandler(
 		DummyServiceDummyMethodProcedure,
 		svc.DummyMethod,
-		opts...,
+		connect.WithSchema(dummyServiceDummyMethodMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.DummyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
