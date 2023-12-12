@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"unicode/utf8"
 
@@ -48,14 +47,8 @@ func (UTF8Serde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 		return &RecordPayload{}, fmt.Errorf("payload does not contain UTF8 control characters")
 	}
 
-	b64 := base64.StdEncoding.EncodeToString(payload)
-	jsonBytes, err := json.Marshal(b64)
-	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
-	}
-
 	return &RecordPayload{
-		NormalizedPayload:   jsonBytes,
+		NormalizedPayload:   payload,
 		DeserializedPayload: payload,
 		Encoding:            PayloadEncodingUtf8WithControlChars,
 	}, nil
