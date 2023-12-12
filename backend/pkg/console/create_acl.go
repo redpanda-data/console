@@ -26,7 +26,7 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 	req := kmsg.NewCreateACLsRequest()
 	req.Creations = []kmsg.CreateACLsRequestCreation{createReq}
 
-	res, err := s.kafkaSvc.CreateACLs(ctx, req)
+	res, err := s.kafkaSvc.CreateACLs(ctx, &req)
 	if err != nil {
 		return &rest.Error{
 			Err:          err,
@@ -63,6 +63,6 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 }
 
 // CreateACLs proxies the request/response to CreateACLs via the Kafka API.
-func (s *Service) CreateACLs(ctx context.Context, req kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error) {
+func (s *Service) CreateACLs(ctx context.Context, req *kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error) {
 	return s.kafkaSvc.CreateACLs(ctx, req)
 }
