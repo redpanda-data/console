@@ -5,6 +5,7 @@ package redpanda.api.dataplane.v1alpha1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/rpc/status.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 message ACL {
@@ -198,8 +199,7 @@ message DeleteACLsResponse {
     string host = 5;
     ACL.Operation operation = 6;
     ACL.PermissionType permission_type = 7;
-    int32 error_code = 8;
-    string error_message = 9;
+    google.rpc.Status error = 8;
   }
 
   repeated MatchingACL matching_acls = 1;
