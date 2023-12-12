@@ -541,11 +541,8 @@ components:
       type: object
     MatchingACL:
       properties:
-        error_code:
-          format: int32
-          type: integer
-        error_message:
-          type: string
+        error:
+          $ref: '#/components/schemas/Status'
         host:
           type: string
         operation:
@@ -714,6 +711,14 @@ components:
         - SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
       type: string
     Status:
+      description: |-
+        The `Status` type defines a logical error model that is suitable for
+        different programming environments, including REST APIs and RPC APIs. It is
+        used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        three pieces of data: error code, error message, and error details.
+
+        You can find out more about this error model and how to work with it in the
+        [API Design Guide](https://cloud.google.com/apis/design/errors).
       properties:
         code:
           description: RPC status code, as described [here](https://github.com/googleapis/googleapis/blob/b4c238feaa1097c53798ed77035bbfeb7fc72e96/google/rpc/code.proto#L32).

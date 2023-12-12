@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
+import { Status } from "../../../../google/rpc/status_pb";
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha1.ACL
@@ -771,14 +772,9 @@ export class DeleteACLsResponse_MatchingACL extends Message<DeleteACLsResponse_M
   permissionType = ACL_PermissionType.UNSPECIFIED;
 
   /**
-   * @generated from field: int32 error_code = 8;
+   * @generated from field: google.rpc.Status error = 8;
    */
-  errorCode = 0;
-
-  /**
-   * @generated from field: string error_message = 9;
-   */
-  errorMessage = "";
+  error?: Status;
 
   constructor(data?: PartialMessage<DeleteACLsResponse_MatchingACL>) {
     super();
@@ -795,8 +791,7 @@ export class DeleteACLsResponse_MatchingACL extends Message<DeleteACLsResponse_M
     { no: 5, name: "host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "operation", kind: "enum", T: proto3.getEnumType(ACL_Operation) },
     { no: 7, name: "permission_type", kind: "enum", T: proto3.getEnumType(ACL_PermissionType) },
-    { no: 8, name: "error_code", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 9, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "error", kind: "message", T: Status },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteACLsResponse_MatchingACL {
