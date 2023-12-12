@@ -13,7 +13,9 @@ import (
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"google.golang.org/genproto/googleapis/rpc/status"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
@@ -176,6 +178,59 @@ func (k *kafkaClientMapper) aclFilterToDeleteACLKafka(filter *v1alpha1.ACL_Filte
 	kafkaReq.Filters = []kmsg.DeleteACLsRequestFilter{deletionFilter}
 
 	return &kafkaReq, nil
+}
+
+func (k *kafkaClientMapper) deleteACLMatchingResultsToProtos(acls []kmsg.DeleteACLsResponseResultMatchingACL) ([]*v1alpha1.DeleteACLsResponse_MatchingACL, error) {
+	matchingACLs := make([]*v1alpha1.DeleteACLsResponse_MatchingACL, 0, len(acls))
+	for _, acl := range acls {
+		protoACL, err := k.deleteACLMatchingResultToProto(acl)
+		if err != nil {
+			// This would lead to
+			return nil, fmt.Errorf("failed to map matching acl to proto: %w", err)
+		}
+		matchingACLs = append(matchingACLs, protoACL)
+	}
+
+	return matchingACLs, nil
+}
+
+func (k *kafkaClientMapper) deleteACLMatchingResultToProto(acl kmsg.DeleteACLsResponseResultMatchingACL) (*v1alpha1.DeleteACLsResponse_MatchingACL, error) {
+	resourceType, err := k.aclResourceTypeToProto(acl.ResourceType)
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := k.aclOperationToProto(acl.Operation)
+	if err != nil {
+		return nil, err
+	}
+
+	permissionType, err := k.aclPermissionTypeToProto(acl.PermissionType)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcePatternType, err := k.aclResourcePatternTypeToProto(acl.ResourcePatternType)
+	if err != nil {
+		return nil, err
+	}
+
+	var statusErr *status.Status
+	if acl.ErrorCode != 0 {
+		connectErr := apierrors.NewConnectErrorFromKafkaErrorCode(acl.ErrorCode, acl.ErrorMessage)
+		statusErr = apierrors.ConnectErrorToGrpcStatus(connectErr)
+	}
+
+	return &v1alpha1.DeleteACLsResponse_MatchingACL{
+		ResourceType:        resourceType,
+		ResourceName:        acl.ResourceName,
+		ResourcePatternType: resourcePatternType,
+		Principal:           acl.Principal,
+		Host:                acl.Host,
+		Operation:           operation,
+		PermissionType:      permissionType,
+		Error:               statusErr,
+	}, nil
 }
 
 func (*kafkaClientMapper) aclOperationToKafka(operation v1alpha1.ACL_Operation) (kmsg.ACLOperation, error) {

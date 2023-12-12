@@ -176,6 +176,32 @@ func (s *Service) DeleteACLs(ctx context.Context, req *connect.Request[v1alpha1.
 		)
 	}
 
-	// TODO: Check how we want to handle multiple errors / partial success in the response
-	return nil, nil
+	if len(res.Results) != 1 {
+		// Should never happen since we only create one ACL, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("unexpected number of results in delete ACL response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_results",
+				Value: strconv.Itoa(len(res.Results)),
+			}),
+		)
+	}
+
+	// Check for inner Kafka error
+	result := res.Results[0]
+	if result.ErrorCode != 0 {
+		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
+	}
+
+	matchingACLsProto, err := s.kafkaClientMapper.deleteACLMatchingResultsToProtos(result.MatchingACLs)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	return connect.NewResponse(&v1alpha1.DeleteACLsResponse{MatchingAcls: matchingACLsProto}), nil
 }
