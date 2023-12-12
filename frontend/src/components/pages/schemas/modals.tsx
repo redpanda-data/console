@@ -64,7 +64,7 @@ const ExplicitConfirmModal = observer((p: {
                 {p.body}
 
                 <Box mt="4">
-                    To confirm this action, type 'delete' in the box below:
+                    To confirm, enter "delete":
                     <Input onChange={e => setConfirmBoxText(e.target.value)} autoFocus />
                 </Box>
             </ModalBody>
@@ -209,9 +209,9 @@ export function openPermanentDeleteModal(
 ) {
 
     openModal(ExplicitConfirmModal, {
-        title: <>Delete schema version {schemaVersionName}</>,
+        title: <>Permanently delete schema version {schemaVersionName}</>,
         body: <>
-            Once this schema is permanently deleted, all metadata will be removed and it will be unrecoverable.
+            After this schema is permanently deleted, all metadata is removed and it is unrecoverable.
         </>,
         primaryButtonContent: <>Delete</>,
         secondaryButtonContent: <>Cancel</>,

@@ -13,7 +13,7 @@ import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
 import { TopicMessage } from '../state/restInterfaces';
-import { Base64 } from 'js-base64';
+import { Base64, fromUint8Array } from 'js-base64';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
@@ -656,11 +656,42 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
 
 // See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
 export function decodeBase64(base64: string) {
+    if (!base64)
+        return base64;
+
     return Base64.decode(base64);
 }
 
 export function encodeBase64(rawData: string) {
     return Base64.encode(rawData);
+}
+
+/**
+ * Validates whether a given string is a valid Base64 encoded string.
+ *
+ * This function tries to decode the string using the Base64.decode method from the js-base64 library.
+ * If the decoding is successful without throwing an exception, the string is considered a valid Base64 string.
+ * If an exception occurs during decoding, it is caught, and the function returns false, indicating that
+ * the string is not a valid Base64 encoded string.
+ *
+ * @param {string} str - The string to be validated as a Base64 encoded string.
+ * @returns {boolean} - Returns true if the string is a valid Base64 encoded string; false otherwise.
+ */
+export function isValidBase64(str: string): boolean {
+    try {
+        Base64.decode(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+export function base64FromUInt8Array(ar: Uint8Array) {
+    return fromUint8Array(ar);
+}
+
+export function base64ToUInt8Array(base64: string) {
+    return Base64.toUint8Array(base64);
 }
 
 export function base64ToHexString(base64: string): string {
@@ -683,6 +714,24 @@ export function base64ToHexString(base64: string): string {
     }
     catch (err) {
         return '<<Unable to decode message>>';
+    }
+}
+
+export function uint8ArrayToHexString(ar: Uint8Array): string {
+    try {
+        let hex = '';
+        for (let i = 0; i < ar.length; i++) {
+            const b = ar[i].toString(16);
+            hex += b.length === 1 ? '0' + b : b;
+
+            if (i < ar.length - 1)
+                hex += ' ';
+        }
+
+        return hex;
+    }
+    catch (err) {
+        return '<<Unable to convert uint8Array to hex>>';
     }
 }
 

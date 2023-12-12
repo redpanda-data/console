@@ -15,14 +15,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
-)
 
-const (
-	compressionTypeNone   = iota
-	compressionTypeGzip   // 1
-	compressionTypeSnappy // 2
-	compressionTypeLz4    // 3
-	compressionTypeZstd   // 4
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // ProduceRecordResponse is the response after sending the produce request to Kafka.
@@ -31,6 +25,9 @@ type ProduceRecordResponse struct {
 	PartitionID int32
 	Offset      int64
 	Error       error
+
+	KeyTroubleshooting   []serde.TroubleshootingReport
+	ValueTroubleshooting []serde.TroubleshootingReport
 }
 
 // ProduceRecords produces all given records (transactional). If transactions are disabled and one or more records
@@ -39,10 +36,10 @@ func (s *Service) ProduceRecords(
 	ctx context.Context,
 	records []*kgo.Record,
 	useTransactions bool,
-	compressionType int8,
+	compressionOpts []kgo.CompressionCodec,
 ) ([]ProduceRecordResponse, error) {
 	additionalKgoOpts := []kgo.Opt{
-		kgo.ProducerBatchCompression(compressionTypeToKgoCodec(compressionType)...),
+		kgo.ProducerBatchCompression(compressionOpts...),
 
 		// Use custom partitioner that treats
 		// - PartitionID = -1 just like the kgo.StickyKeyPartitioner() would do (round robin batch-wise)
@@ -106,22 +103,45 @@ func (s *Service) ProduceRecords(
 	return recordResponses, nil
 }
 
-// compressionTypeToKgoCodec receives the compressionType as an int8 enum and returns a slice of compression
-// codecs which contains the compression codecs in preference order. It will always return the specified
-// compressionType as highest preference and add "None" as fallback codec.
-func compressionTypeToKgoCodec(compressionType int8) []kgo.CompressionCodec {
-	switch compressionType {
-	case compressionTypeNone:
-		return []kgo.CompressionCodec{kgo.NoCompression()}
-	case compressionTypeGzip:
-		return []kgo.CompressionCodec{kgo.GzipCompression(), kgo.NoCompression()}
-	case compressionTypeSnappy:
-		return []kgo.CompressionCodec{kgo.SnappyCompression(), kgo.NoCompression()}
-	case compressionTypeLz4:
-		return []kgo.CompressionCodec{kgo.Lz4Compression(), kgo.NoCompression()}
-	case compressionTypeZstd:
-		return []kgo.CompressionCodec{kgo.ZstdCompression(), kgo.NoCompression()}
-	default:
-		return []kgo.CompressionCodec{kgo.NoCompression()}
+// PublishRecord serializes and produces the records.
+func (s *Service) PublishRecord(ctx context.Context,
+	topic string,
+	partitionID int32,
+	headers []kgo.RecordHeader,
+	key *serde.RecordPayloadInput,
+	value *serde.RecordPayloadInput,
+	useTransactions bool,
+	compressionOpts []kgo.CompressionCodec,
+) (*ProduceRecordResponse, error) {
+	data, err := s.SerdeService.SerializeRecord(ctx, serde.SerializeInput{
+		Topic: topic,
+		Key:   *key,
+		Value: *value,
+	})
+	if err != nil {
+		return &ProduceRecordResponse{
+			Error:                err,
+			KeyTroubleshooting:   data.Key.Troubleshooting,
+			ValueTroubleshooting: data.Value.Troubleshooting,
+		}, err
 	}
+
+	record := &kgo.Record{
+		Topic:     topic,
+		Key:       data.Key.Payload,
+		Value:     data.Value.Payload,
+		Headers:   headers,
+		Partition: partitionID,
+	}
+
+	r, err := s.ProduceRecords(ctx, []*kgo.Record{record}, useTransactions, compressionOpts)
+	if err != nil {
+		if len(r) > 0 {
+			return &r[0], err
+		}
+
+		return &ProduceRecordResponse{Error: err}, err
+	}
+
+	return &r[0], nil
 }

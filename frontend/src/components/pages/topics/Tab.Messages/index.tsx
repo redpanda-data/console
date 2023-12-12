@@ -11,9 +11,10 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio, Table } from 'antd';
+import { ConfigProvider, DatePicker, Radio, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
+import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
@@ -21,12 +22,12 @@ import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { api } from '../../../../state/backendApi';
-import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
+import { MessageSearchRequest, api } from '../../../../state/backendApi';
+import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
+import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -34,7 +35,7 @@ import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelp
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
@@ -43,11 +44,15 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Code, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { appGlobal } from '../../../../state/appGlobal';
+import { WarningIcon } from '@chakra-ui/icons';
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -65,7 +70,7 @@ const getStringValue = (value: string | TopicMessage): string => typeof value ==
 const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
     const toast = useToast()
     return (
-        <Menu>
+        <Menu computePositionOnMount>
             <MenuButton as={Button} variant="link" className="iconButton">
                 <KebabHorizontalIcon />
             </MenuButton>
@@ -184,21 +189,24 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     render() {
         return <>
-            <this.SearchControlsBar/>
+            <this.SearchControlsBar />
+
             {/* Message Table (or error display) */}
             {this.fetchError
-                ? <Alert status="error" my={2} gap={4}>
-                    <AlertIcon />
-                    <div>Backend API Error</div>
-                    <Flex flexDirection="column" gap={2}>
-                        <Text as="span">Please check and modify the request before resubmitting.</Text>
-                        <Code>{((this.fetchError as Error).message ?? String(this.fetchError))}</Code>
-                        <Box>
-                            <Button onClick={() => this.executeMessageSearch()}>
+                ? <Alert status="error">
+                    <AlertIcon alignSelf="flex-start" />
+                    <Box>
+                        <AlertTitle>Backend Error</AlertTitle>
+                        <AlertDescription>
+                            <Box>Please check and modify the request before resubmitting.</Box>
+                            <Box mt="4">
+                                <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
+                            </Box>
+                            <Button mt="4" onClick={() => this.executeMessageSearch()}>
                                 Retry Search
                             </Button>
-                        </Box>
-                    </Flex>
+                        </AlertDescription>
+                    </Box>
                 </Alert>
                 : <>
                     <this.MessageTable />
@@ -255,7 +263,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </Label>
                     <Label text="Start Offset" style={{ ...spaceStyle }}>
                         <InputGroup>
-                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => (searchParams.offsetOrigin = e)} options={startOffsetOptions} />
+                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
+                                searchParams.offsetOrigin = e;
+                                if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
+                                    searchParams.startOffset = searchParams.offsetOrigin;
+                            }} options={startOffsetOptions} />
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
                         </InputGroup>
@@ -308,9 +320,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             </MenuButton>
                             <MenuList>
                                 <MenuItem
-                                    onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}
+                                    onClick={() => {
+                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                                    }}
                                 >
-                                    Publish Message
+                                    Produce Record
                                 </MenuItem>
                                 {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
                             </MenuList>
@@ -360,29 +374,47 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     searchFunc = (source: 'auto' | 'manual') => {
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
+        const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
 
-        if (this.currentSearchRun) {
-            if (IsDev) console.warn(`searchFunc: function already in progress (trigger:${source})`);
-            return;
-        }
+        untracked(() => {
+            const phase = api.messageSearchPhase;
 
-        const phase = untracked(() => api.messageSearchPhase);
-        if (phase) {
-            if (IsDev) console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
-            return;
-        }
+            if (searchParams == this.currentSearchRun && source == 'auto') {
+                console.log('ignoring serach, search params are up to date, and source is auto', {
+                    newParams: searchParams,
+                    oldParams: this.currentSearchRun,
+                    currentSearchPhase: phase,
+                    trigger: source
+                });
+                return;
+            }
 
-        try {
+            // Abort current search if one is running
+            if (phase != 'Done') {
+                api.stopMessageSearch();
+            }
+
+            console.log('starting a new message search', {
+                newParams: searchParams,
+                oldParams: this.currentSearchRun,
+                currentSearchPhase: phase,
+                trigger: source
+            });
+
+            // Start new search
             this.currentSearchRun = searchParams;
+            try {
+                this.executeMessageSearch()
+                    .finally(() => {
+                        untracked(() => {
+                            this.currentSearchRun = null
+                        })
+                    });
 
-            if (this.fetchError == null)
-                untracked(() => this.executeMessageSearch());
-        } catch (error) {
-            console.error(error);
-        } finally {
-            this.currentSearchRun = null;
-        }
+            } catch (err) {
+                console.error('error in message search', { error: err });
+            }
+        });
     };
 
     cancelSearch = () => api.stopMessageSearch();
@@ -395,6 +427,26 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return false;
     }
 
+    FilterSummary() {
+
+        if (this && this.messageSource && this.messageSource.data) {
+            // todo
+        }
+        else {
+            return null;
+        }
+
+        const displayText = this.messageSource.data.length == api.messages.length
+            ? 'Filter matched all messages'
+            : <><b>{this.messageSource.data.length}</b> results</>;
+
+        return <div style={{ marginRight: '1em' }}>
+            <MotionDiv identityKey={displayText}>
+                <Typography.Text type="secondary">{displayText}</Typography.Text>
+            </MotionDiv>
+        </div>;
+    }
+
     @computed
     get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
@@ -405,8 +457,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" lineHeight="0" height="22px" transform="translateY(2px)">
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
                     <SettingOutlined style={{ fontSize: '1rem' }} />
                     <span style={{ marginLeft: '.3em' }}>Preview</span>
                     {(() => {
@@ -534,7 +586,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     Save Messages
                 </Button>
 
-                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} />
+                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch(true)} />
 
                 {
                     (this.messageSource?.data?.length > 0) &&
@@ -563,12 +615,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return ta.localeCompare(tb);
     }
 
-    async executeMessageSearch(): Promise<void> {
+    async executeMessageSearch(includeRawPayload: boolean = false): Promise<TopicMessage[]> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-
-        if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
-            searchParams.startOffset = searchParams.offsetOrigin;
 
         editQuery(query => {
             query['p'] = String(searchParams.partitionID); // p = partition
@@ -603,21 +652,28 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-        };
+            includeRawPayload: includeRawPayload
+        } as MessageSearchRequest;
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
         //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
-        transaction(async () => {
+        return transaction(async () => {
             try {
                 this.fetchError = null;
-                api.startMessageSearch(request);
+                return api.startMessageSearchNew(request).catch(err => {
+                    const msg = ((err as Error).message ?? String(err));
+                    console.error('error in searchTopicMessages: ' + msg);
+                    this.fetchError = err;
+                    return [];
+
+                });
             } catch (error: any) {
                 console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;
+                return [];
             }
         });
-
     }
 
     empty = () => {
@@ -644,9 +700,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 }
 
 @observer
-class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void; }> {
+class SaveMessagesDialog extends Component<{
+    messages: TopicMessage[] | null,
+    onClose: () => void,
+    onRequireRawPayload: () => Promise<TopicMessage[]>
+}> {
     @observable isOpen = false;
     @observable format = 'json' as 'json' | 'csv';
+    @observable isLoadingRawMessage = false;
+    @observable includeRawContent = false;
 
     radioStyle = { display: 'block', lineHeight: '30px' };
 
@@ -670,24 +732,57 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
                 <ModalOverlay />
                 <ModalContent minW="2xl">
                     <ModalHeader>{title}</ModalHeader>
-                    <ModalBody>
+                    <ModalBody display="flex" flexDirection="column" gap="4">
                         <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
-                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
+                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value} disabled={this.isLoadingRawMessage}>
                             <Radio value="json" style={this.radioStyle}>JSON</Radio>
                             <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
                         </Radio.Group>
+                        <Checkbox isChecked={this.includeRawContent} onChange={e => this.includeRawContent = e.target.checked}>
+                            Include raw data
+                        </Checkbox>
                     </ModalBody>
                     <ModalFooter gap={2}>
-                        <Button variant="outline" colorScheme="red" onClick={onClose}>Cancel</Button>
-                        <Button variant="solid" onClick={() => this.saveMessages()}>Save Messages</Button>
+                        <Button variant="outline" colorScheme="red" onClick={onClose} isDisabled={this.isLoadingRawMessage}>
+                            Cancel
+                        </Button>
+                        <Button variant="solid" onClick={() => this.saveMessages()}
+                            isDisabled={this.isLoadingRawMessage}
+                            loadingText="Save Messages"
+                            isLoading={this.isLoadingRawMessage}
+                        >
+                            Save Messages
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
         )
     }
 
-    saveMessages() {
-        const cleanMessages = this.cleanMessages(this.props.messages ?? []);
+    async saveMessages() {
+        let messages = this.props.messages;
+        if (messages == null)
+            return;
+
+        try {
+            if (this.includeRawContent) {
+                const originalUserSelection = [...messages];
+
+                // We do not have the raw content (wasn't requested initially)
+                // so we must restart the message search
+                this.isLoadingRawMessage = true;
+                messages = await this.props.onRequireRawPayload();
+
+                // Here, we do not know whether the user selected to download all messages, or only one.
+                // So we need to filter all newly downloaded messages against the original user selection
+                messages = messages.filter(m => originalUserSelection.any(x => m.partitionID == x.partitionID && m.offset == x.offset));
+            }
+        }
+        finally {
+            this.isLoadingRawMessage = false;
+        }
+
+        const cleanMessages = this.cleanMessages(messages);
 
         const json = toJson(cleanMessages, 4);
 
@@ -709,11 +804,17 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
         const cleanPayload = function (p: Payload): Payload {
             if (!p) return undefined as any;
-            return {
+
+            const cleanedPayload = {
                 payload: p.payload,
+                rawPayload: p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
                 encoding: p.encoding,
-                schemaId: p.schemaId,
             } as any as Payload;
+
+            if (p.schemaId && p.schemaId != 0)
+                cleanedPayload.schemaId = p.schemaId;
+
+            return cleanedPayload;
         };
 
         for (const src of messages) {
@@ -864,6 +965,20 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         const msg = this.props.msg;
         const value = msg.value;
 
+        if (value.troubleshootReport && value.troubleshootReport.length > 0) {
+            return <Flex color="red.600" alignItems="center" gap="4">
+                <WarningIcon fontSize="1.25em" />
+                There were issues deserializing the value
+            </Flex>
+        }
+
+        if (value.isPayloadTooLarge) {
+            return <Flex color="orange.600" alignItems="center" gap="4">
+                <WarningIcon fontSize="1.25em" />
+                Message content is too large and has been omitted
+            </Flex>
+        }
+
         const isPrimitive =
             typeof value.payload === 'string' ||
             typeof value.payload === 'number' ||
@@ -872,18 +987,16 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-
-
             if (value.isPayloadNull) {
                 if (!this.props.isCompactTopic) {
                     return renderEmptyIcon('Value is null');
                 }
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>;
             }
-            else if (value.payload == null || value.payload.length == 0)
+            else if (value.encoding == 'null' || value.payload == null || value.payload.length == 0)
                 return null;
-            else if (msg.value.encoding == 'binary' || msg.value.encoding == 'utf8WithControlChars') {
-                // If the original data was binary or had control characters, display as hex dump
+            else if (msg.value.encoding == 'binary') {
+                // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
             }
             else if (isPrimitive) {
@@ -922,8 +1035,6 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
-
-        {/* .ant-tabs-nav { width: ??; } */}
         <RpTabs
             size="lg"
             defaultIndex={1}
@@ -932,12 +1043,18 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
                     key: 'key',
                     name: <Box minWidth="6rem">Key</Box>,
                     isDisabled: msg.key == null || msg.key.size == 0,
-                    component: renderPayload(msg.key, shouldExpand)
+                    component: <>
+                        <TroubleshootReportViewer payload={msg.key} />
+                        {renderPayload(msg.key, shouldExpand)}
+                    </>
                 },
                 {
                     key: 'value',
                     name: <Box minWidth="6rem">Value</Box>,
-                    component: renderPayload(msg.value, shouldExpand)
+                    component: <>
+                        <TroubleshootReportViewer payload={msg.value} />
+                        {renderPayload(msg.value, shouldExpand)}
+                    </>
                 },
                 {
                     key: 'headers',
@@ -964,20 +1081,22 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         if (payload.encoding == 'binary') {
-            const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
+            const mode = 'hex' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
             }
             else if (mode == 'hex') {
-                const str = String(val);
-                let hex = '';
-                for (let i = 0; i < str.length; i++) {
-                    let n = str.charCodeAt(i).toString(16);
-                    if (n.length == 1) n = '0' + n;
-                    hex += n + ' ';
-                }
+                const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
 
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>;
+                if (rawBytes) {
+                    let result = '';
+                    rawBytes.forEach((n) => {
+                        result += n.toString(16).padStart(2, '0') + ' ';
+                    });
+                    return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
+                } else {
+                    return <div>Raw bytes not available</div>;
+                }
             }
             else {
                 const str = String(val);
@@ -1026,7 +1145,11 @@ function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
                 elements.push(<>{sequentialChars}</>)
                 sequentialChars = ''
             }
-            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>)
+            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
+            if (code == 10)
+                // LineFeed (\n) should be rendered properly
+                elements.push(<br />);
+
         } else {
             sequentialChars += char;
         }
@@ -1081,6 +1204,25 @@ function getControlCharacterName(code: number): string {
         default: return '';
     }
 };
+
+const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
+    const report = props.payload.troubleshootReport;
+    if (!report) return null;
+    if (report.length == 0) return null;
+
+    return <Box mb="4">
+        <Heading as="h4">Deserialization Troubleshoot Report</Heading>
+
+        {report.map(e => <Alert key={e.serdeName} status="error" variant="left-accent" my={4}>
+            <AlertIcon />
+            <Box>
+                <AlertTitle>{e.serdeName}</AlertTitle>
+                <AlertDescription fontFamily="monospace" whiteSpace="pre-wrap">{e.message}</AlertDescription>
+            </Box>
+        </Alert>)}
+    </Box>
+
+});
 
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
@@ -1163,7 +1305,10 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     },
                 ]}
                 expandable={{
-                    rowExpandable: header => (typeof header.value?.payload === 'object' && header.value?.payload != null) || typeof header.value?.payload === 'string', // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
+                    rowExpandable: header =>
+                        (typeof header.value?.payload === 'object' && header.value?.payload != null) // expandable when object
+                        || (typeof header.value?.payload === 'string' // or if it's a string (longer than 20ch, or includes linebreak)
+                            && (header.value.payload.length > 20 || header.value.payload.includes('\n'))), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
                     expandedRowRender: header => typeof header.value?.payload !== 'object'
@@ -1190,9 +1335,11 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Text my={4}>
-                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
-                </Text>
+                <Paragraph>
+                    <Text>
+                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                    </Text>
+                </Paragraph>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
@@ -1259,8 +1406,8 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
         )
     }
 
-    handleColumnListChange = (newValue: Array<{value: string}>) => {
-        const values: string[] = newValue.map(({value}) => value)
+    handleColumnListChange = (newValue: Array<{ value: string }>) => {
+        const values: string[] = newValue.map(({ value }) => value)
         if (!values.length) {
             uiState.topicSettings.previewColumnFields = [];
         } else {
@@ -1516,61 +1663,62 @@ function createPublishRecordsModal(parent: TopicMessageView) {
         },
         onCreate: (showArg: { topicName: string; }) => {
             return observable({
-                topics: [showArg.topicName],
+                topic: showArg.topicName,
                 partition: -1, // -1 = auto
-                compressionType: CompressionType.Uncompressed,
+                compressionType: CompressionType.UNCOMPRESSED,
                 encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
 
-                key: '',
-                value: '',
+                key: {
+                    data: '',
+                    encoding: PayloadEncoding.TEXT,
+                },
+                value: {
+                    data: '',
+                    encoding: PayloadEncoding.TEXT,
+                },
                 headers: [{ key: '', value: '' }],
             } as PublishMessageModalProps['state']);
         },
-        isOkEnabled: s => s.topics.length >= 1,
         onOk: async state => {
 
-            if (state.encodingType === 'json')
-                // try parsing just to make sure its actually json
-                JSON.parse(state.value);
+            // todo: previously we had a JSON.parse() call here when the encoding was set to json
+            // The idea was to checking if its valid json, by simply trying to parse it (so we didn't want the result, just the "error checking")
+            // Maybe we want to reintroduce this later
 
-            const convert: { [key in EncodingType]: (x: string) => string | null } = {
-                'none': () => null,
-                'base64': x => x.trim(),
-                'json': x => encodeBase64(x.trim()),
-                'utf8': x => encodeBase64(x),
-            };
-            const value = convert[state.encodingType](state.value);
+            const req = new PublishMessageRequest();
+            req.topic = state.topic;
+            req.partitionId = state.partition;
+            req.compression = state.compressionType;
+            // req.useTransactions =
 
-            const record: PublishRecord = {
-                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: encodeBase64(h.value) })),
-                key: encodeBase64(state.key),
-                partitionId: state.partition,
-                value: value,
-            };
+            // Headers
+            for (const h of state.headers) {
+                if (!h.value && !h.value)
+                    continue;
+                const kafkaHeader = new KafkaRecordHeader();
+                kafkaHeader.key = h.key;
+                kafkaHeader.value = new TextEncoder().encode(h.value);
+                req.headers.push(kafkaHeader);
+            }
 
-            const result = await api.publishRecords({
-                compressionType: compressionTypeToNum(state.compressionType),
-                records: [record],
-                topicNames: state.topics,
-                useTransactions: false,
-            });
+            // Key
+
+            // Value
+            if (state.value.encoding != PayloadEncoding.NULL) {
+                req.value = new PublishMessagePayloadOptions();
+                req.value.data = new TextEncoder().encode(state.value.data);
+                req.value.encoding = state.value.encoding as PayloadEncoding;
+                req.value.schemaId = state.value.schemaId;
+                req.value.index = state.value.protobufIndex;
+            }
 
 
-            const errors = [
-                result.error,
-                ...result.records.filter(x => x.error).map(r => `Topic "${r.topicName}": \n${r.error}`)
-            ].filterFalsy();
+            // Send request
+            const result = await api.publishMessage(req);
 
-            if (errors.length)
-                throw new Error(errors.join('\n\n'));
-
-            if (result.records.length == 1)
-                return <>Record published on partition <span className="codeBox">{result.records[0].partitionId}</span> with offset <span className="codeBox">{result.records[0].offset}</span></>
-            return <>{result.records.length} records published successfully</>;
-
+            return <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>
         },
-        onSuccess: (state) => {
-            uiState.topicSettings.produceRecordEncoding = state.encodingType;
+        onSuccess: (_state) => {
             parent.props.refreshTopicData(true);
             parent.searchFunc('auto');
         },

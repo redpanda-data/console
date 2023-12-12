@@ -23,6 +23,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/runtime/protoiface"
 
@@ -159,7 +160,7 @@ func (s *Service) Start() error {
 	return nil
 }
 
-func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([]byte, int, error) {
+func (s *Service) unmarshalConfluentMessage(payload []byte) ([]byte, int, error) {
 	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
 	// Confluent's KafakProtobuf serialization format.
 	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
@@ -168,12 +169,12 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 	}
 	schemaID := int(wrapper.SchemaID)
 
-	md, cleanPayload, err := s.getMessageDescriptorFromConfluentMessage(wrapper, topicName)
+	md, err := s.GetMessageDescriptorForSchema(int(wrapper.SchemaID), wrapper.IndexArray)
 	if err != nil {
 		return nil, schemaID, err
 	}
 
-	jsonBytes, err := s.deserializeProtobufMessageToJSON(cleanPayload, md)
+	jsonBytes, err := s.DeserializeProtobufMessageToJSON(wrapper.ProtoPayload, md)
 	if err != nil {
 		return nil, schemaID, err
 	}
@@ -181,7 +182,8 @@ func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([
 	return jsonBytes, schemaID, nil
 }
 
-func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
+// DeserializeProtobufMessageToJSON deserializes the protobuf message to JSON.
+func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
 	msg := dynamic.NewMessage(md)
 	err := msg.Unmarshal(payload)
 	if err != nil {
@@ -199,24 +201,97 @@ func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 	return jsonBytes, nil
 }
 
+// SerializeJSONToProtobufMessage serializes the JSON data to Protobuf message.
+func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDescriptor) ([]byte, error) {
+	msg := dynamic.NewMessage(md)
+	err := msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
+		AnyResolver:        &anyResolver{s.registry},
+		AllowUnknownFields: true,
+	}, json)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+	}
+
+	return msg.Marshal()
+}
+
+// GetMessageDescriptorForSchema gets the Protobuf message descriptor for the schema ID and message index.
+// TODO consolidate this with getMessageDescriptorFromConfluentMessage
+func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*desc.MessageDescriptor, error) {
+	fd, exists := s.GetFileDescriptorBySchemaID(schemaID)
+	if !exists {
+		return nil, fmt.Errorf("schema ID %+v not found", schemaID)
+	}
+
+	messageTypes := fd.GetMessageTypes()
+	var messageDescriptor *desc.MessageDescriptor
+	for _, idx := range index {
+		if idx > len(messageTypes) {
+			return nil, fmt.Errorf("message index is larger than the message types array length")
+		}
+		messageDescriptor = messageTypes[idx]
+		messageTypes = messageDescriptor.GetNestedMessageTypes()
+	}
+
+	if messageDescriptor == nil {
+		return nil, fmt.Errorf("protobuf message descriptor for schema id '%+v' and index '%+v' not found", schemaID, index)
+	}
+
+	return messageDescriptor, nil
+}
+
+// SerializeJSONToConfluentProtobufMessage serialized the JSON message to confluent wrapped payload
+// using the schema ID and message index.
+func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID int, index []int) ([]byte, error) {
+	if len(index) == 0 {
+		index = []int{0}
+	}
+
+	messageDescriptor, err := s.GetMessageDescriptorForSchema(schemaID, index)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := dynamic.NewMessage(messageDescriptor)
+	err = msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
+		AnyResolver:        &anyResolver{s.registry},
+		AllowUnknownFields: true,
+	}, json)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+	}
+
+	var srSerde sr.Serde
+	srSerde.Register(
+		schemaID,
+		&dynamic.Message{},
+		sr.EncodeFn(func(v any) ([]byte, error) {
+			return v.(*dynamic.Message).Marshal()
+		}),
+		sr.Index(index...),
+	)
+
+	return srSerde.Encode(msg)
+}
+
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
 // so that it's human-readable in the Console frontend.
 func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {
 	// 1. First let's try if we can deserialize this message with schema registry (if configured)
 	if s.cfg.SchemaRegistry.Enabled {
-		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload, topicName)
+		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload)
 		if err == nil {
 			return jsonBytes, schemaID, nil
 		}
 	}
 
 	// 2. Now let's check if we have static mappings
-	messageDescriptor, err := s.getMessageDescriptor(topicName, property)
+	messageDescriptor, err := s.GetMessageDescriptor(topicName, property)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get message descriptor for payload: %w", err)
 	}
 
-	jsonBytes, err := s.deserializeProtobufMessageToJSON(payload, messageDescriptor)
+	jsonBytes, err := s.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -224,42 +299,17 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	return jsonBytes, 0, nil
 }
 
-// getMessageDescriptorFromConfluentMessage try to find the right message descriptor of a message that has been serialized
-// according to Confluent's ProtobufSerializer. If successful it will return the found message descriptor along with
-// the protobuf payload (without the bytes that carry the metadata such as schema id), so that this can be used
-// for deserializing the content.
-func (s *Service) getMessageDescriptorFromConfluentMessage(wrapper *confluentEnvelope, topicName string) (*desc.MessageDescriptor, []byte, error) {
-	fd, exists := s.getFileDescriptorBySchemaID(int(wrapper.SchemaID))
-	if !exists {
-		return nil, nil, fmt.Errorf("could not find a file descriptor that matches the decoded schema id '%v'", wrapper.SchemaID)
-	}
-
-	// Traverse the messagetypes until we found the right message type as navigated to via the message
-	// array index. The message array index is an array of ints. Each (nested) type gets indexed level
-	// by level. Root level types will be the first number in the array, 2nd level types the second etc.
-	messageTypes := fd.GetMessageTypes()
-	var msgType *desc.MessageDescriptor
-	for _, idx := range wrapper.IndexArray {
-		if idx > int64(len(messageTypes)) {
-			// This should never happen
-			s.logger.Debug("the message index is larger than the message types array length",
-				zap.Int64("index", idx),
-				zap.Int("array_length", len(messageTypes)),
-				zap.String("topic_name", topicName))
-			return nil, nil, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
-		}
-		msgType = messageTypes[idx]
-		messageTypes = msgType.GetNestedMessageTypes()
-	}
-	return msgType, wrapper.ProtoPayload, nil
+// IsProtobufSchemaRegistryEnabled returns whether the schema registry is enabled in the configuration.
+func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
+	return s.cfg.SchemaRegistry.Enabled
 }
 
-// getMessageDescriptor tries to find the apr
-func (s *Service) getMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
+// GetMessageDescriptor tries to find the apr
+func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
 	mapping, exists := s.mappingsByTopic[topicName]
 	if !exists {
-		return nil, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
+		return nil, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
 	}
 
 	protoTypeURL := ""
@@ -292,7 +342,7 @@ func (s *Service) getMessageDescriptor(topicName string, property RecordProperty
 
 type confluentEnvelope struct {
 	SchemaID     uint32
-	IndexArray   []int64
+	IndexArray   []int
 	ProtoPayload []byte
 }
 
@@ -341,7 +391,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
-	msgTypeIDs := make([]int64, arrLength)
+	msgTypeIDs := make([]int, arrLength)
 	// If there is just one msgtype (default index - 0) the array won't be sent at all
 	if arrLength == 0 {
 		msgTypeIDs = append(msgTypeIDs, 0)
@@ -352,7 +402,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		if err != nil {
 			return nil, fmt.Errorf("failed to read msgTypeID: %w", err)
 		}
-		msgTypeIDs[i] = id
+		msgTypeIDs[i] = int(id)
 	}
 
 	remainingPayload := make([]byte, buf.Len())
@@ -490,15 +540,6 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		}
 	}
 
-	errorReporter := func(err protoparse.ErrorWithPos) error {
-		position := err.GetPosition()
-		s.logger.Warn("failed to parse proto file to descriptor",
-			zap.String("file", position.Filename),
-			zap.Int("line", position.Line),
-			zap.Error(err))
-		return nil
-	}
-
 	// Add common proto types
 	// The well known types are automatically added in the protoreflect protoparse package.
 	// But we need to support the other types Redpanda automatically includes.
@@ -512,6 +553,15 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		if _, exists := filesStr[commonPath]; !exists {
 			filesStr[commonPath] = commonSchema
 		}
+	}
+
+	errorReporter := func(err protoparse.ErrorWithPos) error {
+		position := err.GetPosition()
+		s.logger.Warn("failed to parse proto file to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
 	}
 
 	parser := protoparse.Parser{
@@ -537,7 +587,8 @@ func (s *Service) setFileDescriptorsBySchemaID(descriptors map[int]*desc.FileDes
 	s.fileDescriptorsBySchemaID = descriptors
 }
 
-func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
+// GetFileDescriptorBySchemaID gets the file descriptor by schema ID.
+func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
 	s.fileDescriptorsBySchemaIDMutex.Lock()
 	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
 

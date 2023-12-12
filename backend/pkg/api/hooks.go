@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
+	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -101,11 +102,11 @@ type AuthorizationHooks interface {
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
+	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(r *http.Request, req *console.ListMessageRequest)
+	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
@@ -175,7 +176,7 @@ type ConsoleHooks interface {
 	// of the first websocket message sent, a middleware can not be used here.
 	// The returned context must be used for subsequent requests. The Websocket
 	// connection must be closed if an error is returned.
-	CheckWebsocketConnection(r *http.Request, req ListMessagesRequest) (context.Context, error)
+	CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -237,11 +238,11 @@ func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *res
 	return true, nil
 }
 
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
 
-func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
+func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
 
@@ -253,7 +254,10 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
-func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {}
+
+func (*defaultHooks) PrintListMessagesAuditLog(_ context.Context, _ any, _ *console.ListMessageRequest) {
+}
+
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
@@ -357,7 +361,7 @@ func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndp
 	return nil
 }
 
-func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ ListMessagesRequest) (context.Context, error) {
+func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.ListMessagesRequest) (context.Context, error) {
 	return r.Context(), nil
 }
 

@@ -11,8 +11,6 @@ package api
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -20,63 +18,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
-
-// GetTopicMessagesResponse is a wrapper for an array of TopicMessage
-type GetTopicMessagesResponse struct {
-	KafkaMessages *console.ListMessageResponse `json:"kafkaMessages"`
-}
-
-// ListMessagesRequest represents a search message request with all search parameter. This must be public as it's
-// used in Console Enterprise to implement the hooks.
-type ListMessagesRequest struct {
-	TopicName             string `json:"topicName"`
-	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
-	StartTimestamp        int64  `json:"startTimestamp"` // Start offset by unix timestamp in ms (only considered if start offset is set to -4)
-	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
-	MaxResults            int    `json:"maxResults"`
-	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
-
-	// Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred
-	// to the enterprise backend.
-	Enterprise json.RawMessage `json:"enterprise,omitempty"`
-}
-
-// OK validates the user input for the list messages request.
-func (l *ListMessagesRequest) OK() error {
-	if l.TopicName == "" {
-		return fmt.Errorf("topic name is required")
-	}
-
-	if l.StartOffset < -4 {
-		return fmt.Errorf("start offset is smaller than -4")
-	}
-
-	if l.PartitionID < -1 {
-		return fmt.Errorf("partitionID is smaller than -1")
-	}
-
-	if l.MaxResults <= 0 || l.MaxResults > 500 {
-		return fmt.Errorf("max results must be between 1 and 500")
-	}
-
-	if _, err := l.DecodeInterpreterCode(); err != nil {
-		return fmt.Errorf("failed to decode interpreter code %w", err)
-	}
-
-	return nil
-}
-
-// DecodeInterpreterCode base64-decodes the provided interpreter code and returns it as a string.
-func (l *ListMessagesRequest) DecodeInterpreterCode() (string, error) {
-	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
-	if err != nil {
-		return "", err
-	}
-
-	return string(code), nil
-}
 
 func (api *API) handleGetMessages() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +57,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Get search parameters. Close connection if search parameters are invalid
-		var req ListMessagesRequest
+		var req httptypes.ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
 			api.Logger.Error("failed to parse list message request on Websocket", zap.Error(err))
@@ -170,7 +114,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
-		api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
+		api.Hooks.Authorization.PrintListMessagesAuditLog(ctx, r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 45 * time.Second

@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+
 export interface ApiError {
     statusCode: number;
     message: string;
@@ -142,7 +144,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack';
+export type MessageDataType = 'null' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile';
 export enum CompressionType {
     Unknown = 'unknown',
 
@@ -159,6 +161,11 @@ export interface Payload {
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
     schemaId: number,
     size: number,
+
+    troubleshootReport?: TroubleshootReport[];
+    isPayloadTooLarge?: boolean;
+    normalizedPayload?: Uint8Array; // used to show hex bytes if payload couldn't be decoded
+    rawBytes?: Uint8Array;
 }
 
 export interface TopicMessage {
@@ -177,7 +184,7 @@ export interface TopicMessage {
     value: Payload,
 
     // Added by the frontend
-    valueJson: string,
+    valueJson: string,  // Value json is what is used for (local) filtering
     valueBinHexPreview: string,
     keyJson: string,
     keyBinHexPreview: string,
@@ -1268,15 +1275,6 @@ export function compressionTypeToNum(type: CompressionType) {
             return CompressionTypeNum.None;
     }
 }
-
-// For UI only
-export type EncodingType =
-    | 'none'   // use null as value, aka tombstone
-    | 'utf8'   // use text as it is, use utf8 to get bytes
-    | 'base64' // text is base64, so server should just use base64decode to get the bytes
-    | 'json'   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
-
-
 export interface PublishRecordsRequest {
     // TopicNames is a list of topic names into which the records shall be produced to.
     topicNames: string[];

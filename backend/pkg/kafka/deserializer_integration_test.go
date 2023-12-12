@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -175,7 +174,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: recordTimeStamp,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -263,7 +262,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -308,7 +307,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
-		testTopicName := testutil.TopicNameForTest("deserializer_plain_protobuf")
+		testTopicName := testutil.TopicNameForTest("deserializer_plain_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
@@ -417,7 +416,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -583,7 +582,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -870,7 +869,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 7*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1008,12 +1007,12 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		r := &kgo.Record{
-			// Key:   []byte(msg.GetIdentity()),
+			Key:   []byte("item_0"),
 			Value: msgData,
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 7*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1234,7 +1233,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1610,7 +1609,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1680,7 +1679,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
@@ -1722,20 +1721,6 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("text", dr.Key.Object)
 		assert.Equal([]byte("text"), dr.Key.Payload.Payload)
 	})
-}
-
-func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
