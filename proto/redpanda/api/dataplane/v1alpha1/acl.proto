@@ -188,14 +188,19 @@ message CreateACLResponse {}
 
 message DeleteACLsRequest {
   message Filter {
-    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {
-      defined_only: true,
-      not_in: [0] /* Disallow: Unspecified */
-    }];
+    ACL.ResourceType resource_type = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
 
     optional string resource_name = 2;
 
     ACL.ResourcePatternType resource_pattern_type = 3 [
+      (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
       (buf.validate.field).enum = {
         defined_only: true,
@@ -204,15 +209,20 @@ message DeleteACLsRequest {
     ];
 
     optional string principal = 4;
+
     optional string host = 5;
+
     ACL.Operation operation = 6 [
+      (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
       (buf.validate.field).enum = {
         defined_only: true,
         not_in: [0] /* Disallow: Unspecified */
       }
     ];
+
     ACL.PermissionType permission_type = 7 [
+      (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
       (buf.validate.field).enum = {
         defined_only: true,
@@ -221,7 +231,10 @@ message DeleteACLsRequest {
     ];
   }
 
-  Filter filter = 1 [(buf.validate.field).required = true];
+  Filter filter = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 }
 
 message DeleteACLsResponse {
