@@ -52,9 +52,11 @@ message ACL {
     PERMISSION_TYPE_DENY = 2;
     PERMISSION_TYPE_ALLOW = 3;
   }
+}
 
+message ListACLsRequest {
   message Filter {
-    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum.defined_only = true];
+    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {defined_only: true}];
     optional string resource_name = 2;
     ACL.ResourcePatternType resource_pattern_type = 3 [(buf.validate.field).enum.defined_only = true];
     optional string principal = 4;
@@ -62,10 +64,8 @@ message ACL {
     ACL.Operation operation = 6 [(buf.validate.field).enum.defined_only = true];
     ACL.PermissionType permission_type = 7 [(buf.validate.field).enum.defined_only = true];
   }
-}
 
-message ListACLsRequest {
-  ACL.Filter filter = 1;
+  Filter filter = 1;
   int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Limit the paginated response to a number of items.",
     minimum: 1,
@@ -187,7 +187,41 @@ message CreateACLRequest {
 message CreateACLResponse {}
 
 message DeleteACLsRequest {
-  ACL.Filter filter = 1;
+  message Filter {
+    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [0] /* Disallow: Unspecified */
+    }];
+
+    optional string resource_name = 2;
+
+    ACL.ResourcePatternType resource_pattern_type = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    optional string principal = 4;
+    optional string host = 5;
+    ACL.Operation operation = 6 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+    ACL.PermissionType permission_type = 7 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+  }
+
+  Filter filter = 1 [(buf.validate.field).required = true];
 }
 
 message DeleteACLsResponse {
