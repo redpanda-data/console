@@ -1,25 +1,5 @@
 components:
   schemas:
-    ACL.Filter:
-      properties:
-        host:
-          nullable: true
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          nullable: true
-          type: string
-        resource_name:
-          nullable: true
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     ACL.Operation:
       enum:
         - OPERATION_ANY
@@ -297,6 +277,31 @@ components:
         name:
           type: string
       type: object
+    DeleteACLsRequest.Filter:
+      properties:
+        host:
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          nullable: true
+          type: string
+        resource_name:
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - operation
+        - permission_type
+      type: object
     DeleteACLsResponse:
       properties:
         matching_acls:
@@ -464,6 +469,26 @@ components:
         url:
           description: The URL of the link.
           type: string
+      type: object
+    ListACLsRequest.Filter:
+      properties:
+        host:
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          nullable: true
+          type: string
+        resource_name:
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     ListACLsResponse:
       properties:
@@ -897,6 +922,7 @@ paths:
       parameters:
         - in: query
           name: filter.resource_type
+          required: true
           schema:
             enum:
               - RESOURCE_TYPE_ANY
@@ -913,6 +939,7 @@ paths:
             type: string
         - in: query
           name: filter.resource_pattern_type
+          required: true
           schema:
             enum:
               - RESOURCE_PATTERN_TYPE_ANY
@@ -930,6 +957,7 @@ paths:
             type: string
         - in: query
           name: filter.operation
+          required: true
           schema:
             enum:
               - OPERATION_ANY
@@ -949,6 +977,7 @@ paths:
             type: string
         - in: query
           name: filter.permission_type
+          required: true
           schema:
             enum:
               - PERMISSION_TYPE_ANY

@@ -263,9 +263,61 @@ proto3.util.setEnumType(ACL_PermissionType, "redpanda.api.dataplane.v1alpha1.ACL
 ]);
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.ACL.Filter
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListACLsRequest
  */
-export class ACL_Filter extends Message<ACL_Filter> {
+export class ListACLsRequest extends Message<ListACLsRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ListACLsRequest.Filter filter = 1;
+   */
+  filter?: ListACLsRequest_Filter;
+
+  /**
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListACLsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListACLsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "filter", kind: "message", T: ListACLsRequest_Filter },
+    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListACLsRequest {
+    return new ListACLsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListACLsRequest {
+    return new ListACLsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListACLsRequest {
+    return new ListACLsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListACLsRequest | PlainMessage<ListACLsRequest> | undefined, b: ListACLsRequest | PlainMessage<ListACLsRequest> | undefined): boolean {
+    return proto3.util.equals(ListACLsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListACLsRequest.Filter
+ */
+export class ListACLsRequest_Filter extends Message<ListACLsRequest_Filter> {
   /**
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourceType resource_type = 1;
    */
@@ -301,13 +353,13 @@ export class ACL_Filter extends Message<ACL_Filter> {
    */
   permissionType = ACL_PermissionType.UNSPECIFIED;
 
-  constructor(data?: PartialMessage<ACL_Filter>) {
+  constructor(data?: PartialMessage<ListACLsRequest_Filter>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ACL.Filter";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListACLsRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resource_type", kind: "enum", T: proto3.getEnumType(ACL_ResourceType) },
     { no: 2, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -318,72 +370,20 @@ export class ACL_Filter extends Message<ACL_Filter> {
     { no: 7, name: "permission_type", kind: "enum", T: proto3.getEnumType(ACL_PermissionType) },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ACL_Filter {
-    return new ACL_Filter().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListACLsRequest_Filter {
+    return new ListACLsRequest_Filter().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ACL_Filter {
-    return new ACL_Filter().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListACLsRequest_Filter {
+    return new ListACLsRequest_Filter().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ACL_Filter {
-    return new ACL_Filter().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListACLsRequest_Filter {
+    return new ListACLsRequest_Filter().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ACL_Filter | PlainMessage<ACL_Filter> | undefined, b: ACL_Filter | PlainMessage<ACL_Filter> | undefined): boolean {
-    return proto3.util.equals(ACL_Filter, a, b);
-  }
-}
-
-/**
- * @generated from message redpanda.api.dataplane.v1alpha1.ListACLsRequest
- */
-export class ListACLsRequest extends Message<ListACLsRequest> {
-  /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Filter filter = 1;
-   */
-  filter?: ACL_Filter;
-
-  /**
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize = 0;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken = "";
-
-  constructor(data?: PartialMessage<ListACLsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListACLsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filter", kind: "message", T: ACL_Filter },
-    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListACLsRequest {
-    return new ListACLsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListACLsRequest {
-    return new ListACLsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListACLsRequest {
-    return new ListACLsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListACLsRequest | PlainMessage<ListACLsRequest> | undefined, b: ListACLsRequest | PlainMessage<ListACLsRequest> | undefined): boolean {
-    return proto3.util.equals(ListACLsRequest, a, b);
+  static equals(a: ListACLsRequest_Filter | PlainMessage<ListACLsRequest_Filter> | undefined, b: ListACLsRequest_Filter | PlainMessage<ListACLsRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListACLsRequest_Filter, a, b);
   }
 }
 
@@ -663,9 +663,9 @@ export class CreateACLResponse extends Message<CreateACLResponse> {
  */
 export class DeleteACLsRequest extends Message<DeleteACLsRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Filter filter = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.DeleteACLsRequest.Filter filter = 1;
    */
-  filter?: ACL_Filter;
+  filter?: DeleteACLsRequest_Filter;
 
   constructor(data?: PartialMessage<DeleteACLsRequest>) {
     super();
@@ -675,7 +675,7 @@ export class DeleteACLsRequest extends Message<DeleteACLsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteACLsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filter", kind: "message", T: ACL_Filter },
+    { no: 1, name: "filter", kind: "message", T: DeleteACLsRequest_Filter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteACLsRequest {
@@ -692,6 +692,79 @@ export class DeleteACLsRequest extends Message<DeleteACLsRequest> {
 
   static equals(a: DeleteACLsRequest | PlainMessage<DeleteACLsRequest> | undefined, b: DeleteACLsRequest | PlainMessage<DeleteACLsRequest> | undefined): boolean {
     return proto3.util.equals(DeleteACLsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeleteACLsRequest.Filter
+ */
+export class DeleteACLsRequest_Filter extends Message<DeleteACLsRequest_Filter> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType = ACL_ResourceType.UNSPECIFIED;
+
+  /**
+   * @generated from field: optional string resource_name = 2;
+   */
+  resourceName?: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType = ACL_ResourcePatternType.UNSPECIFIED;
+
+  /**
+   * @generated from field: optional string principal = 4;
+   */
+  principal?: string;
+
+  /**
+   * @generated from field: optional string host = 5;
+   */
+  host?: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Operation operation = 6;
+   */
+  operation = ACL_Operation.UNSPECIFIED;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.PermissionType permission_type = 7;
+   */
+  permissionType = ACL_PermissionType.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<DeleteACLsRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteACLsRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resource_type", kind: "enum", T: proto3.getEnumType(ACL_ResourceType) },
+    { no: 2, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "resource_pattern_type", kind: "enum", T: proto3.getEnumType(ACL_ResourcePatternType) },
+    { no: 4, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "host", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "operation", kind: "enum", T: proto3.getEnumType(ACL_Operation) },
+    { no: 7, name: "permission_type", kind: "enum", T: proto3.getEnumType(ACL_PermissionType) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteACLsRequest_Filter {
+    return new DeleteACLsRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteACLsRequest_Filter {
+    return new DeleteACLsRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteACLsRequest_Filter {
+    return new DeleteACLsRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteACLsRequest_Filter | PlainMessage<DeleteACLsRequest_Filter> | undefined, b: DeleteACLsRequest_Filter | PlainMessage<DeleteACLsRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(DeleteACLsRequest_Filter, a, b);
   }
 }
 
