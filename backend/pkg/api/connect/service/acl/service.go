@@ -57,7 +57,7 @@ func NewService(cfg *config.Config,
 func (s *Service) ListACLs(ctx context.Context, req *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error) {
 	s.defaulter.applyListACLsRequest(req.Msg)
 
-	kafkaReq, err := s.kafkaClientMapper.aclFilterToDescribeACLKafka(req.Msg.Filter)
+	kafkaReq, err := s.kafkaClientMapper.listACLFilterToDescribeACLKafka(req.Msg.Filter)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
@@ -158,7 +158,7 @@ func (s *Service) CreateACL(ctx context.Context, req *connect.Request[v1alpha1.C
 // DeleteACLs implements the handler for the delete ACL endpoint.
 func (s *Service) DeleteACLs(ctx context.Context, req *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
 	// TODO: Ensure that neither req, req.Msg or req.Msg.Filter can never be nil
-	kafkaReq, err := s.kafkaClientMapper.aclFilterToDeleteACLKafka(req.Msg.Filter)
+	kafkaReq, err := s.kafkaClientMapper.deleteACLFilterToDeleteACLKafka(req.Msg.Filter)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible

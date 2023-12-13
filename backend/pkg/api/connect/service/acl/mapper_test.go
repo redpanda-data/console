@@ -27,13 +27,13 @@ func TestAclFilterToKafka(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		input     *v1alpha1.ACL_Filter
+		input     *v1alpha1.ListACLsRequest_Filter
 		want      *kmsg.DescribeACLsRequest
 		wantError bool
 	}{
 		{
 			name: "basic and complete conversion without error",
-			input: &v1alpha1.ACL_Filter{
+			input: &v1alpha1.ListACLsRequest_Filter{
 				Host:                kmsg.StringPtr("localhost"),
 				Principal:           kmsg.StringPtr("principal1"),
 				ResourceName:        kmsg.StringPtr("resource1"),
@@ -72,7 +72,7 @@ func TestAclFilterToKafka(t *testing.T) {
 			// will be "UNSPECIFIED" and therefore can't be mapped to a
 			// valid Kafka request.
 			name: "incomplete conversion",
-			input: &v1alpha1.ACL_Filter{
+			input: &v1alpha1.ListACLsRequest_Filter{
 				ResourceType: v1alpha1.ACL_RESOURCE_TYPE_TOPIC,
 			},
 			want:      nil,
@@ -81,7 +81,7 @@ func TestAclFilterToKafka(t *testing.T) {
 
 		{
 			name: "conversion with errors",
-			input: &v1alpha1.ACL_Filter{
+			input: &v1alpha1.ListACLsRequest_Filter{
 				ResourceType:        v1alpha1.ACL_RESOURCE_TYPE_TOPIC,
 				ResourceName:        kmsg.StringPtr("okay"),
 				ResourcePatternType: v1alpha1.ACL_ResourcePatternType(999), // Invalid
@@ -95,7 +95,7 @@ func TestAclFilterToKafka(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := mapper.aclFilterToDescribeACLKafka(tt.input)
+			got, err := mapper.listACLFilterToDescribeACLKafka(tt.input)
 			if tt.wantError {
 				assert.Errorf(t, err, "expected an error to be set")
 			} else {

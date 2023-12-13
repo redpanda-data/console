@@ -328,7 +328,7 @@ func (s *APISuite) TestListACLs() {
 
 		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
 		_, err := client.ListACLs(ctx, connect.NewRequest(&v1alpha1.ListACLsRequest{
-			Filter: &v1alpha1.ACL_Filter{
+			Filter: &v1alpha1.ListACLsRequest_Filter{
 				ResourceType:   v1alpha1.ACL_RESOURCE_TYPE_ANY,
 				PermissionType: v1alpha1.ACL_PermissionType(999),
 			},
@@ -448,11 +448,11 @@ func (s *APISuite) TestDeleteACLs() {
 		// 2. Delete ACLs
 		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
 
+		// Resource name is not specified and therefore matches all resources
 		deleteRequest := &v1alpha1.DeleteACLsRequest{
-			Filter: &v1alpha1.ACL_Filter{
+			Filter: &v1alpha1.DeleteACLsRequest_Filter{
 				ResourceType:        v1alpha1.ACL_RESOURCE_TYPE_ANY,
-				ResourceName:        kmsg.StringPtr(resourceNamePrefix),
-				ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED,
+				ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_LITERAL,
 				Principal:           kmsg.StringPtr(principal),
 				Host:                kmsg.StringPtr("*"),
 				Operation:           v1alpha1.ACL_OPERATION_ALL,
@@ -472,7 +472,7 @@ func (s *APISuite) TestDeleteACLs() {
 		// as this could otherwise cause more ACLs to be deleted than desired.
 		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
 		_, err := client.DeleteACLs(ctx, connect.NewRequest(&v1alpha1.DeleteACLsRequest{
-			Filter: &v1alpha1.ACL_Filter{
+			Filter: &v1alpha1.DeleteACLsRequest_Filter{
 				ResourceType:   v1alpha1.ACL_RESOURCE_TYPE_ANY,
 				PermissionType: v1alpha1.ACL_PermissionType(999),
 			},
@@ -522,13 +522,13 @@ func (s *APISuite) TestDeleteACLs() {
 		}
 		var response deleteAclsResponse
 		var errResponse string
+		// Resource name is not provided as part of the filter and therefore matches all resource names
 		err = requests.
 			URL(s.httpAddress()+"/v1alpha1/").
 			Path("acls").
 			Delete().
 			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
-			Param("filter.resource_name", "topic").
-			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_PREFIXED").
+			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_LITERAL").
 			Param("filter.operation", "OPERATION_ANY").
 			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
 			Param("filter.principal", principal).
@@ -541,7 +541,7 @@ func (s *APISuite) TestDeleteACLs() {
 		assert.Equal(len(response.MatchingACLs), len(resourceNames))
 	})
 
-	t.Run("delete ACLs with invalid filter (http)", func(t *testing.T) {
+	t.Run("delete ACLs with missing filter (http)", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -554,11 +554,45 @@ func (s *APISuite) TestDeleteACLs() {
 			CheckStatus(http.StatusBadRequest).
 			ToString(&plainResponse).
 			Fetch(ctx)
-		assert.Contains(plainResponse, "INVALID_REQUEST")
-		assert.Error(err)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
 
-		// 2. Try to delete ACLs via HTTP API by using an incomplete filter.
-		// Below test misses the principal and host
+		// 2. Try to delete ACLs via HTTP API by using an empty filter object
+		err = requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter", "").
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
+	})
+
+	t.Run("delete ACLs with an invalid filter (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		var plainResponse string
+		// 1. Try to delete ACLs via HTTP API by using an incomplete filter.
+		// Below test misses the host field (that's okay), but it misses the operation
+		err := requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
+			Param("filter.resource_name", "topic").
+			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_PREFIXED").
+			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
+			Param("filter.principal", "test").
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
+
+		// 2. Try to delete ACLs via HTTP API by using an UNSPECIFIED enum
 		err = requests.
 			URL(s.httpAddress()+"/v1alpha1/").
 			Path("acls").
@@ -566,12 +600,13 @@ func (s *APISuite) TestDeleteACLs() {
 			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
 			Param("filter.resource_name", "topic").
 			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_PREFIXED").
-			Param("filter.operation", "OPERATION_ANY").
 			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
+			Param("filter.operation", "OPERATION_UNSPECIFIED").
+			Param("filter.principal", "test").
 			CheckStatus(http.StatusBadRequest).
 			ToString(&plainResponse).
 			Fetch(ctx)
-		assert.Contains(plainResponse, "INVALID_REQUEST")
-		assert.Error(err)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
 	})
 }
