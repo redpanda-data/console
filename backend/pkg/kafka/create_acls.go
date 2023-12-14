@@ -17,7 +17,7 @@ import (
 )
 
 // CreateACLs creates one or more ACL entries.
-func (s *Service) CreateACLs(ctx context.Context, req kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error) {
+func (s *Service) CreateACLs(ctx context.Context, req *kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error) {
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
 		return nil, fmt.Errorf("acl create request has failed: %w", err)

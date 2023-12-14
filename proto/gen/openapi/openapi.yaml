@@ -1,25 +1,5 @@
 components:
   schemas:
-    ACL.Filter:
-      properties:
-        host:
-          nullable: true
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          nullable: true
-          type: string
-        resource_name:
-          nullable: true
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     ACL.Operation:
       enum:
         - OPERATION_ANY
@@ -297,6 +277,31 @@ components:
         name:
           type: string
       type: object
+    DeleteACLsRequest.Filter:
+      properties:
+        host:
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          nullable: true
+          type: string
+        resource_name:
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - operation
+        - permission_type
+      type: object
     DeleteACLsResponse:
       properties:
         matching_acls:
@@ -465,6 +470,26 @@ components:
           description: The URL of the link.
           type: string
       type: object
+    ListACLsRequest.Filter:
+      properties:
+        host:
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          nullable: true
+          type: string
+        resource_name:
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
     ListACLsResponse:
       properties:
         resources:
@@ -541,11 +566,8 @@ components:
       type: object
     MatchingACL:
       properties:
-        error_code:
-          format: int32
-          type: integer
-        error_message:
-          type: string
+        error:
+          $ref: '#/components/schemas/Status'
         host:
           type: string
         operation:
@@ -714,6 +736,14 @@ components:
         - SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
       type: string
     Status:
+      description: |-
+        The `Status` type defines a logical error model that is suitable for
+        different programming environments, including REST APIs and RPC APIs. It is
+        used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        three pieces of data: error code, error message, and error details.
+
+        You can find out more about this error model and how to work with it in the
+        [API Design Guide](https://cloud.google.com/apis/design/errors).
       properties:
         code:
           description: RPC status code, as described [here](https://github.com/googleapis/googleapis/blob/b4c238feaa1097c53798ed77035bbfeb7fc72e96/google/rpc/code.proto#L32).
@@ -892,6 +922,7 @@ paths:
       parameters:
         - in: query
           name: filter.resource_type
+          required: true
           schema:
             enum:
               - RESOURCE_TYPE_ANY
@@ -908,6 +939,7 @@ paths:
             type: string
         - in: query
           name: filter.resource_pattern_type
+          required: true
           schema:
             enum:
               - RESOURCE_PATTERN_TYPE_ANY
@@ -925,6 +957,7 @@ paths:
             type: string
         - in: query
           name: filter.operation
+          required: true
           schema:
             enum:
               - OPERATION_ANY
@@ -944,6 +977,7 @@ paths:
             type: string
         - in: query
           name: filter.permission_type
+          required: true
           schema:
             enum:
               - PERMISSION_TYPE_ANY

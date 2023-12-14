@@ -104,7 +104,7 @@ func (s *KafkaIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.1.13"))
+	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
