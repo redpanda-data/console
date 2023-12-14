@@ -29,6 +29,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 	"github.com/twmb/franz-go/pkg/sr"
+	"github.com/twmb/franz-go/plugin/kzap"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -40,12 +42,16 @@ import (
 func CreateClients(t *testing.T, brokers []string) (*kgo.Client, *kadm.Client) {
 	t.Helper()
 
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.MaxVersions(kversion.V2_6_0()),
 		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
 		kgo.MaxConcurrentFetches(12),
 		kgo.KeepControlRecords(),
+		kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
 	}
 
 	kClient, err := kgo.NewClient(opts...)
