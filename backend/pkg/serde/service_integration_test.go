@@ -111,6 +111,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 
 	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
 	require.NoError(err)
+	redpandaContainer.FollowOutput(testutil.TestContainersLogger{LogPrefix: "CONTAINER (serde-integration): "})
 
 	s.redpandaContainer = redpandaContainer
 
@@ -125,7 +126,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	s.registryAddress = registryAddr
 
 	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	logCfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	log, err := logCfg.Build()
 	require.NoError(err)
 
