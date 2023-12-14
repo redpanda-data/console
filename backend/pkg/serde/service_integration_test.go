@@ -68,7 +68,6 @@ type SerdeIntegrationTestSuite struct {
 
 	seedBroker      string
 	registryAddress string
-	log             *zap.Logger
 }
 
 func TestSuite(t *testing.T) {
@@ -124,13 +123,6 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	registryAddr, err := redpandaContainer.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 	s.registryAddress = registryAddr
-
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
-
-	s.log = log
 }
 
 func (s *SerdeIntegrationTestSuite) TearDownSuite() {
@@ -1221,7 +1213,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
+		logger, err := zap.NewDevelopment()
 		require.NoError(err)
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
