@@ -379,6 +379,8 @@ const apiStore = {
         req.maxResults = searchRequest.maxResults;
         req.filterInterpreterCode = searchRequest.filterInterpreterCode;
         req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
+        req.keyDeserializer = searchRequest.keyDeserializer;
+        req.valueDeserializer = searchRequest.valueDeserializer;
 
         // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
         // from 30s to 30 minutes before ending the request gracefully.
@@ -1923,6 +1925,9 @@ export interface MessageSearchRequest {
         }
     },
     includeRawPayload?: boolean;
+
+    keyDeserializer?: PayloadEncoding;
+    valueDeserializer?: PayloadEncoding;
 }
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
