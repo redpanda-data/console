@@ -177,7 +177,7 @@ func (s *Service) DeleteACLs(ctx context.Context, req *connect.Request[v1alpha1.
 	}
 
 	if len(res.Results) != 1 {
-		// Should never happen since we only create one ACL, but if it happens we want to err early.
+		// Should never happen since we only delete one ACL, but if it happens we want to err early.
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			errors.New("unexpected number of results in delete ACL response"),
