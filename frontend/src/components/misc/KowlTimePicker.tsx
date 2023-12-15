@@ -63,6 +63,7 @@ export class KowlTimePicker extends Component<{
     }
 
     footer() {
+        // TODO - to be removed with DatePicker
         return (
             <Radio.Group
                 value={this.isLocalTimeMode ? 'local' : 'utc'}

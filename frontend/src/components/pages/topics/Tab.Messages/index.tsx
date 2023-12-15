@@ -11,7 +11,7 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio, Table, Typography } from 'antd';
+import { ConfigProvider, DatePicker, Radio as AntdRadio, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
@@ -44,7 +44,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -734,10 +734,24 @@ class SaveMessagesDialog extends Component<{
                     <ModalHeader>{title}</ModalHeader>
                     <ModalBody display="flex" flexDirection="column" gap="4">
                         <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
-                        <Radio.Group value={this.format} onChange={e => this.format = e.target.value} disabled={this.isLoadingRawMessage}>
-                            <Radio value="json" style={this.radioStyle}>JSON</Radio>
-                            <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
-                        </Radio.Group>
+                        <Box py={2}>
+                            <RadioGroup
+                                name="format"
+                                value={this.format}
+                                onChange={value => this.format = value}
+                                options={[
+                                    {
+                                        value: 'json',
+                                        label: 'JSON'
+                                    },
+                                    {
+                                        value: 'csv',
+                                        label: 'CSV',
+                                        disabled: true
+                                    }
+                                ]}
+                            />
+                        </Box>
                         <Checkbox isChecked={this.includeRawContent} onChange={e => this.includeRawContent = e.target.checked}>
                             Include raw data
                         </Checkbox>
@@ -946,15 +960,16 @@ class StartOffsetDateTimePicker extends Component {
 @observer
 class DateTimePickerExtraFooter extends Component {
     render() {
-        return <Radio.Group
+        // TODO - to be removed with DatePicker
+        return <AntdRadio.Group
             value={uiState.topicSettings.searchParametersLocalTimeMode ? 'local' : 'utc'}
             onChange={e => {
                 // console.log("date mode changed", { newValue: e.target.value, isLocalMode: uiState.topicSettings.searchParametersLocalTimeMode });
                 uiState.topicSettings.searchParametersLocalTimeMode = e.target.value == 'local';
             }}>
-            <Radio value="local">Local</Radio>
-            <Radio value="utc">UTC</Radio>
-        </Radio.Group>;
+            <AntdRadio value="local">Local</AntdRadio>
+            <AntdRadio value="utc">UTC</AntdRadio>
+        </AntdRadio.Group>;
     }
 }
 
