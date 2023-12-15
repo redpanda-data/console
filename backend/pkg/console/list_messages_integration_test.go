@@ -89,7 +89,6 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
-		mockProgress.EXPECT().OnPhase(gomock.Any()).AnyTimes()
 		mockProgress.EXPECT().OnComplete(gomock.Any(), false)
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
