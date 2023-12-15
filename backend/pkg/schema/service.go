@@ -192,6 +192,11 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 	return descriptors[0], nil
 }
 
+// IsEnabled returns whether the schema registry is enabled in configuration.
+func (s *Service) IsEnabled() bool {
+	return s.cfg.Enabled
+}
+
 // GetAvroSchemaByID loads the schema by the given schemaID and tries to parse the schema
 // contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
 func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (avro.Schema, error) {
@@ -283,6 +288,11 @@ func (s *Service) GetSchemaReferences(ctx context.Context, subject, version stri
 // that exists. You can use 'latest' to check compatibility with the latest version.
 func (s *Service) CheckCompatibility(ctx context.Context, subject string, version string, schema Schema) (*CheckCompatibilityResponse, error) {
 	return s.registryClient.CheckCompatibility(ctx, subject, version, schema)
+}
+
+// GetSchemaByID gets the schema by ID.
+func (s *Service) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse, error) {
+	return s.registryClient.GetSchemaByID(ctx, id)
 }
 
 // ParseAvroSchemaWithReferences parses an avro schema that potentially has references
@@ -381,13 +391,31 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 		}
 		schemasByPath[ref.Name] = schemaRefRes.Schema
 	}
+
+	// Add common proto types
+	// The well known types are automatically added in the protoreflect protoparse package.
+	// But we need to support the other types Redpanda automatically includes.
+	// These are added in the embed package, and here we add them to the map for parsing.
+	commonProtoMap, err := embed.CommonProtoFileMap()
+	if err != nil {
+		return fmt.Errorf("failed to load common protobuf types: %w", err)
+	}
+
+	for commonPath, commonSchema := range commonProtoMap {
+		if _, exists := schemasByPath[commonPath]; !exists {
+			schemasByPath[commonPath] = commonSchema
+		}
+	}
+
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
 	}
-	_, err := parser.ParseFiles(name)
+
+	_, err = parser.ParseFiles(name)
+
 	return err
 }
 

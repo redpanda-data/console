@@ -26,6 +26,14 @@ type recordsRequest struct {
 	PartitionID int32 `json:"partitionId"`
 }
 
+const (
+	compressionTypeNone = iota
+	compressionTypeGzip
+	compressionTypeSnappy
+	compressionTypeLz4
+	compressionTypeZstd
+)
+
 // KgoRecordHeaders return the headers request as part of the to be produced Kafka record.
 func (r *recordsRequest) KgoRecordHeaders() []kgo.RecordHeader {
 	if len(r.Headers) == 0 {
@@ -134,8 +142,28 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 		}
 
 		// 3. Submit publish topic records request
-		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, req.CompressionType)
+		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, compressionTypeToKgoCodec(req.CompressionType))
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, publishRes)
+	}
+}
+
+// compressionTypeToKgoCodec receives the compressionType as an int8 enum and returns a slice of compression
+// codecs which contains the compression codecs in preference order. It will always return the specified
+// compressionType as highest preference and add "None" as fallback codec.
+func compressionTypeToKgoCodec(compressionType int8) []kgo.CompressionCodec {
+	switch compressionType {
+	case compressionTypeNone:
+		return []kgo.CompressionCodec{kgo.NoCompression()}
+	case compressionTypeGzip:
+		return []kgo.CompressionCodec{kgo.GzipCompression(), kgo.NoCompression()}
+	case compressionTypeSnappy:
+		return []kgo.CompressionCodec{kgo.SnappyCompression(), kgo.NoCompression()}
+	case compressionTypeLz4:
+		return []kgo.CompressionCodec{kgo.Lz4Compression(), kgo.NoCompression()}
+	case compressionTypeZstd:
+		return []kgo.CompressionCodec{kgo.ZstdCompression(), kgo.NoCompression()}
+	default:
+		return []kgo.CompressionCodec{kgo.NoCompression()}
 	}
 }

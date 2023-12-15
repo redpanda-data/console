@@ -15,7 +15,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -26,6 +28,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -47,19 +50,40 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 	testTopicName := testutil.TopicNameForTest("list_messages")
 
+	testTopicNameProto := testutil.TopicNameForTest("list_messages_proto")
+
 	testutil.CreateTestData(t, ctx, s.kafkaClient, s.kafkaAdminClient, testTopicName)
 
+	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicNameProto)
+	require.NoError(err)
+
+	ssIDs := testutil.ProduceOrdersWithSchemas(t, ctx, s.kafkaClient, s.kafkaSRClient, testTopicNameProto)
+	require.Len(ssIDs, 2)
+
+	t.Cleanup(func() {
+		_, err = s.kafkaSRClient.DeleteSubject(ctx, testTopicNameProto+"-value", sr.SoftDelete)
+		assert.NoError(err)
+
+		_, err = s.kafkaSRClient.DeleteSubject(ctx, testTopicNameProto+"-value", sr.HardDelete)
+		assert.NoError(err)
+
+		s.kafkaAdminClient.DeleteTopics(ctx, testTopicName, testTopicNameProto)
+	})
+
 	t.Run("empty topic", func(t *testing.T) {
-		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil,
-			testutil.TopicNameForTest("list_messages_empty_topic"))
-		require.NoError(err)
-
-		defer func() {
-			s.kafkaAdminClient.DeleteTopics(ctx, testutil.TopicNameForTest("list_messages_empty_topic"))
-		}()
-
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
+
+		testTopicName := testutil.TopicNameForTest("list_messages_empty_topic")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		timer1 := time.NewTimer(30 * time.Millisecond)
+		<-timer1.C
+
+		defer func() {
+			s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+		}()
 
 		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
 
@@ -67,10 +91,13 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnComplete(gomock.Any(), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		input := ListMessageRequest{
-			TopicName:    testutil.TopicNameForTest("list_messages_empty_topic"),
+			TopicName:    testTopicName,
 			PartitionID:  -1,
 			StartOffset:  -2,
 			MessageCount: 100,
@@ -96,7 +123,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(20)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:    testTopicName,
@@ -104,6 +131,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartOffset:  -2,
 			MessageCount: 100,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
@@ -124,7 +154,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:    testTopicName,
@@ -132,6 +162,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartOffset:  10,
 			MessageCount: 1,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
@@ -156,7 +189,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:    testTopicName,
@@ -164,6 +197,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartOffset:  10,
 			MessageCount: 5,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
@@ -184,7 +220,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:      testTopicName,
@@ -193,6 +229,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartTimestamp: time.Date(2010, time.November, 11, 13, 0, 0, 0, time.UTC).UnixMilli(),
 			StartOffset:    StartOffsetTimestamp,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
@@ -217,7 +256,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:      testTopicName,
@@ -226,6 +265,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartTimestamp: time.Date(2010, time.November, 10, 13, 10, 30, 0, time.UTC).UnixMilli(),
 			StartOffset:    StartOffsetTimestamp,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
@@ -239,7 +281,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 
-		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
 		input := ListMessageRequest{
 			TopicName:    "console_list_messages_topic_test_unknown_topic",
@@ -247,6 +289,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			StartOffset:  -2,
 			MessageCount: 100,
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
@@ -257,6 +302,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	// This is essentially the same test as "single messages in a topic" test
 	// but using kfake package to demonstrate a full test of how to use the package
 	// to verify functionality.
+
 	t.Run("single messages in a topic fake", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
@@ -272,7 +318,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
-		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
+		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "")
 
 		var int64Type int64
 
@@ -346,6 +392,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			MessageCount: 1,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
 	})
@@ -365,7 +414,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
-		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
+		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "")
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 
@@ -410,6 +459,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			MessageCount: 1,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
 		assert.Equal("failed to get partitions: LEADER_NOT_AVAILABLE: There is no leader for this topic-partition as we are in the middle of a leadership election.", err.Error())
@@ -430,7 +482,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
-		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
+		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "")
 
 		var int64Type int64
 
@@ -491,13 +543,198 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			MessageCount: 1,
 		}
 
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
+
+	t.Run("messages with filter", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+
+		orderMatcher := MatchesJSON(map[string]map[string]any{
+			"1":  {"ID": "1"},
+			"10": {"ID": "10"},
+			"11": {"ID": "11"},
+			"12": {"ID": "12"},
+			"13": {"ID": "13"},
+			"14": {"ID": "14"},
+			"15": {"ID": "15"},
+			"16": {"ID": "16"},
+			"17": {"ID": "17"},
+			"18": {"ID": "18"},
+			"19": {"ID": "19"},
+		})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).Times(11)
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		code := `return value.ID.startsWith('1')`
+
+		input := ListMessageRequest{
+			TopicName:             testTopicName,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
+
+	t.Run("messages with key filter", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		orderMatcher := MatchesJSON(map[string]map[string]any{
+			"2":  {"ID": "2"},
+			"3":  {"ID": "3"},
+			"12": {"ID": "12"},
+			"13": {"ID": "13"},
+		})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).Times(4)
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		code := `let keyStr = String.fromCharCode.apply(null, key)
+				return keyStr.endsWith('2') || keyStr.endsWith('3')`
+
+		input := ListMessageRequest{
+			TopicName:             testTopicName,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
+
+	t.Run("messages with schema ID", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		orderMatcher := MatchesJSON(map[string]map[string]any{
+			"0": {"id": "0"},
+			"1": {"id": "1"},
+			"2": {"id": "2"},
+			"3": {"id": "3"},
+			"4": {"id": "4"},
+			"5": {"id": "5"},
+			"6": {"id": "6"},
+			"7": {"id": "7"},
+			"8": {"id": "8"},
+			"9": {"id": "9"},
+		})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		code := `return valueSchemaID == ` + strconv.Itoa(ssIDs[0])
+
+		input := ListMessageRequest{
+			TopicName:             testTopicNameProto,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
+
+	t.Run("messages with schema ID 2", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		// Go JSON unmarshals numeric values as float64
+		orderMatcher := MatchesJSON(map[string]map[string]any{
+			"20": {"id": "20", "version": float64(1), "name": "2"},
+			"21": {"id": "21", "version": float64(1), "name": "4"},
+			"22": {"id": "22", "version": float64(1), "name": "8"},
+			"23": {"id": "23", "version": float64(1), "name": "16"},
+			"24": {"id": "24", "version": float64(1), "name": "32"},
+			"25": {"id": "25", "version": float64(1), "name": "64"},
+			"26": {"id": "26", "version": float64(1), "name": "128"},
+			"27": {"id": "27", "version": float64(1), "name": "256"},
+			"28": {"id": "28", "version": float64(1), "name": "512"},
+			"29": {"id": "29", "version": float64(1), "name": "1024"},
+		})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		code := `return valueSchemaID == ` + strconv.Itoa(ssIDs[1])
+
+		input := ListMessageRequest{
+			TopicName:             testTopicNameProto,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
 	})
 }
 
 func createNewTestService(t *testing.T, log *zap.Logger,
-	testName string, seedBrokers string,
+	testName string, seedBrokers string, registryAddr string,
 ) Servicer {
 	metricName := testutil.MetricNameForTest(strings.ReplaceAll(testName, " ", ""))
 
@@ -506,17 +743,34 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	cfg.MetricsNamespace = metricName
 	cfg.Kafka.Brokers = []string{seedBrokers}
 
+	if registryAddr != "" {
+		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
+		cfg.Kafka.Schema.Enabled = true
+		cfg.Kafka.Schema.URLs = []string{registryAddr}
+	}
+
 	svc, err := NewService(&cfg, log, nil, nil)
 	require.NoError(t, err)
 
+	err = svc.Start()
+	require.NoError(t, err)
+
 	return svc
+}
+
+// OrderMatcher can be used in expect functions to assert on Order ID
+type OrderMatcher struct {
+	expectedID string
+	actualID   string
+	err        string
 }
 
 // Matches implements the Matcher interface for OrderMatcher
 func (o *OrderMatcher) Matches(x interface{}) bool {
 	if m, ok := x.(*kafka.TopicMessage); ok {
 		order := testutil.Order{}
-		err := json.Unmarshal(m.Value.Payload.Payload, &order)
+		err := json.Unmarshal(m.Value.NormalizedPayload, &order)
 		if err != nil {
 			o.err = fmt.Sprintf("marshal error: %s", err.Error())
 			return false
@@ -541,9 +795,86 @@ func MatchesOrder(id string) gomock.Matcher {
 	return &OrderMatcher{expectedID: id}
 }
 
-// OrderMatcher can be used in expect functions to assert on Order ID
-type OrderMatcher struct {
-	expectedID string
-	actualID   string
-	err        string
+// GenericMatcher can be used in expect functions to assert on JSON.
+type GenericMatcher struct {
+	expected  map[string]map[string]any
+	err       string
+	actualKey string
+	failedVal string
+	m         sync.Mutex
+}
+
+// Matches implements the Matcher interface for OrderMatcher
+func (o *GenericMatcher) Matches(x interface{}) bool {
+	o.err = ""
+	o.actualKey = ""
+	o.failedVal = ""
+
+	if m, ok := x.(*kafka.TopicMessage); ok {
+		obj := map[string]any{}
+
+		err := json.Unmarshal(m.Value.NormalizedPayload, &obj)
+		if err != nil {
+			o.err = fmt.Sprintf("unmarshal error: %s", err.Error())
+			return false
+		}
+
+		key := string(m.Key.NormalizedPayload)
+		o.actualKey = key
+
+		o.m.Lock()
+		defer o.m.Unlock()
+
+		expectedData, exists := o.expected[key]
+		if !exists {
+			return false
+		}
+		equal := true
+
+		for ek, ev := range expectedData {
+			ev := ev
+			if ev != obj[ek] {
+				equal = false
+				o.failedVal = ek
+				break
+			}
+		}
+
+		if !equal {
+			return false
+		}
+
+		delete(o.expected, key)
+
+		o.err = ""
+		o.actualKey = ""
+		o.failedVal = ""
+
+		return true
+	}
+
+	o.err = "value is not a TopicMessage"
+	return false
+}
+
+// String implements the Stringer interface for OrderMatcher
+func (o *GenericMatcher) String() string {
+	if o.err != "" {
+		return fmt.Sprintf("error: %s", o.err)
+	}
+
+	if o.failedVal != "" {
+		return fmt.Sprintf("got key %s with unequal value at key %s. expected: %+v", o.actualKey, o.failedVal, o.expected[o.actualKey][o.failedVal])
+	} else if o.actualKey != "" {
+		return fmt.Sprintf("missing key %s", o.actualKey)
+	} else if len(o.expected) > 0 {
+		return fmt.Sprintf("missing expected matches %+v", o.expected)
+	}
+
+	return ""
+}
+
+// MatchesOrder creates the Matcher
+func MatchesJSON(expected map[string]map[string]any) gomock.Matcher {
+	return &GenericMatcher{expected: expected}
 }

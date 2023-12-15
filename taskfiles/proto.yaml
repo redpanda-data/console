@@ -23,12 +23,13 @@ tasks:
       - PATH={{.BUILD_ROOT}}/bin:$PATH buf mod update {{.ROOT_DIR}}/proto
 
   generate:
+    dir: "{{.ROOT_DIR}}"
     desc: generate protos
     deps:
       - install-buf
       - install-connect-gateway
     vars:
-      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update
+      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update {{.BACKEND_ROOT}}/pkg/serde/testdata/proto {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
     cmds:
       # Delete previously generated files
       - rm -rf {{.BACKEND_ROOT}}/pkg/protogen

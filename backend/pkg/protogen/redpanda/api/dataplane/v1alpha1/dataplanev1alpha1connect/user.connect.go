@@ -20,7 +20,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// UserServiceName is the fully-qualified name of the UserService service.
@@ -45,6 +45,15 @@ const (
 	UserServiceDeleteUserProcedure = "/redpanda.api.dataplane.v1alpha1.UserService/DeleteUser"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	userServiceServiceDescriptor          = v1alpha1.File_redpanda_api_dataplane_v1alpha1_user_proto.Services().ByName("UserService")
+	userServiceCreateUserMethodDescriptor = userServiceServiceDescriptor.Methods().ByName("CreateUser")
+	userServiceUpdateUserMethodDescriptor = userServiceServiceDescriptor.Methods().ByName("UpdateUser")
+	userServiceListUsersMethodDescriptor  = userServiceServiceDescriptor.Methods().ByName("ListUsers")
+	userServiceDeleteUserMethodDescriptor = userServiceServiceDescriptor.Methods().ByName("DeleteUser")
+)
+
 // UserServiceClient is a client for the redpanda.api.dataplane.v1alpha1.UserService service.
 type UserServiceClient interface {
 	CreateUser(context.Context, *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error)
@@ -66,22 +75,26 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 		createUser: connect.NewClient[v1alpha1.CreateUserRequest, v1alpha1.CreateUserResponse](
 			httpClient,
 			baseURL+UserServiceCreateUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceCreateUserMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		updateUser: connect.NewClient[v1alpha1.UpdateUserRequest, v1alpha1.UpdateUserResponse](
 			httpClient,
 			baseURL+UserServiceUpdateUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceUpdateUserMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		listUsers: connect.NewClient[v1alpha1.ListUsersRequest, v1alpha1.ListUsersResponse](
 			httpClient,
 			baseURL+UserServiceListUsersProcedure,
-			opts...,
+			connect.WithSchema(userServiceListUsersMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		deleteUser: connect.NewClient[v1alpha1.DeleteUserRequest, v1alpha1.DeleteUserResponse](
 			httpClient,
 			baseURL+UserServiceDeleteUserProcedure,
-			opts...,
+			connect.WithSchema(userServiceDeleteUserMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -132,22 +145,26 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 	userServiceCreateUserHandler := connect.NewUnaryHandler(
 		UserServiceCreateUserProcedure,
 		svc.CreateUser,
-		opts...,
+		connect.WithSchema(userServiceCreateUserMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	userServiceUpdateUserHandler := connect.NewUnaryHandler(
 		UserServiceUpdateUserProcedure,
 		svc.UpdateUser,
-		opts...,
+		connect.WithSchema(userServiceUpdateUserMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	userServiceListUsersHandler := connect.NewUnaryHandler(
 		UserServiceListUsersProcedure,
 		svc.ListUsers,
-		opts...,
+		connect.WithSchema(userServiceListUsersMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	userServiceDeleteUserHandler := connect.NewUnaryHandler(
 		UserServiceDeleteUserProcedure,
 		svc.DeleteUser,
-		opts...,
+		connect.WithSchema(userServiceDeleteUserMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.dataplane.v1alpha1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

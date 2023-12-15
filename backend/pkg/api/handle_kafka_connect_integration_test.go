@@ -213,7 +213,7 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 			Hostname:       "redpanda",
 			Networks:       []string{network},
 			NetworkAliases: map[string][]string{network: {"redpanda", "local-redpanda"}},
-			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.1.7",
+			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.2.18",
 			ExposedPorts: []string{
 				plainKafkaPort,
 				outKafkaPort,
@@ -293,18 +293,4 @@ func runHTTPBin(ctx context.Context, network string) (testcontainers.Container, 
 	}
 
 	return container, nil
-}
-
-func getMappedHostPort(ctx context.Context, c testcontainers.Container, port nat.Port) (string, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
 }

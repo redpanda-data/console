@@ -24,12 +24,12 @@ func (*defaulter) applyCreateACLRequest(req *v1alpha1.CreateACLRequest) {
 
 func (d *defaulter) applyListACLsRequest(req *v1alpha1.ListACLsRequest) {
 	if req.Filter == nil {
-		req.Filter = &v1alpha1.ACL_Filter{}
+		req.Filter = &v1alpha1.ListACLsRequest_Filter{}
 	}
 	d.applyListACLsRequestFilter(req.Filter)
 }
 
-func (*defaulter) applyListACLsRequestFilter(filter *v1alpha1.ACL_Filter) {
+func (*defaulter) applyListACLsRequestFilter(filter *v1alpha1.ListACLsRequest_Filter) {
 	if filter.ResourceType == v1alpha1.ACL_RESOURCE_TYPE_UNSPECIFIED {
 		filter.ResourceType = v1alpha1.ACL_RESOURCE_TYPE_ANY
 	}

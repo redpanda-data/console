@@ -39,6 +39,10 @@ func NewService(cfg config.Msgpack) (*Service, error) {
 
 // IsTopicAllowed validates if a topicName is permitted as per the config regexes.
 func (s *Service) IsTopicAllowed(topicName string) bool {
+	if !s.cfg.Enabled {
+		return false
+	}
+
 	isAllowed := false
 	for _, regex := range s.AllowedTopicsExpr {
 		if regex.MatchString(topicName) {

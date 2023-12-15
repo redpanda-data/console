@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+// KafkaRecordHeader is the record header.
+message KafkaRecordHeader {
+  string key = 1; // Header key.
+  bytes value = 2; // Header value.
+}
+
+enum CompressionType {
+  COMPRESSION_TYPE_UNSPECIFIED = 0;
+  COMPRESSION_TYPE_UNCOMPRESSED = 1;
+  COMPRESSION_TYPE_GZIP = 2;
+  COMPRESSION_TYPE_SNAPPY = 3;
+  COMPRESSION_TYPE_LZ4 = 4;
+  COMPRESSION_TYPE_ZSTD = 5;
+}
+
+enum PayloadEncoding {
+  PAYLOAD_ENCODING_UNSPECIFIED = 0;
+  PAYLOAD_ENCODING_NULL = 1;
+  PAYLOAD_ENCODING_AVRO = 2;
+  PAYLOAD_ENCODING_PROTOBUF = 3;
+  PAYLOAD_ENCODING_PROTOBUF_SCHEMA = 4;
+  PAYLOAD_ENCODING_JSON = 5;
+  PAYLOAD_ENCODING_JSON_SCHEMA = 6;
+  PAYLOAD_ENCODING_XML = 7;
+  PAYLOAD_ENCODING_TEXT = 8;
+  PAYLOAD_ENCODING_UTF8 = 9;
+  PAYLOAD_ENCODING_MESSAGE_PACK = 10;
+  PAYLOAD_ENCODING_SMILE = 11;
+  PAYLOAD_ENCODING_BINARY = 12;
+  PAYLOAD_ENCODING_UINT = 13;
+  PAYLOAD_ENCODING_CONSUMER_OFFSETS = 14;
+}
+
+message TroubleshootReport {
+  string serde_name = 1;
+  string message = 2;
+}

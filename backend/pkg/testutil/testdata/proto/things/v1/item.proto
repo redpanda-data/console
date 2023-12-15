@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package testutil.things.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1";
+
+message Item {
+  string id = 1;
+  string name = 2;
+  int32 version = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
