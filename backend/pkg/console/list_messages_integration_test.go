@@ -71,19 +71,19 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	})
 
 	t.Run("empty topic", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
 		testTopicName := testutil.TopicNameForTest("list_messages_empty_topic")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
 
-		timer1 := time.NewTimer(10 * time.Millisecond)
+		timer1 := time.NewTimer(30 * time.Millisecond)
 		<-timer1.C
 
 		defer func() {
 			s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 		}()
-
-		mockCtrl := gomock.NewController(t)
-		defer mockCtrl.Finish()
 
 		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
 
