@@ -49,7 +49,7 @@ func CreateClients(t *testing.T, brokers []string) (*kgo.Client, *kadm.Client) {
 		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
 		kgo.MaxConcurrentFetches(12),
 		kgo.KeepControlRecords(),
-		//kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
+		// kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
 		// We've seen issues in integration tests with the default being applied for
 		// the metadata min age.
 		// kgo.MetadataMinAge(250 * time.Millisecond),
