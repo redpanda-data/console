@@ -30,6 +30,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"github.com/twmb/franz-go/plugin/kzap"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -51,13 +52,9 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		kgo.KeepControlRecords(),
 		// Refresh metadata more often than the default, when the client notices that it's stale.
 		kgo.MetadataMinAge(time.Second),
+		kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
+		kgo.WithHooks(hooks),
 	}
-
-	// Create Logger
-	kgoLogger := KgoZapLogger{
-		logger: logger.With(zap.String("source", "kafka_client")).Sugar(),
-	}
-	opts = append(opts, kgo.WithLogger(kgoLogger), kgo.WithHooks(hooks))
 
 	// Add Rack Awareness if configured
 	if cfg.RackID != "" {
