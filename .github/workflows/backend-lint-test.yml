@@ -26,13 +26,13 @@ jobs:
         with:
           go-version-file: 'backend/go.mod'
 
-#      - name: golangci-lint
-#        uses: golangci/golangci-lint-action@v3
-#        with:
-#          version: v1.51.2
-#          args: --timeout=5m
-#          working-directory: backend
-#
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.51.2
+          args: --timeout=5m
+          working-directory: backend
+
       - name: test
         run: go test -v -race --tags=integration -p=1 ./...
         working-directory: backend

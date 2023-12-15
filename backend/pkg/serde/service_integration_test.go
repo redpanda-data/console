@@ -108,20 +108,8 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Cmd: []string{
-					"--default-log-level=trace",
-				},
-			},
-		},
-		))
-
+	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
 	require.NoError(err)
-	redpandaContainer.FollowOutput(testutil.TestContainersLogger{LogPrefix: "CONTAINER (serde-integration): "})
-	redpandaContainer.StartLogProducer(context.Background())
 
 	s.redpandaContainer = redpandaContainer
 
@@ -1224,7 +1212,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewDevelopment()
+		logger, err := zap.NewProduction()
 		require.NoError(err)
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
