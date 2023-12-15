@@ -111,6 +111,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
 	require.NoError(err)
 	redpandaContainer.FollowOutput(testutil.TestContainersLogger{LogPrefix: "CONTAINER (serde-integration): "})
+	redpandaContainer.StartLogProducer(context.Background())
 
 	s.redpandaContainer = redpandaContainer
 
