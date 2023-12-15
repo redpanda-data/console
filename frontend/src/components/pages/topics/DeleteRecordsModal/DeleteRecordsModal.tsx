@@ -10,7 +10,6 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Slider } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
@@ -20,8 +19,7 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
-import { Alert, AlertIcon, Button, Flex,
-    Input, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Text, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Flex, Input, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Slider, SliderFilledTrack, SliderMark, SliderThumb, SliderTrack, Spinner, Text, useToast } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 
 type AllPartitions = 'allPartitions';
@@ -268,15 +266,18 @@ const ManualOffsetContent = observer(
 
         const { marks, min, max } = getMarks(partition);
         return (
-            <div className={styles.sliderContainer}>
-                <Slider
-                    marks={marks}
-                    min={min}
-                    max={max}
-                    onChange={updateOffsetFromSlider}
-
-                    className={styles.slider}
-                />
+            <Flex alignItems="center" gap={2}>
+                <Slider min={min} max={max} onChange={updateOffsetFromSlider} value={sliderValue}>
+                    {marks && Object.entries(marks).map(([value, label]) =>
+                        <SliderMark value={Number(value)} key={value}>
+                            {label}
+                        </SliderMark>
+                    )}
+                    <SliderTrack>
+                        <SliderFilledTrack />
+                    </SliderTrack>
+                    <SliderThumb />
+                </Slider>
                 <Input
                     maxWidth={124}
                     value={sliderValue}
@@ -295,7 +296,7 @@ const ManualOffsetContent = observer(
                         }
                     }}
                 />
-            </div>
+            </Flex>
         );
     }
 );
