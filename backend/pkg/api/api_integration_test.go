@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,10 +32,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 
+	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -49,11 +53,13 @@ type APIIntegrationTestSuite struct {
 
 	kafkaClient      *kgo.Client
 	kafkaAdminClient *kadm.Client
+	kafkaSRClient    *sr.Client
 
 	cfg *config.Config
 	api *API
 
 	testSeedBroker string
+	registryAddr   string
 }
 
 func TestSuite(t *testing.T) {
@@ -65,18 +71,24 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx)
+	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
 	require.NoError(err)
 	s.redpandaContainer = container
 
 	seedBroker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(err)
-	schemaRegistryAddress, err := container.SchemaRegistryAddress(ctx)
+	registryAddr, err := container.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 
 	s.testSeedBroker = seedBroker
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
+
+	s.registryAddr = registryAddr
+
+	rcl, err := sr.NewClient(sr.URLs(registryAddr))
+	require.NoError(err)
+	s.kafkaSRClient = rcl
 
 	httpListenPort := rand.Intn(50000) + 10000
 	s.cfg = &config.Config{}
@@ -89,8 +101,26 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 		},
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
+	s.cfg.Kafka.Protobuf.Enabled = true
+	s.cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
+	s.cfg.Kafka.Protobuf.SchemaRegistry.RefreshInterval = 2 * time.Second
 	s.cfg.Kafka.Schema.Enabled = true
-	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
+	s.cfg.Kafka.Schema.URLs = []string{registryAddr}
+
+	// proto message mapping
+	absProtoPath, err := filepath.Abs("../testutil/testdata/proto")
+	require.NoError(err)
+	s.cfg.Kafka.Protobuf.Enabled = true
+	s.cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+		{
+			TopicName:      testutil.TopicNameForTest("publish_messages_proto_plain"),
+			ValueProtoType: "testutil.things.v1.Item",
+		},
+	}
+	s.cfg.Kafka.Protobuf.FileSystem.Enabled = true
+	s.cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+	s.cfg.Kafka.Protobuf.FileSystem.Paths = []string{absProtoPath}
+
 	s.api = New(s.cfg)
 
 	go s.api.Start()
@@ -162,6 +192,20 @@ func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
 	assert.NoError(t, err)
 
 	return res, body
+}
+
+func (s *APIIntegrationTestSuite) consumerClientForTopic(topicName string) *kgo.Client {
+	t := s.T()
+	require := require.New(t)
+
+	cl, err := kgo.NewClient(
+		kgo.SeedBrokers(s.testSeedBroker),
+		kgo.ConsumeTopics(topicName),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+	)
+	require.NoError(err)
+
+	return cl
 }
 
 type assertCallReturnValue struct {
@@ -323,7 +367,7 @@ func (a *assertHooks) CanViewTopicConfig(_ context.Context, topic string) (bool,
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
@@ -331,7 +375,7 @@ func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *ListMessagesReq
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, r *httptypes.ListMessagesRequest) (bool, *rest.Error) {
 	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
@@ -355,7 +399,7 @@ func (a *assertHooks) AllowedTopicActions(_ context.Context, topic string) ([]st
 	return rv.SliceValue, rv.Err
 }
 
-func (a *assertHooks) PrintListMessagesAuditLog(_ *http.Request, r *console.ListMessageRequest) {
+func (a *assertHooks) PrintListMessagesAuditLog(_ context.Context, _ any, r *console.ListMessageRequest) {
 	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
@@ -567,7 +611,7 @@ func (a *assertHooks) EnabledConnectClusterFeatures(_ context.Context, _ string)
 	return nil
 }
 
-func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req ListMessagesRequest) (context.Context, error) {
+func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}

@@ -202,7 +202,6 @@ class Overview extends PageComponent {
                                 <Skeleton
                                     isLoaded={Boolean(news)}
                                     noOfLines={4}
-                                    height={4}
                                 >
                                     {news?.map((x, i) => <li key={i}>
                                         <a href={x.url} rel="noopener noreferrer" target="_blank"

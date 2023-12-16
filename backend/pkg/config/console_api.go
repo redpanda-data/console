@@ -28,15 +28,6 @@ type ConsoleAPI struct {
 	// "/redpanda.api.dataplane.v1alpha1.UserService/ListUsers".
 	// You can use "*" to enable all procedures.
 	EnabledProcedures []string `yaml:"enabledProcedures"`
-
-	// ProceduresByKey is the procedures slice in a map, where the key is the procedure.
-	// This allows a more efficient look-up when comparing the requested procedure against
-	// the enabled procedures.
-	EnabledProceduresMap map[string]any
-
-	// AllowsAllProcedures is calculated after parsing the config. It is set to true if
-	// at least one string of EnabledProcedures contains the wildcard ("*").
-	AllowsAllProcedures bool
 }
 
 // Validate configuration options for the Console topic documentation feature.
@@ -54,15 +45,6 @@ func (c *ConsoleAPI) Validate() error {
 		}
 	}
 
-	// Post-processing; config is loaded at this point
-	c.EnabledProceduresMap = make(map[string]any, len(c.EnabledProcedures))
-	for _, p := range c.EnabledProcedures {
-		c.EnabledProceduresMap[p] = struct{}{}
-		if p == "*" {
-			c.AllowsAllProcedures = true
-		}
-	}
-
 	return nil
 }
 
@@ -70,4 +52,21 @@ func (c *ConsoleAPI) Validate() error {
 func (c *ConsoleAPI) SetDefaults() {
 	c.Enabled = true
 	c.EnabledProcedures = []string{"*"}
+}
+
+// GetEnabledProcedures returns a map where the key represents the
+// enabled procedures. The bool indicates whether all procedures are
+// allowed. The bool will be true if at least one string of EnabledProcedures
+// contains the wildcard ("*").
+func (c *ConsoleAPI) GetEnabledProcedures() (map[string]struct{}, bool) {
+	allAllowed := false
+	procedures := make(map[string]struct{}, len(c.EnabledProcedures))
+	for _, p := range c.EnabledProcedures {
+		procedures[p] = struct{}{}
+		if p == "*" {
+			allAllowed = true
+		}
+	}
+
+	return procedures, allAllowed
 }

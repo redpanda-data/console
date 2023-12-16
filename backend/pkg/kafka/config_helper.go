@@ -30,6 +30,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"github.com/twmb/franz-go/plugin/kzap"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -47,15 +48,13 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
 		kgo.MaxConcurrentFetches(12),
 		// We keep control records because we need to consume them in order to know whether the last message in a
-		// a partition is worth waiting for or not (because it's a control record which we would never receive otherwise)
+		// partition is worth waiting for or not (because it's a control record which we would never receive otherwise)
 		kgo.KeepControlRecords(),
+		// Refresh metadata more often than the default, when the client notices that it's stale.
+		kgo.MetadataMinAge(time.Second),
+		kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
+		kgo.WithHooks(hooks),
 	}
-
-	// Create Logger
-	kgoLogger := KgoZapLogger{
-		logger: logger.With(zap.String("source", "kafka_client")).Sugar(),
-	}
-	opts = append(opts, kgo.WithLogger(kgoLogger), kgo.WithHooks(hooks))
 
 	// Add Rack Awareness if configured
 	if cfg.RackID != "" {

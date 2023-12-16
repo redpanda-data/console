@@ -18,7 +18,7 @@ import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { base64ToHexString, decodeBase64, TimeSince } from '../utils/utils';
+import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
     GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
@@ -40,11 +40,12 @@ import {
     PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse,
     PublishRecordsRequest, QuotaResponse, ResourceConfig,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
-    TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
+    TopicDocumentation, TopicDocumentationResponse, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
     PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
     OverviewNewsEntry,
+    Payload,
     SchemaRegistrySubject,
     SchemaRegistrySubjectDetails,
     SchemaRegistryModeResponse,
@@ -58,11 +59,22 @@ import {
     SchemaRegistrySetCompatibilityModeRequest,
     SchemaReferencedByEntry,
     SchemaRegistryValidateSchemaResponse,
-    SchemaVersion
+    SchemaVersion,
+    TopicMessage,
+    CompressionType
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+
+import { createPromiseClient } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { proto3 } from '@bufbuild/protobuf';
+import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect';
+import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { PartitionOffsetOrigin } from './ui';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -227,7 +239,7 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
 }
 
 
-let currentWS: WebSocket | null = null;
+let messageSearchAbortController: AbortController | null = null;
 
 //
 // BackendAPI
@@ -330,7 +342,11 @@ const apiStore = {
     messagesTotalConsumed: 0,
 
 
-    async startMessageSearch(_searchRequest: MessageSearchRequest): Promise<void> {
+    async startMessageSearchNew(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
+        // https://connectrpc.com/docs/web/using-clients
+        // https://github.com/connectrpc/connect-es
+        // https://github.com/connectrpc/examples-es
+
         const searchRequest = {
             ..._searchRequest, ...(appConfig.jwt ? {
                 enterprise: {
@@ -340,99 +356,282 @@ const apiStore = {
                 }
             } : {})
         }
-        const url = `${appConfig.websocketBasePath}/topics/${encodeURIComponent(searchRequest.topicName)}/messages`;
 
-        console.debug('connecting to "' + url + '"');
-
-        // Abort previous connection
-        if (currentWS != null)
-            if (currentWS.readyState == WebSocket.OPEN || currentWS.readyState == WebSocket.CONNECTING)
-                currentWS.close();
-
-        currentWS = new WebSocket(url);
-        const ws = currentWS;
         this.messageSearchPhase = 'Connecting';
         this.messagesBytesConsumed = 0;
         this.messagesTotalConsumed = 0;
+        this.messagesFor = searchRequest.topicName;
+        this.messages.length = 0;
+        this.messagesElapsedMs = null;
 
-        currentWS.onopen = _ev => {
-            if (ws !== currentWS) return; // newer request has taken over
-            // reset state for new request
-            this.messagesFor = searchRequest.topicName;
-            this.messages.length = 0;
-            this.messagesElapsedMs = null;
-            // send new request
-            currentWS.send(JSON.stringify(searchRequest));
-        };
-        currentWS.onclose = ev => {
-            if (ws !== currentWS) return;
-            api.stopMessageSearch();
-            // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''));
-        };
+        // do it
+        const abortController = messageSearchAbortController = new AbortController();
+        const transport = createConnectTransport({
+            baseUrl: window.location.origin,
+        });
 
-        const onMessageHandler = (msgEvent: MessageEvent) => {
-            if (ws !== currentWS) return;
-            const msg = JSON.parse(msgEvent.data);
+        const client = createPromiseClient(ConsoleService, transport);
 
-            switch (msg.type) {
-                case 'phase':
-                    this.messageSearchPhase = msg.phase;
+        const req = new ListMessagesRequest();
+        req.topic = searchRequest.topicName;
+        req.startOffset = BigInt(searchRequest.startOffset);
+        req.partitionId = searchRequest.partitionId;
+        req.maxResults = searchRequest.maxResults;
+        req.filterInterpreterCode = searchRequest.filterInterpreterCode;
+        req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
+
+        // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
+        // from 30s to 30 minutes before ending the request gracefully.
+        let timeoutMs = 30 * 1000;
+        if (searchRequest.startOffset == PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
+            const minuteMs = 60 * 1000;
+            timeoutMs = 30 * minuteMs;
+        }
+
+        try {
+            for await (const res of await client.listMessages(req, { signal: abortController.signal, timeoutMs })) {
+                if (abortController.signal.aborted)
                     break;
 
-                case 'progressUpdate':
-                    this.messagesBytesConsumed = msg.bytesConsumed;
-                    this.messagesTotalConsumed = msg.messagesConsumed;
-                    break;
+                try {
+                    switch (res.controlMessage.case) {
+                        case 'phase':
+                            console.log('phase: ' + res.controlMessage.value.phase)
+                            this.messageSearchPhase = res.controlMessage.value.phase;
+                            break;
+                        case 'progress':
+                            console.log('progress: ' + res.controlMessage.value.messagesConsumed)
+                            this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                            this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
+                            break;
+                        case 'done':
+                            this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
+                            this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                            // this.MessageSearchCancelled = msg.isCancelled;
+                            this.messageSearchPhase = 'Done';
+                            this.messageSearchPhase = null;
+                            break;
+                        case 'error':
+                            // error doesn't necessarily mean the whole request is done
+                            console.info('ws backend error: ' + res.controlMessage.value.message);
+                            toast({
+                                title: 'Backend Error',
+                                description: res.controlMessage.value.message,
+                                status: 'error'
+                            });
 
-                case 'done':
-                    this.messagesElapsedMs = msg.elapsedMs;
-                    this.messagesBytesConsumed = msg.bytesConsumed;
-                    // this.MessageSearchCancelled = msg.isCancelled;
-                    this.messageSearchPhase = 'Done';
-                    this.messageSearchPhase = null;
-                    break;
+                            break;
+                        case 'data':
+                            // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
+                            // this is my hacky way of attempting to get things working by converting the Connect types
+                            // to the rest interface types that are hooked up to other things
 
-                case 'error':
-                    // error doesn't neccesarily mean the whole request is done
-                    console.info('ws backend error: ' + msg.message);
-                    toast({
-                        title: 'Backend Error',
-                        description: msg.message,
-                        status: 'error'
-                    });
+                            const m = {} as TopicMessage;
+                            m.partitionID = res.controlMessage.value.partitionId
 
-                    break;
+                            m.compression = CompressionType.Unknown
+                            switch (res.controlMessage.value.compression) {
+                                case ProtoCompressionType.UNCOMPRESSED:
+                                    m.compression = CompressionType.Uncompressed;
+                                    break;
+                                case ProtoCompressionType.GZIP:
+                                    m.compression = CompressionType.GZip;
+                                    break;
+                                case ProtoCompressionType.SNAPPY:
+                                    m.compression = CompressionType.Snappy;
+                                    break;
+                                case ProtoCompressionType.LZ4:
+                                    m.compression = CompressionType.LZ4;
+                                    break;
+                                case ProtoCompressionType.ZSTD:
+                                    m.compression = CompressionType.ZStd;
+                                    break;
+                            }
 
-                case 'message':
-                    const m = msg.message as TopicMessage;
+                            m.offset = Number(res.controlMessage.value.offset)
+                            m.timestamp = Number(res.controlMessage.value.timestamp)
+                            m.isTransactional = res.controlMessage.value.isTransactional
+                            m.headers = [];
+                            res.controlMessage.value.headers.forEach(h => {
+                                m.headers.push({
+                                    key: h.key,
+                                    value: {
+                                        payload: JSON.stringify(new TextDecoder().decode(h.value)),
+                                        encoding: 'text',
+                                        schemaId: 0,
+                                        size: h.value.length,
+                                        isPayloadNull: h.value == null,
+                                    }
+                                })
+                            })
 
-                    if (m.key.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
-                        m.keyBinHexPreview = base64ToHexString(m.key.payload);
-                        m.key.payload = decodeBase64(m.key.payload);
+                            // key
+                            const key = res.controlMessage.value.key;
+                            const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
+
+                            m.key = {} as Payload;
+                            m.key.rawBytes = key?.originalPayload;
+
+                            switch (key?.encoding) {
+                                case PayloadEncoding.NULL:
+                                    m.key.encoding = 'null';
+                                    break;
+                                case PayloadEncoding.BINARY:
+                                    m.key.encoding = 'binary';
+                                    break;
+                                case PayloadEncoding.XML:
+                                    m.key.encoding = 'xml';
+                                    break;
+                                case PayloadEncoding.AVRO:
+                                    m.key.encoding = 'avro';
+                                    break;
+                                case PayloadEncoding.JSON:
+                                    m.key.encoding = 'json';
+                                    break;
+                                case PayloadEncoding.PROTOBUF:
+                                    m.key.encoding = 'protobuf';
+                                    break;
+                                case PayloadEncoding.MESSAGE_PACK:
+                                    m.key.encoding = 'msgpack';
+                                    break;
+                                case PayloadEncoding.TEXT:
+                                    m.key.encoding = 'text';
+                                    break;
+                                case PayloadEncoding.UTF8:
+                                    m.key.encoding = 'utf8WithControlChars';
+                                    break;
+                                case PayloadEncoding.UINT:
+                                    m.key.encoding = 'uint';
+                                    break;
+                                case PayloadEncoding.SMILE:
+                                    m.key.encoding = 'smile';
+                                    break;
+                                case PayloadEncoding.CONSUMER_OFFSETS:
+                                    m.key.encoding = 'consumerOffsets';
+                                    break;
+                                default:
+                                    console.log('unhandled key encoding type', {
+                                        encoding: key?.encoding,
+                                        encodingName: key?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName : undefined,
+                                        message: res,
+                                    })
+                            }
+
+                            m.key.isPayloadNull = key?.encoding == PayloadEncoding.NULL;
+                            m.key.payload = keyPayload;
+                            m.key.normalizedPayload = key?.normalizedPayload;
+
+                            try {
+                                m.key.payload = JSON.parse(keyPayload);
+                            } catch { }
+
+                            m.key.troubleshootReport = key?.troubleshootReport;
+                            m.key.schemaId = key?.schemaId ?? 0;
+                            m.keyJson = JSON.stringify(m.key.payload);
+                            m.key.size = Number(key?.payloadSize);
+                            m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
+
+                            // console.log(m.keyJson)
+
+                            // value
+                            const val = res.controlMessage.value.value;
+                            const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+
+                            m.value = {} as Payload;
+                            m.value.payload = valuePayload;
+                            m.value.normalizedPayload = val?.normalizedPayload;
+                            m.value.rawBytes = val?.originalPayload;
+
+                            switch (val?.encoding) {
+                                case PayloadEncoding.NULL:
+                                    m.value.encoding = 'null';
+                                    break;
+                                case PayloadEncoding.BINARY:
+                                    m.value.encoding = 'binary';
+                                    break;
+                                case PayloadEncoding.XML:
+                                    m.value.encoding = 'xml';
+                                    break;
+                                case PayloadEncoding.AVRO:
+                                    m.value.encoding = 'avro';
+                                    break;
+                                case PayloadEncoding.JSON:
+                                    m.value.encoding = 'json';
+                                    break;
+                                case PayloadEncoding.PROTOBUF:
+                                    m.value.encoding = 'protobuf';
+                                    break;
+                                case PayloadEncoding.MESSAGE_PACK:
+                                    m.value.encoding = 'msgpack';
+                                    break;
+                                case PayloadEncoding.TEXT:
+                                    m.value.encoding = 'text';
+                                    break;
+                                case PayloadEncoding.UTF8:
+                                    m.value.encoding = 'utf8WithControlChars';
+                                    break;
+                                case PayloadEncoding.UINT:
+                                    m.value.encoding = 'uint';
+                                    break;
+                                case PayloadEncoding.SMILE:
+                                    m.value.encoding = 'smile';
+                                    break;
+                                case PayloadEncoding.CONSUMER_OFFSETS:
+                                    m.value.encoding = 'consumerOffsets';
+                                    break;
+                                default:
+                                    console.log('unhandled value encoding type', {
+                                        encoding: val?.encoding,
+                                        encodingName: val?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName : undefined,
+                                        message: res,
+                                    })
+                            }
+
+                            m.value.schemaId = val?.schemaId ?? 0;
+                            m.value.troubleshootReport = val?.troubleshootReport;
+                            m.value.isPayloadNull = val?.encoding == PayloadEncoding.NULL;
+                            m.valueJson = valuePayload;
+                            m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
+
+                            try {
+                                m.value.payload = JSON.parse(valuePayload);
+                            } catch { }
+
+                            m.valueJson = JSON.stringify(m.value.payload);
+                            m.value.size = Number(val?.payloadSize);
+
+                            this.messages.push(m);
+                            break;
                     }
-
-                    if (m.value.encoding == 'binary' || m.value.encoding == 'utf8WithControlChars') {
-                        m.valueBinHexPreview = base64ToHexString(m.value.payload);
-                        m.value.payload = decodeBase64(m.value.payload);
-                    }
-
-                    m.keyJson = JSON.stringify(m.key.payload);
-                    m.valueJson = JSON.stringify(m.value.payload);
-
-                    this.messages.push(m);
-                    break;
+                }
+                catch (e) {
+                    console.error('error in listMessages loop', { error: e });
+                }
             }
-        };
-        currentWS.onmessage = onMessageHandler;
+        } catch (e) {
+            messageSearchAbortController = null;
+            this.messageSearchPhase = 'Done';
+            this.messagesBytesConsumed = 0;
+            this.messagesTotalConsumed = 0;
+            this.messageSearchPhase = null;
+            // https://connectrpc.com/docs/web/errors
+            if (abortController.signal.aborted) {
+            // Do not throw, this is a user cancellation
+            } else {
+                console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
+                throw e;
+            }
+        }
+
+        // one done
+        api.stopMessageSearch();
+        return this.messages;
     },
 
-
-
     stopMessageSearch() {
-        if (currentWS) {
-            currentWS.close();
-            currentWS = null;
+        if (messageSearchAbortController) {
+            messageSearchAbortController.abort('aborted by user');
+            messageSearchAbortController = null;
         }
 
         if (this.messageSearchPhase != null) {
@@ -1473,6 +1672,17 @@ const apiStore = {
         return parseOrUnwrap<ProduceRecordsResponse>(response, null);
     },
 
+    // New version of "publishRecords"
+    async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
+        const transport = createConnectTransport({
+            baseUrl: window.location.origin,
+        });
+        const client = createPromiseClient(ConsoleService, transport);
+        const r = await client.publishMessage(request);
+
+        return r;
+    },
+
     async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
         // POST "/topics"
         const response = await appConfig.fetch(`${appConfig.restBasePath}/topics`, {
@@ -1711,7 +1921,8 @@ export interface MessageSearchRequest {
         redpandaCloud?: {
             accessToken: string;
         }
-    }
+    },
+    includeRawPayload?: boolean;
 }
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {

@@ -26,17 +26,17 @@ func TestApplyListACLsRequest(t *testing.T) {
 		{
 			name:     "nil filter",
 			input:    &v1alpha1.ListACLsRequest{},
-			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ACL_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_ANY, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
+			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ListACLsRequest_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_ANY, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
 		},
 		{
 			name:     "unspecified values",
-			input:    &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ACL_Filter{}},
-			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ACL_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_ANY, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
+			input:    &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ListACLsRequest_Filter{}},
+			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ListACLsRequest_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_ANY, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
 		},
 		{
 			name:     "partially specified values",
-			input:    &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ACL_Filter{Operation: v1alpha1.ACL_OPERATION_CREATE}},
-			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ACL_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_CREATE, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
+			input:    &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ListACLsRequest_Filter{Operation: v1alpha1.ACL_OPERATION_CREATE}},
+			expected: &v1alpha1.ListACLsRequest{Filter: &v1alpha1.ListACLsRequest_Filter{ResourceType: v1alpha1.ACL_RESOURCE_TYPE_ANY, ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY, Operation: v1alpha1.ACL_OPERATION_CREATE, PermissionType: v1alpha1.ACL_PERMISSION_TYPE_ANY}},
 		},
 	}
 

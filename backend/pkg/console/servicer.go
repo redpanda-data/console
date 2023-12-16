@@ -9,6 +9,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
@@ -40,7 +41,8 @@ type Servicer interface {
 	GetKafkaVersion(ctx context.Context) (string, error)
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
-	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionType int8) ProduceRecordsResponse
+	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
+	PublishRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
 	Start() error
 	Stop()
 	IsHealthy(ctx context.Context) error
@@ -75,5 +77,7 @@ type Servicer interface {
 	// ------------------------------------------------------------------
 
 	// CreateACLs proxies the request/response to CreateACLs via the Kafka API.
-	CreateACLs(ctx context.Context, createReq kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error)
+	CreateACLs(ctx context.Context, createReq *kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error)
+	// DeleteACLsKafka proxies the request/response via the Kafka API.
+	DeleteACLsKafka(ctx context.Context, deleteReq *kmsg.DeleteACLsRequest) (*kmsg.DeleteACLsResponse, error)
 }

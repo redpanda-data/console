@@ -25,6 +25,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // Service acts as interface to interact with the Kafka Cluster
@@ -37,6 +38,7 @@ type Service struct {
 	KafkaAdmClient   *kadm.Client
 	SchemaService    *schema.Service
 	ProtoService     *proto.Service
+	SerdeService     *serde.Service
 	Deserializer     deserializer
 	MetricsNamespace string
 }
@@ -119,6 +121,8 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		}
 	}
 
+	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc)
+
 	return &Service{
 		Config:           cfg,
 		Logger:           logger,
@@ -127,6 +131,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		KafkaAdmClient:   kadm.NewClient(kafkaClient),
 		SchemaService:    schemaSvc,
 		ProtoService:     protoSvc,
+		SerdeService:     serdeSvc,
 		Deserializer: deserializer{
 			SchemaService:  schemaSvc,
 			ProtoService:   protoSvc,

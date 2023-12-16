@@ -74,21 +74,43 @@ const AppPageHeader = observer(() => {
 
 export default AppPageHeader;
 
-
+/**
+ * Custom React Hook: Determines whether to show the refresh button based on route matches.
+ * It checks various routes and conditions to decide if the refresh button should be displayed
+ * in the header next to the breadcrumb.
+ *
+ * @returns {boolean} Indicates whether the refresh button should be shown (true/false).
+ */
 function useShouldShowRefresh() {
-
-    const match = useRouteMatch<{ clusterName: string, connectorName: string }>({
+    const connectClusterMatch = useRouteMatch<{ clusterName: string, connectorName: string }>({
         path: '/connect-clusters/:clusterName/:connectorName',
-        strict: true,
+        strict: false,
         sensitive: true,
         exact: true
     });
 
-    if (match) {
-        // console.log('useRouteMatch found a route where showing the refresh button does not make sense', match);
-        if (match.params.connectorName == 'create-connector')
-            return false;
-    }
+    const schemaCreateMatch = useRouteMatch({
+        path: '/schema-registry/create',
+        strict: false,
+        sensitive: true,
+        exact: true
+    });
+
+    const topicProduceRecordMatch = useRouteMatch({
+        path: '/topics/:topicName/produce-record',
+        strict: false,
+        sensitive: true,
+        exact: true
+    });
+
+    if (connectClusterMatch && connectClusterMatch.params.connectorName == 'create-connector')
+        return false;
+
+    if (schemaCreateMatch)
+        return false
+
+    if (topicProduceRecordMatch)
+        return false
 
     return true;
 }

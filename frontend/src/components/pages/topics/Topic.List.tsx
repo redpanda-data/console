@@ -94,51 +94,16 @@ class TopicList extends PageComponent {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
 
-        const partitionCountReal = topics.sum((x) => x.partitionCount);
-        const partitionCountOnlyReplicated = topics.sum((x) => x.partitionCount * (x.replicationFactor - 1));
-
-        const partitionDetails = QuickTable(
-            [
-                { key: 'Primary:', value: partitionCountReal },
-                { key: 'Replicated:', value: partitionCountOnlyReplicated },
-                { key: 'All:', value: partitionCountReal + partitionCountOnlyReplicated },
-            ],
-            {
-                keyAlign: 'right', keyStyle: { fontWeight: 500 },
-                gapWidth: 4,
-                valueAlign: 'right'
-            }
-        );
+        const partitionCount = topics.sum((x) => x.partitionCount);
+        const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
 
         return (
             <PageContent>
                 <Section py={4}>
                     <Flex>
                         <Statistic title="Total topics" value={topics.length} />
-                        <Popover
-                            title="Partition Details"
-                            content={partitionDetails}
-                            placement="right"
-                            trigger="hover"
-                            size="stretch"
-                            hideCloseButton
-                        >
-                            <div
-                                className="hoverLink"
-                                style={{
-                                    display: 'flex',
-                                    verticalAlign: 'middle',
-                                    cursor: 'default',
-                                }}
-                            >
-                                <Statistic
-                                    title="Total partitions"
-                                    value={
-                                        partitionCountReal + partitionCountOnlyReplicated
-                                    }
-                                />
-                            </div>
-                        </Popover>
+                        <Statistic title="Total partitions" value={partitionCount} />
+                        <Statistic title="Total replicas" value={replicaCount} />
                     </Flex>
                 </Section>
 

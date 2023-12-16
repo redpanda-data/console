@@ -328,7 +328,7 @@ func (s *APISuite) TestListACLs() {
 
 		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
 		_, err := client.ListACLs(ctx, connect.NewRequest(&v1alpha1.ListACLsRequest{
-			Filter: &v1alpha1.ACL_Filter{
+			Filter: &v1alpha1.ListACLsRequest_Filter{
 				ResourceType:   v1alpha1.ACL_RESOURCE_TYPE_ANY,
 				PermissionType: v1alpha1.ACL_PermissionType(999),
 			},
@@ -402,5 +402,211 @@ func (s *APISuite) TestListACLs() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 		assert.GreaterOrEqual(len(response.Resources), 4)
+	})
+}
+
+func (s *APISuite) TestDeleteACLs() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("delete ACLs with a filter that matches all three created ACLs (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// 1. Seed some ACLs
+		principal := "User:test"
+		resourceNamePrefix := "console-deletion-test-"
+
+		resourceNames := map[v1alpha1.ACL_ResourceType]string{
+			v1alpha1.ACL_RESOURCE_TYPE_GROUP:            fmt.Sprintf("%vgroup", resourceNamePrefix),
+			v1alpha1.ACL_RESOURCE_TYPE_TOPIC:            fmt.Sprintf("%vtopic", resourceNamePrefix),
+			v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID: fmt.Sprintf("%vtransactional-id", resourceNamePrefix),
+		}
+
+		acls := kadm.NewACLs().
+			Allow(principal).
+			ResourcePatternType(kadm.ACLPatternLiteral).
+			Groups(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_GROUP]).
+			Topics(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TOPIC]).
+			TransactionalIDs(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID]).
+			Operations(kadm.OpAll)
+
+		err := acls.ValidateCreate()
+		require.NoError(err)
+
+		_, err = s.kafkaAdminClient.CreateACLs(ctx, acls)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.DeleteAllACLs(ctx)
+			assert.NoError(err, "failed to delete all ACLs")
+		}()
+
+		// 2. Delete ACLs
+		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
+
+		// Resource name is not specified and therefore matches all resources
+		deleteRequest := &v1alpha1.DeleteACLsRequest{
+			Filter: &v1alpha1.DeleteACLsRequest_Filter{
+				ResourceType:        v1alpha1.ACL_RESOURCE_TYPE_ANY,
+				ResourcePatternType: v1alpha1.ACL_RESOURCE_PATTERN_TYPE_LITERAL,
+				Principal:           kmsg.StringPtr(principal),
+				Host:                kmsg.StringPtr("*"),
+				Operation:           v1alpha1.ACL_OPERATION_ALL,
+				PermissionType:      v1alpha1.ACL_PERMISSION_TYPE_ALLOW,
+			},
+		}
+		response, err := client.DeleteACLs(ctx, connect.NewRequest(deleteRequest))
+		require.NoError(err)
+		assert.Len(response.Msg.MatchingAcls, len(resourceNames))
+	})
+
+	t.Run("delete ACLs with invalid filter (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// The ACL filter for deletions must be complete (all fields must be set)
+		// as this could otherwise cause more ACLs to be deleted than desired.
+		client := v1alpha1connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
+		_, err := client.DeleteACLs(ctx, connect.NewRequest(&v1alpha1.DeleteACLsRequest{
+			Filter: &v1alpha1.DeleteACLsRequest_Filter{
+				ResourceType:   v1alpha1.ACL_RESOURCE_TYPE_ANY,
+				PermissionType: v1alpha1.ACL_PermissionType(999),
+			},
+		}))
+		assert.Error(err)
+		assert.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("delete ACLs with a filter that matches all three created ACLs (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// 1. Seed some ACLs
+		principal := "User:test"
+		resourceNamePrefix := "console-deletion-test-"
+
+		resourceNames := map[v1alpha1.ACL_ResourceType]string{
+			v1alpha1.ACL_RESOURCE_TYPE_GROUP:            fmt.Sprintf("%vgroup", resourceNamePrefix),
+			v1alpha1.ACL_RESOURCE_TYPE_TOPIC:            fmt.Sprintf("%vtopic", resourceNamePrefix),
+			v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID: fmt.Sprintf("%vtransactional-id", resourceNamePrefix),
+		}
+
+		acls := kadm.NewACLs().
+			Allow(principal).
+			ResourcePatternType(kadm.ACLPatternLiteral).
+			Groups(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_GROUP]).
+			Topics(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TOPIC]).
+			TransactionalIDs(resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID]).
+			Operations(kadm.OpAll)
+
+		err := acls.ValidateCreate()
+		require.NoError(err)
+
+		_, err = s.kafkaAdminClient.CreateACLs(ctx, acls)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.DeleteAllACLs(ctx)
+			assert.NoError(err, "failed to delete all ACLs")
+		}()
+
+		// 2. Delete ACLs via HTTP API
+		type deleteAclsResponse struct {
+			MatchingACLs []map[string]any `json:"matching_acls"`
+		}
+		var response deleteAclsResponse
+		var errResponse string
+		// Resource name is not provided as part of the filter and therefore matches all resource names
+		err = requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
+			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_LITERAL").
+			Param("filter.operation", "OPERATION_ANY").
+			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
+			Param("filter.principal", principal).
+			Param("filter.host", "*").
+			CheckStatus(http.StatusOK).
+			ToJSON(&response).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+		assert.Equal(len(response.MatchingACLs), len(resourceNames))
+	})
+
+	t.Run("delete ACLs with missing filter (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// 1. Try to delete ACLs via HTTP API by not setting any filter at all
+		var plainResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1alpha1/").
+			Path("acls").
+			Delete().
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
+
+		// 2. Try to delete ACLs via HTTP API by using an empty filter object
+		err = requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter", "").
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
+	})
+
+	t.Run("delete ACLs with an invalid filter (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		var plainResponse string
+		// 1. Try to delete ACLs via HTTP API by using an incomplete filter.
+		// Below test misses the host field (that's okay), but it misses the operation
+		err := requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
+			Param("filter.resource_name", "topic").
+			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_PREFIXED").
+			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
+			Param("filter.principal", "test").
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
+
+		// 2. Try to delete ACLs via HTTP API by using an UNSPECIFIED enum
+		err = requests.
+			URL(s.httpAddress()+"/v1alpha1/").
+			Path("acls").
+			Delete().
+			Param("filter.resource_type", "RESOURCE_TYPE_ANY").
+			Param("filter.resource_name", "topic").
+			Param("filter.resource_pattern_type", "RESOURCE_PATTERN_TYPE_PREFIXED").
+			Param("filter.permission_type", "PERMISSION_TYPE_ANY").
+			Param("filter.operation", "OPERATION_UNSPECIFIED").
+			Param("filter.principal", "test").
+			CheckStatus(http.StatusBadRequest).
+			ToString(&plainResponse).
+			Fetch(ctx)
+		assert.Contains(plainResponse, "INVALID_ARGUMENT")
+		assert.NoError(err) // Status BadRequest is the expected status, hence no error
 	})
 }
