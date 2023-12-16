@@ -12,14 +12,12 @@
 import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
-import { Radio } from 'antd';
-import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress,
-    RadioGroup, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
+import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, RadioGroup, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
 import { motion } from 'framer-motion';
-import { AnimatePresence, animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
+import { animProps } from './animationProps';
 import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { InfoIcon } from '@primer/octicons-react';
@@ -253,7 +251,7 @@ export const InfoText = (p: {
 };
 
 export class OptionGroup<T extends string> extends Component<{
-    label?: string;
+    label: string;
     options: { [key: string]: any };
     value: T;
     onChange: (value: T) => void;
@@ -263,18 +261,6 @@ export class OptionGroup<T extends string> extends Component<{
 }> {
     render() {
         const p = this.props;
-
-        const radioGroup = (
-            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)} size={p.size ?? 'middle'} style={p.style}>
-                {ObjToKv(p.options).map(kv => (
-                    <Radio.Button key={kv.key} value={kv.value}>
-                        {kv.key}
-                    </Radio.Button>
-                ))}
-            </Radio.Group>
-        );
-
-        if (!p.label) return radioGroup;
 
         return <Label text={p.label}>
             <RadioGroup
@@ -292,7 +278,7 @@ export class OptionGroup<T extends string> extends Component<{
     }
 }
 
-export class RadioOptionGroup<T> extends Component<{
+export class RadioOptionGroup<T extends string | null = string> extends Component<{
     options: {
         key?: any;
         value: T;
@@ -309,25 +295,29 @@ export class RadioOptionGroup<T> extends Component<{
     render() {
         const p = this.props;
 
-        const radioGroup = (
-            <Radio.Group className="radioOptionGroup" value={p.value} onChange={e => p.onChange(e.target.value)}>
-                {p.options.map(kv => (
-                    <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
-                        <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
-                        <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
-                        <AnimatePresence>
-                            {kv.content && (p.showContent == 'always' || p.value == kv.value) && (
-                                <MotionDiv animProps={animProps_radioOptionGroup} key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
-                                    <div>{kv.content}</div>
-                                </MotionDiv>
-                            )}
-                        </AnimatePresence>
-                    </Radio>
-                ))}
-            </Radio.Group>
-        );
-
-        return radioGroup;
+        return <RadioGroup
+            direction="column"
+            // TODO - we need to make the API more TS safe and make name optional
+            name=""
+            // @ts-ignore
+            value={p.value}
+            // @ts-ignore
+            onChange={p.onChange}
+            // @ts-ignore
+            options={p.options.map(kv => ({
+                value: kv.value,
+                disabled: p.disabled,
+                label: <Box p={3}>
+                    <Text fontWeight={500}>{kv.title}</Text>
+                    <Text color="gray.500">{kv.subTitle}</Text>
+                    {kv.content && (p.showContent == 'always' || p.value == kv.value) && (
+                        <Box key={String(kv.value)} style={{marginLeft: '27px', marginTop: '12px'}}>
+                            <div>{kv.content}</div>
+                        </Box>
+                    )}
+                </Box>
+            }))}
+        />
     }
 }
 

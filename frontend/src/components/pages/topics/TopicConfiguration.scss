@@ -119,16 +119,3 @@
         gap: 8px;
     }
 }
-
-.ratioInput {
-    display:flex;
-    align-items: center;
-
-    .ant-slider{
-        flex-grow:1;
-        min-width: 80px;
-    }
-    .numericInput, .ant-input-number, .ant-input-number-group-wrapper {
-        flex-basis: 100px;
-    }
-}
