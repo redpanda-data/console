@@ -11,10 +11,7 @@
 
 import { Component } from 'react';
 import { observer } from 'mobx-react';
-import { Table } from 'antd';
-import { ColumnProps } from 'antd/lib/table';
 import { api } from '../../../state/backendApi';
-import { makePaginationConfig } from '../../misc/common';
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/restInterfaces';
 import { makeObservable, observable } from 'mobx';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
@@ -23,7 +20,7 @@ import { BrokerList } from '../../misc/BrokerList';
 import ReassignPartitions, { PartitionSelection, } from './ReassignPartitions';
 import { uiSettings } from '../../../state/ui';
 import { BandwidthSlider } from './components/BandwidthSlider';
-import { Empty } from '@redpanda-data/ui';
+import { Box, DataTable, Empty } from '@redpanda-data/ui';
 
 export type PartitionWithMoves = Partition & {
     brokersBefore: number[],
@@ -45,9 +42,6 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     @observable unused: number = 0;
-
-    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
-
     constructor(p: any) {
         super(p);
         makeObservable(this);
@@ -59,67 +53,57 @@ export class StepReview extends Component<{
         if (api.topicPartitions.size == 0)
             return <Empty />;
 
-
-        const columns: ColumnProps<TopicWithMoves>[] = [
-            {
-                width: undefined, title: 'Topic', dataIndex: 'topicName', defaultSortOrder: 'ascend',
-            },
-            {
-                width: '50%', title: 'Brokers Before',
-                render: (v, r) => {
-                    const brokersBefore = r.selectedPartitions.flatMap(x => x.brokersBefore).distinct().sort((a, b) => a - b);
-                    return <BrokerList brokerIds={brokersBefore} />
-                }
-            },
-            {
-                width: '50%', title: 'Brokers After',
-                render: (v, r) => {
-                    const plannedBrokers = r.selectedPartitions.flatMap(x => x.brokersAfter).distinct().sort((a, b) => a - b);
-                    return <BrokerList brokerIds={plannedBrokers} />
-                }
-            },
-            {
-                width: 100, title: () =>
-                    <InfoText
-                        tooltip="The number of replicas that will be moved to a different broker."
-                        maxWidth="180px"
-                    >Reassignments</InfoText>,
-                render: (v, r) => r.selectedPartitions.sum(p => p.numAddedBrokers),
-            },
-            {
-                width: 120, title: 'Estimated Traffic',
-                render: (v, r) => prettyBytesOrNA(r.selectedPartitions.sum(p => p.numAddedBrokers * p.replicaSize)),
-            },
-        ];
-
         return <>
             <div style={{ margin: '2em 1em' }}>
                 <h2>Review Reassignment Plan</h2>
                 <p>Kowl computed the following reassignment plan to distribute the selected partitions onto the selected brokers.</p>
             </div>
 
-            <Table
-                style={{ margin: '0', }} size={'middle'}
-                pagination={this.pageConfig}
-                onChange={(p) => {
-                    if (p.pageSize) uiSettings.reassignment.pageSizeReview = p.pageSize;
-                    this.pageConfig.current = p.current;
-                    this.pageConfig.pageSize = p.pageSize;
-                }}
-                dataSource={this.props.topicsWithMoves}
-                rowKey={r => r.topicName}
-                rowClassName={() => 'pureDisplayRow'}
-                columns={columns}
-                expandable={{
-                    expandIconColumnIndex: 0,
-                    expandRowByClick: true,
-                    expandedRowRender: topic => topic.selectedPartitions
-                        ? <ReviewPartitionTable
-                            topic={topic.topic}
-                            topicPartitions={topic.selectedPartitions}
-                            assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!} />
-                        : <>Error loading partitions</>,
-                }}
+            <DataTable<TopicWithMoves>
+                data={this.props.topicsWithMoves}
+                columns={[
+                    {
+                        header: 'Topic',
+                        accessorKey: 'topicName',
+                    },
+                    {
+                        header: 'Brokers Before',
+                        size: 50,
+                        cell: ({row: {original: topic}}) => {
+                            const brokersBefore = topic.selectedPartitions.flatMap(x => x.brokersBefore).distinct().sort((a, b) => a - b);
+                            return <BrokerList brokerIds={brokersBefore}/>
+                        }
+                    },
+                    {
+                        accessorKey: 'Brokers After',
+                        size: 50,
+                        cell: ({row: {original: topic}}) => {
+                            const plannedBrokers = topic.selectedPartitions.flatMap(x => x.brokersAfter).distinct().sort((a, b) => a - b);
+                            return <BrokerList brokerIds={plannedBrokers}/>
+                        }
+                    },
+                    {
+                        id: 'numAddedBrokers',
+                        size: 100,
+                        header: () =>
+                            <InfoText
+                                tooltip="The number of replicas that will be moved to a different broker."
+                                maxWidth="180px"
+                            >Reassignments</InfoText>,
+                        cell: ({row: {original: topic}}) => topic.selectedPartitions.sum(p => p.numAddedBrokers),
+                    },
+                    {
+                        header: 'Estimated Traffic',
+                        size: 120,
+                        cell: ({row: {original: topic}}) => prettyBytesOrNA(topic.selectedPartitions.sum(p => p.numAddedBrokers * p.replicaSize)),
+                    },
+                ]}
+                subComponent={({row: {original: topic}}) => topic.selectedPartitions
+                    ? <ReviewPartitionTable
+                        topic={topic.topic}
+                        topicPartitions={topic.selectedPartitions}
+                        assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!} />
+                    : <>Error loading partitions</>}
             />
 
             {this.reassignmentOptions()}
@@ -230,39 +214,27 @@ export class StepReview extends Component<{
 }
 
 
-@observer
-class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Partition[], assignments: TopicAssignment }> {
-    partitionsPageConfig = makePaginationConfig(100, true);
-    brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>
-        These are the brokers this partitions replicas are assigned to.<br />
-        The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.
-    </div>;
-
-    render() {
-
-        return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
-            <Table size="small" className="nestedTable"
-                dataSource={this.props.topicPartitions}
-                pagination={this.partitionsPageConfig}
-                scroll={{ y: '300px' }}
-                rowKey={r => r.id}
-                columns={[
-                    { width: 120, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
-                    {
-                        width: undefined, title: 'Brokers Before',
-                        render: (v, record) => <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
-                    },
-                    {
-                        width: undefined, title: 'Brokers After',
-                        render: (v, record) => {
-                            const partitionAssignments = this.props.assignments.partitions.first(p => p.partitionId == record.id);
-                            if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
-                            return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />
-                        }
-                    },
-                ]}
-            />
-        </div>
-    }
-}
+const ReviewPartitionTable = observer((props: { topic: Topic, topicPartitions: Partition[], assignments: TopicAssignment }) => <Box py={2} width="full">
+    <DataTable<Partition>
+        data={props.topicPartitions}
+        columns={[
+            {
+                header: 'Partition',
+                accessorKey: 'id',
+            },
+            {
+                header: 'Brokers Before',
+                cell: ({row: {original: partition}}) => <BrokerList brokerIds={partition.replicas} leaderId={partition.leader}/>
+            },
+            {
+                header: 'Brokers After',
+                cell: ({row: {original: partition}}) => {
+                    const partitionAssignments = props.assignments.partitions.first(p => p.partitionId == partition.id);
+                    if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
+                    return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]}/>
+                }
+            },
+        ]}
+    />
+</Box>);
 

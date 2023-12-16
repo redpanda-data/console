@@ -27,8 +27,9 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
     }
 
     render() {
-        if (api.topicPartitions == null)
+        if (api.topicPartitions == null) {
             return null;
+        }
 
         const allSelectedPartitions = this.selectedPartitions.flatMap(p => p.partitions);
         const partitionCountLeaders = allSelectedPartitions.length; // every partition has a leader

@@ -488,6 +488,31 @@ export const prettyBytesOrNA = function (n: number) {
     return prettyBytes(n);
 }
 
+
+/**
+ * Determines if two sets are equal.
+ *
+ * This function checks if two sets (xs and ys) have the same size and
+ * the same elements. It assumes that the sets contain elements of type T.
+ * Equality is determined by checking if every element in set xs is also
+ * present in set ys.
+ *
+ * @template T - The type of elements in the sets.
+ * @param {Set<T>} xs - The first set to be compared.
+ * @param {Set<T>} ys - The second set to be compared.
+ * @returns {boolean} - Returns `true` if the sets are equal, otherwise returns `false`.
+ * @example
+ * // returns true
+ * eqSet(new Set([1, 2, 3]), new Set([3, 2, 1]));
+ *
+ * @example
+ * // returns false
+ * eqSet(new Set([1, 2, 3]), new Set([4, 5, 6]));
+ */
+export const eqSet = <T = string,>(xs: Set<T>, ys: Set<T>): boolean =>
+    xs.size === ys.size &&
+    [...xs].every((x) => ys.has(x));
+
 export type PrettyValueOptions = {
     /** Show 'Infinite' for greater or equal to 2^64-1 */
     showLargeAsInfinite?: boolean;

@@ -11,17 +11,15 @@
 
 import { Component } from 'react';
 import { UserDetails } from '../../../state/restInterfaces';
-import { Table } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
-import { sortField } from '../../misc/common';
 import { MotionDiv } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
 import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Accordion, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Accordion, DataTable, SearchField, Tooltip } from '@redpanda-data/ui';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -37,54 +35,45 @@ export class AdminUsers extends Component<{}> {
         const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch)) : api.adminInfo.users;
 
         const table = (
-            <Table
-                size={'middle'}
-                style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                bordered={false}
-                showSorterTooltip={false}
-                dataSource={users}
-                rowKey={x => x.internalIdentifier + x.oauthUserId + x.loginProvider}
-                rowClassName={user => 'hoverLink' + (user.internalIdentifier == api.userData?.user.internalIdentifier ? ' tableRowHighlightSpecial' : null)}
+            <DataTable<UserDetails>
+                data={users}
+                enableSorting
+                expandRowByClick
+                size="md"
                 columns={[
                     {
-                        width: 1,
-                        title: 'Identifier',
-                        dataIndex: 'internalIdentifier',
-                        sorter: sortField('internalIdentifier'),
-                        render: (t, r) => {
-                            if (r.internalIdentifier == api.userData?.user.internalIdentifier)
+                        size: 1,
+                        header: 'Identifier',
+                        accessorKey: 'internalIdentifier',
+                        cell: ({row}) => {
+                            if (row.original.internalIdentifier == api.userData?.user.internalIdentifier) {
                                 return (
                                     <span>
                                         <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>
-                                            <UserOutlined style={{ fontSize: '16px', padding: '2px', color: '#ff9e3a' }} />
+                                            <UserOutlined style={{fontSize: '16px', padding: '2px', color: '#ff9e3a'}}/>
                                         </Tooltip>{' '}
-                                        {t}
+                                        {row.original.internalIdentifier}
                                     </span>
                                 );
-                            return t;
+                            }
+                            return row.original.internalIdentifier;
                         }
                     },
-                    { width: 1, title: 'OAuthUserID', dataIndex: 'oauthUserId', sorter: sortField('oauthUserId') },
-                    { width: 1, title: 'Roles', dataIndex: 'roles', render: (_text, user) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
-                    { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },
-                    { title: '', render: _r => <span></span> }
+                    { size: 1, header: 'OAuthUserID', accessorKey: 'oauthUserId' },
+                    { size: 1, header: 'Roles', accessorKey: 'roles', cell: ({row: {original: user}}) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
+                    { size: Infinity, header: 'Login', accessorKey: 'loginProvider' },
                 ]}
-                // expandIconAsCell={false}
-                // expandIconColumnIndex={0}
-                expandRowByClick={true}
-                expandedRowRender={(user: UserDetails) => (
-                    <Accordion
-                        defaultIndex={0}
-                        items={
-                            user.grantedRoles.map(r => ({
-                                heading: r.role.name,
-                                description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
-                            }))
-                        }
-                    />
-                )}
+                subComponent={({row: {original: user}}) =>   <Accordion
+                    defaultIndex={0}
+                    items={
+                        user.grantedRoles.map(r => ({
+                            heading: r.role.name,
+                            description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
+                        }))
+                    }
+                />}
             />
-        );
+        )
 
         return <MotionDiv>
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>

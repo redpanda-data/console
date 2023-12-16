@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { ConfigProvider, DatePicker, Radio as AntdRadio, Table, Typography } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
@@ -36,7 +36,7 @@ import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
-import { makePaginationConfig, range, sortField } from '../../../misc/common';
+import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
@@ -44,7 +44,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Button, Empty, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, Box, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Empty, Code, DataTable, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
@@ -53,6 +53,8 @@ import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../..
 import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { WarningIcon } from '@chakra-ui/icons';
+import { ColumnDef } from '@tanstack/react-table';
+import { CogIcon } from '@heroicons/react/solid';
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -123,7 +125,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     @observable fetchError = null as any | null;
 
-    pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
@@ -474,131 +475,89 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
-        const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
 
-        const columns: ColumnProps<TopicMessage>[] = [
-            { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
-            { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochMillisecond={t} format={tsFormat} /> },
-            {
-                width: hasKeyTags ? '30%' : 1, title: 'Key', dataIndex: 'key',
-                render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />,
-                sorter: this.keySorter
+        const dataTableColumns: Record<string, ColumnDef<TopicMessage>> = {
+            offset: {
+                header: 'Offset',
+                accessorKey: 'offset',
+                cell: ({row: {original: {offset}}}) => numberToThousandsString(offset)
             },
-            {
-                dataIndex: 'value',
-                width: 'auto',
-                title: <span>Value {previewButton}</span>,
-                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
-                //filteredValue: ['?'],
-                //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
+            partitionID: {
+                header: 'Partition',
+                accessorKey: 'partitionID',
             },
-            {
-                width: 1,
-                title: ' ',
-                key: 'action',
-                className: 'msgTableActionColumn',
-                filters: [],
-                filterDropdownVisible: false,
-                onFilterDropdownVisibleChange: _ => (this.showColumnSettings = true),
-                filterIcon: _ => {
-                    return (
-                        <Tooltip label="Column Settings" placement="left" openDelay={1} gutter={16} hasArrow>
-                            <SettingFilled style={IsColumnSettingsEnabled ? { color: 'hsl(255 15% 65%)' } : { color: '#a092a0' }} />
-                        </Tooltip>
-                    );
-                },
-                render: (_text, record) => (
-                    <CopyDropdown record={record} onSaveToFile={() => this.downloadMessages = [record]} />
-                ),
+            timestamp: {
+                header: 'Timestamp',
+                accessorKey: 'timestamp',
+                cell: ({row: {original: {timestamp}}}) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat}/>,
             },
-            // todo: size was a guess anyway, might be added back later
-            // {
-            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-            //     sorter: (a, b) => b.size - a.size
-            // },
-        ];
+            key: {
+                header: 'Key',
+                size: hasKeyTags ? 300 : 1,
+                accessorKey: 'key',
+                cell: ({row: {original}}) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags}/>,
+            },
+            value: {
+                header: () => <span>Value {previewButton}</span>,
+                accessorKey: 'value',
+                cell: ({row: {original}}) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}/>
+            },
+        }
 
-        // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
-        const filteredColumns: (ColumnProps<TopicMessage>)[] =
-            uiState.topicSettings.previewColumnFields.length == 0
-                ? columns
-                : uiState.topicSettings.previewColumnFields
-                    .map(columnList =>
-                        columns.find(c => c.dataIndex === columnList.dataIndex)
-                    )
-                    .filter(column => !!column)
-                    // Add the action tab at the end
-                    .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
+        const newColumns: ColumnDef<TopicMessage>[] = []
 
-        const showTombstones = this.props.topic.cleanupPolicy.includes('compact');
+        uiState.topicSettings.previewColumnFields.forEach(field => {
+            if(dataTableColumns[field.dataIndex]) {
+                newColumns.push(dataTableColumns[field.dataIndex])
+            }
+        })
+
+        // set first column to span most of the space
+        if(newColumns.length > 0) {
+            newColumns[newColumns.length - 1].size = Infinity;
+        }
+
+        newColumns.push({
+            header: () => <button onClick={() => {
+                this.showColumnSettings = true
+            }}><CogIcon style={{width: 20}}/>
+            </button>,
+            id: 'action',
+            size: 0,
+            cell: ({row: {original}}) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]}/>,
+        })
 
         return <>
-            <ConfigProvider renderEmpty={this.empty}>
-                <Table
-                    style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                    size="middle"
-                    showSorterTooltip={false}
-                    pagination={this.pageConfig}
-                    onChange={(pagination) => {
-                        if (pagination.pageSize) uiState.topicSettings.messagesPageSize = pagination.pageSize;
-                        this.pageConfig.current = pagination.current;
-                        this.pageConfig.pageSize = pagination.pageSize;
+            <DataTable<TopicMessage>
+                size="md"
+                data={this.messageSource.data}
+                emptyText="No messages"
+                columns={newColumns}
+                showPagination
+                subComponent={({row: {original}}) => renderExpandedMessage(original)}
+            />
+            <Button variant="outline" style={{marginTop: '4px', marginLeft: '-2px'}}
+                    onClick={() => {
+                        this.downloadMessages = api.messages;
                     }}
-
-                    dataSource={this.messageSource.data}
-
-                    rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.value.isPayloadNull && showTombstones) ? 'tombstone' : ''}
-                    onRow={r => {
-                        return {
-                            onDoubleClick: e => {
-                                // Double clicking a row should expand/collapse it
-                                // But not when the user double-clicks the expand/collapse button
-                                if (e.target instanceof HTMLElement)
-                                    if (e.target.classList.contains('ant-table-row-expand-icon'))
-                                        return;
-                                this.toggleRecordExpand(r);
-                            },
-                        };
-                    }}
-
-                    expandable={{
-                        expandRowByClick: false,
-                        expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'offset'),
-                        rowExpandable: () => true,
-                        expandedRowRender: record => renderExpandedMessage(record),
-                        expandedRowKeys: this.expandedKeys.slice(),
-                        onExpand: (_p, r) => {
-                            this.toggleRecordExpand(r);
-                        }
-                    }}
-
-                    columns={filteredColumns}
-                />
-
-                <Button variant="outline" style={{ marginTop: '4px', marginLeft: '-2px' }}
-                    onClick={() => { this.downloadMessages = api.messages; }}
                     isDisabled={!api.messages || api.messages.length == 0}
-                >
-                    <span style={{ paddingRight: '4px' }}><DownloadIcon /></span>
-                    Save Messages
-                </Button>
+            >
+                <span style={{paddingRight: '4px'}}><DownloadIcon/></span>
+                Save Messages
+            </Button>
 
-                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch(true)} />
+            <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null}onRequireRawPayload={() => this.executeMessageSearch(true)} />
 
-                {
-                    (this.messageSource?.data?.length > 0) &&
-                    <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)} />
-                }
+            {
+                (this.messageSource?.data?.length > 0) &&
+                <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)}/>
+            }
 
-                <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
-
-
-            </ConfigProvider>
+            <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s}/>
         </>;
     });
+
 
 
     @action toggleRecordExpand(r: TopicMessage) {
@@ -1283,26 +1242,22 @@ const MessageSchema = observer((p: { schemaId: number }) => {
 });
 
 const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
-
     return <div className="messageHeaders">
         <div>
-            <Table
-                size="small" style={{ margin: '0', padding: '0' }}
-                indentSize={0}
-                dataSource={props.msg.headers}
-                pagination={false}
+            <DataTable<{key: string, value: Payload}>
+                data={props.msg.headers}
                 columns={[
                     {
-                        width: 200, title: 'Key', dataIndex: 'key',
-                        render: headerKey => <span className="cellDiv" style={{ width: 'auto' }}>
+                        size: 200, header: 'Key', accessorKey: 'key',
+                        cell: ({row: {original: {key: headerKey}}}) => <span className="cellDiv" style={{ width: 'auto' }}>
                             {headerKey
                                 ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis>
                                 : renderEmptyIcon('Empty Key')}
                         </span>
                     },
                     {
-                        width: 'auto', title: 'Value', dataIndex: 'value',
-                        render: headerValue => {
+                        size: Infinity, header: 'Value', accessorKey: 'value',
+                        cell: ({row: {original: {value: headerValue}}}) => {
                             if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
                             if (headerValue.payload === null) return renderEmptyIcon('"null"');
                             if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
@@ -1315,24 +1270,16 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                         },
                     },
                     {
-                        width: 120, title: 'Encoding', dataIndex: 'value',
-                        render: payload => <span className="nowrap">{payload.encoding}</span>
+                        size: 120, header: 'Encoding', accessorKey: 'value',
+                        cell: ({row: {original: {value: payload}}}) => <span className="nowrap">{payload.encoding}</span>
                     },
                 ]}
-                expandable={{
-                    rowExpandable: header =>
-                        (typeof header.value?.payload === 'object' && header.value?.payload != null) // expandable when object
-                        || (typeof header.value?.payload === 'string' // or if it's a string (longer than 20ch, or includes linebreak)
-                            && (header.value.payload.length > 20 || header.value.payload.includes('\n'))), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
-                    expandIconColumnIndex: 1,
-                    expandRowByClick: true,
-                    expandedRowRender: header => typeof header.value?.payload !== 'object'
+                subComponent={({row: {original: header}}) => {
+                    return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
-                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
+                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />
                 }}
-                rowKey={r => r.key}
             />
-            <br />
         </div>
     </div>;
 });
