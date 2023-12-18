@@ -11,14 +11,14 @@
 
 import React, { Component } from 'react';
 import { Topic, TopicConsumer } from '../../../state/restInterfaces';
-import { Skeleton } from 'antd';
 import { observer } from 'mobx-react';
 
 import '../../../utils/arrayExtensions';
 
 import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
-import { Box, DataTable } from '@redpanda-data/ui';
+import { DataTable } from '@redpanda-data/ui';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 @observer
 export class TopicConsumers extends Component<{ topic: Topic }> {
@@ -27,7 +27,7 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
         const isLoading = consumers === null;
 
         if(isLoading) {
-            return <Box mt={2}><Skeleton loading={true} active={true} paragraph={{ rows: 2, width: '100%' }} /></Box>
+            return DefaultSkeleton
         }
 
         if (!consumers) {

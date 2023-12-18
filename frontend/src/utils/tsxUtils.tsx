@@ -18,7 +18,6 @@ import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
 import { motion } from 'framer-motion';
 import { animProps } from './animationProps';
-import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { InfoIcon } from '@primer/octicons-react';
 import colors from '../colors';
@@ -256,7 +255,6 @@ export class OptionGroup<T extends string> extends Component<{
     value: T;
     onChange: (value: T) => void;
     children?: never;
-    size?: SizeType;
     style?: CSSProperties;
 }> {
     render() {

@@ -11,46 +11,103 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { ConfigProvider, DatePicker, Radio as AntdRadio, Table, Typography } from 'antd';
-import { ColumnProps } from 'antd/lib/table';
-import { SortOrder } from 'antd/lib/table/interface';
-import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import * as moment from 'moment';
 import React, { Component, FC, ReactNode } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { MessageSearchRequest, api } from '../../../../state/backendApi';
+import { api, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat } from '../../../../state/ui';
+import {
+    ColumnList,
+    FilterEntry,
+    PartitionOffsetOrigin,
+    PreviewTagV2,
+    TimestampDisplayFormat
+} from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
+import {
+    AnimatePresence,
+    animProps_span_messagesStatus,
+    MotionSpan
+} from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import {
+    Ellipsis,
+    Label,
+    navigatorClipboardErrorHandler,
+    numberToThousandsString,
+    OptionGroup,
+    StatusIndicator,
+    TimestampDisplay,
+    toSafeString
+} from '../../../../utils/tsxUtils';
+import {
+    base64FromUInt8Array,
+    cullText,
+    encodeBase64,
+    prettyBytes,
+    prettyMilliseconds,
+    titleCase
+} from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
-import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
-import createAutoModal from '../../../../utils/createAutoModal';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertIcon, Box, Button, Empty, Code, DataTable, Flex, Input, InputGroup, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack, AlertDescription, AlertTitle, Heading, Checkbox } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertDescription,
+    AlertIcon,
+    AlertTitle,
+    Box,
+    Button,
+    Checkbox,
+    DataTable,
+    DateTimeInput,
+    Empty,
+    Flex,
+    Heading,
+    Input,
+    InputGroup,
+    Link,
+    Menu,
+    MenuButton,
+    MenuItem,
+    MenuList,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    Popover,
+    RadioGroup,
+    SearchField,
+    Select,
+    Switch,
+    Tabs as RpTabs,
+    Tag,
+    TagCloseButton,
+    TagLabel,
+    Text,
+    Tooltip,
+    useToast,
+    VStack
+} from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { WarningIcon } from '@chakra-ui/icons';
 import { ColumnDef } from '@tanstack/react-table';
@@ -138,16 +195,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable deleteRecordsModalVisible = false;
     @observable deleteRecordsModalAlive = false;
 
-    PublishRecordsModal;
-    showPublishRecordsModal;
-
     constructor(props: TopicMessageViewProps) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
-
-        const m = createPublishRecordsModal(this);
-        this.PublishRecordsModal = m.Component;
-        this.showPublishRecordsModal = m.show;
 
         makeObservable(this);
     }
@@ -230,8 +280,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     />
                 )
             }
-
-            <this.PublishRecordsModal />
         </>;
     }
     SearchControlsBar = observer(() => {
@@ -428,25 +476,25 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return false;
     }
 
-    FilterSummary() {
-
-        if (this && this.messageSource && this.messageSource.data) {
-            // todo
-        }
-        else {
-            return null;
-        }
-
-        const displayText = this.messageSource.data.length == api.messages.length
-            ? 'Filter matched all messages'
-            : <><b>{this.messageSource.data.length}</b> results</>;
-
-        return <div style={{ marginRight: '1em' }}>
-            <MotionDiv identityKey={displayText}>
-                <Typography.Text type="secondary">{displayText}</Typography.Text>
-            </MotionDiv>
-        </div>;
-    }
+    // FilterSummary() {
+    //
+    //     if (this && this.messageSource && this.messageSource.data) {
+    //         // todo
+    //     }
+    //     else {
+    //         return null;
+    //     }
+    //
+    //     const displayText = this.messageSource.data.length == api.messages.length
+    //         ? 'Filter matched all messages'
+    //         : <><b>{this.messageSource.data.length}</b> results</>;
+    //
+    //     return <div style={{ marginRight: '1em' }}>
+    //         <MotionDiv identityKey={displayText}>
+    //             <Typography.Text type="secondary">{displayText}</Typography.Text>
+    //         </MotionDiv>
+    //     </div>;
+    // }
 
     @computed
     get activePreviewTags(): PreviewTagV2[] {
@@ -566,12 +614,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const removed = this.expandedKeys.removeAll(x => x == key);
         if (removed == 0) // wasn't expanded, so expand it now
             this.expandedKeys.push(key);
-    }
-
-    keySorter(a: TopicMessage, b: TopicMessage, _sortOrder?: SortOrder): number {
-        const ta = String(a.key) ?? '';
-        const tb = String(b.key) ?? '';
-        return ta.localeCompare(tb);
     }
 
     async executeMessageSearch(includeRawPayload: boolean = false): Promise<TopicMessage[]> {
@@ -888,50 +930,17 @@ class StartOffsetDateTimePicker extends Component {
         const searchParams = uiState.topicSettings.searchParams;
         // new Date().getTimezoneOffset()
 
-        // startTimestamp is always in unixSeconds, so for display we might have to convert
-        let format = 'DD.MM.YYYY HH:mm:ss';
-        let current: moment.Moment | undefined = searchParams.startTimestamp <= 0 ? undefined : moment.utc(searchParams.startTimestamp);
-
-        if (uiState.topicSettings.searchParametersLocalTimeMode) {
-            current = current?.local();
-            format += ' [(Local)]';
-        } else {
-            format += ' [(UTC)]';
-        }
-
-        return <DatePicker showTime={true} allowClear={false}
-            renderExtraFooter={() => <DateTimePickerExtraFooter />}
-            format={format}
-            value={current}
-            onChange={e => {
-                // console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
-                searchParams.startTimestamp = e?.valueOf() ?? -1;
-                searchParams.startTimestampWasSetByUser = true;
-            }}
-            onOk={e => {
-                // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
-                searchParams.startTimestamp = e.valueOf();
-            }}
-        />;
+        return (
+            <DateTimeInput
+                value={searchParams.startTimestamp}
+                onChange={value => {
+                    searchParams.startTimestamp = value
+                    searchParams.startTimestampWasSetByUser = true;
+                }}
+            />
+        )
     }
 }
-
-@observer
-class DateTimePickerExtraFooter extends Component {
-    render() {
-        // TODO - to be removed with DatePicker
-        return <AntdRadio.Group
-            value={uiState.topicSettings.searchParametersLocalTimeMode ? 'local' : 'utc'}
-            onChange={e => {
-                // console.log("date mode changed", { newValue: e.target.value, isLocalMode: uiState.topicSettings.searchParametersLocalTimeMode });
-                uiState.topicSettings.searchParametersLocalTimeMode = e.target.value == 'local';
-            }}>
-            <AntdRadio value="local">Local</AntdRadio>
-            <AntdRadio value="utc">UTC</AntdRadio>
-        </AntdRadio.Group>;
-    }
-}
-
 
 @observer
 class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
@@ -1297,11 +1306,9 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Paragraph>
-                    <Text>
-                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
-                    </Text>
-                </Paragraph>
+                <Text pb={4}>
+                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
+                </Text>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
@@ -1609,83 +1616,3 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
         </MenuItem>
     );
 }
-
-function createPublishRecordsModal(parent: TopicMessageView) {
-    return createAutoModal({
-        modalProps: {
-            title: 'Produce Message',
-            style: { width: '80%', minWidth: '690px', maxWidth: '1000px' },
-            centered: true,
-
-            okText: 'Publish',
-
-            closable: false,
-            keyboard: false,
-            maskClosable: false,
-        },
-        onCreate: (showArg: { topicName: string; }) => {
-            return observable({
-                topic: showArg.topicName,
-                partition: -1, // -1 = auto
-                compressionType: CompressionType.UNCOMPRESSED,
-                encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
-
-                key: {
-                    data: '',
-                    encoding: PayloadEncoding.TEXT,
-                },
-                value: {
-                    data: '',
-                    encoding: PayloadEncoding.TEXT,
-                },
-                headers: [{ key: '', value: '' }],
-            } as PublishMessageModalProps['state']);
-        },
-        onOk: async state => {
-
-            // todo: previously we had a JSON.parse() call here when the encoding was set to json
-            // The idea was to checking if its valid json, by simply trying to parse it (so we didn't want the result, just the "error checking")
-            // Maybe we want to reintroduce this later
-
-            const req = new PublishMessageRequest();
-            req.topic = state.topic;
-            req.partitionId = state.partition;
-            req.compression = state.compressionType;
-            // req.useTransactions =
-
-            // Headers
-            for (const h of state.headers) {
-                if (!h.value && !h.value)
-                    continue;
-                const kafkaHeader = new KafkaRecordHeader();
-                kafkaHeader.key = h.key;
-                kafkaHeader.value = new TextEncoder().encode(h.value);
-                req.headers.push(kafkaHeader);
-            }
-
-            // Key
-
-            // Value
-            if (state.value.encoding != PayloadEncoding.NULL) {
-                req.value = new PublishMessagePayloadOptions();
-                req.value.data = new TextEncoder().encode(state.value.data);
-                req.value.encoding = state.value.encoding as PayloadEncoding;
-                req.value.schemaId = state.value.schemaId;
-                req.value.index = state.value.protobufIndex;
-            }
-
-
-            // Send request
-            const result = await api.publishMessage(req);
-
-            return <>Record published on partition <span className="codeBox">{result.partitionId}</span> with offset <span className="codeBox">{Number(result.offset)}</span></>
-        },
-        onSuccess: (_state) => {
-            parent.props.refreshTopicData(true);
-            parent.searchFunc('auto');
-        },
-        content: (state) => <PublishMessagesModalContent state={state} />,
-    })
-
-}
-

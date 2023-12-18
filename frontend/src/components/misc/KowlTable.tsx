@@ -10,32 +10,8 @@
  */
 
 import React, { Component } from 'react';
-import { ColumnType } from 'antd/lib/table';
 import { observer } from 'mobx-react';
 import { Box, Input } from '@redpanda-data/ui';
-
-type EnumFilter = {
-    type: 'enum',
-    filterEnumOptions?: {
-        value: any;
-        displayName?: string;
-    }[];
-    optionClassName?: string;
-    toDisplay?: (value: any) => string,
-};
-
-type NumericFilter = {
-    type: 'numeric',
-};
-
-//type antdFilterProps = 'filters' | 'filterDropdown' | 'filterDropdownVisible' | 'filterIcon' | 'filterMultiple' | 'filtered' | 'filteredValue' | 'onFilter' | 'onFilterDropdownVisibleChange' | 'defaultFilteredValue';
-type antdFilterProps = 'defaultFilteredValue';
-
-export type KowlColumnType<T> = Omit<ColumnType<T>, antdFilterProps | 'render'> & {
-    filterType?: EnumFilter | NumericFilter;
-    render?: (value: any, record: T, index: number, highlight: (text: string) => JSX.Element) => React.ReactNode;
-    //dataIndex: keyof T | string[];
-};
 
 // sorter:  SorterResult<T>|SorterResult<T>[]
 //

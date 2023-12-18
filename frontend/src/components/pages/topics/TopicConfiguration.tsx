@@ -1,7 +1,8 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
+    PasswordInput, Popover, RadioGroup, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
 import { FC } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
@@ -9,7 +10,6 @@ import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatte
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
 import { api } from '../../../state/backendApi';
-import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
 import { SingleSelect } from '../../misc/Select';
 import { Label } from '../../../utils/tsxUtils';
@@ -359,7 +359,7 @@ export const ConfigEntryEditor = observer((p: {
             />
 
         case 'PASSWORD':
-            return <Password value={entry.currentValue ?? ''} onChange={x => entry.currentValue = x.target.value}/>
+            return <PasswordInput value={entry.currentValue ?? ''} onChange={x => entry.currentValue = x.target.value}/>
 
         case 'RATIO':
             return <RatioInput value={Number(entry.currentValue)} onChange={x => entry.currentValue = x}/>

@@ -203,7 +203,6 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                     <OptionGroup<'caseSensitive' | 'ignoreCase'>
                         label="Matching"
                         options={{'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive'}}
-                        size="small"
                         value={uiState.topicSettings.previewTagsCaseSensitive}
                         onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
                     />

@@ -10,7 +10,6 @@
  */
 
 import React, { PropsWithChildren, useState } from 'react';
-import { CompareFn } from 'antd/lib/table/interface';
 import { observer } from 'mobx-react';
 import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
@@ -41,28 +40,6 @@ function constant(constantValue: JSX.Element): () => JSX.Element {
 }
 
 export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />)
-
-export function sortField<T, F extends (keyof T & string)>(field: F): CompareFn<T> {
-    return (a: T, b: T, _) => {
-
-        if (a[field] == null && b[field] == null) return 0;
-        if (a[field] != null && b[field] == null) return -1;
-        if (a[field] == null && b[field] != null) return 1;
-
-        if (typeof a[field] === 'string') {
-            const left = String(a[field]);
-            const right = String(b[field]);
-            return left.localeCompare(right, undefined, { numeric: true });
-        }
-        if (typeof a[field] === 'number') {
-            const left = +a[field];
-            const right = +b[field];
-            return left - right;
-        }
-
-        throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
-    }
-}
 
 /**
  * returns an array with the numbers from start, up to end (does not include end!)

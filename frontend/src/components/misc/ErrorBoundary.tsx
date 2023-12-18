@@ -13,16 +13,13 @@ import React, { CSSProperties, FC } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import { toJson } from '../../utils/jsonUtils';
-import { Layout, Space } from 'antd';
 import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
 import { envVarDebugAr } from '../../utils/env';
 import { NoClipboardPopover } from './NoClipboardPopover';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
 import StackTrace from 'stacktrace-js';
-import { Button, Icon, useToast } from '@redpanda-data/ui';
-
-const { Content } = Layout;
+import { Box, Button, Flex, Icon, useToast } from '@redpanda-data/ui';
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
@@ -177,11 +174,11 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     render() {
         if (!this.hasError) return this.props.children;
 
-        return <Layout style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
+        return <Box style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
             <div>
                 <h1>Rendering Error!</h1>
                 <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/redpanda-data/console/issues">our GitHub Repo</a></p>
-                <Space size={'large'} style={{ marginTop: '0', marginBottom: '2rem' }}>
+                <Box mt={0} mb={2}>
                     <Button variant="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
                         <Icon as={CloseOutlined} />
                         Dismiss
@@ -194,14 +191,12 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                         />
 
                     </NoClipboardPopover>
-                </Space>
+                </Box>
             </div>
-            <Content>
-                <Space direction="vertical" size={30} style={{ width: '100%' }}>
-                    {this.infoItems.map(e => <InfoItemDisplay key={e.name} data={e} />)}
-                </Space>
-            </Content>
-        </Layout>
+            <Flex flexDirection="column" width="100%">
+                {this.infoItems.map(e => <InfoItemDisplay key={e.name} data={e}/>)}
+            </Flex>
+        </Box>
     }
 }
 

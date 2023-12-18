@@ -10,7 +10,6 @@
  */
 
 import { GithubFilled, LinkedinFilled, SlackSquareOutlined, TwitterOutlined } from '@ant-design/icons';
-import { Footer } from 'antd/lib/layout/layout';
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
 
@@ -48,7 +47,7 @@ export const AppFooter = () => {
         </a>
     </>;
 
-    return <Footer className="footer">
+    return <footer className="footer">
         {/* Social Media Links */}
         <div className="links">
             {isEmbedded() ? gitHub('https://github.com/redpanda-data/redpanda', 'Visit Redpanda\'s GitHub repository') :
@@ -68,7 +67,7 @@ export const AppFooter = () => {
         <div className="versionText">
             <VersionInfo />
         </div>
-    </Footer>;
+    </footer>;
 };
 
 export default AppFooter;

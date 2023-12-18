@@ -9,9 +9,7 @@
  * by the Apache License, Version 2.0
  */
 import { loader } from '@monaco-editor/react';
-import { ConfigProvider } from 'antd';
 import { autorun, configure, observable, when } from 'mobx';
-import colors from './colors';
 // import { embeddedAvailableRoutes } from './components/routes';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
@@ -177,20 +175,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
 
     // Tell monaco editor where to load dependencies from
     loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
-
-    // Set theme color for ant-design
-    ConfigProvider.config({
-        theme: {
-            primaryColor: colors.brandOrange,
-
-            infoColor: colors.brandBlue,
-            successColor: colors.brandSuccess,
-            // processingColor: colors.debugRed,
-            errorColor: colors.brandError,
-            warningColor: colors.brandWarning,
-        },
-    });
-
 
     // Configure MobX
     configure({

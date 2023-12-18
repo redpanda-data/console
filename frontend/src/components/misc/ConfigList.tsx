@@ -15,84 +15,14 @@ import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
-import { sortField } from './common';
 
 import styles from './ConfigList.module.scss';
-import { KowlColumnType } from './KowlTable';
 
 import { DataTable, Flex, Tooltip } from '@redpanda-data/ui';
 import { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
-    const columns: KowlColumnType<ConfigEntry>[] = [
-        {
-            title: 'Configuration',
-            dataIndex: 'name',
-            render: (text: string, record: ConfigEntry) => {
-                let name = (
-                    <div style={{ display: 'flex' }} className={styles.nameText}>
-                        {text}
-                    </div>
-                );
-                if (renderTooltip) name = renderTooltip(record, name);
-
-                const sensitive = record.isSensitive && (
-                    <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
-                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange} />
-                    </Tooltip>
-                );
-
-                return (
-                    <div className={styles.name}>
-                        {name}
-                        <span className={styles.configFlags}>{sensitive}</span>
-                    </div>
-                );
-            }
-        },
-        {
-            title: 'Value',
-            dataIndex: 'value',
-            render: (_: unknown, record: Partial<ConfigEntry>) => <span className={styles.value}>{formatConfigValue(record.name as string, record.value as string, valueDisplay)}</span>
-        },
-        {
-            title: 'Type',
-            width: '120px',
-            dataIndex: 'type',
-            render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span>,
-            filterType: { type: 'enum', toDisplay: x => String(x).toLowerCase(), optionClassName: 'capitalize' },
-            sorter: sortField('type')
-        },
-        {
-            title: (
-                <span className={styles.sourceHeader}>
-                    Source
-                    <Tooltip
-                        label={
-                            <>
-                                <p>Resources can be configured at different levels. Example: A topic config may be inherited from the static broker config.</p>
-                                <p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger and Default config.</p>
-                            </>
-                        }
-                        placement="left"
-                        hasArrow
-                    >
-                        <InfoCircleFilled style={{ color: '#bbbbbb' }} />
-                    </Tooltip>
-                </span>
-            ),
-            dataIndex: 'source',
-            width: '180px',
-            render: (text: string) => <span className={styles.source}>{text.toLowerCase().split('_').join(' ')}</span>,
-            filterType: { type: 'enum', toDisplay: x => x.toLowerCase().split('_').join(' '), optionClassName: 'capitalize' },
-            sorter: sortField('source')
-        }
-    ];
-
     const allTypesUnknown = configEntries.all(x => equalsIgnoreCase(x.type, 'unknown'));
-    if (allTypesUnknown) {
-        columns.removeAll(x => x.dataIndex == 'type');
-    }
 
     const tableColumns: ColumnDef<ConfigEntry>[] = [
         {
@@ -108,7 +38,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
                 const sensitive = record.isSensitive && (
                     <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
-                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange} />
+                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange}/>
                     </Tooltip>
                 );
 
@@ -123,24 +53,32 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
         {
             header: 'Value',
             accessorKey: 'value',
-            cell: ({row: {original: record}}) => <span className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</span>
+            cell: ({row: {original: record}}) => <span
+                className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</span>
         },
-        {
+    ]
+
+    if (!allTypesUnknown) {
+        tableColumns.push({
             header: 'Type',
             size: 120,
             accessorKey: 'type',
             cell: ({row: {original: {type}}}) => <span className={styles.type}>{type?.toLowerCase()}</span>
-        },
-        {
-            id: 'source',
-            header: () => (
-                <span className={styles.sourceHeader}>
+        })
+    }
+
+    tableColumns.push({
+        id: 'source',
+        header: () => (
+            <span className={styles.sourceHeader}>
                 Source
                 <Tooltip
                     label={
                         <>
-                            <p>Resources can be configured at different levels. Example: A topic config may be inherited from the static broker config.</p>
-                            <p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger and Default config.</p>
+                            <p>Resources can be configured at different levels. Example: A topic config may be inherited
+                                from the static broker config.</p>
+                            <p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic
+                                Broker Logger and Default config.</p>
                         </>
                     }
                     placement="left"
@@ -149,12 +87,12 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                     <InfoCircleFilled style={{color: '#bbbbbb'}}/>
                 </Tooltip>
             </span>
-            ),
-            size: 180,
-            accessorKey: 'source',
-            cell: ({row: {original: {source}}}) => <span className={styles.source}>{source?.toLowerCase().split('_').join(' ')}</span>
-        }
-    ]
+        ),
+        size: 180,
+        accessorKey: 'source',
+        cell: ({row: {original: {source}}}) => <span
+            className={styles.source}>{source?.toLowerCase().split('_').join(' ')}</span>
+    })
 
     return (
         <DataTable<ConfigEntry>
