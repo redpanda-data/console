@@ -71,7 +71,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
-	v, err, _ := s.requestGroup.Do(key, func() (interface{}, error) {
+	v, err, _ := s.requestGroup.Do(key, func() (any, error) {
 		schemasRes, err := s.registryClient.GetSchemas(ctx, false)
 		if err != nil {
 			// If schema registry returns an error we want to retry it next time, so let's forget the key

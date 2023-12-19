@@ -130,7 +130,7 @@ func file_things_v1_item_proto_rawDescGZIP() []byte {
 }
 
 var file_things_v1_item_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_things_v1_item_proto_goTypes = []interface{}{
+var file_things_v1_item_proto_goTypes = []any{
 	(*Item)(nil),                  // 0: testutil.things.v1.Item
 	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 }
@@ -149,7 +149,7 @@ func file_things_v1_item_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_things_v1_item_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_things_v1_item_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Item); i {
 			case 0:
 				return &v.state

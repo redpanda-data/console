@@ -166,7 +166,7 @@ func updateSecurity(doc3 *openapi3.T) {
 			Description: "RedpandaCloud",
 			Flows: &openapi3.OAuthFlows{
 				Implicit: &openapi3.OAuthFlow{
-					Extensions: map[string]interface{}{
+					Extensions: map[string]any{
 						"x-client-id": "dQjapNIAHhF7EQqQToRla3yEII9sUSap",
 					},
 					AuthorizationURL: "https://prod-cloudv2.us.auth0.com/oauth/authorize",
@@ -200,7 +200,7 @@ func toExample(in proto.Message, summary string, description string, emitUnpopul
 	}
 
 	return &openapi3.Example{
-		Extensions:    map[string]interface{}{},
+		Extensions:    map[string]any{},
 		Summary:       summary,
 		Description:   description,
 		Value:         rawResponse,
@@ -265,7 +265,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.BadRequest",
 															},
 														},
@@ -290,7 +290,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.ErrorInfo",
 															},
 														},
@@ -315,7 +315,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.QuotaFailure",
 															},
 														},
@@ -340,7 +340,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.Help",
 															},
 														},

@@ -3764,7 +3764,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
-				Payload:  map[string]interface{}{"id": "123456789"},
+				Payload:  map[string]any{"id": "123456789"},
 				Encoding: PayloadEncodingJSON,
 			},
 			Value: RecordPayloadInput{

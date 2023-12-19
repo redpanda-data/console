@@ -152,7 +152,7 @@ func TestTextSerde_SerializeObject(t *testing.T) {
 		},
 		{
 			name:        "invalid type",
-			input:       map[string]interface{}{},
+			input:       map[string]any{},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, res []byte, err error) {
 				require.Error(t, err)

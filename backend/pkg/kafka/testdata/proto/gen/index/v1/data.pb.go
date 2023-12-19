@@ -341,7 +341,7 @@ func file_index_v1_data_proto_rawDescGZIP() []byte {
 
 var file_index_v1_data_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_index_v1_data_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_index_v1_data_proto_goTypes = []interface{}{
+var file_index_v1_data_proto_goTypes = []any{
 	(Item_ItemType)(0),   // 0: index.v1.Item.ItemType
 	(*Widget)(nil),       // 1: index.v1.Widget
 	(*Item)(nil),         // 2: index.v1.Item
@@ -366,7 +366,7 @@ func file_index_v1_data_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_index_v1_data_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_index_v1_data_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Widget); i {
 			case 0:
 				return &v.state
@@ -378,7 +378,7 @@ func file_index_v1_data_proto_init() {
 				return nil
 			}
 		}
-		file_index_v1_data_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_index_v1_data_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*Item); i {
 			case 0:
 				return &v.state
@@ -390,7 +390,7 @@ func file_index_v1_data_proto_init() {
 				return nil
 			}
 		}
-		file_index_v1_data_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_index_v1_data_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*Gadget); i {
 			case 0:
 				return &v.state
@@ -402,7 +402,7 @@ func file_index_v1_data_proto_init() {
 				return nil
 			}
 		}
-		file_index_v1_data_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_index_v1_data_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*Gadget_Gizmo); i {
 			case 0:
 				return &v.state

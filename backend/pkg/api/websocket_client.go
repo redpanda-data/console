@@ -103,14 +103,14 @@ func (wc *websocketClient) producePings() {
 	}
 }
 
-func (wc *websocketClient) readJSON(v interface{}) error {
+func (wc *websocketClient) readJSON(v any) error {
 	wc.Mutex.RLock()
 	defer wc.Mutex.RUnlock()
 
 	return wc.Connection.ReadJSON(v)
 }
 
-func (wc *websocketClient) writeJSON(v interface{}) error {
+func (wc *websocketClient) writeJSON(v any) error {
 	wc.Mutex.Lock()
 	defer wc.Mutex.Unlock()
 

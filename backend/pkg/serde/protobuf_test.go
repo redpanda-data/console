@@ -271,7 +271,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 			expectData, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			data := map[string]interface{}{
+			data := map[string]any{
 				"id": "333",
 			}
 
@@ -284,7 +284,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		})
 
 		t.Run("map type missing topic", func(t *testing.T) {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"id": "333",
 			}
 
@@ -297,7 +297,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		})
 
 		t.Run("map type topic not found", func(t *testing.T) {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"id": "333",
 			}
 

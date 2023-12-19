@@ -126,7 +126,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 
 		input := &createConnectorRequest{
 			ConnectorName: "http_connect_input",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
 				"http.request.url":                          "http://httpbin:80/uuid",

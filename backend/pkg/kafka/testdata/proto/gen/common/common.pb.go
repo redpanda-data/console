@@ -214,7 +214,7 @@ func file_common_common_proto_rawDescGZIP() []byte {
 }
 
 var file_common_common_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_common_common_proto_goTypes = []interface{}{
+var file_common_common_proto_goTypes = []any{
 	(*CommonMessage)(nil),            // 0: common.CommonMessage
 	(*decimal.Decimal)(nil),          // 1: google.type.Decimal
 	(*color.Color)(nil),              // 2: google.type.Color
@@ -247,7 +247,7 @@ func file_common_common_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_common_common_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_common_common_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*CommonMessage); i {
 			case 0:
 				return &v.state

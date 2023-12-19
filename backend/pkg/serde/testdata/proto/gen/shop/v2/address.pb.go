@@ -309,7 +309,7 @@ func file_shop_v2_address_proto_rawDescGZIP() []byte {
 }
 
 var file_shop_v2_address_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_shop_v2_address_proto_goTypes = []interface{}{
+var file_shop_v2_address_proto_goTypes = []any{
 	(*Address)(nil),               // 0: shop.v2.Address
 	(*Address_Customer)(nil),      // 1: shop.v2.Address.Customer
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
@@ -330,7 +330,7 @@ func file_shop_v2_address_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_shop_v2_address_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_shop_v2_address_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Address); i {
 			case 0:
 				return &v.state
@@ -342,7 +342,7 @@ func file_shop_v2_address_proto_init() {
 				return nil
 			}
 		}
-		file_shop_v2_address_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_shop_v2_address_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*Address_Customer); i {
 			case 0:
 				return &v.state

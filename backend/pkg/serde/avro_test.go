@@ -57,7 +57,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		case "/schemas/ids/3000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": avroSchema.String(),
 			}
 
@@ -225,7 +225,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		case "/schemas/ids/2000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": avroSchema.String(),
 			}
 

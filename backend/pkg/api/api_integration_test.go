@@ -168,7 +168,7 @@ func (s *APIIntegrationTestSuite) copyConfig() *config.Config {
 }
 
 func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
-	method, path string, input interface{},
+	method, path string, input any,
 ) (*http.Response, []byte) {
 	t := s.T()
 
