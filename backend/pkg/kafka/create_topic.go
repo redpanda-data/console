@@ -16,18 +16,12 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-// CreateTopic creates a Kafka topic.
-func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (*kmsg.CreateTopicsResponseTopic, error) {
-	req := kmsg.NewCreateTopicsRequest()
-	req.Topics = []kmsg.CreateTopicsRequestTopic{createTopicReq}
-
+// CreateTopics creates new Kafka topic.
+func (s *Service) CreateTopics(ctx context.Context, req *kmsg.CreateTopicsRequest) (*kmsg.CreateTopicsResponse, error) {
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
 		return nil, fmt.Errorf("request has failed: %w", err)
 	}
-	if len(res.Topics) != 1 {
-		return nil, fmt.Errorf("unexpected number of topic responses, expected exactly one but got '%v'", len(res.Topics))
-	}
 
-	return &res.Topics[0], nil
+	return res, nil
 }
