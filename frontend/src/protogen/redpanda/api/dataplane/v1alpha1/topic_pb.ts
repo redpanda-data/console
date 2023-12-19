@@ -258,11 +258,19 @@ export class Topic_Configuration_ConfigSynonym extends Message<Topic_Configurati
  */
 export class CreateTopicRequest extends Message<CreateTopicRequest> {
   /**
-   * TBD if we want to use separate message for Topic in CreateTopic.
+   * Topic is the topic to attempt to create.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.Topic topic = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic topic = 1;
    */
-  topic?: Topic;
+  topic?: CreateTopicRequest_Topic;
+
+  /**
+   * ValidateOnly makes this request a dry-run; everything is validated but
+   * no topics are actually created.
+   *
+   * @generated from field: bool validate_only = 2;
+   */
+  validateOnly = false;
 
   constructor(data?: PartialMessage<CreateTopicRequest>) {
     super();
@@ -272,7 +280,8 @@ export class CreateTopicRequest extends Message<CreateTopicRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "topic", kind: "message", T: Topic },
+    { no: 1, name: "topic", kind: "message", T: CreateTopicRequest_Topic },
+    { no: 2, name: "validate_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicRequest {
@@ -293,13 +302,185 @@ export class CreateTopicRequest extends Message<CreateTopicRequest> {
 }
 
 /**
+ * @generated from message redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic
+ */
+export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * NumPartitions is how many partitions to give a topic. This must
+   * be null if specifying partitions manually (see ReplicaAssignment)
+   * or, to use the cluster default partitions.
+   *
+   * @generated from field: optional int32 partition_count = 2;
+   */
+  partitionCount?: number;
+
+  /**
+   * ReplicationFactor is how many replicas every partition must have.
+   * This must be null if specifying partitions manually (see ReplicaAssignment)
+   * or, to use the cluster default replication factor.
+   *
+   * @generated from field: optional int32 replication_factor = 3;
+   */
+  replicationFactor?: number;
+
+  /**
+   * ReplicaAssignment is an array to manually dictate replicas and their
+   * partitions for a topic. If using this, both ReplicationFactor and
+   * NumPartitions must be -1.
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignment = 4;
+   */
+  replicaAssignment: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
+
+  /**
+   * Configs is an array of key value config pairs for a topic.
+   * These correspond to Kafka Topic-Level Configs.
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.Config configs = 5;
+   */
+  configs: CreateTopicRequest_Topic_Config[] = [];
+
+  constructor(data?: PartialMessage<CreateTopicRequest_Topic>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 4, name: "replica_assignment", kind: "message", T: CreateTopicRequest_Topic_ReplicaAssignment, repeated: true },
+    { no: 5, name: "configs", kind: "message", T: CreateTopicRequest_Topic_Config, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicRequest_Topic {
+    return new CreateTopicRequest_Topic().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic {
+    return new CreateTopicRequest_Topic().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic {
+    return new CreateTopicRequest_Topic().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateTopicRequest_Topic | PlainMessage<CreateTopicRequest_Topic> | undefined, b: CreateTopicRequest_Topic | PlainMessage<CreateTopicRequest_Topic> | undefined): boolean {
+    return proto3.util.equals(CreateTopicRequest_Topic, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.Config
+ */
+export class CreateTopicRequest_Topic_Config extends Message<CreateTopicRequest_Topic_Config> {
+  /**
+   * Name is a topic level config key (e.g. segment.bytes).
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Value is a topic level config value (e.g. 1073741824)
+   *
+   * @generated from field: optional string value = 2;
+   */
+  value?: string;
+
+  constructor(data?: PartialMessage<CreateTopicRequest_Topic_Config>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.Config";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicRequest_Topic_Config {
+    return new CreateTopicRequest_Topic_Config().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic_Config {
+    return new CreateTopicRequest_Topic_Config().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic_Config {
+    return new CreateTopicRequest_Topic_Config().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateTopicRequest_Topic_Config | PlainMessage<CreateTopicRequest_Topic_Config> | undefined, b: CreateTopicRequest_Topic_Config | PlainMessage<CreateTopicRequest_Topic_Config> | undefined): boolean {
+    return proto3.util.equals(CreateTopicRequest_Topic_Config, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment
+ */
+export class CreateTopicRequest_Topic_ReplicaAssignment extends Message<CreateTopicRequest_Topic_ReplicaAssignment> {
+  /**
+   * Partition is a partition to create.
+   *
+   * @generated from field: int32 partition = 1;
+   */
+  partition = 0;
+
+  /**
+   * Replicas are broker IDs the partition must exist on.
+   *
+   * @generated from field: repeated int32 replicas = 2;
+   */
+  replicas: number[] = [];
+
+  constructor(data?: PartialMessage<CreateTopicRequest_Topic_ReplicaAssignment>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "partition", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "replicas", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicRequest_Topic_ReplicaAssignment {
+    return new CreateTopicRequest_Topic_ReplicaAssignment().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic_ReplicaAssignment {
+    return new CreateTopicRequest_Topic_ReplicaAssignment().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateTopicRequest_Topic_ReplicaAssignment {
+    return new CreateTopicRequest_Topic_ReplicaAssignment().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateTopicRequest_Topic_ReplicaAssignment | PlainMessage<CreateTopicRequest_Topic_ReplicaAssignment> | undefined, b: CreateTopicRequest_Topic_ReplicaAssignment | PlainMessage<CreateTopicRequest_Topic_ReplicaAssignment> | undefined): boolean {
+    return proto3.util.equals(CreateTopicRequest_Topic_ReplicaAssignment, a, b);
+  }
+}
+
+/**
  * @generated from message redpanda.api.dataplane.v1alpha1.CreateTopicResponse
  */
 export class CreateTopicResponse extends Message<CreateTopicResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.Topic topic = 1;
+   * Name is the topic's name.
+   *
+   * @generated from field: string name = 1;
    */
-  topic?: Topic;
+  name = "";
 
   constructor(data?: PartialMessage<CreateTopicResponse>) {
     super();
@@ -309,7 +490,7 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "topic", kind: "message", T: Topic },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicResponse {
