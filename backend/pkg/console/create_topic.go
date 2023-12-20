@@ -62,7 +62,7 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 	if len(createRes.Topics) != 1 {
 		return CreateTopicResponse{}, &rest.Error{
 			Err:          fmt.Errorf("unexpected number of topic responses, expected exactly one but got '%v'", len(createRes.Topics)),
-			Status:       http.StatusServiceUnavailable,
+			Status:       http.StatusInternalServerError,
 			Message:      fmt.Sprintf("unexpected number of topic responses, expected exactly one but got '%v'", len(createRes.Topics)),
 			InternalLogs: internalLogs,
 			IsSilent:     false,
