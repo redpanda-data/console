@@ -1220,12 +1220,12 @@ const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
                 <Link pl="2" onClick={() => setShow(!show)} >{show ? 'Hide' : 'Show'}</Link>
             </AlertTitle>
             <AlertDescription whiteSpace="pre-wrap" display={show ? undefined : 'none'}>
-                <Grid templateColumns="auto 1fr" gap={6}>
+                <Grid templateColumns="auto 1fr" rowGap="1" columnGap="4">
                     {report.map(e => <>
-                        <GridItem key={e.serdeName + '-name'} w="100%" fontWeight="bold">
+                        <GridItem key={e.serdeName + '-name'} w="100%" fontWeight="bold" textTransform="capitalize" py="2" px="5" pl="8">
                             {e.serdeName}
                         </GridItem>
-                        <GridItem key={e.serdeName + '-message'} w="100%">
+                        <GridItem key={e.serdeName + '-message'} w="100%" fontFamily="monospace" background="red.100" py="2" px="5">
                             {e.message}
                         </GridItem>
                     </>)}
