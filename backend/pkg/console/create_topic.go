@@ -44,7 +44,11 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 		zap.Int16("replication_factor", createTopicReq.ReplicationFactor),
 		zap.Int("configuration_count", len(createTopicReq.Configs)),
 	}
-	createTopicRes, err := s.kafkaSvc.CreateTopic(ctx, createTopicReq)
+
+	req := kmsg.NewCreateTopicsRequest()
+	req.Topics = []kmsg.CreateTopicsRequestTopic{createTopicReq}
+
+	createRes, err := s.kafkaSvc.CreateTopics(ctx, &req)
 	if err != nil {
 		return CreateTopicResponse{}, &rest.Error{
 			Err:          fmt.Errorf("failed to create topic: %w", err),
@@ -55,6 +59,17 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 		}
 	}
 
+	if len(createRes.Topics) != 1 {
+		return CreateTopicResponse{}, &rest.Error{
+			Err:          fmt.Errorf("unexpected number of topic responses, expected exactly one but got '%v'", len(createRes.Topics)),
+			Status:       http.StatusInternalServerError,
+			Message:      fmt.Sprintf("unexpected number of topic responses, expected exactly one but got '%v'", len(createRes.Topics)),
+			InternalLogs: internalLogs,
+			IsSilent:     false,
+		}
+	}
+
+	createTopicRes := createRes.Topics[0]
 	err = kerr.ErrorForCode(createTopicRes.ErrorCode)
 	if err != nil {
 		return CreateTopicResponse{}, &rest.Error{
@@ -80,4 +95,8 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 		ReplicationFactor:          createTopicRes.ReplicationFactor,
 		CreateTopicResponseConfigs: configs,
 	}, nil
+}
+
+func (s *Service) CreateTopics(ctx context.Context, createReq *kmsg.CreateTopicsRequest) (*kmsg.CreateTopicsResponse, error) {
+	return s.kafkaSvc.CreateTopics(ctx, createReq)
 }

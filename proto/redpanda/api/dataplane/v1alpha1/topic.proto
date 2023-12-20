@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package redpanda.api.dataplane.v1alpha1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -43,11 +44,82 @@ message Topic {
 }
 
 message CreateTopicRequest {
-  Topic topic = 1; // TBD if we want to use separate message for Topic in CreateTopic.
+  message Topic {
+    message Config {
+      // Name is a topic level config key (e.g. segment.bytes).
+      string name = 1 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 255,
+        (buf.validate.field).string.pattern = "^[a-z0-9.]+$"
+      ];
+
+      // Value is a topic level config value (e.g. 1073741824)
+      optional string value = 2;
+    }
+
+    message ReplicaAssignment {
+      // Partition is a partition to create.
+      int32 partition = 1;
+
+      // Replicas are broker IDs the partition must exist on.
+      repeated int32 replicas = 2;
+    }
+
+    // Name is the topic's name.
+    string name = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 255,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
+
+    // NumPartitions is how many partitions to give a topic. This must
+    // be null if specifying partitions manually (see ReplicaAssignment)
+    // or, to use the cluster default partitions.
+    optional int32 partition_count = 2;
+
+    // ReplicationFactor is how many replicas every partition must have.
+    // This must be null if specifying partitions manually (see ReplicaAssignment)
+    // or, to use the cluster default replication factor.
+    optional int32 replication_factor = 3 [
+      (buf.validate.field).int32.gte = 1,
+      (buf.validate.field).int32.lte = 5
+    ];
+
+    // ReplicaAssignment is an array to manually dictate replicas and their
+    // partitions for a topic. If using this, both ReplicationFactor and
+    // NumPartitions must be -1.
+    repeated ReplicaAssignment replica_assignment = 4;
+
+    // Configs is an array of key value config pairs for a topic.
+    // These correspond to Kafka Topic-Level Configs.
+    repeated Config configs = 5;
+  }
+
+  // Topic is the topic to attempt to create.
+  Topic topic = 1 [(buf.validate.field).required = true];
+
+  // ValidateOnly makes this request a dry-run; everything is validated but
+  // no topics are actually created.
+  bool validate_only = 2;
 }
 
 message CreateTopicResponse {
-  Topic topic = 1;
+  // Name is the topic's name.
+  string name = 1;
+
+  // NumPartitions is how many partitions were created for this topic.
+  // This field has a default of -1, which may be returned if the broker
+  // does not support v5+ of this request which added support for returning
+  // this information.
+  // This is currently commented, until
+  // int32 num_partitions = 2;
+
+  // ReplicationFactor is how many replicas every partition has for this topic.
+  // This field has a default of -1, which may be returned if the broker
+  // does not support v5+ of this request which added support for returning
+  // this information.
+  // int32 replication_factor = 3;
 }
 
 message ListTopicsRequest {
