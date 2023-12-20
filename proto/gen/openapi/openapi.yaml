@@ -29,6 +29,16 @@ components:
           type: array
       title: BadRequest
       type: object
+    Config:
+      properties:
+        name:
+          description: Name is a topic level config key (e.g. segment.bytes).
+          type: string
+        value:
+          nullable: true
+          title: Value is a topic level config value (e.g. 1073741824)
+          type: string
+      type: object
     ConfigSynonym:
       properties:
         name:
@@ -251,10 +261,47 @@ components:
           $ref: '#/components/schemas/Secret'
       title: CreateSecretResponse is the response of CreateSecret
       type: object
+    CreateTopicRequest.Topic:
+      properties:
+        configs:
+          description: |-
+            Configs is an array of key value config pairs for a topic.
+            These correspond to Kafka Topic-Level Configs.
+          items:
+            $ref: '#/components/schemas/Config'
+          type: array
+        name:
+          type: string
+        partition_count:
+          description: |-
+            NumPartitions is how many partitions to give a topic. This must
+            be null if specifying partitions manually (see ReplicaAssignment)
+            or, to use the cluster default partitions.
+          format: int32
+          nullable: true
+          type: integer
+        replica_assignment:
+          description: |-
+            ReplicaAssignment is an array to manually dictate replicas and their
+            partitions for a topic. If using this, both ReplicationFactor and
+            NumPartitions must be -1.
+          items:
+            $ref: '#/components/schemas/ReplicaAssignment'
+          type: array
+        replication_factor:
+          description: |-
+            ReplicationFactor is how many replicas every partition must have.
+            This must be null if specifying partitions manually (see ReplicaAssignment)
+            or, to use the cluster default replication factor.
+          format: int32
+          nullable: true
+          type: integer
+      type: object
     CreateTopicResponse:
       properties:
-        topic:
-          $ref: '#/components/schemas/Topic'
+        name:
+          description: Name is the topic's name.
+          type: string
       type: object
     CreateUserRequest.User:
       properties:
@@ -547,7 +594,7 @@ components:
           type: string
         topics:
           items:
-            $ref: '#/components/schemas/Topic'
+            $ref: '#/components/schemas/v1alpha1.Topic'
           type: array
       type: object
     ListUsersResponse:
@@ -649,6 +696,19 @@ components:
             For example, "clientip:<ip address of client>" or "project:<Google
             developer project id>".
           type: string
+      type: object
+    ReplicaAssignment:
+      properties:
+        partition:
+          description: Partition is a partition to create.
+          format: int32
+          type: integer
+        replicas:
+          description: Replicas are broker IDs the partition must exist on.
+          items:
+            format: int32
+            type: integer
+          type: array
       type: object
     Resource:
       properties:
@@ -828,27 +888,6 @@ components:
         worker_id:
           type: string
       type: object
-    Topic:
-      properties:
-        configuration:
-          description: |-
-            configurations is omitted in ListTopics.
-
-            redpanda.api.common.v1alpha1.ErrorStatus x = 7;
-          items:
-            $ref: '#/components/schemas/Configuration'
-          type: array
-        is_internal:
-          type: boolean
-        name:
-          type: string
-        partition_count:
-          format: int32
-          type: integer
-        replication_factor:
-          format: int32
-          type: integer
-      type: object
     UpdateConfiguration:
       properties:
         key:
@@ -899,6 +938,27 @@ components:
           $ref: '#/components/schemas/SASLMechanism'
         name:
           type: string
+      type: object
+    v1alpha1.Topic:
+      properties:
+        configuration:
+          description: |-
+            configurations is omitted in ListTopics.
+
+            redpanda.api.common.v1alpha1.ErrorStatus x = 7;
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+        is_internal:
+          type: boolean
+        name:
+          type: string
+        partition_count:
+          format: int32
+          type: integer
+        replication_factor:
+          format: int32
+          type: integer
       type: object
   securitySchemes:
     auth0:
@@ -1746,12 +1806,20 @@ paths:
     post:
       description: Create a Topic.
       operationId: TopicService_CreateTopic
+      parameters:
+        - description: |-
+            ValidateOnly makes this request a dry-run; everything is validated but
+            no topics are actually created.
+          in: query
+          name: validate_only
+          schema:
+            type: boolean
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Topic'
-        description: TBD if we want to use separate message for Topic in CreateTopic.
+              $ref: '#/components/schemas/CreateTopicRequest.Topic'
+        description: Topic is the topic to attempt to create.
         required: true
         x-originalParamName: topic
       responses:
@@ -1759,7 +1827,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Topic'
+                $ref: '#/components/schemas/v1alpha1.Topic'
           description: Topic Created
         "401":
           content:

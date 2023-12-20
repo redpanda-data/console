@@ -72,6 +72,7 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 							"publish.full.document.only",
 							"publish.full.document.only.tombstone.on.delete",
 							"mongo.errors.tolerance",
+							"producer.override.max.request.size",
 						},
 					},
 				},
