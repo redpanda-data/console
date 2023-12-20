@@ -134,6 +134,7 @@ func (s *KafkaIntegrationTestSuite) TearDownSuite() {
 	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
 }
 
+//nolint:gocognit // this is a complex test, no reason to refactor
 func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	t := s.T()
 
@@ -1472,7 +1473,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		msg2ID := "333"
 		order2CreatedAt := time.Date(2023, time.July, 11, 14, 0, 0, 0, time.UTC)
 		order2CreatedAtStr := order2CreatedAt.Format(time.DateTime)
-		order2CreateInput := fmt.Sprintf(`{"id":"%s","version":22,"created_at":"%s","order_value":3456}`, msg2ID, order2CreatedAtStr)
+		order2CreateInput := fmt.Sprintf(`{"id":%q,"version":22,"created_at":%q,"order_value":3456}`, msg2ID, order2CreatedAtStr)
 		msgData, err = serializeShopV1_2(order2CreateInput, ss2.ID)
 		require.NoError(err)
 

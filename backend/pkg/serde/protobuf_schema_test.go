@@ -30,7 +30,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
+	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
@@ -121,7 +121,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	protoSvc, err := protoPkg.NewService(config.Proto{
+	protoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
 			Enabled:         true,
@@ -361,7 +361,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	testProtoSvc, err := protoPkg.NewService(config.Proto{
+	testProtoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
 			Enabled:         true,

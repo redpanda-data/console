@@ -131,7 +131,7 @@ func file_shop_v1_order_proto_rawDescGZIP() []byte {
 }
 
 var file_shop_v1_order_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_shop_v1_order_proto_goTypes = []any{
+var file_shop_v1_order_proto_goTypes = []interface{}{
 	(*Order)(nil),                 // 0: shop.v1.Order
 	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 }
@@ -150,7 +150,7 @@ func file_shop_v1_order_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_shop_v1_order_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_shop_v1_order_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Order); i {
 			case 0:
 				return &v.state

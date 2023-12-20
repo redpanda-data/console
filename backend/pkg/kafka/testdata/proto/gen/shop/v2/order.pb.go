@@ -382,7 +382,7 @@ func file_shop_v2_order_proto_rawDescGZIP() []byte {
 }
 
 var file_shop_v2_order_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_shop_v2_order_proto_goTypes = []any{
+var file_shop_v2_order_proto_goTypes = []interface{}{
 	(*Order)(nil),                 // 0: shop.v2.Order
 	(*Order_LineItem)(nil),        // 1: shop.v2.Order.LineItem
 	(*Order_Payment)(nil),         // 2: shop.v2.Order.Payment
@@ -414,7 +414,7 @@ func file_shop_v2_order_proto_init() {
 	file_shop_v2_address_proto_init()
 	file_shop_v2_customer_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_shop_v2_order_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_shop_v2_order_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Order); i {
 			case 0:
 				return &v.state
@@ -426,7 +426,7 @@ func file_shop_v2_order_proto_init() {
 				return nil
 			}
 		}
-		file_shop_v2_order_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_shop_v2_order_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Order_LineItem); i {
 			case 0:
 				return &v.state
@@ -438,7 +438,7 @@ func file_shop_v2_order_proto_init() {
 				return nil
 			}
 		}
-		file_shop_v2_order_proto_msgTypes[2].Exporter = func(v any, i int) any {
+		file_shop_v2_order_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Order_Payment); i {
 			case 0:
 				return &v.state

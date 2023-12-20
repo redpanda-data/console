@@ -233,7 +233,7 @@ func file_shop_v2_customer_proto_rawDescGZIP() []byte {
 
 var file_shop_v2_customer_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_shop_v2_customer_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_shop_v2_customer_proto_goTypes = []any{
+var file_shop_v2_customer_proto_goTypes = []interface{}{
 	(Customer_CustomerType)(0), // 0: shop.v2.Customer.CustomerType
 	(*Customer)(nil),           // 1: shop.v2.Customer
 }
@@ -252,7 +252,7 @@ func file_shop_v2_customer_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_shop_v2_customer_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_shop_v2_customer_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Customer); i {
 			case 0:
 				return &v.state

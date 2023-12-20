@@ -42,7 +42,7 @@ func (m *MockIListMessagesProgress) OnComplete(arg0 int64, arg1 bool) {
 }
 
 // OnComplete indicates an expected call of OnComplete.
-func (mr *MockIListMessagesProgressMockRecorder) OnComplete(arg0, arg1 any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnComplete(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnComplete", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnComplete), arg0, arg1)
 }
@@ -54,7 +54,7 @@ func (m *MockIListMessagesProgress) OnError(arg0 string) {
 }
 
 // OnError indicates an expected call of OnError.
-func (mr *MockIListMessagesProgressMockRecorder) OnError(arg0 any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnError(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnError", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnError), arg0)
 }
@@ -66,7 +66,7 @@ func (m *MockIListMessagesProgress) OnMessage(arg0 *kafka.TopicMessage) {
 }
 
 // OnMessage indicates an expected call of OnMessage.
-func (mr *MockIListMessagesProgressMockRecorder) OnMessage(arg0 any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnMessage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnMessage", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnMessage), arg0)
 }
@@ -78,7 +78,7 @@ func (m *MockIListMessagesProgress) OnMessageConsumed(arg0 int64) {
 }
 
 // OnMessageConsumed indicates an expected call of OnMessageConsumed.
-func (mr *MockIListMessagesProgressMockRecorder) OnMessageConsumed(arg0 any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnMessageConsumed(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnMessageConsumed", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnMessageConsumed), arg0)
 }
@@ -90,7 +90,7 @@ func (m *MockIListMessagesProgress) OnPhase(arg0 string) {
 }
 
 // OnPhase indicates an expected call of OnPhase.
-func (mr *MockIListMessagesProgressMockRecorder) OnPhase(arg0 any) *gomock.Call {
+func (mr *MockIListMessagesProgressMockRecorder) OnPhase(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnPhase", reflect.TypeOf((*MockIListMessagesProgress)(nil).OnPhase), arg0)
 }
