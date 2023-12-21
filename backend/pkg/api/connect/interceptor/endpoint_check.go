@@ -19,6 +19,7 @@ import (
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
@@ -27,6 +28,11 @@ import (
 type EndpointCheckInterceptor struct {
 	cfg    *config.ConsoleAPI
 	logger *zap.Logger
+
+	// alwaysEnabledProcedures are endpoints that should always pass this check
+	// regardless whether the API is enabled or what procedures have been
+	// enabled via the config.
+	alwaysEnabledProcedures map[string]struct{}
 }
 
 // NewEndpointCheckInterceptor creates a new EndpointCheckInterceptor.
@@ -34,6 +40,10 @@ func NewEndpointCheckInterceptor(cfg *config.ConsoleAPI, logger *zap.Logger) *En
 	return &EndpointCheckInterceptor{
 		cfg:    cfg,
 		logger: logger,
+		alwaysEnabledProcedures: map[string]struct{}{
+			consolev1alpha1connect.ConsoleServiceListMessagesProcedure:   {},
+			consolev1alpha1connect.ConsoleServicePublishMessageProcedure: {},
+		},
 	}
 }
 
@@ -62,6 +72,12 @@ func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.Un
 				connect.CodeInternal,
 				errors.New("failed to retrieve procedure name"),
 				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()))
+		}
+
+		// Check if this procedure is always enabled. If so we want to let it pass, even
+		// if the API is configured to be disabled.
+		if _, ok := in.alwaysEnabledProcedures[procedure]; ok {
+			return next(ctx, req)
 		}
 
 		notEnabledError := apierrors.NewConnectError(
