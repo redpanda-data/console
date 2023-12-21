@@ -30,12 +30,14 @@ import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
 import { Link } from 'react-router-dom';
+import SearchBar from '../../misc/SearchBar';
 
 @observer
 class TopicList extends PageComponent {
     quickSearchReaction: IReactionDisposer;
 
     @observable topicToDelete: null | Topic = null;
+    @observable filteredTopics: Topic[];
 
     CreateTopicModal;
     showCreateTopicModal;
@@ -93,13 +95,15 @@ class TopicList extends PageComponent {
         if (uiSettings.topicList.hideInternalTopics || isServerless()) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
+        topics = topics.filter(x => x.topicName.toLowerCase().includes(uiSettings.topicList.quickSearch.toLowerCase()));
+
 
         const partitionCount = topics.sum((x) => x.partitionCount);
         const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
 
         return (
             <PageContent>
-                <Section py={4}>
+                <Section>
                     <Flex>
                         <Statistic title="Total topics" value={topics.length} />
                         <Statistic title="Total partitions" value={partitionCount} />
@@ -107,6 +111,15 @@ class TopicList extends PageComponent {
                     </Flex>
                 </Section>
 
+                <Box pt={6}>
+                    <SearchBar<Topic>
+                        dataSource={() => topics || []}
+                        isFilterMatch={this.isFilterMatch}
+                        filterText={uiSettings.topicList.quickSearch}
+                        onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
+                        onFilteredDataChanged={data => this.filteredTopics = data}
+                    />
+                </Box>
                 <Section>
                     <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
                         <Button

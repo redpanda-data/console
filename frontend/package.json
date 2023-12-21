@@ -30,7 +30,7 @@
         "@heroicons/react": "^1.0.6",
         "@monaco-editor/react": "^4.6",
         "@primer/octicons-react": "^17",
-        "@redpanda-data/ui": "^3.37.0-alpha.0",
+        "@redpanda-data/ui": "^3.38.0-alpha.0",
         "@textea/json-viewer": "^1.24.4",
         "array-move": "^4",
         "framer-motion": "^7",
