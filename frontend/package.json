@@ -22,8 +22,11 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.7",
+    "@bufbuild/protobuf": "^1.6.0",
     "@chakra-ui/icons": "^2.1",
     "@chakra-ui/react-use-disclosure": "^2.1",
+    "@connectrpc/connect": "^1.2.0",
+    "@connectrpc/connect-web": "^1.2.0",
     "@heroicons/react": "^1.0.6",
     "@monaco-editor/react": "^4.6",
     "@primer/octicons-react": "^17",
