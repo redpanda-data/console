@@ -42,6 +42,7 @@ export interface SetConfigArguments {
         rest?: string;
         ws?: string;
         assets?: string;
+        grpc?: string;
     };
     setSidebarItems?: (items: SidebarItem[]) => void;
     setBreadcrumbs?: (items: Breadcrumb[]) => void;
@@ -63,6 +64,7 @@ export interface Breadcrumb {
 interface Config {
     websocketBasePath: string;
     restBasePath: string;
+    grpcBase: string;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
     jwt?: string;
@@ -77,6 +79,7 @@ export const config: Config = observable({
     restBasePath: getRestBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
+    grpcBase: getBasePath(),
     clusterId: 'default',
     setSidebarItems: () => {},
     setBreadcrumbs: () => { },
@@ -92,6 +95,7 @@ export const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: Se
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
+        grpcBase: urlOverride?.grpc ?? getBasePath(),
         ...args,
     });
 
