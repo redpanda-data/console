@@ -67,7 +67,7 @@ import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 
-import { createPromiseClient } from '@connectrpc/connect';
+import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { proto3 } from '@bufbuild/protobuf';
 import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect';
@@ -238,6 +238,12 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     return entry.lastPromise;
 }
 
+const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+    if (appConfig.jwt)
+        req.header.append('Authorization', 'Bearer ' + appConfig.jwt);
+    return await next(req);
+};
+
 
 let messageSearchAbortController: AbortController | null = null;
 
@@ -367,7 +373,8 @@ const apiStore = {
         // do it
         const abortController = messageSearchAbortController = new AbortController();
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: appConfig.grpcBase,
+            interceptors: [addBearerTokenInterceptor]
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -616,7 +623,7 @@ const apiStore = {
             this.messageSearchPhase = null;
             // https://connectrpc.com/docs/web/errors
             if (abortController.signal.aborted) {
-            // Do not throw, this is a user cancellation
+                // Do not throw, this is a user cancellation
             } else {
                 console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
                 throw e;
@@ -1675,7 +1682,8 @@ const apiStore = {
     // New version of "publishRecords"
     async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
         const transport = createConnectTransport({
-            baseUrl: window.location.origin,
+            baseUrl: appConfig.grpcBase,
+            interceptors: [addBearerTokenInterceptor],
         });
         const client = createPromiseClient(ConsoleService, transport);
         const r = await client.publishMessage(request);
