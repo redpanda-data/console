@@ -39,10 +39,9 @@ func (BinarySerde) DeserializePayload(_ context.Context, record *kgo.Record, pay
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
 func (BinarySerde) SerializeObject(_ context.Context, obj any, _ PayloadType, _ ...SerdeOpt) ([]byte, error) {
-	if _, isByte := obj.([]byte); !isByte {
+	byteData, isByte := obj.([]byte)
+	if !isByte {
 		return nil, fmt.Errorf("unsupported type %+T for binary serialization", obj)
 	}
-
-	byteData := obj.([]byte)
 	return byteData, nil
 }

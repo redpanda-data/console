@@ -37,6 +37,7 @@ import (
 	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )
 
+// this is a complex test, no reson to refactor it
 func (s *APIIntegrationTestSuite) TestListMessages() {
 	t := s.T()
 
@@ -117,7 +118,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
 				assert.Empty(cm.Data.GetValue().GetTroubleshootReport())
 
-				assert.Equal(fmt.Sprintf(`{"ID":"%s"}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
+				assert.Equal(fmt.Sprintf(`{"ID":%q}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
 			case *v1pb.ListMessagesResponse_Done:
 				doneCount++
 
@@ -219,7 +220,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
 				assert.NotEmpty(cm.Data.GetValue().GetTroubleshootReport())
 
-				assert.Equal(fmt.Sprintf(`{"ID":"%s"}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
+				assert.Equal(fmt.Sprintf(`{"ID":%q}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
 			case *v1pb.ListMessagesResponse_Done:
 				doneCount++
 

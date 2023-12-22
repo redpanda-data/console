@@ -49,7 +49,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	ms "github.com/redpanda-data/console/backend/pkg/msgpack"
-	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
+	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/common"
 	indexv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/index/v1"
@@ -157,7 +157,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -293,7 +293,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -431,7 +431,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -574,7 +574,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -737,7 +737,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -1028,7 +1028,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -1218,7 +1218,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -1396,7 +1396,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -1614,7 +1614,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -1828,7 +1828,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2136,7 +2136,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2168,6 +2168,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),
@@ -2251,7 +2252,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		msg2ID := "333"
 		order2CreatedAt := time.Date(2023, time.July, 11, 14, 0, 0, 0, time.UTC)
 		order2CreatedAtStr := order2CreatedAt.Format(time.DateTime)
-		order2CreateInput := fmt.Sprintf(`{"id":"%s","version":22,"created_at":"%s","order_value":3456}`, msg2ID, order2CreatedAtStr)
+		order2CreateInput := fmt.Sprintf(`{"id":%q,"version":22,"created_at":%q,"order_value":3456}`, msg2ID, order2CreatedAtStr)
 		msgData, err = serializeShopV1_2(order2CreateInput, ss2.ID)
 		require.NoError(err)
 
@@ -2300,7 +2301,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc2, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc2, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc2, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc2.Start()
@@ -2385,7 +2386,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2488,7 +2489,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2739,7 +2740,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2922,7 +2923,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -2982,7 +2983,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3053,7 +3054,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3195,7 +3196,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3289,7 +3290,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3407,7 +3408,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3515,7 +3516,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3660,7 +3661,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -3764,7 +3765,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
-				Payload:  map[string]interface{}{"id": "123456789"},
+				Payload:  map[string]any{"id": "123456789"},
 				Encoding: PayloadEncodingJSON,
 			},
 			Value: RecordPayloadInput{
@@ -3820,7 +3821,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -4025,7 +4026,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()

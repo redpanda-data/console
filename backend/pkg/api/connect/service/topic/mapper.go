@@ -26,7 +26,7 @@ func (k *kafkaClientMapper) createTopicRequestToKafka(req *v1alpha1.CreateTopicR
 }
 
 // createTopicRequestToKafka maps the proto message for creating a topic to kmsg.CreateTopicsRequestTopic.
-func (k *kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.CreateTopicRequest_Topic) kmsg.CreateTopicsRequestTopic {
+func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.CreateTopicRequest_Topic) kmsg.CreateTopicsRequestTopic {
 	partitionCount := int32(-1)
 	if topicReq.PartitionCount != nil {
 		partitionCount = *topicReq.PartitionCount
@@ -63,8 +63,8 @@ func (k *kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.Cr
 	return req
 }
 
-func (k *kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) (*v1alpha1.CreateTopicResponse, error) {
+func (*kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) *v1alpha1.CreateTopicResponse {
 	return &v1alpha1.CreateTopicResponse{
 		Name: topic.Topic,
-	}, nil
+	}
 }

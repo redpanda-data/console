@@ -199,7 +199,7 @@ func TestJsonSerde_SerializeObject(t *testing.T) {
 		},
 		{
 			name: "map",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"foo": "bar",
 			},
 			payloadType: PayloadTypeValue,

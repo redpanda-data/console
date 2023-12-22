@@ -312,7 +312,7 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 		return nil, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
 	}
 
-	protoTypeURL := ""
+	var protoTypeURL string
 	if property == RecordKey {
 		if mapping.KeyProtoType == "" {
 			return nil, fmt.Errorf("no prototype mapping found for the record key of topic '%v'", topicName)

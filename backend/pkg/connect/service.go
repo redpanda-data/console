@@ -24,9 +24,10 @@ import (
 
 // Service provides the API for interacting with all configured Kafka connect clusters.
 type Service struct {
-	Cfg              config.Connect
-	Logger           *zap.Logger
-	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
+	Cfg    config.Connect
+	Logger *zap.Logger
+	// ClientsByCluster holds the Client and config. The key is the clusters' name
+	ClientsByCluster map[string]*ClientWithConfig
 	Interceptor      *interceptor.Interceptor
 }
 

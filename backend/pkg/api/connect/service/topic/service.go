@@ -7,6 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package topic contains all handlers for the topic endpoints.
 package topic
 
 import (
@@ -35,7 +36,7 @@ type Service struct {
 }
 
 // ListTopics lists all Kafka topics.
-func (s *Service) ListTopics(ctx context.Context, c *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
+func (*Service) ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -45,7 +46,7 @@ func (s *Service) ListTopics(ctx context.Context, c *connect.Request[v1alpha1.Li
 }
 
 // DeleteTopic deletes a Kafka topic.
-func (s *Service) DeleteTopic(ctx context.Context, c *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
+func (*Service) DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -55,7 +56,7 @@ func (s *Service) DeleteTopic(ctx context.Context, c *connect.Request[v1alpha1.D
 }
 
 // GetTopicConfiguration retrieves a topic's configuration.
-func (s *Service) GetTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.GetTopicConfigurationRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationResponse], error) {
+func (*Service) GetTopicConfiguration(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -66,7 +67,7 @@ func (s *Service) GetTopicConfiguration(ctx context.Context, c *connect.Request[
 
 // UpdateTopicConfiguration patches a topic's configuration. In contrast to SetTopicConfiguration
 // this will only change the configurations that have been passed into this request.
-func (s *Service) UpdateTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
+func (*Service) UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -78,7 +79,7 @@ func (s *Service) UpdateTopicConfiguration(ctx context.Context, c *connect.Reque
 // SetTopicConfiguration applies the given configuration to a topic, which may reset
 // or overwrite existing configurations that are not provided as part of the request.
 // If you want to patch certain configurations use UpdateTopicConfiguration instead.
-func (s *Service) SetTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error) {
+func (*Service) SetTopicConfiguration(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -132,14 +133,7 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1
 	}
 
 	// Map Kafka response to proto
-	response, err := s.mapper.createTopicResponseTopicToProto(result)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
-	}
+	response := s.mapper.createTopicResponseTopicToProto(result)
 
 	connectResponse := connect.NewResponse(&v1alpha1.CreateTopicResponse{
 		Name: response.Name,

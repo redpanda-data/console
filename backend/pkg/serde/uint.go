@@ -42,7 +42,7 @@ func (UintSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 
 	var err error
 	var numericPayload []byte
-	var numericObject interface{}
+	var numericObject any
 	switch len(payload) {
 	case 8:
 		var bev uint64

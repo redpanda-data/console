@@ -88,7 +88,11 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 			lastErr = kresp.Err
 			continue
 		}
-		res := kresp.Resp.(*kmsg.DescribeGroupsResponse)
+		res, ok := kresp.Resp.(*kmsg.DescribeGroupsResponse)
+		if !ok {
+			// This should never happen, but if it happens we would panic, hence handling here
+			return nil, fmt.Errorf("failed to type assert DescribeGroupsResponse")
+		}
 
 		result.Groups = append(result.Groups, DescribeConsumerGroupsResponse{
 			BrokerMetadata: kresp.Meta,

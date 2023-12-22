@@ -87,8 +87,8 @@ type interpreterArguments struct {
 	PartitionID   int32
 	Offset        int64
 	Timestamp     time.Time
-	Key           interface{}
-	Value         interface{}
+	Key           any
+	Value         any
 	HeadersByKey  map[string][]byte
 	KeySchemaID   *uint32
 	ValueSchemaID *uint32

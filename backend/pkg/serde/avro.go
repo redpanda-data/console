@@ -57,7 +57,7 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
 
-	var obj interface{}
+	var obj any
 	err = avro.Unmarshal(schema, payload[5:], &obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
