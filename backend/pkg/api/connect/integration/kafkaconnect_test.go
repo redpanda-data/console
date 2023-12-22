@@ -26,7 +26,6 @@ import (
 
 func (s *APISuite) TestListConnectors() {
 	t := s.T()
-	// require := require.New(t)
 	assert := assert.New(t)
 
 	t.Run("list conectors with default request (connect-go)", func(t *testing.T) {

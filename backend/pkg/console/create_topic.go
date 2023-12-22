@@ -97,6 +97,7 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 	}, nil
 }
 
+// CreateTopics proxies the create topic request to the Kafka client.
 func (s *Service) CreateTopics(ctx context.Context, createReq *kmsg.CreateTopicsRequest) (*kmsg.CreateTopicsResponse, error) {
 	return s.kafkaSvc.CreateTopics(ctx, createReq)
 }

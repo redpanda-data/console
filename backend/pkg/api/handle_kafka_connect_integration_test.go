@@ -60,9 +60,9 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	commonNetwork := testNetwork
 
 	// Redpanda container
-	exposedPlainKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-	exposedOutKafkaPort := rand.Intn(50000) + 10000   //nolint:gosec // We can use weak random numbers for ports in tests.
-	exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
+	exposedPlainKafkaPort := rand.Intn(50000) + 10000
+	exposedOutKafkaPort := rand.Intn(50000) + 10000
+	exposedKafkaAdminPort := rand.Intn(50000) + 10000
 
 	redpandaContainer, err := runRedpandaForConnect(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
@@ -206,7 +206,7 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
 	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
-	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10) //nolint:gosec // We can use weak random numbers for ports in tests.
+	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10)
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

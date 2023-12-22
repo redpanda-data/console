@@ -2168,6 +2168,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 
 		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
 
 		r := &kgo.Record{
 			Key:       []byte(msg.Id),

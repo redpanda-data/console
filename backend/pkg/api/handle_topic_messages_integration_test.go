@@ -37,7 +37,7 @@ import (
 	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )
 
-//nolint:gocognit // this is a complex test, no reson to refactor it
+// this is a complex test, no reson to refactor it
 func (s *APIIntegrationTestSuite) TestListMessages() {
 	t := s.T()
 
@@ -264,7 +264,6 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	})
 }
 
-//nolint:gocognit // this is a complex test, no reason to refactor it
 func (s *APIIntegrationTestSuite) TestPublishMessages() {
 	t := s.T()
 

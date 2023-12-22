@@ -134,7 +134,6 @@ func (s *KafkaIntegrationTestSuite) TearDownSuite() {
 	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
 }
 
-//nolint:gocognit // this is a complex test, no reason to refactor
 func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 	t := s.T()
 

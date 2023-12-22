@@ -214,7 +214,6 @@ type assertCallReturnValue struct {
 	SliceValue []string
 }
 
-//nolint:gocritic // this is method for asserting not a test itself
 func assertHookCall(t *testing.T) {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()

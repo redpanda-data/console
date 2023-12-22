@@ -47,7 +47,8 @@ func (s *APISuite) DeleteAllACLs(ctx context.Context) error {
 	return err
 }
 
-func (s *APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, resourceName string, principal string) *v1alpha1.ListACLsResponse_Resource {
+//nolint:unparam // Principal always receives "User:test" as of now, but good to keep for clarity
+func (*APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, resourceName string, principal string) *v1alpha1.ListACLsResponse_Resource {
 	return &v1alpha1.ListACLsResponse_Resource{
 		ResourceType:        resourceType,
 		ResourceName:        resourceName,
