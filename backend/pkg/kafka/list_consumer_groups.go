@@ -66,9 +66,11 @@ func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsRe
 			lastErr = kresp.Err
 		}
 
-		// Important: If we don't declare the second parameter, telling us if the cast succeeded,
-		// we'll get a panic when the cast fails, instead of being able to continue.
-		res, _ := kresp.Resp.(*kmsg.ListGroupsResponse)
+		res, ok := kresp.Resp.(*kmsg.ListGroupsResponse)
+		if !ok {
+			// This should never happen, but we want to catch it to avoid panics
+			return nil, fmt.Errorf("failed to assert ListGroupsResponse")
+		}
 
 		result.Groups = append(result.Groups, ListConsumerGroupsResponse{
 			BrokerMetadata: kresp.Meta,

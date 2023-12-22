@@ -67,7 +67,8 @@ func setConnectionURI(config map[string]any) {
 	}
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
-		password := config["connection.password"].(string)
+		//nolint:unchecked-type-assertion,revive // Empty password is handled
+		password, _ := config["connection.password"].(string)
 		if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
 			password = passwordPlaceholder
 		}
@@ -105,8 +106,9 @@ func getFormatOutputString(converter any) string {
 
 func getPostProcessorChain(postProcessorChain any, keyProjectionType any, valueProjectionType any, fieldRenamerMapping any) string {
 	var postProcessorChainResult string
-	if postProcessorChain != nil {
-		postProcessorChainResult = postProcessorChain.(string)
+	postProcessorChainStr, ok := postProcessorChain.(string)
+	if ok {
+		postProcessorChainResult = postProcessorChainStr
 	} else {
 		postProcessorChainResult = "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder"
 	}

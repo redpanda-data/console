@@ -117,7 +117,10 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		return nil, err
 	}
 
-	descriptors := v.(map[int]*desc.FileDescriptor)
+	descriptors, ok := v.(map[int]*desc.FileDescriptor)
+	if !ok {
+		return nil, fmt.Errorf("failed to type assert file descriptors")
+	}
 
 	return descriptors, nil
 }
