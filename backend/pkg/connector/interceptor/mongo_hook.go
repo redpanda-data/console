@@ -67,7 +67,7 @@ func setConnectionURI(config map[string]any) {
 	}
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
-		//nolint:unchecked-type-assertion,revive // Empty password is handled
+		//nolint:revive // Empty password is handled
 		password, _ := config["connection.password"].(string)
 		if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
 			password = passwordPlaceholder
