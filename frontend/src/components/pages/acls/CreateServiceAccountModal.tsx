@@ -248,7 +248,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 
                     <Alert status="info" variant="left-accent" mt={4}>
                         <AlertIcon />
-                        You can't see the user's password again after this modal is closed.
+                        Password will be inaccessible after this modal is closed.
                     </Alert>
                 </ModalBody>
 
