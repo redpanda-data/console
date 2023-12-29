@@ -50,8 +50,9 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 			path, ok := runtime.RPCMethod(ctx)
 			if !ok {
 				procedure = "unknown"
+			} else {
+				procedure = path
 			}
-			procedure = path
 		}
 
 		protocol := req.Peer().Protocol
