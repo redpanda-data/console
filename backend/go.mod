@@ -47,6 +47,7 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.6.1
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/franz-go/pkg/sr v0.0.0-20230717142958-b13e4c4c6074
+	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/twmb/go-cache v1.2.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
@@ -159,7 +160,6 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
 	github.com/twmb/tlscfg v1.2.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

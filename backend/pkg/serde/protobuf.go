@@ -65,7 +65,7 @@ func (d ProtobufSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
 	}
 
-	var native interface{}
+	var native any
 	err = json.Unmarshal(jsonBytes, &native)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)

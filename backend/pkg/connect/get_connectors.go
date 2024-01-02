@@ -340,7 +340,7 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 	// UNKNOWN: Any other scenario.
 	var connStatus connectorStatus
 	var errDetailedContent string
-	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
+	//nolint:gocritic,goconst // this if else is easier to read as they map to rules and logic specified above.
 	if (c.Status.Connector.State == connectorStateRunning) &&
 		totalTasks > 0 && runningTasks == totalTasks {
 		connStatus = ConnectorStatusHealthy

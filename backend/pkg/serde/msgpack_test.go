@@ -136,7 +136,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string json map type", func(t *testing.T) {
-		item := map[string]interface{}{
+		item := map[string]any{
 			"Foo": "bar",
 		}
 		expected, err := msgpack.Marshal(item)
@@ -149,7 +149,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("map type", func(t *testing.T) {
-		item := map[string]interface{}{
+		item := map[string]any{
 			"Foo": "bar",
 		}
 		expected, err := msgpack.Marshal(item)
@@ -194,7 +194,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte json map type", func(t *testing.T) {
-		item := map[string]interface{}{
+		item := map[string]any{
 			"Foo": "bar",
 		}
 		expected, err := msgpack.Marshal(item)

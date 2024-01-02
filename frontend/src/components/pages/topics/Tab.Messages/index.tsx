@@ -13,7 +13,7 @@ import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined 
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode } from 'react';
+import React, { Component, FC, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
@@ -95,6 +95,8 @@ import {
     SearchField,
     Select,
     Switch,
+    Grid,
+    GridItem,
     Tabs as RpTabs,
     Tag,
     TagCloseButton,
@@ -1190,19 +1192,34 @@ function getControlCharacterName(code: number): string {
 
 const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
     const report = props.payload.troubleshootReport;
+    const [show, setShow] = useState(true);
+
     if (!report) return null;
     if (report.length == 0) return null;
 
-    return <Box mb="4">
+    return <Box mb="4" mt="4">
         <Heading as="h4">Deserialization Troubleshoot Report</Heading>
+        <Alert status="error" variant="subtle" my={4} flexDirection="column" background="red.50">
+            <AlertTitle display="flex" flexDirection="row" alignSelf="flex-start" alignItems="center" pb="4" fontWeight="normal">
+                <AlertIcon /> Errors were encoutnered when deserializing this message
+                <Link pl="2" onClick={() => setShow(!show)} >{show ? 'Hide' : 'Show'}</Link>
+            </AlertTitle>
+            <AlertDescription whiteSpace="pre-wrap" display={show ? undefined : 'none'}>
+                <Grid templateColumns="auto 1fr" rowGap="1" columnGap="4">
+                    {report.map(e => <>
+                        <GridItem key={e.serdeName + '-name'} w="100%" fontWeight="bold" textTransform="capitalize" py="2" px="5" pl="8">
+                            {e.serdeName}
+                        </GridItem>
+                        <GridItem key={e.serdeName + '-message'} w="100%" fontFamily="monospace" background="red.100" py="2" px="5">
+                            {e.message}
+                        </GridItem>
+                    </>)}
+                </Grid>
+            </AlertDescription>
 
-        {report.map(e => <Alert key={e.serdeName} status="error" variant="left-accent" my={4}>
-            <AlertIcon />
-            <Box>
-                <AlertTitle>{e.serdeName}</AlertTitle>
-                <AlertDescription fontFamily="monospace" whiteSpace="pre-wrap">{e.message}</AlertDescription>
-            </Box>
-        </Alert>)}
+        </Alert>
+
+
     </Box>
 
 });

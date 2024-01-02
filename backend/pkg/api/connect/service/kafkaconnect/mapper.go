@@ -213,8 +213,8 @@ func (m mapper) connectorInfoListToProto(connectorInfoList []kafkaconnect.Cluste
 }
 
 // convertStringMapToInterfaceMap converts interface map to string map
-func convertStringMapToInterfaceMap(stringMap map[string]string) map[string]interface{} {
-	interfaceMap := make(map[string]interface{}, len(stringMap))
+func convertStringMapToInterfaceMap(stringMap map[string]string) map[string]any {
+	interfaceMap := make(map[string]any, len(stringMap))
 	for key, value := range stringMap {
 		interfaceMap[key] = value
 	}

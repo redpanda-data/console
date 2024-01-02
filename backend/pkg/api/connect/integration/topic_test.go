@@ -201,7 +201,7 @@ func (s *APISuite) TestCreateTopic() {
 		topicsByName := topicDetails.TopicsSet()
 		topicDetail := topicsByName[topicName]
 		partitionCountReturned := len(topicDetail)
-		assert.Equal(int(partitionCount), partitionCountReturned)
+		assert.Equal(partitionCount, partitionCountReturned)
 
 		// 3. Ensure that cleanup.policy is set for created topic
 		resourceConfigs, err := s.kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
