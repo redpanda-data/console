@@ -209,7 +209,6 @@ class TabTasks extends Component {
                     {
                         header: 'Connector',
                         accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
-                        // Include sorting logic if necessary
                         cell: ({ row: { original } }) => (
                             <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
                 {original.connectorName}
@@ -220,7 +219,6 @@ class TabTasks extends Component {
                     {
                         header: 'Task ID',
                         accessorKey: 'taskId',
-                        // Include sorting logic if necessary
                         size: 50
                     },
                     {

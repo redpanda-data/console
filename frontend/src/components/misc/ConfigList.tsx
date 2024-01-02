@@ -84,7 +84,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                     placement="left"
                     hasArrow
                 >
-                    <InfoCircleFilled style={{color: '#bbbbbb'}}/>
+                    <InfoCircleFilled />
                 </Tooltip>
             </span>
         ),
@@ -102,7 +102,6 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             defaultPageSize={10000}
             size="md"
             getRowCanExpand={row => (row.original.synonyms?.length ?? 0) > 0 }
-            // getSubRows={row => row.synonyms as ConfigEntry[]}
             subComponent={({row}) => {
                 if(!row.original.synonyms?.length) {
                     return null
