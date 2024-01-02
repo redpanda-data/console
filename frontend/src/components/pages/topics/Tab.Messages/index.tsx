@@ -77,7 +77,6 @@ import {
     Flex,
     Heading,
     Input,
-    InputGroup,
     Link,
     Menu,
     MenuButton,
@@ -302,18 +301,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return (
             <React.Fragment>
-                <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
+                <Flex my={4}
+                      flexWrap="wrap"
+                      alignItems="center"
+                >
                     {/* Search Settings*/}
                     <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
                         <SingleSelect<number>
                             value={searchParams.partitionID}
                             onChange={c => (searchParams.partitionID = c)}
-                            // style={{ width: '9em' }}
                             options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
                         />
                     </Label>
                     <Label text="Start Offset" style={{ ...spaceStyle }}>
-                        <InputGroup>
+                        <>
                             <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
                                 searchParams.offsetOrigin = e;
                                 if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
@@ -321,25 +322,26 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             }} options={startOffsetOptions} />
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-                        </InputGroup>
+                        </>
                     </Label>
                     <Label text="Max Results" style={{ ...spaceStyle, minWidth: '9em' }}>
                         <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
                     </Label>
 
                     {!isServerless() && (
-                        <Label text="Filter" style={{ ...spaceStyle }}>
-                            <div style={{ height: '32px', paddingTop: '4px' }}>
-                                <Tooltip label="You don't have permissions to use search filters in this topic" isDisabled={canUseFilters} placement="top" hasArrow>
-                                    <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters} onChange={v => (searchParams.filtersEnabled = v.target.checked)} isDisabled={!canUseFilters} />
-                                </Tooltip>
-                            </div>
+                        <Label text="Filter">
+                            <Tooltip label="You don't have permissions to use search filters in this topic"
+                                     isDisabled={canUseFilters} placement="top" hasArrow>
+                                <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters}
+                                        onChange={v => (searchParams.filtersEnabled = v.target.checked)}
+                                        isDisabled={!canUseFilters}/>
+                            </Tooltip>
                         </Label>
                     )}
 
                     {/* Refresh Button */}
                     <Label text="" style={{ ...spaceStyle }}>
-                        <div style={{ display: 'flex' }}>
+                        <Flex ml={4}>
                             <AnimatePresence>
                                 {api.messageSearchPhase == null && (
                                     <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
@@ -360,7 +362,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     </MotionSpan>
                                 )}
                             </AnimatePresence>
-                        </div>
+                        </Flex>
                     </Label>
 
                     {/* Topic Actions */}
@@ -417,7 +419,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <MessageSearchFilterBar />
                         </div>
                     )}
-                </div>
+                </Flex>
             </React.Fragment>
         );
     });
