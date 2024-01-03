@@ -17,6 +17,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
+	con "github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 
@@ -207,6 +208,48 @@ func (s *Service) GetConnectCluster(ctx context.Context, req *connect.Request[v1
 	}), nil
 }
 
+// UpsertConnector implements the handler for the upsert connector operation
+func (s *Service) UpsertConnector(ctx context.Context, req *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error) {
+	putConnectorConfigRequest := con.PutConnectorConfigOptions{
+		Config: convertStringMapToInterfaceMap(req.Msg.Config),
+	}
+
+	isNew := false
+
+	if _, err := s.connectSvc.GetConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
+		if err.Status == http.StatusNotFound {
+			isNew = true
+		}
+	}
+
+	conInfo, err := s.connectSvc.PutConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name, putConnectorConfigRequest)
+	if err != nil {
+		return nil, s.matchError(err)
+	}
+
+	res := connect.NewResponse(&v1alpha1.UpsertConnectorResponse{
+		Connector: s.mapper.ConnectorSpecToProto(conInfo),
+	})
+
+	// Check if connector already exists, if not set header to 201 created
+	if isNew {
+		res.Header().Set("x-http-code", "201")
+	}
+
+	return res, nil
+}
+
+// GetConnectorConfig implements the handler for the get connector configuration operation
+func (s *Service) GetConnectorConfig(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error) {
+	config, err := s.connectSvc.GetConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name)
+	if err != nil {
+		return nil, s.matchError(err)
+	}
+	return connect.NewResponse(&v1alpha1.GetConnectorConfigResponse{
+		Config: config,
+	}), nil
+}
+
 func (*Service) matchError(err *rest.Error) *connect.Error {
 	switch err.Status {
 	case http.StatusNotFound:
@@ -220,6 +263,14 @@ func (*Service) matchError(err *rest.Error) *connect.Error {
 	case http.StatusConflict:
 		return apierrors.NewConnectError(
 			connect.CodeAlreadyExists,
+			err.Err,
+			apierrors.NewErrorInfo(
+				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
+			),
+		)
+	case http.StatusBadRequest:
+		return apierrors.NewConnectError(
+			connect.CodeInvalidArgument,
 			err.Err,
 			apierrors.NewErrorInfo(
 				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
