@@ -63,6 +63,12 @@ const (
 	// KafkaConnectServiceDeleteConnectorProcedure is the fully-qualified name of the
 	// KafkaConnectService's DeleteConnector RPC.
 	KafkaConnectServiceDeleteConnectorProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector"
+	// KafkaConnectServiceUpsertConnectorProcedure is the fully-qualified name of the
+	// KafkaConnectService's UpsertConnector RPC.
+	KafkaConnectServiceUpsertConnectorProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector"
+	// KafkaConnectServiceGetConnectorConfigProcedure is the fully-qualified name of the
+	// KafkaConnectService's GetConnectorConfig RPC.
+	KafkaConnectServiceGetConnectorConfigProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -77,6 +83,8 @@ var (
 	kafkaConnectServicePauseConnectorMethodDescriptor      = kafkaConnectServiceServiceDescriptor.Methods().ByName("PauseConnector")
 	kafkaConnectServiceResumeConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("ResumeConnector")
 	kafkaConnectServiceDeleteConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("DeleteConnector")
+	kafkaConnectServiceUpsertConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("UpsertConnector")
+	kafkaConnectServiceGetConnectorConfigMethodDescriptor  = kafkaConnectServiceServiceDescriptor.Methods().ByName("GetConnectorConfig")
 )
 
 // KafkaConnectServiceClient is a client for the redpanda.api.dataplane.v1alpha1.KafkaConnectService
@@ -107,6 +115,11 @@ type KafkaConnectServiceClient interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error)
+	// UpsertConector implements the update or create connector method, it
+	// exposes a kafka connect equivalent REST endpoint
+	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
+	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 }
 
 // NewKafkaConnectServiceClient constructs a client for the
@@ -174,6 +187,18 @@ func NewKafkaConnectServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(kafkaConnectServiceDeleteConnectorMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		upsertConnector: connect.NewClient[v1alpha1.UpsertConnectorRequest, v1alpha1.UpsertConnectorResponse](
+			httpClient,
+			baseURL+KafkaConnectServiceUpsertConnectorProcedure,
+			connect.WithSchema(kafkaConnectServiceUpsertConnectorMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getConnectorConfig: connect.NewClient[v1alpha1.GetConnectorConfigRequest, v1alpha1.GetConnectorConfigResponse](
+			httpClient,
+			baseURL+KafkaConnectServiceGetConnectorConfigProcedure,
+			connect.WithSchema(kafkaConnectServiceGetConnectorConfigMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -188,6 +213,8 @@ type kafkaConnectServiceClient struct {
 	pauseConnector      *connect.Client[v1alpha1.PauseConnectorRequest, emptypb.Empty]
 	resumeConnector     *connect.Client[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
 	deleteConnector     *connect.Client[v1alpha1.DeleteConnectorRequest, emptypb.Empty]
+	upsertConnector     *connect.Client[v1alpha1.UpsertConnectorRequest, v1alpha1.UpsertConnectorResponse]
+	getConnectorConfig  *connect.Client[v1alpha1.GetConnectorConfigRequest, v1alpha1.GetConnectorConfigResponse]
 }
 
 // ListConnectClusters calls
@@ -236,6 +263,16 @@ func (c *kafkaConnectServiceClient) DeleteConnector(ctx context.Context, req *co
 	return c.deleteConnector.CallUnary(ctx, req)
 }
 
+// UpsertConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.UpsertConnector.
+func (c *kafkaConnectServiceClient) UpsertConnector(ctx context.Context, req *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error) {
+	return c.upsertConnector.CallUnary(ctx, req)
+}
+
+// GetConnectorConfig calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig.
+func (c *kafkaConnectServiceClient) GetConnectorConfig(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error) {
+	return c.getConnectorConfig.CallUnary(ctx, req)
+}
+
 // KafkaConnectServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService service.
 type KafkaConnectServiceHandler interface {
@@ -264,6 +301,11 @@ type KafkaConnectServiceHandler interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error)
+	// UpsertConector implements the update or create connector method, it
+	// exposes a kafka connect equivalent REST endpoint
+	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
+	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 }
 
 // NewKafkaConnectServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -326,6 +368,18 @@ func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...conne
 		connect.WithSchema(kafkaConnectServiceDeleteConnectorMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	kafkaConnectServiceUpsertConnectorHandler := connect.NewUnaryHandler(
+		KafkaConnectServiceUpsertConnectorProcedure,
+		svc.UpsertConnector,
+		connect.WithSchema(kafkaConnectServiceUpsertConnectorMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	kafkaConnectServiceGetConnectorConfigHandler := connect.NewUnaryHandler(
+		KafkaConnectServiceGetConnectorConfigProcedure,
+		svc.GetConnectorConfig,
+		connect.WithSchema(kafkaConnectServiceGetConnectorConfigMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case KafkaConnectServiceListConnectClustersProcedure:
@@ -346,6 +400,10 @@ func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...conne
 			kafkaConnectServiceResumeConnectorHandler.ServeHTTP(w, r)
 		case KafkaConnectServiceDeleteConnectorProcedure:
 			kafkaConnectServiceDeleteConnectorHandler.ServeHTTP(w, r)
+		case KafkaConnectServiceUpsertConnectorProcedure:
+			kafkaConnectServiceUpsertConnectorHandler.ServeHTTP(w, r)
+		case KafkaConnectServiceGetConnectorConfigProcedure:
+			kafkaConnectServiceGetConnectorConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -389,4 +447,12 @@ func (UnimplementedKafkaConnectServiceHandler) ResumeConnector(context.Context, 
 
 func (UnimplementedKafkaConnectServiceHandler) DeleteConnector(context.Context, *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.KafkaConnectService.DeleteConnector is not implemented"))
+}
+
+func (UnimplementedKafkaConnectServiceHandler) UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.KafkaConnectService.UpsertConnector is not implemented"))
+}
+
+func (UnimplementedKafkaConnectServiceHandler) GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig is not implemented"))
 }

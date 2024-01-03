@@ -475,6 +475,13 @@ components:
         cluster:
           $ref: '#/components/schemas/ConnectCluster'
       type: object
+    GetConnectorConfigResponse:
+      properties:
+        config:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
     GetConnectorResponse:
       properties:
         connector:
@@ -939,6 +946,11 @@ components:
           $ref: '#/components/schemas/SASLMechanism'
         name:
           type: string
+      type: object
+    UpsertConnectorResponse:
+      properties:
+        connector:
+          $ref: '#/components/schemas/ConnectorSpec'
       type: object
     v1alpha1.Topic:
       properties:
@@ -1421,6 +1433,90 @@ paths:
       summary: |-
         GetConnector implements the get connector method, exposes a Kafka
         Connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
+    get:
+      operationId: KafkaConnectService_GetConnectorConfig
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+    put:
+      operationId: KafkaConnectService_UpsertConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties:
+                type: string
+              required:
+                - config
+              type: object
+        required: true
+        x-originalParamName: config
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        UpsertConector implements the update or create connector method, it
+        exposes a kafka connect equivalent REST endpoint
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
