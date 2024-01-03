@@ -1288,3 +1288,169 @@ export class ListConnectClustersResponse extends Message<ListConnectClustersResp
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpsertConnectorRequest
+ */
+export class UpsertConnectorRequest extends Message<UpsertConnectorRequest> {
+  /**
+   * @generated from field: string cluster_name = 1;
+   */
+  clusterName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * @generated from field: map<string, string> config = 3;
+   */
+  config: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<UpsertConnectorRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpsertConnectorRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpsertConnectorRequest {
+    return new UpsertConnectorRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpsertConnectorRequest {
+    return new UpsertConnectorRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpsertConnectorRequest {
+    return new UpsertConnectorRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpsertConnectorRequest | PlainMessage<UpsertConnectorRequest> | undefined, b: UpsertConnectorRequest | PlainMessage<UpsertConnectorRequest> | undefined): boolean {
+    return proto3.util.equals(UpsertConnectorRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpsertConnectorResponse
+ */
+export class UpsertConnectorResponse extends Message<UpsertConnectorResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorSpec connector = 1;
+   */
+  connector?: ConnectorSpec;
+
+  constructor(data?: PartialMessage<UpsertConnectorResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpsertConnectorResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "message", T: ConnectorSpec },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpsertConnectorResponse {
+    return new UpsertConnectorResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpsertConnectorResponse {
+    return new UpsertConnectorResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpsertConnectorResponse {
+    return new UpsertConnectorResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpsertConnectorResponse | PlainMessage<UpsertConnectorResponse> | undefined, b: UpsertConnectorResponse | PlainMessage<UpsertConnectorResponse> | undefined): boolean {
+    return proto3.util.equals(UpsertConnectorResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorConfigRequest
+ */
+export class GetConnectorConfigRequest extends Message<GetConnectorConfigRequest> {
+  /**
+   * @generated from field: string cluster_name = 1;
+   */
+  clusterName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetConnectorConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorConfigRequest {
+    return new GetConnectorConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorConfigRequest {
+    return new GetConnectorConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorConfigRequest {
+    return new GetConnectorConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorConfigRequest | PlainMessage<GetConnectorConfigRequest> | undefined, b: GetConnectorConfigRequest | PlainMessage<GetConnectorConfigRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectorConfigRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorConfigResponse
+ */
+export class GetConnectorConfigResponse extends Message<GetConnectorConfigResponse> {
+  /**
+   * @generated from field: map<string, string> config = 1;
+   */
+  config: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<GetConnectorConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorConfigResponse {
+    return new GetConnectorConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorConfigResponse {
+    return new GetConnectorConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorConfigResponse {
+    return new GetConnectorConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorConfigResponse | PlainMessage<GetConnectorConfigResponse> | undefined, b: GetConnectorConfigResponse | PlainMessage<GetConnectorConfigResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectorConfigResponse, a, b);
+  }
+}
+

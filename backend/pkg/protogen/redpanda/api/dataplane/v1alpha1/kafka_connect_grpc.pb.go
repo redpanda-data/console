@@ -30,6 +30,8 @@ const (
 	KafkaConnectService_PauseConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector"
 	KafkaConnectService_ResumeConnector_FullMethodName     = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector"
 	KafkaConnectService_DeleteConnector_FullMethodName     = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector"
+	KafkaConnectService_UpsertConnector_FullMethodName     = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector"
+	KafkaConnectService_GetConnectorConfig_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig"
 )
 
 // KafkaConnectServiceClient is the client API for KafkaConnectService service.
@@ -61,6 +63,11 @@ type KafkaConnectServiceClient interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// UpsertConector implements the update or create connector method, it
+	// exposes a kafka connect equivalent REST endpoint
+	UpsertConnector(ctx context.Context, in *UpsertConnectorRequest, opts ...grpc.CallOption) (*UpsertConnectorResponse, error)
+	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	GetConnectorConfig(ctx context.Context, in *GetConnectorConfigRequest, opts ...grpc.CallOption) (*GetConnectorConfigResponse, error)
 }
 
 type kafkaConnectServiceClient struct {
@@ -152,6 +159,24 @@ func (c *kafkaConnectServiceClient) DeleteConnector(ctx context.Context, in *Del
 	return out, nil
 }
 
+func (c *kafkaConnectServiceClient) UpsertConnector(ctx context.Context, in *UpsertConnectorRequest, opts ...grpc.CallOption) (*UpsertConnectorResponse, error) {
+	out := new(UpsertConnectorResponse)
+	err := c.cc.Invoke(ctx, KafkaConnectService_UpsertConnector_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kafkaConnectServiceClient) GetConnectorConfig(ctx context.Context, in *GetConnectorConfigRequest, opts ...grpc.CallOption) (*GetConnectorConfigResponse, error) {
+	out := new(GetConnectorConfigResponse)
+	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnectorConfig_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KafkaConnectServiceServer is the server API for KafkaConnectService service.
 // All implementations must embed UnimplementedKafkaConnectServiceServer
 // for forward compatibility
@@ -181,6 +206,11 @@ type KafkaConnectServiceServer interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *DeleteConnectorRequest) (*emptypb.Empty, error)
+	// UpsertConector implements the update or create connector method, it
+	// exposes a kafka connect equivalent REST endpoint
+	UpsertConnector(context.Context, *UpsertConnectorRequest) (*UpsertConnectorResponse, error)
+	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	GetConnectorConfig(context.Context, *GetConnectorConfigRequest) (*GetConnectorConfigResponse, error)
 	mustEmbedUnimplementedKafkaConnectServiceServer()
 }
 
@@ -214,6 +244,12 @@ func (UnimplementedKafkaConnectServiceServer) ResumeConnector(context.Context, *
 }
 func (UnimplementedKafkaConnectServiceServer) DeleteConnector(context.Context, *DeleteConnectorRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnector not implemented")
+}
+func (UnimplementedKafkaConnectServiceServer) UpsertConnector(context.Context, *UpsertConnectorRequest) (*UpsertConnectorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertConnector not implemented")
+}
+func (UnimplementedKafkaConnectServiceServer) GetConnectorConfig(context.Context, *GetConnectorConfigRequest) (*GetConnectorConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorConfig not implemented")
 }
 func (UnimplementedKafkaConnectServiceServer) mustEmbedUnimplementedKafkaConnectServiceServer() {}
 
@@ -390,6 +426,42 @@ func _KafkaConnectService_DeleteConnector_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KafkaConnectService_UpsertConnector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertConnectorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KafkaConnectServiceServer).UpsertConnector(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KafkaConnectService_UpsertConnector_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KafkaConnectServiceServer).UpsertConnector(ctx, req.(*UpsertConnectorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KafkaConnectService_GetConnectorConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KafkaConnectServiceServer).GetConnectorConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KafkaConnectService_GetConnectorConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KafkaConnectServiceServer).GetConnectorConfig(ctx, req.(*GetConnectorConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KafkaConnectService_ServiceDesc is the grpc.ServiceDesc for KafkaConnectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -432,6 +504,14 @@ var KafkaConnectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteConnector",
 			Handler:    _KafkaConnectService_DeleteConnector_Handler,
+		},
+		{
+			MethodName: "UpsertConnector",
+			Handler:    _KafkaConnectService_UpsertConnector_Handler,
+		},
+		{
+			MethodName: "GetConnectorConfig",
+			Handler:    _KafkaConnectService_GetConnectorConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
