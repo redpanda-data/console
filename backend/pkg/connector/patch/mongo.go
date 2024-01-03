@@ -118,6 +118,8 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			AddRecommendedValueWithMetadata("all", "ALL").
 			SetComponentType(model.ComponentRadioGroup).
 			SetDocumentation("Behavior for tolerating errors during connector operation. 'NONE' is the default value and signals that any error will result in an immediate connector task failure; 'ALL' changes the behavior to skip over problematic records")
+	case "heartbeat.interval.ms":
+		d.SetDisplayName("Heartbeat interval milliseconds")
 	case name:
 		d.SetDefaultValue("mongodb-" + extractType(connectorClass, mongoClassSelectorRegexp) + "-connector-" + strings.ToLower(random.String(4)))
 	}
