@@ -20,6 +20,9 @@ import svgrPlugin from 'vite-plugin-svgr';
 import { createHtmlPlugin } from 'vite-plugin-html';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import muteWarningsPlugin, { warningsToIgnore } from './vite/muteWarningsPlugin';
+
+import federation from '@originjs/vite-plugin-federation';
+
 const ENV_PREFIX = 'REACT_APP_';
 
 // https://vitejs.dev/config/
@@ -35,6 +38,14 @@ export default defineConfig(({ mode }) => {
             plugins: ['decorators-legacy', 'classProperties']
           }
         }
+      }),
+      federation({
+        name: 'remote_app',
+        filename: 'remoteEntry.js',
+        exposes: {
+          './EmbeddedApp': './src/EmbeddedApp',
+        },
+        shared: ['react', 'react-dom']
       }),
       envCompatible({ prefix: ENV_PREFIX }),
       checker({
@@ -80,6 +91,12 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'build',
       sourcemap: true,
+      modulePreload: {
+        polyfill: false,
+      },
+      target: 'esnext',
+      minify: false,
+      cssCodeSplit: false,
        // TODO: we need to look at how Vite/Rollup sets source maps vs CRA.
       // Can we differentiate between production vs dev build?
     },

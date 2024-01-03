@@ -12,7 +12,7 @@
     "start2": "VITE_CJS_IGNORE_WARNING=true REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS vite",
     "build": "tsc && npm run lint && vite build",
     "build-local-test": "tsc && npm run lint && REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true vite build",
-    "serve": "vite preview --port 3004",
+    "serve": "vite preview --port 3004 --strictPort",
     "test": "TZ=GMT jest --coverage --watchAll=false",
     "test:dev": "TZ=GMT jest --coverage --watchAll",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
@@ -66,6 +66,7 @@
     "vite-tsconfig-paths": "^4.2.2"
   },
   "devDependencies": {
+    "@originjs/vite-plugin-federation": "^1.3.3",
     "@swc/helpers": "^0.5.3",
     "@swc/jest": "^0.2.29",
     "@testing-library/jest-dom": "^6.1.4",
