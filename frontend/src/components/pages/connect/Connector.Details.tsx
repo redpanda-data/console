@@ -398,7 +398,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         p.addBreadcrumb('Connectors', '/connect-clusters');
         p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
         p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`);
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

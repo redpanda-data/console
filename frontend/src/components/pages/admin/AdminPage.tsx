@@ -31,7 +31,7 @@ export default class AdminPage extends PageComponent {
         p.title = 'Admin';
         p.addBreadcrumb('Admin', '/admin');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
 
     }

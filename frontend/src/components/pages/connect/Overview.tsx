@@ -31,7 +31,7 @@ class KafkaConnectOverview extends PageComponent {
         p.title = 'Overview';
         p.addBreadcrumb('Connectors', '/connect-clusters');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
