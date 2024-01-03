@@ -212,6 +212,23 @@ func (m mapper) connectorInfoListToProto(connectorInfoList []kafkaconnect.Cluste
 	return clusters, errs
 }
 
+// ConnectorSpecToProto converts the http response to proto message
+func (mapper) ConnectorSpecToProto(connector con.ConnectorInfo) *dataplanev1alpha1.ConnectorSpec {
+	tasks := make([]*dataplanev1alpha1.TaskInfo, len(connector.Tasks))
+
+	for i, task := range connector.Tasks {
+		tasks[i] = &dataplanev1alpha1.TaskInfo{
+			Connector: task.Connector,
+			Task:      int32(task.Task),
+		}
+	}
+	return &dataplanev1alpha1.ConnectorSpec{
+		Name:   connector.Name,
+		Config: connector.Config,
+		Tasks:  tasks,
+	}
+}
+
 // convertStringMapToInterfaceMap converts interface map to string map
 func convertStringMapToInterfaceMap(stringMap map[string]string) map[string]any {
 	interfaceMap := make(map[string]any, len(stringMap))
