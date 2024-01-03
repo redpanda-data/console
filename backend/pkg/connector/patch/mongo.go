@@ -51,16 +51,7 @@ func (c *ConfigPatchMongoDB) IsMatch(configKey, connectorClass string) bool {
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
-	// Patches for sink connector only
-	if isSink(connectorClass) {
-		switch d.Definition.Name {
-		case "database":
-			d.SetDisplayName("MongoDB database name").
-				SetDocumentation("The name of an existing MongoDB database to store output files in")
-		case "collection":
-			d.SetDisplayName("Default MongoDB collection name")
-		}
-	}
+	d = patchSinkConnector(d, connectorClass)
 
 	// Misc patches
 	switch d.Definition.Name {
@@ -145,6 +136,20 @@ func patchImportance(d model.ConfigDefinition) model.ConfigDefinition {
 	case "output.schema.key",
 		"output.schema.value":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
+	}
+
+	return d
+}
+
+func patchSinkConnector(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
+	if isSink(connectorClass) {
+		switch d.Definition.Name {
+		case "database":
+			d.SetDisplayName("MongoDB database name").
+				SetDocumentation("The name of an existing MongoDB database to store output files in")
+		case "collection":
+			d.SetDisplayName("Default MongoDB collection name")
+		}
 	}
 
 	return d
