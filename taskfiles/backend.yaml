@@ -129,6 +129,7 @@ tasks:
     cmds:
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test -v -race --tags=integration -p=1 ./...
+
   cover:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests with code coverage
@@ -136,6 +137,7 @@ tasks:
       - install-tparse
       - generate
     cmds:
+      - task: 'lint'
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test -race --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse
 
@@ -144,4 +146,4 @@ tasks:
     desc: Run lint and tests
     cmds: 
       - task: 'lint'
-      - task: 'cover'
+      - task: 'test-integration'

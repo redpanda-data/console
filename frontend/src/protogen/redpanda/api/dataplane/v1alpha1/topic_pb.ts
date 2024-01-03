@@ -306,6 +306,8 @@ export class CreateTopicRequest extends Message<CreateTopicRequest> {
  */
 export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> {
   /**
+   * Name is the topic's name.
+   *
    * @generated from field: string name = 1;
    */
   name = "";

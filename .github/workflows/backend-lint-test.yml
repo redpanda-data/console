@@ -32,7 +32,12 @@ jobs:
           version: v1.55.2
           args: --timeout=5m
           working-directory: backend
+      
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
 
-      - name: test
-        run: go test -v -race --tags=integration -p=1 ./...
+      - name: verify
+        run: task backend:verify
         working-directory: backend

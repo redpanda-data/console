@@ -10,25 +10,25 @@ managed:
       - buf.build/envoyproxy/protoc-gen-validate
 plugins:
   # Go Plugins
-  - plugin: buf.build/protocolbuffers/go
+  - plugin: buf.build/protocolbuffers/go:v1.31.0
     opt: paths=source_relative
     out: backend/pkg/protogen
-  - plugin: buf.build/grpc/go
+  - plugin: buf.build/grpc/go:v1.3.0
     opt: paths=source_relative
     out: backend/pkg/protogen
-  - plugin: buf.build/connectrpc/go
+  - plugin: buf.build/connectrpc/go:v1.14.0
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
     out: backend/pkg/protogen
   # Typescript plugins
-  - plugin: buf.build/bufbuild/es
+  - plugin: buf.build/bufbuild/es:v1.6.0
     opt:
       - target=ts
       - import_extension=
     out: frontend/src/protogen
 
-  - plugin: buf.build/connectrpc/es
+  - plugin: buf.build/connectrpc/es:v1.2.0
     opt:
       - target=ts
       - import_extension=

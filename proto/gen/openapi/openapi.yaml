@@ -271,6 +271,7 @@ components:
             $ref: '#/components/schemas/Config'
           type: array
         name:
+          description: Name is the topic's name.
           type: string
         partition_count:
           description: |-
