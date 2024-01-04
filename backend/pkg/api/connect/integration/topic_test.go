@@ -163,7 +163,7 @@ func (s *APISuite) TestCreateTopic() {
 		httpReq := createTopicRequest{
 			Name:              topicName,
 			PartitionCount:    partitionCount,
-			ReplicationFactor: -1,
+			ReplicationFactor: 1,
 			Configs: []struct {
 				Name  string `json:"name"`
 				Value string `json:"value"`
