@@ -37,6 +37,7 @@ jobs:
         uses: arduino/setup-task@v1
         with:
           version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: verify
         run: task backend:verify
