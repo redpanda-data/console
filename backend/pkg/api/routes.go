@@ -48,7 +48,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Base baseInterceptors configured in OSS.
 	baseInterceptors := []connect.Interceptor{
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
-		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
 	}
 
 	// Setup gRPC-Gateway
