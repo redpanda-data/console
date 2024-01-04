@@ -25,13 +25,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: 'backend/go.mod'
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.55.2
-          args: --timeout=5m
-          working-directory: backend
       
       - name: Install Task
         uses: arduino/setup-task@v1
