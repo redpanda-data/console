@@ -81,8 +81,6 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 				},
 			},
 
-			sizing(),
-
 			reviewAndLaunch(),
 		},
 	}
