@@ -55,7 +55,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         p.addBreadcrumb('Consumer Groups', '/groups');
         if (group) p.addBreadcrumb(group, '/' + group);
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

@@ -45,7 +45,7 @@ class Overview extends PageComponent {
         p.title = 'Overview';
         p.addBreadcrumb('Overview', '/overview');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

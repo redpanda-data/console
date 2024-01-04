@@ -179,7 +179,7 @@ class AclList extends PageComponent {
         p.title = 'Kafka Access Control';
         p.addBreadcrumb('Kafka Access Control', '/acls');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
