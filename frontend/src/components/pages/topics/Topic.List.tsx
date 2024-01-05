@@ -55,7 +55,7 @@ class TopicList extends PageComponent {
         p.title = 'Topics';
         p.addBreadcrumb('Topics', '/topics');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

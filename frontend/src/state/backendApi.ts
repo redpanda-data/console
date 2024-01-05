@@ -382,6 +382,7 @@ const apiStore = {
         const req = new ListMessagesRequest();
         req.topic = searchRequest.topicName;
         req.startOffset = BigInt(searchRequest.startOffset);
+        req.startTimestamp = BigInt(searchRequest.startTimestamp);
         req.partitionId = searchRequest.partitionId;
         req.maxResults = searchRequest.maxResults;
         req.filterInterpreterCode = searchRequest.filterInterpreterCode;
@@ -1922,6 +1923,7 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
 export interface MessageSearchRequest {
     topicName: string,
     startOffset: number,
+    startTimestamp: number,
     partitionId: number,
     maxResults: number, // should also support '-1' soon, so we can do live tailing
     filterInterpreterCode: string, // js code, base64 encoded

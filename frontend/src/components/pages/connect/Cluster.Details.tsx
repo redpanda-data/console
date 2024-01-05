@@ -40,7 +40,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
         p.addBreadcrumb('Connectors', '/connect-clusters');
         p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

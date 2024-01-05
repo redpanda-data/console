@@ -58,7 +58,7 @@ func KafkaConnectToConsoleMongoDBHook(config map[string]string) map[string]strin
 }
 
 func setConnectionURI(config map[string]any) {
-	if _, exists := config["connection.uri"]; !exists {
+	if _, exists := config["connection.uri"]; !exists || config["connection.uri"] == "mongodb://" {
 		if _, exists := config["connection.url"]; exists {
 			config["connection.uri"] = config["connection.url"]
 		} else {

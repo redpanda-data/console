@@ -38,7 +38,7 @@ class GroupList extends PageComponent {
         p.title = 'Consumer Groups';
         p.addBreadcrumb('Consumer Groups', '/groups');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

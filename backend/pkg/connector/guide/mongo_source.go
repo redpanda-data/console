@@ -73,12 +73,13 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 							"publish.full.document.only.tombstone.on.delete",
 							"mongo.errors.tolerance",
 							"producer.override.max.request.size",
+							"heartbeat.interval.ms",
+							"heartbeat.topic.name",
+							"offset.partition.name",
 						},
 					},
 				},
 			},
-
-			sizing(),
 
 			reviewAndLaunch(),
 		},

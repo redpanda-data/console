@@ -34,7 +34,7 @@ class QuotasList extends PageComponent {
         p.title = 'Quotas';
         p.addBreadcrumb('Quotas', '/quotas');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 

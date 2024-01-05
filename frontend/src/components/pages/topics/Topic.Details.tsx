@@ -153,7 +153,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicName = this.props.topicName;
         uiState.currentTopicName = topicName;
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
 
         p.title = topicName;

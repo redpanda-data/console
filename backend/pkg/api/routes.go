@@ -58,8 +58,12 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
 			Marshaler: &runtime.JSONPb{
 				MarshalOptions: protojson.MarshalOptions{
-					UseProtoNames:   true, // use snake_case
-					EmitUnpopulated: true, // output zero values e.g. 0, "", false
+					UseProtoNames: true, // use snake_case
+					// Do not use EmitUnpopulated, so we don't emit nulls (they are ugly, and provide no benefit. they transport no information, even in "normal" json).
+					EmitUnpopulated: false,
+					// Instead, use EmitDefaultValues, which is new and like EmitUnpopulated, but
+					// skips nulls (which we consider ugly, and provides no benefit over skipping the field)
+					EmitDefaultValues: true,
 				},
 				UnmarshalOptions: protojson.UnmarshalOptions{
 					DiscardUnknown: true,
