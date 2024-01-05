@@ -12,7 +12,7 @@ package git
 import (
 	"testing"
 
-	"github.com/bmizerany/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
