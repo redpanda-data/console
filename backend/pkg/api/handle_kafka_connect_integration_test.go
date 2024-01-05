@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 
@@ -44,37 +45,29 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	// setup
 	ctx := context.Background()
 
-	connectTestNetwork := "api_integration_redpanda_connect_test_network"
-
 	// create one common network that all containers will share
-	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		ProviderType: testcontainers.ProviderDocker,
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name:           connectTestNetwork,
-			CheckDuplicate: true,
-			Attachable:     true,
-		},
-	})
+	testNetwork, err := network.New(ctx, network.WithCheckDuplicate(), network.WithAttachable())
 	require.NoError(err)
-
-	commonNetwork := testNetwork
+	t.Cleanup(func() {
+		assert.NoError(testNetwork.Remove(ctx))
+	})
 
 	// Redpanda container
 	exposedPlainKafkaPort := rand.Intn(50000) + 10000
 	exposedOutKafkaPort := rand.Intn(50000) + 10000
 	exposedKafkaAdminPort := rand.Intn(50000) + 10000
 
-	redpandaContainer, err := runRedpandaForConnect(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
+	redpandaContainer, err := runRedpandaForConnect(ctx, testNetwork.Name, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
 
 	// HTTPBin container
-	httpC, err := runHTTPBin(ctx, connectTestNetwork)
+	httpC, err := runHTTPBin(ctx, testNetwork.Name)
 	require.NoError(err)
 
 	httpBinContainer := httpC
 
 	// Kafka Connect container
-	connectC, err := runConnect(connectTestNetwork, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
+	connectC, err := runConnect(testNetwork.Name, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
 	require.NoError(err)
 
 	connectContainer := connectC
@@ -117,7 +110,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		assert.NoError(httpBinContainer.Terminate(context.Background()))
 		assert.NoError(connectContainer.Terminate(context.Background()))
 		assert.NoError(redpandaContainer.Terminate(context.Background()))
-		assert.NoError(commonNetwork.Remove(context.Background()))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
