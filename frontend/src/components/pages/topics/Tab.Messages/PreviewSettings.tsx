@@ -37,7 +37,7 @@ const PatternHelpDrawer = () => {
             }}><InfoIcon size={15}/>&nbsp;glob patterns</button>
             <Drawer
                 isOpen={isOpen}
-                placement="left"
+                placement="right"
                 size="xl"
                 onClose={onClose}
             >
