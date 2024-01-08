@@ -384,7 +384,7 @@ func (s *APISuite) TestDeleteTopic() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		urlPath := fmt.Sprintf("/v1alpha1/topics/some-random-topic-name-that-does-not-exist")
+		urlPath := "/v1alpha1/topics/some-random-topic-name-that-does-not-exist"
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + urlPath).
@@ -416,7 +416,7 @@ func (s *APISuite) TestDeleteTopic() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		urlPath := fmt.Sprintf("/v1alpha1/topics/some-chars-are-not!$-allowed")
+		urlPath := "/v1alpha1/topics/some-chars-are-not!$-allowed"
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + urlPath).

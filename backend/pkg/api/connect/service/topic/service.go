@@ -73,7 +73,7 @@ func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1
 
 	result := kafkaRes.Topics[0]
 	if result.ErrorCode != 0 {
-		if kerr.ErrorForCode(result.ErrorCode) == kerr.UnknownTopicOrPartition {
+		if errors.Is(kerr.ErrorForCode(result.ErrorCode), kerr.UnknownTopicOrPartition) {
 			return nil, apierrors.NewConnectError(
 				connect.CodeNotFound,
 				fmt.Errorf("the requested topic does not exist"),
