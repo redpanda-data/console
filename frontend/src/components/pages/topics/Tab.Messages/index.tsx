@@ -28,11 +28,7 @@ import {
     TimestampDisplayFormat
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import {
-    AnimatePresence,
-    animProps_span_messagesStatus,
-    MotionSpan
-} from '../../../../utils/animationProps';
+import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -75,6 +71,8 @@ import {
     DateTimeInput,
     Empty,
     Flex,
+    Grid,
+    GridItem,
     Heading,
     Input,
     Link,
@@ -92,10 +90,7 @@ import {
     Popover,
     RadioGroup,
     SearchField,
-    Select,
     Switch,
-    Grid,
-    GridItem,
     Tabs as RpTabs,
     Tag,
     TagCloseButton,
@@ -107,6 +102,7 @@ import {
 } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
+import { MultiValue, Select as ChakraReactSelect } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
@@ -506,25 +502,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
-
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
-
-        const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
-                    <SettingOutlined style={{ fontSize: '1rem' }} />
-                    <span style={{ marginLeft: '.3em' }}>Preview</span>
-                    {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
-                        if (count > 0)
-                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
-                        return <></>;
-                    })()}
-                </Button>
-            </span>
-        </>;
-
-
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
@@ -557,20 +535,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             },
         }
 
+
         const newColumns: ColumnDef<TopicMessage>[] = []
 
-        uiState.topicSettings.previewColumnFields.forEach(field => {
-            if(dataTableColumns[field.dataIndex]) {
-                newColumns.push(dataTableColumns[field.dataIndex])
+        // let's be defensive and remove any duplicates before showing in the table
+        new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex)).forEach(dataIndex => {
+            if(dataTableColumns[dataIndex]) {
+                newColumns.push(dataTableColumns[dataIndex])
             }
         })
-
-        // set first column to span most of the space
-        if(newColumns.length > 0) {
-            newColumns[newColumns.length - 1].size = Infinity;
-        }
-
-        newColumns.push({
+        const columns: ColumnDef<TopicMessage>[] = [...newColumns, {
             header: () => <button onClick={() => {
                 this.showColumnSettings = true
             }}><CogIcon style={{width: 20}}/>
@@ -578,14 +552,29 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             id: 'action',
             size: 0,
             cell: ({row: {original}}) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]}/>,
-        })
+        }]
+
+        const previewButton = <>
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
+                    <SettingOutlined style={{ fontSize: '1rem' }} />
+                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+                    {(() => {
+                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
+                        if (count > 0)
+                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
+                        return <></>;
+                    })()}
+                </Button>
+            </span>
+        </>;
 
         return <>
             <DataTable<TopicMessage>
                 size="md"
                 data={this.messageSource.data}
                 emptyText="No messages"
-                columns={newColumns}
+                columns={columns}
                 showPagination
                 subComponent={({row: {original}}) => renderExpandedMessage(original)}
             />
@@ -1360,10 +1349,16 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
 ));
 
 
-@observer
-class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
+const handleColumnListChange = action((newValue: MultiValue<{ value: string, label: string }>) => {
+    uiState.topicSettings.previewColumnFields = newValue.map(({label, value}) => ({
+        title: label,
+        dataIndex: value
+    }))
+})
 
-    defaultColumnList: ColumnList[] = [
+
+const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
+    const defaultColumnList: ColumnList[] = [
         { title: 'Offset', dataIndex: 'offset' },
         { title: 'Partition', dataIndex: 'partitionID' },
         { title: 'Timestamp', dataIndex: 'timestamp' },
@@ -1373,38 +1368,21 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
         { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
-    render() {
-        const value = uiState.topicSettings.previewColumnFields.map(column => ({
+    const value = tags.map(column => ({
+        label: column.title,
+        value: column.dataIndex
+    }));
+
+    return <ChakraReactSelect<{label: string; value: string}, true>
+        isMulti={true}
+        name=""
+        options={defaultColumnList.map((column: ColumnList) => ({
             label: column.title,
-            value: column.dataIndex
-        }));
-
-        return (
-            <Select<ColumnList['dataIndex']>
-                isMulti
-                options={this.defaultColumnList.map((column: ColumnList) => ({
-                    label: column.title,
-                    value: column.dataIndex,
-                }))}
-                defaultValue={value}
-                value={value}
-                // @ts-ignore
-                onChange={this.handleColumnListChange}
-            />
-        )
-    }
-
-    handleColumnListChange = (newValue: Array<{ value: string }>) => {
-        const values: string[] = newValue.map(({ value }) => value)
-        if (!values.length) {
-            uiState.topicSettings.previewColumnFields = [];
-        } else {
-            const columnsSelected = values
-                .map(value => this.defaultColumnList.find(columnList => columnList.dataIndex === value))
-                .filter(columnList => !!columnList) as ColumnList[];
-            uiState.topicSettings.previewColumnFields = columnsSelected;
-        }
-    };
+            value: column.dataIndex,
+        }))}
+        value={value}
+        onChange={handleColumnListChange}
+    />
 }
 
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
