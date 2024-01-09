@@ -37,6 +37,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -616,4 +617,8 @@ func (a *assertHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.List
 		assertHookCall(a.t)
 	}
 	return r.Context(), nil
+}
+
+func (a *assertHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
+	return []zapcore.Field{}
 }

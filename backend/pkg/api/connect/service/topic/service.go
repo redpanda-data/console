@@ -13,10 +13,12 @@ package topic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -46,13 +48,46 @@ func (*Service) ListTopics(context.Context, *connect.Request[v1alpha1.ListTopics
 }
 
 // DeleteTopic deletes a Kafka topic.
-func (*Service) DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("this endpoint is not yet implemented"),
-		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-	)
+func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
+	kafkaReq := s.mapper.deleteTopicToKmsg(req.Msg)
+	kafkaRes, err := s.consoleSvc.DeleteTopics(ctx, &kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if len(kafkaRes.Topics) != 1 {
+		// Should never happen since we only delete one topic, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("unexpected number of results in create topics response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_results",
+				Value: strconv.Itoa(len(kafkaRes.Topics)),
+			}),
+		)
+	}
+
+	result := kafkaRes.Topics[0]
+	if result.ErrorCode != 0 {
+		if errors.Is(kerr.ErrorForCode(result.ErrorCode), kerr.UnknownTopicOrPartition) {
+			return nil, apierrors.NewConnectError(
+				connect.CodeNotFound,
+				fmt.Errorf("the requested topic does not exist"),
+				apierrors.NewErrorInfo(
+					commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
+				))
+		}
+		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
+	}
+
+	connectResponse := connect.NewResponse(&v1alpha1.DeleteTopicResponse{})
+	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusNoContent))
+
+	return connectResponse, nil
 }
 
 // GetTopicConfiguration retrieves a topic's configuration.

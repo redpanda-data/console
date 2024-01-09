@@ -2243,7 +2243,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ss2)
 
 		// verify update
-		srRes, err := rcl.Schemas(ctx, testTopicName+"-value", sr.ShowDeleted)
+		srRes, err := rcl.Schemas(sr.WithParams(ctx, sr.ShowDeleted), testTopicName+"-value")
 		require.NoError(err)
 		assert.Len(srRes, 2)
 		assert.Equal(ss.ID, srRes[0].ID)

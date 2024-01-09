@@ -22,16 +22,50 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import { Box, Button, Checkbox, Flex,
-    Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Flex, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useDisclosure } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
+
+const PatternHelpDrawer = () => {
+    const { isOpen, onOpen, onClose } = useDisclosure()
+
+    return (
+        <>
+            <button onClick={onOpen} style={{
+                margin: '0 2px',
+                color: 'hsl(205deg, 100%, 50%)',
+                textDecoration: 'underline dotted'
+            }}><InfoIcon size={15}/>&nbsp;glob patterns</button>
+            <Drawer
+                isOpen={isOpen}
+                placement="right"
+                size="xl"
+                onClose={onClose}
+            >
+                <DrawerOverlay/>
+                <DrawerContent>
+                    <DrawerCloseButton/>
+                    <DrawerHeader>Glob Pattern Examples</DrawerHeader>
+
+                    <DrawerBody>
+                        {globHelp}
+                    </DrawerBody>
+
+                    <DrawerFooter>
+                        <Button variant="outline" mr={3} onClick={onClose}>
+                            Close
+                        </Button>
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
+        </>
+    )
+}
 
 
 const globHelp = <div>
     {/* Examples + Image */}
-    <div style={{ display: 'flex', gap: '2em', minWidth: '900px' }}>
-        <div style={{ flexGrow: 1 }}>
-            <h3>Glob Pattern Examples</h3>
+    <Flex gap={2}>
+        <Flex grow={1}>
             <div className="globHelpGrid">
                 <div className="h">Pattern</div>
                 <div className="h">Result</div>
@@ -84,12 +118,12 @@ const globHelp = <div>
                 <div className="rowSeparator" />
 
             </div>
-        </div>
+        </Flex>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
             <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
             <img src={globExampleImg} alt="Examples for glob patterns" />
         </div>
-    </div>
+    </Flex>
 
     {/* Details */}
     <div>
@@ -143,12 +177,8 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div>
                 <span >
                     When viewing large messages we're often only interested in a few specific fields.
-                    Add <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton>
-                        <span style={{
-                            margin: '0 2px',
-                            color: 'hsl(205deg, 100%, 50%)',
-                            textDecoration: 'underline dotted', cursor: 'pointer'
-                        }}><InfoIcon size={15}/>&nbsp;glob patterns</span>
+                    Add <PatternHelpDrawer /><Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton>
+
                     </Popover> to this list to show found values as previews.
                 </span>
             </div>

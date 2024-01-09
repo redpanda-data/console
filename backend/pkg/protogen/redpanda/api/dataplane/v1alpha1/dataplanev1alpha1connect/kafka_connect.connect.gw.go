@@ -28,6 +28,8 @@ type KafkaConnectServiceGatewayServer struct {
 	pauseConnector      connect_gateway.UnaryHandler[v1alpha1.PauseConnectorRequest, emptypb.Empty]
 	resumeConnector     connect_gateway.UnaryHandler[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
 	deleteConnector     connect_gateway.UnaryHandler[v1alpha1.DeleteConnectorRequest, emptypb.Empty]
+	upsertConnector     connect_gateway.UnaryHandler[v1alpha1.UpsertConnectorRequest, v1alpha1.UpsertConnectorResponse]
+	getConnectorConfig  connect_gateway.UnaryHandler[v1alpha1.GetConnectorConfigRequest, v1alpha1.GetConnectorConfigResponse]
 }
 
 // NewKafkaConnectServiceGatewayServer constructs a Connect-Gateway gRPC server for the
@@ -43,6 +45,8 @@ func NewKafkaConnectServiceGatewayServer(svc KafkaConnectServiceHandler, opts ..
 		pauseConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServicePauseConnectorProcedure, svc.PauseConnector, opts...),
 		resumeConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceResumeConnectorProcedure, svc.ResumeConnector, opts...),
 		deleteConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceDeleteConnectorProcedure, svc.DeleteConnector, opts...),
+		upsertConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceUpsertConnectorProcedure, svc.UpsertConnector, opts...),
+		getConnectorConfig:  connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorConfigProcedure, svc.GetConnectorConfig, opts...),
 	}
 }
 
@@ -80,6 +84,14 @@ func (s *KafkaConnectServiceGatewayServer) ResumeConnector(ctx context.Context, 
 
 func (s *KafkaConnectServiceGatewayServer) DeleteConnector(ctx context.Context, req *v1alpha1.DeleteConnectorRequest) (*emptypb.Empty, error) {
 	return s.deleteConnector(ctx, req)
+}
+
+func (s *KafkaConnectServiceGatewayServer) UpsertConnector(ctx context.Context, req *v1alpha1.UpsertConnectorRequest) (*v1alpha1.UpsertConnectorResponse, error) {
+	return s.upsertConnector(ctx, req)
+}
+
+func (s *KafkaConnectServiceGatewayServer) GetConnectorConfig(ctx context.Context, req *v1alpha1.GetConnectorConfigRequest) (*v1alpha1.GetConnectorConfigResponse, error) {
+	return s.getConnectorConfig(ctx, req)
 }
 
 // RegisterKafkaConnectServiceHandlerGatewayServer registers the Connect handlers for the

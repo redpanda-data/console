@@ -68,3 +68,15 @@ func (*kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopic
 		Name: topic.Topic,
 	}
 }
+
+func (*kafkaClientMapper) deleteTopicToKmsg(req *v1alpha1.DeleteTopicRequest) kmsg.DeleteTopicsRequest {
+	kafkaReq := kmsg.NewDeleteTopicsRequest()
+	kafkaReq.TopicNames = []string{req.Name}
+	kafkaReq.Topics = []kmsg.DeleteTopicsRequestTopic{
+		{
+			Topic: kmsg.StringPtr(req.Name),
+		},
+	}
+
+	return kafkaReq
+}

@@ -3,8 +3,8 @@ package connect
 import (
 	"testing"
 
-	"github.com/bmizerany/assert"
 	"github.com/cloudhut/connect-client"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_traceToErrorContent(t *testing.T) {
