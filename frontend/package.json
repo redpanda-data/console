@@ -8,8 +8,8 @@
     "node": "18"
   },
   "scripts": {
-    "dev": "next dev -p 3004",
-    "dev2": "NEXT_PUBLIC_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS next dev -p 3004",
+    "dev": "NODE_ENV=development next dev -p 3004",
+    "dev2": "NODE_ENV=development NEXT_PUBLIC_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS next dev -p 3004",
     "build": "next build",
     "build-local-test": "tsc && npm run lint && NEXT_PUBLIC_BUSINESS=true NEXT_PUBLIC_CONSOLE_GIT_SHA=abc123 NEXT_PUBLIC_CONSOLE_GIT_REF=local NEXT_PUBLIC_BUILD_TIMESTAMP=32503680000 NEXT_PUBLIC_DEV_HINT=true next build",
     "build-and-serve": "npm run build && npx serve@latest build -p 3004",

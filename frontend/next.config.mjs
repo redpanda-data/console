@@ -1,35 +1,19 @@
-import { NextFederationPlugin } from '@module-federation/nextjs-mf';
+import { NextFederationPlugin } from "@module-federation/nextjs-mf";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Optionally, add any other Next.js config below
   reactStrictMode: true,
-  distDir: 'build', // To match CRA config, set it to `build`
+  distDir: "build", // To match CRA config, set it to `build`
   swcMinify: true,
-  output: 'export',
-  images: { // Required to properly export HTML files
-    unoptimized: true
+  output: "export",
+  images: {
+    // Required to properly export HTML files
+    unoptimized: true,
   },
   experimental: {
     // Optimize how packages get loaded in dev mode
-    optimizePackageImports: [
-      '@redpanda-data/ui',
-      'react-bootstrap',
-      'react-icons',
-      'lodash',
-      '@chakra-ui/react',
-      '@chakra-ui/form-control',
-      '@chakra-ui/icon',
-      '@chakra-ui/layout',
-      '@chakra-ui/media-query',
-      '@chakra-ui/menu',
-      '@chakra-ui/spinner',
-      '@chakra-ui/styled-system',
-      '@chakra-ui/system',
-      '@mui/material',
-      'date-fns',
-      'antd',
-    ],
+    optimizePackageImports: ["@redpanda-data/ui", "react-bootstrap", "react-icons", "lodash", "@chakra-ui/react", "@chakra-ui/form-control", "@chakra-ui/icon", "@chakra-ui/layout", "@chakra-ui/media-query", "@chakra-ui/menu", "@chakra-ui/spinner", "@chakra-ui/styled-system", "@chakra-ui/system", "@mui/material", "date-fns", "antd"],
   },
   webpack: (config) => {
     config.plugins.push(
@@ -38,13 +22,13 @@ const nextConfig = {
        * https://github.com/module-federation/module-federation-examples/issues/3151#issuecomment-1720250040
        */
       new NextFederationPlugin({
-        name: 'rp_console',
-        filename: 'static/chunks/embedded.js',
+        name: "rp_console",
+        filename: "static/chunks/embedded.js",
         exposes: {
           // specify exposed pages and components
-          './EmbeddedApp': './src/EmbeddedApp',
-          './injectApp': './src/injectApp',
-          './config': './src/config.ts',
+          "./EmbeddedApp": "./src/EmbeddedApp",
+          "./injectApp": "./src/injectApp",
+          "./config": "./src/config.ts",
         },
       })
     );
@@ -59,7 +43,7 @@ const nextConfig = {
     config.resolve = {
       ...config.resolve,
       extensionAlias: {
-        '.js': ['.ts', '.js'],
+        ".js": [".ts", ".js"],
       },
     };
 
@@ -68,14 +52,14 @@ const nextConfig = {
      * https://github.com/vercel/next.js/discussions/27953#discussioncomment-3616403
      */
     config.module?.rules
-    .find((rule) => rule.oneOf)
-    .oneOf.forEach((rule) => {
-      if (rule.issuer?.and?.[0]?.toString().includes("_app")) {
-        const and = rule.issuer.and
-        rule.issuer.or = [/[\\/]node_modules[\\/]@redpanda-data[\\/]/, { and }]
-        delete rule.issuer.and
-      }
-    })
+      .find((rule) => rule.oneOf)
+      .oneOf.forEach((rule) => {
+        if (rule.issuer?.and?.[0]?.toString().includes("_app")) {
+          const and = rule.issuer.and;
+          rule.issuer.or = [/[\\/]node_modules[\\/]@redpanda-data[\\/]/, { and }];
+          delete rule.issuer.and;
+        }
+      });
 
     return config;
   },
