@@ -27,9 +27,9 @@ jobs:
       - name: Run build frontend
         run: |
           cd frontend
-          REACT_APP_BUSINESS=true 
-          REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
-          REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
-          REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
-          REACT_APP_DEV_HINT=true
+          NEXT_PUBLIC_BUSINESS=true 
+          NEXT_PUBLIC_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
+          NEXT_PUBLIC_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
+          NEXT_PUBLIC_BUILD_TIMESTAMP=$(date +%s) 
+          NEXT_PUBLIC_DEV_HINT=true
           npm run build 
