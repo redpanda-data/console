@@ -32,4 +32,4 @@ jobs:
           NEXT_PUBLIC_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
           NEXT_PUBLIC_BUILD_TIMESTAMP=$(date +%s) 
           NEXT_PUBLIC_DEV_HINT=true
-          npm run build 
+          NEXT_PRIVATE_LOCAL_WEBPACK=true npm run build 
