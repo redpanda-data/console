@@ -536,14 +536,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         }
 
 
-        const newColumns: ColumnDef<TopicMessage>[] = []
+        const newColumns: ColumnDef<TopicMessage>[] = Object.values(dataTableColumns)
 
-        // let's be defensive and remove any duplicates before showing in the table
-        new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex)).forEach(dataIndex => {
-            if(dataTableColumns[dataIndex]) {
-                newColumns.push(dataTableColumns[dataIndex])
-            }
-        })
+        if(uiState.topicSettings.previewColumnFields.length > 0) {
+            newColumns.splice(0, newColumns.length);
+
+            // let's be defensive and remove any duplicates before showing in the table
+            new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex)).forEach(dataIndex => {
+                if(dataTableColumns[dataIndex]) {
+                    newColumns.push(dataTableColumns[dataIndex])
+                }
+            })
+        }
+
         const columns: ColumnDef<TopicMessage>[] = [...newColumns, {
             header: () => <button onClick={() => {
                 this.showColumnSettings = true
