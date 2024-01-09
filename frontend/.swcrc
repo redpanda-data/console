@@ -1,0 +1,22 @@
+{
+    "jsc": {
+      "target": "es2020",
+      "parser": {
+        "syntax": "typescript",
+        "decorators": true,
+        "dynamicImport": true
+      },
+      "transform": {
+        "decoratorMetadata": true, // required to keep mobx decorator syntax working
+        "legacyDecorator": true
+      },
+      "keepClassNames": true,
+      "externalHelpers": true,
+      "loose": false
+    },
+    "module": {
+      "type": "es6"
+    },
+    "exclude": ["./src/**/.*.spec.ts$", "./**/.*.js$"],
+    "sourceMaps": true
+}

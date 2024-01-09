@@ -21,7 +21,7 @@ declare let value: any; // set/injected by backend
 // declare function find(propName: string, ignoreCase?:boolean): any;
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
 // declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
-function find(this: any | undefined, arg1: any, arg2: any): any {
+export function find(this: any | undefined, arg1: any, arg2: any): any {
     const self = (this != null)
         ? this // called on object
         : value; // called in root
@@ -36,7 +36,7 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
 // declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
 // declare function findAll(pattern: object, ignoreCase?:boolean): object[];
-function findAll(this: any | undefined, arg1: any, arg2: any): any {
+export function findAll(this: any | undefined, arg1: any, arg2: any): any {
     const self = (this != null)
         ? this // called on object
         : value; // called in root
@@ -54,7 +54,7 @@ function findAll(this: any | undefined, arg1: any, arg2: any): any {
 
 
 // calls findByName or findByCallback depending on the arguments
-function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean): any[] {
+export function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean): any[] {
 
     const ignoreCase = Boolean(arg2);
     const caseSensitive = !ignoreCase;
@@ -79,7 +79,7 @@ function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean
 }
 
 
-function findByName(obj: any, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): any[] {
+export function findByName(obj: any, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): any[] {
     const isMatch = caseSensitive
         ? (_: any, prop: string | number) => prop == propertyName
         : (_: any, prop: string | number) => String(prop).toUpperCase() == propertyName.toUpperCase();
@@ -87,7 +87,7 @@ function findByName(obj: any, propertyName: string, caseSensitive: boolean, retu
     return findByCallback(obj, isMatch, returnFirstResult);
 }
 
-function findByCallback(obj: any, isMatch: (object: any, key: string | number) => boolean, returnFirstResult: boolean): any[] {
+export function findByCallback(obj: any, isMatch: (object: any, key: string | number) => boolean, returnFirstResult: boolean): any[] {
     const ctx: PropertySearchContext = {
         isMatch: isMatch,
         currentPath: [],
@@ -99,7 +99,7 @@ function findByCallback(obj: any, isMatch: (object: any, key: string | number) =
     return ctx.results.map(x => x.value);
 }
 
-function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
+export function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
 
     const log = IsDev ?  console.debug : (..._args) => { /* do nothing */ };
 
@@ -159,7 +159,7 @@ type ObjectSearchContext = { isMatch: (obj: any, pattern: object) => boolean, pa
 // returns 'shouldStop'
 // true  -> stop
 // false -> continue
-function findElement(ctx: PropertySearchContext, obj: any): boolean {
+export function findElement(ctx: PropertySearchContext, obj: any): boolean {
     for (const key in obj) {
 
         const value = obj[key];
@@ -192,7 +192,7 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
     return false;
 }
 
-function findObject(ctx: ObjectSearchContext, obj: any): boolean {
+export function findObject(ctx: ObjectSearchContext, obj: any): boolean {
     if (ctx.isMatch(obj, ctx.pattern)) {
         ctx.results.push(obj);
         if (ctx.returnFirstResult) return true;

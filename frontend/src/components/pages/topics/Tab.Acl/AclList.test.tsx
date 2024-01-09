@@ -10,22 +10,25 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import AclList from './AclList';
 import { observable } from 'mobx';
 import { AclStrOperation, AclStrPermission, AclStrResourceType, GetAclOverviewResponse } from '../../../../state/restInterfaces';
 
-it('renders an empty table when no data is present', () => {
+it('renders an empty table when no data is present', async () => {
     const store = observable({
         isAuthorizerEnabled: true,
         aclResources: [],
     });
 
     render(<AclList acl={store} />);
-    expect(screen.getByText('No Data')).toBeInTheDocument();
+
+    await waitFor(() => {
+        expect(screen.getByText('No data')).toBeInTheDocument();
+    })
 });
 
-it('a table with one entry', () => {
+it('renders a table with one entry', async () => {
     const store = observable({
         isAuthorizerEnabled: true,
         aclResources: [
@@ -47,26 +50,36 @@ it('a table with one entry', () => {
 
     render(<AclList acl={store} />);
 
-    expect(screen.getByText('Topic')).toBeInTheDocument();
-    expect(screen.getByText('Test Topic')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('test principal')).toBeInTheDocument();
-    expect(screen.getByText('Any')).toBeInTheDocument();
-    expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Allow')).toBeInTheDocument();
+    await waitFor(() => {
+        expect(screen.getByText('Topic')).toBeInTheDocument();
+        expect(screen.getByText('Allow')).toBeInTheDocument();
+        expect(screen.getByText('test principal')).toBeInTheDocument();
+        expect(screen.getByText('All')).toBeInTheDocument();
+        expect(screen.getByText('Unknown')).toBeInTheDocument();
+        expect(screen.getByText('Test Topic')).toBeInTheDocument();
+        expect(screen.getByText('1')).toBeInTheDocument();
+        expect(screen.getByText('*')).toBeInTheDocument();
+    })
 });
 
-it('informs user about missing permission to view ACLs', () => {
+it('informs user about missing permission to view ACLs', async () => {
     render(<AclList acl={null} />);
-    expect(screen.getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
+
+    await waitFor(() => {
+        expect(screen.getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
+    })
+
 });
 
-it('informs user about missing authorizer config in Kafka cluster', () => {
+it('informs user about missing authorizer config in Kafka cluster', async () => {
     const store = observable({
         isAuthorizerEnabled: false,
         aclResources: [],
     });
 
     render(<AclList acl={store} />);
-    expect(screen.getByText('There\'s no authorizer configured in your Kafka cluster')).toBeInTheDocument();
+
+    await waitFor(() => {
+        expect(screen.getByText('There\'s no authorizer configured in your Kafka cluster')).toBeInTheDocument();
+    });
 });
