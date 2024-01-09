@@ -126,6 +126,9 @@ export class TopicDetailsSettings {
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
 
+    @observable keyDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
+    @observable valueDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
+
     @observable consumerPageSize = 20;
     @observable partitionPageSize = 20;
     @observable aclPageSize = 20;

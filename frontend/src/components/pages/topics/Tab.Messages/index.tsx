@@ -249,6 +249,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
+        const isDeserializerOverrideActive = (
+            (uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null)
+            || (uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null)
+        );
+
         return (
             <React.Fragment>
                 <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
@@ -365,6 +370,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <div style={{ paddingTop: '1em', width: '100%' }}>
                             <MessageSearchFilterBar />
                         </div>
+                    )}
+
+                    {/* Show warning if a deserializer is forced for key or value */}
+                    {isDeserializerOverrideActive && (
+                        <Flex alignItems="flex-end" height="32px" width="100%">
+                            <Tag >
+                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
+                                    Key/Value deserializer is active
+                                </TagLabel>
+                                <TagCloseButton onClick={() => {
+                                    uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED;
+                                    uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED;
+                                }} />
+                            </Tag>
+                        </Flex>
                     )}
                 </div>
             </React.Fragment>
@@ -652,7 +672,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-            includeRawPayload: includeRawPayload
+            includeRawPayload: includeRawPayload,
+
+            keyDeserializer: uiState.topicSettings.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.valueDeserializer,
         } as MessageSearchRequest;
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
@@ -1338,9 +1361,28 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
-const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) =>
-(
-    <Modal isOpen={getShowDialog()} onClose={() => {
+const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) => {
+
+    const payloadEncodingPairs = [
+        { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
+        { value: PayloadEncoding.NULL, label: 'None (Null)' },
+        { value: PayloadEncoding.AVRO, label: 'AVRO' },
+        { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
+        { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
+        { value: PayloadEncoding.JSON, label: 'JSON' },
+        { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
+        { value: PayloadEncoding.XML, label: 'XML' },
+        { value: PayloadEncoding.TEXT, label: 'Plain Text' },
+        { value: PayloadEncoding.UTF8, label: 'UTF-8' },
+        { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
+        { value: PayloadEncoding.SMILE, label: 'Smile' },
+        { value: PayloadEncoding.BINARY, label: 'Binary' },
+        { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
+        { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
+    ];
+
+
+    return <Modal isOpen={getShowDialog()} onClose={() => {
         setShowDialog(false);
     }}>
         <ModalOverlay />
@@ -1350,6 +1392,25 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
+                <Box mb="1em">
+                    <Text mb={2}>Key Deserializer</Text>
+                    <Box>
+                        <SingleSelect
+                            options={payloadEncodingPairs}
+                            value={uiState.topicSettings.keyDeserializer}
+                            onChange={e => uiState.topicSettings.keyDeserializer = e}
+                        />
+                    </Box>
+
+                    <Text mb={2}>Value Deserializer</Text>
+                    <Box>
+                        <SingleSelect
+                            options={payloadEncodingPairs}
+                            value={uiState.topicSettings.valueDeserializer}
+                            onChange={e => uiState.topicSettings.valueDeserializer = e}
+                        />
+                    </Box>
+                </Box>
                 <Paragraph>
                     <Text>
                         Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
@@ -1384,7 +1445,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalFooter>
         </ModalContent>
     </Modal>
-));
+});
 
 
 @observer
