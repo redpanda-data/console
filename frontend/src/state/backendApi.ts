@@ -1176,7 +1176,7 @@ const apiStore = {
                 if (Array.isArray(subjects)) {
                     this.schemaSubjects = subjects;
                 }
-            }, addError);
+            }).catch(addError);
     },
 
     refreshSchemaTypes(force?: boolean) {
@@ -1186,7 +1186,7 @@ const apiStore = {
                 if (types.schemaTypes) {
                     this.schemaTypes = types.schemaTypes;
                 }
-            }, addError);
+            }).catch(addError);;
     },
 
     refreshSchemaDetails(subjectName: string, force?: boolean) {

@@ -13,8 +13,12 @@ import React, { Component } from 'react';
 import { Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { api } from '../../../state/backendApi';
-import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
-import {vs} from 'react-syntax-highlighter/dist/esm/styles/prism'
+import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter';
+/**
+ * @see https://github.com/react-syntax-highlighter/react-syntax-highlighter/issues/221#issuecomment-566502780
+ * @description Use CommonJS because Jest doesn't support ESM
+ */
+import {vs} from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';

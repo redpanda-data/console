@@ -4,7 +4,7 @@ import { autorun, computed } from 'mobx';
 import { api } from '../../../state/backendApi';
 import { observer } from 'mobx-react';
 import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
-import { FC, useEffect } from 'react';
+import React, { FC, useEffect } from 'react';
 import { SingleSelect } from '../../misc/Select';
 import { Label } from '../../../utils/tsxUtils';
 import { proto3 } from '@bufbuild/protobuf';

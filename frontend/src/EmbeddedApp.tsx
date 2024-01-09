@@ -9,20 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
- import { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
-/* start global stylesheets */
-
+/**
+ * NextJS can only import App Router CSS using _app or CSS modules.
+ * Only exception is importing from packages such as antd.
+ * TODO: We should eliminate using CSS files as much as possible and rely on Chakra instead.
+ */
 import 'antd/dist/antd.variable.min.css';
-import './index.scss';
-import './index-cloud-integration.scss';
-import './assets/fonts/open-sans.css';
-import './assets/fonts/poppins.css';
-import './assets/fonts/quicksand.css';
-import './assets/fonts/kumbh-sans.css';
 
-/* end global stylesheet */
+
 
 import { appGlobal } from './state/appGlobal';
 
@@ -55,7 +52,7 @@ export interface EmbeddedProps extends SetConfigArguments {
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
-    useEffect(() => {
+    React.useEffect(() => {
         const shellNavigationHandler = (event: Event) => {
             const pathname = (event as CustomEvent<string>).detail;
             const { pathname: currentPathname } = appGlobal.history.location;

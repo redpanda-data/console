@@ -19,6 +19,7 @@ import { AppFeatures, getBasePath, IsDev } from './utils/env';
 import memoizeOne from 'memoize-one';
 import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 import { APP_ROUTES } from './components/routes';
+import 'whatwg-fetch';
 
 declare const __webpack_public_path__: string;
 
@@ -75,7 +76,7 @@ interface Config {
 export const config: Config = observable({
     websocketBasePath: getWebsocketBasePath(),
     restBasePath: getRestBasePath(),
-    fetch: window.fetch,
+    fetch: typeof window !== 'undefined' ? window.fetch.bind(window) : fetch,
     assetsPath: getBasePath(),
     clusterId: 'default',
     setSidebarItems: () => {},
@@ -85,15 +86,19 @@ export const config: Config = observable({
 
 export const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
-    Object.assign(config, {
-        jwt,
-        isServerless,
-        websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
-        restBasePath: getRestBasePath(urlOverride?.rest),
-        fetch: fetch ?? window.fetch.bind(window),
-        assetsPath: assetsUrl ?? getBasePath(),
-        ...args,
-    });
+
+    // We need to wait to make sure that we have the right Authorization headers set so that fetch can succeed.
+    if (typeof window !== 'undefined') {
+        Object.assign(config, {
+            jwt,
+            isServerless,
+            websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
+            restBasePath: getRestBasePath(urlOverride?.rest),
+            fetch: fetch ?? window.fetch.bind(window),
+            assetsPath: assetsUrl ?? getBasePath(),
+            ...args,
+        });
+    }
 
     return config;
 };
