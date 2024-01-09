@@ -773,10 +773,8 @@ components:
             type: string
           type: object
         secret_data:
-          items:
-            format: byte
-            type: string
-          type: array
+          format: byte
+          type: string
       required:
         - secret_data
       type: object
@@ -1674,10 +1672,8 @@ paths:
                     type: string
                   type: object
                 secret_data:
-                  items:
-                    format: byte
-                    type: string
-                  type: array
+                  format: byte
+                  type: string
               required:
                 - secret_data
               type: object
