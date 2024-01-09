@@ -249,6 +249,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
+        const isDeserializerOverrideActive = (
+            (uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null)
+            || (uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null)
+        );
+
         return (
             <React.Fragment>
                 <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
@@ -312,18 +317,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         </div>
                     </Label>
 
-                    {/* Show warning if a deserializer is forced for key or value */}
-                    <Flex alignItems="center" height="32px">
-                        {((uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null) ||
-                            (uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null))
-                            && (
-                                <Text fontWeight="bold" fontSize="small" color="red.500" >
-                                    Key/Value deserializer override is active
-                                </Text>
-                            )
-                        }
-                    </Flex>
-
                     {/* Topic Actions */}
                     <div className={styles.topicActionsWrapper}>
                         <Menu>
@@ -377,6 +370,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <div style={{ paddingTop: '1em', width: '100%' }}>
                             <MessageSearchFilterBar />
                         </div>
+                    )}
+
+                    {/* Show warning if a deserializer is forced for key or value */}
+                    {isDeserializerOverrideActive && (
+                        <Flex alignItems="flex-end" height="32px" width="100%">
+                            <Tag >
+                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
+                                    Key/Value deserializer is active
+                                </TagLabel>
+                                <TagCloseButton onClick={() => {
+                                    uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED;
+                                    uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED;
+                                }} />
+                            </Tag>
+                        </Flex>
                     )}
                 </div>
             </React.Fragment>
