@@ -53,6 +53,7 @@ import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../..
 import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { WarningIcon } from '@chakra-ui/icons';
+import { proto3 } from '@bufbuild/protobuf';
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -249,10 +250,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
-        const isDeserializerOverrideActive = (
-            (uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null)
-            || (uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null)
-        );
+        const isKeyDeserializerActive = uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null;
+        const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
+        const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
 
         return (
             <React.Fragment>
@@ -374,16 +374,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                     {/* Show warning if a deserializer is forced for key or value */}
                     {isDeserializerOverrideActive && (
-                        <Flex alignItems="flex-end" height="32px" width="100%">
-                            <Tag >
+                        <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
+                            {isKeyDeserializerActive && <Tag>
                                 <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                    Key/Value deserializer is active
+                                    Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
                                 </TagLabel>
-                                <TagCloseButton onClick={() => {
-                                    uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED;
-                                    uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED;
-                                }} />
-                            </Tag>
+                                <TagCloseButton onClick={() => uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED} />
+                            </Tag>}
+                            {isValueDeserializerActive && <Tag>
+                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
+                                    Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
+                                </TagLabel>
+                                <TagCloseButton onClick={() => uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED} />
+                            </Tag>}
                         </Flex>
                     )}
                 </div>
