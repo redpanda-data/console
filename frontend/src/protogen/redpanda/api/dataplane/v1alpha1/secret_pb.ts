@@ -66,9 +66,9 @@ export class SecretInput extends Message<SecretInput> {
   labels: { [key: string]: string } = {};
 
   /**
-   * @generated from field: repeated bytes secret_data = 3;
+   * @generated from field: bytes secret_data = 3;
    */
-  secretData: Uint8Array[] = [];
+  secretData = new Uint8Array(0);
 
   constructor(data?: PartialMessage<SecretInput>) {
     super();
@@ -80,7 +80,7 @@ export class SecretInput extends Message<SecretInput> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */, repeated: true },
+    { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecretInput {

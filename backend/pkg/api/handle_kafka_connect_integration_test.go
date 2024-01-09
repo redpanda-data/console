@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 
@@ -44,37 +45,29 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	// setup
 	ctx := context.Background()
 
-	connectTestNetwork := "api_integration_redpanda_connect_test_network"
-
 	// create one common network that all containers will share
-	testNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		ProviderType: testcontainers.ProviderDocker,
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name:           connectTestNetwork,
-			CheckDuplicate: true,
-			Attachable:     true,
-		},
-	})
+	testNetwork, err := network.New(ctx, network.WithCheckDuplicate(), network.WithAttachable())
 	require.NoError(err)
-
-	commonNetwork := testNetwork
+	t.Cleanup(func() {
+		assert.NoError(testNetwork.Remove(ctx))
+	})
 
 	// Redpanda container
-	exposedPlainKafkaPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
-	exposedOutKafkaPort := rand.Intn(50000) + 10000   //nolint:gosec // We can use weak random numbers for ports in tests.
-	exposedKafkaAdminPort := rand.Intn(50000) + 10000 //nolint:gosec // We can use weak random numbers for ports in tests.
+	exposedPlainKafkaPort := rand.Intn(50000) + 10000
+	exposedOutKafkaPort := rand.Intn(50000) + 10000
+	exposedKafkaAdminPort := rand.Intn(50000) + 10000
 
-	redpandaContainer, err := runRedpandaForConnect(ctx, connectTestNetwork, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
+	redpandaContainer, err := runRedpandaForConnect(ctx, testNetwork.Name, exposedPlainKafkaPort, exposedOutKafkaPort, exposedKafkaAdminPort)
 	require.NoError(err)
 
 	// HTTPBin container
-	httpC, err := runHTTPBin(ctx, connectTestNetwork)
+	httpC, err := runHTTPBin(ctx, testNetwork.Name)
 	require.NoError(err)
 
 	httpBinContainer := httpC
 
 	// Kafka Connect container
-	connectC, err := runConnect(connectTestNetwork, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
+	connectC, err := runConnect(testNetwork.Name, []string{"redpanda:" + strconv.FormatInt(int64(exposedPlainKafkaPort), 10)})
 	require.NoError(err)
 
 	connectContainer := connectC
@@ -117,7 +110,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		assert.NoError(httpBinContainer.Terminate(context.Background()))
 		assert.NoError(connectContainer.Terminate(context.Background()))
 		assert.NoError(redpandaContainer.Terminate(context.Background()))
-		assert.NoError(commonNetwork.Remove(context.Background()))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
@@ -126,7 +118,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 
 		input := &createConnectorRequest{
 			ConnectorName: "http_connect_input",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
 				"http.request.url":                          "http://httpbin:80/uuid",
@@ -206,7 +198,7 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 	plainKafkaPort := strconv.FormatInt(int64(plaintextKafkaPort), 10)
 	outKafkaPort := strconv.FormatInt(int64(outsideKafkaPort), 10)
 	kafkaAdminPort := strconv.FormatInt(int64(exposedKafkaAdminPort), 10)
-	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10) //nolint:gosec // We can use weak random numbers for ports in tests.
+	registryPort := strconv.FormatInt(int64(rand.Intn(50000)+10000), 10)
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

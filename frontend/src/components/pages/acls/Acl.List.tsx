@@ -14,7 +14,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { AclRequestDefault, CreateUserRequest } from '../../../state/restInterfaces';
+import { AclRequestDefault } from '../../../state/restInterfaces';
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -26,11 +26,10 @@ import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcl
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import createAutoModal from '../../../utils/createAutoModal';
-import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result, PasswordInput } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result } from '@redpanda-data/ui';
 import React, { FC, useRef } from 'react';
+import { openCreateUserModal } from './CreateServiceAccountModal';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -171,83 +170,16 @@ class AclList extends PageComponent {
     @observable aclFailed: { err: unknown } | null = null;
     @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
-    CreateServiceAccountModal;
-    showCreateServiceAccountModal;
-
     constructor(p: any) {
         super(p);
         makeObservable(this);
-
-        const m = createAutoModal({
-            modalProps: {
-                title: 'Create User',
-                style: { width: '80%', minWidth: '400px', maxWidth: '600px', top: '50px' },
-
-                okText: 'Create',
-                successTitle: 'User Created',
-
-                closable: false,
-                keyboard: false,
-                maskClosable: false,
-            },
-
-            onCreate: () => observable({
-                username: '',
-                password: generatePassword(30, false),
-                mechanism: 'SCRAM-SHA-256',
-            } as CreateUserRequest),
-
-            isOkEnabled: state => {
-                if (state.username.length === 0) return false
-                if (state.password.length <= 3 || state.password.length > 64) return false
-
-                // Check that the username only contains allowed characters (alphanumeric, hypen, underscore, at symbol)
-                if (/[^a-zA-Z0-9._@-]+/.test(state.username))
-                    return false;
-
-                return true;
-            },
-            onOk: async state => {
-                await api.createServiceAccount({
-                    username: state.username,
-                    password: state.password,
-                    mechanism: state.mechanism,
-                });
-
-                return <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'auto auto',
-                    justifyContent: 'center',
-                    justifyItems: 'end',
-                    alignItems: 'center',
-                    columnGap: '8px',
-                    rowGap: '4px'
-                }}>
-                    <span>Username:</span><span style={{ justifySelf: 'start' }}>
-                        <Code>{state.username}</Code>
-                    </span>
-                    <span>Password:</span><span style={{ justifySelf: 'start' }}>
-                        <PasswordInput value={state.password} isReadOnly />
-                    </span>
-                    <span>Mechanism:</span><span style={{ justifySelf: 'start' }}>
-                        <Code>{state.mechanism}</Code>
-                    </span>
-                </div>
-            },
-            onSuccess: (_state, _result) => {
-                this.refreshData(true);
-            },
-            content: (state) => <CreateServiceAccountEditor state={state} />,
-        });
-        this.CreateServiceAccountModal = m.Component;
-        this.showCreateServiceAccountModal = m.show;
     }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Kafka Access Control';
         p.addBreadcrumb('Kafka Access Control', '/acls');
 
-        this.refreshData(false);
+        this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
@@ -298,8 +230,6 @@ class AclList extends PageComponent {
                             this.refreshData(true);
                         }}
                     />}
-
-                <this.CreateServiceAccountModal />
 
                 <Section>
                     <this.SearchControls />
@@ -445,7 +375,9 @@ class AclList extends PageComponent {
                 <span style={{ marginLeft: 'auto' }}> </span>
 
                 <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
-                    <Button variant="outline" isDisabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
+                    <Button variant="outline"
+                            isDisabled={!Features.createUser}
+                            onClick={() => openCreateUserModal()}>
                         Create user
                     </Button>
                 </Tooltip>

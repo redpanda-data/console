@@ -1,13 +1,32 @@
 # We may as well allow multiple golangci-lint invocations at once.
 run:
   allow-parallel-runners: true
-  # Uses Go version from the go.mod file by default
-  # go: "1.19"
+  build-tags:
+    - integration
 
 # golangci-lint by default ignores some staticcheck and vet raised issues that
 # are actually important to catch. The following ensures that we do not ignore
 # those tools ever.
 issues:
+  exclude-rules:
+    - path: (.+)_test.go
+      linters:
+        - bodyclose
+        - stylecheck
+        - goconst
+        - gosec
+    - path: (.+)_integration_test.go
+      linters:
+        - gocognit
+        - gocritic
+        - gocyclo
+        - cyclop
+        - revive # We are working a lot with high confidence type assertions when using the kfake pkg
+    # there is a bunch of test in the connectors documentation, we don't want
+    # to enforce any style on writting it.
+    - path: /connector/interceptor/(.+)_hook.go
+      linters:
+        - goconst
   exclude-use-default: false
   max-same-issues: 0 # 0 is unlimited
 linters:
@@ -18,9 +37,9 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - unused
     # Not enabled by default: we want a good chunk
+    - typecheck
     - asciicheck
     - bidichk
     - bodyclose
@@ -73,7 +92,7 @@ linters-settings:
   #
   # https://github.com/mvdan/gofumpt/issues/137
   gofumpt:
-    lang-version: "1.19"
+    lang-version: "1.21"
   gosec:
     excludes:
       - G104 # unhandled errors, we exclude for the same reason we do not use errcheck
@@ -133,6 +152,10 @@ linters-settings:
     error-code: 1
     warning-code: 1
     rules:
+      # removed because replacing the version of a proto is easier if we use it
+      # as alias
+      - name: redundant-import-alias
+        disabled: true
       - name: add-constant
         disabled: true
       - name: argument-limit

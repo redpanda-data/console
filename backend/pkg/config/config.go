@@ -143,7 +143,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		return Config{}, fmt.Errorf("failed to unmarshal YAML config into config struct: %w", err)
 	}
 
-	err = k.Load(env.ProviderWithValue("", ".", func(s string, v string) (string, interface{}) {
+	err = k.Load(env.ProviderWithValue("", ".", func(s string, v string) (string, any) {
 		key := strings.ReplaceAll(strings.ToLower(s), "_", ".")
 		// Check to exist if we have a configuration option already and see if it's a slice
 		// If there is a comma in the value, split the value into a slice by the comma.
@@ -165,7 +165,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	// ENV path: CONSOLE_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => console.topicdocumentation.git.basicauth.password
 	// Internal key: console.topicDocumentation.git.basicAuth.password
 	// See issue: https://github.com/cloudhut/kowl/issues/305
-	keys := make(map[string]interface{}, len(k.Keys()))
+	keys := make(map[string]any, len(k.Keys()))
 	for _, key := range k.Keys() {
 		keys[strings.ToLower(key)] = k.Get(key)
 	}

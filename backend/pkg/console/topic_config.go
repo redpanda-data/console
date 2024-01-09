@@ -64,7 +64,7 @@ func NewTopicConfigEntry(
 		}
 	}
 
-	isExplicitlySet := false
+	var isExplicitlySet bool
 	if cfg.Source == kmsg.ConfigSourceUnknown {
 		// Kafka <v1.1 uses the IsDefault property. Since then, it's been replaced by ConfigSource and defaults
 		// to false. Thus, we only consider it if cfg.Source is not set / unknown.

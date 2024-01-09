@@ -85,7 +85,7 @@ type deserializedPayload struct {
 	IsPayloadNull bool              `json:"isPayloadNull"`
 
 	// Object is the parsed version of the payload. This will be passed to the JavaScript interpreter
-	Object             interface{}     `json:"-"`
+	Object             any             `json:"-"`
 	RecognizedEncoding messageEncoding `json:"encoding"`
 	SchemaID           uint32          `json:"schemaId"`
 	Size               int             `json:"size"` // number of 'raw' bytes
@@ -164,7 +164,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	// 1. Test for valid JSON
 	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 	if startsWithJSON {
-		var obj interface{}
+		var obj any
 		err := json.Unmarshal(payload, &obj)
 		if err == nil {
 			return &deserializedPayload{
@@ -188,7 +188,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		trimmed := payload[5:]
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if startsWithJSON {
-			var obj interface{}
+			var obj any
 			err := json.Unmarshal(payload[5:], &obj)
 			if err == nil {
 				return &deserializedPayload{
@@ -212,7 +212,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		r := strings.NewReader(string(trimmed))
 		jsonPayload, err := xj.Convert(r)
 		if err == nil {
-			var obj interface{}
+			var obj any
 			_ = json.Unmarshal(jsonPayload.Bytes(), &obj) // no err possible unless the xml2json package is buggy
 			return &deserializedPayload{
 				Payload: normalizedPayload{
@@ -235,7 +235,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 			schema, err := d.SchemaService.GetAvroSchemaByID(context.Background(), schemaID)
 			if err == nil {
-				var obj interface{}
+				var obj any
 				if err := avro.Unmarshal(schema, payload[5:], &obj); err == nil {
 					jsonBytes, _ := json.Marshal(obj)
 					return &deserializedPayload{
@@ -258,7 +258,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	if d.ProtoService != nil {
 		jsonBytes, schemaID, err := d.ProtoService.UnmarshalPayload(payload, topicName, recordType)
 		if err == nil {
-			var native interface{}
+			var native any
 			err := json.Unmarshal(jsonBytes, &native)
 			if err == nil {
 				return &deserializedPayload{
@@ -278,7 +278,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 	// 6. Test for MessagePack (only if enabled and topic allowed)
 	if d.MsgPackService != nil && d.MsgPackService.IsTopicAllowed(topicName) {
-		var obj interface{}
+		var obj any
 		err := msgpack.Unmarshal(payload, &obj)
 		if err == nil {
 			data, err := json.Marshal(obj)
@@ -354,7 +354,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	// We have to do this before UTF8 as some numeric values can also be "valid" UTF8 values.
 	isNumeric := false
 	var numericPayload []byte
-	var numericObject interface{}
+	var numericObject any
 	switch len(payload) {
 	case 8:
 		var bev uint64

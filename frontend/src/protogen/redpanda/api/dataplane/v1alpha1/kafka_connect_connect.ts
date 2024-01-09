@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, PauseConnectorRequest, RestartConnectorRequest, ResumeConnectorRequest } from "./kafka_connect_pb";
+import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, PauseConnectorRequest, RestartConnectorRequest, ResumeConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
 import { Empty, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -121,6 +121,29 @@ export const KafkaConnectService = {
       name: "DeleteConnector",
       I: DeleteConnectorRequest,
       O: Empty,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpsertConector implements the update or create connector method, it
+     * exposes a kafka connect equivalent REST endpoint
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.UpsertConnector
+     */
+    upsertConnector: {
+      name: "UpsertConnector",
+      I: UpsertConnectorRequest,
+      O: UpsertConnectorResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig
+     */
+    getConnectorConfig: {
+      name: "GetConnectorConfig",
+      I: GetConnectorConfigRequest,
+      O: GetConnectorConfigResponse,
       kind: MethodKind.Unary,
     },
   }

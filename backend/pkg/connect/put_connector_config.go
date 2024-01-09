@@ -27,8 +27,8 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 		return con.ConnectorInfo{}, restErr
 	}
 
-	className := req.Config["connector.class"].(string)
-	if className == "" {
+	className, ok := req.Config["connector.class"].(string)
+	if !ok || className == "" {
 		return con.ConnectorInfo{}, &rest.Error{
 			Err:      fmt.Errorf("connector class is not set"),
 			Status:   http.StatusBadRequest,
@@ -50,7 +50,7 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 	if err != nil {
 		return con.ConnectorInfo{}, &rest.Error{
 			Err:          fmt.Errorf("failed to patch connector config: %w", err),
-			Status:       http.StatusOK,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to patch Connector config: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector_name", connectorName)},
 			IsSilent:     false,

@@ -767,7 +767,7 @@ type OrderMatcher struct {
 }
 
 // Matches implements the Matcher interface for OrderMatcher
-func (o *OrderMatcher) Matches(x interface{}) bool {
+func (o *OrderMatcher) Matches(x any) bool {
 	if m, ok := x.(*kafka.TopicMessage); ok {
 		order := testutil.Order{}
 		err := json.Unmarshal(m.Value.NormalizedPayload, &order)
@@ -805,7 +805,7 @@ type GenericMatcher struct {
 }
 
 // Matches implements the Matcher interface for OrderMatcher
-func (o *GenericMatcher) Matches(x interface{}) bool {
+func (o *GenericMatcher) Matches(x any) bool {
 	o.err = ""
 	o.actualKey = ""
 	o.failedVal = ""

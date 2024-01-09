@@ -37,6 +37,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -168,7 +169,7 @@ func (s *APIIntegrationTestSuite) copyConfig() *config.Config {
 }
 
 func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
-	method, path string, input interface{},
+	method, path string, input any,
 ) (*http.Response, []byte) {
 	t := s.T()
 
@@ -291,12 +292,12 @@ func newAssertHooks(t *testing.T, returnValues map[string]map[string]assertCallR
 }
 
 // Router Hooks
-func (a *assertHooks) ConfigAPIRouter(_ chi.Router)                 {}
-func (a *assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
-func (a *assertHooks) ConfigWsRouter(_ chi.Router)                  {}
-func (a *assertHooks) ConfigInternalRouter(_ chi.Router)            {}
-func (a *assertHooks) ConfigRouter(_ chi.Router)                    {}
-func (a *assertHooks) ConfigConnectRPC(_ ConfigConnectRPCRequest) ConfigConnectRPCResponse {
+func (*assertHooks) ConfigAPIRouter(_ chi.Router)                 {}
+func (*assertHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
+func (*assertHooks) ConfigWsRouter(_ chi.Router)                  {}
+func (*assertHooks) ConfigInternalRouter(_ chi.Router)            {}
+func (*assertHooks) ConfigRouter(_ chi.Router)                    {}
+func (*assertHooks) ConfigConnectRPC(_ ConfigConnectRPCRequest) ConfigConnectRPCResponse {
 	return ConfigConnectRPCResponse{}
 }
 
@@ -541,7 +542,7 @@ func (a *assertHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error)
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanViewSchemas(ctx context.Context) (bool, *rest.Error) {
+func (a *assertHooks) CanViewSchemas(_ context.Context) (bool, *rest.Error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
@@ -549,7 +550,7 @@ func (a *assertHooks) CanViewSchemas(ctx context.Context) (bool, *rest.Error) {
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanCreateSchemas(ctx context.Context) (bool, *rest.Error) {
+func (a *assertHooks) CanCreateSchemas(_ context.Context) (bool, *rest.Error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
@@ -557,7 +558,7 @@ func (a *assertHooks) CanCreateSchemas(ctx context.Context) (bool, *rest.Error) 
 	return rv.BoolValue, rv.Err
 }
 
-func (a *assertHooks) CanDeleteSchemas(ctx context.Context) (bool, *rest.Error) {
+func (a *assertHooks) CanDeleteSchemas(_ context.Context) (bool, *rest.Error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
@@ -611,9 +612,13 @@ func (a *assertHooks) EnabledConnectClusterFeatures(_ context.Context, _ string)
 	return nil
 }
 
-func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error) {
+func (a *assertHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.ListMessagesRequest) (context.Context, error) {
 	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return r.Context(), nil
+}
+
+func (a *assertHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
+	return []zapcore.Field{}
 }

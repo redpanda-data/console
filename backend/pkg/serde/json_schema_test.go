@@ -159,7 +159,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		case "/schemas/ids/1000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": schemaStr,
 			}
 

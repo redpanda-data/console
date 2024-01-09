@@ -20,19 +20,18 @@ jobs:
     name: verify
     runs-on: ubuntu-latest-4
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v4
         with:
           go-version-file: 'backend/go.mod'
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      
+      - name: Install Task
+        uses: arduino/setup-task@v1
         with:
-          version: v1.51.2
-          args: --timeout=5m
-          working-directory: backend
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: test
-        run: go test -v -race --tags=integration -p=1 ./...
+      - name: verify
+        run: task backend:verify
         working-directory: backend

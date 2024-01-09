@@ -7,15 +7,18 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package topic contains all handlers for the topic endpoints.
 package topic
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -35,7 +38,7 @@ type Service struct {
 }
 
 // ListTopics lists all Kafka topics.
-func (s *Service) ListTopics(ctx context.Context, c *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
+func (*Service) ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -45,17 +48,50 @@ func (s *Service) ListTopics(ctx context.Context, c *connect.Request[v1alpha1.Li
 }
 
 // DeleteTopic deletes a Kafka topic.
-func (s *Service) DeleteTopic(ctx context.Context, c *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("this endpoint is not yet implemented"),
-		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-	)
+func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
+	kafkaReq := s.mapper.deleteTopicToKmsg(req.Msg)
+	kafkaRes, err := s.consoleSvc.DeleteTopics(ctx, &kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if len(kafkaRes.Topics) != 1 {
+		// Should never happen since we only delete one topic, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("unexpected number of results in create topics response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_results",
+				Value: strconv.Itoa(len(kafkaRes.Topics)),
+			}),
+		)
+	}
+
+	result := kafkaRes.Topics[0]
+	if result.ErrorCode != 0 {
+		if errors.Is(kerr.ErrorForCode(result.ErrorCode), kerr.UnknownTopicOrPartition) {
+			return nil, apierrors.NewConnectError(
+				connect.CodeNotFound,
+				fmt.Errorf("the requested topic does not exist"),
+				apierrors.NewErrorInfo(
+					commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
+				))
+		}
+		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
+	}
+
+	connectResponse := connect.NewResponse(&v1alpha1.DeleteTopicResponse{})
+	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusNoContent))
+
+	return connectResponse, nil
 }
 
 // GetTopicConfiguration retrieves a topic's configuration.
-func (s *Service) GetTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.GetTopicConfigurationRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationResponse], error) {
+func (*Service) GetTopicConfiguration(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -66,7 +102,7 @@ func (s *Service) GetTopicConfiguration(ctx context.Context, c *connect.Request[
 
 // UpdateTopicConfiguration patches a topic's configuration. In contrast to SetTopicConfiguration
 // this will only change the configurations that have been passed into this request.
-func (s *Service) UpdateTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
+func (*Service) UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -78,7 +114,7 @@ func (s *Service) UpdateTopicConfiguration(ctx context.Context, c *connect.Reque
 // SetTopicConfiguration applies the given configuration to a topic, which may reset
 // or overwrite existing configurations that are not provided as part of the request.
 // If you want to patch certain configurations use UpdateTopicConfiguration instead.
-func (s *Service) SetTopicConfiguration(ctx context.Context, c *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error) {
+func (*Service) SetTopicConfiguration(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error) {
 	return nil, apierrors.NewConnectError(
 		connect.CodeUnimplemented,
 		errors.New("this endpoint is not yet implemented"),
@@ -132,14 +168,7 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1
 	}
 
 	// Map Kafka response to proto
-	response, err := s.mapper.createTopicResponseTopicToProto(result)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
-	}
+	response := s.mapper.createTopicResponseTopicToProto(result)
 
 	connectResponse := connect.NewResponse(&v1alpha1.CreateTopicResponse{
 		Name: response.Name,

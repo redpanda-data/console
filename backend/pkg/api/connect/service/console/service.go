@@ -13,6 +13,7 @@ package console
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -136,13 +137,23 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 
 // PublishMessage serialized and produces the records.
 //
-//nolint:gocognit // complicated response logic
+//nolint:gocognit,cyclop // complicated response logic
 func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1alpha.PublishMessageRequest]) (*connect.Response[v1alpha.PublishMessageResponse], error) {
 	msg := req.Msg
 
 	canPublish, restErr := api.authHooks.CanPublishTopicRecords(ctx, msg.GetTopic())
 	if restErr != nil || !canPublish {
-		return nil, connect.NewError(connect.CodePermissionDenied, restErr.Err)
+		err := errors.New("you don't have permissions to publish topic records")
+		if restErr.Message != "" {
+			err = fmt.Errorf("%w: "+restErr.Message, err)
+		} else if restErr.Err != nil {
+			err = restErr.Err
+		}
+		return nil, apierrors.NewConnectError(
+			connect.CodePermissionDenied,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+		)
 	}
 
 	recordHeaders := make([]kgo.RecordHeader, 0, len(req.Msg.GetHeaders()))

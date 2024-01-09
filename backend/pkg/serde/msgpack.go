@@ -48,7 +48,7 @@ func (d MsgPackSerde) DeserializePayload(_ context.Context, record *kgo.Record, 
 
 	payload := payloadFromRecord(record, payloadType)
 
-	var obj interface{}
+	var obj any
 	err := mp.Unmarshal(payload, &obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
@@ -88,7 +88,7 @@ func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, o
 			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 		}
 
-		var nativeObj interface{}
+		var nativeObj any
 		err := json.Unmarshal([]byte(trimmed), &nativeObj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to deserialize json to messagepack payload: %w", err)
@@ -103,7 +103,7 @@ func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, o
 	case []byte:
 		trimmed := bytes.TrimLeft(v, " \t\r\n")
 		if len(trimmed) != 0 && trimmed[0] == '[' || trimmed[0] == '{' {
-			var nativeObj interface{}
+			var nativeObj any
 			err := json.Unmarshal(trimmed, &nativeObj)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deserialize json to messagepack payload: %w", err)

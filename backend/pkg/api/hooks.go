@@ -18,6 +18,7 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
@@ -177,6 +178,12 @@ type ConsoleHooks interface {
 	// The returned context must be used for subsequent requests. The Websocket
 	// connection must be closed if an error is returned.
 	CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error)
+
+	// AdditionalLogFields is a func that returns key/value pairs that
+	// will be attached to log messages inside route handlers. This
+	// can be used to get context about the authenticated user that issued
+	// the request.
+	AdditionalLogFields(ctx context.Context) []zapcore.Field
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -363,6 +370,10 @@ func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndp
 
 func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.ListMessagesRequest) (context.Context, error) {
 	return r.Context(), nil
+}
+
+func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
+	return []zapcore.Field{}
 }
 
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {

@@ -43,6 +43,7 @@ export interface SetConfigArguments {
         rest?: string;
         ws?: string;
         assets?: string;
+        grpc?: string;
     };
     setSidebarItems?: (items: SidebarItem[]) => void;
     setBreadcrumbs?: (items: Breadcrumb[]) => void;
@@ -64,6 +65,7 @@ export interface Breadcrumb {
 interface Config {
     websocketBasePath: string;
     restBasePath: string;
+    grpcBase: string;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
     jwt?: string;
@@ -78,6 +80,7 @@ export const config: Config = observable({
     restBasePath: getRestBasePath(),
     fetch: typeof window !== 'undefined' ? window.fetch.bind(window) : fetch,
     assetsPath: getBasePath(),
+    grpcBase: getBasePath(),
     clusterId: 'default',
     setSidebarItems: () => {},
     setBreadcrumbs: () => { },
@@ -87,18 +90,19 @@ export const config: Config = observable({
 export const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
-    // We need to wait to make sure that we have the right Authorization headers set so that fetch can succeed.
-    if (typeof window !== 'undefined') {
-        Object.assign(config, {
-            jwt,
-            isServerless,
-            websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
-            restBasePath: getRestBasePath(urlOverride?.rest),
-            fetch: fetch ?? window.fetch.bind(window),
-            assetsPath: assetsUrl ?? getBasePath(),
-            ...args,
-        });
-    }
+        // We need to wait to make sure that we have the right Authorization headers set so that fetch can succeed.
+        if (typeof window !== 'undefined') {
+            Object.assign(config, {
+                jwt,
+                isServerless,
+                websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
+                restBasePath: getRestBasePath(urlOverride?.rest),
+                fetch: fetch ?? window.fetch.bind(window),
+                assetsPath: assetsUrl ?? getBasePath(),
+                grpcBase: urlOverride?.grpc ?? getBasePath(),
+                ...args,
+            });
+        }
 
     return config;
 };

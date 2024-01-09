@@ -30,7 +30,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	protoPkg "github.com/redpanda-data/console/backend/pkg/proto"
+	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
@@ -50,7 +50,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 		case "/schemas/ids/1000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": string(protoFile),
 			}
 
@@ -121,7 +121,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	protoSvc, err := protoPkg.NewService(config.Proto{
+	protoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
 			Enabled:         true,
@@ -270,7 +270,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		case "/schemas/ids/5000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": string(protoFile),
 			}
 
@@ -283,7 +283,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		case "/schemas/ids/2000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
-			resp := map[string]interface{}{
+			resp := map[string]any{
 				"schema": string(protoFile2),
 			}
 
@@ -361,7 +361,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	testProtoSvc, err := protoPkg.NewService(config.Proto{
+	testProtoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
 			Enabled:         true,
@@ -454,7 +454,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			expectData, err := srSerde.Encode(msg)
 			require.NoError(t, err)
 
-			data := map[string]interface{}{
+			data := map[string]any{
 				"id": "333",
 			}
 
@@ -467,7 +467,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		})
 
 		t.Run("invalid schema id", func(t *testing.T) {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"id": "333",
 			}
 

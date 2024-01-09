@@ -127,7 +127,7 @@ func (s *JSONSchemaSerde) validate(ctx context.Context, data []byte, schemaRes *
 		return fmt.Errorf("error compiling json schema: %w", err)
 	}
 
-	var vObj interface{}
+	var vObj any
 	if err := json.Unmarshal(data, &vObj); err != nil {
 		return fmt.Errorf("error validating json schema: %w", err)
 	}

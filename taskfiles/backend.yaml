@@ -3,7 +3,7 @@ tasks:
   install-golangci-lint:
     desc: install golangci linter
     vars:
-      GO_LINT_VERSION: 1.51.2
+      GO_LINT_VERSION: 1.55.2
     cmds:
       - mkdir -p {{ .BUILD_ROOT}}/bin
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "{{ .BUILD_ROOT }}"/bin/go v{{ .GO_LINT_VERSION }}
@@ -86,9 +86,18 @@ tasks:
     desc: Run Go linters for backend code
     deps:
       - install-golangci-lint
+    vars:
+      FIX: '{{ .FIX  | default "" }}'
     dir: "{{.BACKEND_ROOT}}"
     cmds:
-      - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run --timeout 10m ./...'
+      - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run {{ .FIX }} --timeout 10m ./...'
+
+  lint-fix:
+    desc: Run Go linters for backend code fixing fixable issues
+    cmds:
+      - task: lint
+        vars:
+          FIX: --fix
 
   generate:
     dir: "{{.BACKEND_ROOT}}"
@@ -119,8 +128,8 @@ tasks:
       - generate
     cmds:
       - |
-        GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration -p=1 ./...
-  
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test -v -race --tags=integration -p=1 ./...
+
   cover:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests with code coverage
@@ -128,6 +137,7 @@ tasks:
       - install-tparse
       - generate
     cmds:
+      - task: 'lint'
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test -race --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse
 
@@ -136,4 +146,4 @@ tasks:
     desc: Run lint and tests
     cmds: 
       - task: 'lint'
-      - task: 'cover'
+      - task: 'test-integration'

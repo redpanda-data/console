@@ -166,7 +166,7 @@ func updateSecurity(doc3 *openapi3.T) {
 			Description: "RedpandaCloud",
 			Flows: &openapi3.OAuthFlows{
 				Implicit: &openapi3.OAuthFlow{
-					Extensions: map[string]interface{}{
+					Extensions: map[string]any{
 						"x-client-id": "dQjapNIAHhF7EQqQToRla3yEII9sUSap",
 					},
 					AuthorizationURL: "https://prod-cloudv2.us.auth0.com/oauth/authorize",
@@ -200,7 +200,7 @@ func toExample(in proto.Message, summary string, description string, emitUnpopul
 	}
 
 	return &openapi3.Example{
-		Extensions:    map[string]interface{}{},
+		Extensions:    map[string]any{},
 		Summary:       summary,
 		Description:   description,
 		Value:         rawResponse,
@@ -265,7 +265,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.BadRequest",
 															},
 														},
@@ -290,7 +290,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.ErrorInfo",
 															},
 														},
@@ -315,7 +315,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.QuotaFailure",
 															},
 														},
@@ -340,7 +340,7 @@ func updateAny(doc3 *openapi3.T) {
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
 															Type:        "string",
-															Enum: []interface{}{
+															Enum: []any{
 																"type.googleapis.com/google.rpc.Help",
 															},
 														},
@@ -382,7 +382,7 @@ func updateUsers(doc3 *openapi3.T) {
 		}
 		response := &v1alpha1.ListUsersResponse{Users: users}
 		responseExample := toExample(response, "List Users", "List users", true)
-		doc3.Paths["/v1alpha1/users"].Get.Responses.Get(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha1/users").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 
 	// POST /users
@@ -393,7 +393,7 @@ func updateUsers(doc3 *openapi3.T) {
 			Password:  "secure-password",
 			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
 		}}
-		doc3.Paths["/v1alpha1/users"].Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq, "Create User", "Create user", false).Value
+		doc3.Paths.Value("/v1alpha1/users").Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq, "Create User", "Create user", false).Value
 
 		// Responses
 		response := &v1alpha1.CreateUserResponse{User: &v1alpha1.CreateUserResponse_User{
@@ -401,7 +401,7 @@ func updateUsers(doc3 *openapi3.T) {
 			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
 		}}
 		responseExample := toExample(response, "Create User", "Create user", true)
-		doc3.Paths["/v1alpha1/users"].Post.Responses.Get(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha1/users").Post.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
 
 		badRequestExample := toExample(
 			newBadRequestError(
@@ -417,7 +417,7 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths["/v1alpha1/users"].Post.Responses.Get(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+		doc3.Paths.Value("/v1alpha1/users").Post.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
 	}
 
 	// PUT /users/{user.name}
@@ -430,7 +430,7 @@ func updateUsers(doc3 *openapi3.T) {
 				Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
 			},
 		}
-		doc3.Paths["/v1alpha1/users/{user.name}"].Put.RequestBody.Value.Content["application/json"].Example = toExample(updateUserReq, "Update User", "Update user", false).Value
+		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.RequestBody.Value.Content["application/json"].Example = toExample(updateUserReq, "Update User", "Update user", false).Value
 
 		// Responses
 		response := &v1alpha1.UpdateUserResponse{
@@ -440,7 +440,7 @@ func updateUsers(doc3 *openapi3.T) {
 			},
 		}
 		responseExample := toExample(response, "Update User", "Update user", true)
-		doc3.Paths["/v1alpha1/users/{user.name}"].Put.Responses.Get(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 
 		badRequestExample := toExample(
 			newBadRequestError(
@@ -456,7 +456,7 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths["/v1alpha1/users/{user.name}"].Put.Responses.Get(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
 	}
 
 	// DELETE /users/{name}
@@ -464,7 +464,7 @@ func updateUsers(doc3 *openapi3.T) {
 		// Response
 		response := &v1alpha1.DeleteUserResponse{}
 		responseExample := toExample(response, "Delete User", "Delete user", true)
-		doc3.Paths["/v1alpha1/users/{name}"].Delete.Responses.Get(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
 
 		notFoundExample := toExample(
 			connectErrorToErrorStatus(
@@ -477,7 +477,7 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths["/v1alpha1/users/{name}"].Delete.Responses.Get(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
+		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
 	}
 }
 

@@ -209,7 +209,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingJSON, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := testutil.Order{}
 		err = json.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -297,7 +297,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := shopv1.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -451,7 +451,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -618,7 +618,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := shopv1.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -756,7 +756,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		cm := common.CommonMessage{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &cm)
@@ -905,7 +905,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rObject := indexv1.Gadget{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
@@ -1048,7 +1048,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rObject := indexv1.Gadget_Gizmo{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rObject)
@@ -1269,7 +1269,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := shopv2.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -1436,7 +1436,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		dr := svc.Deserializer.DeserializeRecord(record)
 		require.NotNil(dr)
 		assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-		assert.IsType(map[string]interface{}{}, dr.Value.Object)
+		assert.IsType(map[string]any{}, dr.Value.Object)
 
 		rOrder := shopv1.Order{}
 		err = protojson.Unmarshal(dr.Value.Payload.Payload, &rOrder)
@@ -1463,7 +1463,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ss2)
 
 		// verify update
-		srRes, err := rcl.Schemas(ctx, testTopicName+"-value", sr.ShowDeleted)
+		srRes, err := rcl.Schemas(sr.WithParams(ctx, sr.ShowDeleted), testTopicName+"-value")
 		require.NoError(err)
 		assert.Len(srRes, 2)
 		assert.Equal(ss.ID, srRes[0].ID)
@@ -1472,7 +1472,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 		msg2ID := "333"
 		order2CreatedAt := time.Date(2023, time.July, 11, 14, 0, 0, 0, time.UTC)
 		order2CreatedAtStr := order2CreatedAt.Format(time.DateTime)
-		order2CreateInput := fmt.Sprintf(`{"id":"%s","version":22,"created_at":"%s","order_value":3456}`, msg2ID, order2CreatedAtStr)
+		order2CreateInput := fmt.Sprintf(`{"id":%q,"version":22,"created_at":%q,"order_value":3456}`, msg2ID, order2CreatedAtStr)
 		msgData, err = serializeShopV1_2(order2CreateInput, ss2.ID)
 		require.NoError(err)
 
@@ -1530,7 +1530,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 				dr := svc2.Deserializer.DeserializeRecord(cr)
 				require.NotNil(dr)
 				assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-				assert.IsType(map[string]interface{}{}, dr.Value.Object)
+				assert.IsType(map[string]any{}, dr.Value.Object)
 
 				ov1 := shopv1.Order{}
 				err = protojson.Unmarshal(dr.Value.Payload.Payload, &ov1)
@@ -1548,7 +1548,7 @@ func (s *KafkaIntegrationTestSuite) TestDeserializeRecord() {
 				dr := svc2.Deserializer.DeserializeRecord(cr)
 				require.NotNil(dr)
 				assert.Equal(messageEncodingProtobuf, dr.Value.Payload.RecognizedEncoding)
-				assert.IsType(map[string]interface{}{}, dr.Value.Object)
+				assert.IsType(map[string]any{}, dr.Value.Object)
 
 				// the JSON tags have to match shopv_1 Order protojson tags
 				type v1_2Order struct {
