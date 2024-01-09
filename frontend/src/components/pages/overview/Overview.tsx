@@ -23,7 +23,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import './Overview.scss';
+import styles from './Overview.module.scss';
 import { Button, Flex, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
@@ -62,7 +62,7 @@ class Overview extends PageComponent {
         const overview = api.clusterOverview;
         const brokers = api.brokers ?? [];
 
-        const clusterStatus = overview.kafka.status == 'HEALTHY' ? { displayText: 'Running', className: 'status-green' } : overview.kafka.status == 'DEGRADED' ? { displayText: 'Degraded', className: 'status-yellow' } : { displayText: 'Unhealthy', className: 'status-red' };
+        const clusterStatus = overview.kafka.status == 'HEALTHY' ? { displayText: 'Running', className: styles['status-green'] } : overview.kafka.status == 'DEGRADED' ? { displayText: 'Degraded', className: styles['status-yellow'] } : { displayText: 'Unhealthy', className: styles['status-red'] };
 
         const brokerSize = brokers.length > 0 ? prettyBytes(brokers.sum(x => x.totalLogDirSizeBytes ?? 0)) : '...';
 
@@ -132,7 +132,7 @@ class Overview extends PageComponent {
 
         return <>
             <PageContent>
-                <div className="overviewGrid">
+                <div className={styles.overviewGrid}>
                     {/*
                     <Section py={5} gridArea="health">
                         <Grid flexDirection="row">
@@ -173,7 +173,7 @@ class Overview extends PageComponent {
                      */}
                     <Section py={5} gridArea="health">
                         <Flex>
-                            <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
+                            <Statistic title="Cluster Status" value={clusterStatus.displayText} className={`${styles['status-bar']} ${clusterStatus.className}`} />
                             <Statistic title="Cluster Storage Size" value={brokerSize} />
                             <Statistic title="Cluster Version" value={version} />
                             <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
@@ -200,26 +200,26 @@ class Overview extends PageComponent {
                         <h3>Resources and updates</h3>
 
                         <div style={{ display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem' }}>
-                            <ul className="resource-list">
-                                <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
+                            <ul className={styles['resource-list']}>
+                                <li><a href="https://docs.redpanda.com/docs/home/" rel="" className={styles['resource-link']} >
+                                    <span className={styles.dot}>&bull;</span>
                                     Documentation
                                 </a></li>
-                                <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
+                                <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className={styles['resource-link']} >
+                                    <span className={styles.dot}>&bull;</span>
                                     CLI Tools
                                 </a></li>
                             </ul>
 
-                            <ul className="resource-list">
+                            <ul className={styles['resource-list']}>
                                 <Skeleton
                                     isLoaded={Boolean(news)}
                                     noOfLines={4}
                                 >
                                     {news?.map((x, i) => <li key={i}>
                                         <a href={x.url} rel="noopener noreferrer" target="_blank"
-                                           className="resource-link">
-                                            <span className="dot">&bull;</span>
+                                           className={styles['resource-link']}>
+                                            <span className={styles.dot}>&bull;</span>
                                             <span>
                                                 {x.title}
                                                 <ResourcesBadge type={x.badge}/>
@@ -248,8 +248,8 @@ export default Overview;
 const ResourcesBadge = (p: { type?: string | undefined }) => {
     switch (p.type) {
         case 'new':
-            return <span className="badge-wrapper">
-                <div className="badge-new">New</div>
+            return <span className={styles['badge-wrapper']}>
+                <div className={styles['badge-new']}>New</div>
             </span>
 
         default:
@@ -285,7 +285,7 @@ function ClusterDetails() {
         return <>
             <h4>{p.title}</h4>
             {p.children}
-            <div className="separationLine"></div>
+            <div className={styles.separationLine}></div>
         </>
     }
 
@@ -336,7 +336,7 @@ function ClusterDetails() {
         }
     });
 
-    return <div className="clusterDetails">
+    return <div className={styles.clusterDetails}>
         <DetailsBlock title="Services">
             <Details title="Kafka Connect" content={hasConnect
                 ? clusterLines.map(c => [c.name, c.status])

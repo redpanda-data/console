@@ -12,7 +12,6 @@
 import { Component, useState } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
-import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
 import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
@@ -127,7 +126,7 @@ class Login extends Component {
                   }}
                 >
                   <img
-                    src={SvgLogo}
+                    src="/logos/redpanda-text-color.svg"
                     style={{ height: '36px' }}
                     alt="Redpanda Console Logo"
                   />

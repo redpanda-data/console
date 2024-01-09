@@ -6,7 +6,7 @@ import { Component, useEffect, useState } from 'react';
 import { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
-import './CreateTopicModal.scss';
+import styles from './CreateTopicModal.module.scss';
 import {
     Box,
     Button,
@@ -61,7 +61,7 @@ export class CreateTopicModalContent extends Component<Props> {
     render() {
         const state = this.props.state;
 
-        return <div className="createTopicModal" >
+        return <div className="createTopicModal">
 
             <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
                 <Label text="Topic Name">
@@ -384,13 +384,13 @@ function RetentionSizeSelect(p: {
 
 const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
 
-    return <div className="keyValuePairEditor">
+    return <div className={styles.keyValuePairEditor}>
         {p.entries.map((x, i) => <KeyValuePair key={String(i)} entries={p.entries} entry={x} />)}
 
         <Button
             variant="outline"
             size="sm"
-            className="addButton"
+            className={styles.addButton}
             onClick={() => { p.entries.push({ name: '', value: '' }) }}
         >
             <PlusIcon />
@@ -405,7 +405,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicCon
     return <Box className="inputGroup" width="100%" display="flex">
         <Input placeholder="Property Name..." style={{ flexBasis: '30%' }} spellCheck={false} value={entry.name} onChange={e => entry.name = e.target.value} />
         <Input placeholder="Property Value..." style={{ flexBasis: '60%' }} spellCheck={false} value={entry.value} onChange={e => p.entry.value = e.target.value} />
-        <Button variant="outline" className="iconButton deleteButton"
+        <Button variant="outline" className={`iconButton ${styles.deleteButton}`}
             onClick={(event) => {
                 event.stopPropagation();
                 p.entries.remove(p.entry);
