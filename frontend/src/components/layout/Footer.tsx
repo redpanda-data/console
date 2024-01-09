@@ -20,15 +20,15 @@ export const VersionInfo = () => {
     if (IsDev) mode = ' - DEV';
     if (IsCI) mode = ' - CI';
 
-    if (env.REACT_APP_CONSOLE_PLATFORM_VERSION)
-        mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+    if (env.NEXT_PUBLIC_CONSOLE_PLATFORM_VERSION)
+        mode += ` (Platform Version ${env.NEXT_PUBLIC_CONSOLE_PLATFORM_VERSION})`;
 
-    let ref = env.REACT_APP_CONSOLE_GIT_REF;
+    let ref = env.NEXT_PUBLIC_CONSOLE_GIT_REF;
     if (!ref || ref == 'master') ref = '';
 
     const sha = IsDev
         ? '<no git sha in dev>'
-        : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
+        : env.NEXT_PUBLIC_CONSOLE_GIT_SHA.slice(0, 7);
 
     const buildDate = IsDev
         ? new Date()
