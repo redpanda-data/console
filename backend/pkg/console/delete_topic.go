@@ -23,7 +23,11 @@ import (
 
 // DeleteTopic deletes a Kafka Topic (if possible and not disabled).
 func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error {
-	res, err := s.kafkaSvc.DeleteTopics(ctx, []string{topicName})
+	req := kmsg.NewDeleteTopicsRequest()
+	req.TopicNames = []string{topicName}
+	req.TimeoutMillis = 30 * 1000 // 30s
+
+	res, err := s.kafkaSvc.DeleteTopics(ctx, &req)
 	if err != nil {
 		return &rest.Error{
 			Err:          err,
@@ -57,6 +61,11 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	}
 
 	return nil
+}
+
+// DeleteTopics proxies the Kafka request/response between the Console service and Kafka.
+func (s *Service) DeleteTopics(ctx context.Context, req *kmsg.DeleteTopicsRequest) (*kmsg.DeleteTopicsResponse, error) {
+	return s.kafkaSvc.DeleteTopics(ctx, req)
 }
 
 // DeleteTopicRecordsResponse is the response to deleting a Kafka topic.

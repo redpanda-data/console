@@ -287,3 +287,148 @@ func (s *APISuite) TestCreateTopic() {
 		assert.Contains(errResponse, "name") // Check for field name
 	})
 }
+
+func (s *APISuite) TestDeleteTopic() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("delete topic with valid request (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create one Topic via Kafka API
+		topicName := "console-integration-test-delete-topic-connect-go"
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Ensure that topic exists
+		topicDetails, err := s.kafkaAdminClient.ListTopics(ctx, topicName)
+		require.NoError(err)
+		require.Len(topicDetails, 1)
+		require.Truef(topicDetails.Has(topicName), "Topic should exist in response, but it doesn't")
+
+		// 3. Delete topic via Connect API
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha1.DeleteTopicRequest{Name: topicName}
+		_, err = client.DeleteTopic(ctx, connect.NewRequest(&req))
+		require.NoError(err)
+
+		// 4. Ensure that Kafka topic no longer exists
+		topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
+		require.NoError(err)
+		assert.Falsef(topicDetails.Has(topicName), "Topic should no longer exist, but it still exists")
+	})
+
+	t.Run("delete topic with valid request (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create one Topic via Kafka API
+		topicName := "console.integration_test-delete-topic-http1" // Dot, underscore, dash are allowed special chars
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Ensure that topic exists
+		topicDetails, err := s.kafkaAdminClient.ListTopics(ctx, topicName)
+		require.NoError(err)
+		require.Len(topicDetails, 1)
+		require.Truef(topicDetails.Has(topicName), "Topic should exist in response, but it doesn't")
+
+		// 3. Delete topic via HTTP API
+		urlPath := fmt.Sprintf("/v1alpha1/topics/%v", topicName)
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + urlPath).
+			Delete().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusNoContent), // Allows 2xx otherwise
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+
+		// 4. Ensure that Kafka topic no longer exists
+		topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
+		require.NoError(err)
+		assert.Falsef(topicDetails.Has(topicName), "Topic should no longer exist, but it still exists")
+	})
+
+	t.Run("try to delete a non-existent topic (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha1.DeleteTopicRequest{Name: "some-random-topic-name-that-does-not-exist"}
+		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
+		assert.Error(err)
+		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
+	})
+
+	t.Run("try to delete a non-existent topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		urlPath := "/v1alpha1/topics/some-random-topic-name-that-does-not-exist"
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + urlPath).
+			Delete().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.NotEmpty(errResponse)
+		assert.Contains(errResponse, "the requested topic does not exist")
+		assert.Contains(errResponse, "RESOURCE_NOT_FOUND") // Actual enum value will be REASON_RESOURCE_NOT_FOUND
+		assert.Error(err)
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
+	})
+
+	t.Run("request topic deletion with invalid characters (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha1.DeleteTopicRequest{Name: "some-chars-are-not!$-allowed"}
+		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
+		assert.Error(err)
+		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
+	})
+
+	t.Run("request topic deletion with invalid characters (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		urlPath := "/v1alpha1/topics/some-chars-are-not!$-allowed"
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + urlPath).
+			Delete().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+
+		require.Error(err)
+		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status should be 400")
+		assert.Contains(errResponse, "INVALID_ARGUMENT")
+	})
+}

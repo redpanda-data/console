@@ -1949,7 +1949,7 @@ paths:
         - TopicService
   /v1alpha1/topics/{name}:
     delete:
-      description: Delete Topic.
+      description: Deletes the Kafka topic with the requested name.
       operationId: TopicService_DeleteTopic
       parameters:
         - in: path
@@ -1974,7 +1974,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not Found
+          description: The requested topic does not exist
         "500":
           content:
             application/json:
@@ -1987,7 +1987,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete Topic
+      summary: Delete a Kafka topic
       tags:
         - TopicService
   /v1alpha1/topics/{topic_name}/configuration:
