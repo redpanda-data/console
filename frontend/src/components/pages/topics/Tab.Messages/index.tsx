@@ -549,6 +549,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             })
         }
 
+        newColumns[newColumns.length - 1].size = Infinity
+
         const columns: ColumnDef<TopicMessage>[] = [...newColumns, {
             header: () => <button onClick={() => {
                 this.showColumnSettings = true
