@@ -177,9 +177,6 @@ class TopicList extends PageComponent {
                                         <Flex gap={1}>
                                             <DeleteDisabledTooltip topic={record}>
                                                 <button
-                                                    // size="md"
-                                                    // variant="ghost"
-                                                    // className="iconButton"
                                                     onClick={(event) => {
                                                         event.stopPropagation();
                                                         this.topicToDelete = record;
