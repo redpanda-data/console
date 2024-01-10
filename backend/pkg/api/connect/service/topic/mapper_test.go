@@ -48,3 +48,33 @@ func TestDeleteTopicRequestToKafka(t *testing.T) {
 		})
 	}
 }
+
+func TestDescribeTopicConfigsToKafka(t *testing.T) {
+	testCases := []struct {
+		name       string
+		input      *v1alpha1.GetTopicConfigurationsRequest
+		validateFn func(t *testing.T, mappingResult kmsg.DescribeConfigsRequest)
+	}{
+		{
+			name: "Describe Topic Configs",
+			input: &v1alpha1.GetTopicConfigurationsRequest{
+				TopicName: "test-topic",
+			},
+			validateFn: func(t *testing.T, mappingResult kmsg.DescribeConfigsRequest) {
+				require.Len(t, mappingResult.Resources, 1)
+				assert.Equal(t, "test-topic", mappingResult.Resources[0].ResourceName)
+				assert.Equal(t, kmsg.ConfigResourceTypeTopic, mappingResult.Resources[0].ResourceType)
+				assert.Nil(t, mappingResult.Resources[0].ConfigNames)
+			},
+		},
+	}
+
+	kafkaMapper := kafkaClientMapper{}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := kafkaMapper.describeTopicConfigsToKafka(tc.input)
+			tc.validateFn(t, out)
+		})
+	}
+}

@@ -432,3 +432,140 @@ func (s *APISuite) TestDeleteTopic() {
 		assert.Contains(errResponse, "INVALID_ARGUMENT")
 	})
 }
+
+func (s *APISuite) TestGetTopicConfiguration() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-get-topic-config-valid-connect-go"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":  kmsg.StringPtr("delete"),
+			"retention.bytes": kmsg.StringPtr("1000"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Get Topic configuration
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: topicName}
+		response, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
+		require.NoError(err)
+
+		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
+		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		for _, config := range response.Msg.Configurations {
+			if config.Name == "cleanup.policy" {
+				cleanupPolicyConfig = config
+			}
+			if config.Name == "retention.bytes" {
+				retentionBytesConfig = config
+			}
+		}
+		require.NotNilf(cleanupPolicyConfig, "Could not find cleanup.policy config in response")
+		require.NotNilf(retentionBytesConfig, "Could not find retention.bytes config in response")
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, retentionBytesConfig.Source)
+		assert.Equal(kmsg.StringPtr("delete"), cleanupPolicyConfig.Value)
+		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
+		assert.Equal(v1alpha1.ConfigType_CONFIG_TYPE_STRING.String(), cleanupPolicyConfig.Type.String())
+		assert.Equal(v1alpha1.ConfigType_CONFIG_TYPE_LONG.String(), retentionBytesConfig.Type.String())
+		assert.GreaterOrEqual(len(cleanupPolicyConfig.ConfigSynonyms), 1)
+		assert.GreaterOrEqual(len(retentionBytesConfig.ConfigSynonyms), 1)
+	})
+
+	t.Run("get topic configuration of a non-existent topic (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: "does-not-exist"}
+		_, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
+		assert.Error(err)
+		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
+	})
+
+	t.Run("get topic configuration of a bad topic name (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: "invalid-topic$-characters!"}
+		_, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
+		assert.Error(err)
+		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
+	})
+
+	t.Run("get topic configuration of a valid topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-get-topic-config-valid-http"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":  kmsg.StringPtr("delete"),
+			"retention.bytes": kmsg.StringPtr("1000"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Retrieve topic config for topic
+		type topicConfigResponse struct {
+			Configurations []struct {
+				Name  string  `json:"name"`
+				Value *string `json:"value"`
+			} `json:"configurations"`
+		}
+		var httpRes topicConfigResponse
+
+		var errResponse string
+		urlPath := fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)
+		err = requests.
+			URL(s.httpAddress() + urlPath).
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			ToJSON(&httpRes).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+		assert.GreaterOrEqual(len(httpRes.Configurations), 2)
+	})
+
+	t.Run("get topic configuration of a non-existent topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1alpha1/topics/does-not-exist/configurations").
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Error(err)
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Response status code should be 404")
+		assert.Contains(errResponse, "RESOURCE_NOT_FOUND")
+	})
+}
