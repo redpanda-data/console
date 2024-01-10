@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
- import { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 /* start global stylesheets */
@@ -27,7 +27,7 @@ import './assets/fonts/kumbh-sans.css';
 import { appGlobal } from './state/appGlobal';
 
 import { SetConfigArguments, setup, embeddedAvailableRoutesObservable } from './config';
-import HistorySetter from './components/misc/HistorySetter';
+// import HistorySetter from './components/misc/HistorySetter';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
@@ -51,11 +51,17 @@ export interface EmbeddedProps extends SetConfigArguments {
      * we don't prematurely render console if the higher-order-component Console.tsx might rerender.
      * In the future we might decide to use memo() as well
      */
-    isConsoleReadyToMount?: boolean;
+    // isConsoleReadyToMount?: boolean;
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
-    useEffect(() => {
+    console.log('Remote App EmbeddedApp p: ', p);
+
+    React.useEffect(() => {
+        console.log('Remote EmbeddedApp React.useEffect');
+    }, []);
+
+    React.useEffect(() => {
         const shellNavigationHandler = (event: Event) => {
             const pathname = (event as CustomEvent<string>).detail;
             const { pathname: currentPathname } = appGlobal.history.location;
@@ -75,13 +81,13 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
 
     setup(p);
 
-    if (!p.isConsoleReadyToMount) {
-        return null;
-    }
+    // if (!p.isConsoleReadyToMount) {
+    //     return null;
+    // }
 
     return (
         <BrowserRouter basename={basePath}>
-            <HistorySetter />
+            {/* <HistorySetter /> */}
             <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
                 <AppContent />
             </ChakraProvider>

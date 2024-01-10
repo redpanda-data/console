@@ -2,12 +2,13 @@
     "compilerOptions": {
         "experimentalDecorators": true,
         "useDefineForClassFields": true,
-        "target": "es2019",
+        "target": "ESNext",
         "lib": [
             "dom",
             "dom.iterable",
             "esnext"
         ],
+        "types": ["jest", "node", "@testing-library/jest-dom", "vite/client"],
         "allowJs": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
@@ -20,6 +21,7 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
+        "baseUrl": "src",
         "strictPropertyInitialization": false,
         "noFallthroughCasesInSwitch": true,
     },

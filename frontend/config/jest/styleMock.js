@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Redpanda Data, Inc.
+ * Copyright 2023 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -9,6 +9,4 @@
  * by the Apache License, Version 2.0
  */
 
-process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-require('./overrides/webpack.config');
-require('react-scripts/scripts/start');
+module.exports = {};
