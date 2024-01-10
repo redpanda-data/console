@@ -145,6 +145,7 @@ class TopicList extends PageComponent {
                         <DataTable<Topic>
                             data={topics}
                             showPagination
+                            size="sm"
                             columns={[
                                 {
                                     header: 'Name',

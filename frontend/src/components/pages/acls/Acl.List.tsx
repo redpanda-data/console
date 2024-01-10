@@ -116,7 +116,7 @@ class AclList extends PageComponent {
 
                     <DataTable<AclPrincipalGroup>
                         data={groups}
-                        size="md"
+                        size="sm"
                         showPagination
                         columns={[
                             {

@@ -36,7 +36,7 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
 
         return <DataTable<TopicConsumer>
             data={consumers}
-            size="md"
+            size="sm"
             showPagination
             columns={[
                 {size: 1, header: 'Group', accessorKey: 'groupId'},

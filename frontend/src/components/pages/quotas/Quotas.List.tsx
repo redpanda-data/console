@@ -65,7 +65,7 @@ class QuotasList extends PageComponent {
                     {warning}
 
                     <DataTable<{ eqKey: string, entityType: 'client-id' | 'user' | 'ip', entityName?: string | undefined, settings: QuotaResponseSetting[] }>
-                        size="md"
+                        size="sm"
                         data={resources}
                         columns={[
                             {

@@ -578,7 +578,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return <>
             <DataTable<TopicMessage>
-                size="md"
+                size="sm"
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}

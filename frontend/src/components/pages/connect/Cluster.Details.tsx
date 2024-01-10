@@ -75,7 +75,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                         <DataTable<ClusterConnectorInfo>
                             data={connectors ?? []}
-                            size="md"
+                            size="sm"
                             columns={[
                                 {
                                     header: 'Connector',
@@ -118,7 +118,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                         <DataTable<ClusterAdditionalInfo['plugins'][0]>
                             data={additionalInfo?.plugins ?? []}
-                            size="md"
+                            size="sm"
                             showPagination
                             columns={[
                                 {

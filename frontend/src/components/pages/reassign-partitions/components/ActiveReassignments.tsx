@@ -70,7 +70,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
                 data={currentReassignments}
                 defaultPageSize={5}
                 enableSorting={false}
-                size="md"
+                size="sm"
                 onRow={(row) => {
                     this.reassignmentDetails = row.original
                 }}
