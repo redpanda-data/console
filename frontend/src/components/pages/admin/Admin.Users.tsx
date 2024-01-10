@@ -39,7 +39,6 @@ export class AdminUsers extends Component<{}> {
                 data={users}
                 enableSorting
                 expandRowByClick
-                size="md"
                 columns={[
                     {
                         size: 1,

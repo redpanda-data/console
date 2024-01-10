@@ -562,7 +562,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         }]
 
         const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
                 <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
                     <SettingOutlined style={{ fontSize: '1rem' }} />
                     <span style={{ marginLeft: '.3em' }}>Preview</span>
@@ -578,14 +578,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return <>
             <DataTable<TopicMessage>
-                size="sm"
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}
                 showPagination
                 subComponent={({row: {original}}) => renderExpandedMessage(original)}
             />
-            <Button variant="outline" style={{marginTop: '4px', marginLeft: '-2px'}}
+            <Button variant="outline"
                     onClick={() => {
                         this.downloadMessages = api.messages;
                     }}

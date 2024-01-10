@@ -56,7 +56,6 @@ export default observer(function ({ acl }: AclListProps) {
                 resourcePatternType: AclStrResourcePatternType,
                 acls: AclRule[]
             }>
-                size="sm"
                 data={resources}
                 columns={[
                     {

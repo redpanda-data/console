@@ -31,7 +31,6 @@ export class AdminRoles extends Component<{}> {
         return <DataTable<Role>
             enableSorting
             data={roles}
-            size="md"
             expandRowByClick
             subComponent={({row: {original: role}}) => <RoleComponent role={role}/>}
             columns={[

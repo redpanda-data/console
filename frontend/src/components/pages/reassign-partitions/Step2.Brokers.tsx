@@ -47,7 +47,6 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
 
             <DataTable<Broker>
-                size="sm"
                 data={this.brokers}
                 showPagination
                 columns={[

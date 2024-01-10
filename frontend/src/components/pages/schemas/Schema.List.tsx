@@ -155,7 +155,6 @@ class SchemaList extends PageComponent<{}> {
 
                     <DataTable<SchemaRegistrySubject>
                         data={filteredSubjects}
-                        size="sm"
                         columns={[
                             { header: 'Name', accessorKey: 'name', size: 400, cell: ({row: {original: {name}}}) => <Link to={`/schema-registry/subjects/${encodeURIComponent(name)}?version=latest`}>{name}</Link>},
                             { header: 'Type', cell: ({row: {original: r}}) => <SchemaTypeColumn name={r.name} />, size: 100 },

@@ -126,7 +126,6 @@ class GroupList extends PageComponent {
 
                         <DataTable<GroupDescription>
                             data={groups}
-                            size="sm"
                             columns={[
                                 {
                                     header: 'State',

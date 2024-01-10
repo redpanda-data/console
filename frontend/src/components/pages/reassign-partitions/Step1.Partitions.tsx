@@ -66,7 +66,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
             <DataTable<TopicWithPartitions>
                 showPagination
-                size="sm"
                 enableSorting
                 data={this.topicPartitions}
                 rowSelection={{
@@ -244,7 +243,6 @@ export class SelectPartitionTable extends Component<{
 }> {
     render() {
         return <DataTable<Partition>
-            size="sm"
             data={this.props.topicPartitions}
             columns={[
                 {

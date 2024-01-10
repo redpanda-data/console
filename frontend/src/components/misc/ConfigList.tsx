@@ -100,7 +100,6 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             showPagination={false}
             enableSorting={false}
             defaultPageSize={10000}
-            size="md"
             getRowCanExpand={row => (row.original.synonyms?.length ?? 0) > 0 }
             subComponent={({row}) => {
                 if(!row.original.synonyms?.length) {

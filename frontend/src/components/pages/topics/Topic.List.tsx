@@ -145,7 +145,6 @@ class TopicList extends PageComponent {
                         <DataTable<Topic>
                             data={topics}
                             showPagination
-                            size="sm"
                             columns={[
                                 {
                                     header: 'Name',
@@ -177,16 +176,17 @@ class TopicList extends PageComponent {
                                     cell: ({row: {original: record}}) => (
                                         <Flex gap={1}>
                                             <DeleteDisabledTooltip topic={record}>
-                                                <Button
-                                                    variant="ghost"
-                                                    className="iconButton"
+                                                <button
+                                                    // size="md"
+                                                    // variant="ghost"
+                                                    // className="iconButton"
                                                     onClick={(event) => {
                                                         event.stopPropagation();
                                                         this.topicToDelete = record;
                                                     }}
                                                 >
-                                                    <Icon as={HiOutlineTrash} fontSize="22px"/>
-                                                </Button>
+                                                    <Icon as={HiOutlineTrash} />
+                                                </button>
                                             </DeleteDisabledTooltip>
                                         </Flex>
                                     ),

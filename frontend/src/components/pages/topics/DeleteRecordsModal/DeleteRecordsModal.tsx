@@ -102,7 +102,6 @@ function SelectPartitionStep({
                                 }}
                             >
                                 <SingleSelect<number | undefined>
-                                    size="sm"
                                     options={partitions.map(i => ({
                                         label: `Partition ${i}`,
                                         value: i

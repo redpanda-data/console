@@ -72,7 +72,6 @@ class TabClusters extends Component {
         return (
             <DataTable<ClusterConnectors>
                 data={clusters}
-                size="sm"
                 enableSorting={false}
                 columns={[
                     {
@@ -133,7 +132,6 @@ class TabConnectors extends Component {
         return (
             <DataTable<ConnectorType>
                 data={allConnectors}
-                size="sm"
                 enableSorting={false}
                 columns={[
                     {
