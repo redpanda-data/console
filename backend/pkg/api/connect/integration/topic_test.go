@@ -529,13 +529,11 @@ func (s *APISuite) TestGetTopicConfiguration() {
 		}()
 
 		// 2. Retrieve topic config for topic
-		type topicConfigResponse struct {
-			Configurations []struct {
-				Name  string  `json:"name"`
-				Value *string `json:"value"`
-			} `json:"configurations"`
+		type topicConfig struct {
+			Name  string  `json:"name"`
+			Value *string `json:"value"`
 		}
-		var httpRes topicConfigResponse
+		var httpRes []topicConfig
 
 		var errResponse string
 		urlPath := fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)
@@ -549,7 +547,7 @@ func (s *APISuite) TestGetTopicConfiguration() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
-		assert.GreaterOrEqual(len(httpRes.Configurations), 2)
+		assert.GreaterOrEqual(len(httpRes), 2)
 	})
 
 	t.Run("get topic configuration of a non-existent topic (http)", func(t *testing.T) {

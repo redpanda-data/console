@@ -244,7 +244,10 @@ service TopicService {
     };
   }
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/topics/{topic_name}/configurations"};
+    option (google.api.http) = {
+      get: "/v1alpha1/topics/{topic_name}/configurations"
+      response_body: "configurations"
+    };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Topic Configurations"
       description: "Get Topic Configurations."
