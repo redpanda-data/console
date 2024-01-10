@@ -87,7 +87,6 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
-    Paragraph,
     Popover,
     RadioGroup,
     SearchField,
@@ -1367,11 +1366,11 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                         />
                     </Box>
                 </Box>
-                <Paragraph>
+                <Box>
                     <Text>
                         Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
                     </Text>
-                </Paragraph>
+                </Box>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
