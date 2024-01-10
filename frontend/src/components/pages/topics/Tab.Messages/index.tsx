@@ -87,6 +87,7 @@ import {
     ModalFooter,
     ModalHeader,
     ModalOverlay,
+    Paragraph,
     Popover,
     RadioGroup,
     SearchField,
@@ -107,8 +108,11 @@ import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
 import { WarningIcon } from '@chakra-ui/icons';
+import { proto3 } from '@bufbuild/protobuf';
 import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
+import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+
 
 interface TopicMessageViewProps {
     topic: Topic;
@@ -295,6 +299,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
+        const isKeyDeserializerActive = uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null;
+        const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
+        const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
+
         return (
             <React.Fragment>
                 <Flex my={4}
@@ -415,6 +423,24 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <MessageSearchFilterBar />
                         </div>
                     )}
+
+                    {/* Show warning if a deserializer is forced for key or value */}
+                    {isDeserializerOverrideActive && (
+                        <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
+                            {isKeyDeserializerActive && <Tag>
+                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
+                                    Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
+                                </TagLabel>
+                                <TagCloseButton onClick={() => uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED} />
+                            </Tag>}
+                            {isValueDeserializerActive && <Tag>
+                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
+                                    Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
+                                </TagLabel>
+                                <TagCloseButton onClick={() => uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED} />
+                            </Tag>}
+                        </Flex>
+                    )}
                 </Flex>
             </React.Fragment>
         );
@@ -475,26 +501,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
     }
-
-    // FilterSummary() {
-    //
-    //     if (this && this.messageSource && this.messageSource.data) {
-    //         // todo
-    //     }
-    //     else {
-    //         return null;
-    //     }
-    //
-    //     const displayText = this.messageSource.data.length == api.messages.length
-    //         ? 'Filter matched all messages'
-    //         : <><b>{this.messageSource.data.length}</b> results</>;
-    //
-    //     return <div style={{ marginRight: '1em' }}>
-    //         <MotionDiv identityKey={displayText}>
-    //             <Typography.Text type="secondary">{displayText}</Typography.Text>
-    //         </MotionDiv>
-    //     </div>;
-    // }
 
     @computed
     get activePreviewTags(): PreviewTagV2[] {
@@ -652,7 +658,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-            includeRawPayload: includeRawPayload
+            includeRawPayload: includeRawPayload,
+
+            keyDeserializer: uiState.topicSettings.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.valueDeserializer,
         } as MessageSearchRequest;
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
@@ -1308,9 +1317,28 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
-const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) =>
-(
-    <Modal isOpen={getShowDialog()} onClose={() => {
+const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) => {
+
+    const payloadEncodingPairs = [
+        { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
+        { value: PayloadEncoding.NULL, label: 'None (Null)' },
+        { value: PayloadEncoding.AVRO, label: 'AVRO' },
+        { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
+        { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
+        { value: PayloadEncoding.JSON, label: 'JSON' },
+        { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
+        { value: PayloadEncoding.XML, label: 'XML' },
+        { value: PayloadEncoding.TEXT, label: 'Plain Text' },
+        { value: PayloadEncoding.UTF8, label: 'UTF-8' },
+        { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
+        { value: PayloadEncoding.SMILE, label: 'Smile' },
+        { value: PayloadEncoding.BINARY, label: 'Binary' },
+        { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
+        { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
+    ];
+
+
+    return <Modal isOpen={getShowDialog()} onClose={() => {
         setShowDialog(false);
     }}>
         <ModalOverlay />
@@ -1320,9 +1348,30 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Text pb={4}>
-                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
-                </Text>
+                <Box mb="1em">
+                    <Text mb={2}>Key Deserializer</Text>
+                    <Box>
+                        <SingleSelect
+                            options={payloadEncodingPairs}
+                            value={uiState.topicSettings.keyDeserializer}
+                            onChange={e => uiState.topicSettings.keyDeserializer = e}
+                        />
+                    </Box>
+
+                    <Text mb={2}>Value Deserializer</Text>
+                    <Box>
+                        <SingleSelect
+                            options={payloadEncodingPairs}
+                            value={uiState.topicSettings.valueDeserializer}
+                            onChange={e => uiState.topicSettings.valueDeserializer = e}
+                        />
+                    </Box>
+                </Box>
+                <Paragraph>
+                    <Text>
+                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                    </Text>
+                </Paragraph>
                 <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
                     <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
                 </Box>
@@ -1352,7 +1401,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
             </ModalFooter>
         </ModalContent>
     </Modal>
-));
+});
 
 
 const handleColumnListChange = action((newValue: MultiValue<{ value: string, label: string }>) => {
