@@ -39,23 +39,45 @@ components:
           title: Value is a topic level config value (e.g. 1073741824)
           type: string
       type: object
+    ConfigSource:
+      enum:
+        - CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG
+        - CONFIG_SOURCE_DYNAMIC_BROKER_CONFIG
+        - CONFIG_SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG
+        - CONFIG_SOURCE_STATIC_BROKER_CONFIG
+        - CONFIG_SOURCE_DEFAULT_CONFIG
+        - CONFIG_SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
+      type: string
     ConfigSynonym:
       properties:
         name:
           type: string
         source:
-          $ref: '#/components/schemas/Source'
+          $ref: '#/components/schemas/ConfigSource'
         value:
+          nullable: true
           type: string
       type: object
+    ConfigType:
+      enum:
+        - CONFIG_TYPE_BOOLEAN
+        - CONFIG_TYPE_STRING
+        - CONFIG_TYPE_INT
+        - CONFIG_TYPE_SHORT
+        - CONFIG_TYPE_LONG
+        - CONFIG_TYPE_DOUBLE
+        - CONFIG_TYPE_LIST
+        - CONFIG_TYPE_CLASS
+        - CONFIG_TYPE_PASSWORD
+      type: string
     Configuration:
       properties:
         config_synonyms:
           items:
             $ref: '#/components/schemas/ConfigSynonym'
-          readOnly: true
           type: array
         documentation:
+          nullable: true
           type: string
         is_read_only:
           type: boolean
@@ -64,10 +86,11 @@ components:
         name:
           type: string
         source:
-          $ref: '#/components/schemas/Source'
+          $ref: '#/components/schemas/ConfigSource'
         type:
-          type: string
+          $ref: '#/components/schemas/ConfigType'
         value:
+          nullable: true
           type: string
       type: object
     ConnectCluster:
@@ -493,9 +516,9 @@ components:
         holistic_state:
           $ref: '#/components/schemas/ConnectorHolisticState'
       type: object
-    GetTopicConfigurationResponse:
+    GetTopicConfigurationsResponse:
       properties:
-        configuration:
+        configurations:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -792,15 +815,6 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
-    Source:
-      enum:
-        - SOURCE_DYNAMIC_TOPIC_CONFIG
-        - SOURCE_DYNAMIC_BROKER_CONFIG
-        - SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG
-        - SOURCE_STATIC_BROKER_CONFIG
-        - SOURCE_DEFAULT_CONFIG
-        - SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
-      type: string
     Status:
       description: |-
         The `Status` type defines a logical error model that is suitable for
@@ -1987,49 +2001,6 @@ paths:
       tags:
         - TopicService
   /v1alpha1/topics/{topic_name}/configuration:
-    get:
-      description: Get Topic Configuration.
-      operationId: TopicService_GetTopicConfiguration
-      parameters:
-        - in: path
-          name: topic_name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetTopicConfigurationResponse'
-          description: Ok
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get Topic Configuration
-      tags:
-        - TopicService
     patch:
       description: Updates a subset of the topic configuration.
       operationId: TopicService_UpdateTopicConfiguration
@@ -2132,6 +2103,50 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Set Topic Configuration
+      tags:
+        - TopicService
+  /v1alpha1/topics/{topic_name}/configurations:
+    get:
+      description: Get Topic Configurations.
+      operationId: TopicService_GetTopicConfigurations
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicConfigurationsResponse'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Topic Configurations
       tags:
         - TopicService
   /v1alpha1/users:
