@@ -82,6 +82,9 @@ type Servicer interface {
 	DeleteACLsKafka(ctx context.Context, deleteReq *kmsg.DeleteACLsRequest) (*kmsg.DeleteACLsResponse, error)
 	// CreateTopics proxies the request/response to create topics via the Kafka API.
 	CreateTopics(ctx context.Context, createReq *kmsg.CreateTopicsRequest) (*kmsg.CreateTopicsResponse, error)
+	// DescribeConfigs proxies the request/response for describing topic or broker configs via
+	// the Kafka API.
+	DescribeConfigs(ctx context.Context, req *kmsg.DescribeConfigsRequest) (*kmsg.DescribeConfigsResponse, error)
 	// DeleteTopics proxies the request/response to delete topics via the Kafka API.
 	DeleteTopics(ctx context.Context, deleteReq *kmsg.DeleteTopicsRequest) (*kmsg.DeleteTopicsResponse, error)
 }

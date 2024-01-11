@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
+import { ConfigSource, ConfigSynonym, ConfigType } from "./common_pb";
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha1.Topic
@@ -81,21 +82,19 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   name = "";
 
   /**
-   * @generated from field: string type = 2;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigType type = 2;
    */
-  type = "";
+  type = ConfigType.UNSPECIFIED;
 
   /**
-   * @generated from field: string value = 3;
+   * @generated from field: optional string value = 3;
    */
-  value = "";
+  value?: string;
 
   /**
-   * Enum ?
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.Topic.Configuration.Source source = 4;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigSource source = 4;
    */
-  source = Topic_Configuration_Source.UNSPECIFIED;
+  source = ConfigSource.UNSPECIFIED;
 
   /**
    * @generated from field: bool is_read_only = 5;
@@ -108,14 +107,14 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   isSensitive = false;
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration.ConfigSynonym config_synonyms = 7;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConfigSynonym config_synonyms = 7;
    */
-  configSynonyms: Topic_Configuration_ConfigSynonym[] = [];
+  configSynonyms: ConfigSynonym[] = [];
 
   /**
-   * @generated from field: string documentation = 8;
+   * @generated from field: optional string documentation = 8;
    */
-  documentation = "";
+  documentation?: string;
 
   constructor(data?: PartialMessage<Topic_Configuration>) {
     super();
@@ -126,13 +125,13 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.Topic.Configuration";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "source", kind: "enum", T: proto3.getEnumType(Topic_Configuration_Source) },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(ConfigType) },
+    { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "source", kind: "enum", T: proto3.getEnumType(ConfigSource) },
     { no: 5, name: "is_read_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "is_sensitive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "config_synonyms", kind: "message", T: Topic_Configuration_ConfigSynonym, repeated: true },
-    { no: 8, name: "documentation", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "config_synonyms", kind: "message", T: ConfigSynonym, repeated: true },
+    { no: 8, name: "documentation", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Topic_Configuration {
@@ -149,107 +148,6 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
 
   static equals(a: Topic_Configuration | PlainMessage<Topic_Configuration> | undefined, b: Topic_Configuration | PlainMessage<Topic_Configuration> | undefined): boolean {
     return proto3.util.equals(Topic_Configuration, a, b);
-  }
-}
-
-/**
- * @generated from enum redpanda.api.dataplane.v1alpha1.Topic.Configuration.Source
- */
-export enum Topic_Configuration_Source {
-  /**
-   * @generated from enum value: SOURCE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: SOURCE_DYNAMIC_TOPIC_CONFIG = 1;
-   */
-  DYNAMIC_TOPIC_CONFIG = 1,
-
-  /**
-   * @generated from enum value: SOURCE_DYNAMIC_BROKER_CONFIG = 2;
-   */
-  DYNAMIC_BROKER_CONFIG = 2,
-
-  /**
-   * @generated from enum value: SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG = 3;
-   */
-  DYNAMIC_DEFAULT_BROKER_CONFIG = 3,
-
-  /**
-   * @generated from enum value: SOURCE_STATIC_BROKER_CONFIG = 4;
-   */
-  STATIC_BROKER_CONFIG = 4,
-
-  /**
-   * @generated from enum value: SOURCE_DEFAULT_CONFIG = 5;
-   */
-  DEFAULT_CONFIG = 5,
-
-  /**
-   * @generated from enum value: SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG = 6;
-   */
-  DYNAMIC_BROKER_LOGGER_CONFIG = 6,
-}
-// Retrieve enum metadata with: proto3.getEnumType(Topic_Configuration_Source)
-proto3.util.setEnumType(Topic_Configuration_Source, "redpanda.api.dataplane.v1alpha1.Topic.Configuration.Source", [
-  { no: 0, name: "SOURCE_UNSPECIFIED" },
-  { no: 1, name: "SOURCE_DYNAMIC_TOPIC_CONFIG" },
-  { no: 2, name: "SOURCE_DYNAMIC_BROKER_CONFIG" },
-  { no: 3, name: "SOURCE_DYNAMIC_DEFAULT_BROKER_CONFIG" },
-  { no: 4, name: "SOURCE_STATIC_BROKER_CONFIG" },
-  { no: 5, name: "SOURCE_DEFAULT_CONFIG" },
-  { no: 6, name: "SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG" },
-]);
-
-/**
- * @generated from message redpanda.api.dataplane.v1alpha1.Topic.Configuration.ConfigSynonym
- */
-export class Topic_Configuration_ConfigSynonym extends Message<Topic_Configuration_ConfigSynonym> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: string value = 2;
-   */
-  value = "";
-
-  /**
-   * Enum?
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.Topic.Configuration.Source source = 3;
-   */
-  source = Topic_Configuration_Source.UNSPECIFIED;
-
-  constructor(data?: PartialMessage<Topic_Configuration_ConfigSynonym>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.Topic.Configuration.ConfigSynonym";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "source", kind: "enum", T: proto3.getEnumType(Topic_Configuration_Source) },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Topic_Configuration_ConfigSynonym {
-    return new Topic_Configuration_ConfigSynonym().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Topic_Configuration_ConfigSynonym {
-    return new Topic_Configuration_ConfigSynonym().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Topic_Configuration_ConfigSynonym {
-    return new Topic_Configuration_ConfigSynonym().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Topic_Configuration_ConfigSynonym | PlainMessage<Topic_Configuration_ConfigSynonym> | undefined, b: Topic_Configuration_ConfigSynonym | PlainMessage<Topic_Configuration_ConfigSynonym> | undefined): boolean {
-    return proto3.util.equals(Topic_Configuration_ConfigSynonym, a, b);
   }
 }
 
@@ -712,76 +610,76 @@ export class DeleteTopicResponse extends Message<DeleteTopicResponse> {
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.GetTopicConfigurationRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsRequest
  */
-export class GetTopicConfigurationRequest extends Message<GetTopicConfigurationRequest> {
+export class GetTopicConfigurationsRequest extends Message<GetTopicConfigurationsRequest> {
   /**
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
 
-  constructor(data?: PartialMessage<GetTopicConfigurationRequest>) {
+  constructor(data?: PartialMessage<GetTopicConfigurationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetTopicConfigurationRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTopicConfigurationRequest {
-    return new GetTopicConfigurationRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTopicConfigurationsRequest {
+    return new GetTopicConfigurationsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTopicConfigurationRequest {
-    return new GetTopicConfigurationRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTopicConfigurationsRequest {
+    return new GetTopicConfigurationsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTopicConfigurationRequest {
-    return new GetTopicConfigurationRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTopicConfigurationsRequest {
+    return new GetTopicConfigurationsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetTopicConfigurationRequest | PlainMessage<GetTopicConfigurationRequest> | undefined, b: GetTopicConfigurationRequest | PlainMessage<GetTopicConfigurationRequest> | undefined): boolean {
-    return proto3.util.equals(GetTopicConfigurationRequest, a, b);
+  static equals(a: GetTopicConfigurationsRequest | PlainMessage<GetTopicConfigurationsRequest> | undefined, b: GetTopicConfigurationsRequest | PlainMessage<GetTopicConfigurationsRequest> | undefined): boolean {
+    return proto3.util.equals(GetTopicConfigurationsRequest, a, b);
   }
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.GetTopicConfigurationResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsResponse
  */
-export class GetTopicConfigurationResponse extends Message<GetTopicConfigurationResponse> {
+export class GetTopicConfigurationsResponse extends Message<GetTopicConfigurationsResponse> {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configurations = 1;
    */
-  configuration: Topic_Configuration[] = [];
+  configurations: Topic_Configuration[] = [];
 
-  constructor(data?: PartialMessage<GetTopicConfigurationResponse>) {
+  constructor(data?: PartialMessage<GetTopicConfigurationsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetTopicConfigurationResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "configuration", kind: "message", T: Topic_Configuration, repeated: true },
+    { no: 1, name: "configurations", kind: "message", T: Topic_Configuration, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTopicConfigurationResponse {
-    return new GetTopicConfigurationResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTopicConfigurationsResponse {
+    return new GetTopicConfigurationsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTopicConfigurationResponse {
-    return new GetTopicConfigurationResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetTopicConfigurationsResponse {
+    return new GetTopicConfigurationsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTopicConfigurationResponse {
-    return new GetTopicConfigurationResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetTopicConfigurationsResponse {
+    return new GetTopicConfigurationsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetTopicConfigurationResponse | PlainMessage<GetTopicConfigurationResponse> | undefined, b: GetTopicConfigurationResponse | PlainMessage<GetTopicConfigurationResponse> | undefined): boolean {
-    return proto3.util.equals(GetTopicConfigurationResponse, a, b);
+  static equals(a: GetTopicConfigurationsResponse | PlainMessage<GetTopicConfigurationsResponse> | undefined, b: GetTopicConfigurationsResponse | PlainMessage<GetTopicConfigurationsResponse> | undefined): boolean {
+    return proto3.util.equals(GetTopicConfigurationsResponse, a, b);
   }
 }
 

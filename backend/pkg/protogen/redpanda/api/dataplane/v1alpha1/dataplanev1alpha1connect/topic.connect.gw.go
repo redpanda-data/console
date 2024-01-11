@@ -20,7 +20,7 @@ type TopicServiceGatewayServer struct {
 	createTopic              connect_gateway.UnaryHandler[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
 	listTopics               connect_gateway.UnaryHandler[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse]
 	deleteTopic              connect_gateway.UnaryHandler[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
-	getTopicConfiguration    connect_gateway.UnaryHandler[v1alpha1.GetTopicConfigurationRequest, v1alpha1.GetTopicConfigurationResponse]
+	getTopicConfigurations   connect_gateway.UnaryHandler[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
 	updateTopicConfiguration connect_gateway.UnaryHandler[v1alpha1.UpdateTopicConfigurationRequest, v1alpha1.UpdateTopicConfigurationResponse]
 	setTopicConfiguration    connect_gateway.UnaryHandler[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
 }
@@ -32,7 +32,7 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		createTopic:              connect_gateway.NewUnaryHandler(TopicServiceCreateTopicProcedure, svc.CreateTopic, opts...),
 		listTopics:               connect_gateway.NewUnaryHandler(TopicServiceListTopicsProcedure, svc.ListTopics, opts...),
 		deleteTopic:              connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicProcedure, svc.DeleteTopic, opts...),
-		getTopicConfiguration:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationProcedure, svc.GetTopicConfiguration, opts...),
+		getTopicConfigurations:   connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
 		updateTopicConfiguration: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationProcedure, svc.UpdateTopicConfiguration, opts...),
 		setTopicConfiguration:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationProcedure, svc.SetTopicConfiguration, opts...),
 	}
@@ -50,8 +50,8 @@ func (s *TopicServiceGatewayServer) DeleteTopic(ctx context.Context, req *v1alph
 	return s.deleteTopic(ctx, req)
 }
 
-func (s *TopicServiceGatewayServer) GetTopicConfiguration(ctx context.Context, req *v1alpha1.GetTopicConfigurationRequest) (*v1alpha1.GetTopicConfigurationResponse, error) {
-	return s.getTopicConfiguration(ctx, req)
+func (s *TopicServiceGatewayServer) GetTopicConfigurations(ctx context.Context, req *v1alpha1.GetTopicConfigurationsRequest) (*v1alpha1.GetTopicConfigurationsResponse, error) {
+	return s.getTopicConfigurations(ctx, req)
 }
 
 func (s *TopicServiceGatewayServer) UpdateTopicConfiguration(ctx context.Context, req *v1alpha1.UpdateTopicConfigurationRequest) (*v1alpha1.UpdateTopicConfigurationResponse, error) {

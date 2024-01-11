@@ -38,6 +38,11 @@ export enum Reason {
    * @generated from enum value: REASON_KAFKA_CONNECT_API_ERROR = 5;
    */
   KAFKA_CONNECT_API_ERROR = 5,
+
+  /**
+   * @generated from enum value: REASON_TYPE_MAPPING_ERROR = 6;
+   */
+  TYPE_MAPPING_ERROR = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Reason)
 proto3.util.setEnumType(Reason, "redpanda.api.dataplane.v1alpha1.Reason", [
@@ -47,5 +52,6 @@ proto3.util.setEnumType(Reason, "redpanda.api.dataplane.v1alpha1.Reason", [
   { no: 3, name: "REASON_REDPANDA_ADMIN_API_ERROR" },
   { no: 4, name: "REASON_KAFKA_API_ERROR" },
   { no: 5, name: "REASON_KAFKA_CONNECT_API_ERROR" },
+  { no: 6, name: "REASON_TYPE_MAPPING_ERROR" },
 ]);
 

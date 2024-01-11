@@ -13,12 +13,10 @@ package topic
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -26,7 +24,10 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
+
+var _ dataplanev1alpha1connect.TopicServiceHandler = (*Service)(nil)
 
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
@@ -72,16 +73,8 @@ func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1
 	}
 
 	result := kafkaRes.Topics[0]
-	if result.ErrorCode != 0 {
-		if errors.Is(kerr.ErrorForCode(result.ErrorCode), kerr.UnknownTopicOrPartition) {
-			return nil, apierrors.NewConnectError(
-				connect.CodeNotFound,
-				fmt.Errorf("the requested topic does not exist"),
-				apierrors.NewErrorInfo(
-					commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
-				))
-		}
-		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
+	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
+		return nil, connectErr
 	}
 
 	connectResponse := connect.NewResponse(&v1alpha1.DeleteTopicResponse{})
@@ -90,14 +83,46 @@ func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1
 	return connectResponse, nil
 }
 
-// GetTopicConfiguration retrieves a topic's configuration.
-func (*Service) GetTopicConfiguration(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("this endpoint is not yet implemented"),
-		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-	)
+// GetTopicConfigurations retrieves a topic's configuration.
+func (s *Service) GetTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error) {
+	kafkaReq := s.mapper.describeTopicConfigsToKafka(req.Msg)
+	configsRes, err := s.consoleSvc.DescribeConfigs(ctx, &kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if len(configsRes.Resources) != 1 {
+		// Should never happen since we only describe one topic, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("unexpected number of resources in describe configs response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_resources",
+				Value: strconv.Itoa(len(configsRes.Resources)),
+			}),
+		)
+	}
+
+	// Check for inner Kafka error
+	result := configsRes.Resources[0]
+	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
+		return nil, connectErr
+	}
+
+	configs, err := s.mapper.describeTopicConfigsToProto(result.Configs)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	return connect.NewResponse(&v1alpha1.GetTopicConfigurationsResponse{Configurations: configs}), nil
 }
 
 // UpdateTopicConfiguration patches a topic's configuration. In contrast to SetTopicConfiguration
@@ -163,8 +188,8 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1
 
 	// Check for inner Kafka error
 	result := kafkaRes.Topics[0]
-	if result.ErrorCode != 0 {
-		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(result.ErrorCode, result.ErrorMessage)
+	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
+		return nil, connectErr
 	}
 
 	// Map Kafka response to proto
