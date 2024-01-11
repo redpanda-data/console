@@ -27,7 +27,7 @@ type KafkaClientMapper struct{}
 func (*KafkaClientMapper) ConfigTypeToProto(configType kmsg.ConfigType) (v1alpha1.ConfigType, error) {
 	switch configType {
 	case kmsg.ConfigTypeBoolean:
-		return v1alpha1.ConfigType_CONFIG_TYPE_DOUBLE, nil
+		return v1alpha1.ConfigType_CONFIG_TYPE_BOOLEAN, nil
 	case kmsg.ConfigTypeString:
 		return v1alpha1.ConfigType_CONFIG_TYPE_STRING, nil
 	case kmsg.ConfigTypeInt:
