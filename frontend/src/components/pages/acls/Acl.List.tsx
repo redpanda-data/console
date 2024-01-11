@@ -206,7 +206,7 @@ class AclList extends PageComponent {
 
 
                                     return <Menu>
-                                        <MenuButton as={Button} variant="ghost" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}>
+                                        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
                                             <Icon as={TrashIcon} />
                                         </MenuButton>
                                         <MenuList>
