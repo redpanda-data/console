@@ -10,6 +10,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/cloudhut/common/rest"
 )
 
@@ -29,5 +31,13 @@ type Server struct {
 // SetDefaults for server config.
 func (s *Server) SetDefaults() {
 	s.Config.SetDefaults()
+	// We use a timeout of up to 31 minutes in the ListMessages handler for certain requests.
+	// In the future we may be able to use http.NewResponseController to overwrite the global
+	// write timeout only for those routes that require to be run longer, but as of writing this
+	// it is not possible to set this from inside the connect handlers.
+	// References:
+	// 1. https://github.com/connectrpc/connect-go/issues/604
+	// 2. https://github.com/connectrpc/connect-go/issues/356
+	s.HTTPServerWriteTimeout = 32 * time.Minute
 	s.AllowedOrigins = nil
 }
