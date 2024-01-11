@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import React from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';

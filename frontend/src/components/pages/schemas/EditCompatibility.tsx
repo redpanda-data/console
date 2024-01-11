@@ -15,7 +15,6 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton, Button } from '../../../utils/tsxUtils';
-import './Schema.List.scss';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Stack, useToast, VStack, Text } from '@redpanda-data/ui';

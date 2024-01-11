@@ -11,7 +11,7 @@
 
 import { PlusIcon, TrashIcon } from '@primer/octicons-react';
 import { observer } from 'mobx-react';
-import './headersEditor.scss';
+import styles from './headersEditor.module.scss';
 import { Button, Input } from '@redpanda-data/ui';
 
 interface Header {
@@ -23,14 +23,14 @@ export interface Props {
     items: Header[];
 }
 const HeadersEditor = observer((p: Props): JSX.Element => {
-    return <div className="headersEditor">
+    return <div className={styles.headersEditor}>
         <table>
             <thead>
                 <tr>
-                    <th className="index">#</th>
-                    <th className="name">Header Name</th>
-                    <th className="value">Value</th>
-                    <th className="actions">Action</th>
+                    <th className={styles.index}>#</th>
+                    <th className={styles.name}>Header Name</th>
+                    <th className={styles.value}>Value</th>
+                    <th className={styles.actions}>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,12 +49,12 @@ export default HeadersEditor;
 const HeaderComp = observer((p: { list: Header[], header: Header, index: number }) => {
     const { key, value } = p.header;
     return <tr>
-        <td className="index">{p.index + 1}</td>
-        <td className="name"><Input placeholder="Key" borderRightRadius="0" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
-        <td className="value"><Input placeholder="Value" spellCheck={false} value={value} onChange={e => p.header.value = e.target.value} /></td>
-        <td className="actions">
+        <td className={styles.index}>{p.index + 1}</td>
+        <td className={styles.name}><Input placeholder="Key" borderRightRadius="0" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
+        <td className={styles.value}><Input placeholder="Value" spellCheck={false} value={value} onChange={e => p.header.value = e.target.value} /></td>
+        <td className={styles.actions}>
             <Button variant="ghost"
-                className="iconButton"
+                className={styles.iconButton}
                 onClick={(event) => {
                     event.stopPropagation();
                     p.list.remove(p.header);

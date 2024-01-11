@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectors } from '../../../state/restInterfaces';

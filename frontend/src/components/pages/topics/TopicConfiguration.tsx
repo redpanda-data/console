@@ -7,7 +7,7 @@ import { FC } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
-import './TopicConfiguration.scss';
+import styles from './TopicConfiguration.module.scss';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
 import { isServerless } from '../../../config';
@@ -207,7 +207,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                     </ModalContent>
                 }
             </Modal>
-            <div className="configGroupTable">
+            <div className={styles.configGroupTable}>
                 <SearchField searchText={$state.filter || ''} placeholderText="Filter" setSearchText={value => ($state.filter = value)} icon="filter"/>
                 {categories.map(x => (
                     <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={editConfig} hasEditPermissions={hasEditPermissions}/>
@@ -223,8 +223,8 @@ export default ConfigurationEditor
 const ConfigGroup = observer((p: { groupName?: string; onEditEntry: (configEntry: ConfigEntryExtended) => void; entries: ConfigEntryExtended[]; hasEditPermissions: boolean }) => {
     return (
         <>
-            <div className="configGroupSpacer"/>
-            {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+            <div className={styles.configGroupSpacer}/>
+            {p.groupName && <div className={styles.configGroupTitle}>{p.groupName}</div>}
             {p.entries.map(e => (
                 <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions}/>
             ))}
@@ -240,18 +240,18 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
 
     return (
         <>
-            <span className="configName">{p.entry.name}</span>
+            <span className={styles.configName}>{p.entry.name}</span>
 
-            <span className="configValue">{friendlyValue}</span>
+            <span className={styles.configValue}>{friendlyValue}</span>
 
-            <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
+            <span className={styles.isEditted}>{entry.isExplicitlySet && 'Custom'}</span>
 
             <span className="spacer"></span>
 
-            <span className="configButtons">
+            <span className={styles.configButtons}>
                 <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
                     <span
-                        className={'btnEdit' + (canEdit ? '' : ' disabled')}
+                        className={styles.btnEdit + (canEdit ? '' : ' disabled')}
                         onClick={() => {
                             if (canEdit) p.onEditEntry(p.entry);
                         }}

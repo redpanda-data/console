@@ -9,7 +9,7 @@
 * by the Apache License, Version 2.0
 */
 
-import { CSSProperties, FC, ReactElement, ReactNode } from 'react';
+import React, { CSSProperties, FC, ReactElement, ReactNode } from 'react';
 import { observer } from 'mobx-react';
 import { AclOperation, AclStrPermission } from '../../../state/restInterfaces';
 import { SingleSelect } from '../../misc/Select';

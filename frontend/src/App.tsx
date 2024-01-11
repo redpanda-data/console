@@ -9,19 +9,6 @@
 * by the Apache License, Version 2.0
 */
 
-/* start global stylesheets */
-import 'antd/dist/antd.variable.min.css';
-import './globals.scss';
-import './index.scss';
-import './index-cloud-integration.scss';
-import './assets/fonts/open-sans.css';
-import './assets/fonts/poppins.css';
-import './assets/fonts/quicksand.css';
-import './assets/fonts/kumbh-sans.css';
-import './assets/fonts/inter.css';
-/* end global styles */
-
-
 import { BrowserRouter } from 'react-router-dom';
 import { observer } from 'mobx-react';
 import { Container, Grid, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
@@ -36,6 +23,8 @@ import RequireAuth from './components/RequireAuth';
 import HistorySetter from './components/misc/HistorySetter';
 import { isEmbedded, setup } from './config';
 import { getBasePath } from './utils/env';
+import { useEffect } from 'react';
+import Head from 'next/head';
 
 const AppSidebar = observer(() => {
     const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
@@ -48,9 +37,15 @@ const AppSidebar = observer(() => {
 
 
 const App = () => {
-    setup({});
+    useEffect(() => {
+        setup({});
+    }, [])
+
     return (
         <BrowserRouter basename={getBasePath()}>
+            <Head>
+                <title>Redpanda Console</title>
+            </Head>
             <HistorySetter />
             <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
                 <ErrorBoundary>

@@ -2,12 +2,13 @@
     "compilerOptions": {
         "experimentalDecorators": true,
         "useDefineForClassFields": true,
-        "target": "es2019",
+        "target": "ESNext",
         "lib": [
             "dom",
             "dom.iterable",
             "esnext"
         ],
+        "types": ["jest", "node", "@testing-library/jest-dom"],
         "allowJs": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
@@ -19,15 +20,26 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "jsx": "react-jsx",
+        "jsx": "preserve",
+        "baseUrl": "src",
         "strictPropertyInitialization": false,
         "noFallthroughCasesInSwitch": true,
+        "incremental": true,
+        "plugins": [
+            {
+              "name": "next"
+            }
+        ]
     },
     "include": [
-        "src"
+        "src",
+        ".next/types/**/*.ts",
+        "src/assets",
+        "types/index.d.ts",
     ],
     "exclude": [
-        "src/utils/interpreter/**"
+        "src/utils/interpreter/**",
+        "node_modules"
     ],
 
     // Set more sensible defaults to stop 'fork-ts-checker-webpack-plugin' from consuming a lot more CPU than necessary

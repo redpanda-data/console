@@ -15,30 +15,6 @@ import React, { CSSProperties, useRef, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
-import ElasticLogo from '../../../assets/connectors/elastic.svg';
-import MsSqlLogo from '../../../assets/connectors/mssql.png';
-import MySqlLogo from '../../../assets/connectors/mysql.svg';
-import MongoDBLogo from '../../../assets/connectors/mongodb.png';
-import IcebergLogo from '../../../assets/connectors/iceberg.png';
-import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
-import DebeziumLogo from '../../../assets/connectors/debezium.png';
-import ConfluentLogo from '../../../assets/connectors/confluent.png';
-import ApacheLogo from '../../../assets/connectors/apache.svg';
-import HdfsLogo from '../../../assets/connectors/hdfs.png';
-import JdbcLogo from '../../../assets/connectors/jdbc.png';
-import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
-import PostgresqlLogo from '../../../assets/connectors/postgres.png';
-import SalesforceLogo from '../../../assets/connectors/salesforce.png';
-import ServicenowLogo from '../../../assets/connectors/servicenow.png';
-import RedpandaLogo from '../../../assets/connectors/redpanda.svg';
-import BigQueryLogo from '../../../assets/connectors/google-bigquery.svg';
-import GoogleCloudStorageLogo from '../../../assets/connectors/google-cloud-storage.png';
-import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
-import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
-import CassandraLogo from '../../../assets/connectors/cassandra.png';
-import DB2Logo from '../../../assets/connectors/db2.png';
-import TwitterLogo from '../../../assets/connectors/twitter.svg';
-import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
 import { action, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import Section from '../../misc/Section';
@@ -58,7 +34,7 @@ interface ConnectorMetadata {
     readonly author?: string;
 }
 
-const fallbackConnector: ConnectorMetadata = { logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" /> };
+const fallbackConnector: ConnectorMetadata = { logo: <img src="/connectors/redpanda.svg" alt="Redpanda logo" className="connectorLogo" /> };
 
 // Order of entries matters:
 // - first step is checking if there is any exact match for 'className'
@@ -67,7 +43,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Apache Connectors
     {
         classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorSourceConnector',
-        logo: <img src={ApacheLogo} alt="Apache Software Foundation logo" className="connectorLogo" />,
+        logo: <img src="/connectors/apache.svg" alt="Apache Software Foundation logo" className="connectorLogo" />,
         author: 'Apache Software Foundation',
         friendlyName: 'Kafka cluster topics',
         description: 'Imports messages from another Kafka cluster, using MirrorSourceConnector',
@@ -75,7 +51,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorCheckpointConnector',
-        logo: <img src={ApacheLogo} alt="Apache Software Foundation logo" className="connectorLogo" />,
+        logo: <img src="/connectors/apache.svg" alt="Apache Software Foundation logo" className="connectorLogo" />,
         author: 'Apache Software Foundation',
         friendlyName: 'Kafka cluster offsets',
         description: 'Imports consumer group offsets from another Kafka cluster, using MirrorCheckpointConnector',
@@ -83,7 +59,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorHeartbeatConnector',
-        logo: <img src={ApacheLogo} alt="Apache Software Foundation logo" className="connectorLogo" />,
+        logo: <img src="/connectors/apache.svg" alt="Apache Software Foundation logo" className="connectorLogo" />,
         author: 'Apache Software Foundation',
         friendlyName: 'Heartbeat',
         description: 'Generates heartbeat messages to local heartbeat topic',
@@ -92,59 +68,59 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Confluent Connectors
     {
         classNamePrefix: 'io.confluent.connect.hdfs.',
-        logo: <img src={HdfsLogo} alt="HDFS logo" className="connectorLogo" />,
+        logo: <img src="/connectors/hdfs.png" alt="HDFS logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.s3.',
-        logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
+        logo: <img src="/connectors/amazon-s3.png" alt="Amazon S3 logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.jms.',
-        logo: <img src={JdbcLogo} alt="JMS logo" className="connectorLogo" />,
+        logo: <img src="/connectors/jdbc.png" alt="JMS logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.jdbc.',
-        logo: <img src={JdbcLogo} alt="JDBC logo" className="connectorLogo" />,
+        logo: <img src="/connectors/jdbc.png" alt="JDBC logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.salesforce.',
-        logo: <img src={SalesforceLogo} alt="Salesforce logo" className="connectorLogo" />,
+        logo: <img src="/connectors/salesforce.png" alt="Salesforce logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.servicenow.',
-        logo: <img src={ServicenowLogo} alt="Servicenow logo" className="connectorLogo" />,
+        logo: <img src="/connectors/servicenow.png" alt="Servicenow logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.elasticsearch.',
-        logo: <img src={ElasticLogo} alt="Elastic logo" className="connectorLogo" />,
+        logo: <img src="/connectors/elastic.svg" alt="Elastic logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.gcp.pubsub.',
-        logo: <img src={PubSubLogo} alt="Google PubSub logo" className="connectorLogo" />,
+        logo: <img src="/connectors/google-pub-sub.svg" alt="Google PubSub logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
     {
         classNamePrefix: 'io.confluent.connect.cassandra.',
-        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        logo: <img src="/connectors/cassandra.png" alt="Cassandra logo" className="connectorLogo" />,
         author: 'Confluent'
     } as const,
 
     // Debezium Connectors
     {
         classNamePrefix: 'io.debezium.connector.sqlserver.',
-        logo: <img src={MsSqlLogo} alt="MSSQL logo" className="connectorLogo" />,
+        logo: <img src="/connectors/mssql.png" alt="MSSQL logo" className="connectorLogo" />,
         author: 'Debezium'
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.mysql.',
-        logo: <img src={MySqlLogo} alt="MySQL logo" className="connectorLogo" />,
+        logo: <img src="/connectors/mysql.svg" alt="MySQL logo" className="connectorLogo" />,
         author: 'Debezium',
         friendlyName: 'MySQL (Debezium)',
         description: 'Imports a stream of changes from MySQL, Amazon RDS and Amazon Aurora',
@@ -152,12 +128,12 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.mongodb.',
-        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        logo: <img src="/connectors/mongodb.png" alt="MongoDB logo" className="connectorLogo" />,
         author: 'Debezium'
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.postgresql.',
-        logo: <img src={PostgresqlLogo} alt="PostgreSQL logo" className="connectorLogo" />,
+        logo: <img src="/connectors/postgres.png" alt="PostgreSQL logo" className="connectorLogo" />,
         author: 'Debezium',
         friendlyName: 'PostgreSQL (Debezium)',
         description: 'Imports a stream of changes from PostgreSQL',
@@ -165,19 +141,19 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.cassandra.',
-        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        logo: <img src="/connectors/cassandra.png" alt="Cassandra logo" className="connectorLogo" />,
         author: 'Debezium'
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.db2.',
-        logo: <img src={DB2Logo} alt="IBM DB2 logo" className="connectorLogo" />,
+        logo: <img src="/connectors/db2.png" alt="IBM DB2 logo" className="connectorLogo" />,
         author: 'Debezium'
     } as const,
 
     // Redpanda Connectors
     {
         classNamePrefix: 'com.redpanda.kafka.connect.s3.',
-        logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
+        logo: <img src="/connectors/amazon-s3.png" alt="Amazon S3 logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'S3',
         description: 'Exports messages to files in S3 buckets',
@@ -185,7 +161,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'com.redpanda.kafka.connect.gcs.',
-        logo: <img src={GoogleCloudStorageLogo} alt="Google Cloud Storage logo" className="connectorLogo" />,
+        logo: <img src="/connectors/google-cloud-storage.png" alt="Google Cloud Storage logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'Google Cloud Storage',
         description: 'Exports messages to files in Google Cloud Storage',
@@ -193,7 +169,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSourceConnector',
-        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'JDBC',
         description: 'Imports batches of rows from MySQL, PostgreSQL, SQLite and SQL Server',
@@ -201,7 +177,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSinkConnector',
-        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'JDBC',
         description: 'Exports messages to tables in MySQL, PostgreSQL, SQLite and SQL Server',
@@ -211,14 +187,14 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Stream Reactor / Lenses
     {
         classNamePrefix: 'com.datamountaineer.streamreactor.connect.cassandra.',
-        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        logo: <img src="/connectors/cassandra.png" alt="Cassandra logo" className="connectorLogo" />,
         author: 'Lenses'
     } as const,
 
     // WePay Connectors
     {
         classNamePrefix: 'com.wepay.kafka.connect.bigquery.',
-        logo: <img src={BigQueryLogo} alt="Google BigQuery logo" className="connectorLogo" />,
+        logo: <img src="/connectors/google-bigquery.svg" alt="Google BigQuery logo" className="connectorLogo" />,
         author: 'WePay',
         friendlyName: 'Google BigQuery',
         description: 'Exports messages to Google BigQuery tables',
@@ -228,7 +204,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Snowflake Connectors
     {
         classNamePrefix: 'com.snowflake.kafka.connector',
-        logo: <img src={SnowflakeLogo} alt="Snowflake logo" className="connectorLogo" />,
+        logo: <img src="/connectors/snowflake.png" alt="Snowflake logo" className="connectorLogo" />,
         author: 'Snowflake',
         friendlyName: 'Snowflake',
         description: 'Exports messages to Snowflake tables',
@@ -238,7 +214,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // MongoDB Connectors
     {
         classNamePrefix: 'com.mongodb.kafka.connect.MongoSourceConnector',
-        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        logo: <img src="/connectors/mongodb.png" alt="MongoDB logo" className="connectorLogo" />,
         author: 'MongoDB',
         friendlyName: 'MongoDB',
         description: 'Imports collections from MongoDB',
@@ -246,7 +222,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'com.mongodb.kafka.connect.MongoSinkConnector',
-        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        logo: <img src="/connectors/mongodb.png" alt="MongoDB logo" className="connectorLogo" />,
         author: 'MongoDB',
         friendlyName: 'MongoDB',
         description: 'Exports messages to MongoDB collections',
@@ -256,7 +232,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Iceberg Connectors
     {
         classNamePrefix: 'io.tabular.iceberg.connect.IcebergSinkConnector',
-        logo: <img src={IcebergLogo} alt="Iceberg logo" className="connectorLogo" />,
+        logo: <img src="/connectors/iceberg.png" alt="Iceberg logo" className="connectorLogo" />,
         author: 'Tabular',
         friendlyName: 'Iceberg',
         description: 'Exports messages to Iceberg tables',
@@ -266,7 +242,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // JMS Connectors
     {
         classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
-        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda Logo" className="connectorLogo" />,
         author: 'MacroNova',
         friendlyName: 'JMS',
         description: 'Exports messages to JMS queue',
@@ -274,7 +250,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
-        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda Logo" className="connectorLogo" />,
         author: 'MacroNova',
         friendlyName: 'JMS',
         description: 'Imports messages from JMS queue',
@@ -285,7 +261,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     // IBM MQ Connectors
     {
         classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
-        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        logo: <img src="/connectors/ibm-mq.svg" alt="IBM MQ Logo" className="connectorLogo" />,
         author: 'IBM Messaging',
         friendlyName: 'IBM MQ',
         description: 'Exports messages to IBM MQ queue',
@@ -293,7 +269,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     } as const,
     {
         classNamePrefix: 'com.ibm.eventstreams.connect.mqsource.MQSourceConnector',
-        logo: <img src={IbmMqLogo} alt="IBM MQ Logo" className="connectorLogo" />,
+        logo: <img src="/connectors/ibm-mq.svg" alt="IBM MQ Logo" className="connectorLogo" />,
         author: 'IBM Messaging',
         friendlyName: 'IBM MQ',
         description: 'Imports messages from IBM MQ queue',
@@ -303,17 +279,17 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Community Connector
     {
         classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
-        logo: <img src={TwitterLogo} alt="Twitter logo" className="connectorLogo" />,
+        logo: <img src="/connectors/twitter.svg" alt="Twitter logo" className="connectorLogo" />,
         author: 'Jcustenborder'
     } as const,
     {
         classNamePrefix: 'streams.kafka.connect.sink.Neo4jSinkConnector',
-        logo: <img src={Neo4jLogo} alt="Neo4j logo" className="connectorLogo" />,
+        logo: <img src="/connectors/neo4j.svg" alt="Neo4j logo" className="connectorLogo" />,
         author: 'Neo4j Streams'
     } as const,
     {
         classNamePrefix: 'com.github.castorm.kafka.connect.http.HttpSourceConnector',
-        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda Logo" className="connectorLogo" />,
         author: 'Cástor Rodríguez',
         friendlyName: 'HTTP',
         description: 'Imports data from HTTP services as batches or increments',
@@ -323,22 +299,22 @@ const connectorMetadata: ConnectorMetadata[] = [
     // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
     {
         classNamePrefix: 'io.debezium.',
-        logo: <img src={DebeziumLogo} alt="Debezium logo" className="connectorLogo" />,
+        logo: <img src="/connectors/debezium.png" alt="Debezium logo" className="connectorLogo" />,
         author: 'Debezium',
     } as const,
     {
         classNamePrefix: 'io.confluent.',
-        logo: <img src={ConfluentLogo} alt="Confluent logo" className="connectorLogo" />,
+        logo: <img src="/connectors/confluent.png" alt="Confluent logo" className="connectorLogo" />,
         author: 'Confluent',
     } as const,
     {
         classNamePrefix: 'com.redpanda.',
-        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        logo: <img src="/connectors/redpanda.svg" alt="Redpanda logo" className="connectorLogo" />,
         author: 'Redpanda',
     } as const,
     {
         classNamePrefix: 'org.apache.kafka.',
-        logo: <img src={ApacheLogo} alt="Apache Software Foundation logo" className="connectorLogo" />,
+        logo: <img src="/connectors/apache.svg" alt="Apache Software Foundation logo" className="connectorLogo" />,
         author: 'Apache Software Foundation'
     } as const,
 ];

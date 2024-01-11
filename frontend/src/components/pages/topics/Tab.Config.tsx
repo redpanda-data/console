@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';

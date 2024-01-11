@@ -7,14 +7,16 @@
     },
     "plugins": [
         "@typescript-eslint",
-        "react"
+        "react",
+        "jest",
+        "jest-extended"
     ],
     "extends": [
         "react-app",
-        "react-app/jest",
         "plugin:react/recommended",
         "plugin:@typescript-eslint/eslint-recommended",
-        "plugin:react-hooks/recommended"
+        "plugin:react-hooks/recommended",
+        "next/core-web-vitals"
     ],
     "parserOptions": {
         "ecmaVersion": 2018,
@@ -54,6 +56,9 @@
             "always"
         ],
         "eqeqeq": [
+            "off"
+        ],
+        "@next/next/no-img-element": [ // TODO: Remove once we are ready to use Image component
             "off"
         ]
     }

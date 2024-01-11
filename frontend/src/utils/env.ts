@@ -15,15 +15,15 @@ import './extensions';
 const envNames = [
     'NODE_ENV',
 
-    'REACT_APP_CONSOLE_GIT_SHA',
-    'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
-    'REACT_APP_BUILD_TIMESTAMP',
-    'REACT_APP_CONSOLE_PLATFORM_VERSION',
+    'NEXT_PUBLIC_CONSOLE_GIT_SHA',
+    'NEXT_PUBLIC_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
+    'NEXT_PUBLIC_BUILD_TIMESTAMP',
+    'NEXT_PUBLIC_CONSOLE_PLATFORM_VERSION',
 
-    'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
+    'NEXT_PUBLIC_BUILT_FROM_PUSH', // was built by 'image-on-push'?
 
-    'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
-    'REACT_APP_ENABLED_FEATURES' // for debugging, used to set/override enabled feautures while developing
+    'NEXT_PUBLIC_DEV_HINT', // for debugging, since we can't override NODE_ENV
+    'NEXT_PUBLIC_ENABLED_FEATURES' // for debugging, used to set/override enabled feautures while developing
 ] as const;
 
 type Environment = { [key in typeof envNames[number]]: string };
@@ -37,10 +37,10 @@ export default env;
 
 //
 // Helpers
-const isDev = (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') || process.env.REACT_APP_DEV_HINT;
+const isDev = (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') || process.env.NEXT_PUBLIC_DEV_HINT;
 export const IsProd = !isDev;
 export const IsDev = isDev;
-export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH != 'false';
+export const IsCI = env.NEXT_PUBLIC_BUILT_FROM_PUSH && env.NEXT_PUBLIC_BUILT_FROM_PUSH != 'false';
 
 const appFeatureNames = [
     'SINGLE_SIGN_ON',
@@ -48,8 +48,8 @@ const appFeatureNames = [
 ] as const;
 export type AppFeature = typeof appFeatureNames[number];
 
-if (env.REACT_APP_ENABLED_FEATURES)
-    (window as any)['ENABLED_FEATURES'] = env.REACT_APP_ENABLED_FEATURES;
+if (env.NEXT_PUBLIC_ENABLED_FEATURES)
+    (window as any)['ENABLED_FEATURES'] = env.NEXT_PUBLIC_ENABLED_FEATURES;
 const featuresRaw = (window as any)['ENABLED_FEATURES'] ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
@@ -77,7 +77,7 @@ export function getBasePath() {
 
 
 export function getBuildDate(): Date | undefined {
-    const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
+    const timestamp = +env.NEXT_PUBLIC_BUILD_TIMESTAMP;
     if (timestamp == 0) return undefined;
     return new Date(timestamp * 1000);
 }
@@ -89,7 +89,7 @@ const envVarDebugAr: { name: string, value: string }[] = [];
 
 const addProp = (key: string, value: any) => {
     if (value === undefined || value === null || value === '') return;
-    key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
+    key = key.removePrefix('NEXT_PUBLIC_CONSOLE_').removePrefix('NEXT_PUBLIC_');
     envVarDebugObj[key] = value;
     envVarDebugAr.push({ name: key, value: value });
 }

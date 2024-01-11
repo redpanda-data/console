@@ -17,8 +17,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton, InlineSkeleton, Button } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
-
-import './Schema.List.scss';
+import styles from './Schema.List.module.scss';
 import SearchBar from '../../misc/SearchBar';
 import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
@@ -39,7 +38,7 @@ function renderRequestErrors(requestErrors?: string[]) {
 
     return (
         <Section>
-            <div className="SchemaList__error-card">
+            <div className={styles['SchemaList__error-card']}>
                 {requestErrors.map((errorMessage, idx) => (
                     <Alert key={idx} marginTop="1em" status="error">
                         <AlertIcon />

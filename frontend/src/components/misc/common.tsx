@@ -102,7 +102,7 @@ export const UpdatePopup = observer(() => {
     const serverTimestamp = uiState.serverBuildTimestamp;
     if (serverTimestamp == null) return null;
 
-    const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
+    const curTimestamp = Number(env.NEXT_PUBLIC_BUILD_TIMESTAMP);
 
     if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
     if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
