@@ -29,6 +29,7 @@ const (
 	KafkaConnectService_GetConnector_FullMethodName         = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector"
 	KafkaConnectService_PauseConnector_FullMethodName       = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector"
 	KafkaConnectService_ResumeConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector"
+	KafkaConnectService_StopConnector_FullMethodName        = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector"
 	KafkaConnectService_DeleteConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector"
 	KafkaConnectService_UpsertConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector"
 	KafkaConnectService_GetConnectorConfig_FullMethodName   = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig"
@@ -62,6 +63,10 @@ type KafkaConnectServiceClient interface {
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	ResumeConnector(ctx context.Context, in *ResumeConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// StopConnector implements the stop connector method, exposes a Kafka
+	// connect equivalent REST endpoint it stops the connector but does not
+	// delete the connector. All tasks for the connector are shut down completely
+	StopConnector(ctx context.Context, in *StopConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -157,6 +162,15 @@ func (c *kafkaConnectServiceClient) ResumeConnector(ctx context.Context, in *Res
 	return out, nil
 }
 
+func (c *kafkaConnectServiceClient) StopConnector(ctx context.Context, in *StopConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, KafkaConnectService_StopConnector_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *kafkaConnectServiceClient) DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_DeleteConnector_FullMethodName, in, out, opts...)
@@ -228,6 +242,10 @@ type KafkaConnectServiceServer interface {
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	ResumeConnector(context.Context, *ResumeConnectorRequest) (*emptypb.Empty, error)
+	// StopConnector implements the stop connector method, exposes a Kafka
+	// connect equivalent REST endpoint it stops the connector but does not
+	// delete the connector. All tasks for the connector are shut down completely
+	StopConnector(context.Context, *StopConnectorRequest) (*emptypb.Empty, error)
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *DeleteConnectorRequest) (*emptypb.Empty, error)
@@ -271,6 +289,9 @@ func (UnimplementedKafkaConnectServiceServer) PauseConnector(context.Context, *P
 }
 func (UnimplementedKafkaConnectServiceServer) ResumeConnector(context.Context, *ResumeConnectorRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResumeConnector not implemented")
+}
+func (UnimplementedKafkaConnectServiceServer) StopConnector(context.Context, *StopConnectorRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopConnector not implemented")
 }
 func (UnimplementedKafkaConnectServiceServer) DeleteConnector(context.Context, *DeleteConnectorRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnector not implemented")
@@ -444,6 +465,24 @@ func _KafkaConnectService_ResumeConnector_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KafkaConnectService_StopConnector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopConnectorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KafkaConnectServiceServer).StopConnector(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KafkaConnectService_StopConnector_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KafkaConnectServiceServer).StopConnector(ctx, req.(*StopConnectorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KafkaConnectService_DeleteConnector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteConnectorRequest)
 	if err := dec(in); err != nil {
@@ -572,6 +611,10 @@ var KafkaConnectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResumeConnector",
 			Handler:    _KafkaConnectService_ResumeConnector_Handler,
+		},
+		{
+			MethodName: "StopConnector",
+			Handler:    _KafkaConnectService_StopConnector_Handler,
 		},
 		{
 			MethodName: "DeleteConnector",

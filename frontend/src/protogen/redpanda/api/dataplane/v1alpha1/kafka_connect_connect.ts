@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, ListConnectorTopicsRequest, ListConnectorTopicsResponse, PauseConnectorRequest, ResetConnectorTopicsRequest, RestartConnectorRequest, ResumeConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
+import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, ListConnectorTopicsRequest, ListConnectorTopicsResponse, PauseConnectorRequest, ResetConnectorTopicsRequest, RestartConnectorRequest, ResumeConnectorRequest, StopConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
 import { Empty, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -108,6 +108,19 @@ export const KafkaConnectService = {
     resumeConnector: {
       name: "ResumeConnector",
       I: ResumeConnectorRequest,
+      O: Empty,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * StopConnector implements the stop connector method, exposes a Kafka
+     * connect equivalent REST endpoint it stops the connector but does not
+     * delete the connector. All tasks for the connector are shut down completely
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.StopConnector
+     */
+    stopConnector: {
+      name: "StopConnector",
+      I: StopConnectorRequest,
       O: Empty,
       kind: MethodKind.Unary,
     },

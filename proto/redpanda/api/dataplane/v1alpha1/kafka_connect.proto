@@ -171,6 +171,17 @@ message ResumeConnectorRequest {
   ];
 }
 
+message StopConnectorRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
 message GetConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -361,6 +372,14 @@ service KafkaConnectService {
   rpc ResumeConnector(ResumeConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"};
   }
+
+  // StopConnector implements the stop connector method, exposes a Kafka
+  // connect equivalent REST endpoint it stops the connector but does not
+  // delete the connector. All tasks for the connector are shut down completely
+  rpc StopConnector(StopConnectorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop"};
+  }
+
   // DeleteConnector implements the delete connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc DeleteConnector(DeleteConnectorRequest) returns (google.protobuf.Empty) {
