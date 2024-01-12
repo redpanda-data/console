@@ -61,7 +61,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.26.1
+      BUF_VERSION: 1.28.1
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin

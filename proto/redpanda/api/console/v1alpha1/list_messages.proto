@@ -12,7 +12,7 @@ message ListMessagesRequest {
     (buf.validate.field).string.max_len = 128
   ]; // Topic name.
 
-  sint64 start_offset = 2 [(buf.validate.field).sint32 = {
+  sint64 start_offset = 2 [(buf.validate.field).sint64 = {
     in: [
       -1,
       -2,
@@ -22,7 +22,7 @@ message ListMessagesRequest {
   }]; // Start offset. -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp.
 
   int64 start_timestamp = 3; // Start offset by unix timestamp in ms (only considered if start offset is set to -4).
-  int32 partition_id = 4 [(buf.validate.field).sint32 = {gte: -1}]; // -1 for all partition ids
+  int32 partition_id = 4 [(buf.validate.field).int32 = {gte: -1}]; // -1 for all partition ids
   int32 max_results = 5; // Maximum number of results
   string filter_interpreter_code = 6; // Base64 encoded code
   bytes enterprise = 7; // Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred.
