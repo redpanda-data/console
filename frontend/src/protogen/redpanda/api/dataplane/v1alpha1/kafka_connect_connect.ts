@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, PauseConnectorRequest, RestartConnectorRequest, ResumeConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
+import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, ListConnectorTopicsRequest, ListConnectorTopicsResponse, PauseConnectorRequest, ResetConnectorTopicsRequest, RestartConnectorRequest, ResumeConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
 import { Empty, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -144,6 +144,29 @@ export const KafkaConnectService = {
       name: "GetConnectorConfig",
       I: GetConnectorConfigRequest,
       O: GetConnectorConfigResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectorTopics
+     */
+    listConnectorTopics: {
+      name: "ListConnectorTopics",
+      I: ListConnectorTopicsRequest,
+      O: ListConnectorTopicsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
+     * the request body is empty.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ResetConnectorTopics
+     */
+    resetConnectorTopics: {
+      name: "ResetConnectorTopics",
+      I: ResetConnectorTopicsRequest,
+      O: Empty,
       kind: MethodKind.Unary,
     },
   }

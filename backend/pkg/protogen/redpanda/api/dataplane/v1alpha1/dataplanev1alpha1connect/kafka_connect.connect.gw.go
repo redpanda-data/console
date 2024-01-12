@@ -19,34 +19,38 @@ import (
 // service.
 type KafkaConnectServiceGatewayServer struct {
 	v1alpha1.UnimplementedKafkaConnectServiceServer
-	listConnectClusters connect_gateway.UnaryHandler[v1alpha1.ListConnectClustersRequest, v1alpha1.ListConnectClustersResponse]
-	getConnectCluster   connect_gateway.UnaryHandler[v1alpha1.GetConnectClusterRequest, v1alpha1.GetConnectClusterResponse]
-	listConnectors      connect_gateway.UnaryHandler[v1alpha1.ListConnectorsRequest, v1alpha1.ListConnectorsResponse]
-	createConnector     connect_gateway.UnaryHandler[v1alpha1.CreateConnectorRequest, v1alpha1.CreateConnectorResponse]
-	restartConnector    connect_gateway.UnaryHandler[v1alpha1.RestartConnectorRequest, emptypb.Empty]
-	getConnector        connect_gateway.UnaryHandler[v1alpha1.GetConnectorRequest, v1alpha1.GetConnectorResponse]
-	pauseConnector      connect_gateway.UnaryHandler[v1alpha1.PauseConnectorRequest, emptypb.Empty]
-	resumeConnector     connect_gateway.UnaryHandler[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
-	deleteConnector     connect_gateway.UnaryHandler[v1alpha1.DeleteConnectorRequest, emptypb.Empty]
-	upsertConnector     connect_gateway.UnaryHandler[v1alpha1.UpsertConnectorRequest, v1alpha1.UpsertConnectorResponse]
-	getConnectorConfig  connect_gateway.UnaryHandler[v1alpha1.GetConnectorConfigRequest, v1alpha1.GetConnectorConfigResponse]
+	listConnectClusters  connect_gateway.UnaryHandler[v1alpha1.ListConnectClustersRequest, v1alpha1.ListConnectClustersResponse]
+	getConnectCluster    connect_gateway.UnaryHandler[v1alpha1.GetConnectClusterRequest, v1alpha1.GetConnectClusterResponse]
+	listConnectors       connect_gateway.UnaryHandler[v1alpha1.ListConnectorsRequest, v1alpha1.ListConnectorsResponse]
+	createConnector      connect_gateway.UnaryHandler[v1alpha1.CreateConnectorRequest, v1alpha1.CreateConnectorResponse]
+	restartConnector     connect_gateway.UnaryHandler[v1alpha1.RestartConnectorRequest, emptypb.Empty]
+	getConnector         connect_gateway.UnaryHandler[v1alpha1.GetConnectorRequest, v1alpha1.GetConnectorResponse]
+	pauseConnector       connect_gateway.UnaryHandler[v1alpha1.PauseConnectorRequest, emptypb.Empty]
+	resumeConnector      connect_gateway.UnaryHandler[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
+	deleteConnector      connect_gateway.UnaryHandler[v1alpha1.DeleteConnectorRequest, emptypb.Empty]
+	upsertConnector      connect_gateway.UnaryHandler[v1alpha1.UpsertConnectorRequest, v1alpha1.UpsertConnectorResponse]
+	getConnectorConfig   connect_gateway.UnaryHandler[v1alpha1.GetConnectorConfigRequest, v1alpha1.GetConnectorConfigResponse]
+	listConnectorTopics  connect_gateway.UnaryHandler[v1alpha1.ListConnectorTopicsRequest, v1alpha1.ListConnectorTopicsResponse]
+	resetConnectorTopics connect_gateway.UnaryHandler[v1alpha1.ResetConnectorTopicsRequest, emptypb.Empty]
 }
 
 // NewKafkaConnectServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // KafkaConnectService service.
 func NewKafkaConnectServiceGatewayServer(svc KafkaConnectServiceHandler, opts ...connect_gateway.HandlerOption) *KafkaConnectServiceGatewayServer {
 	return &KafkaConnectServiceGatewayServer{
-		listConnectClusters: connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectClustersProcedure, svc.ListConnectClusters, opts...),
-		getConnectCluster:   connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectClusterProcedure, svc.GetConnectCluster, opts...),
-		listConnectors:      connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectorsProcedure, svc.ListConnectors, opts...),
-		createConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceCreateConnectorProcedure, svc.CreateConnector, opts...),
-		restartConnector:    connect_gateway.NewUnaryHandler(KafkaConnectServiceRestartConnectorProcedure, svc.RestartConnector, opts...),
-		getConnector:        connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorProcedure, svc.GetConnector, opts...),
-		pauseConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServicePauseConnectorProcedure, svc.PauseConnector, opts...),
-		resumeConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceResumeConnectorProcedure, svc.ResumeConnector, opts...),
-		deleteConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceDeleteConnectorProcedure, svc.DeleteConnector, opts...),
-		upsertConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceUpsertConnectorProcedure, svc.UpsertConnector, opts...),
-		getConnectorConfig:  connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorConfigProcedure, svc.GetConnectorConfig, opts...),
+		listConnectClusters:  connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectClustersProcedure, svc.ListConnectClusters, opts...),
+		getConnectCluster:    connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectClusterProcedure, svc.GetConnectCluster, opts...),
+		listConnectors:       connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectorsProcedure, svc.ListConnectors, opts...),
+		createConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceCreateConnectorProcedure, svc.CreateConnector, opts...),
+		restartConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceRestartConnectorProcedure, svc.RestartConnector, opts...),
+		getConnector:         connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorProcedure, svc.GetConnector, opts...),
+		pauseConnector:       connect_gateway.NewUnaryHandler(KafkaConnectServicePauseConnectorProcedure, svc.PauseConnector, opts...),
+		resumeConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceResumeConnectorProcedure, svc.ResumeConnector, opts...),
+		deleteConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceDeleteConnectorProcedure, svc.DeleteConnector, opts...),
+		upsertConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceUpsertConnectorProcedure, svc.UpsertConnector, opts...),
+		getConnectorConfig:   connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorConfigProcedure, svc.GetConnectorConfig, opts...),
+		listConnectorTopics:  connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectorTopicsProcedure, svc.ListConnectorTopics, opts...),
+		resetConnectorTopics: connect_gateway.NewUnaryHandler(KafkaConnectServiceResetConnectorTopicsProcedure, svc.ResetConnectorTopics, opts...),
 	}
 }
 
@@ -92,6 +96,14 @@ func (s *KafkaConnectServiceGatewayServer) UpsertConnector(ctx context.Context, 
 
 func (s *KafkaConnectServiceGatewayServer) GetConnectorConfig(ctx context.Context, req *v1alpha1.GetConnectorConfigRequest) (*v1alpha1.GetConnectorConfigResponse, error) {
 	return s.getConnectorConfig(ctx, req)
+}
+
+func (s *KafkaConnectServiceGatewayServer) ListConnectorTopics(ctx context.Context, req *v1alpha1.ListConnectorTopicsRequest) (*v1alpha1.ListConnectorTopicsResponse, error) {
+	return s.listConnectorTopics(ctx, req)
+}
+
+func (s *KafkaConnectServiceGatewayServer) ResetConnectorTopics(ctx context.Context, req *v1alpha1.ResetConnectorTopicsRequest) (*emptypb.Empty, error) {
+	return s.resetConnectorTopics(ctx, req)
 }
 
 // RegisterKafkaConnectServiceHandlerGatewayServer registers the Connect handlers for the

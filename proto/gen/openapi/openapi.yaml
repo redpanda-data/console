@@ -582,6 +582,13 @@ components:
             $ref: '#/components/schemas/ConnectCluster'
           type: array
       type: object
+    ListConnectorTopicsResponse:
+      properties:
+        topics:
+          items:
+            type: string
+          type: array
+      type: object
     ListConnectorsResponse:
       properties:
         connectors:
@@ -1545,13 +1552,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-        required: true
-        x-originalParamName: body
       responses:
         "401":
           content:
@@ -1635,13 +1635,6 @@ paths:
           required: true
           schema:
             type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-        required: true
-        x-originalParamName: body
       responses:
         "401":
           content:
@@ -1664,6 +1657,80 @@ paths:
       summary: |-
         ResumeConnector implements the resume connector method, exposes a Kafka
         connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
+    get:
+      operationId: KafkaConnectService_ListConnectorTopics
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+      tags:
+        - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
+    put:
+      operationId: KafkaConnectService_ResetConnectorTopics
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
+        the request body is empty.
       tags:
         - KafkaConnectService
   /v1alpha1/secret/{secret.id}:

@@ -250,6 +250,32 @@ func (s *Service) GetConnectorConfig(ctx context.Context, req *connect.Request[v
 	}), nil
 }
 
+// ListConnectorTopics implements the handler for the list connector topics
+// operation,There is no defined order in which the topics are returned and
+// consecutive calls may return the same topic names but in different order
+func (s *Service) ListConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error) {
+	connectorTopics, err := s.connectSvc.ListConnectorTopics(ctx, req.Msg.ClusterName, req.Msg.Name)
+	if err != nil {
+		return nil, s.matchError(err)
+	}
+	return connect.NewResponse(&v1alpha1.ListConnectorTopicsResponse{
+		Topics: connectorTopics.Topics,
+	}), nil
+}
+
+// ResetConnectorTopics implements the handler for the reset connector topics
+// operation, Resets the set of topic names that the connector has been using
+// since its creation or since the last time its set of active topics was
+// reset.
+func (s *Service) ResetConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ResetConnectorTopicsRequest]) (*connect.Response[emptypb.Empty], error) {
+	err := s.connectSvc.ResetConnectorTopics(ctx, req.Msg.ClusterName, req.Msg.Name)
+	if err != nil {
+		return nil, s.matchError(err)
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
 func (*Service) matchError(err *rest.Error) *connect.Error {
 	switch err.Status {
 	case http.StatusNotFound:

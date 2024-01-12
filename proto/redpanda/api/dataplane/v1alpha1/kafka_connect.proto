@@ -270,6 +270,32 @@ message GetConnectorConfigResponse {
   map<string, string> config = 1;
 }
 
+message ListConnectorTopicsRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message ListConnectorTopicsResponse {
+  repeated string topics = 1 [(google.api.field_behavior) = UNORDERED_LIST];
+}
+
+message ResetConnectorTopicsRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
 // KafkaConnectService is the service for the Kafka connect, it exposes the
 // Kafka Connect API, you can set multiple Kafka connect services and all of
 // them can be managed using this service definition, the request is not only
@@ -328,18 +354,12 @@ service KafkaConnectService {
   // PauseConnector implements the pause connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc PauseConnector(PauseConnectorRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"
-      body: "*"
-    };
+    option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"};
   }
   // ResumeConnector implements the resume connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc ResumeConnector(ResumeConnectorRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"
-      body: "*"
-    };
+    option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"};
   }
   // DeleteConnector implements the delete connector method, exposes a Kafka
   // connect equivalent REST endpoint
@@ -363,5 +383,16 @@ service KafkaConnectService {
       get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"
       response_body: "config"
     };
+  }
+
+  // ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+  rpc ListConnectorTopics(ListConnectorTopicsRequest) returns (ListConnectorTopicsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics"};
+  }
+
+  // ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
+  // the request body is empty.
+  rpc ResetConnectorTopics(ResetConnectorTopicsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset"};
   }
 }
