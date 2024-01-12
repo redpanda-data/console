@@ -158,15 +158,29 @@ func (s *Service) DeleteConnector(ctx context.Context, req *connect.Request[v1al
 	return res, nil
 }
 
-// RestartConnector implements the handler for the restart connector operation
+// RestartConnector implements the handler for the restart connector operation.
+// For now we only return 204 but don't account for the other response codes
+// and response bodies
 func (s *Service) RestartConnector(ctx context.Context, req *connect.Request[v1alpha1.RestartConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	if err := s.connectSvc.RestartConnector(ctx, req.Msg.ClusterName, req.Msg.Name, req.Msg.Options.IncludeTasks, req.Msg.Options.OnlyFailed); err != nil {
 		return nil, s.matchError(err)
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
-	// Set header to 204 accepted
+	// Set header to 204 no content
 	res.Header().Set("x-http-code", "204")
+	return res, nil
+}
+
+// StopConnector implements the handler for the stop connector operation
+func (s *Service) StopConnector(ctx context.Context, req *connect.Request[v1alpha1.StopConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
+	if err := s.connectSvc.StopConnector(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
+		return nil, s.matchError(err)
+	}
+
+	res := connect.NewResponse(&emptypb.Empty{})
+	// Set header to 202 accepted
+	res.Header().Set("x-http-code", "202")
 	return res, nil
 }
 

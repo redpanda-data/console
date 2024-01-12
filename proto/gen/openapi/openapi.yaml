@@ -1659,6 +1659,45 @@ paths:
         connect equivalent REST endpoint
       tags:
         - KafkaConnectService
+  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
+    put:
+      operationId: KafkaConnectService_StopConnector
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: |-
+        StopConnector implements the stop connector method, exposes a Kafka
+        connect equivalent REST endpoint it stops the connector but does not
+        delete the connector. All tasks for the connector are shut down completely
+      tags:
+        - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
       operationId: KafkaConnectService_ListConnectorTopics
