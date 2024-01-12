@@ -11,7 +11,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.4.3
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/cloudhut/common v0.10.0
-	github.com/cloudhut/connect-client v0.0.0-20230417124247-963e5bcdfee7
+	github.com/cloudhut/connect-client v0.0.0-20240111195309-ea134bd418d2
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
@@ -54,7 +54,7 @@ require (
 	go.uber.org/zap v1.26.0
 	go.vallahaye.net/connect-gateway v0.3.1
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
-	golang.org/x/net v0.19.0
+	golang.org/x/net v0.20.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917
@@ -171,7 +171,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
