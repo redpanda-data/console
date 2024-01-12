@@ -1454,3 +1454,126 @@ export class GetConnectorConfigResponse extends Message<GetConnectorConfigRespon
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectorTopicsRequest
+ */
+export class ListConnectorTopicsRequest extends Message<ListConnectorTopicsRequest> {
+  /**
+   * @generated from field: string cluster_name = 1;
+   */
+  clusterName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<ListConnectorTopicsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectorTopicsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorTopicsRequest {
+    return new ListConnectorTopicsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectorTopicsRequest {
+    return new ListConnectorTopicsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectorTopicsRequest {
+    return new ListConnectorTopicsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListConnectorTopicsRequest | PlainMessage<ListConnectorTopicsRequest> | undefined, b: ListConnectorTopicsRequest | PlainMessage<ListConnectorTopicsRequest> | undefined): boolean {
+    return proto3.util.equals(ListConnectorTopicsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectorTopicsResponse
+ */
+export class ListConnectorTopicsResponse extends Message<ListConnectorTopicsResponse> {
+  /**
+   * @generated from field: repeated string topics = 1;
+   */
+  topics: string[] = [];
+
+  constructor(data?: PartialMessage<ListConnectorTopicsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectorTopicsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topics", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorTopicsResponse {
+    return new ListConnectorTopicsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectorTopicsResponse {
+    return new ListConnectorTopicsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectorTopicsResponse {
+    return new ListConnectorTopicsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListConnectorTopicsResponse | PlainMessage<ListConnectorTopicsResponse> | undefined, b: ListConnectorTopicsResponse | PlainMessage<ListConnectorTopicsResponse> | undefined): boolean {
+    return proto3.util.equals(ListConnectorTopicsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ResetConnectorTopicsRequest
+ */
+export class ResetConnectorTopicsRequest extends Message<ResetConnectorTopicsRequest> {
+  /**
+   * @generated from field: string cluster_name = 1;
+   */
+  clusterName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<ResetConnectorTopicsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ResetConnectorTopicsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResetConnectorTopicsRequest {
+    return new ResetConnectorTopicsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResetConnectorTopicsRequest {
+    return new ResetConnectorTopicsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResetConnectorTopicsRequest {
+    return new ResetConnectorTopicsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResetConnectorTopicsRequest | PlainMessage<ResetConnectorTopicsRequest> | undefined, b: ResetConnectorTopicsRequest | PlainMessage<ResetConnectorTopicsRequest> | undefined): boolean {
+    return proto3.util.equals(ResetConnectorTopicsRequest, a, b);
+  }
+}
+
