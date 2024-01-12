@@ -2487,25 +2487,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
     }
 
-    .ant-table-wrapper {
-        .ant-pagination {
-            // curent antd has a bug: pagination position 'none' has no effect, so we fix it in css
-            display: none;
-        }
-    }
-
-
 }
-
-.ant-table.ant-table-small .ant-table-title,
-.ant-table.ant-table-small .ant-table-footer,
-.ant-table.ant-table-small .ant-table-thead>tr>th,
-.ant-table.ant-table-small .ant-table-tbody>tr>td,
-.ant-table.ant-table-small tfoot>tr>th,
-.ant-table.ant-table-small tfoot>tr>td {
-    // color: red;
-}
-
 
 // when a some container containing a radio button is animated,
 // it sometimes causes the inner part (the "dot") of a radio button to become misaligned

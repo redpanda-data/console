@@ -14,7 +14,6 @@ import { BrowserRouter } from 'react-router-dom';
 
 /* start global stylesheets */
 
-import 'antd/dist/antd.variable.min.css';
 import './index.scss';
 import './index-cloud-integration.scss';
 import './assets/fonts/open-sans.css';

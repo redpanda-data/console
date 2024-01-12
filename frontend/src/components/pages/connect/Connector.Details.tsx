@@ -14,11 +14,8 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
-import { uiSettings } from '../../../state/ui';
+import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { Code } from '../../../utils/tsxUtils';
-import { sortField } from '../../misc/common';
-import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import { ConfigPage } from './dynamic-ui/components';
@@ -26,7 +23,7 @@ import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
@@ -301,43 +298,28 @@ const ConfigOverviewTab = observer((p: {
                     </Heading>
                     <Text opacity=".5" fontWeight="normal">({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})</Text>
                 </Flex>
-                <KowlTable
-                    key="taskList"
-                    dataSource={connectClusterStore.getConnectorTasks(connectorName)}
+                <DataTable<ClusterConnectorTaskInfo>
+                    data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
+                    defaultPageSize={10}
+                    showPagination
                     columns={[
                         {
-                            title: 'Task',
-                            dataIndex: 'taskId',
-                            width: 200,
-                            sorter: sortField('taskId'),
-                            defaultSortOrder: 'ascend',
-                            render: (v) => <Code nowrap>Task-{v}</Code>,
+                            header: 'Task',
+                            accessorKey: 'taskId',
+                            size: 200,
+                            cell: ({row: {original: {taskId}}}) => <Code nowrap>Task-{taskId}</Code>,
                         },
                         {
-                            title: 'Status',
-                            dataIndex: 'state',
-                            sorter: sortField('state'),
-                            render: (_, r) => <TaskState observable={r} />,
-                            filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: (x) => String(x).toLowerCase() },
+                            header: 'Status',
+                            accessorKey: 'state',
+                            cell: ({row: {original}}) => <TaskState observable={original} />,
                         },
                         {
-                            title: 'Worker',
-                            dataIndex: 'workerId',
-                            sorter: sortField('workerId'),
-                            render: (_, r) => <Code nowrap>{r.workerId}</Code>,
-                            filterType: { type: 'enum' },
+                            header: 'Worker',
+                            accessorKey: 'workerId',
+                            cell: ({row: {original}}) => <Code nowrap>{original.workerId}</Code>,
                         }
                     ]}
-                    rowKey="taskId"
-                    search={{
-                        searchColumnIndex: 0,
-                        isRowMatch: (row, regex) =>
-                            regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId),
-                    }}
-                    observableSettings={uiSettings.kafkaConnect.connectorDetails}
-                    pagination={{
-                        defaultPageSize: 10,
-                    }}
                 />
             </Section>
 

@@ -11,19 +11,15 @@
 
 import React from 'react';
 import { observer } from 'mobx-react';
-import { sortField } from '../../../misc/common';
-import Table, { ColumnProps, TablePaginationConfig } from 'antd/lib/table';
 import { toJson } from '../../../../utils/jsonUtils';
 
-import type { GetAclOverviewResponse } from '../../../../state/restInterfaces';
-import { Alert, AlertIcon } from '@redpanda-data/ui';
+import type { AclRule, AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType, GetAclOverviewResponse } from '../../../../state/restInterfaces';
+import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 
 interface AclListProps {
     acl: Acls;
-    onChange?: (config: TablePaginationConfig) => void;
-    paginationConfig?: TablePaginationConfig;
 }
 
 function flatResourceList(store: Acls) {
@@ -36,17 +32,8 @@ function flatResourceList(store: Acls) {
     return flatResources;
 }
 
-export default observer(function ({ acl, onChange, paginationConfig }: AclListProps) {
+export default observer(function ({ acl }: AclListProps) {
     const resources = flatResourceList(acl);
-    const columns: ColumnProps<typeof resources[0]>[] = [
-        { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
-        { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
-        { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
-        { width: '160px', title: 'Operation', dataIndex: 'operation', sorter: sortField('operation') },
-        { width: 'auto', title: 'PatternType', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
-        { width: 'auto', title: 'Name', dataIndex: 'resourceName', sorter: sortField('resourceName') },
-        { width: '120px', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
-    ];
 
     return (
         <>
@@ -58,12 +45,52 @@ export default observer(function ({ acl, onChange, paginationConfig }: AclListPr
                 <AlertIcon />
                 There's no authorizer configured in your Kafka cluster
             </Alert> : null}
-            <Table
-                dataSource={resources}
-                columns={columns}
-                pagination={paginationConfig} onChange={onChange}
-                rowKey={(x) => x.eqKey}
-                rowClassName={() => 'pureDisplayRow'}
+            <DataTable<{
+                eqKey: string,
+                principal: string,
+                host: string,
+                operation: AclStrOperation,
+                permissionType: AclStrPermission,
+                resourceType: AclStrResourceType,
+                resourceName: string,
+                resourcePatternType: AclStrResourcePatternType,
+                acls: AclRule[]
+            }>
+                data={resources}
+                columns={[
+                    {
+                        size: 120,
+                        header: 'Resource',
+                        accessorKey: 'resourceType'
+                    },
+                    {
+                        size: 120,
+                        header: 'Permission',
+                        accessorKey: 'permissionType'
+                    },
+                    {
+                        header: 'Principal',
+                        accessorKey: 'principal'
+                    },
+                    {
+                        size: 160,
+                        header: 'Operation',
+                        accessorKey: 'operation'
+                    },
+                    {
+                        header: 'PatternType',
+                        accessorKey: 'resourcePatternType'
+                    },
+                    {
+                        header: 'Name',
+                        accessorKey: 'resourceName'
+                    },
+                    {
+                        size: 120,
+                        header: 'Host',
+                        accessorKey: 'host'
+                    },
+                ]}
             />
         </>
     );

@@ -10,8 +10,6 @@
  */
 
 import React, { PropsWithChildren, useState } from 'react';
-import { TablePaginationConfig } from 'antd/lib/table';
-import { CompareFn } from 'antd/lib/table/interface';
 import { observer } from 'mobx-react';
 import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
@@ -19,7 +17,6 @@ import env, { IsDev } from '../../utils/env';
 import { ZeroSizeWrapper } from '../../utils/tsxUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 
 export const Section = ((p: PropsWithChildren<{ title: string }>) =>
@@ -43,42 +40,6 @@ function constant(constantValue: JSX.Element): () => JSX.Element {
 }
 
 export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />)
-
-
-export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE, hideOnSinglePage?: boolean): TablePaginationConfig {
-    return {
-        position: ['none' as any, 'bottomRight'],
-        pageSize: pageSize,
-
-        showSizeChanger: true,
-        pageSizeOptions: ['10', '20', '50', '100', '200'],
-        showTotal: (total: number) => `Total ${total} items`,
-        hideOnSinglePage: hideOnSinglePage ?? false,
-    };
-}
-
-
-export function sortField<T, F extends (keyof T & string)>(field: F): CompareFn<T> {
-    return (a: T, b: T, _) => {
-
-        if (a[field] == null && b[field] == null) return 0;
-        if (a[field] != null && b[field] == null) return -1;
-        if (a[field] == null && b[field] != null) return 1;
-
-        if (typeof a[field] === 'string') {
-            const left = String(a[field]);
-            const right = String(b[field]);
-            return left.localeCompare(right, undefined, { numeric: true });
-        }
-        if (typeof a[field] === 'number') {
-            const left = +a[field];
-            const right = +b[field];
-            return left - right;
-        }
-
-        throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
-    }
-}
 
 /**
  * returns an array with the numbers from start, up to end (does not include end!)

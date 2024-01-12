@@ -11,23 +11,18 @@
 
 import React, { Component } from 'react';
 import { observer } from 'mobx-react';
-import { Table } from 'antd';
-import { ColumnProps } from 'antd/lib/table';
 import { api } from '../../../state/backendApi';
-import { makePaginationConfig } from '../../misc/common';
 import { Broker } from '../../../state/restInterfaces';
 import { transaction } from 'mobx';
-import { prettyBytesOrNA } from '../../../utils/utils';
+import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 import { SelectionInfoBar } from './components/StatisticsBar';
 import { PartitionSelection } from './ReassignPartitions';
-import { uiSettings } from '../../../state/ui';
+import { Checkbox, DataTable } from '@redpanda-data/ui';
+import { Row } from '@tanstack/react-table';
 
 
 @observer
 export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], partitionSelection: PartitionSelection }> {
-    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeBrokers ?? 10);
-
-
     brokers: Broker[];
 
     constructor(props: any) {
@@ -43,13 +38,6 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
 
         const selectedBrokers = this.props.selectedBrokerIds;
 
-        const columns: ColumnProps<Broker>[] = [
-            { title: 'ID', width: 40, dataIndex: 'brokerId' },
-            { title: 'Broker Address', width: undefined, dataIndex: 'address' },
-            { title: 'Rack', width: undefined, dataIndex: 'rack' },
-            { title: 'Used Space', width: 150, dataIndex: 'logDirSize', render: prettyBytesOrNA },
-        ];
-
         return <>
             <div style={{ margin: '2em 1em' }}>
                 <h2>Target Brokers</h2>
@@ -58,37 +46,51 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
 
-            <Table
-                style={{ margin: '0', }} size="middle"
-                pagination={this.pageConfig}
-                onChange={(p) => {
-                    if (p.pageSize) uiSettings.reassignment.pageSizeBrokers = p.pageSize;
-                    this.pageConfig.current = p.current;
-                    this.pageConfig.pageSize = p.pageSize;
-                }}
-
-                dataSource={this.brokers}
-                columns={columns}
-
-                onRow={record => ({
-                    onClick: () => selectedBrokers.includes(record.brokerId)
-                        ? selectedBrokers.remove(record.brokerId)
-                        : selectedBrokers.push(record.brokerId),
-                })}
-
-                rowKey="brokerId"
-                rowClassName={() => 'pureDisplayRow'}
-                rowSelection={{
-                    type: 'checkbox',
-                    selectedRowKeys: selectedBrokers.slice(),
-                    onChange: (keys, values) => {
-                        transaction(() => {
-                            selectedBrokers.splice(0);
-                            for (const broker of values)
-                                selectedBrokers.push(broker.brokerId);
-                        });
+            <DataTable<Broker>
+                data={this.brokers}
+                showPagination
+                columns={[
+                    {
+                        id: 'check',
+                        header: observer(() => {
+                            const selectedSet = new Set<number>(selectedBrokers)
+                            const allIdsSet = new Set<number>(this.brokers.map(({brokerId}) => brokerId))
+                            const allIsSelected = eqSet<number>(selectedSet, allIdsSet)
+                            return <Checkbox
+                                isIndeterminate={!allIsSelected && selectedSet.size > 0}
+                                isChecked={allIsSelected}
+                                onChange={() => {
+                                    if(!allIsSelected) {
+                                        transaction(() => {
+                                            selectedBrokers.splice(0);
+                                            for (const broker of this.brokers) {
+                                                selectedBrokers.push(broker.brokerId);
+                                            }
+                                        });
+                                    } else {
+                                        selectedBrokers.splice(0);
+                                    }
+                                }}
+                            />;
+                        }),
+                        cell: observer(({row: {original: broker}}: { row: Row<Broker> }) => {
+                            const checked = selectedBrokers.includes(broker.brokerId)
+                            return (
+                                <Checkbox
+                                    isChecked={checked}
+                                    onChange={() => selectedBrokers.includes(broker.brokerId)
+                                        ? selectedBrokers.remove(broker.brokerId)
+                                        : selectedBrokers.push(broker.brokerId)}
+                                />
+                            );
+                        }),
                     },
-                }} />
+                    { header: 'ID', accessorKey: 'brokerId' },
+                    { header: 'Broker Address', size: Infinity, accessorKey: 'address' },
+                    { header: 'Rack', accessorKey: 'rack' },
+                    { header: 'Used Space', accessorKey: 'logDirSize', cell: ({row: {original}}) => prettyBytesOrNA(original.logDirSize) },
+                ]}
+            />
         </>;
     }
 }

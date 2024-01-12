@@ -12,17 +12,13 @@
 /* eslint-disable react/jsx-key */
 
 import React, { Component, ReactNode } from 'react';
-import { Role, RoleBinding, Permission } from '../../../state/restInterfaces';
-import { Table } from 'antd';
+import { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
-import { sortField } from '../../misc/common';
 import '../../../utils/arrayExtensions';
-import { QuickTable, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { RoleBindingComponent } from './Admin.RoleBindings';
-
-
-
+import { DataTable } from '@redpanda-data/ui';
 
 
 @observer
@@ -32,22 +28,18 @@ export class AdminRoles extends Component<{}> {
         if (!api.adminInfo) return DefaultSkeleton;
         const roles = api.adminInfo.roles;
 
-        return <Table
-            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
-            showSorterTooltip={false}
-            dataSource={roles}
-            rowClassName={() => 'hoverLink'}
-            rowKey={x => x.name}
+        return <DataTable<Role>
+            enableSorting
+            data={roles}
+            expandRowByClick
+            subComponent={({row: {original: role}}) => <RoleComponent role={role}/>}
             columns={[
-                { width: 1, title: 'Role Name', dataIndex: 'name', sorter: sortField('name') },
-                { title: '', render: _r => (<span></span>) },
+                {
+                    accessorKey: 'name',
+                    header: 'Role Name',
+                    size: Infinity,
+                },
             ]}
-            // expandIconAsCell={false} broken after upgrade to antd4
-            expandable={{
-                expandIconColumnIndex: 0,
-                expandRowByClick: true,
-                expandedRowRender: (r: Role) => <RoleComponent key={r.name} role={r} />
-            }}
         />
     }
 }

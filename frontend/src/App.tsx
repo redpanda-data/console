@@ -10,7 +10,6 @@
 */
 
 /* start global stylesheets */
-import 'antd/dist/antd.variable.min.css';
 import './globals.scss';
 import './index.scss';
 import './index-cloud-integration.scss';

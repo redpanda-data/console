@@ -12,19 +12,16 @@
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { sortField } from '../../misc/common';
 import { computed, makeObservable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { SkipIcon } from '@primer/octicons-react';
 import { toJson } from '../../../utils/jsonUtils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
-import { QuotaType } from '../../../state/restInterfaces';
+import { QuotaResponseSetting, QuotaType } from '../../../state/restInterfaces';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Button, Result } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, DataTable, Result } from '@redpanda-data/ui';
 
 @observer
 class QuotasList extends PageComponent {
@@ -62,28 +59,45 @@ class QuotasList extends PageComponent {
         const formatRate = (x: undefined | number) => x ? prettyNumber(x) : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
         const formatPercentage = (x: undefined | number) => x ? `${x}%` : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
 
-        const columns: KowlColumnType<typeof resources[0]>[] = [
-            { width: '100px', title: 'Type', dataIndex: 'entityType', sorter: sortField('entityType'), defaultSortOrder: 'ascend' },
-            { width: 'auto', title: 'Name', dataIndex: 'entityName', sorter: sortField('entityName') },
-            { width: '100px', title: 'Producer Rate', render: (_, e) => formatBytes(e.settings.first(k => k.key == QuotaType.PRODUCER_BYTE_RATE)?.value) },
-            { width: '100px', title: 'Consumer Rate', render: (_, e) => formatBytes(e.settings.first(k => k.key == QuotaType.CONSUMER_BYTE_RATE)?.value) },
-            { width: '100px', title: 'Connection Creation Rate', render: (_, e) => formatRate(e.settings.first(k => k.key == QuotaType.CONNECTION_CREATION_RATE)?.value) },
-            { width: '100px', title: 'Request Handler', render: (_, e) => formatPercentage(e.settings.first(k => k.key == QuotaType.REQUEST_PERCENTAGE)?.value) },
-        ];
-
         return <>
             <PageContent>
                 <Section>
                     {warning}
 
-                    <KowlTable
-                        dataSource={resources}
-                        columns={columns}
-
-                        observableSettings={uiSettings.quotasList}
-
-                        rowKey={x => x.eqKey}
-                        rowClassName={() => 'pureDisplayRow'}
+                    <DataTable<{ eqKey: string, entityType: 'client-id' | 'user' | 'ip', entityName?: string | undefined, settings: QuotaResponseSetting[] }>
+                        data={resources}
+                        columns={[
+                            {
+                                size: 100, // Assuming '100px' translates to '100'
+                                header: 'Type',
+                                accessorKey: 'entityType'
+                            },
+                            {
+                                size: 100, // 'auto' width replaced with an example number
+                                header: 'Name',
+                                accessorKey: 'entityName'
+                            },
+                            {
+                                size: 100,
+                                header: 'Producer Rate',
+                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key == QuotaType.PRODUCER_BYTE_RATE)?.value)
+                            },
+                            {
+                                size: 100,
+                                header: 'Consumer Rate',
+                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key == QuotaType.CONSUMER_BYTE_RATE)?.value)
+                            },
+                            {
+                                size: 100,
+                                header: 'Connection Creation Rate',
+                                cell: ({row: {original}}) => formatRate(original.settings.first(k => k.key == QuotaType.CONNECTION_CREATION_RATE)?.value)
+                            },
+                            {
+                                size: 100,
+                                header: 'Request Handler',
+                                cell: ({row: {original}}) => formatPercentage(original.settings.first(k => k.key == QuotaType.REQUEST_PERCENTAGE)?.value)
+                            }
+                        ]}
                     />
                 </Section>
             </PageContent>

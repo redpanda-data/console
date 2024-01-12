@@ -14,7 +14,6 @@ import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
-import { makePaginationConfig } from '../../misc/common';
 import { Broker, Partition, PartitionReassignmentRequest, Topic, AlterPartitionReassignmentsPartitionResponse } from '../../../state/restInterfaces';
 import { motion } from 'framer-motion';
 import { animProps, } from '../../../utils/animationProps';
@@ -62,8 +61,6 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 @observer
 class ReassignPartitions extends PageComponent {
-    pageConfig = makePaginationConfig(15, true);
-
     @observable removeThrottleFromTopicsContent: string[] | null = null
 
     @observable currentStep = 0; // current page of the wizard

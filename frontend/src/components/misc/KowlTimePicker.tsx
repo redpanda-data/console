@@ -11,10 +11,9 @@
 
 import { Component } from 'react';
 import React from 'react';
-import { DatePicker, Radio } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
-import moment from 'moment';
+import { Box, DateTimeInput } from '@redpanda-data/ui';
 
 @observer
 export class KowlTimePicker extends Component<{
@@ -32,48 +31,16 @@ export class KowlTimePicker extends Component<{
     }
 
     render() {
-        let format = 'DD.MM.YYYY HH:mm:ss';
-        let current: moment.Moment = moment.utc(this.timestampUtcMs);
-
-        if (this.isLocalTimeMode) {
-            current = current?.local();
-            format += ' [(Local)]';
-        } else {
-            format += ' [(UTC)]';
-        }
-
         return (
-            <DatePicker
-                showTime={true}
-                allowClear={false}
-                renderExtraFooter={() => this.footer()}
-                format={format}
-                value={current}
-                onChange={(e) => {
-                    this.timestampUtcMs = e?.valueOf() ?? -1;
-                    this.props.onChange(this.timestampUtcMs);
-                }}
-                onOk={(e) => {
-                    this.timestampUtcMs = e.valueOf();
-                    this.props.onChange(this.timestampUtcMs);
-                }}
-                disabled={this.props.disabled}
-            />
-        );
-    }
-
-    footer() {
-        return (
-            <Radio.Group
-                value={this.isLocalTimeMode ? 'local' : 'utc'}
-                onChange={(e) => {
-                    // console.log("date mode changed", { newValue: e.target.value, isLocalMode: this.isLocalTimeMode });
-                    this.isLocalTimeMode = e.target.value == 'local';
-                }}
-            >
-                <Radio value="local">Local</Radio>
-                <Radio value="utc">UTC</Radio>
-            </Radio.Group>
+            <Box maxW={300}>
+                <DateTimeInput
+                    value={this.timestampUtcMs}
+                    onChange={(value) => {
+                        this.timestampUtcMs = value
+                        this.props.onChange(this.timestampUtcMs)
+                    }}
+                />
+            </Box>
         );
     }
 }

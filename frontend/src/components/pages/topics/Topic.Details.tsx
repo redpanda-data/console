@@ -19,7 +19,6 @@ import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { makePaginationConfig } from '../../misc/common';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { TopicQuickInfoStatistic } from './QuickInfo';
@@ -125,15 +124,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
             new TopicTab(topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
-                const paginationConfig = makePaginationConfig();
                 return (
                     <AclList
                         acl={api.topicAcls.get(t.topicName)}
-                        onChange={(pagination) => {
-                            if (pagination.pageSize) uiState.topicSettings.aclPageSize = pagination.pageSize;
-                            paginationConfig.current = pagination.current;
-                            paginationConfig.pageSize = pagination.pageSize;
-                        }}
                     />
                 );
             }, [() => {

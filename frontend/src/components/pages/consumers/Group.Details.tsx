@@ -10,25 +10,22 @@
  */
 
 import React, { Component } from 'react';
-import { Table } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { makePaginationConfig, sortField } from '../../misc/common';
-import { GroupDescription } from '../../../state/restInterfaces';
+import { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
-import { TablePaginationConfig } from 'antd/lib/table';
-import { OptionGroup, QuickTable, DefaultSkeleton, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
+import { CheckCircleTwoTone, FireTwoTone, HourglassTwoTone, QuestionCircleOutlined, WarningTwoTone } from '@ant-design/icons';
+import { Button, DefaultSkeleton, IconButton, numberToThousandsString, OptionGroup, QuickTable } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
-import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from './Modals';
+import { DeleteOffsetsModal, EditOffsetsModal, GroupDeletingMode, GroupOffset } from './Modals';
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Flex, Section, Tabs, Tag, Tooltip, Popover, Accordion, Text, Empty } from '@redpanda-data/ui';
+import { Accordion, DataTable, Empty, Flex, Popover, Section, Tabs, Tag, Text, Tooltip } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
@@ -218,15 +215,6 @@ class GroupByTopics extends Component<{
     onEditOffsets: (offsets: GroupOffset[]) => void;
     onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
 }> {
-    pageConfig: TablePaginationConfig;
-
-    constructor(props: any) {
-        super(props);
-        this.pageConfig = makePaginationConfig(30);
-        this.pageConfig.hideOnSinglePage = true;
-        this.pageConfig.showSizeChanger = false;
-    }
-
     render() {
         const topicLags = this.props.group.topicOffsets;
         const p = this.props;
@@ -307,55 +295,58 @@ class GroupByTopics extends Component<{
                             onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(g.topicName)}`)}
                         >View Topic</Button>
                     </Flex>,
-                description: <Table
-                    size="middle"
-                    showSorterTooltip={false}
-                    pagination={this.pageConfig}
-                    onChange={(pagination) => {
-                        if (pagination.pageSize) uiSettings.consumerGroupDetails.pageSize = pagination.pageSize;
-                        this.pageConfig.current = pagination.current;
-                        this.pageConfig.pageSize = pagination.pageSize;
-                    }}
-                    dataSource={g.partitions}
-                    rowKey={r => r.partitionId}
-                    rowClassName={(r) => (r.assignedMember) ? '' : 'consumerGroupNoMemberAssigned'}
+                description: <DataTable<{ topicName: string, partitionId: number, groupOffset: number, highWaterMark: number, lag: number, assignedMember: GroupMemberDescription | undefined, id: string | undefined, clientId: string | undefined, host: string | undefined }>
+                    data={g.partitions}
                     columns={[
-                        { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         {
-                            width: 'auto', title: 'Assigned Member', dataIndex: 'id', sorter: sortField('id'),
-                            render: (t, r) => (r.assignedMember ?
-                                renderMergedID(r.id, r.clientId) :
-                                <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> No assigned member</span>)
+                            size: 100,
+                            header: 'Partition',
+                            accessorKey: 'partitionId',
                         },
                         {
-                            width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
-                            render: (t, r) => (r.host ??
+                            size: Infinity,
+                            header: 'Assigned Member',
+                            accessorKey: 'id',
+                            cell: ({row: {original: {assignedMember, id, clientId}}}) => (assignedMember ?
+                                renderMergedID(id, clientId) :
+                                <span style={{ margin: '0 3px' }}><SkipIcon /> No assigned member</span>)
+                        },
+                        {
+                            header: 'Host',
+                            accessorKey: 'host',
+                            cell: ({row: {original: {host}}}) => (host ??
                                 <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /></span>)
                         },
-                        { width: 120, title: 'Log End Offset', dataIndex: 'highWaterMark', render: v => numberToThousandsString(v), sorter: sortField('highWaterMark') },
-                        { width: 120, title: 'Group Offset', dataIndex: 'groupOffset', render: v => numberToThousandsString(v), sorter: sortField('groupOffset') },
-                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => ShortNum({ value: v, tooltip: true }), sorter: sortField('lag') },
                         {
-                            width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
-                            // filters: [],
-                            // filterDropdownVisible: false,
-                            // onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
-                            // filterIcon: (_) => {
-                            //     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
-                            //         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
-                            //     </Tooltip>
-                            // },
-                            render: (text, record) => <Flex pr={2} gap={1}>
-                                <IconButton onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
+                            size: 120,
+                            header: 'Log End Offset',
+                            accessorKey: 'highWaterMark',
+                            cell: ({row: {original}}) => numberToThousandsString(original.highWaterMark) },
+                        {
+                            size: 120,
+                            header: 'Group Offset',
+                            accessorKey: 'groupOffset',
+                            cell: ({row: {original}}) => numberToThousandsString(original.groupOffset) },
+                        {
+                            size: 80,
+                            header: 'Lag',
+                            accessorKey: 'lag',
+                            cell: ({row: {original}}) => ShortNum({ value: original.lag, tooltip: true }) },
+                        {
+                            size: 1,
+                            header: '',
+                            id: 'action',
+                            cell: ({row: {original}}) => <Flex pr={2} gap={1}>
+                                <IconButton onClick={() => p.onEditOffsets([original])} disabledReason={cannotEditGroupReason(this.props.group)}>
                                     <PencilIcon />
                                 </IconButton>
-                                <IconButton onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
+                                <IconButton onClick={() => p.onDeleteOffsets([original], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
                                     <TrashIcon />
                                 </IconButton>
                             </Flex>,
                         },
                     ]}
-                />
+                />,
             }
         });
 
@@ -380,15 +371,6 @@ class GroupByTopics extends Component<{
 
 @observer
 class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartitionsWithLag: boolean }> {
-    pageConfig: TablePaginationConfig;
-
-    constructor(props: any) {
-        super(props);
-        this.pageConfig = makePaginationConfig(30);
-        this.pageConfig.hideOnSinglePage = true;
-        this.pageConfig.showSizeChanger = false;
-    }
-
     render() {
         const topicLags = this.props.group.topicOffsets;
         const p = this.props;
@@ -438,22 +420,28 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                             <Tag variant="solid" colorScheme="brand">lag: {totalLag}</Tag>
                         </Tooltip>
                     </Flex>,
-                    description: <Table
-                        size="small"
-                        pagination={this.pageConfig}
-                        dataSource={assignmentsFlat}
-                        rowKey={r => r.topicName + r.partitionId}
+                    description: <DataTable<{topicName: string, partitionId: number, partitionLag: number}>
+                        data={assignmentsFlat}
                         columns={[
                             {
-                                width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
-                                render: (_, record) => <div
+                                size: 130,
+                                header: 'Topic',
+                                accessorKey: 'topicName',
+                                cell: ({row: {original: {topicName}}}) => <div
                                     className="hoverLink"
-                                    onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(record.topicName)}`)}>
-                                    {record.topicName}
+                                    onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}`)}>
+                                    {topicName}
                                 </div>
                             },
-                            {title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId')},
-                            {title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend'},
+                            {
+                                header: 'Partition',
+                                accessorKey: 'partitionId'
+                            },
+                            {
+                                header: 'Lag',
+                                accessorKey: 'partitionLag',
+                                cell: ({row: {original: {partitionLag}}}) => numberToThousandsString(partitionLag),
+                            },
                         ]}
                     />
                 })

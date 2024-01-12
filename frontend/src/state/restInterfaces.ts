@@ -204,8 +204,8 @@ export interface GetTopicMessagesResponse {
 
 
 export interface KafkaError {
-    code: number,
-    message: string,
+    code: number;
+    message: string;
     description: string;
 }
 
@@ -233,7 +233,7 @@ export type ConfigEntryExtended = ConfigEntry & {
     currentValue: string | number | null | undefined;
 };
 
-interface ConfigEntrySynonym {
+export interface ConfigEntrySynonym {
     name: string,
     value: string | null,
     source: string,

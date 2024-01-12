@@ -14,16 +14,13 @@ import { ConfigEntry } from '../../../../state/restInterfaces';
 import { api } from '../../../../state/backendApi';
 import { computed, makeObservable, observable } from 'mobx';
 import { QuickTable } from '../../../../utils/tsxUtils';
-import { sortField } from '../../../misc/common';
-import { uiSettings } from '../../../../state/ui';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { ReassignmentState } from '../logic/reassignmentTracker';
 import { observer, useLocalObservable } from 'mobx-react';
 import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
-import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
-import { Box, Button, Checkbox, createStandaloneToast, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverCloseButton, PopoverArrow, PopoverContent, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Text, ToastId, UnorderedList, useDisclosure, useToast, PopoverFooter, PopoverBody, ButtonGroup, Skeleton } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Checkbox, createStandaloneToast, DataTable, Flex, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverFooter, PopoverHeader, PopoverTrigger, Progress, redpandaTheme, redpandaToastOptions, Skeleton, Text, ToastId, UnorderedList, useDisclosure, useToast } from '@redpanda-data/ui';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -50,39 +47,6 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
     }
 
     render() {
-        const columnsActiveReassignments: KowlColumnType<ReassignmentState>[] = [
-            {
-                title: 'Topic', width: '1%',
-                render: (v, t) => <TopicNameCol state={t} />,
-                sorter: sortField('topicName')
-            },
-            {
-                title: 'Progress', // ProgressBar, Percent, ETA
-                render: (v, t) => <ProgressCol state={t} />,
-                sorter: (a, b) => {
-                    if (a.progressPercent == null && b.progressPercent != null) return 1;
-                    if (a.progressPercent != null && b.progressPercent == null) return -1;
-                    if (a.progressPercent == null || b.progressPercent == null) return 0;
-                    return a.progressPercent - b.progressPercent;
-                }
-            },
-            {
-                title: 'ETA', width: '100px', align: 'right',
-                render: (v, t) => <ETACol state={t} />,
-                sorter: (a, b) => {
-                    if (a.estimateCompletionTime == null && b.estimateCompletionTime != null) return 1;
-                    if (a.estimateCompletionTime != null && b.estimateCompletionTime == null) return -1;
-                    if (a.estimateCompletionTime == null || b.estimateCompletionTime == null) return 0;
-                    return a.estimateCompletionTime.getTime() - b.estimateCompletionTime.getTime();
-                },
-                defaultSortOrder: 'ascend'
-            },
-            {
-                title: 'Brokers', width: '0.1%',
-                render: (v, t) => <BrokersCol state={t} />,
-            },
-        ];
-
         const minThrottle = this.minThrottle;
         const throttleText = minThrottle === undefined
             ? <>Throttle: Not set (unlimited)</>
@@ -102,22 +66,36 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             </div>
 
             {/* Table */}
-            <KowlTable
-                className="activeReassignments"
-
-                dataSource={currentReassignments}
-                columns={columnsActiveReassignments}
-
-                rowKey={r => r.topicName}
-                onRow={(state) => {
-                    return {
-                        onClick: _e => this.reassignmentDetails = state,
-                    };
+            <DataTable<ReassignmentState>
+                data={currentReassignments}
+                defaultPageSize={5}
+                enableSorting={false}
+                onRow={(row) => {
+                    this.reassignmentDetails = row.original
                 }}
-                pagination={this.pageConfig}
-                observableSettings={uiSettings.reassignment.activeReassignments}
-
-                emptyText={<div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>}
+                columns={[
+                    {
+                        header: 'Topic',
+                        size: 1,
+                        cell: ({ row: { original } }) => <TopicNameCol state={original} />
+                    },
+                    {
+                        header: 'Progress',
+                        size: Infinity,
+                        cell: ({ row: { original } }) => <ProgressCol state={original} />
+                    },
+                    {
+                        header: 'ETA',
+                        size: 100,
+                        cell: ({ row: { original } }) => <ETACol state={original} />
+                    },
+                    {
+                        header: 'Brokers',
+                        size: 1,
+                        cell: ({ row: { original } }) => <BrokersCol state={original} />
+                    }
+                ]}
+                emptyText="No reassignments currently in progress"
             />
 
             <ReassignmentDetailsDialog state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />

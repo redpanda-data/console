@@ -10,7 +10,6 @@
  */
 
 const colors = {
-    antdDefaultBlue: '#1890FF',
     green: '#25B864', // chosen to make it really obvious when changing the theme-color works.
     debugRed: '#FF0000',
 
