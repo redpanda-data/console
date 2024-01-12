@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -36,6 +37,8 @@ type APISuite struct {
 	suite.Suite
 
 	redpandaContainer *redpanda.Container
+	kConnectContainer testcontainers.Container
+	network           *testcontainers.DockerNetwork
 	kafkaClient       *kgo.Client
 	kafkaAdminClient  *kadm.Client
 
@@ -53,26 +56,48 @@ func (s *APISuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	// 1. Start Redpanda Docker container
-	container, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.2.18"))
+	// 1. setup docker network
+	ntw, err := network.New(ctx)
+
+	require.NoError(err)
+
+	s.network = ntw
+
+	// 2. Start Redpanda Docker container
+	container, err := redpanda.RunContainer(ctx,
+		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+		network.WithNetwork([]string{"redpanda"}, s.network),
+		redpanda.WithListener("redpanda:29092"),
+	)
 	require.NoError(err)
 	s.redpandaContainer = container
 
-	// 2. Retrieve connection details
+	// 2. Retrieve Redpanda connection details
 	seedBroker, err := container.KafkaSeedBroker(ctx)
 	require.NoError(err)
 	schemaRegistryAddress, err := container.SchemaRegistryAddress(ctx)
 	require.NoError(err)
 
+	require.NoError(err)
+
 	s.testSeedBroker = seedBroker
 
-	// 3. Create Kafka clients
+	// 3. Start Kafka Connect Docker container
+	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(ctx, s.network.Name, []string{"redpanda:29092"})
+	require.NoError(err)
+
+	s.kConnectContainer = kConnectContainer
+
+	// 4. Create Kafka clients
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	// 4. Configure & start Redpanda Console
+	kConnectClusterURL, err := kConnectContainer.PortEndpoint(ctx, "8083/tcp", "http")
+	require.NoError(err)
+
+	// 5. Configure & start Redpanda Console
 	httpListenPort := rand.Intn(50000) + 10000
 	s.cfg = &config.Config{}
 	s.cfg.SetDefaults()
@@ -86,6 +111,16 @@ func (s *APISuite) SetupSuite() {
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	s.cfg.Kafka.Schema.Enabled = true
 	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
+
+	s.cfg.Connect = config.Connect{
+		Enabled: true,
+		Clusters: []config.ConnectCluster{
+			{
+				Name: "connect-cluster",
+				URL:  kConnectClusterURL,
+			},
+		},
+	}
 	s.api = api.New(s.cfg)
 
 	go s.api.Start()
@@ -109,7 +144,13 @@ func (s *APISuite) TearDownSuite() {
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
+	// 1. Terminate Kafka Connect container
+	assert.NoError(s.kConnectContainer.Terminate(ctx))
+	// 2. Terminate Redpanda container
 	assert.NoError(s.redpandaContainer.Terminate(ctx))
+	// 3. Remove docker network
+	assert.NoError(s.network.Remove(ctx))
+	// 4. Stop API
 	assert.NoError(s.api.Stop(ctx))
 }
 
