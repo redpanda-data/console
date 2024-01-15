@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.3.9 / 2024-01-15
+
+- [SECURITY] Update update github.com/go-git/go-git/v5 to address CVE-2023-4956.
+
 ## v2.3.8 / 2023-12-06
 
 - [SECURITY] Update a dependency that may allow to run a DoS attack
