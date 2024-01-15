@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.3.9 / 2024-01-15
+
+- [SECURITY] Update update github.com/go-git/go-git/v5 to address CVE-2023-4956.
+
+## v2.3.8 / 2023-12-06
+
+- [SECURITY] Update a dependency that may allow to run a DoS attack
+
+## v2.3.7 / 2023-11-17
+
+- [SECURITY] Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363. The previous v2.3.6 did in fact not fix this CVE.
+
+## v2.3.6 / 2023-11-16
+
+- [SECURITY] ~~Build new Docker image running with the latest openssl/libcrypto3 lib which addresses CVE-2023-5363~~
+
 ## v2.3.5 / 2023-10-16
 
 - [FIX] Add common protobuf types to support automatic deserialization.
