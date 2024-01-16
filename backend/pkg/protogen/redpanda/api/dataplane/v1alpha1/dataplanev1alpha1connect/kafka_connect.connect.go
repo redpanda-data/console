@@ -102,8 +102,10 @@ var (
 // KafkaConnectServiceClient is a client for the redpanda.api.dataplane.v1alpha1.KafkaConnectService
 // service.
 type KafkaConnectServiceClient interface {
+	// ListConnectClusters implements the list clusters method, list connect
+	// clusters available in the console configuration
 	ListConnectClusters(context.Context, *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error)
-	// GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(context.Context, *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
@@ -134,7 +136,7 @@ type KafkaConnectServiceClient interface {
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
-	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(context.Context, *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error)
@@ -335,8 +337,10 @@ func (c *kafkaConnectServiceClient) ResetConnectorTopics(ctx context.Context, re
 // KafkaConnectServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService service.
 type KafkaConnectServiceHandler interface {
+	// ListConnectClusters implements the list clusters method, list connect
+	// clusters available in the console configuration
 	ListConnectClusters(context.Context, *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error)
-	// GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(context.Context, *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
@@ -367,7 +371,7 @@ type KafkaConnectServiceHandler interface {
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
-	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(context.Context, *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error)

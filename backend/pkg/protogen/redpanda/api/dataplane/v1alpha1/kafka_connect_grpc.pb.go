@@ -41,8 +41,10 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KafkaConnectServiceClient interface {
+	// ListConnectClusters implements the list clusters method, list connect
+	// clusters available in the console configuration
 	ListConnectClusters(ctx context.Context, in *ListConnectClustersRequest, opts ...grpc.CallOption) (*ListConnectClustersResponse, error)
-	// GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(ctx context.Context, in *GetConnectClusterRequest, opts ...grpc.CallOption) (*GetConnectClusterResponse, error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
@@ -73,7 +75,7 @@ type KafkaConnectServiceClient interface {
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(ctx context.Context, in *UpsertConnectorRequest, opts ...grpc.CallOption) (*UpsertConnectorResponse, error)
-	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(ctx context.Context, in *GetConnectorConfigRequest, opts ...grpc.CallOption) (*GetConnectorConfigResponse, error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(ctx context.Context, in *ListConnectorTopicsRequest, opts ...grpc.CallOption) (*ListConnectorTopicsResponse, error)
@@ -220,8 +222,10 @@ func (c *kafkaConnectServiceClient) ResetConnectorTopics(ctx context.Context, in
 // All implementations must embed UnimplementedKafkaConnectServiceServer
 // for forward compatibility
 type KafkaConnectServiceServer interface {
+	// ListConnectClusters implements the list clusters method, list connect
+	// clusters available in the console configuration
 	ListConnectClusters(context.Context, *ListConnectClustersRequest) (*ListConnectClustersResponse, error)
-	// GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(context.Context, *GetConnectClusterRequest) (*GetConnectClusterResponse, error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
@@ -252,7 +256,7 @@ type KafkaConnectServiceServer interface {
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(context.Context, *UpsertConnectorRequest) (*UpsertConnectorResponse, error)
-	// GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(context.Context, *GetConnectorConfigRequest) (*GetConnectorConfigResponse, error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(context.Context, *ListConnectorTopicsRequest) (*ListConnectorTopicsResponse, error)

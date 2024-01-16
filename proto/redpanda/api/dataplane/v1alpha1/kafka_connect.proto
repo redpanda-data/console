@@ -313,17 +313,29 @@ message ResetConnectorTopicsRequest {
 // proxied but also enriched with better error handling and custom
 // documentation and configuration
 service KafkaConnectService {
+  // ListConnectClusters implements the list clusters method, list connect
+  // clusters available in the console configuration
   rpc ListConnectClusters(ListConnectClustersRequest) returns (ListConnectClustersResponse) {
     option (google.api.http) = {get: "/v1alpha1/kafka-connect/clusters"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List connect clusters"
+      description: "List connect clusters available for being consumed by the console's kafka-connect service."
+    };
   }
-  // GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+
+  // GetConnectCluster implements the get cluster info method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc GetConnectCluster(GetConnectClusterRequest) returns (GetConnectClusterResponse) {
     option (google.api.http) = {
       get: "/v1alpha1/kafka-connect/clusters/{cluster_name}"
       response_body: "cluster"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get connect cluster"
+      description: "Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file."
+    };
   }
+
   // ListConnectors implements the list connectors method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
@@ -333,6 +345,7 @@ service KafkaConnectService {
       description: "List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file."
     };
   }
+
   // CreateConnector implements the create connector method, and exposes an
   // equivalent REST endpoint as the Kafka connect API endpoint
   rpc CreateConnector(CreateConnectorRequest) returns (CreateConnectorResponse) {
@@ -343,9 +356,10 @@ service KafkaConnectService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create connector"
-      description: "Attempt to create a connector with the specific configuration"
+      description: "Attempt to create a connector with the specific configuration."
     };
   }
+
   // RestartConnector implements the restart connector method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc RestartConnector(RestartConnectorRequest) returns (google.protobuf.Empty) {
@@ -353,7 +367,12 @@ service KafkaConnectService {
       post: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart"
       body: "options"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Restart connector"
+      description: "Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options."
+    };
   }
+
   // GetConnector implements the get connector method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse) {
@@ -361,16 +380,29 @@ service KafkaConnectService {
       get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"
       response_body: "connector"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get connector"
+      description: "Get information about a connector in a specific cluster."
+    };
   }
+
   // PauseConnector implements the pause connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc PauseConnector(PauseConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Pause connector"
+      description: "Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous."
+    };
   }
   // ResumeConnector implements the resume connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc ResumeConnector(ResumeConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Resume connector"
+      description: "Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused."
+    };
   }
 
   // StopConnector implements the stop connector method, exposes a Kafka
@@ -378,12 +410,20 @@ service KafkaConnectService {
   // delete the connector. All tasks for the connector are shut down completely
   rpc StopConnector(StopConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Stop connector"
+      description: "Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely."
+    };
   }
 
   // DeleteConnector implements the delete connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc DeleteConnector(DeleteConnectorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete connector"
+      description: "Delete a connector forcefully stoping all tasks and deleting its configuration."
+    };
   }
 
   // UpsertConector implements the update or create connector method, it
@@ -394,24 +434,40 @@ service KafkaConnectService {
       body: "config"
       response_body: "connector"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Upsert connector configuration"
+      description: "Create a new connector using the given configuration, or update the configuration for an existing connector. Returns information about the connector after the change has been made."
+    };
   }
 
-  // GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+  // GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
   rpc GetConnectorConfig(GetConnectorConfigRequest) returns (GetConnectorConfigResponse) {
     option (google.api.http) = {
       get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"
       response_body: "config"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get connector configuration"
+      description: "Get the configuration for the connector."
     };
   }
 
   // ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
   rpc ListConnectorTopics(ListConnectorTopicsRequest) returns (ListConnectorTopicsResponse) {
     option (google.api.http) = {get: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List connector topics"
+      description: "Returns a list of connector topic names, it will return an empty list if the connector is not running."
+    };
   }
 
   // ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
   // the request body is empty.
   rpc ResetConnectorTopics(ResetConnectorTopicsRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {put: "/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reset connector topics"
+      description: "Resets the set of topic names that the connector has been using."
+    };
   }
 }

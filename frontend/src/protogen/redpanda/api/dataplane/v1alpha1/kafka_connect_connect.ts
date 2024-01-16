@@ -19,6 +19,9 @@ export const KafkaConnectService = {
   typeName: "redpanda.api.dataplane.v1alpha1.KafkaConnectService",
   methods: {
     /**
+     * ListConnectClusters implements the list clusters method, list connect
+     * clusters available in the console configuration
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectClusters
      */
     listConnectClusters: {
@@ -28,7 +31,7 @@ export const KafkaConnectService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+     * GetConnectCluster implements the get cluster info method, exposes a Kafka
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectCluster
@@ -149,7 +152,7 @@ export const KafkaConnectService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+     * GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig
      */
