@@ -1249,6 +1249,7 @@ paths:
         - ACLService
   /v1alpha1/kafka-connect/clusters:
     get:
+      description: List connect clusters available for being consumed by the console's kafka-connect service.
       operationId: KafkaConnectService_ListConnectClusters
       responses:
         "401":
@@ -1269,10 +1270,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
+      summary: List connect clusters
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}:
     get:
+      description: Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file.
       operationId: KafkaConnectService_GetConnectCluster
       parameters:
         - in: path
@@ -1299,9 +1302,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
-        Connect equivalent REST endpoint
+      summary: Get connect cluster
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors:
@@ -1342,7 +1343,7 @@ paths:
       tags:
         - KafkaConnectService
     post:
-      description: Attempt to create a connector with the specific configuration
+      description: Attempt to create a connector with the specific configuration.
       operationId: KafkaConnectService_CreateConnector
       parameters:
         - in: path
@@ -1381,6 +1382,7 @@ paths:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}:
     delete:
+      description: Delete a connector forcefully stoping all tasks and deleting its configuration.
       operationId: KafkaConnectService_DeleteConnector
       parameters:
         - in: path
@@ -1412,12 +1414,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        DeleteConnector implements the delete connector method, exposes a Kafka
-        connect equivalent REST endpoint
+      summary: Delete connector
       tags:
         - KafkaConnectService
     get:
+      description: Get information about a connector in a specific cluster.
       operationId: KafkaConnectService_GetConnector
       parameters:
         - in: path
@@ -1449,13 +1450,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        GetConnector implements the get connector method, exposes a Kafka
-        Connect equivalent REST endpoint
+      summary: Get connector
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
     get:
+      description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
       parameters:
         - in: path
@@ -1487,10 +1487,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+      summary: Get connector configuration
       tags:
         - KafkaConnectService
     put:
+      description: Create a new connector using the given configuration, or update the configuration for an existing connector. Returns information about the connector after the change has been made.
       operationId: KafkaConnectService_UpsertConnector
       parameters:
         - in: path
@@ -1533,13 +1534,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        UpsertConector implements the update or create connector method, it
-        exposes a kafka connect equivalent REST endpoint
+      summary: Upsert connector configuration
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
+      description: Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous.
       operationId: KafkaConnectService_PauseConnector
       parameters:
         - in: path
@@ -1571,13 +1571,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        PauseConnector implements the pause connector method, exposes a Kafka
-        connect equivalent REST endpoint
+      summary: Pause connector
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
+      description: Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options.
       operationId: KafkaConnectService_RestartConnector
       parameters:
         - in: path
@@ -1616,13 +1615,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        RestartConnector implements the restart connector method, exposes a Kafka
-        Connect equivalent REST endpoint
+      summary: Restart connector
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
+      description: Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused.
       operationId: KafkaConnectService_ResumeConnector
       parameters:
         - in: path
@@ -1654,13 +1652,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        ResumeConnector implements the resume connector method, exposes a Kafka
-        connect equivalent REST endpoint
+      summary: Resume connector
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
+      description: Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely.
       operationId: KafkaConnectService_StopConnector
       parameters:
         - in: path
@@ -1692,14 +1689,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        StopConnector implements the stop connector method, exposes a Kafka
-        connect equivalent REST endpoint it stops the connector but does not
-        delete the connector. All tasks for the connector are shut down completely
+      summary: Stop connector
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
+      description: Returns a list of connector topic names, it will return an empty list if the connector is not running.
       operationId: KafkaConnectService_ListConnectorTopics
       parameters:
         - in: path
@@ -1731,11 +1726,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+      summary: List connector topics
       tags:
         - KafkaConnectService
   /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
+      description: Resets the set of topic names that the connector has been using.
       operationId: KafkaConnectService_ResetConnectorTopics
       parameters:
         - in: path
@@ -1767,9 +1763,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: |-
-        ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
-        the request body is empty.
+      summary: Reset connector topics
       tags:
         - KafkaConnectService
   /v1alpha1/secret/{secret.id}:
