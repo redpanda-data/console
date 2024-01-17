@@ -558,10 +558,10 @@ export class ConnectorPropertiesStore {
                         console.log('updateJSON: getting config object');
                         const configObj = this.getConfigObject();
                         const jsonText = JSON.stringify(configObj);
-                        return [configObj, jsonText] as [object, string];
+                        return { configObj, jsonText };
                     },
                     (p) => {
-                        const config = p[0];
+                        const config = p.configObj;
                         console.log('updateJSON: reaction, updating json text');
                         this._jsonText = JSON.stringify(config, undefined, 4);
                     },
@@ -576,10 +576,10 @@ export class ConnectorPropertiesStore {
                         console.log('validateOnChange: getting config object');
                         const configObj = this.getConfigObject();
                         const jsonText = JSON.stringify(configObj);
-                        return [configObj, jsonText] as [object, string];
+                        return { configObj, jsonText };
                     },
                     (p) => {
-                        const config = p[0];
+                        const config = p.configObj;
                         console.log('updateJSON: calling validate');
                         this.validate(config);
                     },
