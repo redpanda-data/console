@@ -27,7 +27,6 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Box, Button, Checkbox, DataTable, Flex, Icon, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
 import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
@@ -92,7 +91,7 @@ class TopicList extends PageComponent {
         if (!api.topics) return DefaultSkeleton;
 
         let topics = api.topics;
-        if (uiSettings.topicList.hideInternalTopics || isServerless()) {
+        if (uiSettings.topicList.hideInternalTopics) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
         topics = topics.filter(x => x.topicName.toLowerCase().includes(uiSettings.topicList.quickSearch.toLowerCase()));
@@ -131,14 +130,13 @@ class TopicList extends PageComponent {
                             Create topic
                         </Button>
 
-                        {!isServerless() &&
-                            <Checkbox
-                                isChecked={!uiSettings.topicList.hideInternalTopics}
-                                onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
-                                style={{ marginLeft: 'auto' }}>
-                                Show internal topics
-                            </Checkbox>
-                        }
+                        <Checkbox
+                            isChecked={!uiSettings.topicList.hideInternalTopics}
+                            onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
+                            style={{ marginLeft: 'auto' }}>
+                            Show internal topics
+                        </Checkbox>
+
                         <this.CreateTopicModal />
                     </div>
                     <Box my={4}>
