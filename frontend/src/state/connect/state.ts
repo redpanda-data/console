@@ -422,6 +422,8 @@ export class ConnectorPropertiesStore {
         if (features?.secretStore) this.secrets = new SecretsStore();
         if (features?.editing) this.crud = 'update';
 
+        console.log('features', { secretStore: features?.secretStore, editting: features?.editing })
+
         this.fallbackGroupName = removeNamespace(this.pluginClassName);
         this.initConfig();
     }
@@ -553,9 +555,14 @@ export class ConnectorPropertiesStore {
             this.reactionDisposers.push(
                 reaction(
                     () => {
-                        return this.getConfigObject();
+                        console.log('updateJSON: getting config object');
+                        const configObj = this.getConfigObject();
+                        const jsonText = JSON.stringify(configObj);
+                        return [configObj, jsonText] as [object, string];
                     },
-                    (config) => {
+                    (p) => {
+                        const config = p[0];
+                        console.log('updateJSON: reaction, updating json text');
                         this._jsonText = JSON.stringify(config, undefined, 4);
                     },
                     { delay: 100, fireImmediately: true, equals: comparer.structural }
@@ -566,9 +573,14 @@ export class ConnectorPropertiesStore {
             this.reactionDisposers.push(
                 reaction(
                     () => {
-                        return this.getConfigObject();
+                        console.log('validateOnChange: getting config object');
+                        const configObj = this.getConfigObject();
+                        const jsonText = JSON.stringify(configObj);
+                        return [configObj, jsonText] as [object, string];
                     },
-                    (config) => {
+                    (p) => {
+                        const config = p[0];
+                        console.log('updateJSON: calling validate');
                         this.validate(config);
                     },
                     { delay: 300, fireImmediately: true, equals: comparer.structural }
