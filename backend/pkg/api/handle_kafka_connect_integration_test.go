@@ -205,7 +205,7 @@ func runRedpandaForConnect(ctx context.Context, network string, plaintextKafkaPo
 			Hostname:       "redpanda",
 			Networks:       []string{network},
 			NetworkAliases: map[string][]string{network: {"redpanda", "local-redpanda"}},
-			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.2.18",
+			Image:          "docker.redpanda.com/redpandadata/redpanda:v23.3.2",
 			ExposedPorts: []string{
 				plainKafkaPort,
 				outKafkaPort,
