@@ -20,7 +20,8 @@ import (
 
 // RunRedpandaConnectorsContainer runs a container with the connectors image
 // and returns the running testcontainer, it uses redpandadata/connectors image
-func RunRedpandaConnectorsContainer(ctx context.Context, network string, bootstrapServers []string) (testcontainers.Container, error) {
+// not every option works but we can take advantage of the image customizer for instance
+func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []string, opts ...testcontainers.ContainerCustomizer) (testcontainers.Container, error) {
 	const testConnectConfig = `key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
 	value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
 	group.id=connectors-cluster
@@ -34,7 +35,8 @@ func RunRedpandaConnectorsContainer(ctx context.Context, network string, bootstr
 	const waitTimeout = 3 * time.Minute
 	childCtx, cancel := context.WithTimeout(ctx, waitTimeout)
 	defer cancel()
-	return testcontainers.GenericContainer(childCtx, testcontainers.GenericContainerRequest{
+
+	request := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "redpandadata/connectors:v1.0.13",
 			ExposedPorts: []string{"8083/tcp"},
@@ -45,13 +47,6 @@ func RunRedpandaConnectorsContainer(ctx context.Context, network string, bootstr
 				"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
 				"CONNECT_LOG_LEVEL":         "info",
 			},
-			Networks: []string{
-				network,
-			},
-			NetworkAliases: map[string][]string{
-				network: {"redpanda-connect"},
-			},
-			Hostname: "redpanda-connect",
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Kafka Connect started").
 					WithPollInterval(500 * time.Millisecond).
@@ -59,5 +54,11 @@ func RunRedpandaConnectorsContainer(ctx context.Context, network string, bootstr
 			),
 		},
 		Started: true,
-	})
+	}
+
+	for _, opt := range opts {
+		opt.Customize(&request)
+	}
+
+	return testcontainers.GenericContainer(childCtx, request)
 }
