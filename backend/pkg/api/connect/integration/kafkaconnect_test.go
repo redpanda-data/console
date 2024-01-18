@@ -101,7 +101,7 @@ func (s *APISuite) TestListConnectClusters() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("kafka-connect/clusters").
+			Path("connect/clusters").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
