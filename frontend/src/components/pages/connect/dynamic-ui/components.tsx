@@ -146,6 +146,8 @@ function ConnectorJsonEditor(p: {
             if (!x) return;
             setJsonText(x);
             connectorStore.jsonText = x;
+            // trigger a validate always
+            connectorStore.validate(connectorStore.getConfigObject());
         }}
         options={{
             readOnly: isEmbedded() && p.context == 'EDIT'
