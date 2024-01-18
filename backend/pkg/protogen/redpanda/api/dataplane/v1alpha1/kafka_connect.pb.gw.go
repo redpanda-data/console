@@ -1005,7 +1005,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1030,7 +1030,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1055,7 +1055,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1080,7 +1080,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1105,7 +1105,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1130,7 +1130,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1155,7 +1155,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1180,7 +1180,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1205,7 +1205,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1230,7 +1230,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1255,7 +1255,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1280,7 +1280,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1305,7 +1305,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1330,7 +1330,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1394,7 +1394,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectClusters", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1416,7 +1416,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectCluster", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1438,7 +1438,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectors", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1460,7 +1460,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1482,7 +1482,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1504,7 +1504,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1526,7 +1526,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1548,7 +1548,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1570,7 +1570,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1592,7 +1592,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/DeleteConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1614,7 +1614,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/UpsertConnector", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1636,7 +1636,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorConfig", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1658,7 +1658,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ListConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1680,7 +1680,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResetConnectorTopics", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1745,33 +1745,33 @@ func (m response_KafkaConnectService_GetConnectorConfig_0) XXX_ResponseBody() in
 }
 
 var (
-	pattern_KafkaConnectService_ListConnectClusters_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha1", "kafka-connect", "clusters"}, ""))
+	pattern_KafkaConnectService_ListConnectClusters_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha1", "connect", "clusters"}, ""))
 
-	pattern_KafkaConnectService_GetConnectCluster_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name"}, ""))
+	pattern_KafkaConnectService_GetConnectCluster_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "connect", "clusters", "cluster_name"}, ""))
 
-	pattern_KafkaConnectService_ListConnectors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors"}, ""))
+	pattern_KafkaConnectService_ListConnectors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
 
-	pattern_KafkaConnectService_CreateConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors"}, ""))
+	pattern_KafkaConnectService_CreateConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors"}, ""))
 
-	pattern_KafkaConnectService_RestartConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "restart"}, ""))
+	pattern_KafkaConnectService_RestartConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "restart"}, ""))
 
-	pattern_KafkaConnectService_GetConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name"}, ""))
+	pattern_KafkaConnectService_GetConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
 
-	pattern_KafkaConnectService_PauseConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "pause"}, ""))
+	pattern_KafkaConnectService_PauseConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "pause"}, ""))
 
-	pattern_KafkaConnectService_ResumeConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "resume"}, ""))
+	pattern_KafkaConnectService_ResumeConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "resume"}, ""))
 
-	pattern_KafkaConnectService_StopConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "stop"}, ""))
+	pattern_KafkaConnectService_StopConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "stop"}, ""))
 
-	pattern_KafkaConnectService_DeleteConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name"}, ""))
+	pattern_KafkaConnectService_DeleteConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name"}, ""))
 
-	pattern_KafkaConnectService_UpsertConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
+	pattern_KafkaConnectService_UpsertConnector_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
 
-	pattern_KafkaConnectService_GetConnectorConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
+	pattern_KafkaConnectService_GetConnectorConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "config"}, ""))
 
-	pattern_KafkaConnectService_ListConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "topics"}, ""))
+	pattern_KafkaConnectService_ListConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "topics"}, ""))
 
-	pattern_KafkaConnectService_ResetConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 2, 7}, []string{"v1alpha1", "kafka-connect", "clusters", "cluster_name", "connectors", "name", "topics", "reset"}, ""))
+	pattern_KafkaConnectService_ResetConnectorTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 2, 7}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "connectors", "name", "topics", "reset"}, ""))
 )
 
 var (
