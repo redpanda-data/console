@@ -86,7 +86,7 @@ func (s *APISuite) SetupSuite() {
 	s.testSeedBroker = seedBroker
 
 	// 3. Start Kafka Connect Docker container
-	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(ctx, s.network.Name, []string{"redpanda:29092"})
+	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(ctx, []string{"redpanda:29092"}, network.WithNetwork([]string{"kconnect"}, s.network))
 	require.NoError(err)
 
 	s.kConnectContainer = kConnectContainer
