@@ -1247,7 +1247,7 @@ paths:
       summary: Create ACL
       tags:
         - ACLService
-  /v1alpha1/kafka-connect/clusters:
+  /v1alpha1/connect/clusters:
     get:
       description: List connect clusters available for being consumed by the console's kafka-connect service.
       operationId: KafkaConnectService_ListConnectClusters
@@ -1273,7 +1273,7 @@ paths:
       summary: List connect clusters
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}:
+  /v1alpha1/connect/clusters/{cluster_name}:
     get:
       description: Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file.
       operationId: KafkaConnectService_GetConnectCluster
@@ -1305,7 +1305,7 @@ paths:
       summary: Get connect cluster
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors:
     get:
       description: List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file.
       operationId: KafkaConnectService_ListConnectors
@@ -1380,7 +1380,7 @@ paths:
       summary: Create connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}:
     delete:
       description: Delete a connector forcefully stoping all tasks and deleting its configuration.
       operationId: KafkaConnectService_DeleteConnector
@@ -1453,7 +1453,7 @@ paths:
       summary: Get connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config:
     get:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
@@ -1537,7 +1537,7 @@ paths:
       summary: Upsert connector configuration
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
       description: Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous.
       operationId: KafkaConnectService_PauseConnector
@@ -1574,7 +1574,7 @@ paths:
       summary: Pause connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
       description: Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options.
       operationId: KafkaConnectService_RestartConnector
@@ -1618,7 +1618,7 @@ paths:
       summary: Restart connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
       description: Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused.
       operationId: KafkaConnectService_ResumeConnector
@@ -1655,7 +1655,7 @@ paths:
       summary: Resume connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
       description: Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely.
       operationId: KafkaConnectService_StopConnector
@@ -1692,7 +1692,7 @@ paths:
       summary: Stop connector
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
       description: Returns a list of connector topic names, it will return an empty list if the connector is not running.
       operationId: KafkaConnectService_ListConnectorTopics
@@ -1729,7 +1729,7 @@ paths:
       summary: List connector topics
       tags:
         - KafkaConnectService
-  /v1alpha1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
       description: Resets the set of topic names that the connector has been using.
       operationId: KafkaConnectService_ResetConnectorTopics
