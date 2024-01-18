@@ -372,9 +372,23 @@ const apiStore = {
 
         // do it
         const abortController = messageSearchAbortController = new AbortController();
+
+        // create fetch with keep-alive
+        const keepAliveFetch: typeof globalThis.fetch = async (
+            resource: RequestInfo | URL,
+            config?: RequestInit
+        ): Promise<Response> => {
+            const response = await globalThis.fetch(resource, {
+                ...config,
+                keepalive: true
+            });
+            return response;
+        };
+
         const transport = createConnectTransport({
             baseUrl: appConfig.grpcBase,
-            interceptors: [addBearerTokenInterceptor]
+            interceptors: [addBearerTokenInterceptor],
+            fetch: keepAliveFetch
         });
 
         const client = createPromiseClient(ConsoleService, transport);
