@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -86,6 +85,30 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
     };
 }
 
+function fixUrl(url: URL, subjectName: string, version: number | 'latest') {
+    // If the decoded schemaName starts with the escape character (%) we need to fix the url that react router has messed up
+    // https://github.com/remix-run/react-router/issues/10213
+    // https://github.com/remix-run/history/issues/874
+    if (subjectName.startsWith('%')) {
+
+        console.log('href in schema details with percentage start: ' + {
+            url: url.href,
+            subjectName: subjectName
+        });
+
+        const correctedUrl = new URL(url);
+        correctedUrl.pathname = '/schema-registry/' + encodeURIComponent(subjectName);
+
+        if (version)
+            correctedUrl.searchParams.set('version', String(version));
+
+        setTimeout(() => {
+            // change the url without notifiying the router (otherwise it will mess up the url again)
+            window.history.replaceState(correctedUrl.href, '', correctedUrl);
+        }, 1);
+    }
+}
+
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     subjectNameRaw: string;
@@ -94,13 +117,27 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     @observable version = 'latest' as 'latest' | number;
 
     initPage(p: PageInitHelper): void {
+
+        // If we have a schema named '%2F' we expect the link to it to be url encoded
+        // For things like e.g. 'shop/v1/address.proto' this works, and we get 'shop%2Fv1%2Faddress.proto' as subjectName
+        // thus we decode it to get the raw (real) name.
+        //
+        // However, for '%2F' this does not work!
+        // The url path we land at is '/%2F' instead of the expected '/%252F'.
+        //
+
         const subjectNameRaw = decodeURIComponent(this.props.subjectName);
         const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
+        // Must be in front of getVersionFromQuery
+        const url = new URL(window.location.href);
+
         const version = getVersionFromQuery();
         editQuery(x => {
-            x.version = String(this.version);
+            x.version = String(this.version ?? 'latest');
         });
+
+        fixUrl(url, this.props.subjectName, version);
 
         p.title = subjectNameRaw;
         p.addBreadcrumb('Schema Registry', '/schema-registry');
@@ -156,7 +193,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         const query = new URLSearchParams(window.location.search);
         if (query.has('version')) {
             const versionStr = query.get('version');
-            if (versionStr != '') {
+            if (versionStr != '' && !Number.isNaN(Number(versionStr))) {
                 queryVersion = Number(versionStr);
             }
         }
