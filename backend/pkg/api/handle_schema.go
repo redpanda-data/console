@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/cloudhut/common/rest"
 
@@ -61,9 +60,6 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		subject := rest.GetURLParam(r, "subject")
-		if subjectUnescaped, err := url.PathUnescape(subject); err == nil {
-			subject = subjectUnescaped
-		}
 		version := rest.GetURLParam(r, "version")
 		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {
