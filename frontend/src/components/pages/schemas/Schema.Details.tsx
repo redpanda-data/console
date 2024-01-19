@@ -91,11 +91,6 @@ function fixUrl(url: URL, subjectName: string, version: number | 'latest') {
     // https://github.com/remix-run/history/issues/874
     if (subjectName.startsWith('%')) {
 
-        console.log('href in schema details with percentage start: ' + {
-            url: url.href,
-            subjectName: subjectName
-        });
-
         const correctedUrl = new URL(url);
         correctedUrl.pathname = '/schema-registry/' + encodeURIComponent(subjectName);
 

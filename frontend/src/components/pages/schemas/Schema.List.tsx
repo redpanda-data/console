@@ -140,7 +140,6 @@ class SchemaList extends PageComponent<{}> {
                                 let enc = encodeURIComponent(name);
                                 if (enc.startsWith('%'))
                                     enc = encodeURIComponent(enc);
-                                console.log('going to push history: ' + enc);
                                 appGlobal.history.push(`/schema-registry/${enc}`);
                             },
                         })}
