@@ -506,7 +506,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "consumer.auto.offset.reset",
 							Type:          "STRING",
-							DefaultValue:  "earliest",
+							DefaultValue:  "",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Auto offset reset",
@@ -859,7 +859,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "consumer.auto.offset.reset",
 							Type:          "STRING",
-							DefaultValue:  "earliest",
+							DefaultValue:  "",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Auto offset reset",
@@ -1172,7 +1172,7 @@ func TestKafkaConnectToConsoleMirrorSourceHook(t *testing.T) {
 						Definition: model.ConfigDefinitionKey{
 							Name:          "consumer.auto.offset.reset",
 							Type:          "STRING",
-							DefaultValue:  "earliest",
+							DefaultValue:  "",
 							Importance:    "MEDIUM",
 							Required:      false,
 							DisplayName:   "Auto offset reset",
