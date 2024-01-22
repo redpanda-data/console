@@ -281,9 +281,19 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
   type = "";
 
   /**
-   * @generated from field: string trace = 5;
+   * holistic_state of all the tasks within the connector this is our internal
+   * holistic state concept
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorHolisticState holistic_state = 5;
    */
-  trace = "";
+  holisticState = ConnectorHolisticState.UNSPECIFIED;
+
+  /**
+   * Errors is list of parsed connectors' and tasks' errors
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConnectorError errors = 6;
+   */
+  errors: ConnectorError[] = [];
 
   constructor(data?: PartialMessage<ConnectorStatus>) {
     super();
@@ -297,7 +307,8 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
     { no: 2, name: "connector", kind: "message", T: ConnectorStatus_Connector },
     { no: 3, name: "tasks", kind: "message", T: TaskStatus, repeated: true },
     { no: 4, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "trace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "holistic_state", kind: "enum", T: proto3.getEnumType(ConnectorHolisticState) },
+    { no: 6, name: "errors", kind: "message", T: ConnectorError, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorStatus {
@@ -331,6 +342,11 @@ export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector
    */
   workerId = "";
 
+  /**
+   * @generated from field: string trace = 3;
+   */
+  trace = "";
+
   constructor(data?: PartialMessage<ConnectorStatus_Connector>) {
     super();
     proto3.util.initPartial(data, this);
@@ -341,6 +357,7 @@ export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "worker_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "trace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorStatus_Connector {
@@ -999,16 +1016,6 @@ export class GetConnectorResponse extends Message<GetConnectorResponse> {
    */
   connector?: ConnectorSpec;
 
-  /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorHolisticState holistic_state = 4;
-   */
-  holisticState = ConnectorHolisticState.UNSPECIFIED;
-
-  /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConnectorError errors = 5;
-   */
-  errors: ConnectorError[] = [];
-
   constructor(data?: PartialMessage<GetConnectorResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1018,8 +1025,6 @@ export class GetConnectorResponse extends Message<GetConnectorResponse> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "message", T: ConnectorSpec },
-    { no: 4, name: "holistic_state", kind: "enum", T: proto3.getEnumType(ConnectorHolisticState) },
-    { no: 5, name: "errors", kind: "message", T: ConnectorError, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorResponse {
@@ -1142,21 +1147,6 @@ export class ListConnectorsResponse_ConnectorInfoStatus extends Message<ListConn
    */
   status?: ConnectorStatus;
 
-  /**
-   * holistic_state of all the tasks within the connector this is our internal
-   * holistic state concept
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorHolisticState holistic_state = 4;
-   */
-  holisticState = ConnectorHolisticState.UNSPECIFIED;
-
-  /**
-   * Errors is list of parsed connectors' and tasks' errors
-   *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConnectorError errors = 5;
-   */
-  errors: ConnectorError[] = [];
-
   constructor(data?: PartialMessage<ListConnectorsResponse_ConnectorInfoStatus>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1168,8 +1158,6 @@ export class ListConnectorsResponse_ConnectorInfoStatus extends Message<ListConn
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "info", kind: "message", T: ConnectorSpec },
     { no: 3, name: "status", kind: "message", T: ConnectorStatus },
-    { no: 4, name: "holistic_state", kind: "enum", T: proto3.getEnumType(ConnectorHolisticState) },
-    { no: 5, name: "errors", kind: "message", T: ConnectorError, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorsResponse_ConnectorInfoStatus {
@@ -1494,6 +1482,86 @@ export class GetConnectorConfigResponse extends Message<GetConnectorConfigRespon
 
   static equals(a: GetConnectorConfigResponse | PlainMessage<GetConnectorConfigResponse> | undefined, b: GetConnectorConfigResponse | PlainMessage<GetConnectorConfigResponse> | undefined): boolean {
     return proto3.util.equals(GetConnectorConfigResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorStatusRequest
+ */
+export class GetConnectorStatusRequest extends Message<GetConnectorStatusRequest> {
+  /**
+   * @generated from field: string cluster_name = 1;
+   */
+  clusterName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<GetConnectorStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorStatusRequest {
+    return new GetConnectorStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorStatusRequest {
+    return new GetConnectorStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorStatusRequest {
+    return new GetConnectorStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorStatusRequest | PlainMessage<GetConnectorStatusRequest> | undefined, b: GetConnectorStatusRequest | PlainMessage<GetConnectorStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectorStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorStatusResponse
+ */
+export class GetConnectorStatusResponse extends Message<GetConnectorStatusResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorStatus status = 1;
+   */
+  status?: ConnectorStatus;
+
+  constructor(data?: PartialMessage<GetConnectorStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "message", T: ConnectorStatus },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorStatusResponse {
+    return new GetConnectorStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorStatusResponse {
+    return new GetConnectorStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorStatusResponse {
+    return new GetConnectorStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorStatusResponse | PlainMessage<GetConnectorStatusResponse> | undefined, b: GetConnectorStatusResponse | PlainMessage<GetConnectorStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectorStatusResponse, a, b);
   }
 }
 

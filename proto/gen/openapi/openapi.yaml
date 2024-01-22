@@ -119,6 +119,8 @@ components:
       properties:
         state:
           type: string
+        trace:
+          type: string
         worker_id:
           type: string
       type: object
@@ -174,13 +176,6 @@ components:
       type: string
     ConnectorInfoStatus:
       properties:
-        errors:
-          items:
-            $ref: '#/components/schemas/ConnectorError'
-          title: Errors is list of parsed connectors' and tasks' errors
-          type: array
-        holistic_state:
-          $ref: '#/components/schemas/ConnectorHolisticState'
         info:
           $ref: '#/components/schemas/ConnectorSpec'
         name:
@@ -226,14 +221,19 @@ components:
       properties:
         connector:
           $ref: '#/components/schemas/Connector'
+        errors:
+          items:
+            $ref: '#/components/schemas/ConnectorError'
+          title: Errors is list of parsed connectors' and tasks' errors
+          type: array
+        holistic_state:
+          $ref: '#/components/schemas/ConnectorHolisticState'
         name:
           type: string
         tasks:
           items:
             $ref: '#/components/schemas/TaskStatus'
           type: array
-        trace:
-          type: string
         type:
           type: string
       type: object
@@ -509,12 +509,11 @@ components:
       properties:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
-        errors:
-          items:
-            $ref: '#/components/schemas/ConnectorError'
-          type: array
-        holistic_state:
-          $ref: '#/components/schemas/ConnectorHolisticState'
+      type: object
+    GetConnectorStatusResponse:
+      properties:
+        status:
+          $ref: '#/components/schemas/ConnectorStatus'
       type: object
     GetTopicConfigurationsResponse:
       properties:
@@ -1653,6 +1652,43 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Resume connector
+      tags:
+        - KafkaConnectService
+  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status:
+    get:
+      description: Gets the current status of the connector, including, The state of all of its tasks, error information etc.
+      operationId: KafkaConnectService_GetConnectorStatus
+      parameters:
+        - in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get connector status
       tags:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop:

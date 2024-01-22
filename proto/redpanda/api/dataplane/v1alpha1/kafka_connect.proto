@@ -62,12 +62,17 @@ message ConnectorStatus {
   message Connector {
     string state = 1;
     string worker_id = 2;
+    string trace = 3;
   }
   string name = 1;
   Connector connector = 2;
   repeated TaskStatus tasks = 3;
   string type = 4;
-  string trace = 5;
+  // holistic_state of all the tasks within the connector this is our internal
+  // holistic state concept
+  ConnectorHolisticState holistic_state = 5;
+  // Errors is list of parsed connectors' and tasks' errors
+  repeated ConnectorError errors = 6;
 }
 
 message TaskStatus {
@@ -203,8 +208,6 @@ message CreateConnectorRequest {
 
 message GetConnectorResponse {
   ConnectorSpec connector = 1;
-  ConnectorHolisticState holistic_state = 4;
-  repeated ConnectorError errors = 5;
 }
 
 message CreateConnectorResponse {
@@ -217,11 +220,6 @@ message ListConnectorsResponse {
     string name = 1;
     ConnectorSpec info = 2;
     ConnectorStatus status = 3;
-    // holistic_state of all the tasks within the connector this is our internal
-    // holistic state concept
-    ConnectorHolisticState holistic_state = 4;
-    // Errors is list of parsed connectors' and tasks' errors
-    repeated ConnectorError errors = 5;
   }
 
   // connectors is the list of connectors the key is the connector name
@@ -279,6 +277,21 @@ message GetConnectorConfigRequest {
 
 message GetConnectorConfigResponse {
   map<string, string> config = 1;
+}
+
+message GetConnectorStatusRequest {
+  string cluster_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetConnectorStatusResponse {
+  ConnectorStatus status = 1;
 }
 
 message ListConnectorTopicsRequest {
@@ -386,6 +399,22 @@ service KafkaConnectService {
     };
   }
 
+  // GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+  // Whether it is running or restarting, or if it has failed or paused
+  // Which worker it is assigned to
+  // Error information if it has failed
+  // The state of all its tasks
+  rpc GetConnectorStatus(GetConnectorStatusRequest) returns (GetConnectorStatusResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status"
+      response_body: "status"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get connector status"
+      description: "Gets the current status of the connector, including, The state of all of its tasks, error information etc."
+    };
+  }
+
   // PauseConnector implements the pause connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc PauseConnector(PauseConnectorRequest) returns (google.protobuf.Empty) {
@@ -395,6 +424,7 @@ service KafkaConnectService {
       description: "Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous."
     };
   }
+
   // ResumeConnector implements the resume connector method, exposes a Kafka
   // connect equivalent REST endpoint
   rpc ResumeConnector(ResumeConnectorRequest) returns (google.protobuf.Empty) {
