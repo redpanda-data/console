@@ -586,7 +586,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}
-                showPagination
+                pagination={true}
                 subComponent={({row: {original}}) => renderExpandedMessage(original)}
             />
             <Button variant="outline"
@@ -1305,6 +1305,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                         cell: ({row: {original: {value: payload}}}) => <span className="nowrap">{payload.encoding}</span>
                     },
                 ]}
+
                 subComponent={({row: {original: header}}) => {
                     return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>

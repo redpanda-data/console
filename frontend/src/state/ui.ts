@@ -103,6 +103,7 @@ export class TopicDetailsSettings {
         startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
         partitionID: -1,
         maxResults: 50,
+        page: 0,
 
         filtersEnabled: false,
         filters: [] as FilterEntry[],

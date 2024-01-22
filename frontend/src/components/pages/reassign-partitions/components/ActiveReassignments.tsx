@@ -68,8 +68,11 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             {/* Table */}
             <DataTable<ReassignmentState>
                 data={currentReassignments}
-                defaultPageSize={5}
-                enableSorting={false}
+                pagination={{
+                    pageIndex: 0,
+                    pageSize: 5,
+                }}
+                sorting={false}
                 onRow={(row) => {
                     this.reassignmentDetails = row.original
                 }}

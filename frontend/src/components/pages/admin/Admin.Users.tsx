@@ -37,7 +37,7 @@ export class AdminUsers extends Component<{}> {
         const table = (
             <DataTable<UserDetails>
                 data={users}
-                enableSorting
+                sorting={true}
                 expandRowByClick
                 columns={[
                     {

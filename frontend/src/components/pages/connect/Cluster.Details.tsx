@@ -117,7 +117,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                         <DataTable<ClusterAdditionalInfo['plugins'][0]>
                             data={additionalInfo?.plugins ?? []}
-                            showPagination
+                            pagination={true}
                             columns={[
                                 {
                                     header: 'Class',

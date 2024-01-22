@@ -144,7 +144,7 @@ class TopicList extends PageComponent {
                     <Box my={4}>
                         <DataTable<Topic>
                             data={topics}
-                            showPagination
+                            pagination={true}
                             columns={[
                                 {
                                     header: 'Name',
