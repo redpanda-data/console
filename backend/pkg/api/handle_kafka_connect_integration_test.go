@@ -25,7 +25,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -58,7 +57,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	require.NoError(err)
 
 	// HTTPBin container
-	httpC, err := runHTTPBin(ctx, testNetwork.Name)
+	httpC, err := testutil.RunHTTPBinContainer(ctx, network.WithNetwork([]string{"httpbin", "local-httpbin"}, testNetwork))
 	require.NoError(err)
 
 	httpBinContainer := httpC
@@ -150,25 +149,4 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		assert.Equal("httpbin-input", createConnectRes.Config["kafka.topic"])
 		assert.Equal("1000", createConnectRes.Config["http.timer.interval.millis"])
 	})
-}
-
-func runHTTPBin(ctx context.Context, network string) (testcontainers.Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Hostname:       "httpbin",
-			Networks:       []string{network},
-			NetworkAliases: map[string][]string{network: {"httpbin", "local-httpbin"}},
-			Image:          "kennethreitz/httpbin",
-			ExposedPorts:   []string{"80/tcp"},
-			WaitingFor:     wait.ForHTTP("/"),
-		},
-		Started: true,
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return container, nil
 }

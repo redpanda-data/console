@@ -27,6 +27,7 @@ const (
 	KafkaConnectService_CreateConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/CreateConnector"
 	KafkaConnectService_RestartConnector_FullMethodName     = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/RestartConnector"
 	KafkaConnectService_GetConnector_FullMethodName         = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector"
+	KafkaConnectService_GetConnectorStatus_FullMethodName   = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus"
 	KafkaConnectService_PauseConnector_FullMethodName       = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector"
 	KafkaConnectService_ResumeConnector_FullMethodName      = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/ResumeConnector"
 	KafkaConnectService_StopConnector_FullMethodName        = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/StopConnector"
@@ -59,6 +60,12 @@ type KafkaConnectServiceClient interface {
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error)
+	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+	// Whether it is running or restarting, or if it has failed or paused
+	// Which worker it is assigned to
+	// Error information if it has failed
+	// The state of all its tasks
+	GetConnectorStatus(ctx context.Context, in *GetConnectorStatusRequest, opts ...grpc.CallOption) (*GetConnectorStatusResponse, error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(ctx context.Context, in *PauseConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -140,6 +147,15 @@ func (c *kafkaConnectServiceClient) RestartConnector(ctx context.Context, in *Re
 func (c *kafkaConnectServiceClient) GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error) {
 	out := new(GetConnectorResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnector_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kafkaConnectServiceClient) GetConnectorStatus(ctx context.Context, in *GetConnectorStatusRequest, opts ...grpc.CallOption) (*GetConnectorStatusResponse, error) {
+	out := new(GetConnectorStatusResponse)
+	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnectorStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +256,12 @@ type KafkaConnectServiceServer interface {
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error)
+	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+	// Whether it is running or restarting, or if it has failed or paused
+	// Which worker it is assigned to
+	// Error information if it has failed
+	// The state of all its tasks
+	GetConnectorStatus(context.Context, *GetConnectorStatusRequest) (*GetConnectorStatusResponse, error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(context.Context, *PauseConnectorRequest) (*emptypb.Empty, error)
@@ -287,6 +309,9 @@ func (UnimplementedKafkaConnectServiceServer) RestartConnector(context.Context, 
 }
 func (UnimplementedKafkaConnectServiceServer) GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConnector not implemented")
+}
+func (UnimplementedKafkaConnectServiceServer) GetConnectorStatus(context.Context, *GetConnectorStatusRequest) (*GetConnectorStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorStatus not implemented")
 }
 func (UnimplementedKafkaConnectServiceServer) PauseConnector(context.Context, *PauseConnectorRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PauseConnector not implemented")
@@ -429,6 +454,24 @@ func _KafkaConnectService_GetConnector_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KafkaConnectServiceServer).GetConnector(ctx, req.(*GetConnectorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KafkaConnectService_GetConnectorStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KafkaConnectServiceServer).GetConnectorStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KafkaConnectService_GetConnectorStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KafkaConnectServiceServer).GetConnectorStatus(ctx, req.(*GetConnectorStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -607,6 +650,10 @@ var KafkaConnectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConnector",
 			Handler:    _KafkaConnectService_GetConnector_Handler,
+		},
+		{
+			MethodName: "GetConnectorStatus",
+			Handler:    _KafkaConnectService_GetConnectorStatus_Handler,
 		},
 		{
 			MethodName: "PauseConnector",

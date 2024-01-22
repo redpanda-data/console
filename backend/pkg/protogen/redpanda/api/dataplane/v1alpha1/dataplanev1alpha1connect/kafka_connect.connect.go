@@ -54,6 +54,9 @@ const (
 	// KafkaConnectServiceGetConnectorProcedure is the fully-qualified name of the KafkaConnectService's
 	// GetConnector RPC.
 	KafkaConnectServiceGetConnectorProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnector"
+	// KafkaConnectServiceGetConnectorStatusProcedure is the fully-qualified name of the
+	// KafkaConnectService's GetConnectorStatus RPC.
+	KafkaConnectServiceGetConnectorStatusProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/GetConnectorStatus"
 	// KafkaConnectServicePauseConnectorProcedure is the fully-qualified name of the
 	// KafkaConnectService's PauseConnector RPC.
 	KafkaConnectServicePauseConnectorProcedure = "/redpanda.api.dataplane.v1alpha1.KafkaConnectService/PauseConnector"
@@ -89,6 +92,7 @@ var (
 	kafkaConnectServiceCreateConnectorMethodDescriptor      = kafkaConnectServiceServiceDescriptor.Methods().ByName("CreateConnector")
 	kafkaConnectServiceRestartConnectorMethodDescriptor     = kafkaConnectServiceServiceDescriptor.Methods().ByName("RestartConnector")
 	kafkaConnectServiceGetConnectorMethodDescriptor         = kafkaConnectServiceServiceDescriptor.Methods().ByName("GetConnector")
+	kafkaConnectServiceGetConnectorStatusMethodDescriptor   = kafkaConnectServiceServiceDescriptor.Methods().ByName("GetConnectorStatus")
 	kafkaConnectServicePauseConnectorMethodDescriptor       = kafkaConnectServiceServiceDescriptor.Methods().ByName("PauseConnector")
 	kafkaConnectServiceResumeConnectorMethodDescriptor      = kafkaConnectServiceServiceDescriptor.Methods().ByName("ResumeConnector")
 	kafkaConnectServiceStopConnectorMethodDescriptor        = kafkaConnectServiceServiceDescriptor.Methods().ByName("StopConnector")
@@ -120,6 +124,12 @@ type KafkaConnectServiceClient interface {
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(context.Context, *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error)
+	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+	// Whether it is running or restarting, or if it has failed or paused
+	// Which worker it is assigned to
+	// Error information if it has failed
+	// The state of all its tasks
+	GetConnectorStatus(context.Context, *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(context.Context, *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error)
@@ -192,6 +202,12 @@ func NewKafkaConnectServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(kafkaConnectServiceGetConnectorMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getConnectorStatus: connect.NewClient[v1alpha1.GetConnectorStatusRequest, v1alpha1.GetConnectorStatusResponse](
+			httpClient,
+			baseURL+KafkaConnectServiceGetConnectorStatusProcedure,
+			connect.WithSchema(kafkaConnectServiceGetConnectorStatusMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 		pauseConnector: connect.NewClient[v1alpha1.PauseConnectorRequest, emptypb.Empty](
 			httpClient,
 			baseURL+KafkaConnectServicePauseConnectorProcedure,
@@ -251,6 +267,7 @@ type kafkaConnectServiceClient struct {
 	createConnector      *connect.Client[v1alpha1.CreateConnectorRequest, v1alpha1.CreateConnectorResponse]
 	restartConnector     *connect.Client[v1alpha1.RestartConnectorRequest, emptypb.Empty]
 	getConnector         *connect.Client[v1alpha1.GetConnectorRequest, v1alpha1.GetConnectorResponse]
+	getConnectorStatus   *connect.Client[v1alpha1.GetConnectorStatusRequest, v1alpha1.GetConnectorStatusResponse]
 	pauseConnector       *connect.Client[v1alpha1.PauseConnectorRequest, emptypb.Empty]
 	resumeConnector      *connect.Client[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
 	stopConnector        *connect.Client[v1alpha1.StopConnectorRequest, emptypb.Empty]
@@ -290,6 +307,11 @@ func (c *kafkaConnectServiceClient) RestartConnector(ctx context.Context, req *c
 // GetConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnector.
 func (c *kafkaConnectServiceClient) GetConnector(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error) {
 	return c.getConnector.CallUnary(ctx, req)
+}
+
+// GetConnectorStatus calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorStatus.
+func (c *kafkaConnectServiceClient) GetConnectorStatus(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error) {
+	return c.getConnectorStatus.CallUnary(ctx, req)
 }
 
 // PauseConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.PauseConnector.
@@ -355,6 +377,12 @@ type KafkaConnectServiceHandler interface {
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(context.Context, *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error)
+	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+	// Whether it is running or restarting, or if it has failed or paused
+	// Which worker it is assigned to
+	// Error information if it has failed
+	// The state of all its tasks
+	GetConnectorStatus(context.Context, *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(context.Context, *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error)
@@ -422,6 +450,12 @@ func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...conne
 		connect.WithSchema(kafkaConnectServiceGetConnectorMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	kafkaConnectServiceGetConnectorStatusHandler := connect.NewUnaryHandler(
+		KafkaConnectServiceGetConnectorStatusProcedure,
+		svc.GetConnectorStatus,
+		connect.WithSchema(kafkaConnectServiceGetConnectorStatusMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	kafkaConnectServicePauseConnectorHandler := connect.NewUnaryHandler(
 		KafkaConnectServicePauseConnectorProcedure,
 		svc.PauseConnector,
@@ -484,6 +518,8 @@ func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...conne
 			kafkaConnectServiceRestartConnectorHandler.ServeHTTP(w, r)
 		case KafkaConnectServiceGetConnectorProcedure:
 			kafkaConnectServiceGetConnectorHandler.ServeHTTP(w, r)
+		case KafkaConnectServiceGetConnectorStatusProcedure:
+			kafkaConnectServiceGetConnectorStatusHandler.ServeHTTP(w, r)
 		case KafkaConnectServicePauseConnectorProcedure:
 			kafkaConnectServicePauseConnectorHandler.ServeHTTP(w, r)
 		case KafkaConnectServiceResumeConnectorProcedure:
@@ -531,6 +567,10 @@ func (UnimplementedKafkaConnectServiceHandler) RestartConnector(context.Context,
 
 func (UnimplementedKafkaConnectServiceHandler) GetConnector(context.Context, *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnector is not implemented"))
+}
+
+func (UnimplementedKafkaConnectServiceHandler) GetConnectorStatus(context.Context, *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorStatus is not implemented"))
 }
 
 func (UnimplementedKafkaConnectServiceHandler) PauseConnector(context.Context, *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error) {

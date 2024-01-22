@@ -32,9 +32,7 @@ func (m mapper) connectorsHTTPResponseToProto(httpResponse kafkaconnect.ClusterC
 		}
 
 		connectors[i] = &dataplanev1alpha1.ListConnectorsResponse_ConnectorInfoStatus{
-			Name:          connector.Name,
-			HolisticState: m.holisticStateToProto(connector.Status),
-			Errors:        errors,
+			Name: connector.Name,
 		}
 
 		connectors[i].Info = &dataplanev1alpha1.ConnectorSpec{
@@ -49,10 +47,12 @@ func (m mapper) connectorsHTTPResponseToProto(httpResponse kafkaconnect.ClusterC
 			Connector: &dataplanev1alpha1.ConnectorStatus_Connector{
 				State:    connector.State,
 				WorkerId: connector.WorkerID,
+				Trace:    connector.Trace,
 			},
-			Tasks: m.taskInfoListToProtoStatus(connector.Tasks),
-			Type:  connector.Type,
-			Trace: connector.Trace,
+			Tasks:         m.taskInfoListToProtoStatus(connector.Tasks),
+			Type:          connector.Type,
+			Errors:        errors,
+			HolisticState: m.holisticStateToProto(connector.State),
 		}
 	}
 
@@ -162,7 +162,7 @@ func (mapper) createConnectorProtoToClientRequest(createConnector *dataplanev1al
 	}, nil
 }
 
-func (m mapper) ClusterInfoToProto(clusterInfo kafkaconnect.ClusterInfo) (*dataplanev1alpha1.ConnectCluster, error) {
+func (m mapper) clusterInfoToProto(clusterInfo kafkaconnect.ClusterInfo) *dataplanev1alpha1.ConnectCluster {
 	return &dataplanev1alpha1.ConnectCluster{
 		Name:    clusterInfo.Name,
 		Address: clusterInfo.Host,
@@ -172,7 +172,7 @@ func (m mapper) ClusterInfoToProto(clusterInfo kafkaconnect.ClusterInfo) (*datap
 			KafkaClusterId: clusterInfo.KafkaClusterID,
 		},
 		Plugins: m.connectPluginsToProto(clusterInfo.Plugins),
-	}, nil
+	}
 }
 
 func (mapper) connectPluginsToProto(plugins []con.ConnectorPluginInfo) []*dataplanev1alpha1.ConnectorPlugin {
@@ -212,8 +212,8 @@ func (m mapper) connectorInfoListToProto(connectorInfoList []kafkaconnect.Cluste
 	return clusters, errs
 }
 
-// ConnectorSpecToProto converts the http response to proto message
-func (mapper) ConnectorSpecToProto(connector con.ConnectorInfo) *dataplanev1alpha1.ConnectorSpec {
+// connectorSpecToProto converts the http response to proto message
+func (mapper) connectorSpecToProto(connector con.ConnectorInfo) *dataplanev1alpha1.ConnectorSpec {
 	tasks := make([]*dataplanev1alpha1.TaskInfo, len(connector.Tasks))
 
 	for i, task := range connector.Tasks {
@@ -226,7 +226,27 @@ func (mapper) ConnectorSpecToProto(connector con.ConnectorInfo) *dataplanev1alph
 		Name:   connector.Name,
 		Config: connector.Config,
 		Tasks:  tasks,
+		Type:   connector.Type,
 	}
+}
+
+func (m mapper) connectorStatusToProto(status kafkaconnect.ConnectorStatus) (*dataplanev1alpha1.ConnectorStatus, error) {
+	errors, err := m.connectorErrorsToProto(status.Errors)
+	if err != nil {
+		return nil, fmt.Errorf("failed to map connector error to proto for connector %q: %w", status.Name, err)
+	}
+	return &dataplanev1alpha1.ConnectorStatus{
+		Name: status.Name,
+		Connector: &dataplanev1alpha1.ConnectorStatus_Connector{
+			State:    status.Connector.State,
+			WorkerId: status.Connector.WorkerID,
+			Trace:    status.Connector.Trace,
+		},
+		Type:          status.Type,
+		Errors:        errors,
+		Tasks:         m.taskInfoListToProtoStatus(status.Tasks),
+		HolisticState: m.holisticStateToProto(status.State),
+	}, nil
 }
 
 // convertStringMapToInterfaceMap converts interface map to string map
