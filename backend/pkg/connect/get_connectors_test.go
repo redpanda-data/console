@@ -100,7 +100,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "healthy",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -118,10 +118,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -129,7 +126,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -139,12 +136,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -193,7 +185,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unhealthy - running and 0 tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -211,13 +203,10 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{},
-					Type: "source",
+					Tasks: []connect.ConnectorTaskID{},
+					Type:  "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -227,12 +216,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{},
+					Tasks: []connect.TaskState{},
 				},
 			},
 			expected: &ClusterConnectorInfo{
@@ -275,7 +259,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unhealthy - connector in failed state",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -293,13 +277,10 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{},
-					Type: "source",
+					Tasks: []connect.ConnectorTaskID{},
+					Type:  "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -309,12 +290,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "FAILED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -369,7 +345,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unhealthy - running and all failed tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -387,10 +363,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -398,7 +371,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -408,12 +381,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "FAILED",
@@ -503,7 +471,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "paused - paused and all failed tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -521,10 +489,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -532,7 +497,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -542,12 +507,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "PAUSED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "FAILED",
@@ -632,7 +592,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "degraded - connector running, has tasks and 1 task is in failed state",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -650,10 +610,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -661,7 +618,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -671,12 +628,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -756,7 +708,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "paused - connector paused, has tasks but 1 task failed",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -774,10 +726,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -785,7 +734,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -795,12 +744,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "PAUSED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "PAUSED",
@@ -875,7 +819,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "paused - connector paused, all tasks paused",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -893,10 +837,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -904,7 +845,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -914,12 +855,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "PAUSED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "PAUSED",
@@ -988,7 +924,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "paused - connector paused, no tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1006,10 +942,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1017,7 +950,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1027,12 +960,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "PAUSED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{},
+					Tasks: []connect.TaskState{},
 				},
 			},
 			expected: &ClusterConnectorInfo{
@@ -1069,7 +997,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "stopped - connector stopped, no tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1087,10 +1015,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1098,7 +1023,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1108,12 +1033,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "STOPPED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{},
+					Tasks: []connect.TaskState{},
 				},
 			},
 			expected: &ClusterConnectorInfo{
@@ -1150,7 +1070,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "restarting - connector restarting, > 0 tasks",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1168,10 +1088,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1179,7 +1096,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1189,12 +1106,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RESTARTING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -1263,7 +1175,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "restarting - connector running, > 0 tasks, 1 task is restarting",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1281,10 +1193,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1292,7 +1201,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1302,12 +1211,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -1376,7 +1280,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unassigned - connector is unassigned",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1394,10 +1298,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1405,7 +1306,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1415,12 +1316,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "UNASSIGNED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "UNASSIGNED",
@@ -1469,7 +1365,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unassigned - connector is running, some tasks are unassigned",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1487,10 +1383,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1506,7 +1399,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1516,12 +1409,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -1590,7 +1478,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "destroyed - connector is destroyed",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1608,10 +1496,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1619,7 +1504,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1629,12 +1514,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "DESTROYED",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "DESTROYED",
@@ -1683,7 +1563,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		{
 			name: "unknown - connector is state we do not track",
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "http-source-connector-wtue",
 					Config: map[string]string{
 						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
@@ -1701,10 +1581,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
 						"value.converter.schemas.enable":            "false",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "http-source-connector-wtue",
 							Task:      0,
@@ -1712,7 +1589,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "http-source-connector-wtue",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1722,12 +1599,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "PROVISIONING", // some fictitious state
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
@@ -1792,7 +1664,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				return result
 			},
 			input: &connect.ListConnectorsResponseExpanded{
-				Info: connect.ListConnectorsResponseExpandedInfo{
+				Info: connect.ConnectorInfo{
 					Name: "mirror-source-connector-apfe",
 					Config: map[string]string{
 						"change":          "value1",
@@ -1800,10 +1672,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						"leave":           "value3",
 						"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
 					},
-					Tasks: []struct {
-						Connector string `json:"connector"`
-						Task      int    `json:"task"`
-					}{
+					Tasks: []connect.ConnectorTaskID{
 						{
 							Connector: "mirror-source-connector-apfe",
 							Task:      0,
@@ -1811,7 +1680,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 					},
 					Type: "source",
 				},
-				Status: connect.ListConnectorsResponseExpandedStatus{
+				Status: connect.ConnectorStateInfo{
 					Name: "mirror-source-connector-apfe",
 					Connector: struct {
 						State    string `json:"state"`
@@ -1821,12 +1690,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 						State:    "RUNNING",
 						WorkerID: "172.21.0.5:8083",
 					},
-					Tasks: []struct {
-						ID       int    `json:"id"`
-						State    string `json:"state"`
-						WorkerID string `json:"worker_id"`
-						Trace    string `json:"trace,omitempty"`
-					}{
+					Tasks: []connect.TaskState{
 						{
 							ID:       0,
 							State:    "RUNNING",
