@@ -126,6 +126,28 @@ type ClusterConnectorTaskInfo struct {
 // KafkaConnectToConsoleHook is a function that lets you modify the response before it is sent to the Console frontend.
 type KafkaConnectToConsoleHook = func(pluginClassName string, configs map[string]string) map[string]string
 
+// ConnectorStatus contains information about a single connector and its tasks status
+type ConnectorStatus struct {
+	Name      string                      `json:"name"`
+	Connector con.ConnectorState          `json:"connector"`
+	Tasks     []ClusterConnectorTaskInfo  `json:"tasks"`
+	Errors    []ClusterConnectorInfoError `json:"errors"`
+	Type      string                      `json:"type"`
+	State     connectorState              `json:"state"`
+}
+
+// aggregatedConnectorTasksStatus contains information about the Task of a connectors, this is an intermediate state
+type aggregatedConnectorTasksStatus struct {
+	Total      int
+	Running    int
+	Paused     int
+	Restarting int
+	Unassigned int
+	Failed     int
+	Tasks      []ClusterConnectorTaskInfo
+	Errors     []ClusterConnectorInfoError
+}
+
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
@@ -271,6 +293,64 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	}, nil
 }
 
+// GetConnectorInfo requests the connector info in the context of a single connect cluster.
+func (s *Service) GetConnectorInfo(ctx context.Context, clusterName string, connector string) (con.ConnectorInfo, *rest.Error) {
+	c, restErr := s.getConnectClusterByName(clusterName)
+	if restErr != nil {
+		return con.ConnectorInfo{}, restErr
+	}
+
+	cInfo, err := c.Client.GetConnector(ctx, connector)
+	if err != nil {
+		return con.ConnectorInfo{}, &rest.Error{
+			Err:          err,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
+			Message:      fmt.Sprintf("Failed to get connector state: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+	connectorClass := getMapValueOrString(cInfo.Config, "connector.class", "unknown")
+	return con.ConnectorInfo{
+		Name:   cInfo.Name,
+		Config: s.Interceptor.KafkaConnectToConsole(connectorClass, cInfo.Config),
+		Tasks:  cInfo.Tasks,
+		Type:   cInfo.Type,
+	}, nil
+}
+
+// GetConnectorStatus requests the connector info in the context of a single connect cluster.
+func (s *Service) GetConnectorStatus(ctx context.Context, clusterName string, connector string) (ConnectorStatus, *rest.Error) {
+	c, restErr := s.getConnectClusterByName(clusterName)
+	if restErr != nil {
+		return ConnectorStatus{}, restErr
+	}
+
+	cStatus, err := c.Client.GetConnectorStatus(ctx, connector)
+	if err != nil {
+		return ConnectorStatus{}, &rest.Error{
+			Err:          err,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
+			Message:      fmt.Sprintf("Failed to get connector state: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	aggregatedTasksStatus := getAggregatedTasksStatus(cStatus.Name, cStatus.Tasks)
+
+	holisticConnectorState := getHolisticStateFromConnector(cStatus, aggregatedTasksStatus)
+
+	return ConnectorStatus{
+		Name:      cStatus.Name,
+		Connector: cStatus.Connector,
+		Tasks:     aggregatedTasksStatus.Tasks,
+		Errors:    append(holisticConnectorState.Errors, aggregatedTasksStatus.Errors...),
+		Type:      cStatus.Type,
+		State:     holisticConnectorState.State,
+	}, nil
+}
+
 func (s *Service) listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
 	if l == nil {
 		return []ClusterConnectorInfo{}
@@ -286,46 +366,56 @@ func (s *Service) listConnectorsExpandedToClusterConnectorInfo(l map[string]con.
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
-func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHook, c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
-	totalTasks := len(c.Status.Tasks)
-	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
-	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, totalTasks)
+func getAggregatedTasksStatus(connectorName string, tasks []con.TaskState) aggregatedConnectorTasksStatus {
+	aggregatedTasksStatus := aggregatedConnectorTasksStatus{
+		Tasks:      make([]ClusterConnectorTaskInfo, len(tasks)),
+		Total:      len(tasks),
+		Running:    0,
+		Paused:     0,
+		Restarting: 0,
+		Unassigned: 0,
+		Failed:     0,
+		Errors:     make([]ClusterConnectorInfoError, 0),
+	}
 
-	runningTasks := 0
-	failedTasks := 0
-	pausedTasks := 0
-	restartingTasks := 0
-	unassignedTasks := 0
-	for i, task := range c.Status.Tasks {
-		tasks[i] = ClusterConnectorTaskInfo{
+	for i, task := range tasks {
+		aggregatedTasksStatus.Tasks[i] = ClusterConnectorTaskInfo{
 			TaskID:   task.ID,
 			State:    task.State,
 			WorkerID: task.WorkerID,
 			Trace:    task.Trace,
 		}
-
 		switch task.State {
 		case connectorStateRunning:
-			runningTasks++
+			aggregatedTasksStatus.Running++
 		case connectorStateFailed:
-			failedTasks++
+			aggregatedTasksStatus.Failed++
 
-			errTitle := fmt.Sprintf("Connector %s Task %d is in failed state.", c.Info.Name, task.ID)
-			connectorTaskErrors = append(connectorTaskErrors, ClusterConnectorInfoError{
+			errTitle := fmt.Sprintf("Connector %s Task %d is in failed state.", connectorName, task.ID)
+			aggregatedTasksStatus.Errors = append(aggregatedTasksStatus.Errors, ClusterConnectorInfoError{
 				Type:    connectorErrorTypeError,
 				Title:   errTitle,
 				Content: traceToErrorContent(errTitle, task.Trace),
 			})
 		case connectorStatePaused:
-			pausedTasks++
+			aggregatedTasksStatus.Paused++
 		case connectorStateRestarting:
-			restartingTasks++
+			aggregatedTasksStatus.Restarting++
 		case ConnectorStatusUnassigned:
-			unassignedTasks++
+			aggregatedTasksStatus.Unassigned++
 		}
 	}
 
+	return aggregatedTasksStatus
+}
+
+type holisticConnectorState struct {
+	State  string
+	Errors []ClusterConnectorInfoError
+}
+
+//nolint:cyclop // lots of inspection of state and tasks to determine status and errors
+func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTasksStatus aggregatedConnectorTasksStatus) holisticConnectorState {
 	// LOGIC:
 	// HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
 	// UNHEALTHY: Connector is failed state.
@@ -341,40 +431,40 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 	var connStatus connectorStatus
 	var errDetailedContent string
 	//nolint:gocritic,goconst // this if else is easier to read as they map to rules and logic specified above.
-	if (c.Status.Connector.State == connectorStateRunning) &&
-		totalTasks > 0 && runningTasks == totalTasks {
+	if (status.Connector.State == connectorStateRunning) &&
+		aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Running == aggregatedTasksStatus.Total {
 		connStatus = ConnectorStatusHealthy
-	} else if (c.Status.Connector.State == connectorStateFailed) ||
-		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
+	} else if (status.Connector.State == connectorStateFailed) ||
+		((status.Connector.State == connectorStateRunning) && (aggregatedTasksStatus.Total == 0 || aggregatedTasksStatus.Total == aggregatedTasksStatus.Failed)) {
 		connStatus = ConnectorStatusUnhealthy
 
-		if c.Status.Connector.State == connectorStateFailed {
-			errDetailedContent = "Connector " + c.Info.Name + " is in failed state."
-		} else if totalTasks == 0 {
-			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state but has no tasks."
-		} else if totalTasks == failedTasks {
-			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state. All tasks are in failed state."
+		if status.Connector.State == connectorStateFailed {
+			errDetailedContent = "Connector " + status.Name + " is in failed state."
+		} else if aggregatedTasksStatus.Total == 0 {
+			errDetailedContent = "Connector " + status.Name + " is in " + strings.ToLower(status.Connector.State) + " state but has no tasks."
+		} else if aggregatedTasksStatus.Total == aggregatedTasksStatus.Failed {
+			errDetailedContent = "Connector " + status.Name + " is in " + strings.ToLower(status.Connector.State) + " state. All tasks are in failed state."
 		}
-	} else if (c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
+	} else if (status.Connector.State == connectorStateRunning) && (aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Failed > 0 && aggregatedTasksStatus.Failed < aggregatedTasksStatus.Total) {
 		connStatus = ConnectorStatusDegraded
 		errDetailedContent = fmt.Sprintf("Connector %s is in %s state but has %d / %d failed tasks.",
-			c.Info.Name, strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
-	} else if c.Status.Connector.State == connectorStatePaused {
+			status.Name, strings.ToLower(status.Connector.State), aggregatedTasksStatus.Failed, aggregatedTasksStatus.Total)
+	} else if status.Connector.State == connectorStatePaused {
 		connStatus = ConnectorStatusPaused
-	} else if c.Status.Connector.State == connectorStateStopped {
+	} else if status.Connector.State == connectorStateStopped {
 		connStatus = ConnectorStatusStopped
-	} else if (c.Status.Connector.State == connectorStateRestarting) ||
-		(totalTasks > 0 && restartingTasks > 0) {
+	} else if (status.Connector.State == connectorStateRestarting) ||
+		(aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Restarting > 0) {
 		connStatus = ConnectorStatusRestarting
-	} else if (c.Status.Connector.State == connectorStateUnassigned) ||
-		((c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && unassignedTasks > 0)) {
+	} else if (status.Connector.State == connectorStateUnassigned) ||
+		((status.Connector.State == connectorStateRunning) && (aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Unassigned > 0)) {
 		connStatus = ConnectorStatusUnassigned
-	} else if c.Status.Connector.State == connectorStateDestroyed {
+	} else if status.Connector.State == connectorStateDestroyed {
 		connStatus = ConnectorStatusDestroyed
 	} else {
 		connStatus = ConnectorStatusUnknown
 		errDetailedContent = fmt.Sprintf("Unknown connector status. Connector %s is in %s state.",
-			c.Info.Name, strings.ToLower(c.Status.Connector.State))
+			status.Name, strings.ToLower(status.Connector.State))
 	}
 
 	connectorErrors := make([]ClusterConnectorInfoError, 0)
@@ -385,7 +475,7 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 			stateStr = "degraded"
 		}
 
-		errTitle := "Connector " + c.Info.Name + " is in " + stateStr + " state."
+		errTitle := "Connector " + status.Name + " is in " + stateStr + " state."
 
 		defaultContent := errTitle
 		if errDetailedContent != "" {
@@ -395,18 +485,50 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
 			Type:    connectorErrorTypeError,
 			Title:   errTitle,
-			Content: traceToErrorContent(defaultContent, c.Status.Connector.Trace),
+			Content: traceToErrorContent(defaultContent, status.Connector.Trace),
 		})
-	} else if len(c.Status.Connector.Trace) > 0 {
-		errTitle := "Connector " + c.Info.Name + " has an error"
+	} else if len(status.Connector.Trace) > 0 {
+		errTitle := "Connector " + status.Name + " has an error"
 		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
 			Type:    connectorErrorTypeError,
 			Title:   errTitle,
-			Content: traceToErrorContent(errTitle, c.Status.Connector.Trace),
+			Content: traceToErrorContent(errTitle, status.Connector.Trace),
 		})
 	}
 
-	connectorErrors = append(connectorErrors, connectorTaskErrors...)
+	return holisticConnectorState{
+		State:  connStatus,
+		Errors: connectorErrors,
+	}
+}
+
+func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHook, c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
+	// There seems to be a type missmatch for now I think it's ok to do this conversion looking for a fix in the upstream implementation
+	tasks := make([]con.TaskState, len(c.Status.Tasks))
+
+	for i, task := range c.Status.Tasks {
+		tasks[i] = con.TaskState{
+			ID:       task.ID,
+			State:    task.State,
+			WorkerID: task.WorkerID,
+			Trace:    task.Trace,
+		}
+	}
+
+	status := con.ConnectorStateInfo{
+		Name:      c.Status.Name,
+		Connector: c.Status.Connector,
+		Tasks:     tasks,
+		Type:      c.Status.Type,
+	}
+
+	aggregatedTasksStatus := getAggregatedTasksStatus(c.Info.Name, tasks)
+
+	holisticState := getHolisticStateFromConnector(status, aggregatedTasksStatus)
+
+	connectorErrors := holisticState.Errors
+
+	connectorErrors = append(connectorErrors, aggregatedTasksStatus.Errors...)
 
 	connectorClass := getMapValueOrString(c.Info.Config, "connector.class", "unknown")
 	if configHook == nil {
@@ -422,12 +544,12 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 		Type:         c.Info.Type,
 		State:        c.Status.Connector.State,
 		WorkerID:     c.Status.Connector.WorkerID,
-		Status:       connStatus,
-		Tasks:        tasks,
+		Status:       holisticState.State,
+		Tasks:        aggregatedTasksStatus.Tasks,
 		Trace:        c.Status.Connector.Trace,
 		Errors:       connectorErrors,
 		TotalTasks:   len(c.Status.Tasks),
-		RunningTasks: runningTasks,
+		RunningTasks: aggregatedTasksStatus.Running,
 	}
 }
 
