@@ -52,7 +52,7 @@ func (m mapper) connectorsHTTPResponseToProto(httpResponse kafkaconnect.ClusterC
 			Tasks:         m.taskInfoListToProtoStatus(connector.Tasks),
 			Type:          connector.Type,
 			Errors:        errors,
-			HolisticState: m.holisticStateToProto(connector.State),
+			HolisticState: m.holisticStateToProto(connector.Status),
 		}
 	}
 

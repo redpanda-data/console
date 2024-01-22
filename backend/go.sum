@@ -79,6 +79,8 @@ github.com/cloudhut/common v0.10.0 h1:Z5nhW3yo60bJSGBJEq6MZurlu3XrYJFMPWPCsVJFcD
 github.com/cloudhut/common v0.10.0/go.mod h1:qbvZg1TgR2mO11rS3d/NCGeUzUzzdEMHTivsSeFjO2A=
 github.com/cloudhut/connect-client v0.0.0-20240111195309-ea134bd418d2 h1:APWoZZP3vqKwV2C4rWmR3FXclcCs0WG0UDCN4NP3Byk=
 github.com/cloudhut/connect-client v0.0.0-20240111195309-ea134bd418d2/go.mod h1:khC9xPwJVKZQ02jtn3n64gEgOKtlVrcWuSOvmj5hSO4=
+github.com/cloudhut/connect-client v0.0.0-20240122153328-02a3103805d8 h1:/vAjE5Gvhj88G2+xziuqhrSRCPjmDeuDakTaBz3s7GI=
+github.com/cloudhut/connect-client v0.0.0-20240122153328-02a3103805d8/go.mod h1:khC9xPwJVKZQ02jtn3n64gEgOKtlVrcWuSOvmj5hSO4=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
 github.com/containerd/containerd v1.7.11 h1:lfGKw3eU35sjV0aG2eYZTiwFEY1pCzxdzicHP3SZILw=

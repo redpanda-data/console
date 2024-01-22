@@ -503,28 +503,11 @@ func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTask
 }
 
 func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHook, c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
-	// There seems to be a type missmatch for now I think it's ok to do this conversion looking for a fix in the upstream implementation
-	tasks := make([]con.TaskState, len(c.Status.Tasks))
+	// Get the aggregated tasks status, counts and formatted errors
+	aggregatedTasksStatus := getAggregatedTasksStatus(c.Info.Name, c.Status.Tasks)
 
-	for i, task := range c.Status.Tasks {
-		tasks[i] = con.TaskState{
-			ID:       task.ID,
-			State:    task.State,
-			WorkerID: task.WorkerID,
-			Trace:    task.Trace,
-		}
-	}
-
-	status := con.ConnectorStateInfo{
-		Name:      c.Status.Name,
-		Connector: c.Status.Connector,
-		Tasks:     tasks,
-		Type:      c.Status.Type,
-	}
-
-	aggregatedTasksStatus := getAggregatedTasksStatus(c.Info.Name, tasks)
-
-	holisticState := getHolisticStateFromConnector(status, aggregatedTasksStatus)
+	// Get the holistic state, applying our custom logic
+	holisticState := getHolisticStateFromConnector(c.Status, aggregatedTasksStatus)
 
 	connectorErrors := holisticState.Errors
 
