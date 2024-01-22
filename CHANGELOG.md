@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.4.0 / 2024-01-23
+
+- [FEATURE] Specify strategy (e.g. INT8) for decoding messages
+- [FEATURE] Show summary of each failed decoding strategy when auto decoding messages fails
+- [FEATURE] Full schema management (create, update, delete, compare versions)
+- [IMPROVEMENT] Add button to copy password to clipboard after creating a new user
+- [IMPROVEMENT] Deprecate Websockets in favour of HTTP streaming for streaming messages
+- [IMPROVEMENT] Align UI with Redpanda theme by migrating frontend components from AntD to Redpanda's UI library
+- [IMPROVEMENT] Several improvements for existing and new connectors in the Kafka Connect setup wizard
+
 ## v2.3.9 / 2024-01-15
 
 - [SECURITY] Update update github.com/go-git/go-git/v5 to address CVE-2023-4956.
