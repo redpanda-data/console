@@ -26,6 +26,14 @@ type Server struct {
 	// API. By default, a same-site policy is enforced. This setting is required to prevent
 	// CSRF-attacks.
 	AllowedOrigins []string `yaml:"allowedOrigins"`
+
+	// Debug allows to configure the pprof debug handler options.
+	Debug DebugConfig `yaml:"debug"`
+}
+
+// DebugConfig contains configuration for the pprof debug handler.
+type DebugConfig struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // SetDefaults for server config.
@@ -40,4 +48,6 @@ func (s *Server) SetDefaults() {
 	// 2. https://github.com/connectrpc/connect-go/issues/356
 	s.HTTPServerWriteTimeout = 32 * time.Minute
 	s.AllowedOrigins = nil
+	// Debug is enabled by default for backward compatibility.
+	s.Debug.Enabled = true
 }
