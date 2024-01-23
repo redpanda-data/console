@@ -32,7 +32,10 @@ export class AdminUsers extends Component<{}> {
 
     render() {
         if (!api.adminInfo) return DefaultSkeleton;
-        const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.match(this.quickSearch) || u.oauthUserId.match(this.quickSearch)) : api.adminInfo.users;
+
+        const quickSearchRegExp = new RegExp(this.quickSearch, 'i')
+
+        const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)) : api.adminInfo.users;
 
         const table = (
             <DataTable<UserDetails>

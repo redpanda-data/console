@@ -68,10 +68,12 @@ class GroupList extends PageComponent {
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
 
+        const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i')
+
         const groups = Array.from(api.consumerGroups.values())
             .filter(groupDescription =>
-                groupDescription.groupId.match(uiSettings.consumerGroupList.quickSearch) ||
-                groupDescription.protocol.match(uiSettings.consumerGroupList.quickSearch)
+                groupDescription.groupId.match(quickSearchRegExp) ||
+                groupDescription.protocol.match(quickSearchRegExp)
             );
         const stateGroups = groups.groupInto(g => g.state);
 

@@ -94,8 +94,10 @@ class TopicList extends PageComponent {
         if (uiSettings.topicList.hideInternalTopics) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
+        const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch.toLowerCase(), 'i')
+
         topics = topics.filter(x => {
-            return x.topicName.toLowerCase().match(uiSettings.topicList.quickSearch.toLowerCase());
+            return x.topicName.toLowerCase().match(quickSearchRegExp);
         });
 
 

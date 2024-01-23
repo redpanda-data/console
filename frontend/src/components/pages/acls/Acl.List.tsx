@@ -86,8 +86,10 @@ class AclList extends PageComponent {
             </Alert>
             : null;
 
+        const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
+
         const groups = this.principalGroups.filter(
-            aclGroup => aclGroup.principalName.match(uiSettings.aclList.configTable.quickSearch)
+            aclGroup => aclGroup.principalName.match(quickSearchRegExp)
         );
 
         return <>
