@@ -208,8 +208,10 @@ func (api *API) routes() *chi.Mux {
 			r.Handle("/admin/health", api.handleLivenessProbe())
 			r.Handle("/admin/startup", api.handleStartupProbe())
 
-			// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
-			r.Mount("/debug", chimiddleware.Profiler())
+			if api.Cfg.REST.Debug.Enabled {
+				// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
+				r.Mount("/debug", chimiddleware.Profiler())
+			}
 		})
 
 		// API routes
