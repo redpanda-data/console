@@ -86,8 +86,10 @@ class AclList extends PageComponent {
             </Alert>
             : null;
 
+        const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
+
         const groups = this.principalGroups.filter(
-            aclGroup => aclGroup.principalName.includes(uiSettings.aclList.configTable.quickSearch)
+            aclGroup => aclGroup.principalName.match(quickSearchRegExp)
         );
 
         return <>
@@ -340,7 +342,12 @@ class AclList extends PageComponent {
     SearchControls = observer(() => {
         return (
             <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <SearchField width="300px" searchText={uiSettings.aclList.configTable.quickSearch} setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)} />
+                <SearchField
+                    width="300px"
+                    searchText={uiSettings.aclList.configTable.quickSearch}
+                    setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)}
+                    placeholderText="Enter search term/regex"
+                />
 
                 <span style={{ marginLeft: 'auto' }}> </span>
 

@@ -32,7 +32,10 @@ export class AdminUsers extends Component<{}> {
 
     render() {
         if (!api.adminInfo) return DefaultSkeleton;
-        const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch)) : api.adminInfo.users;
+
+        const quickSearchRegExp = new RegExp(this.quickSearch, 'i')
+
+        const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)) : api.adminInfo.users;
 
         const table = (
             <DataTable<UserDetails>
@@ -76,7 +79,9 @@ export class AdminUsers extends Component<{}> {
 
         return <MotionDiv>
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
-                <SearchField width="300px"
+                <SearchField
+                    width="300px"
+                    placeholderText="Enter search term/regex"
                     searchText={this.quickSearch}
                     setSearchText={x => this.quickSearch = x}
                 />

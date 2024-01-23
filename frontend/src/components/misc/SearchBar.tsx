@@ -25,6 +25,7 @@ class SearchBar<TItem> extends Component<{
     filterText: string,
     onQueryChanged: (value: string) => void,
     onFilteredDataChanged: (data: TItem[]) => void,
+    placeholderText?: string,
 }> {
 
     private filteredSource = {} as FilterableDataSource<TItem>;
@@ -77,6 +78,7 @@ class SearchBar<TItem> extends Component<{
             <SearchField width="350px"
                 searchText={this.props.filterText}
                 setSearchText={this.onChange}
+                placeholderText={this.props.placeholderText}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />
