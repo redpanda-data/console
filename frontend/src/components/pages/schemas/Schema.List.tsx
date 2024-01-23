@@ -108,7 +108,7 @@ class SchemaList extends PageComponent<{}> {
 
         const filteredSubjects = api.schemaSubjects
             .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
-            .filter(x => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()));
+            .filter(x => x.name.toLowerCase().match(uiSettings.schemaList.quickSearch.toLowerCase()));
 
         return (
             <PageContent key="b">
@@ -130,6 +130,7 @@ class SchemaList extends PageComponent<{}> {
                 {renderRequestErrors()}
 
                 <SearchBar<{ name: string }>
+                    placeholderText="Enter search term/regex"
                     dataSource={() => (api.schemaSubjects || []).map(str => ({ name: str.name }))}
                     isFilterMatch={this.isFilterMatch}
                     filterText={uiSettings.schemaList.quickSearch}

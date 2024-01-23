@@ -94,7 +94,9 @@ class TopicList extends PageComponent {
         if (uiSettings.topicList.hideInternalTopics) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
-        topics = topics.filter(x => x.topicName.toLowerCase().includes(uiSettings.topicList.quickSearch.toLowerCase()));
+        topics = topics.filter(x => {
+            return x.topicName.toLowerCase().match(uiSettings.topicList.quickSearch.toLowerCase());
+        });
 
 
         const partitionCount = topics.sum((x) => x.partitionCount);
@@ -112,6 +114,7 @@ class TopicList extends PageComponent {
 
                 <Box pt={6}>
                     <SearchBar<Topic>
+                        placeholderText="Enter search term/regex"
                         dataSource={() => topics || []}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.topicList.quickSearch}

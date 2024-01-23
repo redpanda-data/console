@@ -70,8 +70,8 @@ class GroupList extends PageComponent {
 
         const groups = Array.from(api.consumerGroups.values())
             .filter(groupDescription =>
-                groupDescription.groupId.includes(uiSettings.consumerGroupList.quickSearch) ||
-                groupDescription.protocol.includes(uiSettings.consumerGroupList.quickSearch)
+                groupDescription.groupId.match(uiSettings.consumerGroupList.quickSearch) ||
+                groupDescription.protocol.match(uiSettings.consumerGroupList.quickSearch)
             );
         const stateGroups = groups.groupInto(g => g.state);
 
@@ -170,7 +170,7 @@ class GroupList extends PageComponent {
     }
 
     SearchBar = observer(() => {
-        return <SearchField width="350px"
+        return <SearchField width="350px" placeholderText="Enter search term/regex"
             searchText={uiSettings.consumerGroupList.quickSearch}
             setSearchText={x => uiSettings.consumerGroupList.quickSearch = x}
         />
