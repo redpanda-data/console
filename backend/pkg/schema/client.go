@@ -52,7 +52,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetHeader("Content-Type", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
-		SetTimeout(5 * time.Second)
+		SetTimeout(30 * time.Second)
 
 	// Configure credentials
 	if cfg.Username != "" {
@@ -697,9 +697,18 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	}
 	ch := make(chan chRes, len(subjectsRes.Subjects))
 
+	// limit max concurrency to 10 requests at a time
+	guard := make(chan struct{}, 10)
+
 	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
+		guard <- struct{}{}
+
 		go func(s string) {
+			defer func() {
+				<-guard
+			}()
+
 			srRes, err := c.GetSchemasBySubject(ctx, s, showSoftDeleted)
 			ch <- chRes{
 				schemaRes: srRes,
