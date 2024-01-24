@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useRef, useState } from 'react';
+import React, { FC, useMemo, useRef, useState } from 'react';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -25,11 +25,12 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Box, Button, Checkbox, DataTable, Flex, Icon, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Box, Button, Checkbox, DataTable, Flex, Icon,
+    PaginationState, Updater, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
 
 @observer
@@ -80,7 +81,6 @@ class TopicList extends PageComponent {
     refreshData(force: boolean) {
         api.refreshTopics(force);
         api.refreshClusterOverview(force);
-
     }
 
     isFilterMatch(filter: string, item: Topic): boolean {
@@ -142,54 +142,9 @@ class TopicList extends PageComponent {
                         <this.CreateTopicModal />
                     </div>
                     <Box my={4}>
-                        <DataTable<Topic>
-                            data={topics}
-                            pagination={true}
-                            columns={[
-                                {
-                                    header: 'Name',
-                                    accessorKey: 'topicName',
-                                    cell: ({row: {original: topic}}) => <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>,
-                                    size: Infinity,
-                                },
-                                {
-                                    header: 'Partitions',
-                                    accessorKey: 'partitions',
-                                    cell: ({row: {original: topic}}) => topic.partitionCount,
-                                },
-                                {
-                                    header: 'Replicas',
-                                    accessorKey: 'replicationFactor',
-                                },
-                                {
-                                    header: 'CleanupPolicy',
-                                    accessorKey: 'cleanupPolicy',
-                                },
-                                {
-                                    header: 'Size',
-                                    accessorKey: 'size',
-                                    cell: ({row: {original: topic}}) => renderLogDirSummary(topic.logDirSummary),
-                                },
-                                {
-                                    id: 'action',
-                                    header: '',
-                                    cell: ({row: {original: record}}) => (
-                                        <Flex gap={1}>
-                                            <DeleteDisabledTooltip topic={record}>
-                                                <button
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        this.topicToDelete = record;
-                                                    }}
-                                                >
-                                                    <Icon as={HiOutlineTrash} />
-                                                </button>
-                                            </DeleteDisabledTooltip>
-                                        </Flex>
-                                    ),
-                                },
-                            ]}
-                        />
+                        <TopicsTable topics={topics} onDelete={(record) => {
+                            this.topicToDelete = record;
+                        }} />
                     </Box>
                 </Section>
 
@@ -206,6 +161,81 @@ class TopicList extends PageComponent {
     }
 }
 export default TopicList;
+
+
+export const onPaginationChange = (state: PaginationState, callBack?: (args: { pageSize: number; pageIndex: number }) => void) => (x: Updater<PaginationState>) => {
+    const newState = typeof x === 'function' ? x(state) : x
+    callBack?.(newState)
+}
+
+const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
+    const { search } = useLocation();
+    const paginationParams = useMemo(() => {
+        const searchParams = new URLSearchParams(search)
+        return {
+            pageSize: Number(searchParams.get('pageSize')) || uiSettings.topicList.pageSize,
+            pageIndex: Number(searchParams.get('page')) || 0,
+        }
+    }, [search])
+
+    return (
+        <DataTable<Topic>
+            data={topics}
+            pagination={paginationParams}
+            onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex}) => {
+                uiSettings.topicList.pageSize = pageSize
+                editQuery(query => {
+                    query['page'] = String(pageIndex)
+                    query['pageSize'] = String(pageSize)
+                })
+            })}
+            columns={[
+                {
+                    header: 'Name',
+                    accessorKey: 'topicName',
+                    cell: ({row: {original: topic}}) => <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>,
+                    size: Infinity,
+                },
+                {
+                    header: 'Partitions',
+                    accessorKey: 'partitions',
+                    cell: ({row: {original: topic}}) => topic.partitionCount,
+                },
+                {
+                    header: 'Replicas',
+                    accessorKey: 'replicationFactor',
+                },
+                {
+                    header: 'CleanupPolicy',
+                    accessorKey: 'cleanupPolicy',
+                },
+                {
+                    header: 'Size',
+                    accessorKey: 'size',
+                    cell: ({row: {original: topic}}) => renderLogDirSummary(topic.logDirSummary),
+                },
+                {
+                    id: 'action',
+                    header: '',
+                    cell: ({row: {original: record}}) => (
+                        <Flex gap={1}>
+                            <DeleteDisabledTooltip topic={record}>
+                                <button
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onDelete(record)
+                                    }}
+                                >
+                                    <Icon as={HiOutlineTrash} />
+                                </button>
+                            </DeleteDisabledTooltip>
+                        </Flex>
+                    ),
+                },
+            ]}
+        />
+    )
+}
 
 const iconAllowed = (
     <span style={{ color: 'green' }}>
