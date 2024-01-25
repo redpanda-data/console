@@ -87,4 +87,6 @@ type Servicer interface {
 	DescribeConfigs(ctx context.Context, req *kmsg.DescribeConfigsRequest) (*kmsg.DescribeConfigsResponse, error)
 	// DeleteTopics proxies the request/response to delete topics via the Kafka API.
 	DeleteTopics(ctx context.Context, deleteReq *kmsg.DeleteTopicsRequest) (*kmsg.DeleteTopicsResponse, error)
+	// IncrementalAlterConfigsKafka proxies the request/response to incrementally alter configs via the Kafka API.
+	IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error)
 }

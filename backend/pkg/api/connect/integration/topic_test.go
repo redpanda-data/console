@@ -567,3 +567,146 @@ func (s *APISuite) TestGetTopicConfiguration() {
 		assert.Contains(errResponse, "RESOURCE_NOT_FOUND")
 	})
 }
+
+func (s *APISuite) TestUpdateTopicConfiguration() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("update topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-valid-connect-go"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Update two topic configs where one shall be removed and another set to a different value
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		updateConfigReq := &v1alpha1.UpdateTopicConfigurationsRequest{
+			TopicName: topicName,
+			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
+				{
+					Key:       "cleanup.policy",
+					Value:     nil,
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+				},
+				{
+					Key:       "compression.type",
+					Value:     kmsg.StringPtr("producer"),
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
+				},
+			},
+		}
+		response, err := client.UpdateTopicConfigurations(ctx, connect.NewRequest(updateConfigReq))
+		require.NoError(err)
+		require.NotNil(response.Msg.Configurations)
+		assert.GreaterOrEqual(len(response.Msg.Configurations), 10) // We expect at least 10 config props to be returned
+
+		// 3. Compare the returned config values against our expectations
+		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
+		var compressionTypeConfig *v1alpha1.Topic_Configuration
+		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		for _, config := range response.Msg.Configurations {
+			switch config.Name {
+			case "cleanup.policy":
+				cleanupPolicyConfig = config
+			case "compression.type":
+				compressionTypeConfig = config
+			case "retention.bytes":
+				retentionBytesConfig = config
+			}
+		}
+		require.NotNil(cleanupPolicyConfig)
+		require.NotNil(compressionTypeConfig)
+		require.NotNil(retentionBytesConfig)
+
+		assert.Equal("delete", *cleanupPolicyConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source.String())
+
+		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
+
+		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source.String())
+	})
+
+	t.Run("update topic configuration of a valid topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-valid-http"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Update two topic configs where one shall be removed and another set to a different value
+		type updateTopicConfigRequest struct {
+			Key       string  `json:"key"`
+			Value     *string `json:"value"`
+			Operation string  `json:"operation"`
+		}
+		type updateTopicConfigResponse struct {
+			ConfigSynonyms []any  `json:"config_synonyms"`
+			Documentation  string `json:"documentation"`
+			IsReadOnly     bool   `json:"is_read_only"`
+			IsSensitive    bool   `json:"is_sensitive"`
+			Name           string `json:"name"`
+			Source         string `json:"source"`
+			Type           string `json:"type"`
+			Value          string `json:"value"`
+		}
+
+		var httpRes []updateTopicConfigResponse
+		httpReq := []updateTopicConfigRequest{
+			{
+				Key:       "cleanup.policy",
+				Value:     nil,
+				Operation: "CONFIG_ALTER_OPERATION_DELETE",
+			},
+			{
+				Key:       "compression.type",
+				Value:     kmsg.StringPtr("producer"),
+				Operation: "CONFIG_ALTER_OPERATION_SET",
+			},
+		}
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			BodyJSON(&httpReq).
+			ToJSON(&httpRes).
+			Patch().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+	})
+}

@@ -82,3 +82,19 @@ func (k *KafkaClientMapper) ConfigSynonymToProto(synonym kmsg.DescribeConfigsRes
 		Source: configSource,
 	}, nil
 }
+
+// AlterConfigOperationToKafka maps the proto enum for altering configurations to the kafka client equivalent.
+func (*KafkaClientMapper) AlterConfigOperationToKafka(op v1alpha1.ConfigAlterOperation) (kmsg.IncrementalAlterConfigOp, error) {
+	switch op {
+	case v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET:
+		return kmsg.IncrementalAlterConfigOpSet, nil
+	case v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE:
+		return kmsg.IncrementalAlterConfigOpDelete, nil
+	case v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_APPEND:
+		return kmsg.IncrementalAlterConfigOpAppend, nil
+	case v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SUBTRACT:
+		return kmsg.IncrementalAlterConfigOpSubtract, nil
+	default:
+		return -1, fmt.Errorf("unknown incremental alter operation %q could not be mapped to kafka client type", op.String())
+	}
+}

@@ -32,7 +32,9 @@ type IncrementalAlterConfigsResourceResponse struct {
 func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 	alterConfigs []kmsg.IncrementalAlterConfigsRequestResource,
 ) ([]IncrementalAlterConfigsResourceResponse, *rest.Error) {
-	configRes, err := s.kafkaSvc.IncrementalAlterConfigs(ctx, alterConfigs)
+	req := kmsg.NewIncrementalAlterConfigsRequest()
+	req.Resources = alterConfigs
+	configRes, err := s.kafkaSvc.IncrementalAlterConfigs(ctx, &req)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      err,
@@ -57,4 +59,12 @@ func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 	}
 
 	return patchedConfigs, nil
+}
+
+// IncrementalAlterConfigsKafka alters the configuration of a Kafka resource (broker/topic/...)
+// via the Kafka API. In contrast to IncrementalAlterConfigs the request and response re-uses the
+// original Kafka client kmsg types and thus is only a proxy function which is used for abstracting
+// and virtualizing the Console service.
+func (s *Service) IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error) {
+	return s.kafkaSvc.IncrementalAlterConfigs(ctx, req)
 }
