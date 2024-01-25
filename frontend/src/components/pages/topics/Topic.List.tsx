@@ -22,17 +22,41 @@ import { renderLogDirSummary } from '../../misc/common';
 import { PageComponent, PageInitHelper } from '../Page';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
-import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
+import {
+    CreateTopicModalContent,
+    CreateTopicModalState,
+    RetentionSizeUnit,
+    RetentionTimeUnit
+} from './CreateTopicModal/CreateTopicModal';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Box, Button, Checkbox, DataTable, Flex, Icon,
-    PaginationState, Updater, Popover, Text, Tooltip, useToast } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertDialog,
+    AlertDialogBody,
+    AlertDialogContent,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogOverlay,
+    AlertIcon,
+    Box,
+    Button,
+    Checkbox,
+    DataTable,
+    Flex,
+    Icon,
+    Popover,
+    Text,
+    Tooltip,
+    useToast
+} from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
 import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
 import usePaginationParams from '../../../hooks/usePaginationParams';
+import { onPaginationChange } from '../../../utils/pagination';
 
 @observer
 class TopicList extends PageComponent {
@@ -162,12 +186,6 @@ class TopicList extends PageComponent {
     }
 }
 export default TopicList;
-
-
-export const onPaginationChange = (state: PaginationState, callBack?: (args: { pageSize: number; pageIndex: number }) => void) => (x: Updater<PaginationState>) => {
-    const newState = typeof x === 'function' ? x(state) : x
-    callBack?.(newState)
-}
 
 const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
     const paginationParams = usePaginationParams(uiSettings.topicList.pageSize)

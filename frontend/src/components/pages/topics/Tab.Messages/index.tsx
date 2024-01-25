@@ -111,8 +111,8 @@ import { proto3 } from '@bufbuild/protobuf';
 import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { onPaginationChange } from '../Topic.List';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
+import { onPaginationChange } from '../../../../utils/pagination';
 
 
 interface TopicMessageViewProps {
