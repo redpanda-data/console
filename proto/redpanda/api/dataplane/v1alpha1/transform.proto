@@ -60,7 +60,7 @@ message DeleteTransformRequest {
   string name = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
   ];
 }
 
@@ -70,11 +70,7 @@ message DeployTransformRequest {
   // 'name' is the unique identifier for the transform. It must be a non-empty string,
   // with a maximum length of 128 bytes. It should contain only characters that are
   // valid UTF-8 and not control or format characters.
-  string name = 1 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
-  ];
+  string name = 1;
 
   // WASM binary for the transform. The binary must be a valid WASM binary
   bytes wasm_binary = 2;
@@ -90,21 +86,7 @@ message DeployTransformRequest {
   // Each key must be a non-empty string, not exceeding 128 bytes, and matching the
   // specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
   // The map can have at most 128 key-value pairs.
-  map<string, string> environment = 5 [(buf.validate.field).map = {
-    max_pairs: 128,
-    keys: {
-      string: {
-        min_len: 1,
-        max_len: 128,
-        pattern: "^[\\P{Cc}\\P{Cf}]+$"
-      }
-    },
-    values: {
-      string: {
-        max_bytes: 2048 // 2 KiB
-      }
-    }
-  }];
+  map<string, string> environment = 5;
 }
 
 message DeployTransformResponse {
