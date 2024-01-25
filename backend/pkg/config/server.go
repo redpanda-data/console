@@ -33,7 +33,11 @@ type Server struct {
 
 // DebugConfig contains configuration for the pprof debug handler.
 type DebugConfig struct {
+	// Enabled allows to toggle the debug endpoint.
 	Enabled bool `yaml:"enabled"`
+
+	// ForceLoopback binds the debug endpoint only to the host's loopback interface.
+	ForceLoopback bool `yaml:"forceLoopback"`
 }
 
 // SetDefaults for server config.
@@ -50,4 +54,6 @@ func (s *Server) SetDefaults() {
 	s.AllowedOrigins = nil
 	// Debug is enabled by default for backward compatibility.
 	s.Debug.Enabled = true
+	// Forcing loopback by default on debug is better security-wise.
+	s.Debug.ForceLoopback = true
 }
