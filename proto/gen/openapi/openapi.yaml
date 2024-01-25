@@ -428,7 +428,14 @@ components:
       type: object
     DeleteTopicResponse:
       type: object
+    DeleteTransformResponse:
+      type: object
     DeleteUserResponse:
+      type: object
+    DeployTransformResponse:
+      properties:
+        transform:
+          $ref: '#/components/schemas/TransformMetadata'
       type: object
     ErrorInfo:
       description: |-
@@ -577,6 +584,11 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
+    GetTransformResponse:
+      properties:
+        transform:
+          $ref: '#/components/schemas/TransformMetadata'
+      type: object
     Help:
       description: |-
         Provides links to documentation or for performing an out of band action.
@@ -716,6 +728,19 @@ components:
         replication_factor:
           format: int32
           type: integer
+    ListTransformsRequest.Filter:
+      properties:
+        name:
+          type: string
+      type: object
+    ListTransformsResponse:
+      properties:
+        next_page_token:
+          type: string
+        transforms:
+          items:
+            $ref: '#/components/schemas/TransformMetadata'
+          type: array
       type: object
     ListUsersRequest.Filter:
       properties:
@@ -763,6 +788,27 @@ components:
           type: boolean
         only_failed:
           type: boolean
+      type: object
+    PartitionStatus:
+      enum:
+        - PARTITION_STATUS_RUNNING
+        - PARTITION_STATUS_INACTIVE
+        - PARTITION_STATUS_ERRORED
+        - PARTITION_STATUS_UNKNOWN
+      type: string
+    PartitionTransformStatus:
+      properties:
+        lag:
+          format: int32
+          type: integer
+        node_id:
+          format: int32
+          type: integer
+        partition:
+          format: int32
+          type: integer
+        status:
+          $ref: '#/components/schemas/PartitionStatus'
       type: object
     PermissionType:
       enum:
@@ -1007,6 +1053,21 @@ components:
           type: string
         worker_id:
           type: string
+      type: object
+    TransformMetadata:
+      properties:
+        input_topic_name:
+          type: string
+        name:
+          type: string
+        output_topic_names:
+          items:
+            type: string
+          type: array
+        status:
+          items:
+            $ref: '#/components/schemas/PartitionTransformStatus'
+          type: array
       type: object
     UpdateConfiguration:
       properties:
@@ -2777,6 +2838,199 @@ paths:
       summary: Set Topic Configurations
       tags:
         - TopicService
+  /v1alpha1/transforms:
+    get:
+      description: Retrieve a list of transforms with optional filtering
+      operationId: TransformService_ListTransforms
+      parameters:
+        - in: query
+          name: filter.name
+          schema:
+            type: string
+        - in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTransformsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Transforms
+      tags:
+        - TransformService
+  /v1alpha1/transforms/{name}:
+    delete:
+      description: Delete a WASM transform with the requested name.
+      operationId: TransformService_DeleteTransform
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Transform deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Transform
+      tags:
+        - TransformService
+    get:
+      description: Get Transform!
+      operationId: TransformService_GetTransform
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTransformResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Transform
+      tags:
+        - TransformService
+    put:
+      description: Deploy or update a transform configuration.
+      operationId: TransformService_DeployTransform
+      parameters:
+        - description: |-
+            'name' is the unique identifier for the transform. It must be a non-empty string,
+            with a maximum length of 128 bytes. It should contain only characters that are
+            valid UTF-8 and not control or format characters.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+        - description: WASM binary for the transform. The binary must be a valid WASM binary
+          in: query
+          name: wasm_binary
+          schema:
+            format: byte
+            type: string
+        - description: '''input_topic_name'' specifies the name of the input topic for the transform.'
+          in: query
+          name: input_topic_name
+          schema:
+            type: string
+        - description: |-
+            'output_topic_names' is a list of output topics for the transform. This field can contain
+            multiple strings, each representing the name of an output topic.
+          in: query
+          name: output_topic_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: environment[string]
+          schema:
+            type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformMetadata'
+          description: Transform deployed or updated successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Deploy Transform
+      tags:
+        - TransformService
   /v1alpha1/users:
     get:
       description: List Users
@@ -3037,4 +3291,5 @@ tags:
   - name: KafkaConnectService
   - name: SecretService
   - name: TopicService
+  - name: TransformService
   - name: UserService

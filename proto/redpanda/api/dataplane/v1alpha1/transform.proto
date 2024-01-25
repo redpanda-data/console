@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message TransformMetadata {
+  string name = 1;
+  string input_topic_name = 2;
+  repeated string output_topic_names = 3;
+  repeated PartitionTransformStatus status = 4;
+}
+
+message PartitionTransformStatus {
+  int32 node_id = 1;
+  int32 partition = 2;
+  enum PartitionStatus {
+    PARTITION_STATUS_UNSPECIFIED = 0;
+    PARTITION_STATUS_RUNNING = 1;
+    PARTITION_STATUS_INACTIVE = 2;
+    PARTITION_STATUS_ERRORED = 3;
+    PARTITION_STATUS_UNKNOWN = 4;
+  }
+  PartitionStatus status = 3;
+  int32 lag = 4;
+}
+
+message ListTransformsRequest {
+  message Filter {
+    string name = 1 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+    ];
+  }
+  Filter filter = 1;
+  string page_token = 2;
+}
+
+message ListTransformsResponse {
+  string next_page_token = 1;
+  repeated TransformMetadata transforms = 2;
+}
+
+message GetTransformRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+}
+
+message GetTransformResponse {
+  TransformMetadata transform = 1;
+}
+
+message DeleteTransformRequest {
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+}
+
+message DeleteTransformResponse {}
+
+message DeployTransformRequest {
+  // 'name' is the unique identifier for the transform. It must be a non-empty string,
+  // with a maximum length of 128 bytes. It should contain only characters that are
+  // valid UTF-8 and not control or format characters.
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+
+  // WASM binary for the transform. The binary must be a valid WASM binary
+  bytes wasm_binary = 2;
+
+  // 'input_topic_name' specifies the name of the input topic for the transform.
+  string input_topic_name = 3;
+
+  // 'output_topic_names' is a list of output topics for the transform. This field can contain
+  // multiple strings, each representing the name of an output topic.
+  repeated string output_topic_names = 4;
+
+  // 'environment' is a map representing key-value pairs of environment configurations.
+  // Each key must be a non-empty string, not exceeding 128 bytes, and matching the
+  // specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
+  // The map can have at most 128 key-value pairs.
+  map<string, string> environment = 5 [(buf.validate.field).map = {
+    max_pairs: 128,
+    keys: {
+      string: {
+        min_len: 1,
+        max_len: 128,
+        pattern: "^[\\P{Cc}\\P{Cf}]+$"
+      }
+    },
+    values: {
+      string: {
+        max_bytes: 2048 // 2 KiB
+      }
+    }
+  }];
+}
+
+message DeployTransformResponse {
+  // 'transform' contains the metadata for the deployed transform. This includes
+  // details like the name, input and output topics, status
+  TransformMetadata transform = 1;
+}
+
+service TransformService {
+  rpc DeployTransform(DeployTransformRequest) returns (DeployTransformResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha1/transforms/{name}"
+      response_body: "transform"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Deploy Transform"
+      description: "Deploy or update a transform configuration."
+      responses: {
+        key: "201"
+        value: {
+          description: "Transform deployed or updated successfully."
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.TransformMetadata"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
+    option (google.api.http) = {get: "/v1alpha1/transforms"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Transforms"
+      description: "Retrieve a list of transforms with optional filtering"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTransformsResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/transforms/{name}"
+      response_body: "transform"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Transform"
+      description: "Get Transform!"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTransformResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/transforms/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Transform"
+      description: "Delete a WASM transform with the requested name."
+      responses: {
+        key: "204"
+        value: {
+          description: "Transform deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}
