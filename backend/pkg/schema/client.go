@@ -18,9 +18,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -52,7 +54,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetHeader("Content-Type", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
-		SetTimeout(5 * time.Second)
+		SetTimeout(10 * time.Second)
 
 	// Configure credentials
 	if cfg.Username != "" {
@@ -691,30 +693,29 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
 	}
 
-	type chRes struct {
-		schemaRes []SchemaVersionedResponse
-		err       error
-	}
-	ch := make(chan chRes, len(subjectsRes.Subjects))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10) // limit max concurrency to 10 requests at a time
 
-	// Describe all subjects concurrently one by one
+	schemas := make([]SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
+	mutex := sync.Mutex{}
+
 	for _, subject := range subjectsRes.Subjects {
-		go func(s string) {
-			srRes, err := c.GetSchemasBySubject(ctx, s, showSoftDeleted)
-			ch <- chRes{
-				schemaRes: srRes,
-				err:       err,
+		subject := subject
+		g.Go(func() error {
+			srRes, err := c.GetSchemasBySubject(ctx, subject, showSoftDeleted)
+			if err != nil {
+				return err
 			}
-		}(subject)
+
+			mutex.Lock()
+			schemas = append(schemas, srRes...)
+			mutex.Unlock()
+			return err
+		})
 	}
 
-	schemas := make([]SchemaVersionedResponse, 0)
-	for i := 0; i < cap(ch); i++ {
-		res := <-ch
-		if res.err != nil {
-			return nil, fmt.Errorf("failed to fetch at least one schema: %w", res.err)
-		}
-		schemas = append(schemas, res.schemaRes...)
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return schemas, nil
