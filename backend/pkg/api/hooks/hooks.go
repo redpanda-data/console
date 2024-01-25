@@ -130,6 +130,11 @@ type AuthorizationHooks interface {
 	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
+
+	// WASM Transform Hooks
+	CanListTransforms(ctx context.Context) (bool, *rest.Error)
+	CanDeployTransform(ctx context.Context) (bool, *rest.Error)
+	CanDeleteTransform(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.

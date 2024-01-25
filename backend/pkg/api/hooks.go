@@ -144,6 +144,11 @@ type AuthorizationHooks interface {
 	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
+
+	// WASM Transforms Hooks
+	CanListTransforms(ctx context.Context) (bool, *rest.Error)
+	CanDeployTransform(ctx context.Context) (bool, *rest.Error)
+	CanDeleteTransform(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
@@ -379,3 +384,10 @@ func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
 	return nil
 }
+
+// Authorization Hooks for wasm transforms
+func (*defaultHooks) CanListTransforms(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeployTransform(_ context.Context) (bool, *rest.Error) { return true, nil }
+func (*defaultHooks) CanDeleteTransform(_ context.Context) (bool, *rest.Error) { return true, nil }

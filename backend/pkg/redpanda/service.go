@@ -10,6 +10,7 @@
 package redpanda
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -191,4 +192,16 @@ func ClusterVersionFromBrokerList(brokers []adminapi.Broker) string {
 		}
 	}
 	return version
+}
+
+func (s *Service) ListWasmTransforms(ctx context.Context) ([]adminapi.TransformMetadata, error) {
+	return s.adminClient.ListWasmTransforms(ctx)
+}
+
+func (s *Service) DeployWasmTransform(ctx context.Context, t adminapi.TransformMetadata, file []byte) error {
+	return s.adminClient.DeployWasmTransform(ctx, t, bytes.NewReader(file))
+}
+
+func (s *Service) DeleteWasmTransform(ctx context.Context, name string) error {
+	return s.adminClient.DeleteWasmTransform(ctx, name)
 }
