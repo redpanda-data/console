@@ -212,7 +212,6 @@ func (api *API) routes() *chi.Mux {
 		// Debug routes
 		if api.Cfg.REST.Debug.Enabled {
 			router.Group(func(r chi.Router) {
-				api.Hooks.Route.ConfigInternalRouter(r)
 				if api.Cfg.REST.Debug.ForceLoopback {
 					r.Use(forceLoopbackMiddleware(api.Logger))
 				}
