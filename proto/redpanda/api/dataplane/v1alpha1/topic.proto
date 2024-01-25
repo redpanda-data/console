@@ -149,26 +149,19 @@ message GetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
-message UpdateTopicConfigurationRequest {
+message UpdateTopicConfigurationsRequest {
   message UpdateConfiguration {
     string key = 1;
-    string value = 2;
-    enum Operation {
-      OPERATION_UNSPECIFIED = 0;
-      OPERATION_SET = 1;
-      OPERATION_DELETE = 2;
-      OPERATION_APPEND = 3;
-      OPERATION_SUBTRACT = 4;
-    }
-    Operation operation = 3;
+    optional string value = 2;
+    ConfigAlterOperation operation = 3;
   }
   string topic_name = 1;
-  repeated UpdateConfiguration configuration = 2;
+  repeated UpdateConfiguration configurations = 2;
 }
 
-message UpdateTopicConfigurationResponse {
+message UpdateTopicConfigurationsResponse {
   // Topic's complete set of configurations after this partial patch has been applied.
-  repeated Topic.Configuration configuration = 1;
+  repeated Topic.Configuration configurations = 1;
 }
 
 message SetTopicConfigurationRequest {
@@ -271,10 +264,11 @@ service TopicService {
       }
     };
   }
-  rpc UpdateTopicConfiguration(UpdateTopicConfigurationRequest) returns (UpdateTopicConfigurationResponse) {
+  rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
     option (google.api.http) = {
-      patch: "/v1alpha1/topics/{topic_name}/configuration"
-      body: "configuration"
+      patch: "/v1alpha1/topics/{topic_name}/configurations"
+      body: "configurations"
+      response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update Topic Configuration"
