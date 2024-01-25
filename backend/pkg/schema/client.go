@@ -18,9 +18,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -691,39 +693,29 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
 	}
 
-	type chRes struct {
-		schemaRes []SchemaVersionedResponse
-		err       error
-	}
-	ch := make(chan chRes, len(subjectsRes.Subjects))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10) // limit max concurrency to 10 requests at a time
 
-	// limit max concurrency to 10 requests at a time
-	guard := make(chan struct{}, 10)
+	schemas := make([]SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
+	mutex := sync.Mutex{}
 
-	// Describe all subjects concurrently one by one
 	for _, subject := range subjectsRes.Subjects {
-		guard <- struct{}{}
-
-		go func(s string) {
-			defer func() {
-				<-guard
-			}()
-
-			srRes, err := c.GetSchemasBySubject(ctx, s, showSoftDeleted)
-			ch <- chRes{
-				schemaRes: srRes,
-				err:       err,
+		subject := subject
+		g.Go(func() error {
+			srRes, err := c.GetSchemasBySubject(ctx, subject, showSoftDeleted)
+			if err != nil {
+				return err
 			}
-		}(subject)
+
+			mutex.Lock()
+			schemas = append(schemas, srRes...)
+			mutex.Unlock()
+			return err
+		})
 	}
 
-	schemas := make([]SchemaVersionedResponse, 0)
-	for i := 0; i < cap(ch); i++ {
-		res := <-ch
-		if res.err != nil {
-			return nil, fmt.Errorf("failed to fetch at least one schema: %w", res.err)
-		}
-		schemas = append(schemas, res.schemaRes...)
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return schemas, nil

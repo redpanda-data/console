@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	//nolint:staticcheck // Switching to the google golang protojson comes with a few breaking changes.
 	"github.com/golang/protobuf/jsonpb"
@@ -25,6 +26,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/runtime/protoiface"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -64,6 +66,8 @@ type Service struct {
 
 	registryMutex sync.RWMutex
 	registry      *msgregistry.MessageRegistry
+
+	sfGroup singleflight.Group
 }
 
 // NewService creates a new proto.Service.
@@ -419,13 +423,23 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 }
 
 func (s *Service) tryCreateProtoRegistry() {
-	err := s.createProtoRegistry(context.Background())
-	if err != nil {
-		s.logger.Error("failed to update proto registry", zap.Error(err))
-	}
+	// since this is triggered on proto schema registry refresh interval,
+	// as well as when git or file system is updated
+	// lets protect against too aggressive refresh interval
+	// or multiple concurrent triggers
+	s.sfGroup.Do("tryCreateProtoRegistry", func() (any, error) {
+		err := s.createProtoRegistry(context.Background())
+		if err != nil {
+			s.logger.Error("failed to update proto registry", zap.Error(err))
+		}
+
+		return nil, nil
+	})
 }
 
 func (s *Service) createProtoRegistry(ctx context.Context) error {
+	startTime := time.Now()
+
 	files := make(map[string]filesystem.File)
 
 	if s.gitSvc != nil {
@@ -503,10 +517,13 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 		}
 	}
 
+	totalDuration := time.Since(startTime)
+
 	s.logger.Info("checked whether all mapped proto types also exist in the local registry",
 		zap.Int("types_found", foundTypes),
 		zap.Int("types_missing", missingTypes),
-		zap.Int("registered_types", len(fileDescriptors)))
+		zap.Int("registered_types", len(fileDescriptors)),
+		zap.Duration("operation_duration", totalDuration))
 
 	return nil
 }
