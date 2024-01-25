@@ -207,12 +207,20 @@ func (api *API) routes() *chi.Mux {
 			r.Handle("/admin/metrics", promhttp.Handler())
 			r.Handle("/admin/health", api.handleLivenessProbe())
 			r.Handle("/admin/startup", api.handleStartupProbe())
+		})
 
-			if api.Cfg.REST.Debug.Enabled {
+		// Debug routes
+		if api.Cfg.REST.Debug.Enabled {
+			router.Group(func(r chi.Router) {
+				api.Hooks.Route.ConfigInternalRouter(r)
+				if api.Cfg.REST.Debug.ForceLoopback {
+					r.Use(forceLoopbackMiddleware(api.Logger))
+				}
+
 				// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
 				r.Mount("/debug", chimiddleware.Profiler())
-			}
-		})
+			})
+		}
 
 		// API routes
 		router.Group(func(r chi.Router) {

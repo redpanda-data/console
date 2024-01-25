@@ -231,6 +231,12 @@ kafka:
 #   # API. By default, a same-site policy is enforced to prevent CSRF-attacks.
 #   # Only in very specific deployment models you may need to change the secure default.
 #   allowedOrigins: []
+#   # Debug allows to configure the pprof debug handler options. The pprof handler is exposed
+#   # by default in the /debug path and only served through the system loopback interface,
+#   # e.g. '127.0.0.1' or '::1'.
+#   debug:
+#     enabled: true # allows to toggle the debug endpoint
+#     forceLoopback: true # binds the debug endpoint only to the host's loopback interface
 
 # logger:
 #   level: info # Valid values are: debug, info, warn, error, fatal
