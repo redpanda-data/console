@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, useMemo, useRef, useState } from 'react';
+import React, { FC, useRef, useState } from 'react';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -30,8 +30,9 @@ import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFoo
 import { HiOutlineTrash } from 'react-icons/hi';
 import { isServerless } from '../../../config';
 import { Statistic } from '../../misc/Statistic';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
+import usePaginationParams from '../../../hooks/usePaginationParams';
 
 @observer
 class TopicList extends PageComponent {
@@ -169,14 +170,7 @@ export const onPaginationChange = (state: PaginationState, callBack?: (args: { p
 }
 
 const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
-    const { search } = useLocation();
-    const paginationParams = useMemo(() => {
-        const searchParams = new URLSearchParams(search)
-        return {
-            pageSize: Number(searchParams.get('pageSize')) || uiSettings.topicList.pageSize,
-            pageIndex: Number(searchParams.get('page')) || 0,
-        }
-    }, [search])
+    const paginationParams = usePaginationParams(uiSettings.topicList.pageSize)
 
     return (
         <DataTable<Topic>

@@ -13,7 +13,7 @@ import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined 
 import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode, useMemo, useState } from 'react';
+import React, { Component, FC, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
@@ -25,7 +25,7 @@ import {
     FilterEntry,
     PartitionOffsetOrigin,
     PreviewTagV2,
-    TimestampDisplayFormat
+    TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
@@ -104,7 +104,7 @@ import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue, Select as ChakraReactSelect } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
-import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
 import { WarningIcon } from '@chakra-ui/icons';
 import { proto3 } from '@bufbuild/protobuf';
@@ -112,6 +112,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { onPaginationChange } from '../Topic.List';
+import usePaginationParams from '../../../../hooks/usePaginationParams';
 
 
 interface TopicMessageViewProps {
@@ -508,16 +509,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
-        const { search } = useLocation();
-        const paginationParams = useMemo(() => {
-            const searchParams = new URLSearchParams(search)
-            return {
-                // these || conditions with default are here because of the existing local storage state on some browsers
-                pageSize: Number(searchParams.get('pageSize')) || uiState.topicSettings.searchParams.pageSize || 10,
-                pageIndex: Number(searchParams.get('page')) || uiState.topicSettings.searchParams.page || 0,
-            }
-        }, [search])
-
+        const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -605,7 +597,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 }}
                 pagination={paginationParams}
                 onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex}) => {
-                    uiState.topicSettings.searchParams.page = pageIndex
                     uiState.topicSettings.searchParams.pageSize = pageSize
                     editQuery(query => {
                         query['page'] = String(pageIndex)
