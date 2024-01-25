@@ -54,7 +54,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetHeader("Content-Type", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
-		SetTimeout(30 * time.Second)
+		SetTimeout(10 * time.Second)
 
 	// Configure credentials
 	if cfg.Username != "" {
