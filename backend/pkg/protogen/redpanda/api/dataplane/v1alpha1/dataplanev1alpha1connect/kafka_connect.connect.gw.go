@@ -25,6 +25,7 @@ type KafkaConnectServiceGatewayServer struct {
 	createConnector      connect_gateway.UnaryHandler[v1alpha1.CreateConnectorRequest, v1alpha1.CreateConnectorResponse]
 	restartConnector     connect_gateway.UnaryHandler[v1alpha1.RestartConnectorRequest, emptypb.Empty]
 	getConnector         connect_gateway.UnaryHandler[v1alpha1.GetConnectorRequest, v1alpha1.GetConnectorResponse]
+	getConnectorStatus   connect_gateway.UnaryHandler[v1alpha1.GetConnectorStatusRequest, v1alpha1.GetConnectorStatusResponse]
 	pauseConnector       connect_gateway.UnaryHandler[v1alpha1.PauseConnectorRequest, emptypb.Empty]
 	resumeConnector      connect_gateway.UnaryHandler[v1alpha1.ResumeConnectorRequest, emptypb.Empty]
 	stopConnector        connect_gateway.UnaryHandler[v1alpha1.StopConnectorRequest, emptypb.Empty]
@@ -45,6 +46,7 @@ func NewKafkaConnectServiceGatewayServer(svc KafkaConnectServiceHandler, opts ..
 		createConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceCreateConnectorProcedure, svc.CreateConnector, opts...),
 		restartConnector:     connect_gateway.NewUnaryHandler(KafkaConnectServiceRestartConnectorProcedure, svc.RestartConnector, opts...),
 		getConnector:         connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorProcedure, svc.GetConnector, opts...),
+		getConnectorStatus:   connect_gateway.NewUnaryHandler(KafkaConnectServiceGetConnectorStatusProcedure, svc.GetConnectorStatus, opts...),
 		pauseConnector:       connect_gateway.NewUnaryHandler(KafkaConnectServicePauseConnectorProcedure, svc.PauseConnector, opts...),
 		resumeConnector:      connect_gateway.NewUnaryHandler(KafkaConnectServiceResumeConnectorProcedure, svc.ResumeConnector, opts...),
 		stopConnector:        connect_gateway.NewUnaryHandler(KafkaConnectServiceStopConnectorProcedure, svc.StopConnector, opts...),
@@ -78,6 +80,10 @@ func (s *KafkaConnectServiceGatewayServer) RestartConnector(ctx context.Context,
 
 func (s *KafkaConnectServiceGatewayServer) GetConnector(ctx context.Context, req *v1alpha1.GetConnectorRequest) (*v1alpha1.GetConnectorResponse, error) {
 	return s.getConnector(ctx, req)
+}
+
+func (s *KafkaConnectServiceGatewayServer) GetConnectorStatus(ctx context.Context, req *v1alpha1.GetConnectorStatusRequest) (*v1alpha1.GetConnectorStatusResponse, error) {
+	return s.getConnectorStatus(ctx, req)
 }
 
 func (s *KafkaConnectServiceGatewayServer) PauseConnector(ctx context.Context, req *v1alpha1.PauseConnectorRequest) (*emptypb.Empty, error) {

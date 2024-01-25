@@ -10,8 +10,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.4.3
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/cloudhut/common v0.10.0
-	github.com/cloudhut/connect-client v0.0.0-20240111195309-ea134bd418d2
-	github.com/docker/docker v24.0.7+incompatible
+	github.com/cloudhut/connect-client v0.0.0-20240122153328-02a3103805d8
 	github.com/docker/go-connections v0.5.0
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/getkin/kin-openapi v0.122.0
@@ -85,6 +84,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
+	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

@@ -333,7 +333,7 @@ const SchemaEditor = observer((p: {
             </Flex>
 
             <Flex gap="8">
-                <FormField label="Key or value" width="auto">
+                <FormField label="Key or value" width="auto" isInvalid={state.strategy === 'TOPIC' && state.userInput.length > 0 && !state.keyOrValue} errorText="Required">
                     <RadioGroup name="keyOrValue"
                         isDisabled={isAddVersion}
                         value={state.keyOrValue}

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, ListConnectorTopicsRequest, ListConnectorTopicsResponse, PauseConnectorRequest, ResetConnectorTopicsRequest, RestartConnectorRequest, ResumeConnectorRequest, StopConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
+import { CreateConnectorRequest, CreateConnectorResponse, DeleteConnectorRequest, GetConnectClusterRequest, GetConnectClusterResponse, GetConnectorConfigRequest, GetConnectorConfigResponse, GetConnectorRequest, GetConnectorResponse, GetConnectorStatusRequest, GetConnectorStatusResponse, ListConnectClustersRequest, ListConnectClustersResponse, ListConnectorsRequest, ListConnectorsResponse, ListConnectorTopicsRequest, ListConnectorTopicsResponse, PauseConnectorRequest, ResetConnectorTopicsRequest, RestartConnectorRequest, ResumeConnectorRequest, StopConnectorRequest, UpsertConnectorRequest, UpsertConnectorResponse } from "./kafka_connect_pb";
 import { Empty, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -19,6 +19,9 @@ export const KafkaConnectService = {
   typeName: "redpanda.api.dataplane.v1alpha1.KafkaConnectService",
   methods: {
     /**
+     * ListConnectClusters implements the list clusters method, list connect
+     * clusters available in the console configuration
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectClusters
      */
     listConnectClusters: {
@@ -28,7 +31,7 @@ export const KafkaConnectService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetConnectClusterInfo implements the get cluster info method, exposes a Kafka
+     * GetConnectCluster implements the get cluster info method, exposes a Kafka
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectCluster
@@ -85,6 +88,21 @@ export const KafkaConnectService = {
       name: "GetConnector",
       I: GetConnectorRequest,
       O: GetConnectorResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
+     * Whether it is running or restarting, or if it has failed or paused
+     * Which worker it is assigned to
+     * Error information if it has failed
+     * The state of all its tasks
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorStatus
+     */
+    getConnectorStatus: {
+      name: "GetConnectorStatus",
+      I: GetConnectorStatusRequest,
+      O: GetConnectorStatusResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -149,7 +167,7 @@ export const KafkaConnectService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetConnectorConfig implements the get connector config method, expose a kafka connect equivalent REST endpoint
+     * GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig
      */

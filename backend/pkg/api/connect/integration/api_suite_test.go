@@ -68,7 +68,7 @@ func (s *APISuite) SetupSuite() {
 
 	// 2. Start Redpanda Docker container
 	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.2.18"),
+		testcontainers.WithImage("redpandadata/redpanda:v23.3.2"),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
 	)
@@ -86,7 +86,12 @@ func (s *APISuite) SetupSuite() {
 	s.testSeedBroker = seedBroker
 
 	// 3. Start Kafka Connect Docker container
-	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(ctx, s.network.Name, []string{"redpanda:29092"})
+	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(
+		ctx,
+		[]string{"redpanda:29092"},
+		network.WithNetwork([]string{"kconnect"}, s.network),
+		testcontainers.WithImage("docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-44344ad"),
+	)
 	require.NoError(err)
 
 	s.kConnectContainer = kConnectContainer
