@@ -125,6 +125,44 @@ proto3.util.setEnumType(ConfigType, "redpanda.api.dataplane.v1alpha1.ConfigType"
 ]);
 
 /**
+ * @generated from enum redpanda.api.dataplane.v1alpha1.ConfigAlterOperation
+ */
+export enum ConfigAlterOperation {
+  /**
+   * @generated from enum value: CONFIG_ALTER_OPERATION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CONFIG_ALTER_OPERATION_SET = 1;
+   */
+  SET = 1,
+
+  /**
+   * @generated from enum value: CONFIG_ALTER_OPERATION_DELETE = 2;
+   */
+  DELETE = 2,
+
+  /**
+   * @generated from enum value: CONFIG_ALTER_OPERATION_APPEND = 3;
+   */
+  APPEND = 3,
+
+  /**
+   * @generated from enum value: CONFIG_ALTER_OPERATION_SUBTRACT = 4;
+   */
+  SUBTRACT = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ConfigAlterOperation)
+proto3.util.setEnumType(ConfigAlterOperation, "redpanda.api.dataplane.v1alpha1.ConfigAlterOperation", [
+  { no: 0, name: "CONFIG_ALTER_OPERATION_UNSPECIFIED" },
+  { no: 1, name: "CONFIG_ALTER_OPERATION_SET" },
+  { no: 2, name: "CONFIG_ALTER_OPERATION_DELETE" },
+  { no: 3, name: "CONFIG_ALTER_OPERATION_APPEND" },
+  { no: 4, name: "CONFIG_ALTER_OPERATION_SUBTRACT" },
+]);
+
+/**
  * @generated from message redpanda.api.dataplane.v1alpha1.ConfigSynonym
  */
 export class ConfigSynonym extends Message<ConfigSynonym> {

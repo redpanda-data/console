@@ -39,6 +39,13 @@ components:
           title: Value is a topic level config value (e.g. 1073741824)
           type: string
       type: object
+    ConfigAlterOperation:
+      enum:
+        - CONFIG_ALTER_OPERATION_SET
+        - CONFIG_ALTER_OPERATION_DELETE
+        - CONFIG_ALTER_OPERATION_APPEND
+        - CONFIG_ALTER_OPERATION_SUBTRACT
+      type: string
     ConfigSource:
       enum:
         - CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG
@@ -919,26 +926,20 @@ components:
         key:
           type: string
         operation:
-          $ref: '#/components/schemas/UpdateConfiguration.Operation'
+          $ref: '#/components/schemas/ConfigAlterOperation'
         value:
+          nullable: true
           type: string
       type: object
-    UpdateConfiguration.Operation:
-      enum:
-        - OPERATION_SET
-        - OPERATION_DELETE
-        - OPERATION_APPEND
-        - OPERATION_SUBTRACT
-      type: string
     UpdateSecretResponse:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
       title: UpdateSecretResponse is the response of UpdateSecret
       type: object
-    UpdateTopicConfigurationResponse:
+    UpdateTopicConfigurationsResponse:
       properties:
-        configuration:
+        configurations:
           description: Topic's complete set of configurations after this partial patch has been applied.
           items:
             $ref: '#/components/schemas/Configuration'
@@ -2137,58 +2138,6 @@ paths:
       tags:
         - TopicService
   /v1alpha1/topics/{topic_name}/configuration:
-    patch:
-      description: Updates a subset of the topic configuration.
-      operationId: TopicService_UpdateTopicConfiguration
-      parameters:
-        - in: path
-          name: topic_name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              items:
-                $ref: '#/components/schemas/UpdateConfiguration'
-              type: array
-        required: true
-        x-originalParamName: configuration
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpdateTopicConfigurationResponse'
-          description: Ok
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Update Topic Configuration
-      tags:
-        - TopicService
     put:
       description: Set the entire configuration of a topic. Config entries not provided in the request are removed.
       operationId: TopicService_SetTopicConfiguration
@@ -2283,6 +2232,58 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Get Topic Configurations
+      tags:
+        - TopicService
+    patch:
+      description: Updates a subset of the topic configuration.
+      operationId: TopicService_UpdateTopicConfigurations
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/UpdateConfiguration'
+              type: array
+        required: true
+        x-originalParamName: configurations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTopicConfigurationsResponse'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Update Topic Configuration
       tags:
         - TopicService
   /v1alpha1/users:
