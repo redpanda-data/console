@@ -2333,10 +2333,9 @@ paths:
         content:
           application/json:
             example:
-              user:
-                mechanism: SASL_MECHANISM_SCRAM_SHA_256
-                name: payment-service
-                password: secure-password
+              mechanism: SASL_MECHANISM_SCRAM_SHA_256
+              name: payment-service
+              password: secure-password
             schema:
               $ref: '#/components/schemas/CreateUserRequest.User'
         required: true
