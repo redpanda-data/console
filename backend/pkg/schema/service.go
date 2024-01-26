@@ -12,8 +12,10 @@ package schema
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hamba/avro/v2"
@@ -41,6 +43,11 @@ type Service struct {
 	// by subjects is needed to lookup references in avro schemas.
 	schemaBySubjectVersion *cache.Cache[string, *SchemaVersionedResponse]
 	avroSchemaByID         *cache.Cache[uint32, avro.Schema]
+
+	// for protobuf schema refreshing and compiling
+	srRefreshMutex   sync.RWMutex
+	protoSchemasByID map[int]*SchemaVersionedResponse
+	protoFDByID      map[int]*desc.FileDescriptor
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
@@ -67,35 +74,62 @@ func (s *Service) CheckConnectivity(ctx context.Context) error {
 
 // GetProtoDescriptors returns all file descriptors in a map where the key is the schema id.
 // The value is a set of file descriptors because each schema may references / imported proto schemas.
+//
+//nolint:gocognit,cyclop // complicated refresh logic
 func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDescriptor, error) {
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
-	v, err, _ := s.requestGroup.Do(key, func() (any, error) {
-		schemasRes, err := s.registryClient.GetSchemas(ctx, false)
-		if err != nil {
-			// If schema registry returns an error we want to retry it next time, so let's forget the key
-			s.requestGroup.Forget(key)
-			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
+	_, err, _ := s.requestGroup.Do(key, func() (any, error) {
+		schemasRes, errs := s.registryClient.GetSchemas(ctx, false)
+		if len(errs) > 0 {
+			for _, err := range errs {
+				s.logger.Error("failed to get schema from registry", zap.Error(err))
+			}
 		}
 
+		s.srRefreshMutex.Lock()
+		defer s.srRefreshMutex.Unlock()
+
+		if s.protoSchemasByID == nil {
+			s.protoSchemasByID = make(map[int]*SchemaVersionedResponse, len(schemasRes))
+		}
+
+		schemasToCompile := make([]*SchemaVersionedResponse, 0, len(schemasRes))
+
+		newSchemaIDs := make(map[int]struct{}, len(schemasRes))
+
 		// 1. Index all returned schemas by their respective subject name and version as stored in the schema registry
-		schemasBySubjectAndVersion := make(map[string]map[int]SchemaVersionedResponse)
+		schemasBySubjectAndVersion := make(map[string]map[int]*SchemaVersionedResponse)
 		for _, schema := range schemasRes {
+			schema := schema
+
 			if schema.Type != TypeProtobuf {
 				continue
 			}
 			_, exists := schemasBySubjectAndVersion[schema.Subject]
 			if !exists {
-				schemasBySubjectAndVersion[schema.Subject] = make(map[int]SchemaVersionedResponse)
+				schemasBySubjectAndVersion[schema.Subject] = make(map[int]*SchemaVersionedResponse)
 			}
 			schemasBySubjectAndVersion[schema.Subject][schema.Version] = schema
+
+			if existing, ok := s.protoSchemasByID[schema.SchemaID]; !ok || !strings.EqualFold(existing.Schema, schema.Schema) {
+				schemasToCompile = append(schemasToCompile, schema)
+			}
+
+			newSchemaIDs[schema.SchemaID] = struct{}{}
+
+			s.protoSchemasByID[schema.SchemaID] = schema
 		}
 
-		// 2. Compile each subject with each of it's references into one or more filedescriptors so that they can be
+		compileStart := time.Now()
+
+		// 2. Compile each subject with each of it's references into one or more file descriptors so that they can be
 		// registered in their own proto registry.
-		fdBySchemaID := make(map[int]*desc.FileDescriptor)
-		for _, schema := range schemasRes {
+		newFDBySchemaID := make(map[int]*desc.FileDescriptor, len(schemasToCompile))
+		for _, schema := range schemasToCompile {
+			schema := schema
+
 			if schema.Type != TypeProtobuf {
 				continue
 			}
@@ -108,24 +142,51 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 					zap.Error(err))
 				continue
 			}
-			fdBySchemaID[schema.SchemaID] = fd
+			newFDBySchemaID[schema.SchemaID] = fd
 		}
 
-		return fdBySchemaID, nil
+		compileDuration := time.Since(compileStart)
+
+		s.logger.Info("compiled new schemas",
+			zap.Int("updated_schemas", len(schemasToCompile)),
+			zap.Duration("compile_duration", compileDuration))
+
+		// merge
+		if s.protoFDByID == nil {
+			s.protoFDByID = make(map[int]*desc.FileDescriptor, len(newFDBySchemaID))
+		}
+
+		maps.Copy(s.protoFDByID, newFDBySchemaID)
+
+		// remove schemas only if no errors
+		if len(errs) == 0 {
+			schemasIDsToDelete := make([]int, 0, len(s.protoSchemasByID)/2)
+			for id := range s.protoSchemasByID {
+				if _, ok := newSchemaIDs[id]; !ok {
+					schemasIDsToDelete = append(schemasIDsToDelete, id)
+				}
+			}
+
+			for id := range schemasIDsToDelete {
+				delete(s.protoSchemasByID, id)
+				delete(s.protoFDByID, id)
+			}
+		}
+
+		return nil, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	descriptors, ok := v.(map[int]*desc.FileDescriptor)
-	if !ok {
-		return nil, fmt.Errorf("failed to type assert file descriptors")
-	}
+	s.srRefreshMutex.RLock()
+	descriptors := maps.Clone(s.protoFDByID)
+	s.srRefreshMutex.RUnlock()
 
 	return descriptors, nil
 }
 
-func (s *Service) addReferences(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse, schemasByPath map[string]string) error {
+func (s *Service) addReferences(schema *SchemaVersionedResponse, schemaRepository map[string]map[int]*SchemaVersionedResponse, schemasByPath map[string]string) error {
 	for _, ref := range schema.References {
 		refSubject, exists := schemaRepository[ref.Subject]
 		if !exists {
@@ -147,7 +208,7 @@ func (s *Service) addReferences(schema SchemaVersionedResponse, schemaRepository
 	return nil
 }
 
-func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse) (*desc.FileDescriptor, error) {
+func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRepository map[string]map[int]*SchemaVersionedResponse) (*desc.FileDescriptor, error) {
 	// 1. Let's find the references for each schema and put the references' schemas into our in memory filesystem.
 	schemasByPath := make(map[string]string)
 	schemasByPath[schema.Subject] = schema.Schema

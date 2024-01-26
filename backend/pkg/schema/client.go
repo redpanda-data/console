@@ -211,19 +211,19 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 }
 
 // GetSchemasBySubject gets all versioned schemas for a given subject.
-func (c *Client) GetSchemasBySubject(ctx context.Context, subject string, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
+func (c *Client) GetSchemasBySubject(ctx context.Context, subject string, showSoftDeleted bool) ([]*SchemaVersionedResponse, error) {
 	versionRes, err := c.GetSubjectVersions(ctx, subject, showSoftDeleted)
 	if err != nil {
 		return nil, err
 	}
 
-	results := []SchemaVersionedResponse{}
+	results := []*SchemaVersionedResponse{}
 	for _, sv := range versionRes.Versions {
 		sr, err := c.GetSchemaBySubject(ctx, subject, strconv.FormatInt(int64(sv), 10), showSoftDeleted)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get schema by subject %s and version %d", subject, sv)
 		}
-		results = append(results, *sr)
+		results = append(results, sr)
 	}
 
 	return results, nil
@@ -595,8 +595,8 @@ func (c *Client) GetSchemaTypes(ctx context.Context) ([]string, error) {
 }
 
 // GetSchemas retrieves all stored schemas from a schema registry.
-func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
-	var schemas []SchemaVersionedResponse
+func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]*SchemaVersionedResponse, []error) {
+	var schemas []*SchemaVersionedResponse
 	req := c.client.R().
 		SetContext(ctx).
 		SetResult(&schemas)
@@ -607,7 +607,7 @@ func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]Schema
 
 	res, err := req.Get("/schemas")
 	if err != nil {
-		return nil, fmt.Errorf("get schemas failed: %w", err)
+		return nil, []error{fmt.Errorf("get schemas failed: %w", err)}
 	}
 
 	if res.StatusCode() == http.StatusNotFound {
@@ -619,9 +619,9 @@ func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]Schema
 	if res.IsError() {
 		restErr, ok := res.Error().(*RestError)
 		if !ok {
-			return nil, fmt.Errorf("get schemas failed: Status code %d", res.StatusCode())
+			return nil, []error{fmt.Errorf("get schemas failed: Status code %d", res.StatusCode())}
 		}
-		return nil, restErr
+		return nil, []error{restErr}
 	}
 
 	return schemas, nil
@@ -687,35 +687,38 @@ func (c *Client) CreateSchema(ctx context.Context, subjectName string, schema Sc
 
 // GetSchemasIndividually returns all schemas by describing all schemas one by one. This may be used against
 // schema registry that don't support the /schemas endpoint that returns a list of all registered schemas.
-func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted bool) ([]SchemaVersionedResponse, error) {
+func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted bool) ([]*SchemaVersionedResponse, []error) {
 	subjectsRes, err := c.GetSubjects(ctx, showSoftDeleted)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
+		return nil, []error{fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)}
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10) // limit max concurrency to 10 requests at a time
 
-	schemas := make([]SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
+	schemas := make([]*SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
+	errors := make([]error, len(subjectsRes.Subjects))
 	mutex := sync.Mutex{}
 
-	for _, subject := range subjectsRes.Subjects {
-		subject := subject
+	for i, subject := range subjectsRes.Subjects {
+		i, subject := i, subject
+
 		g.Go(func() error {
 			srRes, err := c.GetSchemasBySubject(ctx, subject, showSoftDeleted)
 			if err != nil {
-				return err
+				errors[i] = err
+				return nil //nolint:nilerr // we collected our errors
 			}
 
 			mutex.Lock()
 			schemas = append(schemas, srRes...)
 			mutex.Unlock()
-			return err
+			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
 
 	return schemas, nil

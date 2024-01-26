@@ -20,7 +20,7 @@ tasks:
 
   install-gofumpt:
     vars:
-      GOFUMPT_VERSION: 0.4.0
+      GOFUMPT_VERSION: 0.5.0
     desc: install gofumpt go formater
     cmds:
       - |
@@ -31,7 +31,7 @@ tasks:
 
   install-gci:
     vars:
-      GCI_VERSION: 0.9.0
+      GCI_VERSION: 0.12.1
     desc: install gci
     cmds:
       - GOBIN={{ .BUILD_ROOT }}/bin/go go install github.com/daixiang0/gci@v{{.GCI_VERSION}}
@@ -80,7 +80,9 @@ tasks:
     cmds:
       - '{{ .BUILD_ROOT }}/bin/go/goimports -l -w -local "github.com/redpanda-data/console/backend" .'
       - '{{ .BUILD_ROOT }}/bin/go/gofumpt -l -w .'
-      - '{{ .BUILD_ROOT }}/bin/go/gci write -s standard -s default -s ''Prefix(github.com/redpanda-data/console/backend)'' .'
+      # https://github.com/daixiang0/gci/issues/174
+      # moves "maps" into the wrong place
+      # - '{{ .BUILD_ROOT }}/bin/go/gci write -s default -s standard -s ''prefix(github.com/redpanda-data/console/backend)'' .'
 
   lint:
     desc: Run Go linters for backend code
