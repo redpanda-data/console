@@ -151,12 +151,30 @@ message GetTopicConfigurationsResponse {
 
 message UpdateTopicConfigurationsRequest {
   message UpdateConfiguration {
-    string key = 1;
+    string key = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 249
+    ];
     optional string value = 2;
-    ConfigAlterOperation operation = 3;
+    ConfigAlterOperation operation = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0]
+      }
+    ];
   }
-  string topic_name = 1;
-  repeated UpdateConfiguration configurations = 2;
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+  repeated UpdateConfiguration configurations = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
 }
 
 message UpdateTopicConfigurationsResponse {
@@ -278,7 +296,7 @@ service TopicService {
         value: {
           description: "Ok"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse"}
           }
         }
       }
