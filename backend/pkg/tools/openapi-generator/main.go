@@ -393,7 +393,7 @@ func updateUsers(doc3 *openapi3.T) {
 			Password:  "secure-password",
 			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
 		}}
-		doc3.Paths.Value("/v1alpha1/users").Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq, "Create User", "Create user", false).Value
+		doc3.Paths.Value("/v1alpha1/users").Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq.User, "Create User", "Create user", false).Value
 
 		// Responses
 		response := &v1alpha1.CreateUserResponse{User: &v1alpha1.CreateUserResponse_User{
