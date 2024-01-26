@@ -19,6 +19,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -698,6 +699,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 
 	schemas := make([]*SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
 	errors := make([]error, len(subjectsRes.Subjects))
+	hasErrors := atomic.Bool{}
 	mutex := sync.Mutex{}
 
 	for i, subject := range subjectsRes.Subjects {
@@ -706,8 +708,9 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		g.Go(func() error {
 			srRes, err := c.GetSchemasBySubject(ctx, subject, showSoftDeleted)
 			if err != nil {
-				errors[i] = err
-				return nil //nolint:nilerr // we collected our errors
+				hasErrors.Store(true)
+				errors[i] = err // concurrent indexed writes to preallocated slice is allowed
+				return nil      //nolint:nilerr // we collected our errors
 			}
 
 			mutex.Lock()
@@ -717,8 +720,13 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		})
 	}
 
+	// is this even possible?
 	if err := g.Wait(); err != nil {
 		return nil, []error{err}
+	}
+
+	if hasErrors.Load() {
+		return schemas, errors
 	}
 
 	return schemas, nil

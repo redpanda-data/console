@@ -95,11 +95,18 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 			s.protoSchemasByID = make(map[int]*SchemaVersionedResponse, len(schemasRes))
 		}
 
+		// collect existing schema IDs
+		existingSchemaIDs := make(map[int]struct{}, len(s.protoSchemasByID))
+		for id := range s.protoSchemasByID {
+			existingSchemaIDs[id] = struct{}{}
+		}
+
 		schemasToCompile := make([]*SchemaVersionedResponse, 0, len(schemasRes))
 
 		newSchemaIDs := make(map[int]struct{}, len(schemasRes))
 
-		// 1. Index all returned schemas by their respective subject name and version as stored in the schema registry
+		// Index all returned schemas by their respective subject name and version as stored in the schema registry
+		// Collect the new or updated schemas to compile
 		schemasBySubjectAndVersion := make(map[string]map[int]*SchemaVersionedResponse)
 		for _, schema := range schemasRes {
 			schema := schema
@@ -147,10 +154,6 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		compileDuration := time.Since(compileStart)
 
-		s.logger.Info("compiled new schemas",
-			zap.Int("updated_schemas", len(schemasToCompile)),
-			zap.Duration("compile_duration", compileDuration))
-
 		// merge
 		if s.protoFDByID == nil {
 			s.protoFDByID = make(map[int]*desc.FileDescriptor, len(newFDBySchemaID))
@@ -158,20 +161,30 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		maps.Copy(s.protoFDByID, newFDBySchemaID)
 
+		schemasDeleted := 0
+
 		// remove schemas only if no errors
 		if len(errs) == 0 {
 			schemasIDsToDelete := make([]int, 0, len(s.protoSchemasByID)/2)
-			for id := range s.protoSchemasByID {
+
+			for id := range existingSchemaIDs {
 				if _, ok := newSchemaIDs[id]; !ok {
 					schemasIDsToDelete = append(schemasIDsToDelete, id)
 				}
 			}
 
-			for id := range schemasIDsToDelete {
+			for _, id := range schemasIDsToDelete {
 				delete(s.protoSchemasByID, id)
 				delete(s.protoFDByID, id)
 			}
+
+			schemasDeleted = len(schemasIDsToDelete)
 		}
+
+		s.logger.Info("compiled new schemas",
+			zap.Int("updated_schemas", len(schemasToCompile)),
+			zap.Int("deleted_schemas", schemasDeleted),
+			zap.Duration("compile_duration", compileDuration))
 
 		return nil, nil
 	})
