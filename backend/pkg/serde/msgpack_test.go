@@ -11,6 +11,8 @@ package serde
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,15 +47,17 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		record         *kgo.Record
+		record         func() *kgo.Record
 		payloadType    PayloadType
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
 			name: "msgpack in value",
-			record: &kgo.Record{
-				Value: msgData,
-				Topic: "msgpack_topic",
+			record: func() *kgo.Record {
+				return &kgo.Record{
+					Value: msgData,
+					Topic: "msgpack_topic",
+				}
 			},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
@@ -62,7 +66,10 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingMsgPack, payload.Encoding)
 
-				assert.Equal(t, `"gaNGb2+jYmFy"`, string(payload.NormalizedPayload))
+				jd, err := json.Marshal(in)
+				require.NoError(t, err)
+
+				assert.Equal(t, string(jd), string(payload.NormalizedPayload))
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -71,9 +78,11 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 		},
 		{
 			name: "not in topic map",
-			record: &kgo.Record{
-				Value: msgData,
-				Topic: "not_msgpack_topic",
+			record: func() *kgo.Record {
+				return &kgo.Record{
+					Value: msgData,
+					Topic: "not_msgpack_topic",
+				}
 			},
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
@@ -81,11 +90,37 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 				assert.Equal(t, "message pack encoding not configured for topic: not_msgpack_topic", err.Error())
 			},
 		},
+		{
+			name: "msgpack 2",
+			record: func() *kgo.Record {
+				msgPackBinFile := "testdata/msgpack/example.msgpack.bin"
+
+				msgPackData, err := os.ReadFile(msgPackBinFile)
+				require.NoError(t, err)
+
+				return &kgo.Record{
+					Value: msgPackData,
+					Topic: "msgpack_topic",
+				}
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				require.NoError(t, err)
+
+				assert.Equal(t,
+					`{"array":[3,2,"1",0],"binary":"AAAAAAo=","negative":false,"num":-2.4,"positive":true}`,
+					string(payload.NormalizedPayload))
+
+				obj, ok := (payload.DeserializedPayload).(map[string]any)
+				require.Truef(t, ok, "parsed payload is not of type map[string]any")
+				assert.Equal(t, -2.4, obj["num"])
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(context.Background(), test.record(), test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}

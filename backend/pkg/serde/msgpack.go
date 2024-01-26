@@ -12,7 +12,6 @@ package serde
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,8 +53,7 @@ func (d MsgPackSerde) DeserializePayload(_ context.Context, record *kgo.Record, 
 		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
 
-	b64 := base64.StdEncoding.EncodeToString(payload)
-	jsonBytes, err := json.Marshal(b64)
+	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding message pack payload: %w", err)
 	}
