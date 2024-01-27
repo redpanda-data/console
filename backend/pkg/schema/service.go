@@ -86,6 +86,10 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 			for _, err := range errs {
 				s.logger.Error("failed to get schema from registry", zap.Error(err))
 			}
+
+			if len(schemasRes) == 0 {
+				return nil, nil
+			}
 		}
 
 		s.srRefreshMutex.Lock()
