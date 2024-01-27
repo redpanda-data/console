@@ -724,11 +724,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		return nil, []error{err}
 	}
 
-	if len(errors) > 0 {
-		return schemas, errors
-	}
-
-	return schemas, nil
+	return schemas, errors
 }
 
 // GetSchemaReferencesResponse is the response to fetching schema references.
