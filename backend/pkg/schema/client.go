@@ -19,7 +19,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -698,19 +697,19 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 	g.SetLimit(10) // limit max concurrency to 10 requests at a time
 
 	schemas := make([]*SchemaVersionedResponse, 0, len(subjectsRes.Subjects))
-	errors := make([]error, len(subjectsRes.Subjects))
-	hasErrors := atomic.Bool{}
+	errors := make([]error, 0, len(subjectsRes.Subjects))
 	mutex := sync.Mutex{}
 
-	for i, subject := range subjectsRes.Subjects {
-		i, subject := i, subject
+	for _, subject := range subjectsRes.Subjects {
+		subject := subject
 
 		g.Go(func() error {
 			srRes, err := c.GetSchemasBySubject(ctx, subject, showSoftDeleted)
 			if err != nil {
-				hasErrors.Store(true)
-				errors[i] = err // concurrent indexed writes to preallocated slice is allowed
-				return nil      //nolint:nilerr // we collected our errors
+				mutex.Lock()
+				errors = append(errors, err)
+				mutex.Unlock()
+				return nil
 			}
 
 			mutex.Lock()
@@ -725,7 +724,7 @@ func (c *Client) GetSchemasIndividually(ctx context.Context, showSoftDeleted boo
 		return nil, []error{err}
 	}
 
-	if hasErrors.Load() {
+	if len(errors) > 0 {
 		return schemas, errors
 	}
 
