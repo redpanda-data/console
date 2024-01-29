@@ -69,7 +69,7 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 
 import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { proto3 } from '@bufbuild/protobuf';
+import { proto3, MethodKind } from '@bufbuild/protobuf';
 import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -119,7 +119,7 @@ async function handle401(res: Response) {
     try {
         const text = await res.text();
         const obj = JSON.parse(text);
-        console.log('unauthorized message: ' + text);
+        console.debug('unauthorized message: ' + text);
 
         const err = obj as ApiError;
         uiState.loginError = String(err.message);
@@ -243,6 +243,18 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
         req.header.append('Authorization', 'Bearer ' + appConfig.jwt);
     return await next(req);
 };
+
+
+// Set keep alive if the server is streaming a response
+const keepAliveForStreamingInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+    return await next({
+        ...req,
+        init: {
+            ...req.init,
+            keepalive: req.method.kind === MethodKind.ServerStreaming,
+        },
+    });
+}
 
 
 let messageSearchAbortController: AbortController | null = null;
@@ -374,7 +386,10 @@ const apiStore = {
         const abortController = messageSearchAbortController = new AbortController();
         const transport = createConnectTransport({
             baseUrl: appConfig.grpcBase,
-            interceptors: [addBearerTokenInterceptor]
+            interceptors: [addBearerTokenInterceptor, keepAliveForStreamingInterceptor],
+             fetch: (input, init) => {
+                return fetch(input, { ...init, keepalive: true });
+            },
         });
 
         const client = createPromiseClient(ConsoleService, transport);
@@ -406,11 +421,11 @@ const apiStore = {
                 try {
                     switch (res.controlMessage.case) {
                         case 'phase':
-                            console.log('phase: ' + res.controlMessage.value.phase)
+                            console.debug('phase: ' + res.controlMessage.value.phase)
                             this.messageSearchPhase = res.controlMessage.value.phase;
                             break;
                         case 'progress':
-                            console.log('progress: ' + res.controlMessage.value.messagesConsumed)
+                            console.debug('progress: ' + res.controlMessage.value.messagesConsumed)
                             this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                             this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                             break;
@@ -520,7 +535,7 @@ const apiStore = {
                                     m.key.encoding = 'consumerOffsets';
                                     break;
                                 default:
-                                    console.log('unhandled key encoding type', {
+                                    console.debug('unhandled key encoding type', {
                                         encoding: key?.encoding,
                                         encodingName: key?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName : undefined,
                                         message: res,
@@ -540,8 +555,6 @@ const apiStore = {
                             m.keyJson = JSON.stringify(m.key.payload);
                             m.key.size = Number(key?.payloadSize);
                             m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
-
-                            // console.log(m.keyJson)
 
                             // value
                             const val = res.controlMessage.value.value;
@@ -590,7 +603,7 @@ const apiStore = {
                                     m.value.encoding = 'consumerOffsets';
                                     break;
                                 default:
-                                    console.log('unhandled value encoding type', {
+                                    console.debug('unhandled value encoding type', {
                                         encoding: val?.encoding,
                                         encodingName: val?.encoding != null ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName : undefined,
                                         message: res,
