@@ -74,9 +74,12 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 		// remove the api route prefix
 		requestURI = strings.ReplaceAll(requestURI, "/api/schemas/subjects/", "")
 		// find the versions suffix of the path
+		subjectPart := requestURI
 		versionsIndex := strings.Index(requestURI, "/versions")
-		// and extract the subject at the start of the string
-		subjectPart := requestURI[:versionsIndex]
+		if versionsIndex > 0 { // satisfy linter
+			// and extract the subject at the start of the string
+			subjectPart = requestURI[:versionsIndex]
+		}
 
 		subject, err := url.PathUnescape(subjectPart)
 		if err != nil {
