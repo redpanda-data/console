@@ -13,7 +13,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
@@ -265,7 +267,7 @@ func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		req := request{}
 		restErr = rest.Decode(w, r, &req)
@@ -323,7 +325,7 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		// 2. Set subject compatibility level
 		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectConfig(r.Context(), subjectName)
@@ -410,7 +412,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		}
 
 		// 1. Parse request params
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		// 2. Parse and validate version input
 		version := rest.GetURLParam(r, "version")
@@ -480,7 +482,7 @@ func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
 		}
 
 		// 1. Parse request params
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		// 2. Parse and validate version input
 		version := rest.GetURLParam(r, "version")
@@ -550,7 +552,7 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
 		if deletePermanentlyStr == "" {
@@ -618,7 +620,7 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		version := rest.GetURLParam(r, "version")
 		switch version {
@@ -716,7 +718,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		var payload schema.Schema
 		restErr = rest.Decode(w, r, &payload)
@@ -775,7 +777,7 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		}
 
 		// 1. Parse request parameters
-		subjectName := rest.GetURLParam(r, "subject")
+		subjectName := getSubjectFromRequestPath(r)
 
 		version := rest.GetURLParam(r, "version")
 		switch version {
@@ -816,4 +818,34 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		res := api.ConsoleSvc.ValidateSchemaRegistrySchema(r.Context(), subjectName, version, payload)
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
+}
+
+func getSubjectFromRequestPath(r *http.Request) string {
+	// subject extraction gets complicated
+	// With a path like /api/schema-registry/subjects/%252F/versions/latest
+	// r.URL.Path is /api/schemas/schema-registry/%2F/versions/latest
+	// while RequestURI is /api/schemas/schema-registry/%252F/versions/latest
+	// that means that chi.URLParam() returns  %2F
+	// which then url.PathUnescape() within rest.GetURLParam() returns "/"
+	// which is "double escaped"
+	// so we have to manually extract and escape the subject part ourselves
+
+	requestURI := r.RequestURI
+	// remove the api route prefix
+	requestURI = strings.ReplaceAll(requestURI, "/api/schema-registry/subjects/", "")
+	requestURI = strings.ReplaceAll(requestURI, "/api/schema-registry/config/", "")
+	// find the versions suffix of the path
+	subjectPart := requestURI
+	lastIndex := strings.Index(requestURI, "/")
+	if lastIndex > 0 { // satisfy linter
+		// and extract the subject at the start of the string
+		subjectPart = requestURI[:lastIndex]
+	}
+
+	subject, err := url.PathUnescape(subjectPart)
+	if err != nil {
+		subject = subjectPart
+	}
+
+	return subject
 }
