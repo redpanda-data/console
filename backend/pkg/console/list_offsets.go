@@ -33,7 +33,7 @@ type PartitionOffset struct {
 // ListOffsets lists partition offsets (either earliest or latest, depending on the timestamp parameter)
 // of one or topic names.
 func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error) {
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
+	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, topicNames)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request partition info for topics")
 	}
