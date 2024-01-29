@@ -85,23 +85,18 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
     };
 }
 
-function fixUrl(url: URL, subjectName: string, version: number | 'latest') {
-    // If the decoded schemaName starts with the escape character (%) we need to fix the url that react router has messed up
-    // https://github.com/remix-run/react-router/issues/10213
-    // https://github.com/remix-run/history/issues/874
-    if (subjectName.startsWith('%')) {
+// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
+// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
+// https://github.com/remix-run/react-router/issues/10213
+// https://github.com/remix-run/history/issues/874
+export function encodeURIComponentPercents(rawStr: string): string {
+    const encoded = encodeURIComponent(rawStr);
+    return encoded.replace(/%/g, '﹪');
+}
 
-        const correctedUrl = new URL(url);
-        correctedUrl.pathname = '/schema-registry/' + encodeURIComponent(subjectName);
-
-        if (version)
-            correctedUrl.searchParams.set('version', String(version));
-
-        setTimeout(() => {
-            // change the url without notifiying the router (otherwise it will mess up the url again)
-            window.history.replaceState(correctedUrl.href, '', correctedUrl);
-        }, 1);
-    }
+function decodeURIComponentPercents(encodedStr: string): string {
+    const encoded = encodedStr.replace(/﹪/g, '%');
+    return decodeURIComponent(encoded);
 }
 
 @observer
@@ -121,18 +116,19 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         // The url path we land at is '/%2F' instead of the expected '/%252F'.
         //
 
-        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        const subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
-        // Must be in front of getVersionFromQuery
-        const url = new URL(window.location.href);
+        console.log('SchemaDetails', {
+            propsSubjectName: this.props.subjectName,
+            subjectNameRaw,
+            subjectNameEncoded
+        });
 
         const version = getVersionFromQuery();
         editQuery(x => {
             x.version = String(this.version ?? 'latest');
         });
-
-        fixUrl(url, this.props.subjectName, version);
 
         p.title = subjectNameRaw;
         p.addBreadcrumb('Schema Registry', '/schema-registry');
@@ -143,14 +139,21 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     constructor(p: any) {
         super(p);
-        this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
         makeObservable(this);
     }
 
     refreshData(force?: boolean) {
-        const encoded = encodeURIComponent(decodeURIComponent(this.props.subjectName));
-        api.refreshSchemaDetails(encoded, this.version, force);
+        const rawName = decodeURIComponentPercents(this.props.subjectName);
+
+        console.log('SchemaDetails.refreshData', {
+            propsSubjectName: this.props.subjectName,
+            rawName,
+        });
+
+
+        api.refreshSchemaDetails(rawName, this.version, force);
     }
 
     render() {

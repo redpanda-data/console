@@ -26,6 +26,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { encodeURIComponentPercents } from './Schema.Details';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -137,9 +138,7 @@ class SchemaList extends PageComponent<{}> {
                         rowKey="name"
                         onRow={({ name }) => ({
                             onClick: () => {
-                                let enc = encodeURIComponent(name);
-                                if (enc.startsWith('%'))
-                                    enc = encodeURIComponent(enc);
+                                const enc = encodeURIComponentPercents(name);
                                 appGlobal.history.push(`/schema-registry/${enc}`);
                             },
                         })}
