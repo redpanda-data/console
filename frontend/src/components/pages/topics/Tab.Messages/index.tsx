@@ -25,7 +25,7 @@ import {
     FilterEntry,
     PartitionOffsetOrigin,
     PreviewTagV2,
-    TimestampDisplayFormat
+    TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
@@ -111,6 +111,8 @@ import { proto3 } from '@bufbuild/protobuf';
 import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import usePaginationParams from '../../../../hooks/usePaginationParams';
+import { onPaginationChange } from '../../../../utils/pagination';
 
 
 interface TopicMessageViewProps {
@@ -507,6 +509,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
+        const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -586,7 +589,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}
-                showPagination
+                // we need (?? []) to be compatible with searchParams of clients already stored in local storage
+                // otherwise we would get undefined for some of the existing ones
+                sorting={uiState.topicSettings.searchParams.sorting ?? []}
+                onSortingChange={sorting => {
+                    uiState.topicSettings.searchParams.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting
+                }}
+                pagination={paginationParams}
+                onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex}) => {
+                    uiState.topicSettings.searchParams.pageSize = pageSize
+                    editQuery(query => {
+                        query['page'] = String(pageIndex)
+                        query['pageSize'] = String(pageSize)
+                    })
+                })}
                 subComponent={({row: {original}}) => renderExpandedMessage(original)}
             />
             <Button variant="outline"
@@ -1305,6 +1321,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                         cell: ({row: {original: {value: payload}}}) => <span className="nowrap">{payload.encoding}</span>
                     },
                 ]}
+
                 subComponent={({row: {original: header}}) => {
                     return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>

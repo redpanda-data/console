@@ -17,6 +17,7 @@ import { TopicTabId } from '../components/pages/topics/Topic.Details';
 import { GetAclsRequest, AclRequestDefault } from './restInterfaces';
 import { ConnectTabKeys } from '../components/pages/connect/Overview';
 import { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { SortingState } from '@redpanda-data/ui';
 
 const settingsName = 'uiSettings-v3';
 
@@ -103,6 +104,9 @@ export class TopicDetailsSettings {
         startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
         partitionID: -1,
         maxResults: 50,
+        page: 0,
+        pageSize: 10,
+        sorting: [] as SortingState,
 
         filtersEnabled: false,
         filters: [] as FilterEntry[],
