@@ -119,12 +119,6 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         const subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
-        console.log('SchemaDetails', {
-            propsSubjectName: this.props.subjectName,
-            subjectNameRaw,
-            subjectNameEncoded
-        });
-
         const version = getVersionFromQuery();
         editQuery(x => {
             x.version = String(this.version ?? 'latest');
@@ -146,13 +140,6 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     refreshData(force?: boolean) {
         const rawName = decodeURIComponentPercents(this.props.subjectName);
-
-        console.log('SchemaDetails.refreshData', {
-            propsSubjectName: this.props.subjectName,
-            rawName,
-        });
-
-
         api.refreshSchemaDetails(rawName, this.version, force);
     }
 
