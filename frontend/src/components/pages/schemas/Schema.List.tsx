@@ -26,6 +26,7 @@ import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { encodeURIComponentPercents } from './Schema.Details';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -99,6 +100,9 @@ class SchemaList extends PageComponent<{}> {
 
         const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
+        for (const x of this.filteredSchemaSubjects ?? [])
+            console.log('name: ' + x.name);
+
         return (
             <PageContent key="b">
                 <Section py={4}>
@@ -133,7 +137,10 @@ class SchemaList extends PageComponent<{}> {
                         rowClassName={() => 'hoverLink'}
                         rowKey="name"
                         onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${encodeURIComponent(name)}`),
+                            onClick: () => {
+                                const enc = encodeURIComponentPercents(name);
+                                appGlobal.history.push(`/schema-registry/${enc}`);
+                            },
                         })}
                     />
                 </Section>

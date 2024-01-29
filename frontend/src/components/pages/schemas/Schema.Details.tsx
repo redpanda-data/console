@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -86,6 +85,20 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
     };
 }
 
+// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
+// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
+// https://github.com/remix-run/react-router/issues/10213
+// https://github.com/remix-run/history/issues/874
+export function encodeURIComponentPercents(rawStr: string): string {
+    const encoded = encodeURIComponent(rawStr);
+    return encoded.replace(/%/g, '﹪');
+}
+
+function decodeURIComponentPercents(encodedStr: string): string {
+    const encoded = encodedStr.replace(/﹪/g, '%');
+    return decodeURIComponent(encoded);
+}
+
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     subjectNameRaw: string;
@@ -94,12 +107,21 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     @observable version = 'latest' as 'latest' | number;
 
     initPage(p: PageInitHelper): void {
-        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
+
+        // If we have a schema named '%2F' we expect the link to it to be url encoded
+        // For things like e.g. 'shop/v1/address.proto' this works, and we get 'shop%2Fv1%2Faddress.proto' as subjectName
+        // thus we decode it to get the raw (real) name.
+        //
+        // However, for '%2F' this does not work!
+        // The url path we land at is '/%2F' instead of the expected '/%252F'.
+        //
+
+        const subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
 
         const version = getVersionFromQuery();
         editQuery(x => {
-            x.version = String(this.version);
+            x.version = String(this.version ?? 'latest');
         });
 
         p.title = subjectNameRaw;
@@ -111,14 +133,14 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     constructor(p: any) {
         super(p);
-        this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
         makeObservable(this);
     }
 
     refreshData(force?: boolean) {
-        const encoded = encodeURIComponent(decodeURIComponent(this.props.subjectName));
-        api.refreshSchemaDetails(encoded, this.version, force);
+        const rawName = decodeURIComponentPercents(this.props.subjectName);
+        api.refreshSchemaDetails(rawName, this.version, force);
     }
 
     render() {
@@ -156,7 +178,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         const query = new URLSearchParams(window.location.search);
         if (query.has('version')) {
             const versionStr = query.get('version');
-            if (versionStr != '') {
+            if (versionStr != '' && !Number.isNaN(Number(versionStr))) {
                 queryVersion = Number(versionStr);
             }
         }

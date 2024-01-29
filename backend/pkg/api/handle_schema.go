@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/cloudhut/common/rest"
 
@@ -60,10 +61,31 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		subject := rest.GetURLParam(r, "subject")
-		if subjectUnescaped, err := url.PathUnescape(subject); err == nil {
-			subject = subjectUnescaped
+		// subject extraction gets complicated
+		// With a path like /api/schemas/subjects/%252F/versions/latest
+		// r.URL.Path is /api/schemas/subjects/%2F/versions/latest
+		// while RequestURI is /api/schemas/subjects/%252F/versions/latest
+		// that means that chi.URLParam() returns  %2F
+		// which then url.PathUnescape() within rest.GetURLParam() returns "/"
+		// which is "double escaped"
+		// so we have to manually extract and escape the subject part ourselves
+
+		requestURI := r.RequestURI
+		// remove the api route prefix
+		requestURI = strings.ReplaceAll(requestURI, "/api/schemas/subjects/", "")
+		// find the versions suffix of the path
+		subjectPart := requestURI
+		versionsIndex := strings.Index(requestURI, "/versions")
+		if versionsIndex > 0 { // satisfy linter
+			// and extract the subject at the start of the string
+			subjectPart = requestURI[:versionsIndex]
 		}
+
+		subject, err := url.PathUnescape(subjectPart)
+		if err != nil {
+			subject = subjectPart
+		}
+
 		version := rest.GetURLParam(r, "version")
 		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {
