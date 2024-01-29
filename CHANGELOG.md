@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.3.10 / 2024-01-29
+
+- [FIX] Fix bug in schema registry URL paths.
+- [CHANGE] Add better error logging for websocket upgrade.
+
+
 ## v2.3.9 / 2024-01-15
 
 - [SECURITY] Update update github.com/go-git/go-git/v5 to address CVE-2023-4956.
