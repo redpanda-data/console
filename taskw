@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
+
+test -f "${SCRIPT_DIR}/.taskversion"
+
+VERSION=$(cat "${SCRIPT_DIR}/.taskversion")
+TASK_DIR="${SCRIPT_DIR}/build/bin"
+TASK="${TASK_DIR}/task"
+
+mkdir -p "$TASK_DIR"
+
+if [[ ! -x $TASK ]] || [[ $($TASK --version | awk '{print $3}') != "${VERSION}" ]]; then
+  echo "--- updating task to ${VERSION}"
+  sh -c "$(curl --retry 5 --retry-delay 0 --retry-max-time 60 --location https://raw.githubusercontent.com/go-task/task/${VERSION}/docs/static/install.sh)" -- -d -b "${TASK_DIR}" "${VERSION}"
+fi
+
+if ! command -v realpath &>/dev/null; then
+  echo "--- realpath command not found. Please install 'coreutils' package for your OS to continue. Exiting"
+  exit 1
+fi
+
+$TASK -d "$SCRIPT_DIR" "$@"
