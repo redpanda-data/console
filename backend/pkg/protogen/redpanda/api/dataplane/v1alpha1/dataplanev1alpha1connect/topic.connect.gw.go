@@ -17,24 +17,24 @@ import (
 // TopicServiceGatewayServer implements the gRPC server API for the TopicService service.
 type TopicServiceGatewayServer struct {
 	v1alpha1.UnimplementedTopicServiceServer
-	createTopic              connect_gateway.UnaryHandler[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
-	listTopics               connect_gateway.UnaryHandler[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse]
-	deleteTopic              connect_gateway.UnaryHandler[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
-	getTopicConfigurations   connect_gateway.UnaryHandler[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
-	updateTopicConfiguration connect_gateway.UnaryHandler[v1alpha1.UpdateTopicConfigurationRequest, v1alpha1.UpdateTopicConfigurationResponse]
-	setTopicConfiguration    connect_gateway.UnaryHandler[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
+	createTopic               connect_gateway.UnaryHandler[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
+	listTopics                connect_gateway.UnaryHandler[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse]
+	deleteTopic               connect_gateway.UnaryHandler[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
+	getTopicConfigurations    connect_gateway.UnaryHandler[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
+	updateTopicConfigurations connect_gateway.UnaryHandler[v1alpha1.UpdateTopicConfigurationsRequest, v1alpha1.UpdateTopicConfigurationsResponse]
+	setTopicConfiguration     connect_gateway.UnaryHandler[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
 // service.
 func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gateway.HandlerOption) *TopicServiceGatewayServer {
 	return &TopicServiceGatewayServer{
-		createTopic:              connect_gateway.NewUnaryHandler(TopicServiceCreateTopicProcedure, svc.CreateTopic, opts...),
-		listTopics:               connect_gateway.NewUnaryHandler(TopicServiceListTopicsProcedure, svc.ListTopics, opts...),
-		deleteTopic:              connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicProcedure, svc.DeleteTopic, opts...),
-		getTopicConfigurations:   connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
-		updateTopicConfiguration: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationProcedure, svc.UpdateTopicConfiguration, opts...),
-		setTopicConfiguration:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationProcedure, svc.SetTopicConfiguration, opts...),
+		createTopic:               connect_gateway.NewUnaryHandler(TopicServiceCreateTopicProcedure, svc.CreateTopic, opts...),
+		listTopics:                connect_gateway.NewUnaryHandler(TopicServiceListTopicsProcedure, svc.ListTopics, opts...),
+		deleteTopic:               connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicProcedure, svc.DeleteTopic, opts...),
+		getTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
+		updateTopicConfigurations: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationsProcedure, svc.UpdateTopicConfigurations, opts...),
+		setTopicConfiguration:     connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationProcedure, svc.SetTopicConfiguration, opts...),
 	}
 }
 
@@ -54,8 +54,8 @@ func (s *TopicServiceGatewayServer) GetTopicConfigurations(ctx context.Context, 
 	return s.getTopicConfigurations(ctx, req)
 }
 
-func (s *TopicServiceGatewayServer) UpdateTopicConfiguration(ctx context.Context, req *v1alpha1.UpdateTopicConfigurationRequest) (*v1alpha1.UpdateTopicConfigurationResponse, error) {
-	return s.updateTopicConfiguration(ctx, req)
+func (s *TopicServiceGatewayServer) UpdateTopicConfigurations(ctx context.Context, req *v1alpha1.UpdateTopicConfigurationsRequest) (*v1alpha1.UpdateTopicConfigurationsResponse, error) {
+	return s.updateTopicConfigurations(ctx, req)
 }
 
 func (s *TopicServiceGatewayServer) SetTopicConfiguration(ctx context.Context, req *v1alpha1.SetTopicConfigurationRequest) (*v1alpha1.SetTopicConfigurationResponse, error) {

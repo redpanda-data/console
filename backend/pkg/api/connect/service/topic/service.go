@@ -13,6 +13,7 @@ package topic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -116,7 +117,7 @@ func (s *Service) GetTopicConfigurations(ctx context.Context, req *connect.Reque
 	configs, err := s.mapper.describeTopicConfigsToProto(result.Configs)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
-			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
+			connect.CodeInternal,
 			err,
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
 		)
@@ -125,15 +126,88 @@ func (s *Service) GetTopicConfigurations(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(&v1alpha1.GetTopicConfigurationsResponse{Configurations: configs}), nil
 }
 
-// UpdateTopicConfiguration patches a topic's configuration. In contrast to SetTopicConfiguration
+// UpdateTopicConfigurations patches a topic's configuration. In contrast to SetTopicConfiguration
 // this will only change the configurations that have been passed into this request.
-func (*Service) UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("this endpoint is not yet implemented"),
-		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-	)
+func (s *Service) UpdateTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error) {
+	// 1. Map proto request to a Kafka request that can be processed by the Kafka client.
+	kafkaReq, err := s.mapper.updateTopicConfigsToKafka(req.Msg)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	// 2. Send incremental alter request and handle errors
+	kafkaRes, err := s.consoleSvc.IncrementalAlterConfigsKafka(ctx, kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if len(kafkaRes.Resources) != 1 {
+		// Should never happen since we only edit configs for one topic, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("unexpected number of resources in incremental alter configs response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_results",
+				Value: strconv.Itoa(len(kafkaRes.Resources)),
+			}),
+		)
+	}
+
+	// Check for inner Kafka error
+	result := kafkaRes.Resources[0]
+	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
+		return nil, connectErr
+	}
+
+	// 3. Now let's describe the topic config and return the entire topic configuration.
+	// This is very similar to GetTopicConfigurations, but we handle errors differently
+	describeKafkaReq := s.mapper.describeTopicConfigsToKafka(&v1alpha1.GetTopicConfigurationsRequest{TopicName: req.Msg.TopicName})
+	configsRes, err := s.consoleSvc.DescribeConfigs(ctx, &describeKafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to describe topic configs after successfully applying config change: %w", err),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if len(configsRes.Resources) != 1 {
+		// Should never happen since we only describe one topic, but if it happens we want to err early.
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			errors.New("failed to describe topic configs after successfully applying config change: unexpected number of resources in describe configs response"),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+				Key:   "retrieved_resources",
+				Value: strconv.Itoa(len(configsRes.Resources)),
+			}),
+		)
+	}
+
+	// Check for inner Kafka error
+	describeConfigsResult := configsRes.Resources[0]
+	if connectErr := s.handleKafkaTopicError(describeConfigsResult.ErrorCode, describeConfigsResult.ErrorMessage); connectErr != nil {
+		return nil, connectErr
+	}
+
+	// 4. Convert describe topic config response into the proto response
+	protoTopicConfigs, err := s.mapper.describeTopicConfigsToProto(describeConfigsResult.Configs)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	return connect.NewResponse(&v1alpha1.UpdateTopicConfigurationsResponse{Configurations: protoTopicConfigs}), nil
 }
 
 // SetTopicConfiguration applies the given configuration to a topic, which may reset

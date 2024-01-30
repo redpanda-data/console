@@ -136,3 +136,34 @@ func (*kafkaClientMapper) deleteTopicToKmsg(req *v1alpha1.DeleteTopicRequest) km
 
 	return kafkaReq
 }
+
+func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha1.UpdateTopicConfigurationsRequest) (*kmsg.IncrementalAlterConfigsRequest, error) {
+	// We only have one resource (a single topic) whose configs we want to update incrementally
+	// The API allows to add many, independent resources of different types. Because we always only
+	// want to patch configs for a single Kafka topic, we can simplify the mapping here by hardcoding
+	// a couple properties of the request.
+	alterTopicResource := kmsg.NewIncrementalAlterConfigsRequestResource()
+	alterTopicResource.ResourceType = kmsg.ConfigResourceTypeTopic
+	alterTopicResource.ResourceName = req.TopicName
+
+	topicConfigUpdates := make([]kmsg.IncrementalAlterConfigsRequestResourceConfig, len(req.Configurations))
+	for i, requestedConfigUpdate := range req.Configurations {
+		topicConfigUpdate := kmsg.NewIncrementalAlterConfigsRequestResourceConfig()
+		topicConfigUpdate.Name = requestedConfigUpdate.Key
+		topicConfigUpdate.Value = requestedConfigUpdate.Value
+		kafkaOp, err := k.commonKafkaClientMapper.AlterConfigOperationToKafka(requestedConfigUpdate.Operation)
+		if err != nil {
+			return nil, err
+		}
+		topicConfigUpdate.Op = kafkaOp
+
+		topicConfigUpdates[i] = topicConfigUpdate
+	}
+	alterTopicResource.Configs = topicConfigUpdates
+
+	// Construct kafka request for altering configs
+	kafkaReq := kmsg.NewIncrementalAlterConfigsRequest()
+	kafkaReq.Resources = []kmsg.IncrementalAlterConfigsRequestResource{alterTopicResource}
+
+	return &kafkaReq, nil
+}
