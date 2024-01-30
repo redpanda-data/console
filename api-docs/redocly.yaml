@@ -1,0 +1,13 @@
+extends:
+  - recommended
+
+apis:
+  core@v2:
+    root: ../proto/gen/openapi/openapi.yaml
+    rules:
+      no-ambiguous-paths: error
+theme:
+  openapi:
+    schemaExpansionLevel: 2
+    hideHostName: "true"
+    supressWarnings: "true"
