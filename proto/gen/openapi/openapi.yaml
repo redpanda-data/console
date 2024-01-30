@@ -1246,6 +1246,12 @@ paths:
       description: List connect clusters available for being consumed by the console's kafka-connect service.
       operationId: KafkaConnectService_ListConnectClusters
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConnectClustersResponse'
+          description: OK
         "401":
           content:
             application/json:
@@ -1272,18 +1278,31 @@ paths:
       description: Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file.
       operationId: KafkaConnectService_GetConnectCluster
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectCluster'
+          description: OK
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
           description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Connect cluster not found
         "500":
           content:
             application/json:
@@ -1304,7 +1323,8 @@ paths:
       description: List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file.
       operationId: KafkaConnectService_ListConnectors
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1315,6 +1335,12 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConnectorsResponse'
+          description: OK
         "401":
           content:
             application/json:
@@ -1340,7 +1366,8 @@ paths:
       description: Attempt to create a connector with the specific configuration.
       operationId: KafkaConnectService_CreateConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1353,6 +1380,12 @@ paths:
         required: true
         x-originalParamName: connector
       responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSpec'
+          description: Created
         "401":
           content:
             application/json:
@@ -1379,7 +1412,8 @@ paths:
       description: Delete a connector forcefully stoping all tasks and deleting its configuration.
       operationId: KafkaConnectService_DeleteConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1390,6 +1424,11 @@ paths:
           schema:
             type: string
       responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
         "401":
           content:
             application/json:
@@ -1415,7 +1454,8 @@ paths:
       description: Get information about a connector in a specific cluster.
       operationId: KafkaConnectService_GetConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1426,6 +1466,12 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSpec'
+          description: OK
         "401":
           content:
             application/json:
@@ -1452,7 +1498,8 @@ paths:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1488,7 +1535,8 @@ paths:
       description: Create a new connector using the given configuration, or update the configuration for an existing connector. Returns information about the connector after the change has been made.
       operationId: KafkaConnectService_UpsertConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1510,6 +1558,18 @@ paths:
         required: true
         x-originalParamName: config
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSpec'
+          description: Ok
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSpec'
+          description: Created
         "401":
           content:
             application/json:
@@ -1536,7 +1596,8 @@ paths:
       description: Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous.
       operationId: KafkaConnectService_PauseConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1547,6 +1608,11 @@ paths:
           schema:
             type: string
       responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Accepted
         "401":
           content:
             application/json:
@@ -1573,7 +1639,8 @@ paths:
       description: Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options.
       operationId: KafkaConnectService_RestartConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1591,6 +1658,11 @@ paths:
         required: true
         x-originalParamName: options
       responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Restart connector request success
         "401":
           content:
             application/json:
@@ -1617,7 +1689,8 @@ paths:
       description: Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused.
       operationId: KafkaConnectService_ResumeConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1628,6 +1701,11 @@ paths:
           schema:
             type: string
       responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Accepted
         "401":
           content:
             application/json:
@@ -1654,7 +1732,8 @@ paths:
       description: Gets the current status of the connector, including, The state of all of its tasks, error information etc.
       operationId: KafkaConnectService_GetConnectorStatus
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1665,6 +1744,12 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorStatus'
+          description: OK
         "401":
           content:
             application/json:
@@ -1691,7 +1776,8 @@ paths:
       description: Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely.
       operationId: KafkaConnectService_StopConnector
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1702,6 +1788,11 @@ paths:
           schema:
             type: string
       responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Accepted
         "401":
           content:
             application/json:
@@ -1728,7 +1819,8 @@ paths:
       description: Returns a list of connector topic names, it will return an empty list if the connector is not running.
       operationId: KafkaConnectService_ListConnectorTopics
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1739,6 +1831,12 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConnectorTopicsResponse'
+          description: Ok
         "401":
           content:
             application/json:
@@ -1765,7 +1863,8 @@ paths:
       description: Resets the set of topic names that the connector has been using.
       operationId: KafkaConnectService_ResetConnectorTopics
       parameters:
-        - in: path
+        - description: The unique name of the connect cluster you are targeting
+          in: path
           name: cluster_name
           required: true
           schema:
@@ -1776,6 +1875,11 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema: {}
+          description: Ok
         "401":
           content:
             application/json:
