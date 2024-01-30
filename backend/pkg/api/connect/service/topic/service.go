@@ -16,8 +16,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -39,14 +41,32 @@ type Service struct {
 	mapper     kafkaClientMapper
 }
 
-// ListTopics lists all Kafka topics.
-func (*Service) ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
-	return nil, apierrors.NewConnectError(
-		connect.CodeUnimplemented,
-		errors.New("this endpoint is not yet implemented"),
-		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-	)
+// ListTopics lists all Kafka topics with their most important metadata.
+func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
+	kafkaReq := kmsg.NewMetadataRequest()
+	kafkaRes, err := s.consoleSvc.GetMetadata(ctx, &kafkaReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	// Filter topics if a filter is set
+	if req.Msg.Filter != nil && req.Msg.Filter.NameContains != "" {
+		filteredTopics := make([]kmsg.MetadataResponseTopic, 0, len(kafkaRes.Topics))
+		for _, topic := range kafkaRes.Topics {
+			if strings.Contains(*topic.Topic, req.Msg.Filter.NameContains) {
+				filteredTopics = append(filteredTopics, topic)
+			}
+		}
+		kafkaRes.Topics = filteredTopics
+	}
+
+	protoResponse := s.mapper.kafkaMetadataToProto(kafkaRes)
+
+	return connect.NewResponse(protoResponse), nil
 }
 
 // DeleteTopic deletes a Kafka topic.

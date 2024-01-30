@@ -167,3 +167,31 @@ func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha1.UpdateTopicC
 
 	return &kafkaReq, nil
 }
+
+func (k *kafkaClientMapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) *v1alpha1.ListTopicsResponse {
+	topics := make([]*v1alpha1.ListTopicsResponse_Topic, len(metadata.Topics))
+	for i, topicMetadata := range metadata.Topics {
+		topics[i] = k.kafkaTopicMetadataToProto(topicMetadata)
+	}
+	return &v1alpha1.ListTopicsResponse{
+		Topics: topics,
+	}
+}
+
+func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1alpha1.ListTopicsResponse_Topic {
+	// We iterate through all partitions to figure out the replication factor,
+	// in case we get an error for the first partitions
+	replicationFactor := -1
+	for _, partition := range topicMetadata.Partitions {
+		if len(partition.Replicas) > replicationFactor {
+			replicationFactor = len(partition.Replicas)
+		}
+	}
+
+	return &v1alpha1.ListTopicsResponse_Topic{
+		Name:              *topicMetadata.Topic,
+		IsInternal:        topicMetadata.IsInternal,
+		PartitionCount:    int32(len(topicMetadata.Partitions)),
+		ReplicationFactor: int32(replicationFactor),
+	}
+}

@@ -18,13 +18,6 @@ message Topic {
     repeated ConfigSynonym config_synonyms = 7;
     optional string documentation = 8;
   }
-  string name = 1;
-  bool is_internal = 2;
-  int32 partition_count = 3;
-  int32 replication_factor = 4;
-  // configurations is omitted in ListTopics.
-  repeated Configuration configuration = 5;
-  // redpanda.api.common.v1alpha1.ErrorStatus x = 7;
 }
 
 message CreateTopicRequest {
@@ -108,7 +101,10 @@ message CreateTopicResponse {
 
 message ListTopicsRequest {
   message Filter {
-    string name = 1;
+    string name_contains = 1 [
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
   }
   Filter filter = 1;
   int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
@@ -121,7 +117,13 @@ message ListTopicsRequest {
 }
 
 message ListTopicsResponse {
-  repeated Topic topics = 1;
+  message Topic {
+    string name = 1;
+    bool is_internal = 2;
+    int32 partition_count = 3;
+    int32 replication_factor = 4;
+  }
+  repeated ListTopicsResponse.Topic topics = 1;
   string next_page_token = 2;
 }
 

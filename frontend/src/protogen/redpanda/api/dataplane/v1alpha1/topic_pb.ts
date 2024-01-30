@@ -11,35 +11,6 @@ import { ConfigAlterOperation, ConfigSource, ConfigSynonym, ConfigType } from ".
  * @generated from message redpanda.api.dataplane.v1alpha1.Topic
  */
 export class Topic extends Message<Topic> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: bool is_internal = 2;
-   */
-  isInternal = false;
-
-  /**
-   * @generated from field: int32 partition_count = 3;
-   */
-  partitionCount = 0;
-
-  /**
-   * @generated from field: int32 replication_factor = 4;
-   */
-  replicationFactor = 0;
-
-  /**
-   * configurations is omitted in ListTopics.
-   *
-   * redpanda.api.common.v1alpha1.ErrorStatus x = 7;
-   *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 5;
-   */
-  configuration: Topic_Configuration[] = [];
-
   constructor(data?: PartialMessage<Topic>) {
     super();
     proto3.util.initPartial(data, this);
@@ -48,11 +19,6 @@ export class Topic extends Message<Topic> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.Topic";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "is_internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "configuration", kind: "message", T: Topic_Configuration, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Topic {
@@ -466,9 +432,9 @@ export class ListTopicsRequest extends Message<ListTopicsRequest> {
  */
 export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: string name_contains = 1;
    */
-  name = "";
+  nameContains = "";
 
   constructor(data?: PartialMessage<ListTopicsRequest_Filter>) {
     super();
@@ -478,7 +444,7 @@ export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTopicsRequest_Filter {
@@ -503,9 +469,9 @@ export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> 
  */
 export class ListTopicsResponse extends Message<ListTopicsResponse> {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic topics = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic topics = 1;
    */
-  topics: Topic[] = [];
+  topics: ListTopicsResponse_Topic[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -520,7 +486,7 @@ export class ListTopicsResponse extends Message<ListTopicsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "topics", kind: "message", T: Topic, repeated: true },
+    { no: 1, name: "topics", kind: "message", T: ListTopicsResponse_Topic, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -538,6 +504,61 @@ export class ListTopicsResponse extends Message<ListTopicsResponse> {
 
   static equals(a: ListTopicsResponse | PlainMessage<ListTopicsResponse> | undefined, b: ListTopicsResponse | PlainMessage<ListTopicsResponse> | undefined): boolean {
     return proto3.util.equals(ListTopicsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic
+ */
+export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: bool is_internal = 2;
+   */
+  isInternal = false;
+
+  /**
+   * @generated from field: int32 partition_count = 3;
+   */
+  partitionCount = 0;
+
+  /**
+   * @generated from field: int32 replication_factor = 4;
+   */
+  replicationFactor = 0;
+
+  constructor(data?: PartialMessage<ListTopicsResponse_Topic>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "is_internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListTopicsResponse_Topic | PlainMessage<ListTopicsResponse_Topic> | undefined, b: ListTopicsResponse_Topic | PlainMessage<ListTopicsResponse_Topic> | undefined): boolean {
+    return proto3.util.equals(ListTopicsResponse_Topic, a, b);
   }
 }
 

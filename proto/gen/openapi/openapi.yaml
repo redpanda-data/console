@@ -629,7 +629,7 @@ components:
       type: object
     ListTopicsRequest.Filter:
       properties:
-        name:
+        name_contains:
           type: string
       type: object
     ListTopicsResponse:
@@ -638,8 +638,21 @@ components:
           type: string
         topics:
           items:
-            $ref: '#/components/schemas/v1alpha1.Topic'
+            $ref: '#/components/schemas/ListTopicsResponse.Topic'
           type: array
+      type: object
+    ListTopicsResponse.Topic:
+      properties:
+        is_internal:
+          type: boolean
+        name:
+          type: string
+        partition_count:
+          format: int32
+          type: integer
+        replication_factor:
+          format: int32
+          type: integer
       type: object
     ListUsersResponse:
       properties:
@@ -972,25 +985,6 @@ components:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
     v1alpha1.Topic:
-      properties:
-        configuration:
-          description: |-
-            configurations is omitted in ListTopics.
-
-            redpanda.api.common.v1alpha1.ErrorStatus x = 7;
-          items:
-            $ref: '#/components/schemas/Configuration'
-          type: array
-        is_internal:
-          type: boolean
-        name:
-          type: string
-        partition_count:
-          format: int32
-          type: integer
-        replication_factor:
-          format: int32
-          type: integer
       type: object
   securitySchemes:
     auth0:
@@ -2005,7 +1999,7 @@ paths:
       operationId: TopicService_ListTopics
       parameters:
         - in: query
-          name: filter.name
+          name: filter.name_contains
           schema:
             type: string
         - description: Limit the paginated response to a number of items.
