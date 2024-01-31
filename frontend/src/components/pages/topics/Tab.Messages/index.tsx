@@ -786,7 +786,7 @@ class SaveMessagesDialog extends Component<{
                         <Button variant="outline" colorScheme="red" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button variant="solid" onClick={() => this.saveMessages()}>
+                        <Button variant="solid" onClick={() => this.saveMessages()} isDisabled={!this.props.messages || this.props.messages.length == 0}>
                             Save Messages
                         </Button>
                     </ModalFooter>
@@ -797,10 +797,9 @@ class SaveMessagesDialog extends Component<{
 
     async saveMessages() {
         const messages = this.props.messages;
-        if (!messages) {
-            console.error('cannot save messages, props array is empty');
+        if (!messages)
             return;
-        }
+
 
         const cleanMessages = this.cleanMessages(messages);
 
