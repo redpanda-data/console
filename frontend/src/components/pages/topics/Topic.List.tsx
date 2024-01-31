@@ -196,6 +196,7 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
     return (
         <DataTable<Topic>
             data={topics}
+            sorting={true}
             pagination={paginationParams}
             onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex}) => {
                 uiSettings.topicList.pageSize = pageSize
@@ -226,7 +227,7 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 },
                 {
                     header: 'Size',
-                    accessorKey: 'size',
+                    accessorKey: 'logDirSummary.totalSizeBytes',
                     cell: ({row: {original: topic}}) => renderLogDirSummary(topic.logDirSummary),
                 },
                 {
