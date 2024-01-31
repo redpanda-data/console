@@ -28,7 +28,6 @@ import {
     TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -287,7 +286,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     SearchControlsBar = observer(() => {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
-        const spaceStyle = { marginRight: '16px', marginTop: '12px' };
         const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
         const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
@@ -306,20 +304,23 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return (
             <React.Fragment>
-                <Flex my={4}
-                      flexWrap="wrap"
-                      alignItems="center"
+                <Flex
+                    my={4}
+                    flexWrap="wrap"
+                    alignItems="flex-end"
+                    gap={3}
+                    width="full"
                 >
                     {/* Search Settings*/}
-                    <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
+                    <Label text="Partition">
                         <SingleSelect<number>
                             value={searchParams.partitionID}
                             onChange={c => (searchParams.partitionID = c)}
                             options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
                         />
                     </Label>
-                    <Label text="Start Offset" style={{ ...spaceStyle }}>
-                        <>
+                    <Label text="Start Offset">
+                        <Flex gap={3}>
                             <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
                                 searchParams.offsetOrigin = e;
                                 if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
@@ -327,9 +328,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             }} options={startOffsetOptions} />
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-                        </>
+                        </Flex>
                     </Label>
-                    <Label text="Max Results" style={{ ...spaceStyle, minWidth: '9em' }}>
+                    <Label text="Max Results">
                         <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
                     </Label>
 
@@ -345,33 +346,26 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     )}
 
                     {/* Refresh Button */}
-                    <Label text="" style={{ ...spaceStyle }}>
-                        <Flex ml={4}>
-                            <AnimatePresence>
-                                {api.messageSearchPhase == null && (
-                                    <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
-                                        <Tooltip label="Repeat current search" placement="top" hasArrow>
-                                            <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                                <SyncIcon size={16} />
-                                            </Button>
-                                        </Tooltip>
-                                    </MotionSpan>
-                                )}
-                                {api.messageSearchPhase != null && (
-                                    <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
-                                        <Tooltip label="Stop searching" placement="top" hasArrow>
-                                            <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                                <XCircleIcon size={20} />
-                                            </Button>
-                                        </Tooltip>
-                                    </MotionSpan>
-                                )}
-                            </AnimatePresence>
-                        </Flex>
-                    </Label>
+                    <Flex>
+                        {api.messageSearchPhase == null && (
+                            <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                    <SyncIcon size={20}/>
+                                </Button>
+                            </Tooltip>
+                        )}
+                        {api.messageSearchPhase != null && (
+                            <Tooltip label="Stop searching" placement="top" hasArrow>
+                                <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()}
+                                        style={{padding: 0, width: '48px'}}>
+                                    <XCircleIcon size={20}/>
+                                </Button>
+                            </Tooltip>
+                        )}
+                    </Flex>
 
                     {/* Topic Actions */}
-                    <div className={styles.topicActionsWrapper}>
+                    <Flex alignSelf="flex-end" ml="auto" gap={3}>
                         <Menu>
                             <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
                                 Actions
@@ -387,12 +381,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
                             </MenuList>
                         </Menu>
-                    </div>
-
-                    {/* Quick Search */}
-                    <Box>
-                        <SearchField width="230px" marginLeft="6" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
-                    </Box>
+                        {/* Quick Search */}
+                        <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
+                    </Flex>
 
                     {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                     {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&

@@ -45,32 +45,6 @@ export const animProps_span_searchResult = {
     exit: { opacity: 0, x: dx50em[2] },
 };
 
-export const animProps_span_messagesStatus = {
-    initial: {
-        opacity: 0,
-        x: 0,
-        display: 'inline-block'
-    },
-    animate: {
-        opacity: 1,
-        x: dx100em[1],
-        transition: {
-            ease: 'easeOut',
-            duration: 0,
-            delay: 0
-        },
-    },
-    exit: {
-        opacity: 0,
-        x: dx100em[2],
-        transition: {
-            ease: 'easeOut',
-            duration: 0.35,
-            delay: 0.9
-        }
-    },
-};
-
 export const animProps_radioOptionGroup = {
     transition: transition,
     initial: { opacity: 0, y: '-1em', height: 0, marginTop: 0 },
