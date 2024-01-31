@@ -618,7 +618,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 Save Messages
             </Button>
 
-            <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null}onRequireRawPayload={() => this.executeMessageSearch(true)} />
+            <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch()} />
 
             {
                 (this.messageSource?.data?.length > 0) &&
@@ -639,7 +639,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.expandedKeys.push(key);
     }
 
-    async executeMessageSearch(includeRawPayload: boolean = false): Promise<TopicMessage[]> {
+    async executeMessageSearch(): Promise<TopicMessage[]> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -676,7 +676,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-            includeRawPayload: includeRawPayload,
+            includeRawPayload: true,
 
             keyDeserializer: uiState.topicSettings.keyDeserializer,
             valueDeserializer: uiState.topicSettings.valueDeserializer,
@@ -734,7 +734,6 @@ class SaveMessagesDialog extends Component<{
 }> {
     @observable isOpen = false;
     @observable format = 'json' as 'json' | 'csv';
-    @observable isLoadingRawMessage = false;
     @observable includeRawContent = false;
 
     radioStyle = { display: 'block', lineHeight: '30px' };
@@ -784,14 +783,10 @@ class SaveMessagesDialog extends Component<{
                         </Checkbox>
                     </ModalBody>
                     <ModalFooter gap={2}>
-                        <Button variant="outline" colorScheme="red" onClick={onClose} isDisabled={this.isLoadingRawMessage}>
+                        <Button variant="outline" colorScheme="red" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button variant="solid" onClick={() => this.saveMessages()}
-                            isDisabled={this.isLoadingRawMessage}
-                            loadingText="Save Messages"
-                            isLoading={this.isLoadingRawMessage}
-                        >
+                        <Button variant="solid" onClick={() => this.saveMessages()}>
                             Save Messages
                         </Button>
                     </ModalFooter>
@@ -801,29 +796,15 @@ class SaveMessagesDialog extends Component<{
     }
 
     async saveMessages() {
-        let messages = this.props.messages;
-        if (messages == null)
+        const messages = this.props.messages;
+        if (!messages) {
+            console.error('cannot save messages, props array is empty');
             return;
-
-        try {
-            if (this.includeRawContent) {
-                const originalUserSelection = [...messages];
-
-                // We do not have the raw content (wasn't requested initially)
-                // so we must restart the message search
-                this.isLoadingRawMessage = true;
-                messages = await this.props.onRequireRawPayload();
-
-                // Here, we do not know whether the user selected to download all messages, or only one.
-                // So we need to filter all newly downloaded messages against the original user selection
-                messages = messages.filter(m => originalUserSelection.any(x => m.partitionID == x.partitionID && m.offset == x.offset));
-            }
-        }
-        finally {
-            this.isLoadingRawMessage = false;
         }
 
         const cleanMessages = this.cleanMessages(messages);
+
+        console.log('saving cleaned messages; messages: ' + messages.length);
 
         const json = toJson(cleanMessages, 4);
 
@@ -842,13 +823,16 @@ class SaveMessagesDialog extends Component<{
 
         // create a copy of each message, omitting properties that don't make
         // sense for the user, like 'size' or caching properties like 'keyJson'.
+        const includeRaw = this.includeRawContent;
 
         const cleanPayload = function (p: Payload): Payload {
             if (!p) return undefined as any;
 
             const cleanedPayload = {
                 payload: p.payload,
-                rawPayload: p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
+                rawPayload: (includeRaw && p.rawBytes)
+                    ? base64FromUInt8Array(p.rawBytes)
+                    : undefined,
                 encoding: p.encoding,
             } as any as Payload;
 
