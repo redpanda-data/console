@@ -541,6 +541,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 accessorKey: 'value',
                 cell: ({row: {original}}) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}/>
             },
+            keySize: {
+                header: 'Key Size',
+                accessorKey: 'key.size',
+                cell: ({row: {original: {key: {size}}}}) => <span>{prettyBytes(size)}</span>
+            },
+            valueSize: {
+                header: 'Value Size',
+                accessorKey: 'value.size',
+                cell: ({row: {original: {value: {size}}}}) => <span>{prettyBytes(size)}</span>
+            }
         }
 
 
@@ -1438,7 +1448,8 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         { title: 'Key', dataIndex: 'key' },
         // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
+        { title: 'Key Size', dataIndex: 'keySize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
+        { title: 'Value Size', dataIndex: 'valueSize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     const value = tags.map(column => ({
