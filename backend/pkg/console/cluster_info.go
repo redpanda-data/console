@@ -56,7 +56,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	eg.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadata(childCtx, nil)
+		metadata, err = s.kafkaSvc.GetMetadataTopics(childCtx, nil)
 		if err != nil {
 			return err
 		}

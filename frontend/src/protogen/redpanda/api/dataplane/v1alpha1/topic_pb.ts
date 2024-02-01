@@ -5,41 +5,12 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { ConfigSource, ConfigSynonym, ConfigType } from "./common_pb";
+import { ConfigAlterOperation, ConfigSource, ConfigSynonym, ConfigType } from "./common_pb";
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha1.Topic
  */
 export class Topic extends Message<Topic> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: bool is_internal = 2;
-   */
-  isInternal = false;
-
-  /**
-   * @generated from field: int32 partition_count = 3;
-   */
-  partitionCount = 0;
-
-  /**
-   * @generated from field: int32 replication_factor = 4;
-   */
-  replicationFactor = 0;
-
-  /**
-   * configurations is omitted in ListTopics.
-   *
-   * redpanda.api.common.v1alpha1.ErrorStatus x = 7;
-   *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 5;
-   */
-  configuration: Topic_Configuration[] = [];
-
   constructor(data?: PartialMessage<Topic>) {
     super();
     proto3.util.initPartial(data, this);
@@ -48,11 +19,6 @@ export class Topic extends Message<Topic> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.Topic";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "is_internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "configuration", kind: "message", T: Topic_Configuration, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Topic {
@@ -466,9 +432,9 @@ export class ListTopicsRequest extends Message<ListTopicsRequest> {
  */
 export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: string name_contains = 1;
    */
-  name = "";
+  nameContains = "";
 
   constructor(data?: PartialMessage<ListTopicsRequest_Filter>) {
     super();
@@ -478,7 +444,7 @@ export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTopicsRequest_Filter {
@@ -503,9 +469,9 @@ export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> 
  */
 export class ListTopicsResponse extends Message<ListTopicsResponse> {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic topics = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic topics = 1;
    */
-  topics: Topic[] = [];
+  topics: ListTopicsResponse_Topic[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -520,7 +486,7 @@ export class ListTopicsResponse extends Message<ListTopicsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "topics", kind: "message", T: Topic, repeated: true },
+    { no: 1, name: "topics", kind: "message", T: ListTopicsResponse_Topic, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -538,6 +504,61 @@ export class ListTopicsResponse extends Message<ListTopicsResponse> {
 
   static equals(a: ListTopicsResponse | PlainMessage<ListTopicsResponse> | undefined, b: ListTopicsResponse | PlainMessage<ListTopicsResponse> | undefined): boolean {
     return proto3.util.equals(ListTopicsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic
+ */
+export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: bool is_internal = 2;
+   */
+  isInternal = false;
+
+  /**
+   * @generated from field: int32 partition_count = 3;
+   */
+  partitionCount = 0;
+
+  /**
+   * @generated from field: int32 replication_factor = 4;
+   */
+  replicationFactor = 0;
+
+  constructor(data?: PartialMessage<ListTopicsResponse_Topic>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "is_internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListTopicsResponse_Topic {
+    return new ListTopicsResponse_Topic().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListTopicsResponse_Topic | PlainMessage<ListTopicsResponse_Topic> | undefined, b: ListTopicsResponse_Topic | PlainMessage<ListTopicsResponse_Topic> | undefined): boolean {
+    return proto3.util.equals(ListTopicsResponse_Topic, a, b);
   }
 }
 
@@ -684,171 +705,133 @@ export class GetTopicConfigurationsResponse extends Message<GetTopicConfiguratio
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest
  */
-export class UpdateTopicConfigurationRequest extends Message<UpdateTopicConfigurationRequest> {
+export class UpdateTopicConfigurationsRequest extends Message<UpdateTopicConfigurationsRequest> {
   /**
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration configuration = 2;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest.UpdateConfiguration configurations = 2;
    */
-  configuration: UpdateTopicConfigurationRequest_UpdateConfiguration[] = [];
+  configurations: UpdateTopicConfigurationsRequest_UpdateConfiguration[] = [];
 
-  constructor(data?: PartialMessage<UpdateTopicConfigurationRequest>) {
+  constructor(data?: PartialMessage<UpdateTopicConfigurationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "configuration", kind: "message", T: UpdateTopicConfigurationRequest_UpdateConfiguration, repeated: true },
+    { no: 2, name: "configurations", kind: "message", T: UpdateTopicConfigurationsRequest_UpdateConfiguration, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationRequest {
-    return new UpdateTopicConfigurationRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationsRequest {
+    return new UpdateTopicConfigurationsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationRequest {
-    return new UpdateTopicConfigurationRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsRequest {
+    return new UpdateTopicConfigurationsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationRequest {
-    return new UpdateTopicConfigurationRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsRequest {
+    return new UpdateTopicConfigurationsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateTopicConfigurationRequest | PlainMessage<UpdateTopicConfigurationRequest> | undefined, b: UpdateTopicConfigurationRequest | PlainMessage<UpdateTopicConfigurationRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateTopicConfigurationRequest, a, b);
+  static equals(a: UpdateTopicConfigurationsRequest | PlainMessage<UpdateTopicConfigurationsRequest> | undefined, b: UpdateTopicConfigurationsRequest | PlainMessage<UpdateTopicConfigurationsRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateTopicConfigurationsRequest, a, b);
   }
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest.UpdateConfiguration
  */
-export class UpdateTopicConfigurationRequest_UpdateConfiguration extends Message<UpdateTopicConfigurationRequest_UpdateConfiguration> {
+export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Message<UpdateTopicConfigurationsRequest_UpdateConfiguration> {
   /**
    * @generated from field: string key = 1;
    */
   key = "";
 
   /**
-   * @generated from field: string value = 2;
+   * @generated from field: optional string value = 2;
    */
-  value = "";
+  value?: string;
 
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration.Operation operation = 3;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigAlterOperation operation = 3;
    */
-  operation = UpdateTopicConfigurationRequest_UpdateConfiguration_Operation.UNSPECIFIED;
+  operation = ConfigAlterOperation.UNSPECIFIED;
 
-  constructor(data?: PartialMessage<UpdateTopicConfigurationRequest_UpdateConfiguration>) {
+  constructor(data?: PartialMessage<UpdateTopicConfigurationsRequest_UpdateConfiguration>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest.UpdateConfiguration";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "operation", kind: "enum", T: proto3.getEnumType(UpdateTopicConfigurationRequest_UpdateConfiguration_Operation) },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "operation", kind: "enum", T: proto3.getEnumType(ConfigAlterOperation) },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationRequest_UpdateConfiguration {
-    return new UpdateTopicConfigurationRequest_UpdateConfiguration().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationsRequest_UpdateConfiguration {
+    return new UpdateTopicConfigurationsRequest_UpdateConfiguration().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationRequest_UpdateConfiguration {
-    return new UpdateTopicConfigurationRequest_UpdateConfiguration().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsRequest_UpdateConfiguration {
+    return new UpdateTopicConfigurationsRequest_UpdateConfiguration().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationRequest_UpdateConfiguration {
-    return new UpdateTopicConfigurationRequest_UpdateConfiguration().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsRequest_UpdateConfiguration {
+    return new UpdateTopicConfigurationsRequest_UpdateConfiguration().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateTopicConfigurationRequest_UpdateConfiguration | PlainMessage<UpdateTopicConfigurationRequest_UpdateConfiguration> | undefined, b: UpdateTopicConfigurationRequest_UpdateConfiguration | PlainMessage<UpdateTopicConfigurationRequest_UpdateConfiguration> | undefined): boolean {
-    return proto3.util.equals(UpdateTopicConfigurationRequest_UpdateConfiguration, a, b);
+  static equals(a: UpdateTopicConfigurationsRequest_UpdateConfiguration | PlainMessage<UpdateTopicConfigurationsRequest_UpdateConfiguration> | undefined, b: UpdateTopicConfigurationsRequest_UpdateConfiguration | PlainMessage<UpdateTopicConfigurationsRequest_UpdateConfiguration> | undefined): boolean {
+    return proto3.util.equals(UpdateTopicConfigurationsRequest_UpdateConfiguration, a, b);
   }
 }
 
 /**
- * @generated from enum redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration.Operation
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse
  */
-export enum UpdateTopicConfigurationRequest_UpdateConfiguration_Operation {
-  /**
-   * @generated from enum value: OPERATION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: OPERATION_SET = 1;
-   */
-  SET = 1,
-
-  /**
-   * @generated from enum value: OPERATION_DELETE = 2;
-   */
-  DELETE = 2,
-
-  /**
-   * @generated from enum value: OPERATION_APPEND = 3;
-   */
-  APPEND = 3,
-
-  /**
-   * @generated from enum value: OPERATION_SUBTRACT = 4;
-   */
-  SUBTRACT = 4,
-}
-// Retrieve enum metadata with: proto3.getEnumType(UpdateTopicConfigurationRequest_UpdateConfiguration_Operation)
-proto3.util.setEnumType(UpdateTopicConfigurationRequest_UpdateConfiguration_Operation, "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationRequest.UpdateConfiguration.Operation", [
-  { no: 0, name: "OPERATION_UNSPECIFIED" },
-  { no: 1, name: "OPERATION_SET" },
-  { no: 2, name: "OPERATION_DELETE" },
-  { no: 3, name: "OPERATION_APPEND" },
-  { no: 4, name: "OPERATION_SUBTRACT" },
-]);
-
-/**
- * @generated from message redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationResponse
- */
-export class UpdateTopicConfigurationResponse extends Message<UpdateTopicConfigurationResponse> {
+export class UpdateTopicConfigurationsResponse extends Message<UpdateTopicConfigurationsResponse> {
   /**
    * Topic's complete set of configurations after this partial patch has been applied.
    *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configurations = 1;
    */
-  configuration: Topic_Configuration[] = [];
+  configurations: Topic_Configuration[] = [];
 
-  constructor(data?: PartialMessage<UpdateTopicConfigurationResponse>) {
+  constructor(data?: PartialMessage<UpdateTopicConfigurationsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "configuration", kind: "message", T: Topic_Configuration, repeated: true },
+    { no: 1, name: "configurations", kind: "message", T: Topic_Configuration, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationResponse {
-    return new UpdateTopicConfigurationResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateTopicConfigurationsResponse {
+    return new UpdateTopicConfigurationsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationResponse {
-    return new UpdateTopicConfigurationResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsResponse {
+    return new UpdateTopicConfigurationsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationResponse {
-    return new UpdateTopicConfigurationResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateTopicConfigurationsResponse {
+    return new UpdateTopicConfigurationsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateTopicConfigurationResponse | PlainMessage<UpdateTopicConfigurationResponse> | undefined, b: UpdateTopicConfigurationResponse | PlainMessage<UpdateTopicConfigurationResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateTopicConfigurationResponse, a, b);
+  static equals(a: UpdateTopicConfigurationsResponse | PlainMessage<UpdateTopicConfigurationsResponse> | undefined, b: UpdateTopicConfigurationsResponse | PlainMessage<UpdateTopicConfigurationsResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateTopicConfigurationsResponse, a, b);
   }
 }
 

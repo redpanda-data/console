@@ -223,15 +223,15 @@ func local_request_TopicService_GetTopicConfigurations_0(ctx context.Context, ma
 
 }
 
-func request_TopicService_UpdateTopicConfiguration_0(ctx context.Context, marshaler runtime.Marshaler, client TopicServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateTopicConfigurationRequest
+func request_TopicService_UpdateTopicConfigurations_0(ctx context.Context, marshaler runtime.Marshaler, client TopicServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateTopicConfigurationsRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Configuration); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Configurations); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -252,20 +252,20 @@ func request_TopicService_UpdateTopicConfiguration_0(ctx context.Context, marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
 
-	msg, err := client.UpdateTopicConfiguration(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpdateTopicConfigurations(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_TopicService_UpdateTopicConfiguration_0(ctx context.Context, marshaler runtime.Marshaler, server TopicServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateTopicConfigurationRequest
+func local_request_TopicService_UpdateTopicConfigurations_0(ctx context.Context, marshaler runtime.Marshaler, server TopicServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateTopicConfigurationsRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Configuration); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Configurations); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -286,7 +286,7 @@ func local_request_TopicService_UpdateTopicConfiguration_0(ctx context.Context, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
 
-	msg, err := server.UpdateTopicConfiguration(ctx, &protoReq)
+	msg, err := server.UpdateTopicConfigurations(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -465,7 +465,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PATCH", pattern_TopicService_UpdateTopicConfiguration_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PATCH", pattern_TopicService_UpdateTopicConfigurations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -473,12 +473,12 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfiguration", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configuration"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_TopicService_UpdateTopicConfiguration_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_TopicService_UpdateTopicConfigurations_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -486,7 +486,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_UpdateTopicConfiguration_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_UpdateTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -644,25 +644,25 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PATCH", pattern_TopicService_UpdateTopicConfiguration_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PATCH", pattern_TopicService_UpdateTopicConfigurations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfiguration", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configuration"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_TopicService_UpdateTopicConfiguration_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_TopicService_UpdateTopicConfigurations_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_TopicService_UpdateTopicConfiguration_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_UpdateTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -700,6 +700,15 @@ func (m response_TopicService_GetTopicConfigurations_0) XXX_ResponseBody() inter
 	return response.Configurations
 }
 
+type response_TopicService_UpdateTopicConfigurations_0 struct {
+	proto.Message
+}
+
+func (m response_TopicService_UpdateTopicConfigurations_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*UpdateTopicConfigurationsResponse)
+	return response.Configurations
+}
+
 var (
 	pattern_TopicService_CreateTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "topics"}, ""))
 
@@ -709,7 +718,7 @@ var (
 
 	pattern_TopicService_GetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configurations"}, ""))
 
-	pattern_TopicService_UpdateTopicConfiguration_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configuration"}, ""))
+	pattern_TopicService_UpdateTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configurations"}, ""))
 
 	pattern_TopicService_SetTopicConfiguration_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configuration"}, ""))
 )
@@ -723,7 +732,7 @@ var (
 
 	forward_TopicService_GetTopicConfigurations_0 = runtime.ForwardResponseMessage
 
-	forward_TopicService_UpdateTopicConfiguration_0 = runtime.ForwardResponseMessage
+	forward_TopicService_UpdateTopicConfigurations_0 = runtime.ForwardResponseMessage
 
 	forward_TopicService_SetTopicConfiguration_0 = runtime.ForwardResponseMessage
 )

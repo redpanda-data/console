@@ -97,9 +97,8 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
     return (
         <DataTable<ConfigEntry>
             data={configEntries}
-            showPagination={false}
-            enableSorting={false}
-            defaultPageSize={10000}
+            pagination={false}
+            sorting={false}
             getRowCanExpand={row => (row.original.synonyms?.length ?? 0) > 0 }
             subComponent={({row}) => {
                 if(!row.original.synonyms?.length) {

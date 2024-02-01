@@ -18,13 +18,6 @@ message Topic {
     repeated ConfigSynonym config_synonyms = 7;
     optional string documentation = 8;
   }
-  string name = 1;
-  bool is_internal = 2;
-  int32 partition_count = 3;
-  int32 replication_factor = 4;
-  // configurations is omitted in ListTopics.
-  repeated Configuration configuration = 5;
-  // redpanda.api.common.v1alpha1.ErrorStatus x = 7;
 }
 
 message CreateTopicRequest {
@@ -108,7 +101,10 @@ message CreateTopicResponse {
 
 message ListTopicsRequest {
   message Filter {
-    string name = 1;
+    string name_contains = 1 [
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
   }
   Filter filter = 1;
   int32 page_size = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
@@ -121,7 +117,13 @@ message ListTopicsRequest {
 }
 
 message ListTopicsResponse {
-  repeated Topic topics = 1;
+  message Topic {
+    string name = 1;
+    bool is_internal = 2;
+    int32 partition_count = 3;
+    int32 replication_factor = 4;
+  }
+  repeated ListTopicsResponse.Topic topics = 1;
   string next_page_token = 2;
 }
 
@@ -149,26 +151,37 @@ message GetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
-message UpdateTopicConfigurationRequest {
+message UpdateTopicConfigurationsRequest {
   message UpdateConfiguration {
-    string key = 1;
-    string value = 2;
-    enum Operation {
-      OPERATION_UNSPECIFIED = 0;
-      OPERATION_SET = 1;
-      OPERATION_DELETE = 2;
-      OPERATION_APPEND = 3;
-      OPERATION_SUBTRACT = 4;
-    }
-    Operation operation = 3;
+    string key = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 249
+    ];
+    optional string value = 2;
+    ConfigAlterOperation operation = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true,
+        not_in: [0]
+      }
+    ];
   }
-  string topic_name = 1;
-  repeated UpdateConfiguration configuration = 2;
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+  repeated UpdateConfiguration configurations = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
 }
 
-message UpdateTopicConfigurationResponse {
+message UpdateTopicConfigurationsResponse {
   // Topic's complete set of configurations after this partial patch has been applied.
-  repeated Topic.Configuration configuration = 1;
+  repeated Topic.Configuration configurations = 1;
 }
 
 message SetTopicConfigurationRequest {
@@ -271,10 +284,11 @@ service TopicService {
       }
     };
   }
-  rpc UpdateTopicConfiguration(UpdateTopicConfigurationRequest) returns (UpdateTopicConfigurationResponse) {
+  rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
     option (google.api.http) = {
-      patch: "/v1alpha1/topics/{topic_name}/configuration"
-      body: "configuration"
+      patch: "/v1alpha1/topics/{topic_name}/configurations"
+      body: "configurations"
+      response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update Topic Configuration"
@@ -284,7 +298,7 @@ service TopicService {
         value: {
           description: "Ok"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse"}
           }
         }
       }

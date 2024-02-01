@@ -54,7 +54,7 @@ type TopicSummary struct {
 // GetTopicsOverview returns a TopicSummary for all Kafka Topics
 func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error) {
 	// 1. Request metadata
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
+	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 func (s *Service) GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error) {
 	if metadata == nil {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
+		metadata, err = s.kafkaSvc.GetMetadataTopics(ctx, nil)
 		if err != nil {
 			return nil, err
 		}

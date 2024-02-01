@@ -16,9 +16,6 @@ import (
 )
 
 // IncrementalAlterConfigs sends a request to alter a Kafka resource's (broker, topics, ...) configuration.
-func (s *Service) IncrementalAlterConfigs(ctx context.Context, alterConfigs []kmsg.IncrementalAlterConfigsRequestResource) (*kmsg.IncrementalAlterConfigsResponse, error) {
-	req := kmsg.NewIncrementalAlterConfigsRequest()
-	req.Resources = alterConfigs
-
+func (s *Service) IncrementalAlterConfigs(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error) {
 	return req.RequestWith(ctx, s.KafkaClient)
 }

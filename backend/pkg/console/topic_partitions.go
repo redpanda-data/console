@@ -197,7 +197,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 }
 
 func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []string) (map[string]TopicDetails, *rest.Error) {
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
+	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, topicNames)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      err,

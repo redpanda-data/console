@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.10 / 2024-01-29
+
+- [FIX] Fix bug in schema registry URL paths.
+- [CHANGE] Add better error logging for websocket upgrade.
+
 ## v2.4.0 / 2024-01-23
 
 - [FEATURE] Specify strategy (e.g. INT8) for decoding messages

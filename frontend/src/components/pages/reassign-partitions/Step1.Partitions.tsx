@@ -65,8 +65,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em 1em 0.3em"/>
 
             <DataTable<TopicWithPartitions>
-                showPagination
-                enableSorting
+                pagination={true}
+                sorting={true}
                 data={this.topicPartitions}
                 rowSelection={{
                     '_internal_connectors_configs': true

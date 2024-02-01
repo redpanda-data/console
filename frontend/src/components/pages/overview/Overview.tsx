@@ -141,7 +141,7 @@ class Overview extends PageComponent {
                         <Heading as="h3" >Broker Details</Heading>
                         <DataTable<BrokerWithConfigAndStorage>
                             data={brokers}
-                            enableSorting={false}
+                            sorting={false}
                             columns={[
                                 {
                                     size: 80,

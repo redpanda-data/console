@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateTopicRequest, CreateTopicResponse, DeleteTopicRequest, DeleteTopicResponse, GetTopicConfigurationsRequest, GetTopicConfigurationsResponse, ListTopicsRequest, ListTopicsResponse, SetTopicConfigurationRequest, SetTopicConfigurationResponse, UpdateTopicConfigurationRequest, UpdateTopicConfigurationResponse } from "./topic_pb";
+import { CreateTopicRequest, CreateTopicResponse, DeleteTopicRequest, DeleteTopicResponse, GetTopicConfigurationsRequest, GetTopicConfigurationsResponse, ListTopicsRequest, ListTopicsResponse, SetTopicConfigurationRequest, SetTopicConfigurationResponse, UpdateTopicConfigurationsRequest, UpdateTopicConfigurationsResponse } from "./topic_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -49,12 +49,12 @@ export const TopicService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfiguration
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfigurations
      */
-    updateTopicConfiguration: {
-      name: "UpdateTopicConfiguration",
-      I: UpdateTopicConfigurationRequest,
-      O: UpdateTopicConfigurationResponse,
+    updateTopicConfigurations: {
+      name: "UpdateTopicConfigurations",
+      I: UpdateTopicConfigurationsRequest,
+      O: UpdateTopicConfigurationsResponse,
       kind: MethodKind.Unary,
     },
     /**

@@ -52,7 +52,7 @@ type BrokerConfigSynonym struct {
 
 // GetAllBrokerConfigs retrieves broker configs.
 func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConfig, error) {
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
+	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get broker ids: %w", err)
 	}

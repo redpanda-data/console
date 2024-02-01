@@ -30,3 +30,11 @@ message ConfigSynonym {
   optional string value = 2;
   ConfigSource source = 3;
 }
+
+enum ConfigAlterOperation {
+  CONFIG_ALTER_OPERATION_UNSPECIFIED = 0;
+  CONFIG_ALTER_OPERATION_SET = 1;
+  CONFIG_ALTER_OPERATION_DELETE = 2;
+  CONFIG_ALTER_OPERATION_APPEND = 3;
+  CONFIG_ALTER_OPERATION_SUBTRACT = 4;
+}

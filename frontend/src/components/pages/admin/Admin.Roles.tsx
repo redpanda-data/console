@@ -29,7 +29,7 @@ export class AdminRoles extends Component<{}> {
         const roles = api.adminInfo.roles;
 
         return <DataTable<Role>
-            enableSorting
+            sorting={true}
             data={roles}
             expandRowByClick
             subComponent={({row: {original: role}}) => <RoleComponent role={role}/>}

@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+//go:build integration
+
 package integration
 
 import (
@@ -565,5 +567,291 @@ func (s *APISuite) TestGetTopicConfiguration() {
 		assert.Error(err)
 		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Response status code should be 404")
 		assert.Contains(errResponse, "RESOURCE_NOT_FOUND")
+	})
+}
+
+func (s *APISuite) TestUpdateTopicConfiguration() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("update topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-valid-connect-go"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Update two topic configs where one shall be removed and another set to a different value
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		updateConfigReq := &v1alpha1.UpdateTopicConfigurationsRequest{
+			TopicName: topicName,
+			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
+				{
+					Key:       "cleanup.policy",
+					Value:     nil,
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+				},
+				{
+					Key:       "compression.type",
+					Value:     kmsg.StringPtr("producer"),
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
+				},
+			},
+		}
+		response, err := client.UpdateTopicConfigurations(ctx, connect.NewRequest(updateConfigReq))
+		require.NoError(err)
+		require.NotNil(response.Msg.Configurations)
+		assert.GreaterOrEqual(len(response.Msg.Configurations), 10) // We expect at least 10 config props to be returned
+
+		// 3. Compare the returned config values against our expectations
+		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
+		var compressionTypeConfig *v1alpha1.Topic_Configuration
+		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		for _, config := range response.Msg.Configurations {
+			switch config.Name {
+			case "cleanup.policy":
+				cleanupPolicyConfig = config
+			case "compression.type":
+				compressionTypeConfig = config
+			case "retention.bytes":
+				retentionBytesConfig = config
+			}
+		}
+		require.NotNil(cleanupPolicyConfig)
+		require.NotNil(compressionTypeConfig)
+		require.NotNil(retentionBytesConfig)
+
+		assert.Equal("delete", *cleanupPolicyConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source.String())
+
+		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
+
+		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source.String())
+	})
+
+	t.Run("update topic configuration of a valid topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-valid-http"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Update two topic configs where one shall be removed and another set to a different value
+		type updateTopicConfigRequest struct {
+			Key       string  `json:"key"`
+			Value     *string `json:"value"`
+			Operation string  `json:"operation"`
+		}
+		type updateTopicConfigResponse struct {
+			ConfigSynonyms []any   `json:"config_synonyms"`
+			Documentation  string  `json:"documentation"`
+			IsReadOnly     bool    `json:"is_read_only"`
+			IsSensitive    bool    `json:"is_sensitive"`
+			Name           string  `json:"name"`
+			Source         string  `json:"source"`
+			Type           string  `json:"type"`
+			Value          *string `json:"value"`
+		}
+
+		var httpRes []updateTopicConfigResponse
+		httpReq := []updateTopicConfigRequest{
+			{
+				Key:       "cleanup.policy",
+				Value:     nil,
+				Operation: "CONFIG_ALTER_OPERATION_DELETE",
+			},
+			{
+				Key:       "compression.type",
+				Value:     kmsg.StringPtr("producer"),
+				Operation: "CONFIG_ALTER_OPERATION_SET",
+			},
+		}
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			BodyJSON(&httpReq).
+			ToJSON(&httpRes).
+			Patch().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+		require.NotNil(httpRes)
+		assert.GreaterOrEqual(len(httpRes), 10) // We expect at least 10 config props to be returned
+
+		// 3. Compare the returned config values against our expectations
+		var cleanupPolicyConfig *updateTopicConfigResponse
+		var compressionTypeConfig *updateTopicConfigResponse
+		var retentionBytesConfig *updateTopicConfigResponse
+		for _, config := range httpRes {
+			copiedConfig := config
+			switch config.Name {
+			case "cleanup.policy":
+				cleanupPolicyConfig = &copiedConfig
+			case "compression.type":
+				compressionTypeConfig = &copiedConfig
+			case "retention.bytes":
+				retentionBytesConfig = &copiedConfig
+			}
+		}
+		require.NotNil(cleanupPolicyConfig)
+		require.NotNil(compressionTypeConfig)
+		require.NotNil(retentionBytesConfig)
+
+		assert.Equal("delete", *cleanupPolicyConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source)
+
+		assert.Equal("producer", *compressionTypeConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)
+
+		assert.Equal("1000", *retentionBytesConfig.Value)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source)
+	})
+
+	t.Run("update topic configuration with invalid payload (connect-go)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-invalid-connect-go"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Update two topic configs where one shall be removed and another set to a different value
+		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		updateConfigReq := &v1alpha1.UpdateTopicConfigurationsRequest{
+			TopicName: topicName,
+			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
+				{
+					Key:       "cleanup.policy",
+					Value:     kmsg.StringPtr("compact"), // Value must be empty for delete operation
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+				},
+				{
+					Key:       "compression.type",
+					Value:     kmsg.StringPtr("producer"),
+					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
+				},
+			},
+		}
+		response, err := client.UpdateTopicConfigurations(ctx, connect.NewRequest(updateConfigReq))
+		assert.Nil(response)
+		require.Error(err)
+		assert.Equal(connect.CodeInternal.String(), connect.CodeOf(err).String())
+		assert.Contains(err.Error(), "cleanup.policy requires a value to be empty")
+	})
+
+	t.Run("update topic configuration for non existent topic (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		type updateTopicConfigRequest struct {
+			Key       string  `json:"key"`
+			Value     *string `json:"value"`
+			Operation string  `json:"operation"`
+		}
+		httpReq := []updateTopicConfigRequest{
+			{
+				Key:       "cleanup.policy",
+				Value:     nil,
+				Operation: "CONFIG_ALTER_OPERATION_DELETE",
+			},
+		}
+
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", "does-not-exist")).
+			Patch().
+			BodyJSON(&httpReq).
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.NotEmpty(errResponse)
+		assert.Contains(errResponse, "REASON_RESOURCE_NOT_FOUND") // Topic does not exist
+		assert.Error(err)
+	})
+
+	t.Run("update topic configuration with empty payload (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-update-topic-config-empty-payload-http"
+		topicConfigs := map[string]*string{
+			"cleanup.policy":   kmsg.StringPtr("delete"),
+			"retention.bytes":  kmsg.StringPtr("1000"),
+			"compression.type": kmsg.StringPtr("snappy"),
+		}
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, topicConfigs, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Send patch config request without any payload for an existing topic
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			Patch().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.NotEmpty(errResponse)
+		assert.Contains(errResponse, "REASON_INVALID_INPUT")
+		assert.Error(err)
 	})
 }

@@ -48,7 +48,7 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
 
             <DataTable<Broker>
                 data={this.brokers}
-                showPagination
+                pagination={true}
                 columns={[
                     {
                         id: 'check',

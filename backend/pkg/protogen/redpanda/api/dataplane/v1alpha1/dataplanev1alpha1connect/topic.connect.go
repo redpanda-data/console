@@ -46,9 +46,9 @@ const (
 	// TopicServiceGetTopicConfigurationsProcedure is the fully-qualified name of the TopicService's
 	// GetTopicConfigurations RPC.
 	TopicServiceGetTopicConfigurationsProcedure = "/redpanda.api.dataplane.v1alpha1.TopicService/GetTopicConfigurations"
-	// TopicServiceUpdateTopicConfigurationProcedure is the fully-qualified name of the TopicService's
-	// UpdateTopicConfiguration RPC.
-	TopicServiceUpdateTopicConfigurationProcedure = "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfiguration"
+	// TopicServiceUpdateTopicConfigurationsProcedure is the fully-qualified name of the TopicService's
+	// UpdateTopicConfigurations RPC.
+	TopicServiceUpdateTopicConfigurationsProcedure = "/redpanda.api.dataplane.v1alpha1.TopicService/UpdateTopicConfigurations"
 	// TopicServiceSetTopicConfigurationProcedure is the fully-qualified name of the TopicService's
 	// SetTopicConfiguration RPC.
 	TopicServiceSetTopicConfigurationProcedure = "/redpanda.api.dataplane.v1alpha1.TopicService/SetTopicConfiguration"
@@ -56,13 +56,13 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	topicServiceServiceDescriptor                        = v1alpha1.File_redpanda_api_dataplane_v1alpha1_topic_proto.Services().ByName("TopicService")
-	topicServiceCreateTopicMethodDescriptor              = topicServiceServiceDescriptor.Methods().ByName("CreateTopic")
-	topicServiceListTopicsMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("ListTopics")
-	topicServiceDeleteTopicMethodDescriptor              = topicServiceServiceDescriptor.Methods().ByName("DeleteTopic")
-	topicServiceGetTopicConfigurationsMethodDescriptor   = topicServiceServiceDescriptor.Methods().ByName("GetTopicConfigurations")
-	topicServiceUpdateTopicConfigurationMethodDescriptor = topicServiceServiceDescriptor.Methods().ByName("UpdateTopicConfiguration")
-	topicServiceSetTopicConfigurationMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfiguration")
+	topicServiceServiceDescriptor                         = v1alpha1.File_redpanda_api_dataplane_v1alpha1_topic_proto.Services().ByName("TopicService")
+	topicServiceCreateTopicMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("CreateTopic")
+	topicServiceListTopicsMethodDescriptor                = topicServiceServiceDescriptor.Methods().ByName("ListTopics")
+	topicServiceDeleteTopicMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("DeleteTopic")
+	topicServiceGetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("GetTopicConfigurations")
+	topicServiceUpdateTopicConfigurationsMethodDescriptor = topicServiceServiceDescriptor.Methods().ByName("UpdateTopicConfigurations")
+	topicServiceSetTopicConfigurationMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfiguration")
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1alpha1.TopicService service.
@@ -71,7 +71,7 @@ type TopicServiceClient interface {
 	ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error)
 	DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error)
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error)
-	UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error)
+	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfiguration(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error)
 }
 
@@ -109,10 +109,10 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceGetTopicConfigurationsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		updateTopicConfiguration: connect.NewClient[v1alpha1.UpdateTopicConfigurationRequest, v1alpha1.UpdateTopicConfigurationResponse](
+		updateTopicConfigurations: connect.NewClient[v1alpha1.UpdateTopicConfigurationsRequest, v1alpha1.UpdateTopicConfigurationsResponse](
 			httpClient,
-			baseURL+TopicServiceUpdateTopicConfigurationProcedure,
-			connect.WithSchema(topicServiceUpdateTopicConfigurationMethodDescriptor),
+			baseURL+TopicServiceUpdateTopicConfigurationsProcedure,
+			connect.WithSchema(topicServiceUpdateTopicConfigurationsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		setTopicConfiguration: connect.NewClient[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse](
@@ -126,12 +126,12 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // topicServiceClient implements TopicServiceClient.
 type topicServiceClient struct {
-	createTopic              *connect.Client[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
-	listTopics               *connect.Client[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse]
-	deleteTopic              *connect.Client[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
-	getTopicConfigurations   *connect.Client[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
-	updateTopicConfiguration *connect.Client[v1alpha1.UpdateTopicConfigurationRequest, v1alpha1.UpdateTopicConfigurationResponse]
-	setTopicConfiguration    *connect.Client[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
+	createTopic               *connect.Client[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
+	listTopics                *connect.Client[v1alpha1.ListTopicsRequest, v1alpha1.ListTopicsResponse]
+	deleteTopic               *connect.Client[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
+	getTopicConfigurations    *connect.Client[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
+	updateTopicConfigurations *connect.Client[v1alpha1.UpdateTopicConfigurationsRequest, v1alpha1.UpdateTopicConfigurationsResponse]
+	setTopicConfiguration     *connect.Client[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1alpha1.TopicService.CreateTopic.
@@ -154,10 +154,10 @@ func (c *topicServiceClient) GetTopicConfigurations(ctx context.Context, req *co
 	return c.getTopicConfigurations.CallUnary(ctx, req)
 }
 
-// UpdateTopicConfiguration calls
-// redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfiguration.
-func (c *topicServiceClient) UpdateTopicConfiguration(ctx context.Context, req *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
-	return c.updateTopicConfiguration.CallUnary(ctx, req)
+// UpdateTopicConfigurations calls
+// redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfigurations.
+func (c *topicServiceClient) UpdateTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error) {
+	return c.updateTopicConfigurations.CallUnary(ctx, req)
 }
 
 // SetTopicConfiguration calls redpanda.api.dataplane.v1alpha1.TopicService.SetTopicConfiguration.
@@ -172,7 +172,7 @@ type TopicServiceHandler interface {
 	ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error)
 	DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error)
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error)
-	UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error)
+	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfiguration(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error)
 }
 
@@ -206,10 +206,10 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceGetTopicConfigurationsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	topicServiceUpdateTopicConfigurationHandler := connect.NewUnaryHandler(
-		TopicServiceUpdateTopicConfigurationProcedure,
-		svc.UpdateTopicConfiguration,
-		connect.WithSchema(topicServiceUpdateTopicConfigurationMethodDescriptor),
+	topicServiceUpdateTopicConfigurationsHandler := connect.NewUnaryHandler(
+		TopicServiceUpdateTopicConfigurationsProcedure,
+		svc.UpdateTopicConfigurations,
+		connect.WithSchema(topicServiceUpdateTopicConfigurationsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceSetTopicConfigurationHandler := connect.NewUnaryHandler(
@@ -228,8 +228,8 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceDeleteTopicHandler.ServeHTTP(w, r)
 		case TopicServiceGetTopicConfigurationsProcedure:
 			topicServiceGetTopicConfigurationsHandler.ServeHTTP(w, r)
-		case TopicServiceUpdateTopicConfigurationProcedure:
-			topicServiceUpdateTopicConfigurationHandler.ServeHTTP(w, r)
+		case TopicServiceUpdateTopicConfigurationsProcedure:
+			topicServiceUpdateTopicConfigurationsHandler.ServeHTTP(w, r)
 		case TopicServiceSetTopicConfigurationProcedure:
 			topicServiceSetTopicConfigurationHandler.ServeHTTP(w, r)
 		default:
@@ -257,8 +257,8 @@ func (UnimplementedTopicServiceHandler) GetTopicConfigurations(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.TopicService.GetTopicConfigurations is not implemented"))
 }
 
-func (UnimplementedTopicServiceHandler) UpdateTopicConfiguration(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfiguration is not implemented"))
+func (UnimplementedTopicServiceHandler) UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfigurations is not implemented"))
 }
 
 func (UnimplementedTopicServiceHandler) SetTopicConfiguration(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationResponse], error) {

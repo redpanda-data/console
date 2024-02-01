@@ -5,22 +5,26 @@ tasks:
       - install-buf
     desc: lint proto files
     cmds:
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf lint
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format {{.ROOT_DIR}}/proto -w
+      - |
+        {{ .PATH_PREFIX }} buf lint
+      - |
+        {{ .PATH_PREFIX }} buf format {{.ROOT_DIR}}/proto -w
 
   format:
     deps:
       - install-buf
     desc: format proto files
     cmds:
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf format -w --exit-code
+      - |
+        {{ .PATH_PREFIX }} buf format -w --exit-code
 
   mod-update:
     deps:
       - install-buf
     desc: update mod
     cmds:
-      - PATH={{.BUILD_ROOT}}/bin:$PATH buf mod update {{.ROOT_DIR}}/proto
+      - |
+        {{ .PATH_PREFIX }} buf mod update {{.ROOT_DIR}}/proto
 
   generate:
     dir: "{{.ROOT_DIR}}"
@@ -38,9 +42,10 @@ tasks:
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
       - task: lint
       - task: format
-      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH:{{ .BUILD_ROOT }}/bin/go buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
+      - |
+        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
       - for: { var: BUF_INPUTS }
-        cmd: PATH={{.BUILD_ROOT}}/bin:$PATH:{{ .BUILD_ROOT }}/bin/go buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}
+        cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff --exit-code; fi
@@ -52,7 +57,8 @@ tasks:
       - install-yq
     cmds:
       - rm -rf ./proto/gen/openapi
-      - cmd: PATH={{.BUILD_ROOT}}/bin:$PATH buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane
+      - |
+        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane
       - cd backend && go run ./pkg/tools/openapi-generator -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
       - 'yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml'
       - rm -f ./proto/gen/openapi/apidocs.swagger.json
@@ -72,21 +78,27 @@ tasks:
       - '[[ $({{ .BUILD_ROOT }}/bin/buf --version) == {{.BUF_VERSION}} ]]'
 
   install-yq:
+    deps:
+      - :backend:install-go
     desc: install yq
+    run: once
     vars:
       YQ_VERSION: 4.35.1
     cmds:
-      - 'go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
+      - '{{ .PATH_PREFIX }} go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
     status:
-      - '[[ $(yq --version) == *"{{.YQ_VERSION}}"* ]]'
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/yq >/dev/null 2>&1'
+      - '[[ $({{.BUILD_ROOT}}/bin/go/yq --version) == *"{{.YQ_VERSION}}"* ]]'
 
   install-connect-gateway:
+    deps:
+      - :backend:install-go
     desc: install connect-gateway
     vars:
       VERSION: 0.3.1
     cmds:
       - |
-        GOBIN={{ .BUILD_ROOT }}/bin/go go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
+        {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
     status:
       - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway >/dev/null 2>&1"
       - '[[ $({{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'

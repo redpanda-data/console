@@ -165,6 +165,12 @@ kafka:
 #   requestTimeout: 6s  # timeout for REST requests
 
 # console:
+#   # Max deserialization determines the maximum payload size for record payloads (key/value/headers)
+#   # that are sent to the frontend when listing messages. Payloads that exceed this value will be
+#   # omitted. If you try to inspect very large messages on the frontend, this will crash the frontend
+#   # application due to resource constraints in the browser. To avoid these crashes, you can limit
+#   # the size here. Records can still be downloaded using the "Save to file" action regardless of this size.
+#   maxDeserializationPayloadSize: 20480
 #   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
 #   topicDocumentation:
 #     enabled: false

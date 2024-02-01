@@ -73,7 +73,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the requested topic exists at all)
-	metadata, restErr := s.kafkaSvc.GetSingleMetadata(ctx, listReq.TopicName)
+	metadata, restErr := s.kafkaSvc.GetSingleTopicMetadata(ctx, listReq.TopicName)
 	if restErr != nil {
 		return fmt.Errorf("failed to get partitions: %w", restErr.Err)
 	}
