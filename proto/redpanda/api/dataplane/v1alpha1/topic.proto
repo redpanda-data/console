@@ -184,17 +184,17 @@ message UpdateTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
-message SetTopicConfigurationRequest {
+message SetTopicConfigurationsRequest {
   message SetConfiguration {
     string key = 1;
-    string value = 2;
+    optional string value = 2;
   }
   string topic_name = 1;
-  repeated SetConfiguration configuration = 2;
+  repeated SetConfiguration configurations = 2;
 }
 
-message SetTopicConfigurationResponse {
-  repeated Topic.Configuration configuration = 1;
+message SetTopicConfigurationsResponse {
+  repeated Topic.Configuration configurations = 1;
 }
 
 service TopicService {
@@ -313,20 +313,21 @@ service TopicService {
       }
     };
   }
-  rpc SetTopicConfiguration(SetTopicConfigurationRequest) returns (SetTopicConfigurationResponse) {
+  rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
     option (google.api.http) = {
-      put: "/v1alpha1/topics/{topic_name}/configuration"
-      body: "configuration"
+      put: "/v1alpha1/topics/{topic_name}/configurations"
+      body: "configurations"
+      response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Set Topic Configuration"
-      description: "Set the entire configuration of a topic. Config entries not provided in the request are removed."
+      summary: "Set Topic Configurations"
+      description: "Set the entire set of configurations for a topic. Config entries that are not provided in the request are removed and will fall-back to their default values."
       responses: {
         key: "200"
         value: {
           description: "Ok"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse"}
           }
         }
       }
