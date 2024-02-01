@@ -40,8 +40,8 @@ func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alph
 		)
 	}
 
-	envs := make([]adminapi.EnvironmentVariable, 0, len(c.Msg.Environment))
-	for k, v := range c.Msg.Environment {
+	envs := make([]adminapi.EnvironmentVariable, 0, len(c.Msg.Transform.Environment))
+	for k, v := range c.Msg.Transform.Environment {
 		envs = append(envs, adminapi.EnvironmentVariable{
 			Key:   k,
 			Value: v,
@@ -49,12 +49,12 @@ func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alph
 	}
 
 	if err := s.redpandaSvc.DeployWasmTransform(ctx, adminapi.TransformMetadata{
-		Name:         c.Msg.Name,
-		InputTopic:   c.Msg.InputTopicName,
-		OutputTopics: c.Msg.OutputTopicNames,
+		Name:         c.Msg.Transform.Name,
+		InputTopic:   c.Msg.Transform.InputTopicName,
+		OutputTopics: c.Msg.Transform.OutputTopicNames,
 		Status:       nil,
 		Environment:  envs,
-	}, c.Msg.WasmBinary); err != nil {
+	}, c.Msg.Transform.WasmBinary); err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
@@ -77,14 +77,14 @@ func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alph
 		return nil, err
 	}
 
-	transform, err := findTransformByName(tfs, c.Msg.Name)
+	transform, err := findTransformByName(tfs, c.Msg.Transform.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	return &connect.Response[v1alpha1.DeployTransformResponse]{
 		Msg: &v1alpha1.DeployTransformResponse{
-			Transform: transform,
+			TransformMetadata: transform,
 		},
 	}, nil
 }

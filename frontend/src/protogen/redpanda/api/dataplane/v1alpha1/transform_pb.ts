@@ -424,6 +424,43 @@ export class DeleteTransformResponse extends Message<DeleteTransformResponse> {
  */
 export class DeployTransformRequest extends Message<DeployTransformRequest> {
   /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.DeployTransformRequest.Transform transform = 1;
+   */
+  transform?: DeployTransformRequest_Transform;
+
+  constructor(data?: PartialMessage<DeployTransformRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "transform", kind: "message", T: DeployTransformRequest_Transform },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined, b: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined): boolean {
+    return proto3.util.equals(DeployTransformRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest.Transform
+ */
+export class DeployTransformRequest_Transform extends Message<DeployTransformRequest_Transform> {
+  /**
    * 'name' is the unique identifier for the transform. It must be a non-empty string,
    * with a maximum length of 128 bytes. It should contain only characters that are
    * valid UTF-8 and not control or format characters.
@@ -464,13 +501,13 @@ export class DeployTransformRequest extends Message<DeployTransformRequest> {
    */
   environment: { [key: string]: string } = {};
 
-  constructor(data?: PartialMessage<DeployTransformRequest>) {
+  constructor(data?: PartialMessage<DeployTransformRequest_Transform>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest.Transform";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "wasm_binary", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
@@ -479,20 +516,20 @@ export class DeployTransformRequest extends Message<DeployTransformRequest> {
     { no: 5, name: "environment", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest {
-    return new DeployTransformRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest_Transform {
+    return new DeployTransformRequest_Transform().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest {
-    return new DeployTransformRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest_Transform {
+    return new DeployTransformRequest_Transform().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest {
-    return new DeployTransformRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest_Transform {
+    return new DeployTransformRequest_Transform().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined, b: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined): boolean {
-    return proto3.util.equals(DeployTransformRequest, a, b);
+  static equals(a: DeployTransformRequest_Transform | PlainMessage<DeployTransformRequest_Transform> | undefined, b: DeployTransformRequest_Transform | PlainMessage<DeployTransformRequest_Transform> | undefined): boolean {
+    return proto3.util.equals(DeployTransformRequest_Transform, a, b);
   }
 }
 
@@ -504,9 +541,9 @@ export class DeployTransformResponse extends Message<DeployTransformResponse> {
    * 'transform' contains the metadata for the deployed transform. This includes
    * details like the name, input and output topics, status
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.TransformMetadata transform = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.TransformMetadata transform_metadata = 1;
    */
-  transform?: TransformMetadata;
+  transformMetadata?: TransformMetadata;
 
   constructor(data?: PartialMessage<DeployTransformResponse>) {
     super();
@@ -516,7 +553,7 @@ export class DeployTransformResponse extends Message<DeployTransformResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "transform", kind: "message", T: TransformMetadata },
+    { no: 1, name: "transform_metadata", kind: "message", T: TransformMetadata },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformResponse {

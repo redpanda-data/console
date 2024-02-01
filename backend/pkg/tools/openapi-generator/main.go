@@ -63,6 +63,7 @@ func main() { //nolint:cyclop,gocognit // this is just some tool
 	updateSecurity(doc3)
 	updateOperations(doc3)
 	updateUsers(doc3)
+	updateTransforms(doc3)
 	updateAny(doc3)
 	removeDummies(doc3)
 
@@ -481,6 +482,117 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			true)
 		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
+	}
+}
+
+func updateTransforms(doc3 *openapi3.T) {
+	// List /transforms
+	{
+		transforms := []*v1alpha1.TransformMetadata{
+			{
+				Name:             "transform1",
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic11", "output-topic12"},
+				Status: []*v1alpha1.PartitionTransformStatus{
+					{
+						NodeId:    int32(1),
+						Partition: int32(1),
+						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:       int32(1),
+					},
+				},
+			},
+			{
+				Name:             "transform2",
+				InputTopicName:   "topic2",
+				OutputTopicNames: []string{"output-topic21", "output-topic22"},
+				Status: []*v1alpha1.PartitionTransformStatus{
+					{
+						NodeId:    int32(2),
+						Partition: int32(2),
+						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:       int32(2),
+					},
+				},
+			},
+		}
+		responseExample := toExample(&v1alpha1.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
+		doc3.Paths.Value("/v1alpha1/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// Get /transforms/{name}
+	{
+		// Request
+		request := &v1alpha1.GetTransformRequest{
+			Name: "transform1",
+		}
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Parameters[0].Value.Example = toExample(request, "Get Transform", "Get transform", false).Value
+
+		// Response
+		response := &v1alpha1.GetTransformResponse{
+			Transform: &v1alpha1.TransformMetadata{
+				Name:             "transform1",
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic1", "output-topic2"},
+				Status: []*v1alpha1.PartitionTransformStatus{
+					{
+						NodeId:    int32(1),
+						Partition: int32(1),
+						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:       int32(1),
+					},
+				},
+			},
+		}
+		responseExample := toExample(response, "Get Transform", "Get transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// PUT /transforms/{transform.name}
+	{
+		// Request
+		deployTransformReq := &v1alpha1.DeployTransformRequest{
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "transform1",
+				WasmBinary:       []byte{0x00, 0x61, 0x73, 0x6D},
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic1", "output-topic2"},
+				Environment: map[string]string{
+					"key1": "value1",
+				},
+			},
+		}
+		requestExample := toExample(deployTransformReq, "Deploy Transform", "Deploy transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{transform.name}").Put.RequestBody.Value.Content["application/json"].Example = requestExample.Value
+
+		response := &v1alpha1.DeployTransformResponse{
+			TransformMetadata: &v1alpha1.TransformMetadata{
+				Name:             "transform1",
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic1", "output-topic2"},
+				Status: []*v1alpha1.PartitionTransformStatus{
+					{
+						NodeId:    int32(1),
+						Partition: int32(1),
+						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:       int32(1),
+					},
+				},
+			},
+		}
+		responseExample := toExample(response, "Deploy Transform", "Deploy transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{transform.name}").Put.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// Delete /transforms/{name}
+	{
+		// Request
+		request := &v1alpha1.DeleteTransformRequest{
+			Name: "transform1",
+		}
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Parameters[0].Value.Example = toExample(request, "Delete Transform", "Delete transform", false).Value
+
+		// Response
+		response := &v1alpha1.DeleteTransformResponse{}
+		responseExample := toExample(response, "Delete Transform", "Delete transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 }
 

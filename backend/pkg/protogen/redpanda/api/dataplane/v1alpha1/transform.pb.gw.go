@@ -31,13 +31,17 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-var (
-	filter_TransformService_DeployTransform_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
-)
-
 func request_TransformService_DeployTransform_0(ctx context.Context, marshaler runtime.Marshaler, client TransformServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeployTransformRequest
 	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Transform); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -46,21 +50,14 @@ func request_TransformService_DeployTransform_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["transform.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "transform.name")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "transform.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_TransformService_DeployTransform_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "transform.name", err)
 	}
 
 	msg, err := client.DeployTransform(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -72,6 +69,14 @@ func local_request_TransformService_DeployTransform_0(ctx context.Context, marsh
 	var protoReq DeployTransformRequest
 	var metadata runtime.ServerMetadata
 
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Transform); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -79,21 +84,14 @@ func local_request_TransformService_DeployTransform_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["transform.name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "transform.name")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	err = runtime.PopulateFieldFromPath(&protoReq, "transform.name", val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_TransformService_DeployTransform_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "transform.name", err)
 	}
 
 	msg, err := server.DeployTransform(ctx, &protoReq)
@@ -255,7 +253,7 @@ func RegisterTransformServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform", runtime.WithHTTPPathPattern("/v1alpha1/transforms/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform", runtime.WithHTTPPathPattern("/v1alpha1/transforms/{transform.name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -394,7 +392,7 @@ func RegisterTransformServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform", runtime.WithHTTPPathPattern("/v1alpha1/transforms/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform", runtime.WithHTTPPathPattern("/v1alpha1/transforms/{transform.name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -485,7 +483,7 @@ type response_TransformService_DeployTransform_0 struct {
 
 func (m response_TransformService_DeployTransform_0) XXX_ResponseBody() interface{} {
 	response := m.Message.(*DeployTransformResponse)
-	return response.Transform
+	return response.TransformMetadata
 }
 
 type response_TransformService_GetTransform_0 struct {
@@ -498,7 +496,7 @@ func (m response_TransformService_GetTransform_0) XXX_ResponseBody() interface{}
 }
 
 var (
-	pattern_TransformService_DeployTransform_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "transforms", "name"}, ""))
+	pattern_TransformService_DeployTransform_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "transforms", "transform.name"}, ""))
 
 	pattern_TransformService_ListTransforms_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "transforms"}, ""))
 

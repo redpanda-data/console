@@ -60,11 +60,13 @@ func (s *APISuite) TestDeployTransform() {
 
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Name:             "test-transform",
-			WasmBinary:       technicallyATransform,
-			InputTopicName:   "wasm-tfm-create-test-i",
-			OutputTopicNames: []string{"wasm-tfm-create-test-o"},
-			Environment:      nil,
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "test-transform",
+				WasmBinary:       technicallyATransform,
+				InputTopicName:   "wasm-tfm-create-test-i",
+				OutputTopicNames: []string{"wasm-tfm-create-test-o"},
+				Environment:      nil,
+			},
 		}))
 		assert.NoError(err)
 
@@ -94,11 +96,13 @@ func (s *APISuite) TestGetTransform() {
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-c"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-d"))
 		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Name:             "test-transform",
-			WasmBinary:       technicallyATransform,
-			InputTopicName:   "wasm-tfm-create-test-c",
-			OutputTopicNames: []string{"wasm-tfm-create-test-d"},
-			Environment:      map[string]string{"foo": "bar"},
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "test-transform",
+				WasmBinary:       technicallyATransform,
+				InputTopicName:   "wasm-tfm-create-test-c",
+				OutputTopicNames: []string{"wasm-tfm-create-test-d"},
+				Environment:      map[string]string{"foo": "bar"},
+			},
 		}))
 		require.NoError(err)
 
@@ -140,19 +144,23 @@ func (s *APISuite) TestListTransforms() {
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-a"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-b"))
 		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Name:             "test-transform1",
-			WasmBinary:       technicallyATransform,
-			InputTopicName:   "wasm-tfm-list-test-a",
-			OutputTopicNames: []string{"wasm-tfm-list-test-b"},
-			Environment:      nil,
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "test-transform1",
+				WasmBinary:       technicallyATransform,
+				InputTopicName:   "wasm-tfm-list-test-a",
+				OutputTopicNames: []string{"wasm-tfm-list-test-b"},
+				Environment:      nil,
+			},
 		}))
 		require.NoError(err)
 		_, err = transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Name:             "test-transform2",
-			WasmBinary:       technicallyATransform,
-			InputTopicName:   "wasm-tfm-list-test-a",
-			OutputTopicNames: []string{"wasm-tfm-list-test-b"},
-			Environment:      nil,
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "test-transform2",
+				WasmBinary:       technicallyATransform,
+				InputTopicName:   "wasm-tfm-list-test-a",
+				OutputTopicNames: []string{"wasm-tfm-list-test-b"},
+				Environment:      nil,
+			},
 		}))
 		spew.Dump(err)
 		require.NoError(err)
@@ -212,11 +220,13 @@ func (s *APISuite) TestDeleteTransforms() {
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-e"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-f"))
 		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Name:             "del-test-transform",
-			WasmBinary:       technicallyATransform,
-			InputTopicName:   "wasm-tfm-delete-test-e",
-			OutputTopicNames: []string{"wasm-tfm-delete-test-f"},
-			Environment:      nil,
+			Transform: &v1alpha1.DeployTransformRequest_Transform{
+				Name:             "del-test-transform",
+				WasmBinary:       technicallyATransform,
+				InputTopicName:   "wasm-tfm-delete-test-e",
+				OutputTopicNames: []string{"wasm-tfm-delete-test-f"},
+				Environment:      nil,
+			},
 		}))
 		require.NoError(err)
 

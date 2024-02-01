@@ -434,7 +434,7 @@ components:
       type: object
     DeployTransformResponse:
       properties:
-        transform:
+        transform_metadata:
           $ref: '#/components/schemas/TransformMetadata'
       type: object
     ErrorInfo:
@@ -1052,6 +1052,38 @@ components:
         trace:
           type: string
         worker_id:
+          type: string
+      type: object
+    Transform:
+      properties:
+        environment:
+          additionalProperties:
+            type: string
+          description: |-
+            'environment' is a map representing key-value pairs of environment configurations.
+            Each key must be a non-empty string, not exceeding 128 bytes, and matching the
+            specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
+            The map can have at most 128 key-value pairs.
+          type: object
+        input_topic_name:
+          description: '''input_topic_name'' specifies the name of the input topic for the transform.'
+          type: string
+        name:
+          description: |-
+            'name' is the unique identifier for the transform. It must be a non-empty string,
+            with a maximum length of 128 bytes. It should contain only characters that are
+            valid UTF-8 and not control or format characters.
+          type: string
+        output_topic_names:
+          description: |-
+            'output_topic_names' is a list of output topics for the transform. This field can contain
+            multiple strings, each representing the name of an output topic.
+          items:
+            type: string
+          type: array
+        wasm_binary:
+          format: byte
+          title: WASM binary for the transform. The binary must be a valid WASM binary
           type: string
       type: object
     TransformMetadata:
@@ -2855,6 +2887,29 @@ paths:
         "200":
           content:
             application/json:
+              example:
+                next_page_token: ""
+                transforms:
+                  - input_topic_name: topic1
+                    name: transform1
+                    output_topic_names:
+                      - output-topic11
+                      - output-topic12
+                    status:
+                      - lag: 1
+                        node_id: 1
+                        partition: 1
+                        status: PARTITION_STATUS_RUNNING
+                  - input_topic_name: topic2
+                    name: transform2
+                    output_topic_names:
+                      - output-topic21
+                      - output-topic22
+                    status:
+                      - lag: 2
+                        node_id: 2
+                        partition: 2
+                        status: PARTITION_STATUS_RUNNING
               schema:
                 $ref: '#/components/schemas/ListTransformsResponse'
           description: OK
@@ -2884,7 +2939,9 @@ paths:
       description: Delete a WASM transform with the requested name.
       operationId: TransformService_DeleteTransform
       parameters:
-        - in: path
+        - example:
+            name: transform1
+          in: path
           name: name
           required: true
           schema:
@@ -2893,6 +2950,7 @@ paths:
         "204":
           content:
             application/json:
+              example: {}
               schema: {}
           description: Transform deleted successfully
         "401":
@@ -2926,7 +2984,9 @@ paths:
       description: Get Transform!
       operationId: TransformService_GetTransform
       parameters:
-        - in: path
+        - example:
+            name: transform1
+          in: path
           name: name
           required: true
           schema:
@@ -2935,6 +2995,18 @@ paths:
         "200":
           content:
             application/json:
+              example:
+                transform:
+                  input_topic_name: topic1
+                  name: transform1
+                  output_topic_names:
+                    - output-topic1
+                    - output-topic2
+                  status:
+                    - lag: 1
+                      node_id: 1
+                      partition: 1
+                      status: PARTITION_STATUS_RUNNING
               schema:
                 $ref: '#/components/schemas/GetTransformResponse'
           description: OK
@@ -2965,6 +3037,7 @@ paths:
       summary: Get Transform
       tags:
         - TransformService
+  /v1alpha1/transforms/{transform.name}:
     put:
       description: Deploy or update a transform configuration.
       operationId: TransformService_DeployTransform
@@ -2974,39 +3047,67 @@ paths:
             with a maximum length of 128 bytes. It should contain only characters that are
             valid UTF-8 and not control or format characters.
           in: path
-          name: name
+          name: transform.name
           required: true
           schema:
             type: string
-        - description: WASM binary for the transform. The binary must be a valid WASM binary
-          in: query
-          name: wasm_binary
-          schema:
-            format: byte
-            type: string
-        - description: '''input_topic_name'' specifies the name of the input topic for the transform.'
-          in: query
-          name: input_topic_name
-          schema:
-            type: string
-        - description: |-
-            'output_topic_names' is a list of output topics for the transform. This field can contain
-            multiple strings, each representing the name of an output topic.
-          in: query
-          name: output_topic_names
-          schema:
-            items:
-              type: string
-            type: array
-        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          name: environment[string]
-          schema:
-            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              transform:
+                environment:
+                  key1: value1
+                input_topic_name: topic1
+                name: transform1
+                output_topic_names:
+                  - output-topic1
+                  - output-topic2
+                wasm_binary: AGFzbQ==
+            schema:
+              properties:
+                environment:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    'environment' is a map representing key-value pairs of environment configurations.
+                    Each key must be a non-empty string, not exceeding 128 bytes, and matching the
+                    specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
+                    The map can have at most 128 key-value pairs.
+                  type: object
+                input_topic_name:
+                  description: '''input_topic_name'' specifies the name of the input topic for the transform.'
+                  type: string
+                output_topic_names:
+                  description: |-
+                    'output_topic_names' is a list of output topics for the transform. This field can contain
+                    multiple strings, each representing the name of an output topic.
+                  items:
+                    type: string
+                  type: array
+                wasm_binary:
+                  format: byte
+                  title: WASM binary for the transform. The binary must be a valid WASM binary
+                  type: string
+              type: object
+        required: true
+        x-originalParamName: transform
       responses:
         "201":
           content:
             application/json:
+              example:
+                transform_metadata:
+                  input_topic_name: topic1
+                  name: transform1
+                  output_topic_names:
+                    - output-topic1
+                    - output-topic2
+                  status:
+                    - lag: 1
+                      node_id: 1
+                      partition: 1
+                      status: PARTITION_STATUS_RUNNING
               schema:
                 $ref: '#/components/schemas/TransformMetadata'
           description: Transform deployed or updated successfully.
