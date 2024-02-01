@@ -32,6 +32,7 @@ tasks:
     deps:
       - install-buf
       - install-connect-gateway
+      - install-yq
     vars:
       BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update {{.BACKEND_ROOT}}/pkg/serde/testdata/proto {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
     cmds:
