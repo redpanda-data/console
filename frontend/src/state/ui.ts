@@ -44,9 +44,11 @@ export interface PreviewTagV2 {
     searchInMessageValue: boolean;
 }
 
+export type DataColumnKey = 'offset' | 'partitionID' | 'timestamp' | 'key' | 'value' | 'keySize' | 'valueSize';
+
 export interface ColumnList {
     title: string;
-    dataIndex: string;
+    dataIndex: DataColumnKey;
 }
 
 export type FilterType = 'code';
