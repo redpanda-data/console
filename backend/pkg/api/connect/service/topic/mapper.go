@@ -195,3 +195,26 @@ func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataR
 		ReplicationFactor: int32(replicationFactor),
 	}
 }
+
+func (k *kafkaClientMapper) setTopicConfigurationsToKafka(req *v1alpha1.SetTopicConfigurationsRequest) *kmsg.AlterConfigsRequest {
+	alterConfigResource := kmsg.NewAlterConfigsRequestResource()
+	alterConfigResource.ResourceType = kmsg.ConfigResourceTypeTopic
+	alterConfigResource.ResourceName = req.TopicName
+
+	for _, config := range req.Configurations {
+		alterConfigResource.Configs = append(alterConfigResource.Configs, k.setTopicConfigurationsResourceToKafka(config))
+	}
+
+	kafkaReq := kmsg.NewAlterConfigsRequest()
+	kafkaReq.Resources = []kmsg.AlterConfigsRequestResource{alterConfigResource}
+
+	return &kafkaReq
+}
+
+func (*kafkaClientMapper) setTopicConfigurationsResourceToKafka(req *v1alpha1.SetTopicConfigurationsRequest_SetConfiguration) kmsg.AlterConfigsRequestResourceConfig {
+	kafkaReq := kmsg.NewAlterConfigsRequestResourceConfig()
+	kafkaReq.Name = req.Key
+	kafkaReq.Value = req.Value
+
+	return kafkaReq
+}

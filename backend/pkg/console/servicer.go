@@ -91,4 +91,6 @@ type Servicer interface {
 	GetMetadata(ctx context.Context, metadataReq *kmsg.MetadataRequest) (*kmsg.MetadataResponse, error)
 	// IncrementalAlterConfigsKafka proxies the request/response to incrementally alter configs via the Kafka API.
 	IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error)
+	// AlterConfigs proxies the request/response to set configs (not incrementally) via the Kafka API.
+	AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error)
 }

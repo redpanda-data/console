@@ -19,3 +19,8 @@ import (
 func (s *Service) IncrementalAlterConfigs(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error) {
 	return req.RequestWith(ctx, s.KafkaClient)
 }
+
+// AlterConfigs sends a request to set a Kafka resource's (broker, topics, ...) configuration.
+func (s *Service) AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error) {
+	return req.RequestWith(ctx, s.KafkaClient)
+}
