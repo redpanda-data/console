@@ -60,8 +60,9 @@ tasks:
       - rm -rf ./proto/gen/openapi
       - |
         {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane
-      - cd backend && go run ./pkg/tools/openapi-generator -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
-      - 'yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml'
+      - cd backend && {{ .PATH_PREFIX }} go run ./pkg/tools/openapi-generator -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
+      - |
+        {{ .PATH_PREFIX }} yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml
       - rm -f ./proto/gen/openapi/apidocs.swagger.json
 
 
