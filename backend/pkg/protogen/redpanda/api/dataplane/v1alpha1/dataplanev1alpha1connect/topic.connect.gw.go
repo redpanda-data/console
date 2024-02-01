@@ -22,7 +22,7 @@ type TopicServiceGatewayServer struct {
 	deleteTopic               connect_gateway.UnaryHandler[v1alpha1.DeleteTopicRequest, v1alpha1.DeleteTopicResponse]
 	getTopicConfigurations    connect_gateway.UnaryHandler[v1alpha1.GetTopicConfigurationsRequest, v1alpha1.GetTopicConfigurationsResponse]
 	updateTopicConfigurations connect_gateway.UnaryHandler[v1alpha1.UpdateTopicConfigurationsRequest, v1alpha1.UpdateTopicConfigurationsResponse]
-	setTopicConfiguration     connect_gateway.UnaryHandler[v1alpha1.SetTopicConfigurationRequest, v1alpha1.SetTopicConfigurationResponse]
+	setTopicConfigurations    connect_gateway.UnaryHandler[v1alpha1.SetTopicConfigurationsRequest, v1alpha1.SetTopicConfigurationsResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
@@ -34,7 +34,7 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		deleteTopic:               connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicProcedure, svc.DeleteTopic, opts...),
 		getTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
 		updateTopicConfigurations: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationsProcedure, svc.UpdateTopicConfigurations, opts...),
-		setTopicConfiguration:     connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationProcedure, svc.SetTopicConfiguration, opts...),
+		setTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationsProcedure, svc.SetTopicConfigurations, opts...),
 	}
 }
 
@@ -58,8 +58,8 @@ func (s *TopicServiceGatewayServer) UpdateTopicConfigurations(ctx context.Contex
 	return s.updateTopicConfigurations(ctx, req)
 }
 
-func (s *TopicServiceGatewayServer) SetTopicConfiguration(ctx context.Context, req *v1alpha1.SetTopicConfigurationRequest) (*v1alpha1.SetTopicConfigurationResponse, error) {
-	return s.setTopicConfiguration(ctx, req)
+func (s *TopicServiceGatewayServer) SetTopicConfigurations(ctx context.Context, req *v1alpha1.SetTopicConfigurationsRequest) (*v1alpha1.SetTopicConfigurationsResponse, error) {
+	return s.setTopicConfigurations(ctx, req)
 }
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService
