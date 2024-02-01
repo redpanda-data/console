@@ -21,7 +21,7 @@ import { api, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
-    ColumnList,
+    ColumnList, DataColumnKey,
     FilterEntry,
     PartitionOffsetOrigin,
     PreviewTagV2,
@@ -552,7 +552,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
 
-        const dataTableColumns: Record<string, ColumnDef<TopicMessage>> = {
+        const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
             offset: {
                 header: 'Offset',
                 accessorKey: 'offset',
@@ -581,17 +581,18 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             keySize: {
                 header: 'Key Size',
                 accessorKey: 'key.size',
-                cell: ({ row: { original: { key: { size } } } }) => <span>{prettyBytes(size)}</span>
+                cell: ({ row: { original: { key: { size } } } }) => <span>{prettyBytes(size)}</span>,
             },
             valueSize: {
                 header: 'Value Size',
                 accessorKey: 'value.size',
-                cell: ({ row: { original: { value: { size } } } }) => <span>{prettyBytes(size)}</span>
+                cell: ({ row: { original: { value: { size } } } }) => <span>{prettyBytes(size)}</span>,
             }
         }
 
+        const columnsVisibleByDefault: DataColumnKey[] = ['offset', 'partitionID', 'timestamp', 'key', 'value']
 
-        const newColumns: ColumnDef<TopicMessage>[] = Object.values(dataTableColumns)
+        const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map(key => dataTableColumns[key])
 
         if (uiState.topicSettings.previewColumnFields.length > 0) {
             newColumns.splice(0, newColumns.length);
@@ -1452,7 +1453,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
 });
 
 
-const handleColumnListChange = action((newValue: MultiValue<{ value: string, label: string }>) => {
+const handleColumnListChange = action((newValue: MultiValue<{ value: DataColumnKey, label: string }>) => {
     uiState.topicSettings.previewColumnFields = newValue.map(({ label, value }) => ({
         title: label,
         dataIndex: value
@@ -1477,7 +1478,7 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         value: column.dataIndex
     }));
 
-    return <ChakraReactSelect<{ label: string; value: string }, true>
+    return <ChakraReactSelect<{ label: string; value: DataColumnKey }, true>
         isMulti={true}
         name=""
         options={defaultColumnList.map((column: ColumnList) => ({
