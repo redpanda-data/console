@@ -11,6 +11,7 @@ package transform
 
 import (
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
@@ -22,7 +23,7 @@ import (
 
 func findTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {
 	for _, transform := range transforms {
-		if transform.Name == name {
+		if strings.Contains(transform.Name, name) {
 			return transform, nil
 		}
 	}
@@ -39,7 +40,12 @@ func transformsConversion(transforms []adminapi.TransformMetadata) ([]*v1alpha1.
 	for _, transform := range transforms {
 		stat, err := statusConversion(transform)
 		if err != nil {
-			return nil, err
+			return nil, apierrors.NewConnectError(
+				connect.CodeNotFound,
+				fmt.Errorf("the requested transform does not exist"),
+				apierrors.NewErrorInfo(
+					commonv1alpha1.Reason_REASON_SERVER_ERROR.String(),
+				))
 		}
 		apiTransforms = append(apiTransforms, &v1alpha1.TransformMetadata{
 			Name:             transform.Name,

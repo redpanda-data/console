@@ -194,14 +194,17 @@ func ClusterVersionFromBrokerList(brokers []adminapi.Broker) string {
 	return version
 }
 
+// ListWasmTransforms lists all wasm transforms in the Redpanda cluster.
 func (s *Service) ListWasmTransforms(ctx context.Context) ([]adminapi.TransformMetadata, error) {
 	return s.adminClient.ListWasmTransforms(ctx)
 }
 
+// DeployWasmTransform deploys a wasm transform to the Redpanda cluster.
 func (s *Service) DeployWasmTransform(ctx context.Context, t adminapi.TransformMetadata, file []byte) error {
 	return s.adminClient.DeployWasmTransform(ctx, t, bytes.NewReader(file))
 }
 
+// DeleteWasmTransform deletes a wasm transform from the Redpanda cluster
 func (s *Service) DeleteWasmTransform(ctx context.Context, name string) error {
 	return s.adminClient.DeleteWasmTransform(ctx, name)
 }

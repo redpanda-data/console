@@ -7,6 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package transform contains the implementation of all Transform endpoints.
 package transform
 
 import (
@@ -25,11 +26,13 @@ import (
 
 var _ dataplanev1alpha1connect.TransformServiceHandler = (*Service)(nil)
 
+// Service is the implementation of the transform service.
 type Service struct {
 	cfg         *config.Config
 	redpandaSvc *redpanda.Service
 }
 
+// DeployTransform deploys a transform to Redpanda
 func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
@@ -89,6 +92,7 @@ func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alph
 	}, nil
 }
 
+// ListTransforms lists all the transforms matching the filter deployed to Redpanda
 func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
@@ -107,17 +111,31 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
-	outTransforms, err := transformsConversion(transforms)
+	preFilter, err := transformsConversion(transforms)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.Msg.GetFilter().GetName() == "" {
+		return &connect.Response[v1alpha1.ListTransformsResponse]{
+			Msg: &v1alpha1.ListTransformsResponse{
+				Transforms: preFilter,
+			},
+		}, nil
+	}
+
+	transform, err := findTransformByName(preFilter, c.Msg.GetFilter().GetName())
 	if err != nil {
 		return nil, err
 	}
 	return &connect.Response[v1alpha1.ListTransformsResponse]{
 		Msg: &v1alpha1.ListTransformsResponse{
-			Transforms: outTransforms,
+			Transforms: []*v1alpha1.TransformMetadata{transform},
 		},
 	}, nil
 }
 
+// GetTransform gets a transform by name
 func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
@@ -153,6 +171,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 	}, nil
 }
 
+// DeleteTransform deletes a transform by name
 func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(

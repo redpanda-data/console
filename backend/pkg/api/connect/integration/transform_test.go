@@ -167,7 +167,7 @@ func (s *APISuite) TestListTransforms() {
 
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
 			Filter: &v1alpha1.ListTransformsRequest_Filter{
-				Name: "test-transform",
+				Name: "test-transform1",
 			},
 		}))
 		assert.NoError(err)

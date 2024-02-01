@@ -71,17 +71,37 @@ message DeployTransformRequest {
     // 'name' is the unique identifier for the transform. It must be a non-empty string,
     // with a maximum length of 128 bytes. It should contain only characters that are
     // valid UTF-8 and not control or format characters.
-    string name = 1;
+    string name = 1 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+    ];
 
     // WASM binary for the transform. The binary must be a valid WASM binary
     bytes wasm_binary = 2;
 
     // 'input_topic_name' specifies the name of the input topic for the transform.
-    string input_topic_name = 3;
+    string input_topic_name = 3 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+    ];
 
     // 'output_topic_names' is a list of output topics for the transform. This field can contain
     // multiple strings, each representing the name of an output topic.
-    repeated string output_topic_names = 4;
+    repeated string output_topic_names = 4 [(buf.validate.field) = {
+      repeated {
+        min_items: 1,
+        max_items: 128,
+        items {
+          string {
+            min_len: 1, // minimum length of each topic name
+            max_len: 128, // maximum length of each topic name
+            pattern: "^[\\P{Cc}\\P{Cf}]+$" // pattern each topic name should follow
+          }
+        }
+      }
+    }];
 
     // 'environment' is a map representing key-value pairs of environment configurations.
     // Each key must be a non-empty string, not exceeding 128 bytes, and matching the
