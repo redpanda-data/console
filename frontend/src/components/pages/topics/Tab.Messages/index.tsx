@@ -28,7 +28,6 @@ import {
     TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { AnimatePresence, animProps_span_messagesStatus, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
@@ -126,7 +125,43 @@ interface TopicMessageViewProps {
         - add back summary of quick search  <this.FilterSummary />
 */
 
-const getStringValue = (value: string | TopicMessage): string => typeof value === 'string' ? value : JSON.stringify(value, null, 4)
+function getMessageAsString(value: string | TopicMessage): string {
+    if (typeof value === 'string')
+        return value;
+
+    const obj = Object.assign({}, value) as Partial<TopicMessage>;
+    delete obj.keyBinHexPreview;
+    delete obj.valueBinHexPreview;
+    delete obj.keyJson;
+    delete obj.valueJson;
+    if (obj.key) {
+        delete obj.key.normalizedPayload;
+        if (obj.key.rawBytes)
+            obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+    }
+    if (obj.value) {
+        delete obj.value.normalizedPayload;
+        if (obj.value.rawBytes)
+            obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+    }
+
+    return JSON.stringify(obj, null, 4);
+}
+
+function getPayloadAsString(value: string | Uint8Array | object): string {
+
+    if (value == null)
+        return '';
+
+    if (typeof value === 'string')
+        return value;
+
+    if (value instanceof Uint8Array)
+        return JSON.stringify(Array.from(value), null, 4);
+
+    return JSON.stringify(value, null, 4);
+}
+
 
 const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
     const toast = useToast()
@@ -136,8 +171,18 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ re
                 <KebabHorizontalIcon />
             </MenuButton>
             <MenuList>
+                <MenuItem onClick={() => {
+                    navigator.clipboard.writeText(getMessageAsString(record)).then(() => {
+                        toast({
+                            status: 'success',
+                            description: 'Message copied to clipboard'
+                        })
+                    }).catch(navigatorClipboardErrorHandler)
+                }}>
+                    Copy Message
+                </MenuItem>
                 <MenuItem disabled={record.key.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                    navigator.clipboard.writeText(getPayloadAsString(record.key.payload ?? record.key.rawBytes)).then(() => {
                         toast({
                             status: 'success',
                             description: 'Key copied to clipboard'
@@ -147,7 +192,7 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ re
                     Copy Key
                 </MenuItem>
                 <MenuItem disabled={record.value.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getStringValue(record)).then(() => {
+                    navigator.clipboard.writeText(getPayloadAsString(record.value.payload ?? record.value.rawBytes)).then(() => {
                         toast({
                             status: 'success',
                             description: 'Value copied to clipboard'
@@ -287,7 +332,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     SearchControlsBar = observer(() => {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
-        const spaceStyle = { marginRight: '16px', marginTop: '12px' };
         const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
         const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
@@ -306,20 +350,23 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return (
             <React.Fragment>
-                <Flex my={4}
-                      flexWrap="wrap"
-                      alignItems="center"
+                <Flex
+                    my={4}
+                    flexWrap="wrap"
+                    alignItems="flex-end"
+                    gap={3}
+                    width="full"
                 >
                     {/* Search Settings*/}
-                    <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
+                    <Label text="Partition">
                         <SingleSelect<number>
                             value={searchParams.partitionID}
                             onChange={c => (searchParams.partitionID = c)}
                             options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
                         />
                     </Label>
-                    <Label text="Start Offset" style={{ ...spaceStyle }}>
-                        <>
+                    <Label text="Start Offset">
+                        <Flex gap={3}>
                             <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
                                 searchParams.offsetOrigin = e;
                                 if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
@@ -327,51 +374,44 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             }} options={startOffsetOptions} />
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-                        </>
+                        </Flex>
                     </Label>
-                    <Label text="Max Results" style={{ ...spaceStyle, minWidth: '9em' }}>
+                    <Label text="Max Results">
                         <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
                     </Label>
 
                     {!isServerless() && (
                         <Label text="Filter">
                             <Tooltip label="You don't have permissions to use search filters in this topic"
-                                     isDisabled={canUseFilters} placement="top" hasArrow>
+                                isDisabled={canUseFilters} placement="top" hasArrow>
                                 <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters}
-                                        onChange={v => (searchParams.filtersEnabled = v.target.checked)}
-                                        isDisabled={!canUseFilters}/>
+                                    onChange={v => (searchParams.filtersEnabled = v.target.checked)}
+                                    isDisabled={!canUseFilters} />
                             </Tooltip>
                         </Label>
                     )}
 
                     {/* Refresh Button */}
-                    <Label text="" style={{ ...spaceStyle }}>
-                        <Flex ml={4}>
-                            <AnimatePresence>
-                                {api.messageSearchPhase == null && (
-                                    <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
-                                        <Tooltip label="Repeat current search" placement="top" hasArrow>
-                                            <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                                <SyncIcon size={16} />
-                                            </Button>
-                                        </Tooltip>
-                                    </MotionSpan>
-                                )}
-                                {api.messageSearchPhase != null && (
-                                    <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
-                                        <Tooltip label="Stop searching" placement="top" hasArrow>
-                                            <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                                <XCircleIcon size={20} />
-                                            </Button>
-                                        </Tooltip>
-                                    </MotionSpan>
-                                )}
-                            </AnimatePresence>
-                        </Flex>
-                    </Label>
+                    <Flex>
+                        {api.messageSearchPhase == null && (
+                            <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                    <SyncIcon size={20} />
+                                </Button>
+                            </Tooltip>
+                        )}
+                        {api.messageSearchPhase != null && (
+                            <Tooltip label="Stop searching" placement="top" hasArrow>
+                                <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()}
+                                    style={{ padding: 0, width: '48px' }}>
+                                    <XCircleIcon size={20} />
+                                </Button>
+                            </Tooltip>
+                        )}
+                    </Flex>
 
                     {/* Topic Actions */}
-                    <div className={styles.topicActionsWrapper}>
+                    <Flex alignSelf="flex-end" ml="auto" gap={3}>
                         <Menu>
                             <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
                                 Actions
@@ -387,12 +427,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
                             </MenuList>
                         </Menu>
-                    </div>
-
-                    {/* Quick Search */}
-                    <Box>
-                        <SearchField width="230px" marginLeft="6" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
-                    </Box>
+                        {/* Quick Search */}
+                        <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
+                    </Flex>
 
                     {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                     {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
@@ -519,7 +556,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             offset: {
                 header: 'Offset',
                 accessorKey: 'offset',
-                cell: ({row: {original: {offset}}}) => numberToThousandsString(offset)
+                cell: ({ row: { original: { offset } } }) => numberToThousandsString(offset)
             },
             partitionID: {
                 header: 'Partition',
@@ -528,45 +565,57 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             timestamp: {
                 header: 'Timestamp',
                 accessorKey: 'timestamp',
-                cell: ({row: {original: {timestamp}}}) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat}/>,
+                cell: ({ row: { original: { timestamp } } }) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat} />,
             },
             key: {
                 header: 'Key',
                 size: hasKeyTags ? 300 : 1,
                 accessorKey: 'key',
-                cell: ({row: {original}}) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags}/>,
+                cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags} />,
             },
             value: {
                 header: () => <span>Value {previewButton}</span>,
                 accessorKey: 'value',
-                cell: ({row: {original}}) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}/>
+                cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
             },
+            keySize: {
+                header: 'Key Size',
+                accessorKey: 'key.size',
+                cell: ({ row: { original: { key: { size } } } }) => <span>{prettyBytes(size)}</span>
+            },
+            valueSize: {
+                header: 'Value Size',
+                accessorKey: 'value.size',
+                cell: ({ row: { original: { value: { size } } } }) => <span>{prettyBytes(size)}</span>
+            }
         }
 
 
         const newColumns: ColumnDef<TopicMessage>[] = Object.values(dataTableColumns)
 
-        if(uiState.topicSettings.previewColumnFields.length > 0) {
+        if (uiState.topicSettings.previewColumnFields.length > 0) {
             newColumns.splice(0, newColumns.length);
 
             // let's be defensive and remove any duplicates before showing in the table
             new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex)).forEach(dataIndex => {
-                if(dataTableColumns[dataIndex]) {
+                if (dataTableColumns[dataIndex]) {
                     newColumns.push(dataTableColumns[dataIndex])
                 }
             })
         }
 
-        newColumns[newColumns.length - 1].size = Infinity
+        if (newColumns.length > 0) {
+            newColumns[newColumns.length - 1].size = Infinity
+        }
 
         const columns: ColumnDef<TopicMessage>[] = [...newColumns, {
             header: () => <button onClick={() => {
                 this.showColumnSettings = true
-            }}><CogIcon style={{width: 20}}/>
+            }}><CogIcon style={{ width: 20 }} />
             </button>,
             id: 'action',
             size: 0,
-            cell: ({row: {original}}) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]}/>,
+            cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
         }]
 
         const previewButton = <>
@@ -596,33 +645,33 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     uiState.topicSettings.searchParams.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting
                 }}
                 pagination={paginationParams}
-                onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex}) => {
+                onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
                     uiState.topicSettings.searchParams.pageSize = pageSize
                     editQuery(query => {
                         query['page'] = String(pageIndex)
                         query['pageSize'] = String(pageSize)
                     })
                 })}
-                subComponent={({row: {original}}) => renderExpandedMessage(original)}
+                subComponent={({ row: { original } }) => renderExpandedMessage(original)}
             />
             <Button variant="outline"
-                    onClick={() => {
-                        this.downloadMessages = api.messages;
-                    }}
-                    isDisabled={!api.messages || api.messages.length == 0}
+                onClick={() => {
+                    this.downloadMessages = api.messages;
+                }}
+                isDisabled={!api.messages || api.messages.length == 0}
             >
-                <span style={{paddingRight: '4px'}}><DownloadIcon/></span>
+                <span style={{ paddingRight: '4px' }}><DownloadIcon /></span>
                 Save Messages
             </Button>
 
-            <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null}onRequireRawPayload={() => this.executeMessageSearch(true)} />
+            <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch()} />
 
             {
                 (this.messageSource?.data?.length > 0) &&
-                <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)}/>
+                <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)} />
             }
 
-            <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s}/>
+            <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
         </>;
     });
 
@@ -636,7 +685,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.expandedKeys.push(key);
     }
 
-    async executeMessageSearch(includeRawPayload: boolean = false): Promise<TopicMessage[]> {
+    async executeMessageSearch(): Promise<TopicMessage[]> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -673,7 +722,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-            includeRawPayload: includeRawPayload,
+            includeRawPayload: true,
 
             keyDeserializer: uiState.topicSettings.keyDeserializer,
             valueDeserializer: uiState.topicSettings.valueDeserializer,
@@ -731,7 +780,6 @@ class SaveMessagesDialog extends Component<{
 }> {
     @observable isOpen = false;
     @observable format = 'json' as 'json' | 'csv';
-    @observable isLoadingRawMessage = false;
     @observable includeRawContent = false;
 
     radioStyle = { display: 'block', lineHeight: '30px' };
@@ -781,14 +829,10 @@ class SaveMessagesDialog extends Component<{
                         </Checkbox>
                     </ModalBody>
                     <ModalFooter gap={2}>
-                        <Button variant="outline" colorScheme="red" onClick={onClose} isDisabled={this.isLoadingRawMessage}>
+                        <Button variant="outline" colorScheme="red" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button variant="solid" onClick={() => this.saveMessages()}
-                            isDisabled={this.isLoadingRawMessage}
-                            loadingText="Save Messages"
-                            isLoading={this.isLoadingRawMessage}
-                        >
+                        <Button variant="solid" onClick={() => this.saveMessages()} isDisabled={!this.props.messages || this.props.messages.length == 0}>
                             Save Messages
                         </Button>
                     </ModalFooter>
@@ -798,29 +842,14 @@ class SaveMessagesDialog extends Component<{
     }
 
     async saveMessages() {
-        let messages = this.props.messages;
-        if (messages == null)
+        const messages = this.props.messages;
+        if (!messages)
             return;
 
-        try {
-            if (this.includeRawContent) {
-                const originalUserSelection = [...messages];
-
-                // We do not have the raw content (wasn't requested initially)
-                // so we must restart the message search
-                this.isLoadingRawMessage = true;
-                messages = await this.props.onRequireRawPayload();
-
-                // Here, we do not know whether the user selected to download all messages, or only one.
-                // So we need to filter all newly downloaded messages against the original user selection
-                messages = messages.filter(m => originalUserSelection.any(x => m.partitionID == x.partitionID && m.offset == x.offset));
-            }
-        }
-        finally {
-            this.isLoadingRawMessage = false;
-        }
 
         const cleanMessages = this.cleanMessages(messages);
+
+        console.log('saving cleaned messages; messages: ' + messages.length);
 
         const json = toJson(cleanMessages, 4);
 
@@ -839,13 +868,16 @@ class SaveMessagesDialog extends Component<{
 
         // create a copy of each message, omitting properties that don't make
         // sense for the user, like 'size' or caching properties like 'keyJson'.
+        const includeRaw = this.includeRawContent;
 
         const cleanPayload = function (p: Payload): Payload {
             if (!p) return undefined as any;
 
             const cleanedPayload = {
                 payload: p.payload,
-                rawPayload: p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
+                rawPayload: (includeRaw && p.rawBytes)
+                    ? base64FromUInt8Array(p.rawBytes)
+                    : undefined,
                 encoding: p.encoding,
             } as any as Payload;
 
@@ -1291,12 +1323,12 @@ const MessageSchema = observer((p: { schemaId: number }) => {
 const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
     return <div className="messageHeaders">
         <div>
-            <DataTable<{key: string, value: Payload}>
+            <DataTable<{ key: string, value: Payload }>
                 data={props.msg.headers}
                 columns={[
                     {
                         size: 200, header: 'Key', accessorKey: 'key',
-                        cell: ({row: {original: {key: headerKey}}}) => <span className="cellDiv" style={{ width: 'auto' }}>
+                        cell: ({ row: { original: { key: headerKey } } }) => <span className="cellDiv" style={{ width: 'auto' }}>
                             {headerKey
                                 ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis>
                                 : renderEmptyIcon('Empty Key')}
@@ -1304,7 +1336,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     },
                     {
                         size: Infinity, header: 'Value', accessorKey: 'value',
-                        cell: ({row: {original: {value: headerValue}}}) => {
+                        cell: ({ row: { original: { value: headerValue } } }) => {
                             if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
                             if (headerValue.payload === null) return renderEmptyIcon('"null"');
                             if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
@@ -1318,11 +1350,11 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     },
                     {
                         size: 120, header: 'Encoding', accessorKey: 'value',
-                        cell: ({row: {original: {value: payload}}}) => <span className="nowrap">{payload.encoding}</span>
+                        cell: ({ row: { original: { value: payload } } }) => <span className="nowrap">{payload.encoding}</span>
                     },
                 ]}
 
-                subComponent={({row: {original: header}}) => {
+                subComponent={({ row: { original: header } }) => {
                     return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
                         : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />
@@ -1421,7 +1453,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
 
 
 const handleColumnListChange = action((newValue: MultiValue<{ value: string, label: string }>) => {
-    uiState.topicSettings.previewColumnFields = newValue.map(({label, value}) => ({
+    uiState.topicSettings.previewColumnFields = newValue.map(({ label, value }) => ({
         title: label,
         dataIndex: value
     }))
@@ -1436,7 +1468,8 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         { title: 'Key', dataIndex: 'key' },
         // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
+        { title: 'Key Size', dataIndex: 'keySize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
+        { title: 'Value Size', dataIndex: 'valueSize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     const value = tags.map(column => ({
@@ -1444,7 +1477,7 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         value: column.dataIndex
     }));
 
-    return <ChakraReactSelect<{label: string; value: string}, true>
+    return <ChakraReactSelect<{ label: string; value: string }, true>
         isMulti={true}
         name=""
         options={defaultColumnList.map((column: ColumnList) => ({
