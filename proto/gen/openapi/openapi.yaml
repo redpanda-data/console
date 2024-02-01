@@ -728,6 +728,7 @@ components:
         replication_factor:
           format: int32
           type: integer
+      type: object
     ListTransformsRequest.Filter:
       properties:
         name:
