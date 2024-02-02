@@ -37,9 +37,9 @@ proto3.util.setEnumType(SASLMechanism, "redpanda.api.dataplane.v1alpha1.SASLMech
  */
 export class ListUsersRequest extends Message<ListUsersRequest> {
   /**
-   * @generated from field: optional string name = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.ListUsersRequest.Filter filter = 1;
    */
-  name?: string;
+  filter?: ListUsersRequest_Filter;
 
   constructor(data?: PartialMessage<ListUsersRequest>) {
     super();
@@ -49,7 +49,7 @@ export class ListUsersRequest extends Message<ListUsersRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "filter", kind: "message", T: ListUsersRequest_Filter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsersRequest {
@@ -66,6 +66,49 @@ export class ListUsersRequest extends Message<ListUsersRequest> {
 
   static equals(a: ListUsersRequest | PlainMessage<ListUsersRequest> | undefined, b: ListUsersRequest | PlainMessage<ListUsersRequest> | undefined): boolean {
     return proto3.util.equals(ListUsersRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListUsersRequest.Filter
+ */
+export class ListUsersRequest_Filter extends Message<ListUsersRequest_Filter> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string name_contains = 2;
+   */
+  nameContains = "";
+
+  constructor(data?: PartialMessage<ListUsersRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListUsersRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsersRequest_Filter {
+    return new ListUsersRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsersRequest_Filter {
+    return new ListUsersRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsersRequest_Filter {
+    return new ListUsersRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUsersRequest_Filter | PlainMessage<ListUsersRequest_Filter> | undefined, b: ListUsersRequest_Filter | PlainMessage<ListUsersRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListUsersRequest_Filter, a, b);
   }
 }
 

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -36,11 +37,12 @@ import (
 type APISuite struct {
 	suite.Suite
 
-	redpandaContainer *redpanda.Container
-	kConnectContainer testcontainers.Container
-	network           *testcontainers.DockerNetwork
-	kafkaClient       *kgo.Client
-	kafkaAdminClient  *kadm.Client
+	redpandaContainer   *redpanda.Container
+	kConnectContainer   testcontainers.Container
+	network             *testcontainers.DockerNetwork
+	kafkaClient         *kgo.Client
+	kafkaAdminClient    *kadm.Client
+	redpandaAdminClient *adminapi.AdminAPI
 
 	cfg *config.Config
 	api *api.API
@@ -80,6 +82,8 @@ func (s *APISuite) SetupSuite() {
 	require.NoError(err)
 	schemaRegistryAddress, err := container.SchemaRegistryAddress(ctx)
 	require.NoError(err)
+	adminApiAddr, err := container.AdminAPIAddress(ctx)
+	require.NoError(err)
 
 	require.NoError(err)
 
@@ -102,6 +106,11 @@ func (s *APISuite) SetupSuite() {
 	kConnectClusterURL, err := kConnectContainer.PortEndpoint(ctx, "8083/tcp", "http")
 	require.NoError(err)
 
+	// 5. Create Redpanda client
+	adminApiClient, err := adminapi.NewAdminAPI([]string{adminApiAddr}, &adminapi.NopAuth{}, nil)
+	require.NoError(err)
+	s.redpandaAdminClient = adminApiClient
+
 	// 5. Configure & start Redpanda Console
 	httpListenPort := rand.Intn(50000) + 10000
 	s.cfg = &config.Config{}
@@ -116,6 +125,10 @@ func (s *APISuite) SetupSuite() {
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	s.cfg.Kafka.Schema.Enabled = true
 	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
+
+	s.cfg.Redpanda.AdminAPI.Enabled = true
+	s.cfg.Redpanda.AdminAPI.URLs = []string{adminApiAddr}
+	s.cfg.Redpanda.AdminAPI.TLS.Enabled = false
 
 	s.cfg.Connect = config.Connect{
 		Enabled: true,
