@@ -821,19 +821,38 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 }
 
 func getSubjectFromRequestPath(r *http.Request) string {
-	// subject extraction gets complicated
-	// With a path like /api/schema-registry/subjects/%252F/versions/latest
-	// r.URL.Path is /api/schemas/schema-registry/%2F/versions/latest
-	// while RequestURI is /api/schemas/schema-registry/%252F/versions/latest
-	// that means that chi.URLParam() returns  %2F
-	// which then url.PathUnescape() within rest.GetURLParam() returns "/"
-	// which is "double escaped"
-	// so we have to manually extract and escape the subject part ourselves
+	// Subject extraction is a little tricky.
+	// Subjects can have characters such as "/" and "%"".
+	// Subjects are passed to the router as part of path parameter, URL escaped.
+	// However, there seems to be _some_ unescaping withing Go's HTTP request itself.
+	// If a subject is "%2F", the subject path parameter would be "%252F".
+	// With an HTTP request path like "/api/schema-registry/subjects/%252F/versions/latest"
+	// Go's HTTP request.URL.Path is "/api/schemas/schema-registry/%2F/versions/latest",
+	// which is already unescaped.
+	// While Go HTTP request.RequestURI is "/api/schemas/schema-registry/%252F/versions/latest"
+	// Which is the raw version that the client sent.
+	// That means that if we use rest.GetURLParam(),
+	// it first calls chi.URLParam() to get the path param, which returns "%2F"
+	// Which then url.PathUnescape() within rest.GetURLParam() to finally return "/".
+	// which is "double escaped" and _not_ what we want.
+	// So that means we have to manually extract and unescape the subject part ourselves
+	// from the raw path in request.RequestURI.
+	// See url.setPath() and parse() functions in url.go.
 
 	requestURI := r.RequestURI
+
+	fmt.Println("requestURI:", requestURI)
+	fmt.Println("raw path:", r.URL.RawPath)
+	fmt.Println("path:", r.URL.Path)
+
 	// remove the api route prefix
-	requestURI = strings.ReplaceAll(requestURI, "/api/schema-registry/subjects/", "")
-	requestURI = strings.ReplaceAll(requestURI, "/api/schema-registry/config/", "")
+	requestURI = strings.Replace(requestURI, r.URL.Scheme+"://", "", 1)
+	requestURI = strings.Replace(requestURI, r.Host, "", 1)
+	requestURI = strings.Replace(requestURI, "/api/schema-registry/subjects/", "", 1)
+	requestURI = strings.Replace(requestURI, "/api/schema-registry/config/", "", 1)
+
+	fmt.Println("!!!", requestURI)
+
 	// find the versions suffix of the path
 	subjectPart := requestURI
 	lastIndex := strings.Index(requestURI, "/")
@@ -842,6 +861,7 @@ func getSubjectFromRequestPath(r *http.Request) string {
 		subjectPart = requestURI[:lastIndex]
 	}
 
+	// finally unescape
 	subject, err := url.PathUnescape(subjectPart)
 	if err != nil {
 		subject = subjectPart
