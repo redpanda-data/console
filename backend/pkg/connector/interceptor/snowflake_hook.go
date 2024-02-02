@@ -17,10 +17,6 @@ func KafkaConnectToConsoleSnowflakeHook(response model.ValidationResponse, _ map
 		return response
 	}
 
-	if ingestion.Value.Value == "snowpipe_streaming" && converter.Value.Value != "org.apache.kafka.connect.storage.StringConverter" {
-		converter.AddValueErrors("For SNOWPIPE_STREAMING only STRING converter can be used")
-	}
-
 	return response
 }
 
