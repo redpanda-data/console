@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
@@ -58,7 +59,7 @@ func NewService(cfg *config.Config,
 }
 
 // ListUsers returns a list of all existing users.
-func (s *Service) ListUsers(ctx context.Context, _ *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
+func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
 	// 1. Check if we can list users
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewConnectError(
@@ -79,11 +80,35 @@ func (s *Service) ListUsers(ctx context.Context, _ *connect.Request[v1alpha1.Lis
 		)
 	}
 
+	// doesUserPassFilter returns true if either no filter is provided or
+	// if the given username passes the given filter criteria.
+	doesUserPassFilter := func(username string) bool {
+		if req.Msg.Filter == nil {
+			return true
+		}
+
+		if req.Msg.Filter.Name == username {
+			return true
+		}
+
+		if req.Msg.Filter.NameContains != "" && strings.Contains(username, req.Msg.Filter.NameContains) {
+			return true
+		}
+
+		return false
+	}
+
 	filteredUsers := make([]*v1alpha1.ListUsersResponse_User, 0)
 	for _, user := range users {
 		if s.isProtectedUserFn(user) {
 			continue
 		}
+
+		// Remove users that do not pass the filter criteria
+		if !doesUserPassFilter(user) {
+			continue
+		}
+
 		filteredUsers = append(filteredUsers, &v1alpha1.ListUsersResponse_User{
 			Name: user,
 		})
