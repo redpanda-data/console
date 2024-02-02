@@ -824,7 +824,7 @@ func getSubjectFromRequestPath(r *http.Request) string {
 	// Subject extraction is a little tricky.
 	// Subjects can have characters such as "/" and "%"".
 	// Subjects are passed to the router as part of path parameter, URL escaped.
-	// However, there seems to be _some_ unescaping withing Go's HTTP request itself.
+	// However, there seems to be _some_ unescaping within Go's HTTP request itself.
 	// If a subject is "%2F", the subject path parameter would be "%252F".
 	// With an HTTP request path like "/api/schema-registry/subjects/%252F/versions/latest"
 	// Go's HTTP request.URL.Path is "/api/schemas/schema-registry/%2F/versions/latest",
