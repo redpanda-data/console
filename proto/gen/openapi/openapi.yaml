@@ -654,6 +654,13 @@ components:
           format: int32
           type: integer
       type: object
+    ListUsersRequest.Filter:
+      properties:
+        name:
+          type: string
+        name_contains:
+          type: string
+      type: object
     ListUsersResponse:
       properties:
         users:
@@ -2286,7 +2293,11 @@ paths:
       operationId: UserService_ListUsers
       parameters:
         - in: query
-          name: name
+          name: filter.name
+          schema:
+            type: string
+        - in: query
+          name: filter.name_contains
           schema:
             type: string
       responses:
