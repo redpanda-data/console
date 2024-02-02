@@ -80,7 +80,7 @@ func TestKafkaConnectToConsoleSnowflakeHook(t *testing.T) {
 			},
 		},
 		{
-			name: "Should not allow snowpipe streaming for non-StringConverter",
+			name: "Should allow snowpipe streaming for non-StringConverter",
 			args: args{
 				response: model.ValidationResponse{
 					Configs: []model.ConfigDefinition{
@@ -109,9 +109,8 @@ func TestKafkaConnectToConsoleSnowflakeHook(t *testing.T) {
 					},
 					{
 						Value: model.ConfigDefinitionValue{
-							Name:   "value.converter",
-							Value:  "com.snowflake.kafka.connector.records.SnowflakeJsonConverter",
-							Errors: []string{"For SNOWPIPE_STREAMING only STRING converter can be used"},
+							Name:  "value.converter",
+							Value: "com.snowflake.kafka.connector.records.SnowflakeJsonConverter",
 						},
 					},
 				},
