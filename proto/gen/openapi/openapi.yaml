@@ -832,11 +832,12 @@ components:
         key:
           type: string
         value:
+          nullable: true
           type: string
       type: object
-    SetTopicConfigurationResponse:
+    SetTopicConfigurationsResponse:
       properties:
-        configuration:
+        configurations:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -2131,59 +2132,6 @@ paths:
       summary: Delete a Kafka topic
       tags:
         - TopicService
-  /v1alpha1/topics/{topic_name}/configuration:
-    put:
-      description: Set the entire configuration of a topic. Config entries not provided in the request are removed.
-      operationId: TopicService_SetTopicConfiguration
-      parameters:
-        - in: path
-          name: topic_name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              items:
-                $ref: '#/components/schemas/SetConfiguration'
-              type: array
-        required: true
-        x-originalParamName: configuration
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetTopicConfigurationResponse'
-          description: Ok
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Set Topic Configuration
-      tags:
-        - TopicService
   /v1alpha1/topics/{topic_name}/configurations:
     get:
       description: Get Topic Configurations.
@@ -2278,6 +2226,58 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Update Topic Configuration
+      tags:
+        - TopicService
+    put:
+      description: Set the entire set of configurations for a topic. Config entries that are not provided in the request are removed and will fall-back to their default values.
+      operationId: TopicService_SetTopicConfigurations
+      parameters:
+        - in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/SetConfiguration'
+              type: array
+        required: true
+        x-originalParamName: configurations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetTopicConfigurationsResponse'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Set Topic Configurations
       tags:
         - TopicService
   /v1alpha1/users:

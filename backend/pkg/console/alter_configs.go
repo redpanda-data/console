@@ -68,3 +68,10 @@ func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 func (s *Service) IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error) {
 	return s.kafkaSvc.IncrementalAlterConfigs(ctx, req)
 }
+
+// AlterConfigs proxies the request/response to set configs (not incrementally) via the Kafka API. The difference
+// between AlterConfigs and IncrementalAlterConfigs is that AlterConfigs sets the entire configuration so that
+// all properties that are not set as part of this request will be reset to their default values.
+func (s *Service) AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error) {
+	return s.kafkaSvc.AlterConfigs(ctx, req)
+}

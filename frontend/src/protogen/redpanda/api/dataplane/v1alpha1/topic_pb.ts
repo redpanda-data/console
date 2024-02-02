@@ -836,125 +836,125 @@ export class UpdateTopicConfigurationsResponse extends Message<UpdateTopicConfig
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest
  */
-export class SetTopicConfigurationRequest extends Message<SetTopicConfigurationRequest> {
+export class SetTopicConfigurationsRequest extends Message<SetTopicConfigurationsRequest> {
   /**
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest.SetConfiguration configuration = 2;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest.SetConfiguration configurations = 2;
    */
-  configuration: SetTopicConfigurationRequest_SetConfiguration[] = [];
+  configurations: SetTopicConfigurationsRequest_SetConfiguration[] = [];
 
-  constructor(data?: PartialMessage<SetTopicConfigurationRequest>) {
+  constructor(data?: PartialMessage<SetTopicConfigurationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "configuration", kind: "message", T: SetTopicConfigurationRequest_SetConfiguration, repeated: true },
+    { no: 2, name: "configurations", kind: "message", T: SetTopicConfigurationsRequest_SetConfiguration, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationRequest {
-    return new SetTopicConfigurationRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationsRequest {
+    return new SetTopicConfigurationsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationRequest {
-    return new SetTopicConfigurationRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationsRequest {
+    return new SetTopicConfigurationsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationRequest {
-    return new SetTopicConfigurationRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationsRequest {
+    return new SetTopicConfigurationsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetTopicConfigurationRequest | PlainMessage<SetTopicConfigurationRequest> | undefined, b: SetTopicConfigurationRequest | PlainMessage<SetTopicConfigurationRequest> | undefined): boolean {
-    return proto3.util.equals(SetTopicConfigurationRequest, a, b);
+  static equals(a: SetTopicConfigurationsRequest | PlainMessage<SetTopicConfigurationsRequest> | undefined, b: SetTopicConfigurationsRequest | PlainMessage<SetTopicConfigurationsRequest> | undefined): boolean {
+    return proto3.util.equals(SetTopicConfigurationsRequest, a, b);
   }
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest.SetConfiguration
+ * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest.SetConfiguration
  */
-export class SetTopicConfigurationRequest_SetConfiguration extends Message<SetTopicConfigurationRequest_SetConfiguration> {
+export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetTopicConfigurationsRequest_SetConfiguration> {
   /**
    * @generated from field: string key = 1;
    */
   key = "";
 
   /**
-   * @generated from field: string value = 2;
+   * @generated from field: optional string value = 2;
    */
-  value = "";
+  value?: string;
 
-  constructor(data?: PartialMessage<SetTopicConfigurationRequest_SetConfiguration>) {
+  constructor(data?: PartialMessage<SetTopicConfigurationsRequest_SetConfiguration>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationRequest.SetConfiguration";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest.SetConfiguration";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationRequest_SetConfiguration {
-    return new SetTopicConfigurationRequest_SetConfiguration().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationsRequest_SetConfiguration {
+    return new SetTopicConfigurationsRequest_SetConfiguration().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationRequest_SetConfiguration {
-    return new SetTopicConfigurationRequest_SetConfiguration().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationsRequest_SetConfiguration {
+    return new SetTopicConfigurationsRequest_SetConfiguration().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationRequest_SetConfiguration {
-    return new SetTopicConfigurationRequest_SetConfiguration().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationsRequest_SetConfiguration {
+    return new SetTopicConfigurationsRequest_SetConfiguration().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetTopicConfigurationRequest_SetConfiguration | PlainMessage<SetTopicConfigurationRequest_SetConfiguration> | undefined, b: SetTopicConfigurationRequest_SetConfiguration | PlainMessage<SetTopicConfigurationRequest_SetConfiguration> | undefined): boolean {
-    return proto3.util.equals(SetTopicConfigurationRequest_SetConfiguration, a, b);
+  static equals(a: SetTopicConfigurationsRequest_SetConfiguration | PlainMessage<SetTopicConfigurationsRequest_SetConfiguration> | undefined, b: SetTopicConfigurationsRequest_SetConfiguration | PlainMessage<SetTopicConfigurationsRequest_SetConfiguration> | undefined): boolean {
+    return proto3.util.equals(SetTopicConfigurationsRequest_SetConfiguration, a, b);
   }
 }
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse
  */
-export class SetTopicConfigurationResponse extends Message<SetTopicConfigurationResponse> {
+export class SetTopicConfigurationsResponse extends Message<SetTopicConfigurationsResponse> {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configuration = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configurations = 1;
    */
-  configuration: Topic_Configuration[] = [];
+  configurations: Topic_Configuration[] = [];
 
-  constructor(data?: PartialMessage<SetTopicConfigurationResponse>) {
+  constructor(data?: PartialMessage<SetTopicConfigurationsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "configuration", kind: "message", T: Topic_Configuration, repeated: true },
+    { no: 1, name: "configurations", kind: "message", T: Topic_Configuration, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationResponse {
-    return new SetTopicConfigurationResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicConfigurationsResponse {
+    return new SetTopicConfigurationsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationResponse {
-    return new SetTopicConfigurationResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicConfigurationsResponse {
+    return new SetTopicConfigurationsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationResponse {
-    return new SetTopicConfigurationResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicConfigurationsResponse {
+    return new SetTopicConfigurationsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetTopicConfigurationResponse | PlainMessage<SetTopicConfigurationResponse> | undefined, b: SetTopicConfigurationResponse | PlainMessage<SetTopicConfigurationResponse> | undefined): boolean {
-    return proto3.util.equals(SetTopicConfigurationResponse, a, b);
+  static equals(a: SetTopicConfigurationsResponse | PlainMessage<SetTopicConfigurationsResponse> | undefined, b: SetTopicConfigurationsResponse | PlainMessage<SetTopicConfigurationsResponse> | undefined): boolean {
+    return proto3.util.equals(SetTopicConfigurationsResponse, a, b);
   }
 }
 
