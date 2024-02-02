@@ -31,6 +31,20 @@ import { uiState } from '../../../state/uiState';
 import { createStandaloneToast } from '@chakra-ui/react';
 const { ToastContainer, toast } = createStandaloneToast()
 
+// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
+// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
+// https://github.com/remix-run/react-router/issues/10213
+// https://github.com/remix-run/history/issues/874
+export function encodeURIComponentPercents(rawStr: string): string {
+    const encoded = encodeURIComponent(rawStr);
+    return encoded.replace(/%/g, '﹪');
+}
+
+function decodeURIComponentPercents(encodedStr: string): string {
+    const encoded = encodedStr.replace(/﹪/g, '%');
+    return decodeURIComponent(encoded);
+}
+
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     subjectNameRaw: string;
@@ -46,7 +60,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     constructor(p: any) {
         super(p);
-        this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
 
         makeObservable(this);
@@ -55,7 +69,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     componentDidUpdate(prevProps: { subjectName: string }) {
         if (!prevProps) return;
 
-        const prevName = decodeURIComponent(prevProps.subjectName);
+        const prevName = decodeURIComponentPercents(prevProps.subjectName);
 
         if (prevName != this.subjectNameRaw) {
             this.updateTitleAndBreadcrumbs();
@@ -64,7 +78,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     }
 
     updateTitleAndBreadcrumbs() {
-        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        const subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
         this.subjectNameRaw = subjectNameRaw;
 
         const version = getVersionFromQuery() ?? 'latest';
@@ -84,7 +98,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         api.refreshSchemaSubjects(force);
         api.refreshSchemaTypes(force);
 
-        const subjectName = decodeURIComponent(this.props.subjectName);
+        const subjectName = decodeURIComponentPercents(this.props.subjectName);
         api.refreshSchemaDetails(subjectName, force).then(() => {
             const details = api.schemaDetails.get(subjectName);
             if (!details) return;
@@ -99,11 +113,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     }
 
     render() {
-        this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
-        this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
-
         const isSoftDeleted = api.schemaSubjects?.find(x => x.name == this.subjectNameRaw)?.isSoftDeleted;
-
         const subject = api.schemaDetails.get(this.subjectNameRaw);
         if (!subject) return DefaultSkeleton;
 

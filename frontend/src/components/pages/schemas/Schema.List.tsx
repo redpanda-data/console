@@ -30,6 +30,7 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
+import { encodeURIComponentPercents } from './Schema.Details';
 
 const { ToastContainer, toast } = createStandaloneToast()
 
@@ -159,7 +160,10 @@ class SchemaList extends PageComponent<{}> {
                     <DataTable<SchemaRegistrySubject>
                         data={filteredSubjects}
                         columns={[
-                            { header: 'Name', accessorKey: 'name', size: 400, cell: ({row: {original: {name}}}) => <Link to={`/schema-registry/subjects/${encodeURIComponent(name)}?version=latest`}>{name}</Link>},
+                            {
+                                header: 'Name', accessorKey: 'name', size: 400, cell: ({ row: { original: { name } } }) =>
+                                    <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
+                            },
                             { header: 'Type', cell: ({row: {original: r}}) => <SchemaTypeColumn name={r.name} />, size: 100 },
                             { header: 'Compatibility', cell: ({row: {original: r}}) => <SchemaCompatibilityColumn name={r.name} />, size: 100 },
                             { header: 'Latest Version', cell: ({row: {original: r}}) => <LatestVersionColumn name={r.name} />, size: 100 },
