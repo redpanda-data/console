@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.4.1 / 2024-02-02
+
+- [FIX] Fix bug in schema registry URL paths for subject names that used escaping characters (i.e. %2F)
+- [FIX] The pagination component to select different pages always shows up now [#1034](https://github.com/redpanda-data/console/issues/1032)
+- [FIX] When sorting the Kafka topics by size the order was off, the column ordering is fixed now
+- [FIX] Using the "copy value" action for a Kafka record no longer includes the payload property multiple times [#1054](https://github.com/redpanda-data/console/issues/1054)
+- [FIX] Selecting the "size" column as the only column to show in the table settings used to throw an exception [#1051](https://github.com/redpanda-data/console/issues/1051)
+- [FIX] Fix decoding for msgpack encoded payloads [#1034](https://github.com/redpanda-data/console/issues/1034)
+- [FIX] Under certain circumstances the download messages button downloaded an empty JSON array instead of the shown records [#1031](https://github.com/redpanda-data/console/issues/1031)
+- [FIX] Searching for topics in the topicslist' quicksearch box using a regex did no longer work [#1026](https://github.com/redpanda-data/console/issues/1026)
+- [IMPROVEMENT] Document new `console.maxDeserializationPayloadSize` config to control max message size that is still shown in the frontend
+
 ## v2.3.10 / 2024-01-29
 
 - [FIX] Fix bug in schema registry URL paths.
