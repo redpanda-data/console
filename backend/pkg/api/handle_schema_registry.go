@@ -847,8 +847,6 @@ func getSubjectFromRequestPath(r *http.Request) string {
 	requestURI = strings.Replace(requestURI, "/api/schema-registry/subjects/", "", 1)
 	requestURI = strings.Replace(requestURI, "/api/schema-registry/config/", "", 1)
 
-	fmt.Println("!!!", requestURI)
-
 	// find the versions suffix of the path
 	subjectPart := requestURI
 	lastIndex := strings.Index(requestURI, "/")
