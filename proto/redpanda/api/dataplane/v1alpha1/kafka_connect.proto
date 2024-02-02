@@ -122,7 +122,7 @@ message ListConnectorsRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -140,7 +140,7 @@ message RestartConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -158,7 +158,7 @@ message DeleteConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -174,7 +174,7 @@ message PauseConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -190,7 +190,7 @@ message ResumeConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -206,7 +206,7 @@ message StopConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -222,7 +222,7 @@ message GetConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -238,7 +238,7 @@ message CreateConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -272,7 +272,7 @@ message GetConnectClusterRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -294,7 +294,7 @@ message UpsertConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -319,7 +319,7 @@ message GetConnectorConfigRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -339,7 +339,7 @@ message GetConnectorStatusRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -359,7 +359,7 @@ message ListConnectorTopicsRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -379,7 +379,7 @@ message ResetConnectorTopicsRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The unique name of the connect cluster you are targeting",
+      description: "Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -424,7 +424,7 @@ service KafkaConnectService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connect cluster"
-      description: "Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file."
+      description: "Get information about an available Kafka Connect cluster. Use the cluster name defined in the console's configuration file."
       responses: {
         key: "200"
         value: {
@@ -452,7 +452,7 @@ service KafkaConnectService {
     option (google.api.http) = {get: "/v1alpha1/connect/clusters/{cluster_name}/connectors"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List connectors"
-      description: "List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file."
+      description: "List connectors managed by the Kafka Connect service."
       responses: {
         key: "200"
         value: {
@@ -475,7 +475,7 @@ service KafkaConnectService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create connector"
-      description: "Attempt to create a connector with the specific configuration."
+      description: "Create a connector with the specified configuration."
       responses: {
         key: "201"
         value: {
@@ -542,7 +542,7 @@ service KafkaConnectService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector status"
-      description: "Gets the current status of the connector, including, The state of all of its tasks, error information etc."
+      description: "Gets the current status of the connector, including the state for each of its tasks, error information, etc."
       responses: {
         key: "200"
         value: {
@@ -561,11 +561,11 @@ service KafkaConnectService {
     option (google.api.http) = {put: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Pause connector"
-      description: "Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous."
+      description: "Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process."
       responses: {
         key: "202"
         value: {
-          description: "Accepted"
+          description: "Pause request accepted"
           schema: {}
         }
       }
@@ -578,11 +578,11 @@ service KafkaConnectService {
     option (google.api.http) = {put: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Resume connector"
-      description: "Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused."
+      description: "Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything."
       responses: {
         key: "202"
         value: {
-          description: "Accepted"
+          description: "Resume request accepted"
           schema: {}
         }
       }
@@ -596,11 +596,11 @@ service KafkaConnectService {
     option (google.api.http) = {put: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Stop connector"
-      description: "Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely."
+      description: "Stops a connector, but does not delete the connector. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process."
       responses: {
         key: "202"
         value: {
-          description: "Accepted"
+          description: "Request accepted"
           schema: {}
         }
       }
@@ -613,7 +613,7 @@ service KafkaConnectService {
     option (google.api.http) = {delete: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete connector"
-      description: "Delete a connector forcefully stoping all tasks and deleting its configuration."
+      description: "Delete a connector. This operation force stops all tasks and also deletes the connector configuration."
       responses: {
         key: "204"
         value: {
@@ -638,7 +638,7 @@ service KafkaConnectService {
       responses: {
         key: "200"
         value: {
-          description: "Ok"
+          description: "Updated"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorSpec"}
           }
@@ -673,11 +673,11 @@ service KafkaConnectService {
     option (google.api.http) = {get: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List connector topics"
-      description: "Returns a list of connector topic names, it will return an empty list if the connector is not running."
+      description: "Returns a list of connector topic names. If the connector is inactive, this call returns an empty list."
       responses: {
         key: "200"
         value: {
-          description: "Ok"
+          description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListConnectorTopicsResponse"}
           }
@@ -692,11 +692,11 @@ service KafkaConnectService {
     option (google.api.http) = {put: "/v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Reset connector topics"
-      description: "Resets the set of topic names that the connector has been using."
+      description: "Resets the set of topic names that the connector is using."
       responses: {
         key: "200"
         value: {
-          description: "Ok"
+          description: "OK"
           schema: {}
         }
       }

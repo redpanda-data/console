@@ -1275,10 +1275,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}:
     get:
-      description: Get information about an available kafka connect cluster, use the cluster_name defined in console's configuration file.
+      description: Get information about an available Kafka Connect cluster. Use the cluster name defined in the console's configuration file.
       operationId: KafkaConnectService_GetConnectCluster
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1320,10 +1320,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors:
     get:
-      description: List connectors managed by the kafka-connect service, use the cluster_name defined in the configuration file.
+      description: List connectors managed by the Kafka Connect service.
       operationId: KafkaConnectService_ListConnectors
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1363,10 +1363,10 @@ paths:
       tags:
         - KafkaConnectService
     post:
-      description: Attempt to create a connector with the specific configuration.
+      description: Create a connector with the specified configuration.
       operationId: KafkaConnectService_CreateConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1409,10 +1409,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}:
     delete:
-      description: Delete a connector forcefully stoping all tasks and deleting its configuration.
+      description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
       operationId: KafkaConnectService_DeleteConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1454,7 +1454,7 @@ paths:
       description: Get information about a connector in a specific cluster.
       operationId: KafkaConnectService_GetConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1498,7 +1498,7 @@ paths:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1535,7 +1535,7 @@ paths:
       description: Create a new connector using the given configuration, or update the configuration for an existing connector. Returns information about the connector after the change has been made.
       operationId: KafkaConnectService_UpsertConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1563,7 +1563,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConnectorSpec'
-          description: Ok
+          description: Updated
         "201":
           content:
             application/json:
@@ -1593,10 +1593,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
-      description: Pause the connector and its tasks, which stops message processing until the connector is resumed. This call asynchronous.
+      description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_PauseConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1612,7 +1612,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Accepted
+          description: Pause request accepted
         "401":
           content:
             application/json:
@@ -1639,7 +1639,7 @@ paths:
       description: Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options.
       operationId: KafkaConnectService_RestartConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1686,10 +1686,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
-      description: Resume a paused connector and its tasks, resumes message processing after the connector has been paused. It won't do nothing if the connector is not paused.
+      description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
       operationId: KafkaConnectService_ResumeConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1705,7 +1705,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Accepted
+          description: Resume request accepted
         "401":
           content:
             application/json:
@@ -1729,10 +1729,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status:
     get:
-      description: Gets the current status of the connector, including, The state of all of its tasks, error information etc.
+      description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
       operationId: KafkaConnectService_GetConnectorStatus
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1773,10 +1773,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
-      description: Stops a connector, it stops the connector but does not delete the connector. All tasks for the connector are shut down completely.
+      description: Stops a connector, but does not delete the connector. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_StopConnector
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1792,7 +1792,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Accepted
+          description: Request accepted
         "401":
           content:
             application/json:
@@ -1816,10 +1816,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
-      description: Returns a list of connector topic names, it will return an empty list if the connector is not running.
+      description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
       operationId: KafkaConnectService_ListConnectorTopics
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1836,7 +1836,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListConnectorTopicsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -1860,10 +1860,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
-      description: Resets the set of topic names that the connector has been using.
+      description: Resets the set of topic names that the connector is using.
       operationId: KafkaConnectService_ResetConnectorTopics
       parameters:
-        - description: The unique name of the connect cluster you are targeting
+        - description: Unique name of target connect cluster. Use the cluster name defined in the console's configuration file.
           in: path
           name: cluster_name
           required: true
@@ -1879,7 +1879,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
