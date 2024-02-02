@@ -841,10 +841,6 @@ func getSubjectFromRequestPath(r *http.Request) string {
 
 	requestURI := r.RequestURI
 
-	fmt.Println("requestURI:", requestURI)
-	fmt.Println("raw path:", r.URL.RawPath)
-	fmt.Println("path:", r.URL.Path)
-
 	// remove the api route prefix
 	requestURI = strings.Replace(requestURI, r.URL.Scheme+"://", "", 1)
 	requestURI = strings.Replace(requestURI, r.Host, "", 1)
