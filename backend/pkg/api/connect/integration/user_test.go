@@ -58,7 +58,7 @@ func (s *APISuite) TestListUsers() {
 		createUser(username1)
 		createUser(username2)
 		defer deleteUser(username1)
-		defer deleteUser(username1)
+		defer deleteUser(username2)
 
 		// 2. List users
 		client := v1alpha1connect.NewUserServiceClient(http.DefaultClient, s.httpAddress())
@@ -106,7 +106,7 @@ func (s *APISuite) TestListUsers() {
 		createUser(username1)
 		createUser(username2)
 		defer deleteUser(username1)
-		defer deleteUser(username1)
+		defer deleteUser(username2)
 
 		// 2. List users
 		type listUsersRes struct {
