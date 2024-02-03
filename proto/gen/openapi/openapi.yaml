@@ -432,11 +432,6 @@ components:
       type: object
     DeleteUserResponse:
       type: object
-    DeployTransformResponse:
-      properties:
-        transform_metadata:
-          $ref: '#/components/schemas/TransformMetadata'
-      type: object
     ErrorInfo:
       description: |-
         Describes the cause of the error with structured details.
@@ -1053,38 +1048,6 @@ components:
         trace:
           type: string
         worker_id:
-          type: string
-      type: object
-    Transform:
-      properties:
-        environment:
-          additionalProperties:
-            type: string
-          description: |-
-            'environment' is a map representing key-value pairs of environment configurations.
-            Each key must be a non-empty string, not exceeding 128 bytes, and matching the
-            specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
-            The map can have at most 128 key-value pairs.
-          type: object
-        input_topic_name:
-          description: '''input_topic_name'' specifies the name of the input topic for the transform.'
-          type: string
-        name:
-          description: |-
-            'name' is the unique identifier for the transform. It must be a non-empty string,
-            with a maximum length of 128 bytes. It should contain only characters that are
-            valid UTF-8 and not control or format characters.
-          type: string
-        output_topic_names:
-          description: |-
-            'output_topic_names' is a list of output topics for the transform. This field can contain
-            multiple strings, each representing the name of an output topic.
-          items:
-            type: string
-          type: array
-        wasm_binary:
-          format: byte
-          title: WASM binary for the transform. The binary must be a valid WASM binary
           type: string
       type: object
     TransformMetadata:
@@ -3036,101 +2999,6 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Get Transform
-      tags:
-        - TransformService
-  /v1alpha1/transforms/{transform.name}:
-    put:
-      description: Deploy or update a transform configuration.
-      operationId: TransformService_DeployTransform
-      parameters:
-        - description: |-
-            'name' is the unique identifier for the transform. It must be a non-empty string,
-            with a maximum length of 128 bytes. It should contain only characters that are
-            valid UTF-8 and not control or format characters.
-          in: path
-          name: transform.name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            example:
-              transform:
-                environment:
-                  key1: value1
-                input_topic_name: topic1
-                name: transform1
-                output_topic_names:
-                  - output-topic1
-                  - output-topic2
-                wasm_binary: AGFzbQ==
-            schema:
-              properties:
-                environment:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    'environment' is a map representing key-value pairs of environment configurations.
-                    Each key must be a non-empty string, not exceeding 128 bytes, and matching the
-                    specified pattern. Each value must be a string not exceeding 2048 bytes (2 KiB).
-                    The map can have at most 128 key-value pairs.
-                  type: object
-                input_topic_name:
-                  description: '''input_topic_name'' specifies the name of the input topic for the transform.'
-                  type: string
-                output_topic_names:
-                  description: |-
-                    'output_topic_names' is a list of output topics for the transform. This field can contain
-                    multiple strings, each representing the name of an output topic.
-                  items:
-                    type: string
-                  type: array
-                wasm_binary:
-                  format: byte
-                  title: WASM binary for the transform. The binary must be a valid WASM binary
-                  type: string
-              type: object
-        required: true
-        x-originalParamName: transform
-      responses:
-        "201":
-          content:
-            application/json:
-              example:
-                transform_metadata:
-                  input_topic_name: topic1
-                  name: transform1
-                  output_topic_names:
-                    - output-topic1
-                    - output-topic2
-                  status:
-                    - lag: 1
-                      node_id: 1
-                      partition: 1
-                      status: PARTITION_STATUS_RUNNING
-              schema:
-                $ref: '#/components/schemas/TransformMetadata'
-          description: Transform deployed or updated successfully.
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Deploy Transform
       tags:
         - TransformService
   /v1alpha1/users:

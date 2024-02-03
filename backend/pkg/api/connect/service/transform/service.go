@@ -15,7 +15,6 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -30,66 +29,6 @@ var _ dataplanev1alpha1connect.TransformServiceHandler = (*Service)(nil)
 type Service struct {
 	cfg         *config.Config
 	redpandaSvc *redpanda.Service
-}
-
-// DeployTransform deploys a transform to Redpanda
-func (s *Service) DeployTransform(ctx context.Context, c *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to deploy a transform"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
-
-	envs := make([]adminapi.EnvironmentVariable, 0, len(c.Msg.Transform.Environment))
-	for k, v := range c.Msg.Transform.Environment {
-		envs = append(envs, adminapi.EnvironmentVariable{
-			Key:   k,
-			Value: v,
-		})
-	}
-
-	if err := s.redpandaSvc.DeployWasmTransform(ctx, adminapi.TransformMetadata{
-		Name:         c.Msg.Transform.Name,
-		InputTopic:   c.Msg.Transform.InputTopicName,
-		OutputTopics: c.Msg.Transform.OutputTopicNames,
-		Status:       nil,
-		Environment:  envs,
-	}, c.Msg.Transform.WasmBinary); err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
-	}
-
-	// is this a real transform, is it just fantasy?
-	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
-	}
-
-	tfs, err := transformsConversion(transforms)
-	if err != nil {
-		return nil, err
-	}
-
-	transform, err := findTransformByName(tfs, c.Msg.Transform.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	return &connect.Response[v1alpha1.DeployTransformResponse]{
-		Msg: &v1alpha1.DeployTransformResponse{
-			TransformMetadata: transform,
-		},
-	}, nil
 }
 
 // ListTransforms lists all the transforms matching the filter deployed to Redpanda

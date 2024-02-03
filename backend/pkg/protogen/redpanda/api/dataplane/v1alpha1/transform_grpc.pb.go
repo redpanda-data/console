@@ -20,7 +20,6 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	TransformService_DeployTransform_FullMethodName = "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform"
 	TransformService_ListTransforms_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.TransformService/ListTransforms"
 	TransformService_GetTransform_FullMethodName    = "/redpanda.api.dataplane.v1alpha1.TransformService/GetTransform"
 	TransformService_DeleteTransform_FullMethodName = "/redpanda.api.dataplane.v1alpha1.TransformService/DeleteTransform"
@@ -30,7 +29,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TransformServiceClient interface {
-	DeployTransform(ctx context.Context, in *DeployTransformRequest, opts ...grpc.CallOption) (*DeployTransformResponse, error)
 	ListTransforms(ctx context.Context, in *ListTransformsRequest, opts ...grpc.CallOption) (*ListTransformsResponse, error)
 	GetTransform(ctx context.Context, in *GetTransformRequest, opts ...grpc.CallOption) (*GetTransformResponse, error)
 	DeleteTransform(ctx context.Context, in *DeleteTransformRequest, opts ...grpc.CallOption) (*DeleteTransformResponse, error)
@@ -42,15 +40,6 @@ type transformServiceClient struct {
 
 func NewTransformServiceClient(cc grpc.ClientConnInterface) TransformServiceClient {
 	return &transformServiceClient{cc}
-}
-
-func (c *transformServiceClient) DeployTransform(ctx context.Context, in *DeployTransformRequest, opts ...grpc.CallOption) (*DeployTransformResponse, error) {
-	out := new(DeployTransformResponse)
-	err := c.cc.Invoke(ctx, TransformService_DeployTransform_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *transformServiceClient) ListTransforms(ctx context.Context, in *ListTransformsRequest, opts ...grpc.CallOption) (*ListTransformsResponse, error) {
@@ -84,7 +73,6 @@ func (c *transformServiceClient) DeleteTransform(ctx context.Context, in *Delete
 // All implementations must embed UnimplementedTransformServiceServer
 // for forward compatibility
 type TransformServiceServer interface {
-	DeployTransform(context.Context, *DeployTransformRequest) (*DeployTransformResponse, error)
 	ListTransforms(context.Context, *ListTransformsRequest) (*ListTransformsResponse, error)
 	GetTransform(context.Context, *GetTransformRequest) (*GetTransformResponse, error)
 	DeleteTransform(context.Context, *DeleteTransformRequest) (*DeleteTransformResponse, error)
@@ -95,9 +83,6 @@ type TransformServiceServer interface {
 type UnimplementedTransformServiceServer struct {
 }
 
-func (UnimplementedTransformServiceServer) DeployTransform(context.Context, *DeployTransformRequest) (*DeployTransformResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeployTransform not implemented")
-}
 func (UnimplementedTransformServiceServer) ListTransforms(context.Context, *ListTransformsRequest) (*ListTransformsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTransforms not implemented")
 }
@@ -118,24 +103,6 @@ type UnsafeTransformServiceServer interface {
 
 func RegisterTransformServiceServer(s grpc.ServiceRegistrar, srv TransformServiceServer) {
 	s.RegisterService(&TransformService_ServiceDesc, srv)
-}
-
-func _TransformService_DeployTransform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployTransformRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TransformServiceServer).DeployTransform(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TransformService_DeployTransform_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransformServiceServer).DeployTransform(ctx, req.(*DeployTransformRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _TransformService_ListTransforms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -199,10 +166,6 @@ var TransformService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "redpanda.api.dataplane.v1alpha1.TransformService",
 	HandlerType: (*TransformServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "DeployTransform",
-			Handler:    _TransformService_DeployTransform_Handler,
-		},
 		{
 			MethodName: "ListTransforms",
 			Handler:    _TransformService_ListTransforms_Handler,

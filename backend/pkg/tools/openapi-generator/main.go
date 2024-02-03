@@ -546,41 +546,6 @@ func updateTransforms(doc3 *openapi3.T) {
 		responseExample := toExample(response, "Get Transform", "Get transform", true)
 		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
-	// PUT /transforms/{transform.name}
-	{
-		// Request
-		deployTransformReq := &v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "transform1",
-				WasmBinary:       []byte{0x00, 0x61, 0x73, 0x6D},
-				InputTopicName:   "topic1",
-				OutputTopicNames: []string{"output-topic1", "output-topic2"},
-				Environment: map[string]string{
-					"key1": "value1",
-				},
-			},
-		}
-		requestExample := toExample(deployTransformReq, "Deploy Transform", "Deploy transform", true)
-		doc3.Paths.Value("/v1alpha1/transforms/{transform.name}").Put.RequestBody.Value.Content["application/json"].Example = requestExample.Value
-
-		response := &v1alpha1.DeployTransformResponse{
-			TransformMetadata: &v1alpha1.TransformMetadata{
-				Name:             "transform1",
-				InputTopicName:   "topic1",
-				OutputTopicNames: []string{"output-topic1", "output-topic2"},
-				Status: []*v1alpha1.PartitionTransformStatus{
-					{
-						NodeId:    int32(1),
-						Partition: int32(1),
-						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
-						Lag:       int32(1),
-					},
-				},
-			},
-		}
-		responseExample := toExample(response, "Deploy Transform", "Deploy transform", true)
-		doc3.Paths.Value("/v1alpha1/transforms/{transform.name}").Put.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
-	}
 	// Delete /transforms/{name}
 	{
 		// Request

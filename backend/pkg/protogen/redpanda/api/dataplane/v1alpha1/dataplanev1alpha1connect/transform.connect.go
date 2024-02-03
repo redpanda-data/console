@@ -35,9 +35,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// TransformServiceDeployTransformProcedure is the fully-qualified name of the TransformService's
-	// DeployTransform RPC.
-	TransformServiceDeployTransformProcedure = "/redpanda.api.dataplane.v1alpha1.TransformService/DeployTransform"
 	// TransformServiceListTransformsProcedure is the fully-qualified name of the TransformService's
 	// ListTransforms RPC.
 	TransformServiceListTransformsProcedure = "/redpanda.api.dataplane.v1alpha1.TransformService/ListTransforms"
@@ -52,7 +49,6 @@ const (
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
 	transformServiceServiceDescriptor               = v1alpha1.File_redpanda_api_dataplane_v1alpha1_transform_proto.Services().ByName("TransformService")
-	transformServiceDeployTransformMethodDescriptor = transformServiceServiceDescriptor.Methods().ByName("DeployTransform")
 	transformServiceListTransformsMethodDescriptor  = transformServiceServiceDescriptor.Methods().ByName("ListTransforms")
 	transformServiceGetTransformMethodDescriptor    = transformServiceServiceDescriptor.Methods().ByName("GetTransform")
 	transformServiceDeleteTransformMethodDescriptor = transformServiceServiceDescriptor.Methods().ByName("DeleteTransform")
@@ -61,7 +57,6 @@ var (
 // TransformServiceClient is a client for the redpanda.api.dataplane.v1alpha1.TransformService
 // service.
 type TransformServiceClient interface {
-	DeployTransform(context.Context, *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error)
 	ListTransforms(context.Context, *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error)
 	GetTransform(context.Context, *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error)
 	DeleteTransform(context.Context, *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error)
@@ -78,12 +73,6 @@ type TransformServiceClient interface {
 func NewTransformServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TransformServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &transformServiceClient{
-		deployTransform: connect.NewClient[v1alpha1.DeployTransformRequest, v1alpha1.DeployTransformResponse](
-			httpClient,
-			baseURL+TransformServiceDeployTransformProcedure,
-			connect.WithSchema(transformServiceDeployTransformMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		listTransforms: connect.NewClient[v1alpha1.ListTransformsRequest, v1alpha1.ListTransformsResponse](
 			httpClient,
 			baseURL+TransformServiceListTransformsProcedure,
@@ -107,15 +96,9 @@ func NewTransformServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // transformServiceClient implements TransformServiceClient.
 type transformServiceClient struct {
-	deployTransform *connect.Client[v1alpha1.DeployTransformRequest, v1alpha1.DeployTransformResponse]
 	listTransforms  *connect.Client[v1alpha1.ListTransformsRequest, v1alpha1.ListTransformsResponse]
 	getTransform    *connect.Client[v1alpha1.GetTransformRequest, v1alpha1.GetTransformResponse]
 	deleteTransform *connect.Client[v1alpha1.DeleteTransformRequest, v1alpha1.DeleteTransformResponse]
-}
-
-// DeployTransform calls redpanda.api.dataplane.v1alpha1.TransformService.DeployTransform.
-func (c *transformServiceClient) DeployTransform(ctx context.Context, req *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error) {
-	return c.deployTransform.CallUnary(ctx, req)
 }
 
 // ListTransforms calls redpanda.api.dataplane.v1alpha1.TransformService.ListTransforms.
@@ -136,7 +119,6 @@ func (c *transformServiceClient) DeleteTransform(ctx context.Context, req *conne
 // TransformServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha1.TransformService service.
 type TransformServiceHandler interface {
-	DeployTransform(context.Context, *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error)
 	ListTransforms(context.Context, *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error)
 	GetTransform(context.Context, *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error)
 	DeleteTransform(context.Context, *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error)
@@ -148,12 +130,6 @@ type TransformServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewTransformServiceHandler(svc TransformServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	transformServiceDeployTransformHandler := connect.NewUnaryHandler(
-		TransformServiceDeployTransformProcedure,
-		svc.DeployTransform,
-		connect.WithSchema(transformServiceDeployTransformMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	transformServiceListTransformsHandler := connect.NewUnaryHandler(
 		TransformServiceListTransformsProcedure,
 		svc.ListTransforms,
@@ -174,8 +150,6 @@ func NewTransformServiceHandler(svc TransformServiceHandler, opts ...connect.Han
 	)
 	return "/redpanda.api.dataplane.v1alpha1.TransformService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case TransformServiceDeployTransformProcedure:
-			transformServiceDeployTransformHandler.ServeHTTP(w, r)
 		case TransformServiceListTransformsProcedure:
 			transformServiceListTransformsHandler.ServeHTTP(w, r)
 		case TransformServiceGetTransformProcedure:
@@ -190,10 +164,6 @@ func NewTransformServiceHandler(svc TransformServiceHandler, opts ...connect.Han
 
 // UnimplementedTransformServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedTransformServiceHandler struct{}
-
-func (UnimplementedTransformServiceHandler) DeployTransform(context.Context, *connect.Request[v1alpha1.DeployTransformRequest]) (*connect.Response[v1alpha1.DeployTransformResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.TransformService.DeployTransform is not implemented"))
-}
 
 func (UnimplementedTransformServiceHandler) ListTransforms(context.Context, *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.TransformService.ListTransforms is not implemented"))

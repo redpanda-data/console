@@ -17,7 +17,6 @@ import (
 // TransformServiceGatewayServer implements the gRPC server API for the TransformService service.
 type TransformServiceGatewayServer struct {
 	v1alpha1.UnimplementedTransformServiceServer
-	deployTransform connect_gateway.UnaryHandler[v1alpha1.DeployTransformRequest, v1alpha1.DeployTransformResponse]
 	listTransforms  connect_gateway.UnaryHandler[v1alpha1.ListTransformsRequest, v1alpha1.ListTransformsResponse]
 	getTransform    connect_gateway.UnaryHandler[v1alpha1.GetTransformRequest, v1alpha1.GetTransformResponse]
 	deleteTransform connect_gateway.UnaryHandler[v1alpha1.DeleteTransformRequest, v1alpha1.DeleteTransformResponse]
@@ -27,15 +26,10 @@ type TransformServiceGatewayServer struct {
 // TransformService service.
 func NewTransformServiceGatewayServer(svc TransformServiceHandler, opts ...connect_gateway.HandlerOption) *TransformServiceGatewayServer {
 	return &TransformServiceGatewayServer{
-		deployTransform: connect_gateway.NewUnaryHandler(TransformServiceDeployTransformProcedure, svc.DeployTransform, opts...),
 		listTransforms:  connect_gateway.NewUnaryHandler(TransformServiceListTransformsProcedure, svc.ListTransforms, opts...),
 		getTransform:    connect_gateway.NewUnaryHandler(TransformServiceGetTransformProcedure, svc.GetTransform, opts...),
 		deleteTransform: connect_gateway.NewUnaryHandler(TransformServiceDeleteTransformProcedure, svc.DeleteTransform, opts...),
 	}
-}
-
-func (s *TransformServiceGatewayServer) DeployTransform(ctx context.Context, req *v1alpha1.DeployTransformRequest) (*v1alpha1.DeployTransformResponse, error) {
-	return s.deployTransform(ctx, req)
 }
 
 func (s *TransformServiceGatewayServer) ListTransforms(ctx context.Context, req *v1alpha1.ListTransformsRequest) (*v1alpha1.ListTransformsResponse, error) {

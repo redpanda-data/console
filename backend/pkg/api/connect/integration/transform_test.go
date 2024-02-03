@@ -1,17 +1,23 @@
 package integration
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"mime/multipart"
 	"net/http"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 	asrt "github.com/stretchr/testify/assert"
 	rqr "github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
 
+	"github.com/redpanda-data/console/backend/pkg/api"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
@@ -44,6 +50,55 @@ func spawnTopic(ctx context.Context, partitionCount int32, client v1alpha1connec
 	return err
 }
 
+func spawnTransform(cfg config.Server, name, inputTopic string, outputTopics []string, env []adminapi.EnvironmentVariable, wasm []byte) error {
+	metadata := api.TransformMetadata{
+		Name:         name,
+		InputTopic:   inputTopic,
+		OutputTopics: outputTopics,
+		Environment:  env,
+	}
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	metadataPart, err := writer.CreateFormField("metadata")
+	if err != nil {
+		return err
+	}
+
+	if err := json.NewEncoder(metadataPart).Encode(metadata); err != nil {
+		return err
+	}
+
+	wasmPart, err := writer.CreateFormFile("wasm_binary", "transform.wasm")
+	if err != nil {
+		return err
+	}
+
+	if _, err := wasmPart.Write(wasm); err != nil {
+		return err
+	}
+
+	if err := writer.Close(); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:%d/api/transforms/%s", cfg.HTTPListenAddress, cfg.HTTPListenPort, name), body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("unexpected status code: %d message: %s", resp.StatusCode, resp.Status)
+	}
+	return nil
+}
+
 func (s *APISuite) TestDeployTransform() {
 	t := s.T()
 
@@ -59,19 +114,16 @@ func (s *APISuite) TestDeployTransform() {
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-o"))
 
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "test-transform",
-				WasmBinary:       technicallyATransform,
-				InputTopicName:   "wasm-tfm-create-test-i",
-				OutputTopicNames: []string{"wasm-tfm-create-test-o"},
-				Environment:      nil,
-			},
-		}))
-		assert.NoError(err)
+		stErr := spawnTransform(s.api.Cfg.REST, "test-transform",
+			"wasm-tfm-create-test-i",
+			[]string{"wasm-tfm-create-test-o"},
+			[]adminapi.EnvironmentVariable{{"foo", "bar"}},
+			technicallyATransform)
+
+		assert.NoError(stErr, fmt.Sprintf("error: %v", stErr))
 
 		defer func() {
-			_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
+			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
 				Name: "test-transform",
 			}))
 			require.NoError(err)
@@ -95,37 +147,25 @@ func (s *APISuite) TestGetTransform() {
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-c"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-d"))
-		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "test-transform",
-				WasmBinary:       technicallyATransform,
-				InputTopicName:   "wasm-tfm-create-test-c",
-				OutputTopicNames: []string{"wasm-tfm-create-test-d"},
-				Environment:      map[string]string{"foo": "bar"},
-			},
-		}))
-		require.NoError(err)
+
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform-get", "wasm-tfm-create-test-c", []string{"wasm-tfm-create-test-d"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
 
 		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha1.GetTransformRequest{
-			Name: "test-transform",
+			Name: "test-transform-get",
 		}))
 		assert.NoError(err)
 
-		assert.Equal(msg.Msg.Transform.Name, "test-transform")
+		assert.Equal(msg.Msg.Transform.Name, "test-transform-get")
 		assert.Equal(msg.Msg.Transform.InputTopicName, "wasm-tfm-create-test-c")
 		assert.Equal(msg.Msg.Transform.OutputTopicNames, []string{"wasm-tfm-create-test-d"})
 		defer func() {
 			_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-transform",
+				Name: "test-transform-get",
 			}))
 			require.NoError(err)
 			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-c"))
 			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-d"))
 		}()
-		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha1.GetTransformRequest{
-			Name: "test-transform",
-		}))
-		assert.NoError(err, "transform should exist")
 	})
 }
 
@@ -143,27 +183,9 @@ func (s *APISuite) TestListTransforms() {
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-a"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-b"))
-		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "test-transform1",
-				WasmBinary:       technicallyATransform,
-				InputTopicName:   "wasm-tfm-list-test-a",
-				OutputTopicNames: []string{"wasm-tfm-list-test-b"},
-				Environment:      nil,
-			},
-		}))
-		require.NoError(err)
-		_, err = transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "test-transform2",
-				WasmBinary:       technicallyATransform,
-				InputTopicName:   "wasm-tfm-list-test-a",
-				OutputTopicNames: []string{"wasm-tfm-list-test-b"},
-				Environment:      nil,
-			},
-		}))
-		spew.Dump(err)
-		require.NoError(err)
+
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform1", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform2", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
 
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
 			Filter: &v1alpha1.ListTransformsRequest_Filter{
@@ -219,18 +241,8 @@ func (s *APISuite) TestDeleteTransforms() {
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-e"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-f"))
-		_, err := transformClient.DeployTransform(ctx, connect.NewRequest(&v1alpha1.DeployTransformRequest{
-			Transform: &v1alpha1.DeployTransformRequest_Transform{
-				Name:             "del-test-transform",
-				WasmBinary:       technicallyATransform,
-				InputTopicName:   "wasm-tfm-delete-test-e",
-				OutputTopicNames: []string{"wasm-tfm-delete-test-f"},
-				Environment:      nil,
-			},
-		}))
-		require.NoError(err)
-
-		_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
+		require.NoError(spawnTransform(s.api.Cfg.REST, "del-test-transform", "wasm-tfm-delete-test-e", []string{"wasm-tfm-delete-test-f"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
+		_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
 			Name: "del-test-transform",
 		}))
 		assert.NoError(err)

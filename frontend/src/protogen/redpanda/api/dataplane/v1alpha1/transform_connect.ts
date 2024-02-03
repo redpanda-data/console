@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteTransformRequest, DeleteTransformResponse, DeployTransformRequest, DeployTransformResponse, GetTransformRequest, GetTransformResponse, ListTransformsRequest, ListTransformsResponse } from "./transform_pb";
+import { DeleteTransformRequest, DeleteTransformResponse, GetTransformRequest, GetTransformResponse, ListTransformsRequest, ListTransformsResponse } from "./transform_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -12,15 +12,6 @@ import { MethodKind } from "@bufbuild/protobuf";
 export const TransformService = {
   typeName: "redpanda.api.dataplane.v1alpha1.TransformService",
   methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.TransformService.DeployTransform
-     */
-    deployTransform: {
-      name: "DeployTransform",
-      I: DeployTransformRequest,
-      O: DeployTransformResponse,
-      kind: MethodKind.Unary,
-    },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TransformService.ListTransforms
      */
