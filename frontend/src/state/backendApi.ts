@@ -245,6 +245,13 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
 };
 
 
+const transport = createConnectTransport({
+    baseUrl: appConfig.grpcBase,
+    interceptors: [addBearerTokenInterceptor]
+});
+
+const consoleClient = createPromiseClient(ConsoleService, transport);
+
 let messageSearchAbortController: AbortController | null = null;
 
 //
@@ -372,12 +379,6 @@ const apiStore = {
 
         // do it
         const abortController = messageSearchAbortController = new AbortController();
-        const transport = createConnectTransport({
-            baseUrl: appConfig.grpcBase,
-            interceptors: [addBearerTokenInterceptor]
-        });
-
-        const client = createPromiseClient(ConsoleService, transport);
 
         const req = new ListMessagesRequest();
         req.topic = searchRequest.topicName;
@@ -399,7 +400,7 @@ const apiStore = {
         }
 
         try {
-            for await (const res of await client.listMessages(req, { signal: abortController.signal, timeoutMs })) {
+            for await (const res of await consoleClient.listMessages(req, { signal: abortController.signal, timeoutMs })) {
                 if (abortController.signal.aborted)
                     break;
 
