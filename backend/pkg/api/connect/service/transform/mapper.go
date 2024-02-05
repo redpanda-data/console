@@ -15,6 +15,7 @@ import (
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
+//nolint:stylecheck // generated enum
 func statusToPartitionTransformStatus_PartitionStatus(s string) (v1alpha1.PartitionTransformStatus_PartitionStatus, error) {
 	switch s {
 	case "unspecified":
