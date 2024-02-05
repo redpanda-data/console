@@ -52,7 +52,6 @@ func NewService(logger *zap.Logger,
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
 func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest], stream *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
-
 	lmq := httptypes.ListMessagesRequest{
 		TopicName:             req.Msg.GetTopic(),
 		StartOffset:           req.Msg.GetStartOffset(),
