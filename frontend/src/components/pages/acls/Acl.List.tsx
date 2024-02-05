@@ -118,7 +118,8 @@ class AclList extends PageComponent {
 
                     <DataTable<AclPrincipalGroup>
                         data={groups}
-                        pagination={true}
+                        pagination
+                        sorting
                         columns={[
                             {
                                 size: Infinity,

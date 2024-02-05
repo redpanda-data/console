@@ -36,7 +36,8 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
 
         return <DataTable<TopicConsumer>
             data={consumers}
-            pagination={true}
+            pagination
+            sorting
             columns={[
                 {size: 1, header: 'Group', accessorKey: 'groupId'},
                 {header: 'Lag', accessorKey: 'summedLag'},
