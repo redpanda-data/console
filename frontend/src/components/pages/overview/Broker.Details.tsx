@@ -119,7 +119,7 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
         return (
             <div className="brokerConfigView">
                 <DetailsDisplaySettings />
-                <ConfigList configEntries={entries} valueDisplay={uiSettings.brokerList.valueDisplay} />
+                <ConfigList key={uiSettings.brokerList.propsOrder} configEntries={entries} valueDisplay={uiSettings.brokerList.valueDisplay} />
             </div>
         );
     }

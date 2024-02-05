@@ -76,6 +76,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                         <DataTable<ClusterConnectorInfo>
                             data={connectors ?? []}
                             pagination
+                            defaultPageSize={10}
                             sorting
                             columns={[
                                 {

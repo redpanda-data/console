@@ -40,10 +40,8 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
         return <>
             {warning}
             <DataTable<Partition>
-                pagination={{
-                    pageSize: 100,
-                    pageIndex: 0
-                }}
+                pagination
+                defaultPageSize={50}
                 sorting
                 data={partitions}
                 columns={[

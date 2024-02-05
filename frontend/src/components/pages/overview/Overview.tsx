@@ -142,6 +142,8 @@ class Overview extends PageComponent {
                         <DataTable<BrokerWithConfigAndStorage>
                             data={brokers}
                             sorting={false}
+                            defaultPageSize={10}
+                            pagination
                             columns={[
                                 {
                                     size: 80,

@@ -300,10 +300,8 @@ const ConfigOverviewTab = observer((p: {
                 </Flex>
                 <DataTable<ClusterConnectorTaskInfo>
                     data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-                    pagination={{
-                        pageSize: 10,
-                        pageIndex: 0
-                    }}
+                    pagination
+                    defaultPageSize={10}
                     sorting
                     columns={[
                         {
