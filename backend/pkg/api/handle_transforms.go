@@ -34,6 +34,7 @@ const (
 	mb int64 = 1024 * kb
 )
 
+// TransformMetadata is the metadata required to deploy a wasm transform
 type TransformMetadata struct {
 	Name         string                         `json:"name"`
 	InputTopic   string                         `json:"input_topic"`

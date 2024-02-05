@@ -82,7 +82,7 @@ func spawnTransform(cfg config.Server, name, inputTopic string, outputTopics []s
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:%d/v1alpha1/transforms", cfg.HTTPListenAddress, cfg.HTTPListenPort), body)
+	req, err := http.NewRequestWithContext(context.Background(), "PUT", fmt.Sprintf("http://%s:%d/v1alpha1/transforms", cfg.HTTPListenAddress, cfg.HTTPListenPort), body)
 	if err != nil {
 		return err
 	}
@@ -111,13 +111,13 @@ func (s *APISuite) TestDeployTransform() {
 
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-i"))
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-o"))
+		require.NoError(spawnTopic(ctx, 3, topicClient, "wasm-tfm-create-test-o"))
 
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 		stErr := spawnTransform(s.api.Cfg.REST, "test-transform",
 			"wasm-tfm-create-test-i",
 			[]string{"wasm-tfm-create-test-o"},
-			[]adminapi.EnvironmentVariable{{"foo", "bar"}},
+			[]adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
 			technicallyATransform)
 
 		assert.NoError(stErr, fmt.Sprintf("error: %v", stErr))
@@ -135,7 +135,6 @@ func (s *APISuite) TestDeployTransform() {
 
 func (s *APISuite) TestGetTransform() {
 	t := s.T()
-	// require := rqr.New(t)
 	assert := asrt.New(t)
 	require := rqr.New(t)
 
@@ -145,10 +144,10 @@ func (s *APISuite) TestGetTransform() {
 
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-c"))
+		require.NoError(spawnTopic(ctx, 3, topicClient, "wasm-tfm-create-test-c"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-d"))
 
-		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform-get", "wasm-tfm-create-test-c", []string{"wasm-tfm-create-test-d"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform-get", "wasm-tfm-create-test-c", []string{"wasm-tfm-create-test-d"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform))
 
 		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha1.GetTransformRequest{
 			Name: "test-transform-get",
@@ -184,8 +183,8 @@ func (s *APISuite) TestListTransforms() {
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-a"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-b"))
 
-		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform1", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
-		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform2", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform1", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform))
+		require.NoError(spawnTransform(s.api.Cfg.REST, "test-transform2", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform))
 
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
 			Filter: &v1alpha1.ListTransformsRequest_Filter{
@@ -241,7 +240,7 @@ func (s *APISuite) TestDeleteTransforms() {
 		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-e"))
 		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-f"))
-		require.NoError(spawnTransform(s.api.Cfg.REST, "del-test-transform", "wasm-tfm-delete-test-e", []string{"wasm-tfm-delete-test-f"}, []adminapi.EnvironmentVariable{{"foo", "bar"}}, technicallyATransform))
+		require.NoError(spawnTransform(s.api.Cfg.REST, "del-test-transform", "wasm-tfm-delete-test-e", []string{"wasm-tfm-delete-test-f"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform))
 		_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
 			Name: "del-test-transform",
 		}))
