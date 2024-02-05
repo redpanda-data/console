@@ -128,6 +128,8 @@ class GroupList extends PageComponent {
 
                         <DataTable<GroupDescription>
                             data={groups}
+                            pagination
+                            sorting
                             columns={[
                                 {
                                     header: 'State',
