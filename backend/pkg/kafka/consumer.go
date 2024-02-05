@@ -115,8 +115,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	// 2. Create consumer workers
 	jobs := make(chan *kgo.Record, 100)
 	resultsCh := make(chan *TopicMessage, 100)
-	workerCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	workerCtx, cancel := context.WithCancelCause(ctx)
+	defer cancel(errors.New("worker cancel"))
 
 	wg := sync.WaitGroup{}
 

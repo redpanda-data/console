@@ -245,6 +245,13 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
 };
 
 
+const transport = createConnectTransport({
+    baseUrl: appConfig.grpcBase,
+    interceptors: [addBearerTokenInterceptor]
+});
+
+const consoleClient = createPromiseClient(ConsoleService, transport);
+
 let messageSearchAbortController: AbortController | null = null;
 
 //
@@ -372,14 +379,9 @@ const apiStore = {
 
         // do it
         const abortController = messageSearchAbortController = new AbortController();
-        const transport = createConnectTransport({
-            baseUrl: appConfig.grpcBase,
-            interceptors: [addBearerTokenInterceptor]
-        });
-
-        const client = createPromiseClient(ConsoleService, transport);
 
         const req = new ListMessagesRequest();
+
         req.topic = searchRequest.topicName;
         req.startOffset = BigInt(searchRequest.startOffset);
         req.startTimestamp = BigInt(searchRequest.startTimestamp);
@@ -392,14 +394,19 @@ const apiStore = {
 
         // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
         // from 30s to 30 minutes before ending the request gracefully.
-        let timeoutMs = 30 * 1000;
+        const timeoutMs = 30 * 1000;
         if (searchRequest.startOffset == PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
-            const minuteMs = 60 * 1000;
-            timeoutMs = 30 * minuteMs;
+            // const minuteMs = 60 * 1000;
+            // timeoutMs = 30 * minuteMs;
+            console.log('asdf')
         }
 
+        abortController.signal.addEventListener('abort', () => {
+            console.log('ABORTED');
+        })
+
         try {
-            for await (const res of await client.listMessages(req, { signal: abortController.signal, timeoutMs })) {
+            for await (const res of await consoleClient.listMessages(req, { signal: abortController.signal, timeoutMs })) {
                 if (abortController.signal.aborted)
                     break;
 
@@ -415,6 +422,7 @@ const apiStore = {
                             this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                             break;
                         case 'done':
+                            console.log('done phase')
                             this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                             this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                             // this.MessageSearchCancelled = msg.isCancelled;

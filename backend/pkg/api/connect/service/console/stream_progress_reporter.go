@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +32,8 @@ type streamProgressReporter struct {
 
 	messagesConsumed atomic.Int64
 	bytesConsumed    atomic.Int64
+
+	writeMutex sync.Mutex
 }
 
 func (p *streamProgressReporter) Start() {
@@ -44,41 +47,53 @@ func (p *streamProgressReporter) Start() {
 	// topic it may take some time until there are messages. This go routine is in charge of keeping the user up to
 	// date about the progress Kowl made streaming the topic
 	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+
 		for {
 			select {
 			case <-p.ctx.Done():
+				ticker.Stop()
 				return
-			default:
+			case <-ticker.C:
 				p.reportProgress()
 			}
-			time.Sleep(1 * time.Second)
 		}
 	}()
 }
 
 func (p *streamProgressReporter) reportProgress() {
+	p.writeMutex.Lock()
+	defer p.writeMutex.Unlock()
+
 	msg := &v1alpha.ListMessagesResponse_ProgressMessage{
 		MessagesConsumed: p.messagesConsumed.Load(),
 		BytesConsumed:    p.bytesConsumed.Load(),
 	}
 
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Progress{
 			Progress: msg,
 		},
-	})
+	}); err != nil {
+		p.logger.Error("send error in stream reportProgress", zap.Error(err))
+	}
 }
 
 func (p *streamProgressReporter) OnPhase(name string) {
+	p.writeMutex.Lock()
+	defer p.writeMutex.Unlock()
+
 	msg := &v1alpha.ListMessagesResponse_PhaseMessage{
 		Phase: name,
 	}
 
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Phase{
 			Phase: msg,
 		},
-	})
+	}); err != nil {
+		p.logger.Error("send error in stream OnPhase", zap.Error(err))
+	}
 }
 
 func (p *streamProgressReporter) OnMessageConsumed(size int64) {
@@ -87,6 +102,13 @@ func (p *streamProgressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
+	if message == nil {
+		return
+	}
+
+	p.writeMutex.Lock()
+	defer p.writeMutex.Unlock()
+
 	headers := make([]*v1alpha.KafkaRecordHeader, 0, len(message.Headers))
 
 	for _, mh := range message.Headers {
@@ -164,14 +186,19 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 		})
 	}
 
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Data{
 			Data: data,
 		},
-	})
+	}); err != nil {
+		p.logger.Error("send error in stream OnMessage", zap.Error(err))
+	}
 }
 
 func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
+	p.writeMutex.Lock()
+	defer p.writeMutex.Unlock()
+
 	msg := &v1alpha.ListMessagesResponse_StreamCompletedMessage{
 		ElapsedMs:        elapsedMs,
 		IsCancelled:      isCancelled,
@@ -179,21 +206,28 @@ func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
 		BytesConsumed:    p.bytesConsumed.Load(),
 	}
 
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Done{
 			Done: msg,
 		},
-	})
+	}); err != nil {
+		p.logger.Error("send error in stream OnComplete", zap.Error(err))
+	}
 }
 
 func (p *streamProgressReporter) OnError(message string) {
+	p.writeMutex.Lock()
+	defer p.writeMutex.Unlock()
+
 	msg := &v1alpha.ListMessagesResponse_ErrorMessage{
 		Message: message,
 	}
 
-	p.stream.Send(&v1alpha.ListMessagesResponse{
+	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
 		ControlMessage: &v1alpha.ListMessagesResponse_Error{
 			Error: msg,
 		},
-	})
+	}); err != nil {
+		p.logger.Error("send error in stream OnError", zap.Error(err))
+	}
 }
