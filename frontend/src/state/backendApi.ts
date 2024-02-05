@@ -400,10 +400,6 @@ const apiStore = {
             timeoutMs = 30 * minuteMs;
         }
 
-        abortController.signal.addEventListener('abort', () => {
-            console.log('ABORTED');
-        })
-
         try {
             for await (const res of await consoleClient.listMessages(req, { signal: abortController.signal, timeoutMs })) {
                 if (abortController.signal.aborted)
@@ -421,7 +417,6 @@ const apiStore = {
                             this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
                             break;
                         case 'done':
-                            console.log('done phase')
                             this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
                             this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                             // this.MessageSearchCancelled = msg.isCancelled;
