@@ -381,7 +381,6 @@ const apiStore = {
         const abortController = messageSearchAbortController = new AbortController();
 
         const req = new ListMessagesRequest();
-
         req.topic = searchRequest.topicName;
         req.startOffset = BigInt(searchRequest.startOffset);
         req.startTimestamp = BigInt(searchRequest.startTimestamp);
