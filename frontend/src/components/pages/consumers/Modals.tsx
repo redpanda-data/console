@@ -257,10 +257,8 @@ export class EditOffsetsModal extends Component<{
                     </Flex>,
                     description: <DataTable<GroupOffset>
                         size="sm"
-                        pagination={{
-                            pageSize: 1000,
-                            pageIndex: 0
-                        }}
+                        pagination
+                        defaultPageSize={100}
                         sorting
                         data={items}
                         columns={[
