@@ -159,6 +159,8 @@ class SchemaList extends PageComponent<{}> {
 
                     <DataTable<SchemaRegistrySubject>
                         data={filteredSubjects}
+                        pagination
+                        sorting
                         columns={[
                             {
                                 header: 'Name', accessorKey: 'name', size: 400, cell: ({ row: { original: { name } } }) =>

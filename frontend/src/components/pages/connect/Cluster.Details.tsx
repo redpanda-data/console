@@ -75,6 +75,8 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                         <DataTable<ClusterConnectorInfo>
                             data={connectors ?? []}
+                            pagination
+                            sorting
                             columns={[
                                 {
                                     header: 'Connector',
@@ -117,7 +119,8 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                         <DataTable<ClusterAdditionalInfo['plugins'][0]>
                             data={additionalInfo?.plugins ?? []}
-                            pagination={true}
+                            pagination
+                            sorting
                             columns={[
                                 {
                                     header: 'Class',

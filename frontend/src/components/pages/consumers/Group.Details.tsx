@@ -296,6 +296,8 @@ class GroupByTopics extends Component<{
                         >View Topic</Button>
                     </Flex>,
                 description: <DataTable<{ topicName: string, partitionId: number, groupOffset: number, highWaterMark: number, lag: number, assignedMember: GroupMemberDescription | undefined, id: string | undefined, clientId: string | undefined, host: string | undefined }>
+                    pagination
+                    sorting
                     data={g.partitions}
                     columns={[
                         {
@@ -421,6 +423,8 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
                         </Tooltip>
                     </Flex>,
                     description: <DataTable<{topicName: string, partitionId: number, partitionLag: number}>
+                        pagination
+                        sorting
                         data={assignmentsFlat}
                         columns={[
                             {

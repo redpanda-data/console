@@ -261,6 +261,7 @@ export class EditOffsetsModal extends Component<{
                             pageSize: 1000,
                             pageIndex: 0
                         }}
+                        sorting
                         data={items}
                         columns={[
                             {

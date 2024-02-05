@@ -40,7 +40,8 @@ export class AdminUsers extends Component<{}> {
         const table = (
             <DataTable<UserDetails>
                 data={users}
-                sorting={true}
+                pagination
+                sorting
                 expandRowByClick
                 columns={[
                     {

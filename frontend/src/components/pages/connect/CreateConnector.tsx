@@ -464,8 +464,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     return currentStep < steps.length - 1 ? setCurrentStep((n) => n + 1) : undefined;
                 },
                 previous: () => {
-
-                    setSelectedPlugin(null);
+                    if(currentStep === 1) {
+                        setSelectedPlugin(null);
+                    }
                     clearErrors();
 
                     setTimeout(() => {
