@@ -394,11 +394,10 @@ const apiStore = {
 
         // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
         // from 30s to 30 minutes before ending the request gracefully.
-        const timeoutMs = 30 * 1000;
+        let timeoutMs = 30 * 1000;
         if (searchRequest.startOffset == PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
-            // const minuteMs = 60 * 1000;
-            // timeoutMs = 30 * minuteMs;
-            console.log('asdf')
+            const minuteMs = 60 * 1000;
+            timeoutMs = 30 * minuteMs;
         }
 
         abortController.signal.addEventListener('abort', () => {
