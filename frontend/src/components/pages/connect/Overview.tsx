@@ -73,6 +73,7 @@ class TabClusters extends Component {
             <DataTable<ClusterConnectors>
                 data={clusters}
                 sorting={false}
+                pagination
                 columns={[
                     {
                         header: 'Cluster',
@@ -132,6 +133,7 @@ class TabConnectors extends Component {
         return (
             <DataTable<ConnectorType>
                 data={allConnectors}
+                pagination
                 sorting={false}
                 columns={[
                     {
@@ -203,6 +205,8 @@ class TabTasks extends Component {
         return (
             <DataTable<TaskType>
                 data={allTasks}
+                pagination
+                sorting
                 columns={[
                     {
                         header: 'Connector',

@@ -57,6 +57,8 @@ export default observer(function ({ acl }: AclListProps) {
                 acls: AclRule[]
             }>
                 data={resources}
+                pagination
+                sorting
                 columns={[
                     {
                         size: 120,

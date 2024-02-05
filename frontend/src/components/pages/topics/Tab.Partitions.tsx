@@ -44,6 +44,7 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                     pageSize: 100,
                     pageIndex: 0
                 }}
+                sorting
                 data={partitions}
                 columns={[
                     {

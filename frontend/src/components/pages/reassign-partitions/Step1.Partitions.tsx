@@ -243,6 +243,8 @@ export class SelectPartitionTable extends Component<{
 }> {
     render() {
         return <DataTable<Partition>
+            pagination
+            sorting
             data={this.props.topicPartitions}
             columns={[
                 {

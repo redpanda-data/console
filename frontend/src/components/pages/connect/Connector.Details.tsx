@@ -304,6 +304,7 @@ const ConfigOverviewTab = observer((p: {
                         pageSize: 10,
                         pageIndex: 0
                     }}
+                    sorting
                     columns={[
                         {
                             header: 'Task',

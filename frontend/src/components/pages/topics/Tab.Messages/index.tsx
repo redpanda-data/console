@@ -1325,6 +1325,8 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
     return <div className="messageHeaders">
         <div>
             <DataTable<{ key: string, value: Payload }>
+                pagination
+                sorting
                 data={props.msg.headers}
                 columns={[
                     {
