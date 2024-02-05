@@ -82,7 +82,7 @@ func spawnTransform(cfg config.Server, name, inputTopic string, outputTopics []s
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:%d/api/transforms/%s", cfg.HTTPListenAddress, cfg.HTTPListenPort, name), body)
+	req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:%d/v1alpha1/transforms", cfg.HTTPListenAddress, cfg.HTTPListenPort), body)
 	if err != nil {
 		return err
 	}
