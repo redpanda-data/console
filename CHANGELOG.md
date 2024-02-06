@@ -3,7 +3,7 @@
 ## v2.4.2 / 2024-02-06
 
 - [FIX] Fix pagination issue in frontend.
-- [FIX] Fix regex filtering issue in ACL screen in frontend.
+- [FIX] Fix regex filtering issue in ACL screen in frontend [#1080](https://github.com/redpanda-data/console/issues/1080).
 - [FIX] Fix inconsistent filtering issue with list messages API when using pushdown filters [#1073](https://github.com/redpanda-data/console/issues/1073).
 - [IMPROVEMENT] Optimize schema registry protobuf refresh to reduce memory usage [#1040](https://github.com/redpanda-data/console/pull/1040).
 
