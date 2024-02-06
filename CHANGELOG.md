@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.2 / 2024-02-06
+
+- [FIX] Fix pagination issue in frontend.
+- [FIX] Fix regex filtering issue in ACL screen in frontend.
+- [FIX] Fix inconsistent filtering issue with list messages API when using pushdown filters [#1073](https://github.com/redpanda-data/console/issues/1073).
+- [IMPROVEMENT] Optimize schema registry protobuf refresh to reduce memory usage [#1040](https://github.com/redpanda-data/console/pull/1040).
+
 ## v2.4.1 / 2024-02-02
 
 - [FIX] Fix bug in schema registry URL paths for subject names that used escaping characters (i.e. %2F)
