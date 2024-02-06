@@ -50,7 +50,7 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
-	preFilter, err := transformsConversion(transforms)
+	preFilter, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 		)
 	}
 
-	tfs, err := transformsConversion(transforms)
+	tfs, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 		)
 	}
 
-	tfs, err := transformsConversion(transforms)
+	tfs, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
 		return nil, err
 	}
