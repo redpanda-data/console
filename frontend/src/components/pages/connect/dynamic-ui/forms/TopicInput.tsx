@@ -42,13 +42,8 @@ export const TopicInput = observer((p: { properties: Property[], connectorType: 
                 if (!allTopics) return [];
 
                 if (this.isRegex) {
-                    try {
-                        const regex = new RegExp(String(this.property.value));
-                        return allTopics.filter(t => regex.test(t));
-                    } catch (e) {
-                        console.warn('Invalid expression')
-                    }
-                    return allTopics
+                    const regex = new RegExp(String(this.property.value));
+                    return allTopics.filter(t => regex.test(t));
                 } else {
                     const validTopics = String(this.property.value).split(',');
                     return allTopics.filter(t => validTopics.includes(t));

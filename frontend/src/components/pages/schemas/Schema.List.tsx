@@ -110,7 +110,7 @@ class SchemaList extends PageComponent<{}> {
         let filteredSubjects = api.schemaSubjects
 
         try {
-            const quickSearchRegExp = new RegExp(uiSettings.schemaList.quickSearch, 'i')
+            const quickSearchRegExp = new RegExp(uiSettings.schemaList.quickSearch, 'i');
             filteredSubjects = filteredSubjects.filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
                 .filter(x => x.name.toLowerCase().match(quickSearchRegExp));
         } catch (e) {
