@@ -14,6 +14,7 @@ import (
 
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
+	"connectrpc.com/otelconnect"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
@@ -22,6 +23,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -45,11 +47,22 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 	}
 
-	// Base baseInterceptors configured in OSS.
+	// Base baseInterceptors configured in OSS. The exposed metrics are pretty verbose,
+	// but as of today we don't have a way to modify what is being exposed.
+	meterProvider := metric.NewMeterProvider(metric.WithReader(api.promExporter))
+	otelInterceptor, err := otelconnect.NewInterceptor(
+		otelconnect.WithMeterProvider(meterProvider),
+		otelconnect.WithoutServerPeerAttributes(),
+		otelconnect.WithoutTracing(),
+	)
+	if err != nil {
+		api.Logger.Fatal("failed to create open telemetry interceptor", zap.Error(err))
+	}
 	baseInterceptors := []connect.Interceptor{
 		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log"), api.Hooks.Console.AdditionalLogFields),
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
 		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
+		otelInterceptor,
 	}
 
 	// Setup gRPC-Gateway
