@@ -25,6 +25,8 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -56,6 +58,9 @@ type API struct {
 
 	// Hooks to add additional functionality from the outside at different places
 	Hooks *Hooks
+
+	// promExporter is used to report OpenTelemetry metrics via Prometheus scrape HTTP endpoint.
+	promExporter *otelprometheus.Exporter
 
 	// internal server intance
 	server *rest.Server
@@ -94,6 +99,11 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
 	}
 
+	promExporter, err := otelprometheus.New()
+	if err != nil {
+		logger.Fatal("failed to create prometheus exporter for open telemetry", zap.Error(err))
+	}
+
 	a := &API{
 		Cfg:               cfg,
 		Logger:            logger,
@@ -107,6 +117,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 			Type:      redpanda.LicenseTypeOpenSource,
 			ExpiresAt: math.MaxInt32,
 		},
+		promExporter: promExporter,
 	}
 	for _, opt := range opts {
 		opt(a)
