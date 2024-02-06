@@ -33,3 +33,17 @@ func findTransformByName(transforms []*v1alpha1.TransformMetadata, name string) 
 			commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
 		))
 }
+
+func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {
+	for _, transform := range transforms {
+		if transform.Name == name {
+			return transform, nil
+		}
+	}
+	return nil, apierrors.NewConnectError(
+		connect.CodeNotFound,
+		fmt.Errorf("the requested transform does not exist"),
+		apierrors.NewErrorInfo(
+			commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
+		))
+}

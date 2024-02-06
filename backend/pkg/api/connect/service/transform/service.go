@@ -99,7 +99,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 		return nil, err
 	}
 
-	transform, err := findTransformByName(tfs, c.Msg.Name)
+	transform, err := findExactTransformByName(tfs, c.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 		return nil, err
 	}
 
-	transform, err := findTransformByName(tfs, c.Msg.Name)
+	transform, err := findExactTransformByName(tfs, c.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
