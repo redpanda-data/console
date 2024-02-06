@@ -33,9 +33,14 @@ export class AdminUsers extends Component<{}> {
     render() {
         if (!api.adminInfo) return DefaultSkeleton;
 
-        const quickSearchRegExp = new RegExp(this.quickSearch, 'i')
+        let users = api.adminInfo.users
 
-        const users = this.quickSearch.length > 0 ? api.adminInfo.users.filter(u => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)) : api.adminInfo.users;
+        try {
+            const quickSearchRegExp = new RegExp(this.quickSearch, 'i')
+            users = users.filter(u => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp))
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
 
         const table = (
             <DataTable<UserDetails>

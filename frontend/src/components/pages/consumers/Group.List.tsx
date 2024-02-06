@@ -68,13 +68,19 @@ class GroupList extends PageComponent {
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
 
-        const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i')
+        let groups = Array.from(api.consumerGroups.values())
 
-        const groups = Array.from(api.consumerGroups.values())
-            .filter(groupDescription =>
-                groupDescription.groupId.match(quickSearchRegExp) ||
-                groupDescription.protocol.match(quickSearchRegExp)
-            );
+        try {
+            const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i')
+            groups = groups
+                .filter(groupDescription =>
+                    groupDescription.groupId.match(quickSearchRegExp) ||
+                    groupDescription.protocol.match(quickSearchRegExp)
+                );
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
+
         const stateGroups = groups.groupInto(g => g.state);
 
         return (
