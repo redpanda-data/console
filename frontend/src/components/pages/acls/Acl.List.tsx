@@ -86,11 +86,16 @@ class AclList extends PageComponent {
             </Alert>
             : null;
 
-        const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
 
-        const groups = this.principalGroups.filter(
-            aclGroup => aclGroup.principalName.match(quickSearchRegExp)
-        );
+        let groups = this.principalGroups
+        try {
+            const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
+            groups = groups.filter(
+                aclGroup => aclGroup.principalName.match(quickSearchRegExp)
+            );
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
 
         return <>
             <AlertDeleteFailed aclFailed={this.aclFailed} onClose={() => {
