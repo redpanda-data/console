@@ -333,6 +333,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+        const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
+        const customStartOffsetValid = !isNaN(Number(customStartOffsetValue));
 
         const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
 
@@ -369,10 +371,28 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <Flex gap={3}>
                             <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
                                 searchParams.offsetOrigin = e;
-                                if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
+                                if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
+                                    if (searchParams.startOffset < 0)
+                                        searchParams.startOffset = 0;
+                                }
+                                else {
                                     searchParams.startOffset = searchParams.offsetOrigin;
+                                }
                             }} options={startOffsetOptions} />
-                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && <Input style={{ width: '7.5em' }} maxLength={20} value={searchParams.startOffset} onChange={e => (searchParams.startOffset = +e.target.value)} isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />}
+                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
+                                <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
+                                    <Input style={{ width: '7.5em' }}
+                                        maxLength={20}
+                                        isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
+                                        value={customStartOffsetValue}
+                                        onChange={e => {
+                                            setCustomStartOffsetValue(e.target.value);
+                                            if (!isNaN(Number(e.target.value)))
+                                                searchParams.startOffset = Number(e.target.value);
+                                        }}
+                                    />
+                                </Tooltip>
+                            }
                             {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
                         </Flex>
                     </Label>
