@@ -39,8 +39,8 @@ func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*ad
 	return nil, fmt.Errorf("transform not found")
 }
 
-func spawnTopic(ctx context.Context, k *kadm.Client, topic string, partitionCount, replicationFactor int) error {
-	_, err := k.CreateTopic(ctx, int32(partitionCount), int16(replicationFactor), map[string]*string{}, topic)
+func spawnTopic(ctx context.Context, k *kadm.Client, topic string, partitionCount int) error {
+	_, err := k.CreateTopic(ctx, int32(partitionCount), int16(1), map[string]*string{}, topic)
 	return err
 }
 
@@ -77,8 +77,8 @@ func (s *APISuite) TestDeployTransform() {
 	outputTopicName := "wasm-tfm-create-test-o"
 
 	// Create input and output topics
-	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
-	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
+	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 	defer func() {
 		// Clean up: delete transform and topics
@@ -141,8 +141,8 @@ func (s *APISuite) TestGetTransform() {
 
 	t.Run("create transform with valid request", func(t *testing.T) {
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 		r, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfName,
@@ -185,8 +185,8 @@ func (s *APISuite) TestListTransforms() {
 
 	t.Run("list transforms with valid request", func(t *testing.T) {
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 		r1, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfNameOne,
@@ -257,8 +257,8 @@ func (s *APISuite) TestNilFilterListTransform() {
 
 	t.Run("list transforms with valid request", func(t *testing.T) {
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 		r1, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfNameOne,
@@ -328,8 +328,8 @@ func (s *APISuite) TestDeleteTransforms() {
 			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
 			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
 		}()
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
-		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 		resp, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfName,
 			InputTopic:   inputTopicName,
