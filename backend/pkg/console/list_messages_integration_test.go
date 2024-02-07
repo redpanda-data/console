@@ -621,8 +621,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
-		code := `let keyStr = String.fromCharCode.apply(null, key)
-				return keyStr.endsWith('2') || keyStr.endsWith('3')`
+		code := `return key.endsWith('2') || key.endsWith('3')`
 
 		input := ListMessageRequest{
 			TopicName:             testTopicName,
