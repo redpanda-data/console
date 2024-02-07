@@ -14,6 +14,8 @@ import (
 	"context"
 	"errors"
 
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
+
 	"connectrpc.com/connect"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -52,10 +54,14 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 	}
 	preFilter, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+		)
 	}
 
-	if c.Msg.GetFilter().GetName() == "" {
+	if c.Msg.GetFilter() == nil || c.Msg.GetFilter().GetName() == "" {
 		return &connect.Response[v1alpha1.ListTransformsResponse]{
 			Msg: &v1alpha1.ListTransformsResponse{
 				Transforms: preFilter,
@@ -65,7 +71,12 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 
 	transform, err := findTransformByName(preFilter, c.Msg.GetFilter().GetName())
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(
+				commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
+			))
 	}
 	return &connect.Response[v1alpha1.ListTransformsResponse]{
 		Msg: &v1alpha1.ListTransformsResponse{
@@ -96,12 +107,20 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 
 	tfs, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+		)
 	}
 
 	transform, err := findExactTransformByName(tfs, c.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
+		)
 	}
 	return &connect.Response[v1alpha1.GetTransformResponse]{
 		Msg: &v1alpha1.GetTransformResponse{
@@ -132,12 +151,20 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 
 	tfs, err := adminMetadataToProtoMetadata(transforms)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+		)
 	}
 
 	transform, err := findExactTransformByName(tfs, c.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
+		)
 	}
 
 	if err := s.redpandaSvc.DeleteWasmTransform(ctx, transform.Name); err != nil {

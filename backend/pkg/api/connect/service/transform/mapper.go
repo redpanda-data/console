@@ -12,11 +12,8 @@ package transform
 import (
 	"fmt"
 
-	"connectrpc.com/connect"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
@@ -43,12 +40,7 @@ func adminMetadataToProtoMetadata(transforms []adminapi.TransformMetadata) ([]*v
 	for _, transform := range transforms {
 		stat, err := adminStatusToProtoStatus(transform)
 		if err != nil {
-			return nil, apierrors.NewConnectError(
-				connect.CodeNotFound,
-				fmt.Errorf("the requested transform does not exist"),
-				apierrors.NewErrorInfo(
-					commonv1alpha1.Reason_REASON_SERVER_ERROR.String(),
-				))
+			return nil, fmt.Errorf("unable to convert transform status: %w", err)
 		}
 		apiTransforms = append(apiTransforms, &v1alpha1.TransformMetadata{
 			Name:             transform.Name,
@@ -65,11 +57,7 @@ func adminStatusToProtoStatus(transform adminapi.TransformMetadata) ([]*v1alpha1
 	for _, ts := range transform.Status {
 		st, err := statusToPartitionTransformStatus_PartitionStatus(ts.Status)
 		if err != nil {
-			return nil, apierrors.NewConnectError(
-				connect.CodeInternal,
-				err,
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-			)
+			return nil, err
 		}
 		pts = append(pts, &v1alpha1.PartitionTransformStatus{
 			NodeId:    int32(ts.NodeID),

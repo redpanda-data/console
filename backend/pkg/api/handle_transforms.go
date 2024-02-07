@@ -47,21 +47,6 @@ func (api *API) handleDeployTransform() http.HandlerFunc {
 		Transform *adminapi.TransformMetadata `json:"transform"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		canList, restErr := api.Hooks.Authorization.CanDeployTransform(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canList {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to list wasm transforms"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to list wasm transforms",
-				IsSilent: false,
-			})
-			return
-		}
-
 		if !api.Cfg.Redpanda.AdminAPI.Enabled {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      fmt.Errorf("you must enable the admin api to manage wasm transforms"),

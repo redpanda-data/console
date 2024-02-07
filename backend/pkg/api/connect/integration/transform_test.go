@@ -196,7 +196,7 @@ func (s *APISuite) TestListTransforms() {
 	require := rqr.New(t)
 	assert := asrt.New(t)
 
-	t.Run("list transforms with valid request (connect-go)", func(t *testing.T) {
+	t.Run("list transforms with valid request", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
 		defer cancel()
 
@@ -256,13 +256,75 @@ func (s *APISuite) TestListTransforms() {
 	})
 }
 
+func (s *APISuite) TestNilFilterListTransform() {
+	t := s.T()
+
+	require := rqr.New(t)
+	assert := asrt.New(t)
+
+	t.Run("list transforms with valid request", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
+		defer cancel()
+
+		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
+		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-nf-list-test-a"))
+		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-nf-list-test-b"))
+
+		r1, err := spawnTransform(s.api.Cfg.REST, "test-nf-1", "wasm-nf-list-test-a", []string{"wasm-nf-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		require.NoError(err)
+		assert.Equal("test-nf-1", r1.Name)
+		assert.Equal("wasm-nf-list-test-a", r1.InputTopic)
+		assert.Equal([]string{"wasm-nf-list-test-b"}, r1.OutputTopics)
+
+		r2, err := spawnTransform(s.api.Cfg.REST, "test-nf-2", "wasm-nf-list-test-a", []string{"wasm-nf-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		require.NoError(err)
+		assert.Equal("test-nf-2", r2.Name)
+		assert.Equal("wasm-nf-list-test-a", r2.InputTopic)
+		assert.Equal([]string{"wasm-nf-list-test-b"}, r2.OutputTopics)
+
+		defer func() {
+			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
+				Name: "test-nf-1",
+			}))
+			require.NoError(err)
+			_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
+				Name: "test-nf-2",
+			}))
+			require.NoError(err)
+			require.NoError(despawnTopic(ctx, topicClient, "wasm-nf-list-test-a"))
+			require.NoError(despawnTopic(ctx, topicClient, "wasm-nf-list-test-b"))
+		}()
+
+		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
+		assert.NoError(err)
+
+		for _, transform := range transforms.Msg.Transforms {
+			assert.Condition(func() bool {
+				return transform.Name == "test-nf-1" || transform.Name == "test-nf-2"
+			}, "transform name should be test-nf-1 or test-nf-2")
+			assert.Equal("wasm-nf-list-test-a", transform.InputTopicName)
+			assert.Condition(func() bool {
+				for _, topic := range transform.OutputTopicNames {
+					if topic == "wasm-nf-list-test-b" {
+						return true
+					}
+				}
+				return false
+			}, "transform output topic should be wasm-nf-list-test-b")
+		}
+		_, err = transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
+		assert.NoError(err)
+	})
+}
+
 func (s *APISuite) TestDeleteTransforms() {
 	t := s.T()
 
 	require := rqr.New(t)
 	assert := asrt.New(t)
 
-	t.Run("delete transform with valid request (connect-go)", func(t *testing.T) {
+	t.Run("delete transform with valid request", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
 		defer cancel()
 

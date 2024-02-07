@@ -13,10 +13,6 @@ import (
 	"fmt"
 	"strings"
 
-	"connectrpc.com/connect"
-
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
@@ -26,12 +22,7 @@ func findTransformByName(transforms []*v1alpha1.TransformMetadata, name string) 
 			return transform, nil
 		}
 	}
-	return nil, apierrors.NewConnectError(
-		connect.CodeNotFound,
-		fmt.Errorf("the requested transform does not exist"),
-		apierrors.NewErrorInfo(
-			commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
-		))
+	return nil, fmt.Errorf("the requested transform does not exist %s", name)
 }
 
 func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {
@@ -40,10 +31,5 @@ func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name str
 			return transform, nil
 		}
 	}
-	return nil, apierrors.NewConnectError(
-		connect.CodeNotFound,
-		fmt.Errorf("the requested transform does not exist"),
-		apierrors.NewErrorInfo(
-			commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
-		))
+	return nil, fmt.Errorf("the requested transform does not exist %s", name)
 }
