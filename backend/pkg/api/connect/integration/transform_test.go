@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"testing"
@@ -18,7 +17,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 
 	"github.com/redpanda-data/console/backend/pkg/api"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
@@ -32,161 +30,144 @@ type response struct {
 	Transform *adminapi.TransformMetadata `json:"transform"`
 }
 
-func despawnTopic(ctx context.Context, client v1alpha1connect.TopicServiceClient, topic string) error {
-	_, err := client.DeleteTopic(ctx, connect.NewRequest(&v1alpha1.DeleteTopicRequest{
-		Name: topic,
-	}))
-	return err
-}
-
-func spawnTopic(ctx context.Context, partitionCount int32, client v1alpha1connect.TopicServiceClient, topic string) error {
-	_, err := client.CreateTopic(ctx, connect.NewRequest(&v1alpha1.CreateTopicRequest{
-		Topic: &v1alpha1.CreateTopicRequest_Topic{
-			Name:           topic,
-			PartitionCount: &partitionCount,
-			Configs: []*v1alpha1.CreateTopicRequest_Topic_Config{
-				{
-					Name:  "cleanup.policy",
-					Value: kadm.StringPtr("compact"),
-				},
-			},
-		},
-	}))
-	return err
-}
-
-func spawnTransform(cfg config.Server, name, inputTopic string, outputTopics []string, env []adminapi.EnvironmentVariable, wasm []byte) (*adminapi.TransformMetadata, error) {
-	metadataOut := api.TransformMetadata{
-		Name:         name,
-		InputTopic:   inputTopic,
-		OutputTopics: outputTopics,
-		Environment:  env,
-	}
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	metadataPart, err := writer.CreateFormField("metadata")
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.NewEncoder(metadataPart).Encode(metadataOut); err != nil {
-		return nil, err
-	}
-
-	wasmPart, err := writer.CreateFormFile("wasm_binary", "transform.wasm")
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := wasmPart.Write(wasm); err != nil {
-		return nil, err
-	}
-
-	if err := writer.Close(); err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(context.Background(), "PUT", fmt.Sprintf("http://%s:%d/v1alpha1/transforms", cfg.HTTPListenAddress, cfg.HTTPListenPort), body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close() // It's important to close the response body when you're done with it
-
-	if resp.StatusCode != http.StatusCreated {
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil { // If there's an error reading the body, report the status code at least
-			return nil, fmt.Errorf("unexpected status code: %d, error reading response body: %v", resp.StatusCode, err)
+func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
+	for _, t := range ts {
+		if t.Name == name {
+			return &t, nil
 		}
-		return nil, fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(bodyBytes))
 	}
-
-	var metaResp response
-	if err := json.NewDecoder(resp.Body).Decode(&metaResp); err != nil {
-		return nil, err
-	}
-
-	return metaResp.Transform, nil
+	return nil, fmt.Errorf("transform not found")
 }
 
+func spawnTopic(ctx context.Context, k *kadm.Client, topic string, partitionCount, replicationFactor int) error {
+	_, err := k.CreateTopic(ctx, int32(partitionCount), int16(replicationFactor), map[string]*string{}, topic)
+	return err
+}
+
+func despawnTopic(ctx context.Context, k *kadm.Client, topic string) error {
+	_, err := k.DeleteTopics(ctx, topic)
+	return err
+}
+
+func spawnTransform(ctx context.Context, svc *adminapi.AdminAPI, meta adminapi.TransformMetadata, b []byte) (*adminapi.TransformMetadata, error) {
+	if err := svc.DeployWasmTransform(ctx, meta, bytes.NewReader(b)); err != nil {
+		return nil, err
+	}
+	transforms, err := svc.ListWasmTransforms(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return findExactTransformByName(transforms, meta.Name)
+}
+
+func despawnTransform(ctx context.Context, svc *adminapi.AdminAPI, name string) error {
+	return svc.DeleteWasmTransform(ctx, name)
+}
+
+// DirectDeployAndTestTransform encapsulates the logic for creating a transform and asserting its successful creation.
 func (s *APISuite) TestDeployTransform() {
 	t := s.T()
-
 	require := rqr.New(t)
 	assert := asrt.New(t)
 
-	t.Run("create transform with valid request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // Adjust timeout as necessary
+	defer cancel()
+	tfName := "test-transform"
+	inputTopicName := "wasm-tfm-create-test-i"
+	outputTopicName := "wasm-tfm-create-test-o"
 
-		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-i"))
-		require.NoError(spawnTopic(ctx, 3, topicClient, "wasm-tfm-create-test-o"))
+	// Create input and output topics
+	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
+	require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
 
-		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		defer func() {
-			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-transform",
-			}))
-			require.NoError(err)
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-i"))
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-o"))
-		}()
-		resp, stErr := spawnTransform(s.api.Cfg.REST, "test-transform",
-			"wasm-tfm-create-test-i",
-			[]string{"wasm-tfm-create-test-o"},
-			[]adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
-			technicallyATransform)
+	defer func() {
+		// Clean up: delete transform and topics
+		require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfName))
+		require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
+		require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
+	}()
 
-		assert.NoError(stErr, fmt.Sprintf("error: %v", stErr))
-		assert.Equal("test-transform", resp.Name)
-		assert.Equal("wasm-tfm-create-test-i", resp.InputTopic)
-		assert.Equal([]string{"wasm-tfm-create-test-o"}, resp.OutputTopics)
-	})
+	// Prepare the multipart request with transform metadata and wasm binary
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	metadataOut := api.TransformMetadata{
+		Name:         tfName,
+		InputTopic:   inputTopicName,
+		OutputTopics: []string{outputTopicName},
+		Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+	}
+
+	metadataPart, err := writer.CreateFormField("metadata")
+	require.NoError(err)
+	require.NoError(json.NewEncoder(metadataPart).Encode(metadataOut))
+
+	wasmPart, err := writer.CreateFormFile("wasm_binary", "transform.wasm")
+	require.NoError(err)
+
+	_, err = wasmPart.Write(technicallyATransform)
+	require.NoError(err)
+
+	require.NoError(writer.Close())
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", fmt.Sprintf("http://%s:%d/v1alpha1/transforms", s.api.Cfg.REST.HTTPListenAddress, s.api.Cfg.REST.HTTPListenPort), body)
+	require.NoError(err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(err)
+	defer resp.Body.Close()
+
+	require.Equal(http.StatusCreated, resp.StatusCode, "Expected HTTP status code 201 for successful transform creation")
+
+	var metaResp response
+	require.NoError(json.NewDecoder(resp.Body).Decode(&metaResp))
+
+	// Assertions to verify the transform has been created correctly
+	assert.Equal(tfName, metaResp.Transform.Name)
+	assert.Equal(inputTopicName, metaResp.Transform.InputTopic)
+	assert.Equal([]string{outputTopicName}, metaResp.Transform.OutputTopics)
 }
 
 func (s *APISuite) TestGetTransform() {
 	t := s.T()
 	assert := asrt.New(t)
 	require := rqr.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
+	defer cancel()
+	tfName := "test-get-tf"
+	inputTopicName := "wasm-tfm-create-test-c"
+	outputTopicName := "wasm-tfm-create-test-d"
 
 	t.Run("create transform with valid request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
-		defer cancel()
-
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, 3, topicClient, "wasm-tfm-create-test-c"))
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-create-test-d"))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
 
-		r, err := spawnTransform(s.api.Cfg.REST, "test-transform-get", "wasm-tfm-create-test-c", []string{"wasm-tfm-create-test-d"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		r, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfName,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("test-transform-get", r.Name)
-		assert.Equal("wasm-tfm-create-test-c", r.InputTopic)
-		assert.Equal([]string{"wasm-tfm-create-test-d"}, r.OutputTopics)
+		assert.Equal(tfName, r.Name)
+		assert.Equal(inputTopicName, r.InputTopic)
+		assert.Equal([]string{outputTopicName}, r.OutputTopics)
 
 		defer func() {
-			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-transform-get",
-			}))
-			require.NoError(err)
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-c"))
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-create-test-d"))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
 		}()
 		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha1.GetTransformRequest{
-			Name: "test-transform-get",
+			Name: tfName,
 		}))
 		assert.NoError(err)
 
-		assert.Equal("test-transform-get", msg.Msg.Transform.Name)
-		assert.Equal("wasm-tfm-create-test-c", msg.Msg.Transform.InputTopicName)
-		assert.Equal([]string{"wasm-tfm-create-test-d"}, msg.Msg.Transform.OutputTopicNames)
+		assert.Equal(tfName, msg.Msg.Transform.Name)
+		assert.Equal(inputTopicName, msg.Msg.Transform.InputTopicName)
+		assert.Equal([]string{outputTopicName}, msg.Msg.Transform.OutputTopicNames)
 	})
 }
 
@@ -195,61 +176,67 @@ func (s *APISuite) TestListTransforms() {
 
 	require := rqr.New(t)
 	assert := asrt.New(t)
+	tfNameOne := "test-lt-tf"
+	tfNameTwo := "test-lt-tf-2"
+	inputTopicName := "wasm-tfm-lt-test-c"
+	outputTopicName := "wasm-tfm-lt-test-d"
+	ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
+	defer cancel()
 
 	t.Run("list transforms with valid request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
-		defer cancel()
-
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-a"))
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-list-test-b"))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
 
-		r1, err := spawnTransform(s.api.Cfg.REST, "test-transform1", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		r1, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfNameOne,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("test-transform1", r1.Name)
-		assert.Equal("wasm-tfm-list-test-a", r1.InputTopic)
-		assert.Equal([]string{"wasm-tfm-list-test-b"}, r1.OutputTopics)
+		assert.Equal(tfNameOne, r1.Name)
+		assert.Equal(inputTopicName, r1.InputTopic)
+		assert.Equal([]string{outputTopicName}, r1.OutputTopics)
 
-		r2, err := spawnTransform(s.api.Cfg.REST, "test-transform2", "wasm-tfm-list-test-a", []string{"wasm-tfm-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		r2, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfNameTwo,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("test-transform2", r2.Name)
-		assert.Equal("wasm-tfm-list-test-a", r2.InputTopic)
-		assert.Equal([]string{"wasm-tfm-list-test-b"}, r2.OutputTopics)
+		assert.Equal(tfNameTwo, r2.Name)
+		assert.Equal(inputTopicName, r2.InputTopic)
+		assert.Equal([]string{outputTopicName}, r2.OutputTopics)
 
 		defer func() {
-			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-transform1",
-			}))
-			require.NoError(err)
-			_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-transform2",
-			}))
-			require.NoError(err)
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-list-test-a"))
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-list-test-b"))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfNameOne))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfNameTwo))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
 		}()
 
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
 			Filter: &v1alpha1.ListTransformsRequest_Filter{
-				Name: "test-transform1",
+				Name: tfNameOne,
 			},
 		}))
 		assert.NoError(err)
 
 		for _, transform := range transforms.Msg.Transforms {
 			assert.Condition(func() bool {
-				return transform.Name == "test-transform1" || transform.Name == "test-transform2"
-			}, "transform name should be test-transform1 or test-transform2")
-			assert.Equal("wasm-tfm-list-test-a", transform.InputTopicName)
+				return transform.Name == tfNameOne || transform.Name == tfNameTwo
+			}, fmt.Sprintf("transform name should be %s or %s", tfNameOne, tfNameTwo))
+			assert.Equal(inputTopicName, transform.InputTopicName)
 			assert.Condition(func() bool {
 				for _, topic := range transform.OutputTopicNames {
-					if topic == "wasm-tfm-list-test-b" {
+					if topic == outputTopicName {
 						return true
 					}
 				}
 				return false
-			}, "transform output topic should be wasm-tfm-list-test-b")
+			}, fmt.Sprintf("transform output topic should be %s", outputTopicName))
 		}
 		_, err = transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
 		assert.NoError(err)
@@ -261,39 +248,45 @@ func (s *APISuite) TestNilFilterListTransform() {
 
 	require := rqr.New(t)
 	assert := asrt.New(t)
+	tfNameOne := "test-nf-tf"
+	tfNameTwo := "test-nf-tf-2"
+	inputTopicName := "wasm-tfm-nf-test-c"
+	outputTopicName := "wasm-tfm-nf-test-d"
+	ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
+	defer cancel()
 
 	t.Run("list transforms with valid request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
-		defer cancel()
-
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-nf-list-test-a"))
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-nf-list-test-b"))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
 
-		r1, err := spawnTransform(s.api.Cfg.REST, "test-nf-1", "wasm-nf-list-test-a", []string{"wasm-nf-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		r1, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfNameOne,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("test-nf-1", r1.Name)
-		assert.Equal("wasm-nf-list-test-a", r1.InputTopic)
-		assert.Equal([]string{"wasm-nf-list-test-b"}, r1.OutputTopics)
+		assert.Equal(tfNameOne, r1.Name)
+		assert.Equal(inputTopicName, r1.InputTopic)
+		assert.Equal([]string{outputTopicName}, r1.OutputTopics)
 
-		r2, err := spawnTransform(s.api.Cfg.REST, "test-nf-2", "wasm-nf-list-test-a", []string{"wasm-nf-list-test-b"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		r2, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfNameTwo,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("test-nf-2", r2.Name)
-		assert.Equal("wasm-nf-list-test-a", r2.InputTopic)
-		assert.Equal([]string{"wasm-nf-list-test-b"}, r2.OutputTopics)
+		assert.Equal(tfNameTwo, r2.Name)
+		assert.Equal(inputTopicName, r2.InputTopic)
+		assert.Equal([]string{outputTopicName}, r2.OutputTopics)
 
 		defer func() {
-			_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-nf-1",
-			}))
-			require.NoError(err)
-			_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-				Name: "test-nf-2",
-			}))
-			require.NoError(err)
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-nf-list-test-a"))
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-nf-list-test-b"))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfNameOne))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfNameTwo))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
 		}()
 
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
@@ -301,17 +294,17 @@ func (s *APISuite) TestNilFilterListTransform() {
 
 		for _, transform := range transforms.Msg.Transforms {
 			assert.Condition(func() bool {
-				return transform.Name == "test-nf-1" || transform.Name == "test-nf-2"
-			}, "transform name should be test-nf-1 or test-nf-2")
-			assert.Equal("wasm-nf-list-test-a", transform.InputTopicName)
+				return transform.Name == tfNameOne || transform.Name == tfNameTwo
+			}, fmt.Sprintf("transform name should be %s or %s", tfNameOne, tfNameTwo))
+			assert.Equal(inputTopicName, transform.InputTopicName)
 			assert.Condition(func() bool {
 				for _, topic := range transform.OutputTopicNames {
-					if topic == "wasm-nf-list-test-b" {
+					if topic == outputTopicName {
 						return true
 					}
 				}
 				return false
-			}, "transform output topic should be wasm-nf-list-test-b")
+			}, fmt.Sprintf("transform output topic should be %s", outputTopicName))
 		}
 		_, err = transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
 		assert.NoError(err)
@@ -323,32 +316,37 @@ func (s *APISuite) TestDeleteTransforms() {
 
 	require := rqr.New(t)
 	assert := asrt.New(t)
-
+	tfName := "del-test-transform"
+	inputTopicName := "wasm-tfm-delete-test-e"
+	outputTopicName := "wasm-tfm-delete-test-f"
+	ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
+	defer cancel()
 	t.Run("delete transform with valid request", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), transformTimeout)
-		defer cancel()
-
 		transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
-		topicClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 		defer func() {
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-delete-test-e"))
-			require.NoError(despawnTopic(ctx, topicClient, "wasm-tfm-delete-test-f"))
+			require.NoError(despawnTransform(ctx, s.redpandaAdminClient, tfName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, inputTopicName))
+			require.NoError(despawnTopic(ctx, s.kafkaAdminClient, outputTopicName))
 		}()
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-e"))
-		require.NoError(spawnTopic(ctx, 2, topicClient, "wasm-tfm-delete-test-f"))
-		resp, err := spawnTransform(s.api.Cfg.REST, "del-test-transform", "wasm-tfm-delete-test-e", []string{"wasm-tfm-delete-test-f"}, []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}}, technicallyATransform)
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, inputTopicName, 2, 1))
+		require.NoError(spawnTopic(ctx, s.kafkaAdminClient, outputTopicName, 3, 1))
+		resp, err := spawnTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         tfName,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, technicallyATransform)
 		require.NoError(err)
-		assert.Equal("del-test-transform", resp.Name)
-		assert.Equal("wasm-tfm-delete-test-e", resp.InputTopic)
-		assert.Equal([]string{"wasm-tfm-delete-test-f"}, resp.OutputTopics)
+		assert.Equal(tfName, resp.Name)
+		assert.Equal(inputTopicName, resp.InputTopic)
+		assert.Equal([]string{outputTopicName}, resp.OutputTopics)
 
 		_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
-			Name: "del-test-transform",
+			Name: tfName,
 		}))
 		assert.NoError(err)
-
 		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha1.GetTransformRequest{
-			Name: "del-test-transform",
+			Name: tfName,
 		}))
 		assert.Error(err)
 	})
