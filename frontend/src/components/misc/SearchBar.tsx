@@ -86,7 +86,7 @@ class SearchBar<TItem> extends Component<{
             // }
             />
 
-            <this.FilterSummary />
+            {/*<this.FilterSummary />*/}
         </div>;
     }
 
