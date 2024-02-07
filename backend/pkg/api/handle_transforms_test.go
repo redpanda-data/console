@@ -76,11 +76,11 @@ func Test_findTransformByName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := findTransformByName(tt.args.ts, tt.args.name)
-			if !tt.wantErr(t, err, fmt.Sprintf("findTransformByName(%v, %v)", tt.args.ts, tt.args.name)) {
+			got, err := findExactTransformByName(tt.args.ts, tt.args.name)
+			if !tt.wantErr(t, err, fmt.Sprintf("findExactTransformByName(%v, %v)", tt.args.ts, tt.args.name)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "findTransformByName(%v, %v)", tt.args.ts, tt.args.name)
+			assert.Equalf(t, tt.want, got, "findExactTransformByName(%v, %v)", tt.args.ts, tt.args.name)
 		})
 	}
 }

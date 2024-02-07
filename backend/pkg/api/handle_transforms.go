@@ -19,7 +19,7 @@ import (
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 )
 
-func findTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
+func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
 	for _, t := range ts {
 		if t.Name == name {
 			return &t, nil
@@ -153,7 +153,7 @@ func (api *API) handleDeployTransform() http.HandlerFunc {
 			return
 		}
 
-		t, err := findTransformByName(transforms, msg.Name)
+		t, err := findExactTransformByName(transforms, msg.Name)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
