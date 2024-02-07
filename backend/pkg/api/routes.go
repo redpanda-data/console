@@ -47,8 +47,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 	}
 
-	// Base baseInterceptors configured in OSS. The exposed metrics are pretty verbose,
-	// but as of today we don't have a way to modify what is being exposed.
+	// The exposed metrics are pretty verbose (highly cardinal), but as of today we don't
+	// have a way to modify what is being exposed. The buf team has an issue about making
+	// this more flexible: https://github.com/connectrpc/connect-go/issues/665
 	meterProvider := metric.NewMeterProvider(metric.WithReader(api.promExporter))
 	otelInterceptor, err := otelconnect.NewInterceptor(
 		otelconnect.WithMeterProvider(meterProvider),
@@ -58,6 +59,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	if err != nil {
 		api.Logger.Fatal("failed to create open telemetry interceptor", zap.Error(err))
 	}
+
+	// Define interceptors that shall be used in the community version of Console. We may add further
+	// interceptors by calling the hooks.
 	baseInterceptors := []connect.Interceptor{
 		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log"), api.Hooks.Console.AdditionalLogFields),
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
