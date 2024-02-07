@@ -37,7 +37,7 @@ func (TextSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 	if len(trimmed) == 0 {
 		return &RecordPayload{
 			NormalizedPayload:   payload,
-			DeserializedPayload: payload,
+			DeserializedPayload: string(payload),
 			Encoding:            PayloadEncodingText,
 		}, nil
 	}
@@ -53,7 +53,7 @@ func (TextSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 
 	return &RecordPayload{
 		NormalizedPayload:   payload,
-		DeserializedPayload: payload,
+		DeserializedPayload: string(payload),
 		Encoding:            PayloadEncodingText,
 	}, nil
 }

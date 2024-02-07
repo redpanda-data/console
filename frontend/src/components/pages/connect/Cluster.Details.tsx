@@ -20,14 +20,17 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 import { isEmbedded } from '../../../config';
 import { Link } from 'react-router-dom';
-import { Button, DataTable } from '@redpanda-data/ui';
+import { Box, Button, DataTable } from '@redpanda-data/ui';
 import { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/restInterfaces';
+import SearchBar from '../../misc/SearchBar';
+import { uiSettings } from '../../../state/ui';
 
 
 @observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
     @observable placeholder = 5;
+    @observable filteredResults: ClusterConnectorInfo[] = [];
 
     constructor(p: any) {
         super(p);
@@ -51,15 +54,31 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
         api.refreshClusterAdditionalInfo(clusterName, force);
     }
 
+    isFilterMatch(filter: string, item: ClusterConnectorInfo): boolean {
+        return item.name.toLowerCase().includes(filter.toLowerCase());
+    }
+
     render() {
         const clusterName = decodeURIComponent(this.props.clusterName);
 
         if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
 
         const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
-        const connectors = cluster?.connectors;
+        let connectors = cluster?.connectors;
 
         const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
+
+        try {
+            const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i')
+
+            connectors = connectors?.filter(x => {
+                return x.name.match(quickSearchRegExp) || x.class.match(quickSearchRegExp)
+            }) ?? []
+
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
+
 
         return (
             <PageContent>
@@ -72,6 +91,19 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                         <div style={{ display: 'flex', marginBottom: '.5em' }}>
                             <Link to={`/connect-clusters/${clusterName}/create-connector`}><Button variant="solid" colorScheme="brand">Create connector</Button></Link>
                         </div>
+
+                        <Box my={5}>
+                            <SearchBar<ClusterConnectorInfo>
+                                placeholderText="Enter search term/regex"
+                                dataSource={() => connectors ?? []}
+                                isFilterMatch={this.isFilterMatch}
+                                filterText={uiSettings.connectorsList.quickSearch}
+                                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                                onFilteredDataChanged={data => {
+                                    this.filteredResults = data;
+                                }}
+                            />
+                        </Box>
 
                         <DataTable<ClusterConnectorInfo>
                             data={connectors ?? []}

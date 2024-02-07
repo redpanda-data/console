@@ -88,7 +88,7 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		serdeEncoding = opts.ValueEncoding
 	}
 
-	// When deserializing, clients can optionally specify the deseired encoding
+	// When deserializing, clients can optionally specify the desired encoding
 	doSpecificEncoding := serdeEncoding != PayloadEncodingUnspecified && serdeEncoding != ""
 
 	// Try all registered SerDes in the order they were registered
