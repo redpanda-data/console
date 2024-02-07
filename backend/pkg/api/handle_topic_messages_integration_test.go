@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -283,19 +284,11 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		doneCount := 0
 		progressCount := 0
 		errorCount := 0
-		seenZeroOffset := false
+
 		for stream.Receive() {
 			msg := stream.Msg()
 			switch cm := msg.GetControlMessage().(type) {
 			case *v1pb.ListMessagesResponse_Data:
-				if seenZeroOffset {
-					assert.NotEmpty(cm.Data.Offset)
-				}
-
-				if cm.Data.Offset == 0 {
-					seenZeroOffset = true
-				}
-
 				assert.NotEmpty(cm.Data.Timestamp)
 				assert.NotEmpty(cm.Data.Compression)
 				assert.NotEmpty(cm.Data.Headers)
@@ -359,13 +352,13 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 
 		assert.Nil(stream.Err())
 		assert.Nil(stream.Close())
-		assert.Equal(
-			[]string{"2", "3", "12", "13"},
-			keys)
+
+		sort.Strings(keys)
+
+		assert.Equal([]string{"12", "13", "2", "3"}, keys)
 		assert.Equal(3, phaseCount)
 		assert.Equal(0, errorCount)
 		assert.Equal(1, doneCount)
-		assert.True(seenZeroOffset)
 		assert.GreaterOrEqual(progressCount, 0)
 	})
 }

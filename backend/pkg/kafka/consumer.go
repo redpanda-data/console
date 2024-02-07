@@ -121,8 +121,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 
 	wg := sync.WaitGroup{}
 
-	s.Logger.Info("!!! consumeReq.FilterInterpreterCode: " + consumeReq.FilterInterpreterCode)
-
 	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
 	// multiple workers are actually beneficial - for potentially high throughput stream requests.
 	workerCount := 1
