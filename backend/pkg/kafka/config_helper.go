@@ -146,13 +146,17 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 
 		// AWS MSK IAM
 		if cfg.SASL.Mechanism == config.SASLMechanismAWSManagedStreamingIAM {
-			mechanism := aws.Auth{
-				AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
-				SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
-				SessionToken: cfg.SASL.AWSMskIam.SessionToken,
-				UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
-			}.AsManagedStreamingIAMMechanism()
-			opts = append(opts, kgo.SASL(mechanism))
+			if cfg.SASL.AWSMskIam.AccessKey != "" &&
+				cfg.SASL.AWSMskIam.SecretKey != "" &&
+				cfg.SASL.AWSMskIam.SessionToken != "" {
+				mechanism := aws.Auth{
+					AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
+					SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
+					SessionToken: cfg.SASL.AWSMskIam.SessionToken,
+					UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
+				}.AsManagedStreamingIAMMechanism()
+				opts = append(opts, kgo.SASL(mechanism))
+			}
 		}
 	}
 
