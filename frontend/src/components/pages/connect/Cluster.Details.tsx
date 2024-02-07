@@ -69,10 +69,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
         const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
 
         try {
-            const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch.toLowerCase(), 'i')
+            const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i')
 
             connectors = connectors?.filter(x => {
-                return x.name.toLowerCase().match(quickSearchRegExp);
+                return x.name.match(quickSearchRegExp) || x.class.match(quickSearchRegExp)
             }) ?? []
 
         } catch (e) {
