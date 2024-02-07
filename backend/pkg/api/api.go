@@ -99,7 +99,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
 	}
 
-	promExporter, err := otelprometheus.New()
+	promExporter, err := otelprometheus.New(otelprometheus.WithoutScopeInfo(), otelprometheus.WithoutTargetInfo())
 	if err != nil {
 		logger.Fatal("failed to create prometheus exporter for open telemetry", zap.Error(err))
 	}
