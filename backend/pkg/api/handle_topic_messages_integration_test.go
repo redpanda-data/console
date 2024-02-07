@@ -13,6 +13,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,7 +38,7 @@ import (
 	things "github.com/redpanda-data/console/backend/pkg/testutil/testdata/proto/gen/things/v1"
 )
 
-// this is a complex test, no reson to refactor it
+// this is a complex test, no reason to refactor it
 func (s *APIIntegrationTestSuite) TestListMessages() {
 	t := s.T()
 
@@ -255,6 +256,111 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		assert.Nil(stream.Close())
 		assert.Equal(
 			[]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"},
+			keys)
+		assert.Equal(3, phaseCount)
+		assert.Equal(0, errorCount)
+		assert.Equal(1, doneCount)
+		assert.True(seenZeroOffset)
+		assert.GreaterOrEqual(progressCount, 0)
+	})
+
+	t.Run("with filter", func(t *testing.T) {
+		filterCode := base64.StdEncoding.EncodeToString([]byte(
+			`return key.endsWith('2') || key.endsWith('3')`,
+		))
+
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:                 topicName,
+			StartOffset:           -2,
+			PartitionId:           -1,
+			MaxResults:            100,
+			FilterInterpreterCode: filterCode,
+		}))
+		require.NoError(err)
+
+		keys := make([]string, 0, 4)
+		phaseCount := 0
+		doneCount := 0
+		progressCount := 0
+		errorCount := 0
+		seenZeroOffset := false
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch cm := msg.GetControlMessage().(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				if seenZeroOffset {
+					assert.NotEmpty(cm.Data.Offset)
+				}
+
+				if cm.Data.Offset == 0 {
+					seenZeroOffset = true
+				}
+
+				assert.NotEmpty(cm.Data.Timestamp)
+				assert.NotEmpty(cm.Data.Compression)
+				assert.NotEmpty(cm.Data.Headers)
+
+				for _, h := range cm.Data.Headers {
+					h := h
+					assert.NotEmpty(h)
+					assert.NotEmpty(h.Key)
+					assert.NotEmpty(h.Value)
+				}
+
+				key := string(cm.Data.GetKey().GetNormalizedPayload())
+				keys = append(keys, key)
+
+				assert.NotEmpty(cm.Data.GetKey())
+				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
+				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
+				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
+				assert.Empty(cm.Data.GetKey().GetTroubleshootReport())
+
+				assert.NotEmpty(cm.Data.GetValue())
+				assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
+				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
+				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
+				assert.Empty(cm.Data.GetValue().GetTroubleshootReport())
+
+				assert.Equal(fmt.Sprintf(`{"ID":%q}`, key), string(cm.Data.GetValue().GetNormalizedPayload()))
+			case *v1pb.ListMessagesResponse_Done:
+				doneCount++
+
+				assert.NotEmpty(cm.Done.GetBytesConsumed())
+				assert.NotEmpty(cm.Done.GetMessagesConsumed())
+				assert.NotEmpty(cm.Done.GetElapsedMs())
+				assert.False(cm.Done.GetIsCancelled())
+			case *v1pb.ListMessagesResponse_Phase:
+				if phaseCount == 0 {
+					assert.Equal("Get Partitions", cm.Phase.GetPhase())
+				} else if phaseCount == 1 {
+					assert.Equal("Get Watermarks and calculate consuming requests", cm.Phase.GetPhase())
+				} else if phaseCount == 2 {
+					assert.Equal("Consuming messages", cm.Phase.GetPhase())
+				} else {
+					assert.Fail("Unknown phase.")
+				}
+
+				phaseCount++
+			case *v1pb.ListMessagesResponse_Progress:
+				progressCount++
+
+				assert.NotEmpty(cm.Progress)
+				assert.NotEmpty(cm.Progress.GetBytesConsumed())
+				assert.NotEmpty(cm.Progress.GetMessagesConsumed())
+			case *v1pb.ListMessagesResponse_Error:
+				errorCount++
+			}
+		}
+
+		assert.Nil(stream.Err())
+		assert.Nil(stream.Close())
+		assert.Equal(
+			[]string{"2", "3", "12", "13"},
 			keys)
 		assert.Equal(3, phaseCount)
 		assert.Equal(0, errorCount)

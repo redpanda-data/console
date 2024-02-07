@@ -78,6 +78,8 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 		}
 	}
 
+	api.logger.Info("!!! lmq.FilterInterpreterCode: " + lmq.FilterInterpreterCode)
+
 	if len(lmq.FilterInterpreterCode) > 0 {
 		canUseMessageSearchFilters, restErr := api.authHooks.CanUseMessageSearchFilters(ctx, &lmq)
 		if restErr != nil || !canUseMessageSearchFilters {
@@ -95,6 +97,8 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 
 	interpreterCode, _ := lmq.DecodeInterpreterCode() // Error has been checked in validation function
 
+	api.logger.Info("!!! interpreterCode: " + interpreterCode)
+
 	// Request messages from kafka and return them once we got all the messages or the context is done
 	listReq := console.ListMessageRequest{
 		TopicName:             lmq.TopicName,
@@ -105,6 +109,7 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 		FilterInterpreterCode: interpreterCode,
 		Troubleshoot:          req.Msg.GetTroubleshoot(),
 		IncludeRawPayload:     req.Msg.GetIncludeOriginalRawPayload(),
+		IgnoreMaxPayloadLimit: req.Msg.GetIgnoreMaxSizeLimit(),
 		KeyDeserializer:       fromProtoEncoding(req.Msg.GetKeyDeserializer()),
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
 	}

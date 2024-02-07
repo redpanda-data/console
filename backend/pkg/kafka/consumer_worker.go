@@ -59,11 +59,12 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 			ctx,
 			record,
 			serde.DeserializationOptions{
-				MaxPayloadSize: s.Config.Console.MaxDeserializationPayloadSize,
-				Troubleshoot:   consumeReq.Troubleshoot,
-				IncludeRawData: consumeReq.IncludeRawPayload,
-				KeyEncoding:    consumeReq.KeyDeserializer,
-				ValueEncoding:  consumeReq.ValueDeserializer,
+				MaxPayloadSize:        s.Config.Console.MaxDeserializationPayloadSize,
+				Troubleshoot:          consumeReq.Troubleshoot,
+				IncludeRawData:        consumeReq.IncludeRawPayload,
+				IgnoreMaxPayloadLimit: consumeReq.IgnoreMaxPayloadLimit,
+				KeyEncoding:           consumeReq.KeyDeserializer,
+				ValueEncoding:         consumeReq.ValueDeserializer,
 			})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))

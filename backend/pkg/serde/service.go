@@ -120,7 +120,7 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		rp.OriginalPayload = payload
 	}
 
-	if len(payload) > opts.MaxPayloadSize {
+	if !opts.IgnoreMaxPayloadLimit && len(payload) > opts.MaxPayloadSize {
 		rp.IsPayloadTooLarge = true
 		rp.NormalizedPayload = nil
 	}
@@ -160,6 +160,9 @@ type DeserializationOptions struct {
 
 	// IncludeRawData can be enabled to include raw binary data in the returned output.
 	IncludeRawData bool
+
+	// IgnoreMaxPayloadLimit can be used to force returning deserialized payloads even if too large.
+	IgnoreMaxPayloadLimit bool
 }
 
 // SerializeRecord will serialize the input.

@@ -79,6 +79,7 @@ type TopicConsumeRequest struct {
 	FilterInterpreterCode string
 	Troubleshoot          bool
 	IncludeRawPayload     bool
+	IgnoreMaxPayloadLimit bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
 }
@@ -119,6 +120,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	defer cancel(errors.New("worker cancel"))
 
 	wg := sync.WaitGroup{}
+
+	s.Logger.Info("!!! consumeReq.FilterInterpreterCode: " + consumeReq.FilterInterpreterCode)
 
 	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
 	// multiple workers are actually beneficial - for potentially high throughput stream requests.

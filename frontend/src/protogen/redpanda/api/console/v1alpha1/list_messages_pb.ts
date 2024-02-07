@@ -90,6 +90,13 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
    */
   valueDeserializer?: PayloadEncoding;
 
+  /**
+   * Optionally ignore configured maximum payload size limit.
+   *
+   * @generated from field: bool ignore_max_size_limit = 12;
+   */
+  ignoreMaxSizeLimit = false;
+
   constructor(data?: PartialMessage<ListMessagesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -109,6 +116,7 @@ export class ListMessagesRequest extends Message<ListMessagesRequest> {
     { no: 9, name: "include_original_raw_payload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "key_deserializer", kind: "enum", T: proto3.getEnumType(PayloadEncoding), opt: true },
     { no: 11, name: "value_deserializer", kind: "enum", T: proto3.getEnumType(PayloadEncoding), opt: true },
+    { no: 12, name: "ignore_max_size_limit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMessagesRequest {
