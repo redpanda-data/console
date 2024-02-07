@@ -21,11 +21,10 @@ import (
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
+	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-
-	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
