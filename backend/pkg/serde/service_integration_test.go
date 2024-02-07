@@ -239,9 +239,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("payload is not null as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("123", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// check key properties
@@ -377,9 +377,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.Len(dr.Value.Troubleshooting, 0)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("123", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// check key properties
@@ -510,9 +510,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// assert.Equal("incorrect magic byte for protobuf schema", dr.Value.Troubleshooting[1].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("123", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// check key properties
@@ -672,9 +672,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte for avro", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("111", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("111", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
@@ -957,9 +957,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte for avro", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("444", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("444", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
@@ -1147,9 +1147,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("222", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("222", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
@@ -1543,9 +1543,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("gadget_0", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("gadget_0", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
@@ -2065,9 +2065,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("123456789", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("123456789", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
@@ -2456,9 +2456,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// check value
-		valObj, ok := (dr.Value.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("my text value", string(valObj))
+		valObj, ok := (dr.Value.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("my text value", valObj)
 		assert.Empty(dr.Value.SchemaID)
 
 		assert.Equal("my text value", string(dr.Value.NormalizedPayload))
@@ -2544,9 +2544,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check key
-		obj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("text", string(obj))
+		obj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("text", obj)
 
 		assert.Equal("text", string(dr.Key.NormalizedPayload))
 
@@ -2559,9 +2559,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// check value
-		valObj, ok := (dr.Value.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("my text value", string(valObj))
+		valObj, ok := (dr.Value.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("my text value", valObj)
 		assert.Empty(dr.Value.SchemaID)
 
 		assert.Equal("my text value", string(dr.Value.NormalizedPayload))
@@ -2857,9 +2857,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).([]byte)
-		require.Truef(ok, "parsed payload is not of type []byte")
-		assert.Equal("order_0", string(keyObj))
+		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		require.Truef(ok, "parsed payload is not of type string")
+		assert.Equal("order_0", keyObj)
 		assert.Empty(dr.Key.SchemaID)
 
 		// key properties
