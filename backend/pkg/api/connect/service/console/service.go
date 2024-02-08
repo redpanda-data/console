@@ -105,7 +105,7 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 		FilterInterpreterCode: interpreterCode,
 		Troubleshoot:          req.Msg.GetTroubleshoot(),
 		IncludeRawPayload:     req.Msg.GetIncludeOriginalRawPayload(),
-		IgnoreMaxPayloadLimit: req.Msg.GetIgnoreMaxSizeLimit(),
+		IgnoreMaxSizeLimit:    req.Msg.GetIgnoreMaxSizeLimit(),
 		KeyDeserializer:       fromProtoEncoding(req.Msg.GetKeyDeserializer()),
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
 	}

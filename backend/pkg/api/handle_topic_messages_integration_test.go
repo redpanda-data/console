@@ -14,8 +14,10 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -59,9 +61,33 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
 		topicName)
 
+	topicNameBig := testutil.TopicNameForTest("list_messages_big_0")
+	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+		topicNameBig)
+
 	defer func() {
 		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
 	}()
+
+	// produce too big of a message
+	order := testutil.Order{ID: randomString(21000)}
+	serializedOrder, err := json.Marshal(order)
+	require.NoError(err)
+
+	r := &kgo.Record{
+		Key:   []byte("too_big_0"),
+		Value: serializedOrder,
+		Topic: topicNameBig,
+		Headers: []kgo.RecordHeader{
+			{
+				Key:   "revision",
+				Value: []byte("0"),
+			},
+		},
+	}
+	results := s.kafkaClient.ProduceSync(ctx, r)
+	require.NoError(results.FirstErr())
 
 	t.Run("simple happy path", func(t *testing.T) {
 		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
@@ -265,7 +291,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		assert.GreaterOrEqual(progressCount, 0)
 	})
 
-	t.Run("with filter", func(t *testing.T) {
+	t.Run("with key filter", func(t *testing.T) {
 		filterCode := base64.StdEncoding.EncodeToString([]byte(
 			`return key.endsWith('2') || key.endsWith('3')`,
 		))
@@ -359,6 +385,213 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		assert.Equal(3, phaseCount)
 		assert.Equal(0, errorCount)
 		assert.Equal(1, doneCount)
+		assert.GreaterOrEqual(progressCount, 0)
+	})
+
+	t.Run("too big", func(t *testing.T) {
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:       topicNameBig,
+			StartOffset: -1,
+			PartitionId: -1,
+			MaxResults:  5,
+		}))
+		require.NoError(err)
+
+		keys := make([]string, 0, 5)
+		phaseCount := 0
+		doneCount := 0
+		progressCount := 0
+		errorCount := 0
+		seenZeroOffset := false
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch cm := msg.GetControlMessage().(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				if seenZeroOffset {
+					assert.NotEmpty(cm.Data.Offset)
+				}
+
+				if cm.Data.Offset == 0 {
+					seenZeroOffset = true
+				}
+
+				assert.NotEmpty(cm.Data.Timestamp)
+				assert.NotEmpty(cm.Data.Compression)
+				assert.NotEmpty(cm.Data.Headers)
+
+				for _, h := range cm.Data.Headers {
+					h := h
+					assert.NotEmpty(h)
+					assert.NotEmpty(h.Key)
+					assert.NotEmpty(h.Value)
+				}
+
+				key := string(cm.Data.GetKey().GetNormalizedPayload())
+				keys = append(keys, key)
+
+				assert.NotEmpty(cm.Data.GetKey())
+				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
+				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
+				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
+				assert.Empty(cm.Data.GetKey().GetTroubleshootReport())
+
+				assert.NotEmpty(cm.Data.GetValue())
+				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
+				assert.Empty(cm.Data.GetValue().GetTroubleshootReport())
+
+				if key == "too_big_0" {
+					assert.True(cm.Data.GetValue().GetIsPayloadTooLarge())
+					assert.Empty(cm.Data.GetValue().GetNormalizedPayload())
+				} else {
+					assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
+					assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
+				}
+
+			case *v1pb.ListMessagesResponse_Done:
+				doneCount++
+
+				assert.NotEmpty(cm.Done.GetBytesConsumed())
+				assert.NotEmpty(cm.Done.GetMessagesConsumed())
+				assert.NotEmpty(cm.Done.GetElapsedMs())
+				assert.False(cm.Done.GetIsCancelled())
+			case *v1pb.ListMessagesResponse_Phase:
+				if phaseCount == 0 {
+					assert.Equal("Get Partitions", cm.Phase.GetPhase())
+				} else if phaseCount == 1 {
+					assert.Equal("Get Watermarks and calculate consuming requests", cm.Phase.GetPhase())
+				} else if phaseCount == 2 {
+					assert.Equal("Consuming messages", cm.Phase.GetPhase())
+				} else {
+					assert.Fail("Unknown phase.")
+				}
+
+				phaseCount++
+			case *v1pb.ListMessagesResponse_Progress:
+				progressCount++
+
+				assert.NotEmpty(cm.Progress)
+				assert.NotEmpty(cm.Progress.GetBytesConsumed())
+				assert.NotEmpty(cm.Progress.GetMessagesConsumed())
+			case *v1pb.ListMessagesResponse_Error:
+				errorCount++
+			}
+		}
+
+		assert.Nil(stream.Err())
+		assert.Nil(stream.Close())
+		assert.Equal([]string{"16", "17", "18", "19", "too_big_0"}, keys)
+		assert.Equal(3, phaseCount)
+		assert.Equal(0, errorCount)
+		assert.Equal(1, doneCount)
+		assert.False(seenZeroOffset)
+		assert.GreaterOrEqual(progressCount, 0)
+	})
+
+	t.Run("too big with ignore", func(t *testing.T) {
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:              topicNameBig,
+			StartOffset:        -1,
+			PartitionId:        -1,
+			MaxResults:         5,
+			IgnoreMaxSizeLimit: true,
+		}))
+		require.NoError(err)
+
+		keys := make([]string, 0, 5)
+		phaseCount := 0
+		doneCount := 0
+		progressCount := 0
+		errorCount := 0
+		seenZeroOffset := false
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch cm := msg.GetControlMessage().(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				if seenZeroOffset {
+					assert.NotEmpty(cm.Data.Offset)
+				}
+
+				if cm.Data.Offset == 0 {
+					seenZeroOffset = true
+				}
+
+				assert.NotEmpty(cm.Data.Timestamp)
+				assert.NotEmpty(cm.Data.Compression)
+				assert.NotEmpty(cm.Data.Headers)
+
+				for _, h := range cm.Data.Headers {
+					h := h
+					assert.NotEmpty(h)
+					assert.NotEmpty(h.Key)
+					assert.NotEmpty(h.Value)
+				}
+
+				key := string(cm.Data.GetKey().GetNormalizedPayload())
+				keys = append(keys, key)
+
+				assert.NotEmpty(cm.Data.GetKey())
+				assert.NotEmpty(cm.Data.GetKey().GetNormalizedPayload())
+				assert.Empty(cm.Data.GetKey().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetKey().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_TEXT, cm.Data.GetKey().GetEncoding())
+				assert.False(cm.Data.GetKey().GetIsPayloadTooLarge())
+				assert.Empty(cm.Data.GetKey().GetTroubleshootReport())
+
+				assert.NotEmpty(cm.Data.GetValue())
+				assert.Empty(cm.Data.GetValue().GetOriginalPayload())
+				assert.NotEmpty(cm.Data.GetValue().GetPayloadSize())
+				assert.Equal(v1pb.PayloadEncoding_PAYLOAD_ENCODING_JSON, cm.Data.GetValue().GetEncoding())
+				assert.Empty(cm.Data.GetValue().GetTroubleshootReport())
+				assert.False(cm.Data.GetValue().GetIsPayloadTooLarge())
+				assert.NotEmpty(cm.Data.GetValue().GetNormalizedPayload())
+
+				if key == "too_big_0" {
+					// {"ID":"..."}
+					// large string of 21000 chars + 9 extra chars
+					assert.Len(cm.Data.GetValue().GetNormalizedPayload(), 21009)
+				}
+
+			case *v1pb.ListMessagesResponse_Done:
+				doneCount++
+
+				assert.NotEmpty(cm.Done.GetBytesConsumed())
+				assert.NotEmpty(cm.Done.GetMessagesConsumed())
+				assert.NotEmpty(cm.Done.GetElapsedMs())
+				assert.False(cm.Done.GetIsCancelled())
+			case *v1pb.ListMessagesResponse_Phase:
+				if phaseCount == 0 {
+					assert.Equal("Get Partitions", cm.Phase.GetPhase())
+				} else if phaseCount == 1 {
+					assert.Equal("Get Watermarks and calculate consuming requests", cm.Phase.GetPhase())
+				} else if phaseCount == 2 {
+					assert.Equal("Consuming messages", cm.Phase.GetPhase())
+				} else {
+					assert.Fail("Unknown phase.")
+				}
+
+				phaseCount++
+			case *v1pb.ListMessagesResponse_Progress:
+				progressCount++
+
+				assert.NotEmpty(cm.Progress)
+				assert.NotEmpty(cm.Progress.GetBytesConsumed())
+				assert.NotEmpty(cm.Progress.GetMessagesConsumed())
+			case *v1pb.ListMessagesResponse_Error:
+				errorCount++
+			}
+		}
+
+		assert.Nil(stream.Err())
+		assert.Nil(stream.Close())
+		assert.Equal([]string{"16", "17", "18", "19", "too_big_0"}, keys)
+		assert.Equal(3, phaseCount)
+		assert.Equal(0, errorCount)
+		assert.Equal(1, doneCount)
+		assert.False(seenZeroOffset)
 		assert.GreaterOrEqual(progressCount, 0)
 	})
 }
@@ -688,4 +921,14 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Equal("item_sr_0", obj2.Name)
 		assert.Equal(timestamppb.New(objTime), obj2.CreatedAt)
 	})
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randomString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
