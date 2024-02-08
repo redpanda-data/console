@@ -16,6 +16,7 @@ import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../pr
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { base64ToUInt8Array, isValidBase64 } from '../../../utils/utils';
+import { isEmbedded } from '../../../config';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -23,16 +24,16 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    {value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null'},
-    {value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes'},
-    {value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text'},
+    { value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null' },
+    { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
+    { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
 
-    {value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema'},
+    { value: PayloadEncoding.AVRO, label: 'Avro', tooltip: 'The given JSON will be serialized using the selected schema' },
     // We hide Protobuf until we can provide a better UX with selecting types rather than having users
     // specify an index that points to the type within the proto schema.
     // {value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema'},
 
-    {value: PayloadEncoding.BINARY, label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor'},
+    { value: PayloadEncoding.BINARY, label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor' },
 ];
 
 const protoBufInfoElement = <Text>
@@ -68,7 +69,7 @@ type Inputs = {
     value: PayloadOptions;
 }
 
-const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
+const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
     const toast = useToast()
 
     const {
@@ -99,7 +100,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
     })
 
-    const {fields, append, remove} = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control,
         name: 'headers',
     });
@@ -142,11 +143,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
 
     const compressionTypes = proto3.getEnumType(CompressionType).values
         .filter(x => x.no != CompressionType.UNSPECIFIED)
-        .map(x => ({label: x.localName, value: x.no as CompressionType}))
+        .map(x => ({ label: x.localName, value: x.no as CompressionType }))
 
     const availablePartitions = computed(() => {
         const partitions: { label: string, value: number; }[] = [
-            {label: 'Auto (CRC32)', value: -1},
+            { label: 'Auto (Murmur2)', value: -1 },
         ];
 
         const count = api.topics?.first(t => t.topicName == topicName)?.partitionCount;
@@ -161,7 +162,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         }
 
         for (let i = 0; i < count; i++) {
-            partitions.push({label: `Partition ${i}`, value: i});
+            partitions.push({ label: `Partition ${i}`, value: i });
         }
 
         return partitions;
@@ -178,10 +179,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
         })
     }, []);
 
-    const availableValues = Array.from(api.schemaDetails.values())
+    const availableValues = Array.from(api.schemaDetails.values());
 
-    const keySchemaName = watch('key.schemaName')
-    const valueSchemaName = watch('value.schemaName')
+    const keySchemaName = watch('key.schemaName');
+    const valueSchemaName = watch('value.schemaName');
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const req = new PublishMessageRequest();
@@ -200,7 +201,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             req.headers.push(kafkaHeader);
         }
 
-        const encodeData = function(data: string, encoding: PayloadEncoding): Uint8Array {
+        const encodeData = function (data: string, encoding: PayloadEncoding): Uint8Array {
             if (encoding == PayloadEncoding.BINARY) {
                 // This will throw an exception if data is not base64.
                 // We want to catch exceptions so that we can show an error.
@@ -256,7 +257,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
             })
             appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}`)
         }
-    }
+    };
+
+    const filteredEncodingOptions = isEmbedded()
+        ? encodingOptions.filter(x => x.value != PayloadEncoding.AVRO)
+        : encodingOptions;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -268,8 +273,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 control={control}
                                 name="partition"
                                 render={({
-                                             field: {onChange, value,},
-                                         }) => (
+                                    field: { onChange, value, },
+                                }) => (
                                     <SingleSelect<number>
                                         options={availablePartitions.get()}
                                         value={value}
@@ -285,8 +290,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 control={control}
                                 name="compressionType"
                                 render={({
-                                             field: {onChange, value,},
-                                         }) => (
+                                    field: { onChange, value, },
+                                }) => (
                                     <SingleSelect<CompressionType>
                                         options={compressionTypes}
                                         value={value}
@@ -306,13 +311,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                     {fields.map((field, index) => (
                         <HStack key={field.id} spacing={2}>
                             <FormControl>
-                                <Input {...register(`headers.${index}.key`)} placeholder="Key"/>
+                                <Input {...register(`headers.${index}.key`)} placeholder="Key" />
                             </FormControl>
                             <FormControl>
-                                <Input {...register(`headers.${index}.value`)} placeholder="Value"/>
+                                <Input {...register(`headers.${index}.value`)} placeholder="Value" />
                             </FormControl>
                             <IconButton
-                                icon={<HiOutlineTrash/>}
+                                icon={<HiOutlineTrash />}
                                 aria-label="Remove item"
                                 variant="outline"
                                 onClick={() => remove(index)}
@@ -320,7 +325,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                         </HStack>))}
 
                     <Box>
-                        <Button type="button" variant="outline" onClick={() => append({key: '', value: ''})} size="sm">
+                        <Button type="button" variant="outline" onClick={() => append({ key: '', value: '' })} size="sm">
                             Add row
                         </Button>
                     </Box>
@@ -337,10 +342,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                     control={control}
                                     name="key.encoding"
                                     render={({
-                                                field: {onChange, value,},
-                                            }) => (
+                                        field: { onChange, value, },
+                                    }) => (
                                         <SingleSelect<PayloadEncoding | 'base64'>
-                                            options={encodingOptions}
+                                            options={filteredEncodingOptions}
                                             value={value}
                                             onChange={onChange}
                                         />
@@ -355,10 +360,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         control={control}
                                         name="key.schemaName"
                                         render={({
-                                                    field: {onChange, value,},
-                                                }) => (
+                                            field: { onChange, value, },
+                                        }) => (
                                             <SingleSelect<string | undefined>
-                                                options={availableValues.map((value) => ({key: value.name, value: value.name}))}
+                                                options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
                                                 value={value}
                                                 onChange={newVal => {
                                                     onChange(newVal);
@@ -380,15 +385,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                     control={control}
                                     name="key.schemaVersion"
                                     render={({
-                                                field: {onChange, value,},
-                                            }) => (
+                                        field: { onChange, value, },
+                                    }) => (
                                         <SingleSelect<number | undefined>
                                             options={
                                                 availableValues
                                                     .filter(value => value.name === keySchemaName)
                                                     .flatMap(value => value.versions)
-                                                    .sort(({version: version1}, {version: version2}) => version2 - version1)
-                                                    .map(({version}) => ({label: version, value: version}))
+                                                    .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+                                                    .map(({ version }) => ({ label: version, value: version }))
                                             }
                                             value={value}
                                             onChange={onChange}
@@ -411,8 +416,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                             control={control}
                             name="key.data"
                             render={({
-                                        field: {onChange, value},
-                                    }) => (
+                                field: { onChange, value },
+                            }) => (
                                 <KowlEditor
                                     onMount={setTheme}
                                     height={300}
@@ -438,10 +443,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         control={control}
                                         name="value.encoding"
                                         render={({
-                                                    field: {onChange, value,},
-                                                }) => (
+                                            field: { onChange, value, },
+                                        }) => (
                                             <SingleSelect<PayloadEncoding | 'base64'>
-                                                options={encodingOptions}
+                                                options={filteredEncodingOptions}
                                                 value={value}
                                                 onChange={onChange}
                                             />
@@ -455,10 +460,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         control={control}
                                         name="value.schemaName"
                                         render={({
-                                                    field: {onChange, value,},
-                                                }) => (
+                                            field: { onChange, value, },
+                                        }) => (
                                             <SingleSelect<string | undefined>
-                                                options={availableValues.map((value) => ({key: value.name, value: value.name}))}
+                                                options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
                                                 value={value}
                                                 onChange={newVal => {
                                                     onChange(newVal);
@@ -479,15 +484,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                         control={control}
                                         name="value.schemaVersion"
                                         render={({
-                                                    field: {onChange, value,},
-                                                }) => (
+                                            field: { onChange, value, },
+                                        }) => (
                                             <SingleSelect<number | undefined>
                                                 options={
                                                     availableValues
                                                         .filter(value => value.name === valueSchemaName)
                                                         .flatMap(value => value.versions)
-                                                        .sort(({version: version1}, {version: version2}) => version2 - version1)
-                                                        .map(({version}) => ({label: version, value: version}))
+                                                        .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+                                                        .map(({ version }) => ({ label: version, value: version }))
                                                 }
                                                 value={value}
                                                 onChange={onChange}
@@ -510,8 +515,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({topicName}) => {
                                 control={control}
                                 name="value.data"
                                 render={({
-                                            field: {onChange, value},
-                                        }) => (
+                                    field: { onChange, value },
+                                }) => (
                                     <KowlEditor
                                         onMount={setTheme}
                                         height={300}
@@ -564,7 +569,7 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
                 <Text fontSize="lg">This will produce a single record to the <strong>{this.props.topicName}</strong> topic.</Text>
 
                 <Box my={6}>
-                    <PublishTopicForm topicName={this.props.topicName}/>
+                    <PublishTopicForm topicName={this.props.topicName} />
                 </Box>
             </Box>
         )
