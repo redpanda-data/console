@@ -67,10 +67,7 @@ import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 
-import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient } from '@connectrpc/connect';
-import { createConnectTransport } from '@connectrpc/connect-web';
 import { proto3 } from '@bufbuild/protobuf';
-import { ConsoleService } from '../protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
@@ -238,20 +235,6 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     return entry.lastPromise;
 }
 
-const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-    if (appConfig.jwt)
-        req.header.append('Authorization', 'Bearer ' + appConfig.jwt);
-    return await next(req);
-};
-
-
-const transport = createConnectTransport({
-    baseUrl: appConfig.grpcBase,
-    interceptors: [addBearerTokenInterceptor]
-});
-
-const consoleClient = createPromiseClient(ConsoleService, transport);
-
 let messageSearchAbortController: AbortController | null = null;
 
 //
@@ -360,6 +343,13 @@ const apiStore = {
         // https://github.com/connectrpc/connect-es
         // https://github.com/connectrpc/examples-es
 
+        const client = appConfig.consoleClient;
+
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('No console client configured');
+        }
+
         const searchRequest = {
             ..._searchRequest, ...(appConfig.jwt ? {
                 enterprise: {
@@ -400,7 +390,7 @@ const apiStore = {
         }
 
         try {
-            for await (const res of await consoleClient.listMessages(req, { signal: abortController.signal, timeoutMs })) {
+            for await (const res of client.listMessages(req, { signal: abortController.signal, timeoutMs })) {
                 if (abortController.signal.aborted)
                     break;
 
@@ -1685,11 +1675,12 @@ const apiStore = {
 
     // New version of "publishRecords"
     async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
-        const transport = createConnectTransport({
-            baseUrl: appConfig.grpcBase,
-            interceptors: [addBearerTokenInterceptor],
-        });
-        const client = createPromiseClient(ConsoleService, transport);
+
+        const client = appConfig.consoleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
         const r = await client.publishMessage(request);
 
         return r;
