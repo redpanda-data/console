@@ -10,26 +10,17 @@
  */
 import { loader } from '@monaco-editor/react';
 import { autorun, configure, observable, when } from 'mobx';
-// import { embeddedAvailableRoutes } from './components/routes';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
-import { AppFeatures, getBasePath, IsDev } from './utils/env';
+import { AppFeatures, getBasePath } from './utils/env';
 import memoizeOne from 'memoize-one';
-import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
+import { DEFAULT_API_BASE } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient, PromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 
 declare const __webpack_public_path__: string;
-
-const getWebsocketBasePath = (overrideUrl?: string): string => {
-    if (overrideUrl) return overrideUrl;
-    const isHttps = window.location.protocol.startsWith('https');
-    const protocol = isHttps ? 'wss://' : 'ws://';
-    const host = IsDev ? DEFAULT_HOST : window.location.host;
-    return `${protocol + host + getBasePath()}/api`;
-};
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
@@ -70,7 +61,6 @@ export interface Breadcrumb {
 }
 
 interface Config {
-    websocketBasePath: string;
     restBasePath: string;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -86,7 +76,6 @@ interface Config {
 // inside a componenet, don't be tempted to used it as singleton you might find
 // unexpected behaviour
 export const config: Config = observable({
-    websocketBasePath: getWebsocketBasePath(),
     restBasePath: getRestBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
@@ -109,7 +98,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     Object.assign(config, {
         jwt,
         isServerless,
-        websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
