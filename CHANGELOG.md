@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.4.3 / 2024-02-08
+
+- [FIX] Persist pagination settings in local storage [#1095](https://github.com/redpanda-data/console/pull/1095).
+- [FIX] Re-add search bar to filter connectors by their name [#1094](https://github.com/redpanda-data/console/pull/1094).
+- [FIX] Only update the custom offset in the message search if it's a number [#1092](https://github.com/redpanda-data/console/pull/1092).
+- [FIX] Pushdown filters no longer failed to match when plain strings in key or value were used [#1093](https://github.com/redpanda-data/console/pull/1093).
+- [IMPROVEMENT] Cache custom offset input in message search [#1092](https://github.com/redpanda-data/console/pull/1092).
+
 ## v2.4.2 / 2024-02-06
 
 - [FIX] Fix pagination issue in frontend.
