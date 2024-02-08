@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
+import React, { FC } from 'react';
 import { Topic, TopicConsumer } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
 
@@ -19,24 +19,38 @@ import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
 import { DataTable } from '@redpanda-data/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { uiState } from '../../../state/uiState';
+import { onPaginationChange } from '../../../utils/pagination';
+import { editQuery } from '../../../utils/queryHelper';
 
-@observer
-export class TopicConsumers extends Component<{ topic: Topic }> {
-    render() {
-        let consumers = api.topicConsumers.get(this.props.topic.topicName);
-        const isLoading = consumers === null;
+type TopicConsumersProps = { topic: Topic };
 
-        if(isLoading) {
-            return DefaultSkeleton
-        }
+export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
+    const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize);
 
-        if (!consumers) {
-            consumers = [];
-        }
+    let consumers = api.topicConsumers.get(topic.topicName);
+    const isLoading = consumers === null;
 
-        return <DataTable<TopicConsumer>
+    if(isLoading) {
+        return DefaultSkeleton;
+    }
+
+    if (!consumers) {
+        consumers = [];
+    }
+
+    return (
+        <DataTable<TopicConsumer>
             data={consumers}
-            pagination
+            pagination={paginationParams}
+            onPaginationChange={onPaginationChange(paginationParams, ({pageSize, pageIndex}) => {
+                uiState.topicSettings.consumerPageSize = pageSize;
+                editQuery(query => {
+                    query['page'] = String(pageIndex);
+                    query['pageSize'] = String(pageSize);
+                });
+            })}
             sorting
             columns={[
                 {size: 1, header: 'Group', accessorKey: 'groupId'},
@@ -46,5 +60,5 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
                 appGlobal.history.push(`/groups/${encodeURIComponent(row.original.groupId)}`)
             }}
         />
-    }
-}
+    );
+});
