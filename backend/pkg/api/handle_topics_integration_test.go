@@ -217,6 +217,13 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// switch
 		s.api.ConsoleSvc = newConsoleSvc
 
+		// undo switch
+		defer func() {
+			if oldConsoleSvc != nil {
+				s.api.ConsoleSvc = oldConsoleSvc
+			}
+		}()
+
 		// call the fake control and expect function
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
 			fakeCluster.KeepControl()
@@ -247,13 +254,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				return nil, nil, false
 			}
 		})
-
-		// undo switch
-		defer func() {
-			if oldConsoleSvc != nil {
-				s.api.ConsoleSvc = oldConsoleSvc
-			}
-		}()
 
 		// make the request
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -312,6 +312,13 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// switch
 		s.api.ConsoleSvc = newConsoleSvc
 
+		// undo switch
+		defer func() {
+			if oldConsoleSvc != nil {
+				s.api.ConsoleSvc = oldConsoleSvc
+			}
+		}()
+
 		// call the fake control and expect function
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
 			fakeCluster.KeepControl()
@@ -355,13 +362,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				return nil, nil, false
 			}
 		})
-
-		// undo switch
-		defer func() {
-			if oldConsoleSvc != nil {
-				s.api.ConsoleSvc = oldConsoleSvc
-			}
-		}()
 
 		// make the request
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

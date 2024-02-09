@@ -157,7 +157,7 @@ tasks:
       - generate
     cmds:
       - |
-        {{ .PATH_PREFIX }} go test -v -race --tags=integration -p=1 ./...
+        {{ .PATH_PREFIX }} go test -v -race --tags=integration -p=1 {{.CLI_ARGS | default "./..." }}
 
   cover:
     dir: "{{.BACKEND_ROOT}}"
@@ -168,7 +168,7 @@ tasks:
     cmds:
       - task: 'lint'
       - |
-        {{ .PATH_PREFIX }} go test -race --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse
+        {{ .PATH_PREFIX }} go test -race --tags=integration -json -cover {{.CLI_ARGS | default "./..." }} | {{ .BUILD_ROOT }}/bin/go/tparse
 
   verify:
     dir: "{{.BACKEND_ROOT}}"

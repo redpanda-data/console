@@ -48,6 +48,7 @@ type ListMessageRequest struct {
 	FilterInterpreterCode string
 	Troubleshoot          bool
 	IncludeRawPayload     bool
+	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
 }
@@ -138,6 +139,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		FilterInterpreterCode: listReq.FilterInterpreterCode,
 		Troubleshoot:          listReq.Troubleshoot,
 		IncludeRawPayload:     listReq.IncludeRawPayload,
+		IgnoreMaxSizeLimit:    listReq.IgnoreMaxSizeLimit,
 		KeyDeserializer:       listReq.KeyDeserializer,
 		ValueDeserializer:     listReq.ValueDeserializer,
 	}

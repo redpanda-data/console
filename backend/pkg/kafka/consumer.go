@@ -79,6 +79,7 @@ type TopicConsumeRequest struct {
 	FilterInterpreterCode string
 	Troubleshoot          bool
 	IncludeRawPayload     bool
+	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
 }

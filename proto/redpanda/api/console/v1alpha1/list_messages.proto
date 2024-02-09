@@ -32,6 +32,9 @@ message ListMessagesRequest {
 
   optional PayloadEncoding key_deserializer = 10; // Optionally specify key payload deserialization strategy to use.
   optional PayloadEncoding value_deserializer = 11; // Optionally specify value payload deserialization strategy to use.
+
+  bool ignore_max_size_limit = 12; // Optionally ignore configured maximum payload size limit.
+  // Used to force returning deserialized payloads.
 }
 
 // ListMessagesResponse is the response for ListMessages call.
