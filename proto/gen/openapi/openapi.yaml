@@ -286,10 +286,10 @@ components:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
     CreateSecretResponse:
+      description: CreateSecretResponse is the response of CreateSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
-      title: CreateSecretResponse is the response of CreateSecret
       type: object
     CreateTopicRequest.Topic:
       properties:
@@ -522,6 +522,12 @@ components:
         status:
           $ref: '#/components/schemas/ConnectorStatus'
       type: object
+    GetSecretResponse:
+      description: GetSecretResponse is the response of GetSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     GetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -607,25 +613,28 @@ components:
           type: string
       type: object
     ListSecretsRequest.Filter:
+      description: Defines the filter for querying the secrets.
       properties:
         labels[string]:
           additionalProperties:
             type: string
+          description: The secret labels to search for.
           type: object
         name:
+          description: The secret ID or name to search for.
           type: string
-      title: Defines the filter for Secrets
       type: object
     ListSecretsResponse:
+      description: ListSecretsResponse is the response of ListSecrets.
       properties:
         next_page_token:
-          description: token to retrieve the next page.
+          description: Token to retrieve the next page.
           type: string
         secrets:
+          description: Secrets retrieved.
           items:
             $ref: '#/components/schemas/Secret'
           type: array
-      title: ListSecretsResponse is the response of ListSecrets
       type: object
     ListTopicsRequest.Filter:
       properties:
@@ -810,25 +819,31 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
     Secret:
+      description: Secret defienes the secret resource.
       properties:
         id:
+          description: Secret identifier.
           readOnly: true
           type: string
         labels:
           additionalProperties:
             type: string
+          description: Secret labels.
           type: object
-      title: Secret defienes the secret resource
       type: object
     SecretInput:
+      description: SecretInput defienes the secret input for secret API actions.
       properties:
         id:
+          description: Secret identifier.
           type: string
         labels:
           additionalProperties:
             type: string
+          description: Secret labels.
           type: object
         secret_data:
+          description: The secret data.
           format: byte
           type: string
       required:
@@ -953,10 +968,10 @@ components:
           type: string
       type: object
     UpdateSecretResponse:
+      description: UpdateSecretResponse is the response of UpdateSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
-      title: UpdateSecretResponse is the response of UpdateSecret
       type: object
     UpdateTopicConfigurationsResponse:
       properties:
@@ -1914,7 +1929,8 @@ paths:
       description: Update a Secret content.
       operationId: SecretService_UpdateSecret
       parameters:
-        - in: path
+        - description: Secret identifier.
+          in: path
           name: secret.id
           required: true
           schema:
@@ -1927,13 +1943,17 @@ paths:
                 labels:
                   additionalProperties:
                     type: string
+                  description: Secret labels.
                   type: object
                 secret_data:
+                  description: The secret data.
                   format: byte
                   type: string
               required:
                 - secret_data
+              title: The input for the secret to update.
               type: object
+        description: The input for the secret to update.
         required: true
         x-originalParamName: secret
       responses:
@@ -1975,7 +1995,8 @@ paths:
       description: List Secrets
       operationId: SecretService_ListSecrets
       parameters:
-        - in: query
+        - description: The secret ID or name to search for.
+          in: query
           name: filter.name
           schema:
             type: string
@@ -1984,7 +2005,9 @@ paths:
           name: filter.labels[string]
           schema:
             type: string
-        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
           in: query
           name: page_token
           schema:
@@ -2031,6 +2054,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SecretInput'
+        description: The input for the secret to create.
         required: true
         x-originalParamName: secret
       responses:
@@ -2066,7 +2090,7 @@ paths:
       description: Delete a Secret.
       operationId: SecretService_DeleteSecret
       parameters:
-        - description: The id of the secret you want to delete
+        - description: The id of the secret to delete.
           in: path
           name: id
           required: true
@@ -2103,6 +2127,50 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Delete Secret
+      tags:
+        - SecretService
+    get:
+      description: Get a secret.
+      operationId: SecretService_GetSecret
+      parameters:
+        - description: The id of the secret to retrieve.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Secret
       tags:
         - SecretService
   /v1alpha1/topics:

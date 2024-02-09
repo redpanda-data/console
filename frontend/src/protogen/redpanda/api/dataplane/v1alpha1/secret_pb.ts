@@ -7,17 +7,21 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * Secret defienes the secret resource
+ * Secret defienes the secret resource.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.Secret
  */
 export class Secret extends Message<Secret> {
   /**
+   * Secret identifier.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
 
   /**
+   * Secret labels.
+   *
    * @generated from field: map<string, string> labels = 2;
    */
   labels: { [key: string]: string } = {};
@@ -52,20 +56,28 @@ export class Secret extends Message<Secret> {
 }
 
 /**
+ * SecretInput defienes the secret input for secret API actions.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha1.SecretInput
  */
 export class SecretInput extends Message<SecretInput> {
   /**
+   * Secret identifier.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
 
   /**
+   * Secret labels.
+   *
    * @generated from field: map<string, string> labels = 2;
    */
   labels: { [key: string]: string } = {};
 
   /**
+   * The secret data.
+   *
    * @generated from field: bytes secret_data = 3;
    */
   secretData = new Uint8Array(0);
@@ -101,18 +113,20 @@ export class SecretInput extends Message<SecretInput> {
 }
 
 /**
- * ListSecretsResponse is the response of ListSecrets
+ * ListSecretsResponse is the response of ListSecrets.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.ListSecretsResponse
  */
 export class ListSecretsResponse extends Message<ListSecretsResponse> {
   /**
+   * Secrets retrieved.
+   *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Secret secrets = 1;
    */
   secrets: Secret[] = [];
 
   /**
-   * token to retrieve the next page.
+   * Token to retrieve the next page.
    *
    * @generated from field: string next_page_token = 2;
    */
@@ -148,18 +162,21 @@ export class ListSecretsResponse extends Message<ListSecretsResponse> {
 }
 
 /**
- * ListSecretsRequest is the request of ListSecrets
+ * ListSecretsRequest is the request of ListSecrets.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.ListSecretsRequest
  */
 export class ListSecretsRequest extends Message<ListSecretsRequest> {
   /**
+   * List filter.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ListSecretsRequest.Filter filter = 1;
    */
   filter?: ListSecretsRequest_Filter;
 
   /**
-   * Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
    *
    * @generated from field: string page_token = 2;
    */
@@ -203,17 +220,21 @@ export class ListSecretsRequest extends Message<ListSecretsRequest> {
 }
 
 /**
- * Defines the filter for Secrets
+ * Defines the filter for querying the secrets.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.ListSecretsRequest.Filter
  */
 export class ListSecretsRequest_Filter extends Message<ListSecretsRequest_Filter> {
   /**
+   * The secret ID or name to search for.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * The secret labels to search for.
+   *
    * @generated from field: map<string, string> labels = 2;
    */
   labels: { [key: string]: string } = {};
@@ -248,12 +269,96 @@ export class ListSecretsRequest_Filter extends Message<ListSecretsRequest_Filter
 }
 
 /**
- * CreateSecretRequest is the request of CreateSecret
+ * GetSecretRequest is the request of GetSecret.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetSecretRequest
+ */
+export class GetSecretRequest extends Message<GetSecretRequest> {
+  /**
+   * The id of the secret to retrieve.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<GetSecretRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetSecretRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSecretRequest {
+    return new GetSecretRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSecretRequest {
+    return new GetSecretRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSecretRequest {
+    return new GetSecretRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSecretRequest | PlainMessage<GetSecretRequest> | undefined, b: GetSecretRequest | PlainMessage<GetSecretRequest> | undefined): boolean {
+    return proto3.util.equals(GetSecretRequest, a, b);
+  }
+}
+
+/**
+ * GetSecretResponse is the response of GetSecret.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetSecretResponse
+ */
+export class GetSecretResponse extends Message<GetSecretResponse> {
+  /**
+   * The created secret.
+   *
+   * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
+   */
+  secret?: Secret;
+
+  constructor(data?: PartialMessage<GetSecretResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetSecretResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "secret", kind: "message", T: Secret },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetSecretResponse {
+    return new GetSecretResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetSecretResponse {
+    return new GetSecretResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetSecretResponse {
+    return new GetSecretResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetSecretResponse | PlainMessage<GetSecretResponse> | undefined, b: GetSecretResponse | PlainMessage<GetSecretResponse> | undefined): boolean {
+    return proto3.util.equals(GetSecretResponse, a, b);
+  }
+}
+
+/**
+ * CreateSecretRequest is the request of CreateSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.CreateSecretRequest
  */
 export class CreateSecretRequest extends Message<CreateSecretRequest> {
   /**
+   * The input for the secret to create.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
    */
   secret?: SecretInput;
@@ -287,12 +392,14 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
 }
 
 /**
- * CreateSecretResponse is the response of CreateSecret
+ * CreateSecretResponse is the response of CreateSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.CreateSecretResponse
  */
 export class CreateSecretResponse extends Message<CreateSecretResponse> {
   /**
+   * The created secret.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
    */
   secret?: Secret;
@@ -326,12 +433,14 @@ export class CreateSecretResponse extends Message<CreateSecretResponse> {
 }
 
 /**
- * UpdateSecretRequest is the request of UpdateSecret
+ * UpdateSecretRequest is the request of UpdateSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.UpdateSecretRequest
  */
 export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   /**
+   * The input for the secret to update.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
    */
   secret?: SecretInput;
@@ -365,12 +474,14 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
 }
 
 /**
- * UpdateSecretResponse is the response of UpdateSecret
+ * UpdateSecretResponse is the response of UpdateSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.UpdateSecretResponse
  */
 export class UpdateSecretResponse extends Message<UpdateSecretResponse> {
   /**
+   * The updated secret.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
    */
   secret?: Secret;
@@ -404,13 +515,13 @@ export class UpdateSecretResponse extends Message<UpdateSecretResponse> {
 }
 
 /**
- * DeleteSecretRequest is the request of DeleteSecret
+ * DeleteSecretRequest is the request of DeleteSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.DeleteSecretRequest
  */
 export class DeleteSecretRequest extends Message<DeleteSecretRequest> {
   /**
-   * The id of the secret you want to delete
+   * The id of the secret to delete.
    *
    * @generated from field: string id = 1;
    */

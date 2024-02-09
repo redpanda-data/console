@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	SecretService_GetSecret_FullMethodName    = "/redpanda.api.dataplane.v1alpha1.SecretService/GetSecret"
 	SecretService_ListSecrets_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.SecretService/ListSecrets"
 	SecretService_CreateSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateSecret"
 	SecretService_UpdateSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateSecret"
@@ -30,9 +31,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SecretServiceClient interface {
+	// GetSecret retrieves the specific secret.
+	GetSecret(ctx context.Context, in *GetSecretRequest, opts ...grpc.CallOption) (*GetSecretResponse, error)
+	// ListSecrets lists the secrets based on optional filter.
 	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
+	// CreateSecret creates the secret.
 	CreateSecret(ctx context.Context, in *CreateSecretRequest, opts ...grpc.CallOption) (*CreateSecretResponse, error)
+	// UpdateSecret updates the secret.
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*UpdateSecretResponse, error)
+	// DeleteSecret deletes the secret.
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
 }
 
@@ -42,6 +49,15 @@ type secretServiceClient struct {
 
 func NewSecretServiceClient(cc grpc.ClientConnInterface) SecretServiceClient {
 	return &secretServiceClient{cc}
+}
+
+func (c *secretServiceClient) GetSecret(ctx context.Context, in *GetSecretRequest, opts ...grpc.CallOption) (*GetSecretResponse, error) {
+	out := new(GetSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_GetSecret_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *secretServiceClient) ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error) {
@@ -84,9 +100,15 @@ func (c *secretServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecret
 // All implementations must embed UnimplementedSecretServiceServer
 // for forward compatibility
 type SecretServiceServer interface {
+	// GetSecret retrieves the specific secret.
+	GetSecret(context.Context, *GetSecretRequest) (*GetSecretResponse, error)
+	// ListSecrets lists the secrets based on optional filter.
 	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
+	// CreateSecret creates the secret.
 	CreateSecret(context.Context, *CreateSecretRequest) (*CreateSecretResponse, error)
+	// UpdateSecret updates the secret.
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*UpdateSecretResponse, error)
+	// DeleteSecret deletes the secret.
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
 }
@@ -95,6 +117,9 @@ type SecretServiceServer interface {
 type UnimplementedSecretServiceServer struct {
 }
 
+func (UnimplementedSecretServiceServer) GetSecret(context.Context, *GetSecretRequest) (*GetSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSecret not implemented")
+}
 func (UnimplementedSecretServiceServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecrets not implemented")
 }
@@ -118,6 +143,24 @@ type UnsafeSecretServiceServer interface {
 
 func RegisterSecretServiceServer(s grpc.ServiceRegistrar, srv SecretServiceServer) {
 	s.RegisterService(&SecretService_ServiceDesc, srv)
+}
+
+func _SecretService_GetSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecretServiceServer).GetSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecretService_GetSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecretServiceServer).GetSecret(ctx, req.(*GetSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SecretService_ListSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -199,6 +242,10 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "redpanda.api.dataplane.v1alpha1.SecretService",
 	HandlerType: (*SecretServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetSecret",
+			Handler:    _SecretService_GetSecret_Handler,
+		},
 		{
 			MethodName: "ListSecrets",
 			Handler:    _SecretService_ListSecrets_Handler,
