@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package api
+package transform
 
 import (
 	"encoding/json"
@@ -17,16 +17,9 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
-)
 
-func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
-	for _, t := range ts {
-		if t.Name == name {
-			return &t, nil
-		}
-	}
-	return nil, fmt.Errorf("transform not found")
-}
+	"github.com/redpanda-data/console/backend/pkg/api"
+)
 
 const (
 	// Define how many bytes are in a kilobyte (KB) and a megabyte (MB)
@@ -34,20 +27,20 @@ const (
 	mb int64 = 1024 * kb
 )
 
-// TransformMetadata is the metadata required to deploy a wasm transform
-type TransformMetadata struct {
+// Metadata is the transform metadata required to deploy a wasm transform
+type Metadata struct {
 	Name         string                         `json:"name"`
 	InputTopic   string                         `json:"input_topic"`
 	OutputTopics []string                       `json:"output_topics"`
 	Environment  []adminapi.EnvironmentVariable `json:"environment"`
 }
 
-func (api *API) handleDeployTransform() http.HandlerFunc {
+func (s *Service) HandleDeployTransform() http.HandlerFunc {
 	type response struct {
 		Transform *adminapi.TransformMetadata `json:"transform"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !api.Cfg.Redpanda.AdminAPI.Enabled {
+		if !s.cfg.Redpanda.AdminAPI.Enabled {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      fmt.Errorf("you must enable the admin api to manage wasm transforms"),
 				Status:   http.StatusServiceUnavailable,
@@ -78,7 +71,7 @@ func (api *API) handleDeployTransform() http.HandlerFunc {
 			return
 		}
 
-		var msg TransformMetadata
+		var msg Metadata
 		if err := json.Unmarshal([]byte(metadataJSON), &msg); err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,

@@ -113,9 +113,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	}
 	r.Mount("/v1alpha1", gwMux) // Dataplane API
 
-	// Wasm Transforms
-	r.Put("/v1alpha1/transforms", api.handleDeployTransform())
-
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
@@ -123,6 +120,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.RedpandaSvc)
+
+	// Wasm Transforms
+	r.Put("/v1alpha1/transforms", transformSvc.HandleDeployTransform())
 
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	aclSvcPath, aclSvcHandler := dataplanev1alpha1connect.NewACLServiceHandler(aclSvc, connect.WithInterceptors(hookOutput.Interceptors...))
