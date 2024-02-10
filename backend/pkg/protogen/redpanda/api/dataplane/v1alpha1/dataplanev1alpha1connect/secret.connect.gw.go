@@ -17,6 +17,7 @@ import (
 // SecretServiceGatewayServer implements the gRPC server API for the SecretService service.
 type SecretServiceGatewayServer struct {
 	v1alpha1.UnimplementedSecretServiceServer
+	getSecret    connect_gateway.UnaryHandler[v1alpha1.GetSecretRequest, v1alpha1.GetSecretResponse]
 	listSecrets  connect_gateway.UnaryHandler[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse]
 	createSecret connect_gateway.UnaryHandler[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse]
 	updateSecret connect_gateway.UnaryHandler[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
@@ -27,11 +28,16 @@ type SecretServiceGatewayServer struct {
 // service.
 func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gateway.HandlerOption) *SecretServiceGatewayServer {
 	return &SecretServiceGatewayServer{
+		getSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetSecretProcedure, svc.GetSecret, opts...),
 		listSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListSecretsProcedure, svc.ListSecrets, opts...),
 		createSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
 		updateSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
 		deleteSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
 	}
+}
+
+func (s *SecretServiceGatewayServer) GetSecret(ctx context.Context, req *v1alpha1.GetSecretRequest) (*v1alpha1.GetSecretResponse, error) {
+	return s.getSecret(ctx, req)
 }
 
 func (s *SecretServiceGatewayServer) ListSecrets(ctx context.Context, req *v1alpha1.ListSecretsRequest) (*v1alpha1.ListSecretsResponse, error) {

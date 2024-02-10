@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateSecretRequest, CreateSecretResponse, DeleteSecretRequest, DeleteSecretResponse, ListSecretsRequest, ListSecretsResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
+import { CreateSecretRequest, CreateSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetSecretRequest, GetSecretResponse, ListSecretsRequest, ListSecretsResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -13,6 +13,19 @@ export const SecretService = {
   typeName: "redpanda.api.dataplane.v1alpha1.SecretService",
   methods: {
     /**
+     * GetSecret retrieves the specific secret.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.GetSecret
+     */
+    getSecret: {
+      name: "GetSecret",
+      I: GetSecretRequest,
+      O: GetSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListSecrets lists the secrets based on optional filter.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.ListSecrets
      */
     listSecrets: {
@@ -22,6 +35,8 @@ export const SecretService = {
       kind: MethodKind.Unary,
     },
     /**
+     * CreateSecret creates the secret.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.CreateSecret
      */
     createSecret: {
@@ -31,6 +46,8 @@ export const SecretService = {
       kind: MethodKind.Unary,
     },
     /**
+     * UpdateSecret updates the secret.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.UpdateSecret
      */
     updateSecret: {
@@ -40,6 +57,8 @@ export const SecretService = {
       kind: MethodKind.Unary,
     },
     /**
+     * DeleteSecret deletes the secret.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.DeleteSecret
      */
     deleteSecret: {
