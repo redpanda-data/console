@@ -594,6 +594,122 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		assert.False(seenZeroOffset)
 		assert.GreaterOrEqual(progressCount, 0)
 	})
+
+	t.Run("invalid code in filter", func(t *testing.T) {
+		filterCode := base64.StdEncoding.EncodeToString([]byte(
+			`foo bar`,
+		))
+
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:                 topicName,
+			StartOffset:           -2,
+			PartitionId:           -1,
+			MaxResults:            100,
+			FilterInterpreterCode: filterCode,
+		}))
+		require.NoError(err)
+
+		phaseCount := 0
+		doneCount := 0
+		progressCount := 0
+		errorCount := 0
+		dataCount := 0
+
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch cm := msg.GetControlMessage().(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				dataCount++
+			case *v1pb.ListMessagesResponse_Done:
+				doneCount++
+
+				assert.NotEmpty(cm.Done.GetBytesConsumed())
+				assert.NotEmpty(cm.Done.GetMessagesConsumed())
+				assert.NotEmpty(cm.Done.GetElapsedMs())
+				assert.False(cm.Done.GetIsCancelled())
+			case *v1pb.ListMessagesResponse_Phase:
+				phaseCount++
+			case *v1pb.ListMessagesResponse_Progress:
+				progressCount++
+			case *v1pb.ListMessagesResponse_Error:
+				errorCount++
+			}
+		}
+
+		err = stream.Err()
+		assert.Error(err)
+		connectErr := new(connect.Error)
+		ok := errors.As(err, &connectErr)
+		require.True(ok)
+
+		assert.Equal(connect.CodeInvalidArgument, connectErr.Code())
+		assert.Equal("SyntaxError: (anonymous): Line 1:35 Unexpected identifier", connectErr.Message())
+		assert.NotEmpty(connectErr.Details())
+
+		assert.Nil(stream.Close())
+
+		assert.Equal(0, phaseCount)
+		assert.Equal(0, errorCount)
+		assert.Equal(0, doneCount)
+		assert.Equal(0, dataCount)
+		assert.GreaterOrEqual(progressCount, 0)
+	})
+
+	t.Run("invalid base64 filter", func(t *testing.T) {
+		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
+			Topic:                 topicName,
+			StartOffset:           -2,
+			PartitionId:           -1,
+			MaxResults:            100,
+			FilterInterpreterCode: "foobar",
+		}))
+		require.NoError(err)
+
+		phaseCount := 0
+		doneCount := 0
+		progressCount := 0
+		errorCount := 0
+		dataCount := 0
+
+		for stream.Receive() {
+			msg := stream.Msg()
+			switch cm := msg.GetControlMessage().(type) {
+			case *v1pb.ListMessagesResponse_Data:
+				dataCount++
+			case *v1pb.ListMessagesResponse_Done:
+				doneCount++
+
+				assert.NotEmpty(cm.Done.GetBytesConsumed())
+				assert.NotEmpty(cm.Done.GetMessagesConsumed())
+				assert.NotEmpty(cm.Done.GetElapsedMs())
+				assert.False(cm.Done.GetIsCancelled())
+			case *v1pb.ListMessagesResponse_Phase:
+				phaseCount++
+			case *v1pb.ListMessagesResponse_Progress:
+				progressCount++
+			case *v1pb.ListMessagesResponse_Error:
+				errorCount++
+			}
+		}
+
+		err = stream.Err()
+		assert.Error(err)
+		connectErr := new(connect.Error)
+		ok := errors.As(err, &connectErr)
+		require.True(ok)
+
+		assert.Equal(connect.CodeInvalidArgument, connectErr.Code())
+		assert.Equal("illegal base64 data at input byte 4", connectErr.Message())
+		assert.NotEmpty(connectErr.Details())
+
+		assert.Nil(stream.Close())
+
+		assert.Equal(0, phaseCount)
+		assert.Equal(0, errorCount)
+		assert.Equal(0, doneCount)
+		assert.Equal(0, dataCount)
+		assert.GreaterOrEqual(progressCount, 0)
+	})
 }
 
 func (s *APIIntegrationTestSuite) TestPublishMessages() {
