@@ -37,17 +37,33 @@ type streamProgressReporter struct {
 }
 
 func (p *streamProgressReporter) Start() {
-	// If search is disabled do not report progress regularly as each consumed message will be sent through the socket
-	// anyways
-	if p.request.FilterInterpreterCode == "" {
+	tickerDuration := 0 * time.Second
+
+	// We should report progress in two scenarios.
+	// If filter is enabled it could take a while to find the matching record(s).
+	// If search is for newest records it could take a while to get new records.
+	// For the second scenario we also need to get around certain infrastructure and ingress idle connection limits.
+	// With "newest" request, we may wait a while until we get a record to send.
+	// While we wait for a record the connection is idle.
+	// Different ingress controllers, proxies, and load balancers have different default settings for idle connections.
+	// For example AWS LB has a default idle connection timeout of 1m.
+	// Essentially we need a ping / keep alive message in stream to work around these idle timeouts.
+
+	if p.request.FilterInterpreterCode != "" {
+		tickerDuration = 0 * time.Second
+	} else if p.request.StartOffset == -3 { // Newest
+		tickerDuration = 30 * time.Second
+	}
+
+	if tickerDuration == 0 {
 		return
 	}
 
-	// Report the current progress every second to the user. If there's a search request which has to browse a whole
-	// topic it may take some time until there are messages. This go routine is in charge of keeping the user up to
-	// date about the progress Kowl made streaming the topic
+	// Report the current progress every ticker to the user.
+	// This goroutine is in charge of keeping the user up to date about the progress
+	// Console made streaming the topic.
 	go func() {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(tickerDuration)
 
 		for {
 			select {
