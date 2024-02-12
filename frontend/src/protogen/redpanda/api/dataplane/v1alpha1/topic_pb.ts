@@ -177,7 +177,7 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
   name = "";
 
   /**
-   * NumPartitions is how many partitions to give a topic. This must
+   * PartitionCount is how many partitions to give a topic. This must
    * be null if specifying partitions manually (see ReplicaAssignment)
    * or, to use the cluster default partitions.
    *
@@ -199,9 +199,9 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
    * partitions for a topic. If using this, both ReplicationFactor and
    * NumPartitions must be -1.
    *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignment = 4;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignments = 4;
    */
-  replicaAssignment: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
+  replicaAssignments: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
 
   /**
    * Configs is an array of key value config pairs for a topic.
@@ -222,7 +222,7 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 4, name: "replica_assignment", kind: "message", T: CreateTopicRequest_Topic_ReplicaAssignment, repeated: true },
+    { no: 4, name: "replica_assignments", kind: "message", T: CreateTopicRequest_Topic_ReplicaAssignment, repeated: true },
     { no: 5, name: "configs", kind: "message", T: CreateTopicRequest_Topic_Config, repeated: true },
   ]);
 
@@ -348,6 +348,27 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
    */
   name = "";
 
+  /**
+   * PartitionCount is how many partitions were created for this topic.
+   * This field has a default of -1, which may be returned if the broker
+   * does not support v5+ of this request which added support for returning
+   * this information.
+   * This is currently commented, until
+   *
+   * @generated from field: int32 partition_count = 2;
+   */
+  partitionCount = 0;
+
+  /**
+   * ReplicationFactor is how many replicas every partition has for this topic.
+   * This field has a default of -1, which may be returned if the broker
+   * does not support v5+ of this request which added support for returning
+   * this information.
+   *
+   * @generated from field: int32 replication_factor = 3;
+   */
+  replicationFactor = 0;
+
   constructor(data?: PartialMessage<CreateTopicResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -357,6 +378,8 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicResponse {
