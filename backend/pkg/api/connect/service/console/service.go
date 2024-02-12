@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 
@@ -93,7 +94,25 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 		}
 	}
 
-	interpreterCode, _ := lmq.DecodeInterpreterCode() // Error has been checked in validation function
+	interpreterCode, err := lmq.DecodeInterpreterCode()
+	if err != nil {
+		return apierrors.NewConnectError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("failed decoding provided interpreter code: %w", err),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
+
+	// test compile
+	code := fmt.Sprintf(`var isMessageOk = function() {%s}`, interpreterCode)
+	_, err = goja.Compile("", code, true)
+	if err != nil {
+		return apierrors.NewConnectError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("failed to compile provided interpreter code: %w", err),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
 
 	// Request messages from kafka and return them once we got all the messages or the context is done
 	listReq := console.ListMessageRequest{
