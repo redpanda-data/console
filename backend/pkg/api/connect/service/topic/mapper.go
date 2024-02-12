@@ -70,7 +70,9 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.Crea
 
 func (*kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) *v1alpha1.CreateTopicResponse {
 	return &v1alpha1.CreateTopicResponse{
-		Name: topic.Topic,
+		Name:              topic.Topic,
+		PartitionCount:    topic.NumPartitions,
+		ReplicationFactor: int32(topic.ReplicationFactor),
 	}
 }
 
