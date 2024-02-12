@@ -86,12 +86,12 @@ components:
         documentation:
           nullable: true
           type: string
-        is_read_only:
-          type: boolean
-        is_sensitive:
-          type: boolean
         name:
           type: string
+        read_only:
+          type: boolean
+        sensitive:
+          type: boolean
         source:
           $ref: '#/components/schemas/ConfigSource'
         type:
@@ -652,7 +652,7 @@ components:
       type: object
     ListTopicsResponse.Topic:
       properties:
-        is_internal:
+        internal:
           type: boolean
         name:
           type: string
@@ -772,12 +772,12 @@ components:
       type: object
     ReplicaAssignment:
       properties:
-        partition:
+        partition_id:
           description: Partition is a partition to create.
           format: int32
           type: integer
-        replicas:
-          description: Replicas are broker IDs the partition must exist on.
+        replica_ids:
+          description: Replicas are the broker IDs the partition must exist on.
           items:
             format: int32
             type: integer
@@ -851,7 +851,7 @@ components:
       type: object
     SetConfiguration:
       properties:
-        key:
+        name:
           type: string
         value:
           nullable: true
@@ -959,7 +959,7 @@ components:
       type: object
     UpdateConfiguration:
       properties:
-        key:
+        name:
           type: string
         operation:
           $ref: '#/components/schemas/ConfigAlterOperation'
