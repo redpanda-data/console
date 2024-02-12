@@ -643,7 +643,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		require.True(ok)
 
 		assert.Equal(connect.CodeInvalidArgument, connectErr.Code())
-		assert.Equal("SyntaxError: (anonymous): Line 1:35 Unexpected identifier", connectErr.Message())
+		assert.Equal("failed to compile provided interpreter code: SyntaxError: (anonymous): Line 1:35 Unexpected identifier", connectErr.Message())
 		assert.NotEmpty(connectErr.Details())
 
 		assert.Nil(stream.Close())
@@ -699,7 +699,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 		require.True(ok)
 
 		assert.Equal(connect.CodeInvalidArgument, connectErr.Code())
-		assert.Equal("illegal base64 data at input byte 4", connectErr.Message())
+		assert.Equal("failed decoding provided interpreter code: illegal base64 data at input byte 4", connectErr.Message())
 		assert.NotEmpty(connectErr.Details())
 
 		assert.Nil(stream.Close())
