@@ -50,8 +50,8 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.Crea
 		configs[i] = c
 	}
 
-	replicaAssignments := make([]kmsg.CreateTopicsRequestTopicReplicaAssignment, len(topicReq.ReplicaAssignment))
-	for i, assignment := range topicReq.ReplicaAssignment {
+	replicaAssignments := make([]kmsg.CreateTopicsRequestTopicReplicaAssignment, len(topicReq.ReplicaAssignments))
+	for i, assignment := range topicReq.ReplicaAssignments {
 		a := kmsg.NewCreateTopicsRequestTopicReplicaAssignment()
 		a.Partition = assignment.PartitionId
 		a.Replicas = assignment.ReplicaIds

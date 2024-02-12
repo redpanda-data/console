@@ -154,10 +154,10 @@ func (s *APISuite) TestCreateTopic() {
 				Name  string `json:"name"`
 				Value string `json:"value"`
 			} `json:"configs"`
-			ReplicaAssignment []struct {
+			ReplicaAssignments []struct {
 				Partition int   `json:"partition"`
 				Replicas  []int `json:"replicas"`
-			} `json:"replica_assignment"`
+			} `json:"replica_assignments"`
 		}
 
 		topicName := "console-integration-test-valid-request-rest"
