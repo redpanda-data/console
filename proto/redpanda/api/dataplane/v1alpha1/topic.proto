@@ -50,7 +50,7 @@ message CreateTopicRequest {
       (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
     ];
 
-    // NumPartitions is how many partitions to give a topic. This must
+    // PartitionCount is how many partitions to give a topic. This must
     // be null if specifying partitions manually (see ReplicaAssignment)
     // or, to use the cluster default partitions.
     optional int32 partition_count = 2;
@@ -85,18 +85,18 @@ message CreateTopicResponse {
   // Name is the topic's name.
   string name = 1;
 
-  // NumPartitions is how many partitions were created for this topic.
+  // PartitionCount is how many partitions were created for this topic.
   // This field has a default of -1, which may be returned if the broker
   // does not support v5+ of this request which added support for returning
   // this information.
   // This is currently commented, until
-  // int32 num_partitions = 2;
+  int32 partition_count = 2;
 
   // ReplicationFactor is how many replicas every partition has for this topic.
   // This field has a default of -1, which may be returned if the broker
   // does not support v5+ of this request which added support for returning
   // this information.
-  // int32 replication_factor = 3;
+  int32 replication_factor = 3;
 }
 
 message ListTopicsRequest {
