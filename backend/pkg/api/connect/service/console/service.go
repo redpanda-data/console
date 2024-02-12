@@ -98,7 +98,7 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 	if err != nil {
 		return apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			err,
+			fmt.Errorf("failed decoding provided interpreter code: %w", err),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
