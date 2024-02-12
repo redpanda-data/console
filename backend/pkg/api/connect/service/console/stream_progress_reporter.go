@@ -49,15 +49,10 @@ func (p *streamProgressReporter) Start() {
 	// For example AWS LB has a default idle connection timeout of 1m.
 	// Essentially we need a ping / keep alive message in stream to work around these idle timeouts.
 
-	if p.request.FilterInterpreterCode != "" {
-		tickerDuration = 0 * time.Second
-	} else if p.request.StartOffset == -3 { // Newest
-		tickerDuration = 30 * time.Second
-	}
-
-	if tickerDuration == 0 {
-		return
-	}
+     tickerDuration := 30 * time.Second
+      if p.requestFilterInterpreterCode != "" {
+        tickerDuration = time.Second
+      }
 
 	// Report the current progress every ticker to the user.
 	// This goroutine is in charge of keeping the user up to date about the progress
