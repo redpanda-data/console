@@ -53,8 +53,8 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha1.Crea
 	replicaAssignments := make([]kmsg.CreateTopicsRequestTopicReplicaAssignment, len(topicReq.ReplicaAssignment))
 	for i, assignment := range topicReq.ReplicaAssignment {
 		a := kmsg.NewCreateTopicsRequestTopicReplicaAssignment()
-		a.Partition = assignment.Partition
-		a.Replicas = assignment.Replicas
+		a.Partition = assignment.PartitionId
+		a.Replicas = assignment.ReplicaIds
 		replicaAssignments[i] = a
 	}
 
@@ -115,8 +115,8 @@ func (k *kafkaClientMapper) describeTopicConfigsToProto(resources []kmsg.Describ
 			Type:           configType,
 			Value:          resource.Value,
 			Source:         configSource,
-			IsReadOnly:     resource.ReadOnly,
-			IsSensitive:    resource.IsSensitive,
+			ReadOnly:       resource.ReadOnly,
+			Sensitive:      resource.IsSensitive,
 			ConfigSynonyms: synonyms,
 			Documentation:  resource.Documentation,
 		}
@@ -149,7 +149,7 @@ func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha1.UpdateTopicC
 	topicConfigUpdates := make([]kmsg.IncrementalAlterConfigsRequestResourceConfig, len(req.Configurations))
 	for i, requestedConfigUpdate := range req.Configurations {
 		topicConfigUpdate := kmsg.NewIncrementalAlterConfigsRequestResourceConfig()
-		topicConfigUpdate.Name = requestedConfigUpdate.Key
+		topicConfigUpdate.Name = requestedConfigUpdate.Name
 		topicConfigUpdate.Value = requestedConfigUpdate.Value
 		kafkaOp, err := k.commonKafkaClientMapper.AlterConfigOperationToKafka(requestedConfigUpdate.Operation)
 		if err != nil {
@@ -190,7 +190,7 @@ func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataR
 
 	return &v1alpha1.ListTopicsResponse_Topic{
 		Name:              *topicMetadata.Topic,
-		IsInternal:        topicMetadata.IsInternal,
+		Internal:          topicMetadata.IsInternal,
 		PartitionCount:    int32(len(topicMetadata.Partitions)),
 		ReplicationFactor: int32(replicationFactor),
 	}
@@ -213,7 +213,7 @@ func (k *kafkaClientMapper) setTopicConfigurationsToKafka(req *v1alpha1.SetTopic
 
 func (*kafkaClientMapper) setTopicConfigurationsResourceToKafka(req *v1alpha1.SetTopicConfigurationsRequest_SetConfiguration) kmsg.AlterConfigsRequestResourceConfig {
 	kafkaReq := kmsg.NewAlterConfigsRequestResourceConfig()
-	kafkaReq.Name = req.Key
+	kafkaReq.Name = req.Name
 	kafkaReq.Value = req.Value
 
 	return kafkaReq

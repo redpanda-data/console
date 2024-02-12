@@ -54,7 +54,7 @@ func (p *streamProgressReporter) Start() {
 		tickerDuration = time.Second
 	}
 
-	// Report the current progress every ticker to the user.
+	// Report the current progress every ticker togit c the user.
 	// This goroutine is in charge of keeping the user up to date about the progress
 	// Console made streaming the topic.
 	go func() {
