@@ -131,7 +131,6 @@ type CreateTopicResponse struct {
 	// This field has a default of -1, which may be returned if the broker
 	// does not support v5+ of this request which added support for returning
 	// this information.
-	// This is currently commented, until
 	PartitionCount int32 `protobuf:"varint,2,opt,name=partition_count,json=partitionCount,proto3" json:"partition_count,omitempty"`
 	// ReplicationFactor is how many replicas every partition has for this topic.
 	// This field has a default of -1, which may be returned if the broker

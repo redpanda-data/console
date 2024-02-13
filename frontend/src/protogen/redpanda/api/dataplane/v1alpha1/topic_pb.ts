@@ -353,7 +353,6 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
    * This field has a default of -1, which may be returned if the broker
    * does not support v5+ of this request which added support for returning
    * this information.
-   * This is currently commented, until
    *
    * @generated from field: int32 partition_count = 2;
    */
