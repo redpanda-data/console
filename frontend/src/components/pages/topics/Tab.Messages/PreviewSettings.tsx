@@ -320,6 +320,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
 
             <Box w="full">
                 <SingleSelect<string>
+                    creatable
                     placeholder="Pattern..."
                     value={tag.pattern}
                     onChange={(value) => {
