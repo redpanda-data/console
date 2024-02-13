@@ -121,6 +121,9 @@ message ListConnectorsRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -139,6 +142,9 @@ message RestartConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -157,6 +163,9 @@ message DeleteConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -173,6 +182,9 @@ message PauseConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -189,6 +201,9 @@ message ResumeConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -205,6 +220,9 @@ message StopConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -221,6 +239,9 @@ message GetConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -237,6 +258,9 @@ message CreateConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -271,6 +295,9 @@ message GetConnectClusterRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -293,6 +320,9 @@ message UpsertConnectorRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -318,6 +348,9 @@ message GetConnectorConfigRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -338,6 +371,9 @@ message GetConnectorStatusRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -358,6 +394,9 @@ message ListConnectorTopicsRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -378,6 +417,9 @@ message ResetConnectorTopicsRequest {
   string cluster_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-z0-9-]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
