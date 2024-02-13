@@ -55,8 +55,12 @@ func (s *APISuite) TestCreateTopic() {
 				},
 			},
 		}
-		_, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
+		createTopicRes, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
 		require.NoError(err)
+
+		assert.Equal(topicName, createTopicRes.Msg.Name)
+		assert.EqualValues(partitionCount, createTopicRes.Msg.PartitionCount)
+		assert.EqualValues(1, createTopicRes.Msg.ReplicationFactor)
 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -154,10 +158,10 @@ func (s *APISuite) TestCreateTopic() {
 				Name  string `json:"name"`
 				Value string `json:"value"`
 			} `json:"configs"`
-			ReplicaAssignment []struct {
+			ReplicaAssignments []struct {
 				Partition int   `json:"partition"`
 				Replicas  []int `json:"replicas"`
-			} `json:"replica_assignment"`
+			} `json:"replica_assignments"`
 		}
 
 		topicName := "console-integration-test-valid-request-rest"
@@ -176,10 +180,18 @@ func (s *APISuite) TestCreateTopic() {
 				},
 			},
 		}
+
+		type createTopicsResponse struct {
+			Name              string `json:"name"`
+			PartitionCount    int    `json:"partition_count"`
+			ReplicationFactor int    `json:"replication_factor"`
+		}
+		var httpRes createTopicsResponse
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/topics").
 			BodyJSON(&httpReq).
+			ToJSON(&httpRes).
 			Post().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusCreated), // Allows 2xx otherwise
@@ -188,6 +200,8 @@ func (s *APISuite) TestCreateTopic() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
+		assert.Equal(topicName, httpRes.Name)
+		assert.Equal(partitionCount, httpRes.PartitionCount)
 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -263,7 +277,7 @@ func (s *APISuite) TestCreateTopic() {
 		assert.Contains(errResponse, "name") // Check for field name
 	})
 
-	t.Run("try to create topic with an empty topic (http)", func(t *testing.T) {
+	t.Run("try to create topic with a blank name (http)", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 

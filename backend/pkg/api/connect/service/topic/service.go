@@ -355,7 +355,9 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1
 	response := s.mapper.createTopicResponseTopicToProto(result)
 
 	connectResponse := connect.NewResponse(&v1alpha1.CreateTopicResponse{
-		Name: response.Name,
+		Name:              response.Name,
+		PartitionCount:    response.PartitionCount,
+		ReplicationFactor: response.ReplicationFactor,
 	})
 	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusCreated))
 	return connectResponse, nil
