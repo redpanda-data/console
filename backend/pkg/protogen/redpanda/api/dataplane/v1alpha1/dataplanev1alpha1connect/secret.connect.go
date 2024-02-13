@@ -49,16 +49,36 @@ const (
 	// SecretServiceDeleteSecretProcedure is the fully-qualified name of the SecretService's
 	// DeleteSecret RPC.
 	SecretServiceDeleteSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteSecret"
+	// SecretServiceGetConnectorSecretProcedure is the fully-qualified name of the SecretService's
+	// GetConnectorSecret RPC.
+	SecretServiceGetConnectorSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectorSecret"
+	// SecretServiceListConnectorSecretsProcedure is the fully-qualified name of the SecretService's
+	// ListConnectorSecrets RPC.
+	SecretServiceListConnectorSecretsProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectorSecrets"
+	// SecretServiceCreateConnectorSecretProcedure is the fully-qualified name of the SecretService's
+	// CreateConnectorSecret RPC.
+	SecretServiceCreateConnectorSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectorSecret"
+	// SecretServiceUpdateConnectorSecretProcedure is the fully-qualified name of the SecretService's
+	// UpdateConnectorSecret RPC.
+	SecretServiceUpdateConnectorSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectorSecret"
+	// SecretServiceDeleteConnectorSecretProcedure is the fully-qualified name of the SecretService's
+	// DeleteConnectorSecret RPC.
+	SecretServiceDeleteConnectorSecretProcedure = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectorSecret"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	secretServiceServiceDescriptor            = v1alpha1.File_redpanda_api_dataplane_v1alpha1_secret_proto.Services().ByName("SecretService")
-	secretServiceGetSecretMethodDescriptor    = secretServiceServiceDescriptor.Methods().ByName("GetSecret")
-	secretServiceListSecretsMethodDescriptor  = secretServiceServiceDescriptor.Methods().ByName("ListSecrets")
-	secretServiceCreateSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("CreateSecret")
-	secretServiceUpdateSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("UpdateSecret")
-	secretServiceDeleteSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("DeleteSecret")
+	secretServiceServiceDescriptor                     = v1alpha1.File_redpanda_api_dataplane_v1alpha1_secret_proto.Services().ByName("SecretService")
+	secretServiceGetSecretMethodDescriptor             = secretServiceServiceDescriptor.Methods().ByName("GetSecret")
+	secretServiceListSecretsMethodDescriptor           = secretServiceServiceDescriptor.Methods().ByName("ListSecrets")
+	secretServiceCreateSecretMethodDescriptor          = secretServiceServiceDescriptor.Methods().ByName("CreateSecret")
+	secretServiceUpdateSecretMethodDescriptor          = secretServiceServiceDescriptor.Methods().ByName("UpdateSecret")
+	secretServiceDeleteSecretMethodDescriptor          = secretServiceServiceDescriptor.Methods().ByName("DeleteSecret")
+	secretServiceGetConnectorSecretMethodDescriptor    = secretServiceServiceDescriptor.Methods().ByName("GetConnectorSecret")
+	secretServiceListConnectorSecretsMethodDescriptor  = secretServiceServiceDescriptor.Methods().ByName("ListConnectorSecrets")
+	secretServiceCreateConnectorSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("CreateConnectorSecret")
+	secretServiceUpdateConnectorSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("UpdateConnectorSecret")
+	secretServiceDeleteConnectorSecretMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("DeleteConnectorSecret")
 )
 
 // SecretServiceClient is a client for the redpanda.api.dataplane.v1alpha1.SecretService service.
@@ -73,6 +93,16 @@ type SecretServiceClient interface {
 	UpdateSecret(context.Context, *connect.Request[v1alpha1.UpdateSecretRequest]) (*connect.Response[v1alpha1.UpdateSecretResponse], error)
 	// DeleteSecret deletes the secret.
 	DeleteSecret(context.Context, *connect.Request[v1alpha1.DeleteSecretRequest]) (*connect.Response[v1alpha1.DeleteSecretResponse], error)
+	// GetConnectorSecret retrieves the specific secret for a specific connector.
+	GetConnectorSecret(context.Context, *connect.Request[v1alpha1.GetConnectorSecretRequest]) (*connect.Response[v1alpha1.GetConnectorSecretResponse], error)
+	// ListConnectorSecrets lists the connector secrets based on optional filter.
+	ListConnectorSecrets(context.Context, *connect.Request[v1alpha1.ListConnectorSecretsRequest]) (*connect.Response[v1alpha1.ListConnectorSecretsResponse], error)
+	// CreateConnectorSecret creates the secret for a connector.
+	CreateConnectorSecret(context.Context, *connect.Request[v1alpha1.CreateConnectorSecretRequest]) (*connect.Response[v1alpha1.CreateConnectorSecretResponse], error)
+	// UpdateConnectorSecret updates the connector secret.
+	UpdateConnectorSecret(context.Context, *connect.Request[v1alpha1.UpdateConnectorSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectorSecretResponse], error)
+	// DeleteSecret deletes the secret.
+	DeleteConnectorSecret(context.Context, *connect.Request[v1alpha1.DeleteConnectorSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectorSecretResponse], error)
 }
 
 // NewSecretServiceClient constructs a client for the redpanda.api.dataplane.v1alpha1.SecretService
@@ -115,16 +145,51 @@ func NewSecretServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(secretServiceDeleteSecretMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getConnectorSecret: connect.NewClient[v1alpha1.GetConnectorSecretRequest, v1alpha1.GetConnectorSecretResponse](
+			httpClient,
+			baseURL+SecretServiceGetConnectorSecretProcedure,
+			connect.WithSchema(secretServiceGetConnectorSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listConnectorSecrets: connect.NewClient[v1alpha1.ListConnectorSecretsRequest, v1alpha1.ListConnectorSecretsResponse](
+			httpClient,
+			baseURL+SecretServiceListConnectorSecretsProcedure,
+			connect.WithSchema(secretServiceListConnectorSecretsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		createConnectorSecret: connect.NewClient[v1alpha1.CreateConnectorSecretRequest, v1alpha1.CreateConnectorSecretResponse](
+			httpClient,
+			baseURL+SecretServiceCreateConnectorSecretProcedure,
+			connect.WithSchema(secretServiceCreateConnectorSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		updateConnectorSecret: connect.NewClient[v1alpha1.UpdateConnectorSecretRequest, v1alpha1.UpdateConnectorSecretResponse](
+			httpClient,
+			baseURL+SecretServiceUpdateConnectorSecretProcedure,
+			connect.WithSchema(secretServiceUpdateConnectorSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deleteConnectorSecret: connect.NewClient[v1alpha1.DeleteConnectorSecretRequest, v1alpha1.DeleteConnectorSecretResponse](
+			httpClient,
+			baseURL+SecretServiceDeleteConnectorSecretProcedure,
+			connect.WithSchema(secretServiceDeleteConnectorSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // secretServiceClient implements SecretServiceClient.
 type secretServiceClient struct {
-	getSecret    *connect.Client[v1alpha1.GetSecretRequest, v1alpha1.GetSecretResponse]
-	listSecrets  *connect.Client[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse]
-	createSecret *connect.Client[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse]
-	updateSecret *connect.Client[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
-	deleteSecret *connect.Client[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
+	getSecret             *connect.Client[v1alpha1.GetSecretRequest, v1alpha1.GetSecretResponse]
+	listSecrets           *connect.Client[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse]
+	createSecret          *connect.Client[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse]
+	updateSecret          *connect.Client[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
+	deleteSecret          *connect.Client[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
+	getConnectorSecret    *connect.Client[v1alpha1.GetConnectorSecretRequest, v1alpha1.GetConnectorSecretResponse]
+	listConnectorSecrets  *connect.Client[v1alpha1.ListConnectorSecretsRequest, v1alpha1.ListConnectorSecretsResponse]
+	createConnectorSecret *connect.Client[v1alpha1.CreateConnectorSecretRequest, v1alpha1.CreateConnectorSecretResponse]
+	updateConnectorSecret *connect.Client[v1alpha1.UpdateConnectorSecretRequest, v1alpha1.UpdateConnectorSecretResponse]
+	deleteConnectorSecret *connect.Client[v1alpha1.DeleteConnectorSecretRequest, v1alpha1.DeleteConnectorSecretResponse]
 }
 
 // GetSecret calls redpanda.api.dataplane.v1alpha1.SecretService.GetSecret.
@@ -152,6 +217,31 @@ func (c *secretServiceClient) DeleteSecret(ctx context.Context, req *connect.Req
 	return c.deleteSecret.CallUnary(ctx, req)
 }
 
+// GetConnectorSecret calls redpanda.api.dataplane.v1alpha1.SecretService.GetConnectorSecret.
+func (c *secretServiceClient) GetConnectorSecret(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorSecretRequest]) (*connect.Response[v1alpha1.GetConnectorSecretResponse], error) {
+	return c.getConnectorSecret.CallUnary(ctx, req)
+}
+
+// ListConnectorSecrets calls redpanda.api.dataplane.v1alpha1.SecretService.ListConnectorSecrets.
+func (c *secretServiceClient) ListConnectorSecrets(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorSecretsRequest]) (*connect.Response[v1alpha1.ListConnectorSecretsResponse], error) {
+	return c.listConnectorSecrets.CallUnary(ctx, req)
+}
+
+// CreateConnectorSecret calls redpanda.api.dataplane.v1alpha1.SecretService.CreateConnectorSecret.
+func (c *secretServiceClient) CreateConnectorSecret(ctx context.Context, req *connect.Request[v1alpha1.CreateConnectorSecretRequest]) (*connect.Response[v1alpha1.CreateConnectorSecretResponse], error) {
+	return c.createConnectorSecret.CallUnary(ctx, req)
+}
+
+// UpdateConnectorSecret calls redpanda.api.dataplane.v1alpha1.SecretService.UpdateConnectorSecret.
+func (c *secretServiceClient) UpdateConnectorSecret(ctx context.Context, req *connect.Request[v1alpha1.UpdateConnectorSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectorSecretResponse], error) {
+	return c.updateConnectorSecret.CallUnary(ctx, req)
+}
+
+// DeleteConnectorSecret calls redpanda.api.dataplane.v1alpha1.SecretService.DeleteConnectorSecret.
+func (c *secretServiceClient) DeleteConnectorSecret(ctx context.Context, req *connect.Request[v1alpha1.DeleteConnectorSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectorSecretResponse], error) {
+	return c.deleteConnectorSecret.CallUnary(ctx, req)
+}
+
 // SecretServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha1.SecretService
 // service.
 type SecretServiceHandler interface {
@@ -165,6 +255,16 @@ type SecretServiceHandler interface {
 	UpdateSecret(context.Context, *connect.Request[v1alpha1.UpdateSecretRequest]) (*connect.Response[v1alpha1.UpdateSecretResponse], error)
 	// DeleteSecret deletes the secret.
 	DeleteSecret(context.Context, *connect.Request[v1alpha1.DeleteSecretRequest]) (*connect.Response[v1alpha1.DeleteSecretResponse], error)
+	// GetConnectorSecret retrieves the specific secret for a specific connector.
+	GetConnectorSecret(context.Context, *connect.Request[v1alpha1.GetConnectorSecretRequest]) (*connect.Response[v1alpha1.GetConnectorSecretResponse], error)
+	// ListConnectorSecrets lists the connector secrets based on optional filter.
+	ListConnectorSecrets(context.Context, *connect.Request[v1alpha1.ListConnectorSecretsRequest]) (*connect.Response[v1alpha1.ListConnectorSecretsResponse], error)
+	// CreateConnectorSecret creates the secret for a connector.
+	CreateConnectorSecret(context.Context, *connect.Request[v1alpha1.CreateConnectorSecretRequest]) (*connect.Response[v1alpha1.CreateConnectorSecretResponse], error)
+	// UpdateConnectorSecret updates the connector secret.
+	UpdateConnectorSecret(context.Context, *connect.Request[v1alpha1.UpdateConnectorSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectorSecretResponse], error)
+	// DeleteSecret deletes the secret.
+	DeleteConnectorSecret(context.Context, *connect.Request[v1alpha1.DeleteConnectorSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectorSecretResponse], error)
 }
 
 // NewSecretServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -203,6 +303,36 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(secretServiceDeleteSecretMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	secretServiceGetConnectorSecretHandler := connect.NewUnaryHandler(
+		SecretServiceGetConnectorSecretProcedure,
+		svc.GetConnectorSecret,
+		connect.WithSchema(secretServiceGetConnectorSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	secretServiceListConnectorSecretsHandler := connect.NewUnaryHandler(
+		SecretServiceListConnectorSecretsProcedure,
+		svc.ListConnectorSecrets,
+		connect.WithSchema(secretServiceListConnectorSecretsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	secretServiceCreateConnectorSecretHandler := connect.NewUnaryHandler(
+		SecretServiceCreateConnectorSecretProcedure,
+		svc.CreateConnectorSecret,
+		connect.WithSchema(secretServiceCreateConnectorSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	secretServiceUpdateConnectorSecretHandler := connect.NewUnaryHandler(
+		SecretServiceUpdateConnectorSecretProcedure,
+		svc.UpdateConnectorSecret,
+		connect.WithSchema(secretServiceUpdateConnectorSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	secretServiceDeleteConnectorSecretHandler := connect.NewUnaryHandler(
+		SecretServiceDeleteConnectorSecretProcedure,
+		svc.DeleteConnectorSecret,
+		connect.WithSchema(secretServiceDeleteConnectorSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha1.SecretService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SecretServiceGetSecretProcedure:
@@ -215,6 +345,16 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 			secretServiceUpdateSecretHandler.ServeHTTP(w, r)
 		case SecretServiceDeleteSecretProcedure:
 			secretServiceDeleteSecretHandler.ServeHTTP(w, r)
+		case SecretServiceGetConnectorSecretProcedure:
+			secretServiceGetConnectorSecretHandler.ServeHTTP(w, r)
+		case SecretServiceListConnectorSecretsProcedure:
+			secretServiceListConnectorSecretsHandler.ServeHTTP(w, r)
+		case SecretServiceCreateConnectorSecretProcedure:
+			secretServiceCreateConnectorSecretHandler.ServeHTTP(w, r)
+		case SecretServiceUpdateConnectorSecretProcedure:
+			secretServiceUpdateConnectorSecretHandler.ServeHTTP(w, r)
+		case SecretServiceDeleteConnectorSecretProcedure:
+			secretServiceDeleteConnectorSecretHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -242,4 +382,24 @@ func (UnimplementedSecretServiceHandler) UpdateSecret(context.Context, *connect.
 
 func (UnimplementedSecretServiceHandler) DeleteSecret(context.Context, *connect.Request[v1alpha1.DeleteSecretRequest]) (*connect.Response[v1alpha1.DeleteSecretResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.DeleteSecret is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) GetConnectorSecret(context.Context, *connect.Request[v1alpha1.GetConnectorSecretRequest]) (*connect.Response[v1alpha1.GetConnectorSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.GetConnectorSecret is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) ListConnectorSecrets(context.Context, *connect.Request[v1alpha1.ListConnectorSecretsRequest]) (*connect.Response[v1alpha1.ListConnectorSecretsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.ListConnectorSecrets is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) CreateConnectorSecret(context.Context, *connect.Request[v1alpha1.CreateConnectorSecretRequest]) (*connect.Response[v1alpha1.CreateConnectorSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.CreateConnectorSecret is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) UpdateConnectorSecret(context.Context, *connect.Request[v1alpha1.UpdateConnectorSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectorSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.UpdateConnectorSecret is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) DeleteConnectorSecret(context.Context, *connect.Request[v1alpha1.DeleteConnectorSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectorSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha1.SecretService.DeleteConnectorSecret is not implemented"))
 }
