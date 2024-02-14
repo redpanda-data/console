@@ -877,9 +877,6 @@ components:
     SecretInput:
       description: SecretInput defienes the secret input for secret API actions.
       properties:
-        id:
-          description: Secret identifier.
-          type: string
         labels:
           additionalProperties:
             type: string
@@ -2190,7 +2187,6 @@ paths:
       summary: Get a connector secret
       tags:
         - SecretService
-  /v1alpha1/connect/clusters/{cluster_name}/secrets/{secret.id}:
     put:
       description: Update connector secret content.
       operationId: SecretService_UpdateConnectorSecret
@@ -2201,9 +2197,9 @@ paths:
           required: true
           schema:
             type: string
-        - description: Secret identifier.
+        - description: The id of the secret to retrieve.
           in: path
-          name: secret.id
+          name: id
           required: true
           schema:
             type: string
@@ -2211,20 +2207,7 @@ paths:
         content:
           application/json:
             schema:
-              properties:
-                labels:
-                  additionalProperties:
-                    type: string
-                  description: Secret labels.
-                  type: object
-                secret_data:
-                  description: The secret data.
-                  format: byte
-                  type: string
-              required:
-                - secret_data
-              title: The input for the secret to update.
-              type: object
+              $ref: '#/components/schemas/SecretInput'
         description: The input for the secret to update.
         required: true
         x-originalParamName: secret
@@ -2321,6 +2304,12 @@ paths:
     post:
       description: Create a secret.
       operationId: SecretService_CreateSecret
+      parameters:
+        - description: Secret identifier.
+          in: query
+          name: id
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -2445,14 +2434,13 @@ paths:
       summary: Get secret
       tags:
         - SecretService
-  /v1alpha1/secrets/{secret.id}:
     put:
       description: Update a Secret content.
       operationId: SecretService_UpdateSecret
       parameters:
         - description: Secret identifier.
           in: path
-          name: secret.id
+          name: id
           required: true
           schema:
             type: string
@@ -2460,20 +2448,7 @@ paths:
         content:
           application/json:
             schema:
-              properties:
-                labels:
-                  additionalProperties:
-                    type: string
-                  description: Secret labels.
-                  type: object
-                secret_data:
-                  description: The secret data.
-                  format: byte
-                  type: string
-              required:
-                - secret_data
-              title: The input for the secret to update.
-              type: object
+              $ref: '#/components/schemas/SecretInput'
         description: The input for the secret to update.
         required: true
         x-originalParamName: secret

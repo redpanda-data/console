@@ -62,13 +62,6 @@ export class Secret extends Message<Secret> {
  */
 export class SecretInput extends Message<SecretInput> {
   /**
-   * Secret identifier.
-   *
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
    * Secret labels.
    *
    * @generated from field: map<string, string> labels = 2;
@@ -90,7 +83,6 @@ export class SecretInput extends Message<SecretInput> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.SecretInput";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
@@ -357,9 +349,16 @@ export class GetSecretResponse extends Message<GetSecretResponse> {
  */
 export class CreateSecretRequest extends Message<CreateSecretRequest> {
   /**
+   * Secret identifier.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
    * The input for the secret to create.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 2;
    */
   secret?: SecretInput;
 
@@ -371,7 +370,8 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "secret", kind: "message", T: SecretInput },
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secret", kind: "message", T: SecretInput },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateSecretRequest {
@@ -439,9 +439,16 @@ export class CreateSecretResponse extends Message<CreateSecretResponse> {
  */
 export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   /**
+   * Secret identifier.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
    * The input for the secret to update.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 2;
    */
   secret?: SecretInput;
 
@@ -453,7 +460,8 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "secret", kind: "message", T: SecretInput },
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secret", kind: "message", T: SecretInput },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateSecretRequest {
@@ -905,9 +913,16 @@ export class UpdateConnectorSecretRequest extends Message<UpdateConnectorSecretR
   clusterName = "";
 
   /**
+   * The id of the secret to retrieve.
+   *
+   * @generated from field: string id = 2;
+   */
+  id = "";
+
+  /**
    * The input for the secret to update.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 2;
+   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 3;
    */
   secret?: SecretInput;
 
@@ -920,7 +935,8 @@ export class UpdateConnectorSecretRequest extends Message<UpdateConnectorSecretR
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateConnectorSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "secret", kind: "message", T: SecretInput },
+    { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "secret", kind: "message", T: SecretInput },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectorSecretRequest {
