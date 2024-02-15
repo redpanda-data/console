@@ -11,22 +11,29 @@
 
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
-import { comparer } from 'mobx';
+import { comparer, observable, transaction } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
-import { Code } from '../../../utils/tsxUtils';
+import { MessageSearchRequest, api } from '../../../state/backendApi';
+import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance, TopicMessage } from '../../../state/restInterfaces';
+import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import { ConfigPage } from './dynamic-ui/components';
 import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
-import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable } from '@redpanda-data/ui';
+import { delay, encodeBase64 } from '../../../utils/utils';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable, SearchField } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
+import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
+import { ColumnDef } from '@tanstack/react-table';
+import { MessagePreview, renderExpandedMessage } from '../topics/Tab.Messages';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { uiState } from '../../../state/uiState';
+import { sanitizeString } from '../../../utils/filterHelper';
+import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -109,7 +116,7 @@ const KafkaConnectorMain = observer(
                         key: 'overview',
                         name: 'Overview',
                         component: <Box mt="8">
-                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector}/>
+                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
                         </Box>
                     },
                     {
@@ -125,20 +132,27 @@ const KafkaConnectorMain = observer(
                                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                                     <Button
                                         variant="outline"
-                                        style={{width: '200px'}}
+                                        style={{ width: '200px' }}
                                         disabled={(() => {
                                             if (!canEdit) return true;
                                             if (!connector) return true;
                                             if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
                                         })()}
                                         onClick={() => {
-                                            $state.updatingConnector = {clusterName, connectorName};
+                                            $state.updatingConnector = { clusterName, connectorName };
                                         }}
                                     >
                                         Update Config
                                     </Button>
                                 </Tooltip>
                             </Flex>
+                        </Box>
+                    },
+                    {
+                        key: 'logs',
+                        name: 'Logs',
+                        component: <Box mt="8">
+                            <LogsTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
                         </Box>
                     }
                 ]}
@@ -308,17 +322,17 @@ const ConfigOverviewTab = observer((p: {
                             header: 'Task',
                             accessorKey: 'taskId',
                             size: 200,
-                            cell: ({row: {original: {taskId}}}) => <Code nowrap>Task-{taskId}</Code>,
+                            cell: ({ row: { original: { taskId } } }) => <Code nowrap>Task-{taskId}</Code>,
                         },
                         {
                             header: 'Status',
                             accessorKey: 'state',
-                            cell: ({row: {original}}) => <TaskState observable={original} />,
+                            cell: ({ row: { original } }) => <TaskState observable={original} />,
                         },
                         {
                             header: 'Worker',
                             accessorKey: 'workerId',
-                            cell: ({row: {original}}) => <Code nowrap>{original.workerId}</Code>,
+                            cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
                         }
                     ]}
                 />
@@ -390,6 +404,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         await api.refreshConnectClusters(force);
 
         // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
+        // and show the logs tab
         api.refreshTopics(force);
     }
 
@@ -475,3 +490,138 @@ const ConnectorDetails = observer((p: {
         )}
     </Grid>
 });
+
+type LogsTabState = {
+    messages: TopicMessage[];
+    error?: string;
+    isComplete: boolean;
+};
+
+
+const LogsTab = observer((p: {
+    clusterName: string,
+    connectClusterStore: ConnectClusterStore,
+    connector: ClusterConnectorInfo,
+}) => {
+    const { connector } = p;
+    const connectorName = connector.name;
+    const topicName = '__redpanda.connectors_logs';
+    const topic = api.topics?.first(x => x.topicName == topicName);
+
+    const createLogsTabState = () => {
+        const s = observable({
+            messages: [],
+            isComplete: false,
+        } as LogsTabState);
+        // Start search immediately
+        const searchPromise = executeMessageSearch(topicName, connectorName);
+        searchPromise.catch(x => s.error = String(x)).then(() => s.isComplete = true);
+        // TODO:
+        // this is really unclean, the search api should return an *instance* of a search, which should
+        // be observable (containing an observable array of results, and error if any) but refactoring
+        // this in the same PR would be too much
+        s.messages = api.messages;
+        return s;
+    };
+
+    const [state, setState] = useState(createLogsTabState);
+
+    const paginationParams = usePaginationParams(10);
+    const messageTableColumns: ColumnDef<TopicMessage>[] = [
+        {
+            header: 'Timestamp',
+            accessorKey: 'timestamp',
+            cell: ({ row: { original: { timestamp } } }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+            size: 30
+        },
+        {
+            header: 'Value',
+            accessorKey: 'value',
+            cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => []} isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false} />,
+            size: 700
+        }
+    ];
+
+    const filteredMessages = state.messages.filter(x => {
+        if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+        return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
+    })
+
+
+    return <>
+        <Box my="1rem">The logs below are for the last three hours.</Box>
+
+        <Section minWidth="800px">
+            <Flex mb="6">
+                <SearchField width="230px" searchText={uiSettings.connectorsDetails.logsQuickSearch} setSearchText={x => (uiSettings.connectorsDetails.logsQuickSearch = x)} />
+                <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>Refresh logs</Button>
+            </Flex>
+
+            <DataTable<TopicMessage>
+                data={filteredMessages}
+                emptyText="No messages"
+                columns={messageTableColumns}
+
+                sorting={uiSettings.connectorsDetails.sorting ?? []}
+                onSortingChange={sorting => {
+                    uiSettings.connectorsDetails.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+                }}
+                pagination={paginationParams}
+                // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
+                //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
+                subComponent={({ row: { original } }) => renderExpandedMessage(original)}
+            />
+
+        </Section>
+    </>
+});
+
+function isFilterMatch(str: string, m: TopicMessage) {
+    str = str.toLowerCase();
+    if (m.offset.toString().toLowerCase().includes(str)) return true;
+    if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
+    if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+    return false;
+}
+
+
+async function executeMessageSearch(topicName: string, connectorKey: string) {
+    const filterCode: string = `return key == "${connectorKey}";`;
+
+    const lastXHours = 5;
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - lastXHours);
+
+    const request = {
+        topicName: topicName,
+        partitionId: -1,
+
+        startOffset: PartitionOffsetOrigin.Timestamp,
+        startTimestamp: startTime.getTime(),
+        maxResults: 1000,
+        filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
+        includeRawPayload: false,
+
+        keyDeserializer: PayloadEncoding.UNSPECIFIED,
+        valueDeserializer: PayloadEncoding.UNSPECIFIED,
+    } as MessageSearchRequest;
+
+    // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
+    // so any changes in phase, messages, error, etc can be used immediately in the ui
+    return transaction(async () => {
+        try {
+            // this.fetchError = null;
+            return api.startMessageSearchNew(request)
+                .catch(err => {
+                    const msg = ((err as Error).message ?? String(err));
+                    console.error('error in connectorLogsMessageSearch: ' + msg);
+                    // this.fetchError = err;
+                    return [];
+                });
+        } catch (error: any) {
+            console.error('error in connectorLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
+            // this.fetchError = error;
+            return [];
+        }
+    });
+}

@@ -1019,7 +1019,7 @@ class StartOffsetDateTimePicker extends Component {
 }
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
+export class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value;
@@ -1091,7 +1091,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+export function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
         <RpTabs

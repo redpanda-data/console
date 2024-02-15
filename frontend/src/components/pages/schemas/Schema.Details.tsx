@@ -205,9 +205,6 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                             component: <VersionDiff subject={subject} />
                         }
                     ]} />
-
-
-
             </PageContent>
         );
     }
