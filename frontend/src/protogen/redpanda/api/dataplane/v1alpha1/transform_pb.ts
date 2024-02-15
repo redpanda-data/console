@@ -155,6 +155,107 @@ proto3.util.setEnumType(PartitionTransformStatus_PartitionStatus, "redpanda.api.
 ]);
 
 /**
+ * DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
+ * still used for validation in the HTTP endpoint.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest
+ */
+export class DeployTransformRequest extends Message<DeployTransformRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string input_topic_name = 2;
+   */
+  inputTopicName = "";
+
+  /**
+   * @generated from field: repeated string output_topic_names = 3;
+   */
+  outputTopicNames: string[] = [];
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable environment_variables = 4;
+   */
+  environmentVariables: DeployTransformRequest_EnvironmentVariable[] = [];
+
+  constructor(data?: PartialMessage<DeployTransformRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "input_topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "output_topic_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "environment_variables", kind: "message", T: DeployTransformRequest_EnvironmentVariable, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest {
+    return new DeployTransformRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined, b: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined): boolean {
+    return proto3.util.equals(DeployTransformRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable
+ */
+export class DeployTransformRequest_EnvironmentVariable extends Message<DeployTransformRequest_EnvironmentVariable> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value = "";
+
+  constructor(data?: PartialMessage<DeployTransformRequest_EnvironmentVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest_EnvironmentVariable {
+    return new DeployTransformRequest_EnvironmentVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest_EnvironmentVariable {
+    return new DeployTransformRequest_EnvironmentVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest_EnvironmentVariable {
+    return new DeployTransformRequest_EnvironmentVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeployTransformRequest_EnvironmentVariable | PlainMessage<DeployTransformRequest_EnvironmentVariable> | undefined, b: DeployTransformRequest_EnvironmentVariable | PlainMessage<DeployTransformRequest_EnvironmentVariable> | undefined): boolean {
+    return proto3.util.equals(DeployTransformRequest_EnvironmentVariable, a, b);
+  }
+}
+
+/**
  * @generated from message redpanda.api.dataplane.v1alpha1.ListTransformsRequest
  */
 export class ListTransformsRequest extends Message<ListTransformsRequest> {
