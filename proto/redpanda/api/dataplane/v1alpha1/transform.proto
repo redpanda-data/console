@@ -43,7 +43,7 @@ message DeployTransformRequest {
       (buf.validate.field).string.max_len = 128,
       (buf.validate.field).cel = {
         id: "transforms_env_key_does_not_use_redpanda_prefix",
-        expression: "this.startsWith('REDPANDA_')"
+        expression: "!this.startsWith('REDPANDA_')"
         message: "Environment variable keys that start with 'REDPANDA_' are reserved."
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
