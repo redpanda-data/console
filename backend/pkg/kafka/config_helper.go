@@ -15,6 +15,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"net"
 	"os"
 	"time"
@@ -146,17 +147,33 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 
 		// AWS MSK IAM
 		if cfg.SASL.Mechanism == config.SASLMechanismAWSManagedStreamingIAM {
+			var mechanism sasl.Mechanism
 			if cfg.SASL.AWSMskIam.AccessKey != "" &&
 				cfg.SASL.AWSMskIam.SecretKey != "" &&
 				cfg.SASL.AWSMskIam.SessionToken != "" {
-				mechanism := aws.Auth{
+				mechanism = aws.Auth{
 					AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
 					SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
 					SessionToken: cfg.SASL.AWSMskIam.SessionToken,
 					UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
 				}.AsManagedStreamingIAMMechanism()
-				opts = append(opts, kgo.SASL(mechanism))
+			} else {
+				sess, err := session.NewSession()
+				if err != nil {
+					return nil, err
+				}
+				val, err := sess.Config.Credentials.Get()
+				if err != nil {
+					return nil, err
+				}
+				mechanism = aws.Auth{
+					AccessKey:    val.AccessKeyID,
+					SecretKey:    val.SecretAccessKey,
+					SessionToken: val.SessionToken,
+					UserAgent:    val.ProviderName,
+				}.AsManagedStreamingIAMMechanism()
 			}
+			opts = append(opts, kgo.SASL(mechanism))
 		}
 	}
 
