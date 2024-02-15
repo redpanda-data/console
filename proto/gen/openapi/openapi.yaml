@@ -291,6 +291,17 @@ components:
         secret:
           $ref: '#/components/schemas/Secret'
       type: object
+    CreateSecretRequest:
+      description: CreateSecretRequest is the request of CreateSecret.
+      properties:
+        id:
+          description: Secret identifier.
+          type: string
+        secret:
+          $ref: '#/components/schemas/SecretInput'
+      required:
+        - secret
+      type: object
     CreateSecretResponse:
       description: CreateSecretResponse is the response of CreateSecret.
       properties:
@@ -2304,20 +2315,14 @@ paths:
     post:
       description: Create a secret.
       operationId: SecretService_CreateSecret
-      parameters:
-        - description: Secret identifier.
-          in: query
-          name: id
-          schema:
-            type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SecretInput'
-        description: The input for the secret to create.
+              $ref: '#/components/schemas/CreateSecretRequest'
+        description: CreateSecretRequest is the request of CreateSecret.
         required: true
-        x-originalParamName: secret
+        x-originalParamName: body
       responses:
         "201":
           content:
