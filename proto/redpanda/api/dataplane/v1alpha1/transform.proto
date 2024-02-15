@@ -4,10 +4,15 @@ package redpanda.api.dataplane.v1alpha1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 message TransformMetadata {
-  string name = 1;
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
   string input_topic_name = 2;
   repeated string output_topic_names = 3;
   repeated PartitionTransformStatus status = 4;
@@ -25,6 +30,91 @@ message PartitionTransformStatus {
   }
   PartitionStatus status = 3;
   int32 lag = 4;
+}
+
+// DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
+// still used for validation in the HTTP endpoint.
+message DeployTransformRequest {
+  message EnvironmentVariable {
+    string key = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).cel = {
+        id: "transforms_env_key_does_not_use_redpanda_prefix",
+        expression: "this.startsWith('REDPANDA_')"
+        message: "Environment variable keys that start with 'REDPANDA_' are reserved."
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The key of your environment variable.",
+        example: "\"LOG_LEVEL\"",
+      }
+    ];
+    string value = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 2048,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The key of your environment variable.",
+        example: "\"DEBUG\"",
+      }
+    ];
+  }
+
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The name of the transform.",
+      example: "\"redact-payment-details-in-orders\"",
+    }
+  ];
+  string input_topic_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The input topic to apply the transform to.",
+      example: "\"orders\"",
+    }
+  ];
+  repeated string output_topic_names = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1,
+      max_items: 1,
+      unique: true,
+      items: {
+        string: {
+          min_len: 1,
+          max_len: 249,
+          pattern: "^[a-zA-Z0-9._\\-]*$"
+        }
+      }
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The output topic to write the transform results to.",
+      example: "\"orders-redacted\"",
+    }
+  ];
+  repeated EnvironmentVariable environment_variables = 4 [
+    (buf.validate.field).repeated = {
+      min_items: 0,
+      max_items: 128,
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The output topic to write the transform results to.",
+      example: "\"orders-redacted\"",
+    }
+  ];
 }
 
 message ListTransformsRequest {
