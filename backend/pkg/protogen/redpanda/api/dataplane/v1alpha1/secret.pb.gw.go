@@ -119,10 +119,6 @@ func local_request_SecretService_ListSecrets_0(ctx context.Context, marshaler ru
 
 }
 
-var (
-	filter_SecretService_CreateSecret_0 = &utilities.DoubleArray{Encoding: map[string]int{"secret": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
-)
-
 func request_SecretService_CreateSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateSecretRequest
 	var metadata runtime.ServerMetadata
@@ -131,14 +127,7 @@ func request_SecretService_CreateSecret_0(ctx context.Context, marshaler runtime
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Secret); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_CreateSecret_0); err != nil {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -155,14 +144,7 @@ func local_request_SecretService_CreateSecret_0(ctx context.Context, marshaler r
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Secret); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_CreateSecret_0); err != nil {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -813,7 +795,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1086,7 +1068,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1205,6 +1187,15 @@ type response_SecretService_UpdateSecret_0 struct {
 
 func (m response_SecretService_UpdateSecret_0) XXX_ResponseBody() interface{} {
 	response := m.Message.(*UpdateSecretResponse)
+	return response.Secret
+}
+
+type response_SecretService_GetConnectorSecret_0 struct {
+	proto.Message
+}
+
+func (m response_SecretService_GetConnectorSecret_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*GetConnectorSecretResponse)
 	return response.Secret
 }
 
