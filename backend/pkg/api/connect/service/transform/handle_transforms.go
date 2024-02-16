@@ -10,139 +10,203 @@
 package transform
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	"connectrpc.com/connect"
+	"github.com/bufbuild/protovalidate-go"
+	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/redpanda-data/console/backend/pkg/api"
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
+	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
 const (
-	// Define how many bytes are in a kilobyte (KB) and a megabyte (MB)
-	kb int64 = 1024
-	mb int64 = 1024 * kb
+	// Define how many bytes are in a kilobyte (KiB) and a megabyte (MiB)
+	kib int64 = 1024
+	mib int64 = 1024 * kib
 )
 
-// Metadata is the transform metadata required to deploy a wasm transform
-type Metadata struct {
-	Name         string                         `json:"name"`
-	InputTopic   string                         `json:"input_topic"`
-	OutputTopics []string                       `json:"output_topics"`
-	Environment  []adminapi.EnvironmentVariable `json:"environment"`
-}
-
+// HandleDeployTransform is the HTTP handler for deploying WASM transforms in Redpanda.
+// Because we use multipart/form-data for uploading the binary file (up to 50mb), we did
+// not use gRPC/protobuf for this.
 func (s *Service) HandleDeployTransform() http.HandlerFunc {
-	type response struct {
-		Transform *adminapi.TransformMetadata `json:"transform"`
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.cfg.Redpanda.AdminAPI.Enabled {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("you must enable the admin api to manage wasm transforms"),
-				Status:   http.StatusServiceUnavailable,
-				Message:  "you must enable the admin api to manage wasm transforms",
-				IsSilent: false,
-			})
+			s.writeError(w, r, apierrors.NewRedpandaAdminAPINotConfiguredError())
 			return
 		}
 
-		if err := r.ParseMultipartForm(50 * mb); err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "Could not parse multipart form",
-				IsSilent: false,
-			})
+		// 1. Parse input data that is sent using Multipart form encoding.
+		if r.ContentLength == 0 {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("request body must be a valid multipart/form-data payload, but sent body is empty"),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
+			return
+		}
+
+		// The max default binary upload size is 10MiB. Because this does not include
+		// the metadata we added 5KiB as a limit.
+		if err := r.ParseMultipartForm(10*mib + 5*kib); err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("could not parse multipart form: %w", err),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
 			return
 		}
 
 		metadataJSON := r.FormValue("metadata")
 		if metadataJSON == "" {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("metadata field is missing"),
-				Status:   http.StatusBadRequest,
-				Message:  "Could not find or parse form field metadata",
-				IsSilent: false,
-			})
-			return
-		}
-
-		var msg Metadata
-		if err := json.Unmarshal([]byte(metadataJSON), &msg); err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "Could not decode transform metadata",
-				IsSilent: false,
-			})
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("could not find or parse form field metadata"),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
 			return
 		}
 
 		wasmForm, _, err := r.FormFile("wasm_binary")
 		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "Could not find or parse form field wasm_binary",
-				IsSilent: false,
-			})
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("could not find or parse form field wasm_binary: %w", err),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
 			return
 		}
 		defer wasmForm.Close()
 
 		wasmBinary, err := io.ReadAll(wasmForm)
 		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "Could not read wasm binary",
-				IsSilent: false,
-			})
-		}
-
-		if err := api.RedpandaSvc.DeployWasmTransform(r.Context(), adminapi.TransformMetadata{
-			Name:         msg.Name,
-			InputTopic:   msg.InputTopic,
-			OutputTopics: msg.OutputTopics,
-			Status:       nil,
-			Environment:  msg.Environment,
-		}, wasmBinary); err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not deploy wasm transform",
-				IsSilent: false,
-			})
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("could not read wasm binary: %w", err),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
 			return
 		}
 
-		transforms, err := api.RedpandaSvc.ListWasmTransforms(r.Context())
+		// 2. Parse and validate request parameters
+		var deployTransformReq v1alpha1.DeployTransformRequest
+		err = protojson.UnmarshalOptions{}.Unmarshal([]byte(metadataJSON), &deployTransformReq)
 		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not list wasm transforms from Kafka cluster",
-				IsSilent: false,
-			})
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("unable to parse form field metadata: %w", err),
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			))
+			return
+		}
+		if err := s.validateProtoMessage(&deployTransformReq); err != nil {
+			s.writeError(w, r, err)
 			return
 		}
 
-		t, err := findExactTransformByName(transforms, msg.Name)
-		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusNotFound,
-				Message:  "Could not find transform",
-				IsSilent: false,
-			})
+		// 3. Deploy WASM transform by calling the Redpanda Admin API
+		if err := s.redpandaSvc.DeployWasmTransform(r.Context(), s.mapper.deployTransformReqToAdminAPI(&deployTransformReq), wasmBinary); err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInvalidArgument,
+				fmt.Errorf("could not deploy wasm transform: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+			))
 			return
 		}
-		rest.SendResponse(w, r, api.Logger, http.StatusCreated, response{
-			Transform: t,
-		})
+
+		// 4. List transforms and find the just deployed transform from the response
+		transforms, err := s.redpandaSvc.ListWasmTransforms(r.Context())
+		if err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("deployed wasm transform, but could not list wasm transforms from Redpanda cluster: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+			))
+			return
+		}
+
+		transformsProto, err := s.mapper.transformMetadataToProto(transforms)
+		if err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("deployed wasm transform, but failed to map list response to proto: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+			))
+			return
+		}
+
+		transformProto, err := findExactTransformByName(transformsProto, deployTransformReq.Name)
+		if err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("deployed wasm transform, but failed to list it afterwards"),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+			))
+			return
+		}
+
+		// 5. Write found transform proto as JSON
+		jsonBytes, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(transformProto)
+		if err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("deployed wasm transform, but failed to serialize response into JSON: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
+			))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if _, err := w.Write(jsonBytes); err != nil {
+			s.logger.Error("failed to write response to deploy wasm transform request", zap.Error(err))
+		}
 	}
+}
+
+// validateProtoMessage validates a given proto message using its
+// validate rules which are defined as part of the proto message.
+// This is usually done inside an interceptor, however HandleDeployTransform
+// is special as it's not using the connect gateway.
+func (s *Service) validateProtoMessage(msg proto.Message) error {
+	err := s.validator.Validate(msg)
+	if err == nil {
+		return nil
+	}
+
+	var badRequest *errdetails.BadRequest
+	var validationErr *protovalidate.ValidationError
+	var runtimeErr *protovalidate.RuntimeError
+	var compilationErr *protovalidate.CompilationError
+
+	switch {
+	case errors.As(err, &validationErr):
+		var fieldViolations []*errdetails.BadRequest_FieldViolation
+		for _, violation := range validationErr.Violations {
+			fieldViolationErr := &errdetails.BadRequest_FieldViolation{
+				Field:       violation.FieldPath,
+				Description: violation.Message,
+			}
+			fieldViolations = append(fieldViolations, fieldViolationErr)
+		}
+		badRequest = apierrors.NewBadRequest(fieldViolations...)
+	case errors.As(err, &runtimeErr):
+		s.logger.Error("validation runtime error", zap.Error(runtimeErr))
+	case errors.As(err, &compilationErr):
+		s.logger.Error("validation compilation error", zap.Error(compilationErr))
+	}
+
+	return apierrors.NewConnectError(
+		connect.CodeInvalidArgument,
+		errors.New("provided parameters are invalid"),
+		apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		badRequest, // This may be nil, but that's okay.
+	)
 }

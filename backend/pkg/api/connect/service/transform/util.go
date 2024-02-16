@@ -22,7 +22,7 @@ func findTransformByName(transforms []*v1alpha1.TransformMetadata, name string) 
 			return transform, nil
 		}
 	}
-	return nil, fmt.Errorf("the requested transform does not exist %s", name)
+	return nil, fmt.Errorf("the requested transform %q does not exist", name)
 }
 
 func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {
@@ -31,5 +31,5 @@ func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name str
 			return transform, nil
 		}
 	}
-	return nil, fmt.Errorf("the requested transform does not exist %s", name)
+	return nil, fmt.Errorf("the requested transform %q does not exist", name)
 }

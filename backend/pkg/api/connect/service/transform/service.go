@@ -12,9 +12,12 @@ package transform
 
 import (
 	"context"
-	"errors"
+	"net/http"
+	"strconv"
 
 	"connectrpc.com/connect"
+	"github.com/bufbuild/protovalidate-go"
+	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -29,18 +32,53 @@ var _ dataplanev1alpha1connect.TransformServiceHandler = (*Service)(nil)
 // Service is the implementation of the transform service.
 type Service struct {
 	cfg         *config.Config
+	logger      *zap.Logger
 	redpandaSvc *redpanda.Service
+	validator   *protovalidate.Validator
+	mapper      mapper
+	errorWriter *connect.ErrorWriter
+}
+
+// NewService creates a new transform service handler.
+func NewService(cfg *config.Config,
+	logger *zap.Logger,
+	redpandaSvc *redpanda.Service,
+	protoValidator *protovalidate.Validator,
+) *Service {
+	return &Service{
+		cfg:         cfg,
+		logger:      logger,
+		redpandaSvc: redpandaSvc,
+		validator:   protoValidator,
+		mapper:      mapper{},
+		errorWriter: connect.NewErrorWriter(),
+	}
+}
+
+// writeError writes an error using connect.ErrorWriter and also logs this event.
+func (s *Service) writeError(w http.ResponseWriter, r *http.Request, err error) {
+	childLogger := s.logger.With(
+		zap.String("request_method", r.Method),
+		zap.String("request_path", r.URL.Path),
+	)
+
+	writeErr := s.errorWriter.Write(w, r, err)
+	if writeErr != nil {
+		childLogger.Error("failed to write error",
+			zap.NamedError("error_to_write", err),
+			zap.Error(err))
+
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"code":"INTERNAL","message":"failed to write error with error writer"}`))
+		return
+	}
+	childLogger.Warn("", zap.Error(err))
 }
 
 // ListTransforms lists all the transforms matching the filter deployed to Redpanda
 func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to list transforms"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
@@ -51,10 +89,10 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
-	preFilter, err := adminMetadataToProtoMetadata(transforms)
+	transformsProto, err := s.mapper.transformMetadataToProto(transforms)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
-			connect.CodeNotFound,
+			connect.CodeInternal,
 			err,
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
 		)
@@ -63,23 +101,21 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 	if c.Msg.GetFilter() == nil || c.Msg.GetFilter().GetName() == "" {
 		return &connect.Response[v1alpha1.ListTransformsResponse]{
 			Msg: &v1alpha1.ListTransformsResponse{
-				Transforms: preFilter,
+				Transforms: transformsProto,
 			},
 		}, nil
 	}
 
-	transform, err := findTransformByName(preFilter, c.Msg.GetFilter().GetName())
+	transformsFiltered, err := findTransformByName(transformsProto, c.Msg.GetFilter().GetName())
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,
 			err,
-			apierrors.NewErrorInfo(
-				commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String(),
-			))
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()))
 	}
 	return &connect.Response[v1alpha1.ListTransformsResponse]{
 		Msg: &v1alpha1.ListTransformsResponse{
-			Transforms: []*v1alpha1.TransformMetadata{transform},
+			Transforms: []*v1alpha1.TransformMetadata{transformsFiltered},
 		},
 	}, nil
 }
@@ -87,12 +123,7 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 // GetTransform gets a transform by name
 func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to get a transform"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
@@ -104,7 +135,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 		)
 	}
 
-	tfs, err := adminMetadataToProtoMetadata(transforms)
+	tfs, err := s.mapper.transformMetadataToProto(transforms)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,
@@ -131,12 +162,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 // DeleteTransform deletes a transform by name
 func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to get a transform"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
@@ -148,7 +174,7 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 		)
 	}
 
-	tfs, err := adminMetadataToProtoMetadata(transforms)
+	tfs, err := s.mapper.transformMetadataToProto(transforms)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,
@@ -174,17 +200,8 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 		)
 	}
 
-	return &connect.Response[v1alpha1.DeleteTransformResponse]{
-		Msg: &v1alpha1.DeleteTransformResponse{},
-	}, nil
-}
+	connectResponse := connect.NewResponse(&v1alpha1.DeleteTransformResponse{})
+	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusNoContent))
 
-// NewService creates a new transform service handler.
-func NewService(cfg *config.Config,
-	redpandaSvc *redpanda.Service,
-) *Service {
-	return &Service{
-		cfg:         cfg,
-		redpandaSvc: redpandaSvc,
-	}
+	return connectResponse, nil
 }

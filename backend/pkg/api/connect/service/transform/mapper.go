@@ -17,11 +17,10 @@ import (
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
-//nolint:stylecheck // generated enum
-func statusToPartitionTransformStatus_PartitionStatus(s string) (v1alpha1.PartitionTransformStatus_PartitionStatus, error) {
+type mapper struct{}
+
+func (*mapper) partitionTransformStatusToProto(s string) (v1alpha1.PartitionTransformStatus_PartitionStatus, error) {
 	switch s {
-	case "unspecified":
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNSPECIFIED, nil
 	case "running":
 		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING, nil
 	case "inactive":
@@ -31,40 +30,60 @@ func statusToPartitionTransformStatus_PartitionStatus(s string) (v1alpha1.Partit
 	case "unknown":
 		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN, nil
 	default:
-		return -1, fmt.Errorf("unable to convert %q to a known string that can be handled by the Redpanda Admin API", s)
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNSPECIFIED, fmt.Errorf("unable to convert %q to a known string that can be handled by the Redpanda Admin API", s)
 	}
 }
 
-func adminMetadataToProtoMetadata(transforms []adminapi.TransformMetadata) ([]*v1alpha1.TransformMetadata, error) {
+func (m *mapper) transformMetadataToProto(transforms []adminapi.TransformMetadata) ([]*v1alpha1.TransformMetadata, error) {
 	apiTransforms := make([]*v1alpha1.TransformMetadata, 0, len(transforms))
 	for _, transform := range transforms {
-		stat, err := adminStatusToProtoStatus(transform)
-		if err != nil {
-			return nil, fmt.Errorf("unable to convert transform status: %w", err)
+		statuses := make([]*v1alpha1.PartitionTransformStatus, len(transform.Status))
+		for i, transformStatusWithMetadata := range transform.Status {
+			p, err := m.transformStatusWithMetadataToProto(transformStatusWithMetadata)
+			if err != nil {
+				return nil, fmt.Errorf("unable to convert transform status: %w", err)
+			}
+			statuses[i] = p
 		}
+
 		apiTransforms = append(apiTransforms, &v1alpha1.TransformMetadata{
 			Name:             transform.Name,
 			InputTopicName:   transform.InputTopic,
 			OutputTopicNames: transform.OutputTopics,
-			Status:           stat,
+			Statuses:         statuses,
 		})
 	}
 	return apiTransforms, nil
 }
 
-func adminStatusToProtoStatus(transform adminapi.TransformMetadata) ([]*v1alpha1.PartitionTransformStatus, error) {
-	pts := make([]*v1alpha1.PartitionTransformStatus, 0, len(transform.Status))
-	for _, ts := range transform.Status {
-		st, err := statusToPartitionTransformStatus_PartitionStatus(ts.Status)
-		if err != nil {
-			return nil, err
-		}
-		pts = append(pts, &v1alpha1.PartitionTransformStatus{
-			NodeId:    int32(ts.NodeID),
-			Status:    st,
-			Lag:       int32(ts.Lag),
-			Partition: int32(ts.Partition),
-		})
+func (m *mapper) transformStatusWithMetadataToProto(transformStatusWithMetadata adminapi.PartitionTransformStatus) (*v1alpha1.PartitionTransformStatus, error) {
+	status, err := m.partitionTransformStatusToProto(transformStatusWithMetadata.Status)
+	if err != nil {
+		return nil, err
 	}
-	return pts, nil
+
+	return &v1alpha1.PartitionTransformStatus{
+		BrokerId:    int32(transformStatusWithMetadata.NodeID),
+		Status:      status,
+		Lag:         int32(transformStatusWithMetadata.Lag),
+		PartitionId: int32(transformStatusWithMetadata.Partition),
+	}, nil
+}
+
+func (m *mapper) deployTransformReqToAdminAPI(req *v1alpha1.DeployTransformRequest) adminapi.TransformMetadata {
+	envVars := make([]adminapi.EnvironmentVariable, len(req.EnvironmentVariables))
+	for i, keyVal := range req.EnvironmentVariables {
+		envVars[i] = adminapi.EnvironmentVariable{
+			Key:   keyVal.Key,
+			Value: keyVal.Value,
+		}
+	}
+
+	return adminapi.TransformMetadata{
+		Name:         req.Name,
+		InputTopic:   req.InputTopicName,
+		OutputTopics: req.OutputTopicNames,
+		Status:       nil, // Output only
+		Environment:  envVars,
+	}
 }
