@@ -30,6 +30,8 @@ type KafkaSASLAwsMskIam struct {
 	// condition key; see the following link for more details:
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-useragent
 	UserAgent string `yaml:"userAgent"`
+
+	Region string `yaml:"region"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag

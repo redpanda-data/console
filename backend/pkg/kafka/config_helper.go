@@ -19,7 +19,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -158,19 +158,24 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 					UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
 				}.AsManagedStreamingIAMMechanism()
 			} else {
-				sess, err := session.NewSession()
+				cfgVal, err := awsConfig.LoadDefaultConfig(
+					context.TODO(),
+					awsConfig.WithRegion(cfg.SASL.AWSMskIam.Region),
+				)
 				if err != nil {
 					return nil, err
 				}
-				val, err := sess.Config.Credentials.Get()
+
+				creds, err := cfgVal.Credentials.Retrieve(context.TODO())
 				if err != nil {
 					return nil, err
 				}
+
 				mechanism = aws.Auth{
-					AccessKey:    val.AccessKeyID,
-					SecretKey:    val.SecretAccessKey,
-					SessionToken: val.SessionToken,
-					UserAgent:    val.ProviderName,
+					AccessKey:    creds.AccessKeyID,
+					SecretKey:    creds.SecretAccessKey,
+					SessionToken: creds.SessionToken,
+					UserAgent:    creds.Source,
 				}.AsManagedStreamingIAMMechanism()
 			}
 			opts = append(opts, kgo.SASL(mechanism))
