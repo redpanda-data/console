@@ -15,12 +15,12 @@ message TransformMetadata {
   ];
   string input_topic_name = 2;
   repeated string output_topic_names = 3;
-  repeated PartitionTransformStatus status = 4;
+  repeated PartitionTransformStatus statuses = 4;
 }
 
 message PartitionTransformStatus {
-  int32 node_id = 1;
-  int32 partition = 2;
+  int32 broker_id = 1;
+  int32 partition_id = 2;
   enum PartitionStatus {
     PARTITION_STATUS_UNSPECIFIED = 0;
     PARTITION_STATUS_RUNNING = 1;
@@ -136,6 +136,8 @@ message ListTransformsResponse {
 
 message GetTransformRequest {
   string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
@@ -148,6 +150,8 @@ message GetTransformResponse {
 
 message DeleteTransformRequest {
   string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
