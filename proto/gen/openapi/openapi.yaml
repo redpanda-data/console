@@ -794,13 +794,13 @@ components:
       type: string
     PartitionTransformStatus:
       properties:
+        broker_id:
+          format: int32
+          type: integer
         lag:
           format: int32
           type: integer
-        node_id:
-          format: int32
-          type: integer
-        partition:
+        partition_id:
           format: int32
           type: integer
         status:
@@ -1060,7 +1060,7 @@ components:
           items:
             type: string
           type: array
-        status:
+        statuses:
           items:
             $ref: '#/components/schemas/PartitionTransformStatus'
           type: array
@@ -2859,20 +2859,20 @@ paths:
                     output_topic_names:
                       - output-topic11
                       - output-topic12
-                    status:
-                      - lag: 1
-                        node_id: 1
-                        partition: 1
+                    statuses:
+                      - broker_id: 1
+                        lag: 1
+                        partition_id: 1
                         status: PARTITION_STATUS_RUNNING
                   - input_topic_name: topic2
                     name: transform2
                     output_topic_names:
                       - output-topic21
                       - output-topic22
-                    status:
-                      - lag: 2
-                        node_id: 2
-                        partition: 2
+                    statuses:
+                      - broker_id: 2
+                        lag: 2
+                        partition_id: 2
                         status: PARTITION_STATUS_RUNNING
               schema:
                 $ref: '#/components/schemas/ListTransformsResponse'
@@ -2966,10 +2966,10 @@ paths:
                   output_topic_names:
                     - output-topic1
                     - output-topic2
-                  status:
-                    - lag: 1
-                      node_id: 1
-                      partition: 1
+                  statuses:
+                    - broker_id: 1
+                      lag: 1
+                      partition_id: 1
                       status: PARTITION_STATUS_RUNNING
               schema:
                 $ref: '#/components/schemas/GetTransformResponse'

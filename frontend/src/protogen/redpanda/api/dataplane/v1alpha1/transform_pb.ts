@@ -26,9 +26,9 @@ export class TransformMetadata extends Message<TransformMetadata> {
   outputTopicNames: string[] = [];
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.PartitionTransformStatus status = 4;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.PartitionTransformStatus statuses = 4;
    */
-  status: PartitionTransformStatus[] = [];
+  statuses: PartitionTransformStatus[] = [];
 
   constructor(data?: PartialMessage<TransformMetadata>) {
     super();
@@ -41,7 +41,7 @@ export class TransformMetadata extends Message<TransformMetadata> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "input_topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "output_topic_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "status", kind: "message", T: PartitionTransformStatus, repeated: true },
+    { no: 4, name: "statuses", kind: "message", T: PartitionTransformStatus, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TransformMetadata {
@@ -66,14 +66,14 @@ export class TransformMetadata extends Message<TransformMetadata> {
  */
 export class PartitionTransformStatus extends Message<PartitionTransformStatus> {
   /**
-   * @generated from field: int32 node_id = 1;
+   * @generated from field: int32 broker_id = 1;
    */
-  nodeId = 0;
+  brokerId = 0;
 
   /**
-   * @generated from field: int32 partition = 2;
+   * @generated from field: int32 partition_id = 2;
    */
-  partition = 0;
+  partitionId = 0;
 
   /**
    * @generated from field: redpanda.api.dataplane.v1alpha1.PartitionTransformStatus.PartitionStatus status = 3;
@@ -93,8 +93,8 @@ export class PartitionTransformStatus extends Message<PartitionTransformStatus> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.PartitionTransformStatus";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "node_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "partition", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "partition_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "status", kind: "enum", T: proto3.getEnumType(PartitionTransformStatus_PartitionStatus) },
     { no: 4, name: "lag", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
