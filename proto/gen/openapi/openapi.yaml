@@ -280,16 +280,16 @@ components:
       type: object
     CreateACLResponse:
       type: object
+    CreateConnectSecretResponse:
+      description: CreateConnectSecretResponse is the response of CreateConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     CreateConnectorResponse:
       properties:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
-      type: object
-    CreateConnectorSecretResponse:
-      description: CreateConnectorSecretResponse is the response of CreateConnectorSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
       type: object
     CreateSecretRequest:
       description: CreateSecretRequest is the request of CreateSecret.
@@ -420,8 +420,8 @@ components:
             $ref: '#/components/schemas/MatchingACL'
           type: array
       type: object
-    DeleteConnectorSecretResponse:
-      description: DeleteConnectorSecretResponse is the response of DeleteConnectorSecret.
+    DeleteConnectSecretResponse:
+      description: DeleteConnectSecretResponse is the response of DeleteConnectSecret.
       type: object
     DeleteSecretResponse:
       description: DeleteSecretResponse is the response of DeleteSecret.
@@ -541,6 +541,12 @@ components:
         cluster:
           $ref: '#/components/schemas/ConnectCluster'
       type: object
+    GetConnectSecretResponse:
+      description: GetConnectSecretResponse is the response of GetConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     GetConnectorConfigResponse:
       properties:
         config:
@@ -552,12 +558,6 @@ components:
       properties:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
-      type: object
-    GetConnectorSecretResponse:
-      description: GetConnectorSecretResponse is the response of GetConnectorSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
       type: object
     GetConnectorStatusResponse:
       properties:
@@ -636,8 +636,8 @@ components:
             $ref: '#/components/schemas/ConnectCluster'
           type: array
       type: object
-    ListConnectorSecretsResponse:
-      description: ListConnectorSecretsResponse is the response of ListConnectorSecrets.
+    ListConnectSecretsResponse:
+      description: ListConnectSecretsResponse is the response of ListConnectSecrets.
       properties:
         next_page_token:
           description: Token to retrieve the next page.
@@ -1018,8 +1018,8 @@ components:
           nullable: true
           type: string
       type: object
-    UpdateConnectorSecretResponse:
-      description: UpdateConnectorSecretResponse is the response of UpdateConnectorSecret.
+    UpdateConnectSecretResponse:
+      description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
@@ -1983,8 +1983,8 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/secrets:
     get:
-      description: List connector secrets based on optional filter.
-      operationId: SecretService_ListConnectorSecrets
+      description: List Kafka Connect cluster secrets based on optional filter.
+      operationId: SecretService_ListConnectSecrets
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -2040,12 +2040,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: List connector secrets
+      summary: List Connect Cluster Secrets
       tags:
         - SecretService
     post:
-      description: Create a connector secret.
-      operationId: SecretService_CreateConnectorSecret
+      description: Create a Kafka Connect cluster secret.
+      operationId: SecretService_CreateConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -2057,10 +2057,10 @@ paths:
         content:
           application/json:
             schema:
-              description: CreateConnectorSecretRequest is the request of CreateConnectorSecret.
+              description: CreateConnectSecretRequest is the request of CreateConnectSecret.
               properties:
                 name:
-                  description: The connector name.
+                  description: The Connect name.
                   type: string
                 secret:
                   $ref: '#/components/schemas/SecretInput'
@@ -2095,13 +2095,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Create a connector secret
+      summary: Create Connect Cluster Secret
       tags:
         - SecretService
   /v1alpha1/connect/clusters/{cluster_name}/secrets/{id}:
     delete:
-      description: Delete a connector secret.
-      operationId: SecretService_DeleteConnectorSecret
+      description: Delete a Kafka Connect cluster secret.
+      operationId: SecretService_DeleteConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -2145,12 +2145,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete a connector secret
+      summary: Delete Connect Cluster Secret
       tags:
         - SecretService
     get:
-      description: Get a connector secret.
-      operationId: SecretService_GetConnectorSecret
+      description: Get a specific Kafka Connect cluster secret.
+      operationId: SecretService_GetConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -2195,12 +2195,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Get a connector secret
+      summary: Get Connect Cluster Secret
       tags:
         - SecretService
     put:
-      description: Update connector secret content.
-      operationId: SecretService_UpdateConnectorSecret
+      description: Update a Kafka Connect cluster secret.
+      operationId: SecretService_UpdateConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -2253,7 +2253,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Update secret
+      summary: Update Connect Cluster Secret
       tags:
         - SecretService
   /v1alpha1/secrets:
@@ -2309,7 +2309,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: List secrets
+      summary: List Secrets
       tags:
         - SecretService
     post:
@@ -2348,7 +2348,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Create secret
+      summary: Create Secret
       tags:
         - SecretService
   /v1alpha1/secrets/{id}:
@@ -2392,11 +2392,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete secret
+      summary: Delete Secret
       tags:
         - SecretService
     get:
-      description: Get a secret.
+      description: Get a specific secret.
       operationId: SecretService_GetSecret
       parameters:
         - description: The id of the secret to retrieve.
@@ -2440,7 +2440,7 @@ paths:
       tags:
         - SecretService
     put:
-      description: Update a Secret content.
+      description: Update a secret.
       operationId: SecretService_UpdateSecret
       parameters:
         - description: Secret identifier.
