@@ -70,7 +70,7 @@ func (m *mapper) transformStatusWithMetadataToProto(transformStatusWithMetadata 
 	}, nil
 }
 
-func (m *mapper) deployTransformReqToAdminAPI(req *v1alpha1.DeployTransformRequest) adminapi.TransformMetadata {
+func (*mapper) deployTransformReqToAdminAPI(req *v1alpha1.DeployTransformRequest) adminapi.TransformMetadata {
 	envVars := make([]adminapi.EnvironmentVariable, len(req.EnvironmentVariables))
 	for i, keyVal := range req.EnvironmentVariables {
 		envVars[i] = adminapi.EnvironmentVariable{
