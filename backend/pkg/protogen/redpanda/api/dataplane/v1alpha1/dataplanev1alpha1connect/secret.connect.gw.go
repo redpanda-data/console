@@ -17,32 +17,32 @@ import (
 // SecretServiceGatewayServer implements the gRPC server API for the SecretService service.
 type SecretServiceGatewayServer struct {
 	v1alpha1.UnimplementedSecretServiceServer
-	getSecret             connect_gateway.UnaryHandler[v1alpha1.GetSecretRequest, v1alpha1.GetSecretResponse]
-	listSecrets           connect_gateway.UnaryHandler[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse]
-	createSecret          connect_gateway.UnaryHandler[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse]
-	updateSecret          connect_gateway.UnaryHandler[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
-	deleteSecret          connect_gateway.UnaryHandler[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
-	getConnectorSecret    connect_gateway.UnaryHandler[v1alpha1.GetConnectorSecretRequest, v1alpha1.GetConnectorSecretResponse]
-	listConnectorSecrets  connect_gateway.UnaryHandler[v1alpha1.ListConnectorSecretsRequest, v1alpha1.ListConnectorSecretsResponse]
-	createConnectorSecret connect_gateway.UnaryHandler[v1alpha1.CreateConnectorSecretRequest, v1alpha1.CreateConnectorSecretResponse]
-	updateConnectorSecret connect_gateway.UnaryHandler[v1alpha1.UpdateConnectorSecretRequest, v1alpha1.UpdateConnectorSecretResponse]
-	deleteConnectorSecret connect_gateway.UnaryHandler[v1alpha1.DeleteConnectorSecretRequest, v1alpha1.DeleteConnectorSecretResponse]
+	getSecret           connect_gateway.UnaryHandler[v1alpha1.GetSecretRequest, v1alpha1.GetSecretResponse]
+	listSecrets         connect_gateway.UnaryHandler[v1alpha1.ListSecretsRequest, v1alpha1.ListSecretsResponse]
+	createSecret        connect_gateway.UnaryHandler[v1alpha1.CreateSecretRequest, v1alpha1.CreateSecretResponse]
+	updateSecret        connect_gateway.UnaryHandler[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
+	deleteSecret        connect_gateway.UnaryHandler[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
+	getConnectSecret    connect_gateway.UnaryHandler[v1alpha1.GetConnectSecretRequest, v1alpha1.GetConnectSecretResponse]
+	listConnectSecrets  connect_gateway.UnaryHandler[v1alpha1.ListConnectSecretsRequest, v1alpha1.ListConnectSecretsResponse]
+	createConnectSecret connect_gateway.UnaryHandler[v1alpha1.CreateConnectSecretRequest, v1alpha1.CreateConnectSecretResponse]
+	updateConnectSecret connect_gateway.UnaryHandler[v1alpha1.UpdateConnectSecretRequest, v1alpha1.UpdateConnectSecretResponse]
+	deleteConnectSecret connect_gateway.UnaryHandler[v1alpha1.DeleteConnectSecretRequest, v1alpha1.DeleteConnectSecretResponse]
 }
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
 // service.
 func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gateway.HandlerOption) *SecretServiceGatewayServer {
 	return &SecretServiceGatewayServer{
-		getSecret:             connect_gateway.NewUnaryHandler(SecretServiceGetSecretProcedure, svc.GetSecret, opts...),
-		listSecrets:           connect_gateway.NewUnaryHandler(SecretServiceListSecretsProcedure, svc.ListSecrets, opts...),
-		createSecret:          connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
-		updateSecret:          connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
-		deleteSecret:          connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
-		getConnectorSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetConnectorSecretProcedure, svc.GetConnectorSecret, opts...),
-		listConnectorSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListConnectorSecretsProcedure, svc.ListConnectorSecrets, opts...),
-		createConnectorSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateConnectorSecretProcedure, svc.CreateConnectorSecret, opts...),
-		updateConnectorSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateConnectorSecretProcedure, svc.UpdateConnectorSecret, opts...),
-		deleteConnectorSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteConnectorSecretProcedure, svc.DeleteConnectorSecret, opts...),
+		getSecret:           connect_gateway.NewUnaryHandler(SecretServiceGetSecretProcedure, svc.GetSecret, opts...),
+		listSecrets:         connect_gateway.NewUnaryHandler(SecretServiceListSecretsProcedure, svc.ListSecrets, opts...),
+		createSecret:        connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
+		updateSecret:        connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
+		deleteSecret:        connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
+		getConnectSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetConnectSecretProcedure, svc.GetConnectSecret, opts...),
+		listConnectSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListConnectSecretsProcedure, svc.ListConnectSecrets, opts...),
+		createConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateConnectSecretProcedure, svc.CreateConnectSecret, opts...),
+		updateConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateConnectSecretProcedure, svc.UpdateConnectSecret, opts...),
+		deleteConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteConnectSecretProcedure, svc.DeleteConnectSecret, opts...),
 	}
 }
 
@@ -66,24 +66,24 @@ func (s *SecretServiceGatewayServer) DeleteSecret(ctx context.Context, req *v1al
 	return s.deleteSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) GetConnectorSecret(ctx context.Context, req *v1alpha1.GetConnectorSecretRequest) (*v1alpha1.GetConnectorSecretResponse, error) {
-	return s.getConnectorSecret(ctx, req)
+func (s *SecretServiceGatewayServer) GetConnectSecret(ctx context.Context, req *v1alpha1.GetConnectSecretRequest) (*v1alpha1.GetConnectSecretResponse, error) {
+	return s.getConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) ListConnectorSecrets(ctx context.Context, req *v1alpha1.ListConnectorSecretsRequest) (*v1alpha1.ListConnectorSecretsResponse, error) {
-	return s.listConnectorSecrets(ctx, req)
+func (s *SecretServiceGatewayServer) ListConnectSecrets(ctx context.Context, req *v1alpha1.ListConnectSecretsRequest) (*v1alpha1.ListConnectSecretsResponse, error) {
+	return s.listConnectSecrets(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) CreateConnectorSecret(ctx context.Context, req *v1alpha1.CreateConnectorSecretRequest) (*v1alpha1.CreateConnectorSecretResponse, error) {
-	return s.createConnectorSecret(ctx, req)
+func (s *SecretServiceGatewayServer) CreateConnectSecret(ctx context.Context, req *v1alpha1.CreateConnectSecretRequest) (*v1alpha1.CreateConnectSecretResponse, error) {
+	return s.createConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) UpdateConnectorSecret(ctx context.Context, req *v1alpha1.UpdateConnectorSecretRequest) (*v1alpha1.UpdateConnectorSecretResponse, error) {
-	return s.updateConnectorSecret(ctx, req)
+func (s *SecretServiceGatewayServer) UpdateConnectSecret(ctx context.Context, req *v1alpha1.UpdateConnectSecretRequest) (*v1alpha1.UpdateConnectSecretResponse, error) {
+	return s.updateConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) DeleteConnectorSecret(ctx context.Context, req *v1alpha1.DeleteConnectorSecretRequest) (*v1alpha1.DeleteConnectorSecretResponse, error) {
-	return s.deleteConnectorSecret(ctx, req)
+func (s *SecretServiceGatewayServer) DeleteConnectSecret(ctx context.Context, req *v1alpha1.DeleteConnectSecretRequest) (*v1alpha1.DeleteConnectSecretResponse, error) {
+	return s.deleteConnectSecret(ctx, req)
 }
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService

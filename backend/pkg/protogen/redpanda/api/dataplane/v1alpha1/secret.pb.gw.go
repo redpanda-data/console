@@ -273,8 +273,8 @@ func local_request_SecretService_DeleteSecret_0(ctx context.Context, marshaler r
 
 }
 
-func request_SecretService_GetConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorSecretRequest
+func request_SecretService_GetConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -304,13 +304,13 @@ func request_SecretService_GetConnectorSecret_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := client.GetConnectorSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetConnectSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SecretService_GetConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectorSecretRequest
+func local_request_SecretService_GetConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -340,17 +340,17 @@ func local_request_SecretService_GetConnectorSecret_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.GetConnectorSecret(ctx, &protoReq)
+	msg, err := server.GetConnectSecret(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_SecretService_ListConnectorSecrets_0 = &utilities.DoubleArray{Encoding: map[string]int{"cluster_name": 0, "clusterName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_SecretService_ListConnectSecrets_0 = &utilities.DoubleArray{Encoding: map[string]int{"cluster_name": 0, "clusterName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_SecretService_ListConnectorSecrets_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorSecretsRequest
+func request_SecretService_ListConnectSecrets_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConnectSecretsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -373,17 +373,17 @@ func request_SecretService_ListConnectorSecrets_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_ListConnectorSecrets_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_ListConnectSecrets_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListConnectorSecrets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListConnectSecrets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SecretService_ListConnectorSecrets_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectorSecretsRequest
+func local_request_SecretService_ListConnectSecrets_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListConnectSecretsRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -406,17 +406,17 @@ func local_request_SecretService_ListConnectorSecrets_0(ctx context.Context, mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_ListConnectorSecrets_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SecretService_ListConnectSecrets_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListConnectorSecrets(ctx, &protoReq)
+	msg, err := server.ListConnectSecrets(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_SecretService_CreateConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateConnectorSecretRequest
+func request_SecretService_CreateConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -444,13 +444,13 @@ func request_SecretService_CreateConnectorSecret_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
 
-	msg, err := client.CreateConnectorSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.CreateConnectSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SecretService_CreateConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateConnectorSecretRequest
+func local_request_SecretService_CreateConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -478,13 +478,13 @@ func local_request_SecretService_CreateConnectorSecret_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cluster_name", err)
 	}
 
-	msg, err := server.CreateConnectorSecret(ctx, &protoReq)
+	msg, err := server.CreateConnectSecret(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_SecretService_UpdateConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateConnectorSecretRequest
+func request_SecretService_UpdateConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -522,13 +522,13 @@ func request_SecretService_UpdateConnectorSecret_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := client.UpdateConnectorSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.UpdateConnectSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SecretService_UpdateConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateConnectorSecretRequest
+func local_request_SecretService_UpdateConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq UpdateConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -566,13 +566,13 @@ func local_request_SecretService_UpdateConnectorSecret_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.UpdateConnectorSecret(ctx, &protoReq)
+	msg, err := server.UpdateConnectSecret(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_SecretService_DeleteConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteConnectorSecretRequest
+func request_SecretService_DeleteConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, client SecretServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -602,13 +602,13 @@ func request_SecretService_DeleteConnectorSecret_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := client.DeleteConnectorSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteConnectSecret(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SecretService_DeleteConnectorSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteConnectorSecretRequest
+func local_request_SecretService_DeleteConnectSecret_0(ctx context.Context, marshaler runtime.Marshaler, server SecretServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteConnectSecretRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -638,7 +638,7 @@ func local_request_SecretService_DeleteConnectorSecret_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.DeleteConnectorSecret(ctx, &protoReq)
+	msg, err := server.DeleteConnectSecret(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -774,7 +774,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_SecretService_GetConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SecretService_GetConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -782,12 +782,12 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SecretService_GetConnectorSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SecretService_GetConnectSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -795,11 +795,11 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SecretService_ListConnectorSecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SecretService_ListConnectSecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -807,12 +807,12 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectorSecrets", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectSecrets", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SecretService_ListConnectorSecrets_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SecretService_ListConnectSecrets_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -820,11 +820,11 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_ListConnectorSecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_ListConnectSecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_SecretService_CreateConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SecretService_CreateConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -832,12 +832,12 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SecretService_CreateConnectorSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SecretService_CreateConnectSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -845,11 +845,11 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_CreateConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SecretService_UpdateConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SecretService_UpdateConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -857,12 +857,12 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SecretService_UpdateConnectorSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SecretService_UpdateConnectSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -870,11 +870,11 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_UpdateConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_SecretService_DeleteConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_SecretService_DeleteConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -882,12 +882,12 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SecretService_DeleteConnectorSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_SecretService_DeleteConnectSecret_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -895,7 +895,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_DeleteConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_DeleteConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1050,113 +1050,113 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_SecretService_GetConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SecretService_GetConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SecretService_GetConnectorSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SecretService_GetConnectSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SecretService_GetConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SecretService_ListConnectorSecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SecretService_ListConnectSecrets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectorSecrets", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectSecrets", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SecretService_ListConnectorSecrets_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SecretService_ListConnectSecrets_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SecretService_ListConnectorSecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_ListConnectSecrets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_SecretService_CreateConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SecretService_CreateConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SecretService_CreateConnectorSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SecretService_CreateConnectSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SecretService_CreateConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_SecretService_UpdateConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_SecretService_UpdateConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SecretService_UpdateConnectorSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SecretService_UpdateConnectSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SecretService_UpdateConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectorSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_SecretService_DeleteConnectorSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_SecretService_DeleteConnectSecret_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectorSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectSecret", runtime.WithHTTPPathPattern("/v1alpha1/connect/clusters/{cluster_name}/secrets/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SecretService_DeleteConnectorSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SecretService_DeleteConnectSecret_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SecretService_DeleteConnectorSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecretService_DeleteConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1190,30 +1190,30 @@ func (m response_SecretService_UpdateSecret_0) XXX_ResponseBody() interface{} {
 	return response.Secret
 }
 
-type response_SecretService_GetConnectorSecret_0 struct {
+type response_SecretService_GetConnectSecret_0 struct {
 	proto.Message
 }
 
-func (m response_SecretService_GetConnectorSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorSecretResponse)
+func (m response_SecretService_GetConnectSecret_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*GetConnectSecretResponse)
 	return response.Secret
 }
 
-type response_SecretService_CreateConnectorSecret_0 struct {
+type response_SecretService_CreateConnectSecret_0 struct {
 	proto.Message
 }
 
-func (m response_SecretService_CreateConnectorSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreateConnectorSecretResponse)
+func (m response_SecretService_CreateConnectSecret_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*CreateConnectSecretResponse)
 	return response.Secret
 }
 
-type response_SecretService_UpdateConnectorSecret_0 struct {
+type response_SecretService_UpdateConnectSecret_0 struct {
 	proto.Message
 }
 
-func (m response_SecretService_UpdateConnectorSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpdateConnectorSecretResponse)
+func (m response_SecretService_UpdateConnectSecret_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*UpdateConnectSecretResponse)
 	return response.Secret
 }
 
@@ -1228,15 +1228,15 @@ var (
 
 	pattern_SecretService_DeleteSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "secrets", "id"}, ""))
 
-	pattern_SecretService_GetConnectorSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
+	pattern_SecretService_GetConnectSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
 
-	pattern_SecretService_ListConnectorSecrets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets"}, ""))
+	pattern_SecretService_ListConnectSecrets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets"}, ""))
 
-	pattern_SecretService_CreateConnectorSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets"}, ""))
+	pattern_SecretService_CreateConnectSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets"}, ""))
 
-	pattern_SecretService_UpdateConnectorSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
+	pattern_SecretService_UpdateConnectSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
 
-	pattern_SecretService_DeleteConnectorSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
+	pattern_SecretService_DeleteConnectSecret_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha1", "connect", "clusters", "cluster_name", "secrets", "id"}, ""))
 )
 
 var (
@@ -1250,13 +1250,13 @@ var (
 
 	forward_SecretService_DeleteSecret_0 = runtime.ForwardResponseMessage
 
-	forward_SecretService_GetConnectorSecret_0 = runtime.ForwardResponseMessage
+	forward_SecretService_GetConnectSecret_0 = runtime.ForwardResponseMessage
 
-	forward_SecretService_ListConnectorSecrets_0 = runtime.ForwardResponseMessage
+	forward_SecretService_ListConnectSecrets_0 = runtime.ForwardResponseMessage
 
-	forward_SecretService_CreateConnectorSecret_0 = runtime.ForwardResponseMessage
+	forward_SecretService_CreateConnectSecret_0 = runtime.ForwardResponseMessage
 
-	forward_SecretService_UpdateConnectorSecret_0 = runtime.ForwardResponseMessage
+	forward_SecretService_UpdateConnectSecret_0 = runtime.ForwardResponseMessage
 
-	forward_SecretService_DeleteConnectorSecret_0 = runtime.ForwardResponseMessage
+	forward_SecretService_DeleteConnectSecret_0 = runtime.ForwardResponseMessage
 )

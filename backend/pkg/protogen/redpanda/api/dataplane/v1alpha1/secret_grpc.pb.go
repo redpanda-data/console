@@ -20,16 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SecretService_GetSecret_FullMethodName             = "/redpanda.api.dataplane.v1alpha1.SecretService/GetSecret"
-	SecretService_ListSecrets_FullMethodName           = "/redpanda.api.dataplane.v1alpha1.SecretService/ListSecrets"
-	SecretService_CreateSecret_FullMethodName          = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateSecret"
-	SecretService_UpdateSecret_FullMethodName          = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateSecret"
-	SecretService_DeleteSecret_FullMethodName          = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteSecret"
-	SecretService_GetConnectorSecret_FullMethodName    = "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectorSecret"
-	SecretService_ListConnectorSecrets_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectorSecrets"
-	SecretService_CreateConnectorSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectorSecret"
-	SecretService_UpdateConnectorSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectorSecret"
-	SecretService_DeleteConnectorSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectorSecret"
+	SecretService_GetSecret_FullMethodName           = "/redpanda.api.dataplane.v1alpha1.SecretService/GetSecret"
+	SecretService_ListSecrets_FullMethodName         = "/redpanda.api.dataplane.v1alpha1.SecretService/ListSecrets"
+	SecretService_CreateSecret_FullMethodName        = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateSecret"
+	SecretService_UpdateSecret_FullMethodName        = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateSecret"
+	SecretService_DeleteSecret_FullMethodName        = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteSecret"
+	SecretService_GetConnectSecret_FullMethodName    = "/redpanda.api.dataplane.v1alpha1.SecretService/GetConnectSecret"
+	SecretService_ListConnectSecrets_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.SecretService/ListConnectSecrets"
+	SecretService_CreateConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/CreateConnectSecret"
+	SecretService_UpdateConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/UpdateConnectSecret"
+	SecretService_DeleteConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1alpha1.SecretService/DeleteConnectSecret"
 )
 
 // SecretServiceClient is the client API for SecretService service.
@@ -46,16 +46,16 @@ type SecretServiceClient interface {
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*UpdateSecretResponse, error)
 	// DeleteSecret deletes the secret.
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
-	// GetConnectorSecret retrieves the specific secret for a specific connector.
-	GetConnectorSecret(ctx context.Context, in *GetConnectorSecretRequest, opts ...grpc.CallOption) (*GetConnectorSecretResponse, error)
-	// ListConnectorSecrets lists the connector secrets based on optional filter.
-	ListConnectorSecrets(ctx context.Context, in *ListConnectorSecretsRequest, opts ...grpc.CallOption) (*ListConnectorSecretsResponse, error)
-	// CreateConnectorSecret creates the secret for a connector.
-	CreateConnectorSecret(ctx context.Context, in *CreateConnectorSecretRequest, opts ...grpc.CallOption) (*CreateConnectorSecretResponse, error)
-	// UpdateConnectorSecret updates the connector secret.
-	UpdateConnectorSecret(ctx context.Context, in *UpdateConnectorSecretRequest, opts ...grpc.CallOption) (*UpdateConnectorSecretResponse, error)
+	// GetConnectSecret retrieves the specific secret for a specific Connect.
+	GetConnectSecret(ctx context.Context, in *GetConnectSecretRequest, opts ...grpc.CallOption) (*GetConnectSecretResponse, error)
+	// ListConnectSecrets lists the Connect secrets based on optional filter.
+	ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error)
+	// CreateConnectSecret creates the secret for a Connect.
+	CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error)
+	// UpdateConnectSecret updates the Connect secret.
+	UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error)
 	// DeleteSecret deletes the secret.
-	DeleteConnectorSecret(ctx context.Context, in *DeleteConnectorSecretRequest, opts ...grpc.CallOption) (*DeleteConnectorSecretResponse, error)
+	DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error)
 }
 
 type secretServiceClient struct {
@@ -111,45 +111,45 @@ func (c *secretServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecret
 	return out, nil
 }
 
-func (c *secretServiceClient) GetConnectorSecret(ctx context.Context, in *GetConnectorSecretRequest, opts ...grpc.CallOption) (*GetConnectorSecretResponse, error) {
-	out := new(GetConnectorSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_GetConnectorSecret_FullMethodName, in, out, opts...)
+func (c *secretServiceClient) GetConnectSecret(ctx context.Context, in *GetConnectSecretRequest, opts ...grpc.CallOption) (*GetConnectSecretResponse, error) {
+	out := new(GetConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_GetConnectSecret_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) ListConnectorSecrets(ctx context.Context, in *ListConnectorSecretsRequest, opts ...grpc.CallOption) (*ListConnectorSecretsResponse, error) {
-	out := new(ListConnectorSecretsResponse)
-	err := c.cc.Invoke(ctx, SecretService_ListConnectorSecrets_FullMethodName, in, out, opts...)
+func (c *secretServiceClient) ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error) {
+	out := new(ListConnectSecretsResponse)
+	err := c.cc.Invoke(ctx, SecretService_ListConnectSecrets_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) CreateConnectorSecret(ctx context.Context, in *CreateConnectorSecretRequest, opts ...grpc.CallOption) (*CreateConnectorSecretResponse, error) {
-	out := new(CreateConnectorSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_CreateConnectorSecret_FullMethodName, in, out, opts...)
+func (c *secretServiceClient) CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error) {
+	out := new(CreateConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_CreateConnectSecret_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) UpdateConnectorSecret(ctx context.Context, in *UpdateConnectorSecretRequest, opts ...grpc.CallOption) (*UpdateConnectorSecretResponse, error) {
-	out := new(UpdateConnectorSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_UpdateConnectorSecret_FullMethodName, in, out, opts...)
+func (c *secretServiceClient) UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error) {
+	out := new(UpdateConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_UpdateConnectSecret_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) DeleteConnectorSecret(ctx context.Context, in *DeleteConnectorSecretRequest, opts ...grpc.CallOption) (*DeleteConnectorSecretResponse, error) {
-	out := new(DeleteConnectorSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_DeleteConnectorSecret_FullMethodName, in, out, opts...)
+func (c *secretServiceClient) DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error) {
+	out := new(DeleteConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_DeleteConnectSecret_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,16 +170,16 @@ type SecretServiceServer interface {
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*UpdateSecretResponse, error)
 	// DeleteSecret deletes the secret.
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
-	// GetConnectorSecret retrieves the specific secret for a specific connector.
-	GetConnectorSecret(context.Context, *GetConnectorSecretRequest) (*GetConnectorSecretResponse, error)
-	// ListConnectorSecrets lists the connector secrets based on optional filter.
-	ListConnectorSecrets(context.Context, *ListConnectorSecretsRequest) (*ListConnectorSecretsResponse, error)
-	// CreateConnectorSecret creates the secret for a connector.
-	CreateConnectorSecret(context.Context, *CreateConnectorSecretRequest) (*CreateConnectorSecretResponse, error)
-	// UpdateConnectorSecret updates the connector secret.
-	UpdateConnectorSecret(context.Context, *UpdateConnectorSecretRequest) (*UpdateConnectorSecretResponse, error)
+	// GetConnectSecret retrieves the specific secret for a specific Connect.
+	GetConnectSecret(context.Context, *GetConnectSecretRequest) (*GetConnectSecretResponse, error)
+	// ListConnectSecrets lists the Connect secrets based on optional filter.
+	ListConnectSecrets(context.Context, *ListConnectSecretsRequest) (*ListConnectSecretsResponse, error)
+	// CreateConnectSecret creates the secret for a Connect.
+	CreateConnectSecret(context.Context, *CreateConnectSecretRequest) (*CreateConnectSecretResponse, error)
+	// UpdateConnectSecret updates the Connect secret.
+	UpdateConnectSecret(context.Context, *UpdateConnectSecretRequest) (*UpdateConnectSecretResponse, error)
 	// DeleteSecret deletes the secret.
-	DeleteConnectorSecret(context.Context, *DeleteConnectorSecretRequest) (*DeleteConnectorSecretResponse, error)
+	DeleteConnectSecret(context.Context, *DeleteConnectSecretRequest) (*DeleteConnectSecretResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
 }
 
@@ -202,20 +202,20 @@ func (UnimplementedSecretServiceServer) UpdateSecret(context.Context, *UpdateSec
 func (UnimplementedSecretServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) GetConnectorSecret(context.Context, *GetConnectorSecretRequest) (*GetConnectorSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorSecret not implemented")
+func (UnimplementedSecretServiceServer) GetConnectSecret(context.Context, *GetConnectSecretRequest) (*GetConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) ListConnectorSecrets(context.Context, *ListConnectorSecretsRequest) (*ListConnectorSecretsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListConnectorSecrets not implemented")
+func (UnimplementedSecretServiceServer) ListConnectSecrets(context.Context, *ListConnectSecretsRequest) (*ListConnectSecretsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConnectSecrets not implemented")
 }
-func (UnimplementedSecretServiceServer) CreateConnectorSecret(context.Context, *CreateConnectorSecretRequest) (*CreateConnectorSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateConnectorSecret not implemented")
+func (UnimplementedSecretServiceServer) CreateConnectSecret(context.Context, *CreateConnectSecretRequest) (*CreateConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) UpdateConnectorSecret(context.Context, *UpdateConnectorSecretRequest) (*UpdateConnectorSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateConnectorSecret not implemented")
+func (UnimplementedSecretServiceServer) UpdateConnectSecret(context.Context, *UpdateConnectSecretRequest) (*UpdateConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) DeleteConnectorSecret(context.Context, *DeleteConnectorSecretRequest) (*DeleteConnectorSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnectorSecret not implemented")
+func (UnimplementedSecretServiceServer) DeleteConnectSecret(context.Context, *DeleteConnectSecretRequest) (*DeleteConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnectSecret not implemented")
 }
 func (UnimplementedSecretServiceServer) mustEmbedUnimplementedSecretServiceServer() {}
 
@@ -320,92 +320,92 @@ func _SecretService_DeleteSecret_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_GetConnectorSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConnectorSecretRequest)
+func _SecretService_GetConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).GetConnectorSecret(ctx, in)
+		return srv.(SecretServiceServer).GetConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_GetConnectorSecret_FullMethodName,
+		FullMethod: SecretService_GetConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).GetConnectorSecret(ctx, req.(*GetConnectorSecretRequest))
+		return srv.(SecretServiceServer).GetConnectSecret(ctx, req.(*GetConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_ListConnectorSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConnectorSecretsRequest)
+func _SecretService_ListConnectSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConnectSecretsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).ListConnectorSecrets(ctx, in)
+		return srv.(SecretServiceServer).ListConnectSecrets(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_ListConnectorSecrets_FullMethodName,
+		FullMethod: SecretService_ListConnectSecrets_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).ListConnectorSecrets(ctx, req.(*ListConnectorSecretsRequest))
+		return srv.(SecretServiceServer).ListConnectSecrets(ctx, req.(*ListConnectSecretsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_CreateConnectorSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateConnectorSecretRequest)
+func _SecretService_CreateConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).CreateConnectorSecret(ctx, in)
+		return srv.(SecretServiceServer).CreateConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_CreateConnectorSecret_FullMethodName,
+		FullMethod: SecretService_CreateConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).CreateConnectorSecret(ctx, req.(*CreateConnectorSecretRequest))
+		return srv.(SecretServiceServer).CreateConnectSecret(ctx, req.(*CreateConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_UpdateConnectorSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateConnectorSecretRequest)
+func _SecretService_UpdateConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).UpdateConnectorSecret(ctx, in)
+		return srv.(SecretServiceServer).UpdateConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_UpdateConnectorSecret_FullMethodName,
+		FullMethod: SecretService_UpdateConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).UpdateConnectorSecret(ctx, req.(*UpdateConnectorSecretRequest))
+		return srv.(SecretServiceServer).UpdateConnectSecret(ctx, req.(*UpdateConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_DeleteConnectorSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteConnectorSecretRequest)
+func _SecretService_DeleteConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).DeleteConnectorSecret(ctx, in)
+		return srv.(SecretServiceServer).DeleteConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_DeleteConnectorSecret_FullMethodName,
+		FullMethod: SecretService_DeleteConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).DeleteConnectorSecret(ctx, req.(*DeleteConnectorSecretRequest))
+		return srv.(SecretServiceServer).DeleteConnectSecret(ctx, req.(*DeleteConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -438,24 +438,24 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SecretService_DeleteSecret_Handler,
 		},
 		{
-			MethodName: "GetConnectorSecret",
-			Handler:    _SecretService_GetConnectorSecret_Handler,
+			MethodName: "GetConnectSecret",
+			Handler:    _SecretService_GetConnectSecret_Handler,
 		},
 		{
-			MethodName: "ListConnectorSecrets",
-			Handler:    _SecretService_ListConnectorSecrets_Handler,
+			MethodName: "ListConnectSecrets",
+			Handler:    _SecretService_ListConnectSecrets_Handler,
 		},
 		{
-			MethodName: "CreateConnectorSecret",
-			Handler:    _SecretService_CreateConnectorSecret_Handler,
+			MethodName: "CreateConnectSecret",
+			Handler:    _SecretService_CreateConnectSecret_Handler,
 		},
 		{
-			MethodName: "UpdateConnectorSecret",
-			Handler:    _SecretService_UpdateConnectorSecret_Handler,
+			MethodName: "UpdateConnectSecret",
+			Handler:    _SecretService_UpdateConnectSecret_Handler,
 		},
 		{
-			MethodName: "DeleteConnectorSecret",
-			Handler:    _SecretService_DeleteConnectorSecret_Handler,
+			MethodName: "DeleteConnectSecret",
+			Handler:    _SecretService_DeleteConnectSecret_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

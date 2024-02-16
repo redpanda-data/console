@@ -597,11 +597,11 @@ export class DeleteSecretResponse extends Message<DeleteSecretResponse> {
 }
 
 /**
- * GetConnectorSecretRequest is the request of GetSecret.
+ * GetConnectSecretRequest is the request of GetSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorSecretRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectSecretRequest
  */
-export class GetConnectorSecretRequest extends Message<GetConnectorSecretRequest> {
+export class GetConnectSecretRequest extends Message<GetConnectSecretRequest> {
   /**
    * The unique name of target connect cluster.
    *
@@ -616,41 +616,41 @@ export class GetConnectorSecretRequest extends Message<GetConnectorSecretRequest
    */
   id = "";
 
-  constructor(data?: PartialMessage<GetConnectorSecretRequest>) {
+  constructor(data?: PartialMessage<GetConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorSecretRequest {
-    return new GetConnectorSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectSecretRequest {
+    return new GetConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorSecretRequest {
-    return new GetConnectorSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectSecretRequest {
+    return new GetConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorSecretRequest {
-    return new GetConnectorSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectSecretRequest {
+    return new GetConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectorSecretRequest | PlainMessage<GetConnectorSecretRequest> | undefined, b: GetConnectorSecretRequest | PlainMessage<GetConnectorSecretRequest> | undefined): boolean {
-    return proto3.util.equals(GetConnectorSecretRequest, a, b);
+  static equals(a: GetConnectSecretRequest | PlainMessage<GetConnectSecretRequest> | undefined, b: GetConnectSecretRequest | PlainMessage<GetConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectSecretRequest, a, b);
   }
 }
 
 /**
- * GetConnectorSecretResponse is the response of GetConnectorSecret.
+ * GetConnectSecretResponse is the response of GetConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectorSecretResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.GetConnectSecretResponse
  */
-export class GetConnectorSecretResponse extends Message<GetConnectorSecretResponse> {
+export class GetConnectSecretResponse extends Message<GetConnectSecretResponse> {
   /**
    * The created secret.
    *
@@ -658,40 +658,40 @@ export class GetConnectorSecretResponse extends Message<GetConnectorSecretRespon
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<GetConnectorSecretResponse>) {
+  constructor(data?: PartialMessage<GetConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectorSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.GetConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorSecretResponse {
-    return new GetConnectorSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectSecretResponse {
+    return new GetConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorSecretResponse {
-    return new GetConnectorSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectSecretResponse {
+    return new GetConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorSecretResponse {
-    return new GetConnectorSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectSecretResponse {
+    return new GetConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectorSecretResponse | PlainMessage<GetConnectorSecretResponse> | undefined, b: GetConnectorSecretResponse | PlainMessage<GetConnectorSecretResponse> | undefined): boolean {
-    return proto3.util.equals(GetConnectorSecretResponse, a, b);
+  static equals(a: GetConnectSecretResponse | PlainMessage<GetConnectSecretResponse> | undefined, b: GetConnectSecretResponse | PlainMessage<GetConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectSecretResponse, a, b);
   }
 }
 
 /**
- * CreateConnectorSecretRequest is the request of CreateConnectorSecret.
+ * CreateConnectSecretRequest is the request of CreateConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.CreateConnectorSecretRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.CreateConnectSecretRequest
  */
-export class CreateConnectorSecretRequest extends Message<CreateConnectorSecretRequest> {
+export class CreateConnectSecretRequest extends Message<CreateConnectSecretRequest> {
   /**
    * The unique name of target connect cluster.
    *
@@ -700,7 +700,7 @@ export class CreateConnectorSecretRequest extends Message<CreateConnectorSecretR
   clusterName = "";
 
   /**
-   * The connector name.
+   * The Connect name.
    *
    * @generated from field: string name = 2;
    */
@@ -713,42 +713,42 @@ export class CreateConnectorSecretRequest extends Message<CreateConnectorSecretR
    */
   secret?: SecretInput;
 
-  constructor(data?: PartialMessage<CreateConnectorSecretRequest>) {
+  constructor(data?: PartialMessage<CreateConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateConnectorSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "secret", kind: "message", T: SecretInput },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectorSecretRequest {
-    return new CreateConnectorSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectSecretRequest {
+    return new CreateConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectorSecretRequest {
-    return new CreateConnectorSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectSecretRequest {
+    return new CreateConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectorSecretRequest {
-    return new CreateConnectorSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectSecretRequest {
+    return new CreateConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateConnectorSecretRequest | PlainMessage<CreateConnectorSecretRequest> | undefined, b: CreateConnectorSecretRequest | PlainMessage<CreateConnectorSecretRequest> | undefined): boolean {
-    return proto3.util.equals(CreateConnectorSecretRequest, a, b);
+  static equals(a: CreateConnectSecretRequest | PlainMessage<CreateConnectSecretRequest> | undefined, b: CreateConnectSecretRequest | PlainMessage<CreateConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(CreateConnectSecretRequest, a, b);
   }
 }
 
 /**
- * CreateConnectorSecretResponse is the response of CreateConnectorSecret.
+ * CreateConnectSecretResponse is the response of CreateConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.CreateConnectorSecretResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.CreateConnectSecretResponse
  */
-export class CreateConnectorSecretResponse extends Message<CreateConnectorSecretResponse> {
+export class CreateConnectSecretResponse extends Message<CreateConnectSecretResponse> {
   /**
    * The created secret.
    *
@@ -756,40 +756,40 @@ export class CreateConnectorSecretResponse extends Message<CreateConnectorSecret
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<CreateConnectorSecretResponse>) {
+  constructor(data?: PartialMessage<CreateConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateConnectorSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectorSecretResponse {
-    return new CreateConnectorSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectSecretResponse {
+    return new CreateConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectorSecretResponse {
-    return new CreateConnectorSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectSecretResponse {
+    return new CreateConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectorSecretResponse {
-    return new CreateConnectorSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectSecretResponse {
+    return new CreateConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateConnectorSecretResponse | PlainMessage<CreateConnectorSecretResponse> | undefined, b: CreateConnectorSecretResponse | PlainMessage<CreateConnectorSecretResponse> | undefined): boolean {
-    return proto3.util.equals(CreateConnectorSecretResponse, a, b);
+  static equals(a: CreateConnectSecretResponse | PlainMessage<CreateConnectSecretResponse> | undefined, b: CreateConnectSecretResponse | PlainMessage<CreateConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(CreateConnectSecretResponse, a, b);
   }
 }
 
 /**
- * ListConnectorSecretRequest is the request of ListConnectorSecrets.
+ * ListConnectSecretRequest is the request of ListConnectSecrets.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectorSecretsRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectSecretsRequest
  */
-export class ListConnectorSecretsRequest extends Message<ListConnectorSecretsRequest> {
+export class ListConnectSecretsRequest extends Message<ListConnectSecretsRequest> {
   /**
    * The unique name of target connect cluster.
    *
@@ -819,13 +819,13 @@ export class ListConnectorSecretsRequest extends Message<ListConnectorSecretsReq
    */
   pageSize = 0;
 
-  constructor(data?: PartialMessage<ListConnectorSecretsRequest>) {
+  constructor(data?: PartialMessage<ListConnectSecretsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectorSecretsRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectSecretsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "filter", kind: "message", T: ListSecretsFilter },
@@ -833,29 +833,29 @@ export class ListConnectorSecretsRequest extends Message<ListConnectorSecretsReq
     { no: 4, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorSecretsRequest {
-    return new ListConnectorSecretsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectSecretsRequest {
+    return new ListConnectSecretsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectorSecretsRequest {
-    return new ListConnectorSecretsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectSecretsRequest {
+    return new ListConnectSecretsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectorSecretsRequest {
-    return new ListConnectorSecretsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectSecretsRequest {
+    return new ListConnectSecretsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListConnectorSecretsRequest | PlainMessage<ListConnectorSecretsRequest> | undefined, b: ListConnectorSecretsRequest | PlainMessage<ListConnectorSecretsRequest> | undefined): boolean {
-    return proto3.util.equals(ListConnectorSecretsRequest, a, b);
+  static equals(a: ListConnectSecretsRequest | PlainMessage<ListConnectSecretsRequest> | undefined, b: ListConnectSecretsRequest | PlainMessage<ListConnectSecretsRequest> | undefined): boolean {
+    return proto3.util.equals(ListConnectSecretsRequest, a, b);
   }
 }
 
 /**
- * ListConnectorSecretsResponse is the response of ListConnectorSecrets.
+ * ListConnectSecretsResponse is the response of ListConnectSecrets.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectorSecretsResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.ListConnectSecretsResponse
  */
-export class ListConnectorSecretsResponse extends Message<ListConnectorSecretsResponse> {
+export class ListConnectSecretsResponse extends Message<ListConnectSecretsResponse> {
   /**
    * Secrets retrieved.
    *
@@ -870,41 +870,41 @@ export class ListConnectorSecretsResponse extends Message<ListConnectorSecretsRe
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListConnectorSecretsResponse>) {
+  constructor(data?: PartialMessage<ListConnectSecretsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectorSecretsResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListConnectSecretsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secrets", kind: "message", T: Secret, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorSecretsResponse {
-    return new ListConnectorSecretsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectSecretsResponse {
+    return new ListConnectSecretsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectorSecretsResponse {
-    return new ListConnectorSecretsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectSecretsResponse {
+    return new ListConnectSecretsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectorSecretsResponse {
-    return new ListConnectorSecretsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectSecretsResponse {
+    return new ListConnectSecretsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListConnectorSecretsResponse | PlainMessage<ListConnectorSecretsResponse> | undefined, b: ListConnectorSecretsResponse | PlainMessage<ListConnectorSecretsResponse> | undefined): boolean {
-    return proto3.util.equals(ListConnectorSecretsResponse, a, b);
+  static equals(a: ListConnectSecretsResponse | PlainMessage<ListConnectSecretsResponse> | undefined, b: ListConnectSecretsResponse | PlainMessage<ListConnectSecretsResponse> | undefined): boolean {
+    return proto3.util.equals(ListConnectSecretsResponse, a, b);
   }
 }
 
 /**
- * UpdateConnectorSecretRequest is the request of UpdateConnectorSecret.
+ * UpdateConnectSecretRequest is the request of UpdateConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.UpdateConnectorSecretRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpdateConnectSecretRequest
  */
-export class UpdateConnectorSecretRequest extends Message<UpdateConnectorSecretRequest> {
+export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretRequest> {
   /**
    * The unique name of target connect cluster.
    *
@@ -926,42 +926,42 @@ export class UpdateConnectorSecretRequest extends Message<UpdateConnectorSecretR
    */
   secret?: SecretInput;
 
-  constructor(data?: PartialMessage<UpdateConnectorSecretRequest>) {
+  constructor(data?: PartialMessage<UpdateConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateConnectorSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "secret", kind: "message", T: SecretInput },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectorSecretRequest {
-    return new UpdateConnectorSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectSecretRequest {
+    return new UpdateConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectorSecretRequest {
-    return new UpdateConnectorSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectSecretRequest {
+    return new UpdateConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectorSecretRequest {
-    return new UpdateConnectorSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectSecretRequest {
+    return new UpdateConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateConnectorSecretRequest | PlainMessage<UpdateConnectorSecretRequest> | undefined, b: UpdateConnectorSecretRequest | PlainMessage<UpdateConnectorSecretRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateConnectorSecretRequest, a, b);
+  static equals(a: UpdateConnectSecretRequest | PlainMessage<UpdateConnectSecretRequest> | undefined, b: UpdateConnectSecretRequest | PlainMessage<UpdateConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateConnectSecretRequest, a, b);
   }
 }
 
 /**
- * UpdateConnectorSecretResponse is the response of UpdateConnectorSecret.
+ * UpdateConnectSecretResponse is the response of UpdateConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.UpdateConnectorSecretResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.UpdateConnectSecretResponse
  */
-export class UpdateConnectorSecretResponse extends Message<UpdateConnectorSecretResponse> {
+export class UpdateConnectSecretResponse extends Message<UpdateConnectSecretResponse> {
   /**
    * The updated secret.
    *
@@ -969,40 +969,40 @@ export class UpdateConnectorSecretResponse extends Message<UpdateConnectorSecret
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<UpdateConnectorSecretResponse>) {
+  constructor(data?: PartialMessage<UpdateConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateConnectorSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectorSecretResponse {
-    return new UpdateConnectorSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectSecretResponse {
+    return new UpdateConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectorSecretResponse {
-    return new UpdateConnectorSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectSecretResponse {
+    return new UpdateConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectorSecretResponse {
-    return new UpdateConnectorSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectSecretResponse {
+    return new UpdateConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateConnectorSecretResponse | PlainMessage<UpdateConnectorSecretResponse> | undefined, b: UpdateConnectorSecretResponse | PlainMessage<UpdateConnectorSecretResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateConnectorSecretResponse, a, b);
+  static equals(a: UpdateConnectSecretResponse | PlainMessage<UpdateConnectSecretResponse> | undefined, b: UpdateConnectSecretResponse | PlainMessage<UpdateConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateConnectSecretResponse, a, b);
   }
 }
 
 /**
- * DeleteConnectorSecretRequest is the request of DeleteConnectorSecret.
+ * DeleteConnectSecretRequest is the request of DeleteConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.DeleteConnectorSecretRequest
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeleteConnectSecretRequest
  */
-export class DeleteConnectorSecretRequest extends Message<DeleteConnectorSecretRequest> {
+export class DeleteConnectSecretRequest extends Message<DeleteConnectSecretRequest> {
   /**
    * The unique name of target connect cluster.
    *
@@ -1017,65 +1017,65 @@ export class DeleteConnectorSecretRequest extends Message<DeleteConnectorSecretR
    */
   id = "";
 
-  constructor(data?: PartialMessage<DeleteConnectorSecretRequest>) {
+  constructor(data?: PartialMessage<DeleteConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteConnectorSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorSecretRequest {
-    return new DeleteConnectorSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectSecretRequest {
+    return new DeleteConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorSecretRequest {
-    return new DeleteConnectorSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectSecretRequest {
+    return new DeleteConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorSecretRequest {
-    return new DeleteConnectorSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectSecretRequest {
+    return new DeleteConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteConnectorSecretRequest | PlainMessage<DeleteConnectorSecretRequest> | undefined, b: DeleteConnectorSecretRequest | PlainMessage<DeleteConnectorSecretRequest> | undefined): boolean {
-    return proto3.util.equals(DeleteConnectorSecretRequest, a, b);
+  static equals(a: DeleteConnectSecretRequest | PlainMessage<DeleteConnectSecretRequest> | undefined, b: DeleteConnectSecretRequest | PlainMessage<DeleteConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectSecretRequest, a, b);
   }
 }
 
 /**
- * DeleteConnectorSecretResponse is the response of DeleteConnectorSecret.
+ * DeleteConnectSecretResponse is the response of DeleteConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1alpha1.DeleteConnectorSecretResponse
+ * @generated from message redpanda.api.dataplane.v1alpha1.DeleteConnectSecretResponse
  */
-export class DeleteConnectorSecretResponse extends Message<DeleteConnectorSecretResponse> {
-  constructor(data?: PartialMessage<DeleteConnectorSecretResponse>) {
+export class DeleteConnectSecretResponse extends Message<DeleteConnectSecretResponse> {
+  constructor(data?: PartialMessage<DeleteConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteConnectorSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeleteConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorSecretResponse {
-    return new DeleteConnectorSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectSecretResponse {
+    return new DeleteConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorSecretResponse {
-    return new DeleteConnectorSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectSecretResponse {
+    return new DeleteConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorSecretResponse {
-    return new DeleteConnectorSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectSecretResponse {
+    return new DeleteConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteConnectorSecretResponse | PlainMessage<DeleteConnectorSecretResponse> | undefined, b: DeleteConnectorSecretResponse | PlainMessage<DeleteConnectorSecretResponse> | undefined): boolean {
-    return proto3.util.equals(DeleteConnectorSecretResponse, a, b);
+  static equals(a: DeleteConnectSecretResponse | PlainMessage<DeleteConnectSecretResponse> | undefined, b: DeleteConnectSecretResponse | PlainMessage<DeleteConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectSecretResponse, a, b);
   }
 }
 
