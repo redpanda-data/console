@@ -44,45 +44,52 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 	// 1. Create a client for each configured Connect cluster
 	clientsByCluster := make(map[string]*ClientWithConfig)
 
-	if len(cfg.Clusters) > 0 {
-		logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
+	if len(cfg.Clusters) == 0 {
+		return &Service{
+			Cfg:              cfg,
+			Logger:           logger,
+			ClientsByCluster: clientsByCluster,
+			Interceptor:      interceptor.NewInterceptor(),
+		}, nil
+	}
 
-		for _, clusterCfg := range cfg.Clusters {
-			// Create dedicated Connect HTTP Client for each cluster
-			childLogger := logger.With(
-				zap.String("cluster_name", clusterCfg.Name),
-				zap.String("cluster_address", clusterCfg.URL))
+	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
 
-			opts := []con.ClientOption{
-				con.WithTimeout(cfg.ReadTimeout),
-				con.WithUserAgent("Redpanda Console"),
-			}
+	for _, clusterCfg := range cfg.Clusters {
+		// Create dedicated Connect HTTP Client for each cluster
+		childLogger := logger.With(
+			zap.String("cluster_name", clusterCfg.Name),
+			zap.String("cluster_address", clusterCfg.URL))
 
-			opts = append(opts, con.WithHost(clusterCfg.URL))
-			// TLS Config
-			tlsCfg, err := clusterCfg.TLS.TLSConfig()
-			if err != nil {
-				childLogger.Error("failed to create TLS config for Kafka connect HTTP client, fallback to default TLS config", zap.Error(err))
-				tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
-			}
-			opts = append(opts, con.WithTLSConfig(tlsCfg))
+		opts := []con.ClientOption{
+			con.WithTimeout(cfg.ReadTimeout),
+			con.WithUserAgent("Redpanda Console"),
+		}
 
-			// Basic Auth
-			if clusterCfg.Username != "" {
-				opts = append(opts, con.WithBasicAuth(clusterCfg.Username, clusterCfg.Password))
-			}
+		opts = append(opts, con.WithHost(clusterCfg.URL))
+		// TLS Config
+		tlsCfg, err := clusterCfg.TLS.TLSConfig()
+		if err != nil {
+			childLogger.Error("failed to create TLS config for Kafka connect HTTP client, fallback to default TLS config", zap.Error(err))
+			tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
+		}
+		opts = append(opts, con.WithTLSConfig(tlsCfg))
 
-			// Bearer Token
-			if clusterCfg.Token != "" {
-				opts = append(opts, con.WithAuthToken(clusterCfg.Token))
-			}
+		// Basic Auth
+		if clusterCfg.Username != "" {
+			opts = append(opts, con.WithBasicAuth(clusterCfg.Username, clusterCfg.Password))
+		}
 
-			// Create client
-			client := con.NewClient(opts...)
-			clientsByCluster[clusterCfg.Name] = &ClientWithConfig{
-				Client: client,
-				Cfg:    clusterCfg,
-			}
+		// Bearer Token
+		if clusterCfg.Token != "" {
+			opts = append(opts, con.WithAuthToken(clusterCfg.Token))
+		}
+
+		// Create client
+		client := con.NewClient(opts...)
+		clientsByCluster[clusterCfg.Name] = &ClientWithConfig{
+			Client: client,
+			Cfg:    clusterCfg,
 		}
 	}
 
@@ -94,13 +101,12 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 	}
 
 	// 2. Test connectivity against each cluster concurrently
-	if len(cfg.Clusters) > 0 {
-		shortCtx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
-		defer cancel()
-		svc.TestConnectivity(shortCtx)
 
-		logger.Info("successfully create Kafka connect service")
-	}
+	shortCtx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
+	defer cancel()
+	svc.TestConnectivity(shortCtx)
+
+	logger.Info("successfully create Kafka connect service")
 
 	return svc, nil
 }
