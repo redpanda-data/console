@@ -15,11 +15,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"net"
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -149,8 +149,8 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		if cfg.SASL.Mechanism == config.SASLMechanismAWSManagedStreamingIAM {
 			var mechanism sasl.Mechanism
 			if cfg.SASL.AWSMskIam.AccessKey != "" &&
-				cfg.SASL.AWSMskIam.SecretKey != "" &&
-				cfg.SASL.AWSMskIam.SessionToken != "" {
+				cfg.SASL.AWSMskIam.SecretKey != "" {
+				// SessionToken is optional
 				mechanism = aws.Auth{
 					AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
 					SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
