@@ -48,7 +48,7 @@ const (
 	RecordValue
 )
 
-type RegexProtoTopicMapping struct {
+type regexProtoTopicMapping struct {
 	config.ProtoTopicMapping
 	r *regexp.Regexp
 }
@@ -61,7 +61,7 @@ type Service struct {
 	logger *zap.Logger
 
 	strictMappingsByTopic map[string]config.ProtoTopicMapping
-	regexMappingsByTopic  map[string]RegexProtoTopicMapping
+	regexMappingsByTopic  map[string]regexProtoTopicMapping
 	gitSvc                *git.Service
 	fsSvc                 *filesystem.Service
 	schemaSvc             *schema.Service
@@ -139,9 +139,9 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 	}, nil
 }
 
-func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTopic map[string]config.ProtoTopicMapping, regexMappingsByTopic map[string]RegexProtoTopicMapping, err error) {
+func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTopic map[string]config.ProtoTopicMapping, regexMappingsByTopic map[string]regexProtoTopicMapping, err error) {
 	strictMappingsByTopic = make(map[string]config.ProtoTopicMapping)
-	regexMappingsByTopic = make(map[string]RegexProtoTopicMapping)
+	regexMappingsByTopic = make(map[string]regexProtoTopicMapping)
 
 	for _, mapping := range mappings {
 		if mapping.IsRegex {
@@ -150,7 +150,7 @@ func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTo
 				return nil, nil, fmt.Errorf("invalid regexp as a topic name: %w", err)
 			}
 
-			regexMappingsByTopic[mapping.TopicName] = RegexProtoTopicMapping{
+			regexMappingsByTopic[mapping.TopicName] = regexProtoTopicMapping{
 				ProtoTopicMapping: mapping,
 				r:                 r,
 			}
@@ -159,7 +159,7 @@ func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTo
 		strictMappingsByTopic[mapping.TopicName] = mapping
 	}
 
-	return
+	return strictMappingsByTopic, regexMappingsByTopic, err
 }
 
 // Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these

@@ -17,8 +17,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 func Test_decodeConfluentBinaryWrapper(t *testing.T) {
@@ -51,11 +52,6 @@ var (
 		IsRegex:   false,
 	}
 
-	strictTopicMapping03 = config.ProtoTopicMapping{
-		TopicName: "strictTopicMapping03",
-		IsRegex:   false,
-	}
-
 	regexTopicMapping01 = config.ProtoTopicMapping{
 		TopicName: "TopicName",
 		IsRegex:   true,
@@ -77,7 +73,7 @@ func genNTopicMappings(n int, baseName string, isRegex bool) []config.ProtoTopic
 func TestService_getMatchingMapping(t *testing.T) {
 	type fields struct {
 		strictMappingsByTopic map[string]config.ProtoTopicMapping
-		regexMappingsByTopic  map[string]RegexProtoTopicMapping
+		regexMappingsByTopic  map[string]regexProtoTopicMapping
 	}
 	type args struct {
 		topicName string
@@ -110,7 +106,7 @@ func TestService_getMatchingMapping(t *testing.T) {
 					strictTopicMapping02.TopicName: strictTopicMapping02,
 					regexTopicMapping01.TopicName:  regexTopicMapping01,
 				},
-				regexMappingsByTopic: map[string]RegexProtoTopicMapping{
+				regexMappingsByTopic: map[string]regexProtoTopicMapping{
 					regexTopicMapping01.TopicName: {
 						ProtoTopicMapping: regexTopicMapping01,
 						r:                 regexp.MustCompile(regexTopicMapping01.TopicName),
@@ -180,7 +176,6 @@ func BenchmarkService_getMatchingMapping(b *testing.B) {
 	}
 	for _, bench := range benchs {
 		b.Run(bench.name, func(b *testing.B) {
-
 			strictTopicMappings := genNTopicMappings(int(float32(bench.topicCount)*(1.0-bench.ratio)), "strictMapping", false)
 			regexTopicMappings := genNTopicMappings(int(float32(bench.topicCount)*bench.ratio), "regexMapping", true)
 
