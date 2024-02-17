@@ -119,23 +119,9 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		}
 	}
 
-	strictMappingsByTopic := make(map[string]config.ProtoTopicMapping)
-	regexMappingsByTopic := make(map[string]RegexProtoTopicMapping)
-
-	for _, mapping := range cfg.Mappings {
-		if mapping.IsRegex {
-			r, err := regexp.Compile(mapping.TopicName)
-			if err != nil {
-				return nil, fmt.Errorf("invalid regexp as a topic name: %w", err)
-			}
-
-			regexMappingsByTopic[mapping.TopicName] = RegexProtoTopicMapping{
-				ProtoTopicMapping: mapping,
-				r:                 r,
-			}
-			continue
-		}
-		strictMappingsByTopic[mapping.TopicName] = mapping
+	strictMappingsByTopic, regexMappingsByTopic, err := setMappingsByTopic(cfg.Mappings)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Service{
@@ -151,6 +137,29 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		// registry has to be created afterwards
 		registry: nil,
 	}, nil
+}
+
+func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTopic map[string]config.ProtoTopicMapping, regexMappingsByTopic map[string]RegexProtoTopicMapping, err error) {
+	strictMappingsByTopic = make(map[string]config.ProtoTopicMapping)
+	regexMappingsByTopic = make(map[string]RegexProtoTopicMapping)
+
+	for _, mapping := range mappings {
+		if mapping.IsRegex {
+			r, err := regexp.Compile(mapping.TopicName)
+			if err != nil {
+				return nil, nil, fmt.Errorf("invalid regexp as a topic name: %w", err)
+			}
+
+			regexMappingsByTopic[mapping.TopicName] = RegexProtoTopicMapping{
+				ProtoTopicMapping: mapping,
+				r:                 r,
+			}
+			continue
+		}
+		strictMappingsByTopic[mapping.TopicName] = mapping
+	}
+
+	return
 }
 
 // Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these
@@ -341,6 +350,7 @@ func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopi
 		match = rMapping.r.MatchString(topicName)
 		if match {
 			mapping = rMapping.ProtoTopicMapping
+			s.strictMappingsByTopic[topicName] = mapping
 			break
 		}
 	}

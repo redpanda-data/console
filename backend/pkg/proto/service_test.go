@@ -12,6 +12,7 @@ package proto
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
@@ -60,6 +61,18 @@ var (
 		IsRegex:   true,
 	}
 )
+
+func genNTopicMappings(n int, baseName string, isRegex bool) []config.ProtoTopicMapping {
+	m := make([]config.ProtoTopicMapping, 0)
+	for i := 0; i < n; i++ {
+		m = append(m, config.ProtoTopicMapping{
+			TopicName: fmt.Sprintf("%v%v", baseName, i),
+			IsRegex:   isRegex,
+		})
+	}
+
+	return m
+}
 
 func TestService_getMatchingMapping(t *testing.T) {
 	type fields struct {
@@ -123,6 +136,75 @@ func TestService_getMatchingMapping(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotMapping, tt.wantMapping) {
 				t.Errorf("Service.getMatchingMapping() = %v, want %v", gotMapping, tt.wantMapping)
+			}
+		})
+	}
+}
+
+func BenchmarkService_getMatchingMapping(b *testing.B) {
+	benchs := []struct {
+		name       string
+		baseName   string
+		topicCount int
+		iter       int
+		ratio      float32 // must be between 0 and 1
+	}{
+		{
+			name:       "Only strict mappings",
+			baseName:   "strictMapping",
+			topicCount: 100,
+			iter:       100,
+			ratio:      0.0,
+		},
+		{
+			name:       "10% regex mappings",
+			baseName:   "regexMapping",
+			topicCount: 100,
+			iter:       100,
+			ratio:      0.1,
+		},
+		{
+			name:       "50% regex mappings",
+			baseName:   "regexMapping",
+			topicCount: 100,
+			iter:       100,
+			ratio:      0.5,
+		},
+		{
+			name:       "90% regex mappings",
+			baseName:   "regexMapping",
+			topicCount: 100,
+			iter:       100,
+			ratio:      1.0,
+		},
+	}
+	for _, bench := range benchs {
+		b.Run(bench.name, func(b *testing.B) {
+
+			strictTopicMappings := genNTopicMappings(int(float32(bench.topicCount)*(1.0-bench.ratio)), "strictMapping", false)
+			regexTopicMappings := genNTopicMappings(int(float32(bench.topicCount)*bench.ratio), "regexMapping", true)
+
+			strictMappingsByTopic, regexMappingsByTopic, err := setMappingsByTopic(append(strictTopicMappings, regexTopicMappings...))
+			if err != nil {
+				b.Error(err)
+			}
+
+			topicNames := make([]string, 0)
+
+			for i := 0; i < bench.topicCount; i++ {
+				topicNames = append(topicNames, fmt.Sprintf("%v%v", bench.baseName, i))
+			}
+
+			for i := 0; i < b.N; i++ {
+				s := &Service{
+					strictMappingsByTopic: strictMappingsByTopic,
+					regexMappingsByTopic:  regexMappingsByTopic,
+				}
+				for n := 0; n < bench.iter; n++ {
+					for _, topicName := range topicNames {
+						_, _ = s.getMatchingMapping(topicName)
+					}
+				}
 			}
 		})
 	}
