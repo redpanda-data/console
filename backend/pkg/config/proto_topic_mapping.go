@@ -17,9 +17,6 @@ type ProtoTopicMapping struct {
 	// TopicName is the name of the topic to apply these proto files. This supports regex.
 	TopicName string `yaml:"topicName"`
 
-	// IsRegex indicates if the topicName must be handled as a regex and match multiple topic names
-	IsRegex bool `yaml:"isRegex"`
-
 	// KeyProtoType is the proto's fully qualified name that shall be used for a Kafka record's key
 	KeyProtoType string `yaml:"keyProtoType"`
 

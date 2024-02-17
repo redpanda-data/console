@@ -61,7 +61,7 @@ type Service struct {
 	logger *zap.Logger
 
 	strictMappingsByTopic map[string]config.ProtoTopicMapping
-	regexMappingsByTopic  map[string]regexProtoTopicMapping
+	mappingsRegex         []regexProtoTopicMapping
 	gitSvc                *git.Service
 	fsSvc                 *filesystem.Service
 	schemaSvc             *schema.Service
@@ -119,7 +119,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		}
 	}
 
-	strictMappingsByTopic, regexMappingsByTopic, err := setMappingsByTopic(cfg.Mappings)
+	strictMappingsByTopic, mappingsRegex, err := setMappingsByTopic(cfg.Mappings, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		logger: logger,
 
 		strictMappingsByTopic: strictMappingsByTopic,
-		regexMappingsByTopic:  regexMappingsByTopic,
+		mappingsRegex:         mappingsRegex,
 		gitSvc:                gitSvc,
 		fsSvc:                 fsSvc,
 		schemaSvc:             schemaSvc,
@@ -139,27 +139,26 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 	}, nil
 }
 
-func setMappingsByTopic(mappings []config.ProtoTopicMapping) (strictMappingsByTopic map[string]config.ProtoTopicMapping, regexMappingsByTopic map[string]regexProtoTopicMapping, err error) {
+func setMappingsByTopic(mappings []config.ProtoTopicMapping, logger *zap.Logger) (strictMappingsByTopic map[string]config.ProtoTopicMapping, mappingsRegex []regexProtoTopicMapping, err error) {
 	strictMappingsByTopic = make(map[string]config.ProtoTopicMapping)
-	regexMappingsByTopic = make(map[string]regexProtoTopicMapping)
+	mappingsRegex = make([]regexProtoTopicMapping, 0)
 
 	for _, mapping := range mappings {
-		if mapping.IsRegex {
-			r, err := regexp.Compile(mapping.TopicName)
-			if err != nil {
-				return nil, nil, fmt.Errorf("invalid regexp as a topic name: %w", err)
-			}
-
-			regexMappingsByTopic[mapping.TopicName] = regexProtoTopicMapping{
-				ProtoTopicMapping: mapping,
-				r:                 r,
-			}
+		r, err := regexp.Compile(mapping.TopicName)
+		if err != nil {
+			strictMappingsByTopic[mapping.TopicName] = mapping
+			logger.Warn("topic name handled as a strict match", zap.String("topic_name", mapping.TopicName))
 			continue
 		}
-		strictMappingsByTopic[mapping.TopicName] = mapping
+
+		mappingsRegex = append(mappingsRegex, regexProtoTopicMapping{
+			ProtoTopicMapping: mapping,
+			r:                 r,
+		})
+		continue
 	}
 
-	return strictMappingsByTopic, regexMappingsByTopic, err
+	return strictMappingsByTopic, mappingsRegex, err
 }
 
 // Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these
@@ -346,7 +345,7 @@ func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopi
 	}
 
 	var match bool
-	for _, rMapping := range s.regexMappingsByTopic {
+	for _, rMapping := range s.mappingsRegex {
 		match = rMapping.r.MatchString(topicName)
 		if match {
 			mapping = rMapping.ProtoTopicMapping
