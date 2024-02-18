@@ -493,12 +493,12 @@ func updateTransforms(doc3 *openapi3.T) {
 				Name:             "transform1",
 				InputTopicName:   "topic1",
 				OutputTopicNames: []string{"output-topic11", "output-topic12"},
-				Status: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha1.PartitionTransformStatus{
 					{
-						NodeId:    int32(1),
-						Partition: int32(1),
-						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
-						Lag:       int32(1),
+						BrokerId:    int32(1),
+						PartitionId: int32(1),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(1),
 					},
 				},
 			},
@@ -506,12 +506,12 @@ func updateTransforms(doc3 *openapi3.T) {
 				Name:             "transform2",
 				InputTopicName:   "topic2",
 				OutputTopicNames: []string{"output-topic21", "output-topic22"},
-				Status: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha1.PartitionTransformStatus{
 					{
-						NodeId:    int32(2),
-						Partition: int32(2),
-						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
-						Lag:       int32(2),
+						BrokerId:    int32(2),
+						PartitionId: int32(2),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(2),
 					},
 				},
 			},
@@ -533,12 +533,12 @@ func updateTransforms(doc3 *openapi3.T) {
 				Name:             "transform1",
 				InputTopicName:   "topic1",
 				OutputTopicNames: []string{"output-topic1", "output-topic2"},
-				Status: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha1.PartitionTransformStatus{
 					{
-						NodeId:    int32(1),
-						Partition: int32(1),
-						Status:    v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
-						Lag:       int32(1),
+						BrokerId:    int32(1),
+						PartitionId: int32(1),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(1),
 					},
 				},
 			},
