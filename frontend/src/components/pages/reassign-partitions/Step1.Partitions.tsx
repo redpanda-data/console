@@ -24,7 +24,7 @@ import Highlighter from 'react-highlight-words';
 import { uiSettings } from '../../../state/ui';
 import { WarningTwoTone } from '@ant-design/icons';
 import { SearchTitle } from '../../misc/KowlTable';
-import { Checkbox, DataTable, Popover } from '@redpanda-data/ui'
+import { Box, Checkbox, DataTable, Popover } from '@redpanda-data/ui'
 import { Row } from '@tanstack/react-table';
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
@@ -108,13 +108,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 : record.topicName;
 
                             if (this.props.throttledTopics.includes(record.topicName)) {
-                                return <div>
+                                return <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}>
                                     <span>{content}</span>
                                     <WarningToolip content="Topic replication is throttled" position="top"/>
-                                </div>
+                                </Box>
                             }
 
-                            return content;
+                            return <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}>{content}</Box>;
                         },
                         size: Infinity,
                     },

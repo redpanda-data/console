@@ -214,12 +214,13 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 {
                     header: 'Name',
                     accessorKey: 'topicName',
-                    cell: ({row: {original: topic}}) => <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>,
+                    cell: ({row: {original: topic}}) => <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}><Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link></Box>,
                     size: Infinity,
                 },
                 {
                     header: 'Partitions',
                     accessorKey: 'partitions',
+                    enableResizing: true,
                     cell: ({row: {original: topic}}) => topic.partitionCount,
                 },
                 {
@@ -310,12 +311,14 @@ const renderName = (topic: Topic) => {
     );
 
     return (
-        <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
+        <Box wordBreak="break-word" whiteSpace="break-spaces">
+            <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
             <span>
                 {topic.topicName}
                 {iconClosedEye}
             </span>
-        </Popover>
+            </Popover>
+        </Box>
     );
 };
 

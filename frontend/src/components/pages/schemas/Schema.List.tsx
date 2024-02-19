@@ -27,7 +27,7 @@ import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
-import { createStandaloneToast } from '@chakra-ui/react';
+import { Box, createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
 import { encodeURIComponentPercents } from './Schema.Details';
@@ -167,8 +167,10 @@ class SchemaList extends PageComponent<{}> {
                         sorting
                         columns={[
                             {
-                                header: 'Name', accessorKey: 'name', size: 400, cell: ({ row: { original: { name } } }) =>
-                                    <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
+                                header: 'Name', accessorKey: 'name', size: Infinity, cell: ({ row: { original: { name } } }) =>
+                                    <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}>
+                                        <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
+                                    </Box>
                             },
                             { header: 'Type', cell: ({row: {original: r}}) => <SchemaTypeColumn name={r.name} />, size: 100 },
                             { header: 'Compatibility', cell: ({row: {original: r}}) => <SchemaCompatibilityColumn name={r.name} />, size: 100 },
@@ -178,7 +180,7 @@ class SchemaList extends PageComponent<{}> {
                                 id: 'actions',
                                 cell: ({row: {original: r}}) =>
                                     <Button variant="icon"
-                                            height="21px" color="gray.500"
+                                            height="16px" color="gray.500"
                                             disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
                                             onClick={e => {
                                                 e.stopPropagation();
