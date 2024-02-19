@@ -46,11 +46,20 @@ func (m *mapper) transformMetadataToProto(transforms []adminapi.TransformMetadat
 			statuses[i] = p
 		}
 
+		envVars := make([]*v1alpha1.TransformMetadata_EnvironmentVariable, len(transform.Environment))
+		for i, keyVal := range transform.Environment {
+			envVars[i] = &v1alpha1.TransformMetadata_EnvironmentVariable{
+				Key:   keyVal.Key,
+				Value: keyVal.Value,
+			}
+		}
+
 		apiTransforms = append(apiTransforms, &v1alpha1.TransformMetadata{
-			Name:             transform.Name,
-			InputTopicName:   transform.InputTopic,
-			OutputTopicNames: transform.OutputTopics,
-			Statuses:         statuses,
+			Name:                 transform.Name,
+			InputTopicName:       transform.InputTopic,
+			OutputTopicNames:     transform.OutputTopics,
+			Statuses:             statuses,
+			EnvironmentVariables: envVars,
 		})
 	}
 	return apiTransforms, nil

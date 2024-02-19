@@ -382,6 +382,10 @@ func (s *APISuite) TestGetTransform() {
 		assert.Equal(tfName, msg.Msg.Transform.Name)
 		assert.Equal(inputTopicName, msg.Msg.Transform.InputTopicName)
 		assert.Equal([]string{outputTopicName}, msg.Msg.Transform.OutputTopicNames)
+		require.Len(msg.Msg.Transform.EnvironmentVariables, 1)
+		envVar := msg.Msg.Transform.EnvironmentVariables[0]
+		assert.Equal("foo", envVar.Key)
+		assert.Equal("bar", envVar.Value)
 	})
 
 	t.Run("get transform with valid request (http)", func(t *testing.T) {
@@ -393,11 +397,16 @@ func (s *APISuite) TestGetTransform() {
 			PartitionID int32  `json:"partition_id"`
 			Statuses    string `json:"status"`
 		}
+		type envVar struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		}
 		type getTransformResponse struct {
-			Name             string                     `json:"name"`
-			InputTopicName   string                     `json:"input_topic_name"`
-			OutputTopicNames []string                   `json:"output_topic_names"`
-			Statuses         []partitionTransformStatus `json:"statuses"`
+			Name                 string                     `json:"name"`
+			InputTopicName       string                     `json:"input_topic_name"`
+			OutputTopicNames     []string                   `json:"output_topic_names"`
+			Statuses             []partitionTransformStatus `json:"statuses"`
+			EnvironmentVariables []envVar                   `json:"environment_variables"`
 		}
 		var httpRes getTransformResponse
 		var errResponse string
@@ -411,6 +420,14 @@ func (s *APISuite) TestGetTransform() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
+
+		assert.Equal(tfName, httpRes.Name)
+		assert.Equal(inputTopicName, httpRes.InputTopicName)
+		assert.Equal([]string{outputTopicName}, httpRes.OutputTopicNames)
+		require.Len(httpRes.EnvironmentVariables, 1)
+		keyVal := httpRes.EnvironmentVariables[0]
+		assert.Equal("foo", keyVal.Key)
+		assert.Equal("bar", keyVal.Value)
 	})
 
 	t.Run("get transform with special chars in name - valid request (http)", func(t *testing.T) {
