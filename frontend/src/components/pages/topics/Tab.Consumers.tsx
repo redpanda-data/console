@@ -27,18 +27,16 @@ import { editQuery } from '../../../utils/queryHelper';
 type TopicConsumersProps = { topic: Topic };
 
 export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
-    const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize);
-
     let consumers = api.topicConsumers.get(topic.topicName);
     const isLoading = consumers === null;
-
     if(isLoading) {
         return DefaultSkeleton;
     }
-
     if (!consumers) {
         consumers = [];
     }
+
+    const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize, consumers.length);
 
     return (
         <DataTable<TopicConsumer>
