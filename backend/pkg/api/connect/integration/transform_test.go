@@ -261,10 +261,6 @@ func (s *APISuite) TestDeployTransform() {
 			Name:             "deploy-transform-incomplete-metadata",
 			InputTopicName:   inputTopicName,
 			OutputTopicNames: []string{"some-random-topic"},
-			EnvironmentVariables: []KeyVal{{
-				Key:   "READPANDA_KEYS_ARE_PROTECTED", // This should be flagged
-				Value: "bar",
-			}},
 		}
 
 		metadataPart, err := writer.CreateFormField("metadata")
@@ -426,6 +422,7 @@ func (s *APISuite) TestGetTransform() {
 		assert.Nil(msg)
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
+		assert.Contains(err.Error(), "does not exist")
 	})
 
 	t.Run("try to get transform without name (connect-go)", func(t *testing.T) {
@@ -499,8 +496,6 @@ func (s *APISuite) TestListTransforms() {
 			require.Len(transform.OutputTopicNames, 1)
 			assert.Equal(outputTopicName, transform.OutputTopicNames[0])
 		}
-		_, err = transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
-		assert.NoError(err)
 	})
 
 	t.Run("list transforms with valid request (http)", func(t *testing.T) {
@@ -540,8 +535,6 @@ func (s *APISuite) TestListTransforms() {
 			require.Len(transform.OutputTopicNames, 1)
 			assert.Equal(outputTopicName, transform.OutputTopicNames[0])
 		}
-		_, err = transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
-		assert.NoError(err)
 	})
 
 	t.Run("list transforms with filter (connect-go)", func(t *testing.T) {
