@@ -99,6 +99,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 				},
 			},
 		}),
+		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptReserved),
 	)
 
 	// Call Hook
