@@ -432,6 +432,20 @@ components:
       type: object
     DeleteUserResponse:
       type: object
+    EnvironmentVariable:
+      properties:
+        key:
+          description: The key of your environment variable.
+          example: LOG_LEVEL
+          type: string
+        value:
+          description: The key of your environment variable.
+          example: DEBUG
+          type: string
+      required:
+        - key
+        - value
+      type: object
     ErrorInfo:
       description: |-
         Describes the cause of the error with structured details.
@@ -1052,6 +1066,11 @@ components:
       type: object
     TransformMetadata:
       properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
         input_topic_name:
           type: string
         name:
@@ -2854,7 +2873,8 @@ paths:
               example:
                 next_page_token: ""
                 transforms:
-                  - input_topic_name: topic1
+                  - environment_variables: []
+                    input_topic_name: topic1
                     name: transform1
                     output_topic_names:
                       - output-topic11
@@ -2864,7 +2884,8 @@ paths:
                         lag: 1
                         partition_id: 1
                         status: PARTITION_STATUS_RUNNING
-                  - input_topic_name: topic2
+                  - environment_variables: []
+                    input_topic_name: topic2
                     name: transform2
                     output_topic_names:
                       - output-topic21
@@ -2961,6 +2982,7 @@ paths:
             application/json:
               example:
                 transform:
+                  environment_variables: []
                   input_topic_name: topic1
                   name: transform1
                   output_topic_names:

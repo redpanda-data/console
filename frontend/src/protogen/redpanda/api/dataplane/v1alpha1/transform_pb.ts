@@ -30,6 +30,11 @@ export class TransformMetadata extends Message<TransformMetadata> {
    */
   statuses: PartitionTransformStatus[] = [];
 
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.TransformMetadata.EnvironmentVariable environment_variables = 5;
+   */
+  environmentVariables: TransformMetadata_EnvironmentVariable[] = [];
+
   constructor(data?: PartialMessage<TransformMetadata>) {
     super();
     proto3.util.initPartial(data, this);
@@ -42,6 +47,7 @@ export class TransformMetadata extends Message<TransformMetadata> {
     { no: 2, name: "input_topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "output_topic_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "statuses", kind: "message", T: PartitionTransformStatus, repeated: true },
+    { no: 5, name: "environment_variables", kind: "message", T: TransformMetadata_EnvironmentVariable, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TransformMetadata {
@@ -58,6 +64,49 @@ export class TransformMetadata extends Message<TransformMetadata> {
 
   static equals(a: TransformMetadata | PlainMessage<TransformMetadata> | undefined, b: TransformMetadata | PlainMessage<TransformMetadata> | undefined): boolean {
     return proto3.util.equals(TransformMetadata, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha1.TransformMetadata.EnvironmentVariable
+ */
+export class TransformMetadata_EnvironmentVariable extends Message<TransformMetadata_EnvironmentVariable> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value = "";
+
+  constructor(data?: PartialMessage<TransformMetadata_EnvironmentVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha1.TransformMetadata.EnvironmentVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TransformMetadata_EnvironmentVariable {
+    return new TransformMetadata_EnvironmentVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TransformMetadata_EnvironmentVariable {
+    return new TransformMetadata_EnvironmentVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TransformMetadata_EnvironmentVariable {
+    return new TransformMetadata_EnvironmentVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TransformMetadata_EnvironmentVariable | PlainMessage<TransformMetadata_EnvironmentVariable> | undefined, b: TransformMetadata_EnvironmentVariable | PlainMessage<TransformMetadata_EnvironmentVariable> | undefined): boolean {
+    return proto3.util.equals(TransformMetadata_EnvironmentVariable, a, b);
   }
 }
 
@@ -177,9 +226,9 @@ export class DeployTransformRequest extends Message<DeployTransformRequest> {
   outputTopicNames: string[] = [];
 
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable environment_variables = 4;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.TransformMetadata.EnvironmentVariable environment_variables = 4;
    */
-  environmentVariables: DeployTransformRequest_EnvironmentVariable[] = [];
+  environmentVariables: TransformMetadata_EnvironmentVariable[] = [];
 
   constructor(data?: PartialMessage<DeployTransformRequest>) {
     super();
@@ -192,7 +241,7 @@ export class DeployTransformRequest extends Message<DeployTransformRequest> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "input_topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "output_topic_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "environment_variables", kind: "message", T: DeployTransformRequest_EnvironmentVariable, repeated: true },
+    { no: 4, name: "environment_variables", kind: "message", T: TransformMetadata_EnvironmentVariable, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest {
@@ -209,49 +258,6 @@ export class DeployTransformRequest extends Message<DeployTransformRequest> {
 
   static equals(a: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined, b: DeployTransformRequest | PlainMessage<DeployTransformRequest> | undefined): boolean {
     return proto3.util.equals(DeployTransformRequest, a, b);
-  }
-}
-
-/**
- * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable
- */
-export class DeployTransformRequest_EnvironmentVariable extends Message<DeployTransformRequest_EnvironmentVariable> {
-  /**
-   * @generated from field: string key = 1;
-   */
-  key = "";
-
-  /**
-   * @generated from field: string value = 2;
-   */
-  value = "";
-
-  constructor(data?: PartialMessage<DeployTransformRequest_EnvironmentVariable>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DeployTransformRequest.EnvironmentVariable";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployTransformRequest_EnvironmentVariable {
-    return new DeployTransformRequest_EnvironmentVariable().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployTransformRequest_EnvironmentVariable {
-    return new DeployTransformRequest_EnvironmentVariable().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployTransformRequest_EnvironmentVariable {
-    return new DeployTransformRequest_EnvironmentVariable().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: DeployTransformRequest_EnvironmentVariable | PlainMessage<DeployTransformRequest_EnvironmentVariable> | undefined, b: DeployTransformRequest_EnvironmentVariable | PlainMessage<DeployTransformRequest_EnvironmentVariable> | undefined): boolean {
-    return proto3.util.equals(DeployTransformRequest_EnvironmentVariable, a, b);
   }
 }
 
