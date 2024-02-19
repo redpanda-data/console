@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -410,6 +411,47 @@ func (s *APISuite) TestGetTransform() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
+	})
+
+	t.Run("get transform with special chars in name - valid request (http)", func(t *testing.T) {
+		// Skip this test, until https://github.com/redpanda-data/redpanda/issues/16643 is fixed.
+		t.Skip()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		transformNameWithSpecialChars := "some-transform/name that&requires! encoding"
+		_, err := createTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
+			Name:         transformNameWithSpecialChars,
+			InputTopic:   inputTopicName,
+			OutputTopics: []string{outputTopicName},
+			Environment:  []adminapi.EnvironmentVariable{{Key: "foo", Value: "bar"}},
+		}, identityTransform)
+		require.NoError(err)
+		t.Cleanup(func() {
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, transformNameWithSpecialChars))
+		})
+
+		// We'll only check whether the returned name matches, we don't care about the
+		// other returned properties as they are already validated in another test.
+		type getTransformResponse struct {
+			Name string `json:"name"`
+		}
+		var httpRes getTransformResponse
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + "/v1alpha1/transforms/" + url.PathEscape(transformNameWithSpecialChars)).
+			ToJSON(&httpRes).
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+		assert.Equal(transformNameWithSpecialChars, httpRes.Name)
 	})
 
 	t.Run("get non-existent transform (connect-go)", func(t *testing.T) {
