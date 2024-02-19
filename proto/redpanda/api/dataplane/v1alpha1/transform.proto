@@ -8,33 +8,6 @@ import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 message TransformMetadata {
-  string name = 1 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
-  ];
-  string input_topic_name = 2;
-  repeated string output_topic_names = 3;
-  repeated PartitionTransformStatus statuses = 4;
-}
-
-message PartitionTransformStatus {
-  int32 broker_id = 1;
-  int32 partition_id = 2;
-  enum PartitionStatus {
-    PARTITION_STATUS_UNSPECIFIED = 0;
-    PARTITION_STATUS_RUNNING = 1;
-    PARTITION_STATUS_INACTIVE = 2;
-    PARTITION_STATUS_ERRORED = 3;
-    PARTITION_STATUS_UNKNOWN = 4;
-  }
-  PartitionStatus status = 3;
-  int32 lag = 4;
-}
-
-// DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
-// still used for validation in the HTTP endpoint.
-message DeployTransformRequest {
   message EnvironmentVariable {
     string key = 1 [
       (google.api.field_behavior) = REQUIRED,
@@ -63,6 +36,34 @@ message DeployTransformRequest {
     ];
   }
 
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+  string input_topic_name = 2;
+  repeated string output_topic_names = 3;
+  repeated PartitionTransformStatus statuses = 4;
+  repeated TransformMetadata.EnvironmentVariable environment_variables = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}];
+}
+
+message PartitionTransformStatus {
+  int32 broker_id = 1;
+  int32 partition_id = 2;
+  enum PartitionStatus {
+    PARTITION_STATUS_UNSPECIFIED = 0;
+    PARTITION_STATUS_RUNNING = 1;
+    PARTITION_STATUS_INACTIVE = 2;
+    PARTITION_STATUS_ERRORED = 3;
+    PARTITION_STATUS_UNKNOWN = 4;
+  }
+  PartitionStatus status = 3;
+  int32 lag = 4;
+}
+
+// DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
+// still used for validation in the HTTP endpoint.
+message DeployTransformRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -105,15 +106,12 @@ message DeployTransformRequest {
       example: "\"orders-redacted\"",
     }
   ];
-  repeated EnvironmentVariable environment_variables = 4 [
+  repeated TransformMetadata.EnvironmentVariable environment_variables = 4 [
     (buf.validate.field).repeated = {
       min_items: 0,
       max_items: 128,
     },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The output topic to write the transform results to.",
-      example: "\"orders-redacted\"",
-    }
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}
   ];
 }
 
