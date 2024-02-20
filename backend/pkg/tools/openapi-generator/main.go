@@ -520,11 +520,9 @@ func updateTransforms(doc3 *openapi3.T) {
 		responseExample := toExample(&v1alpha1.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
 		doc3.Paths.Value("/v1alpha1/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
-	// POST /transforms
+	// PUT /transforms
 	{
 		// Create request sample
-		// We copy the majority of the propertis from an existing endpoint description, so
-		// that we don't need to construct all properties of the openapi3.Operation struct.
 		deployTransformReq := v1alpha1.DeployTransformRequest{
 			Name:             "redact-orders",
 			InputTopicName:   "orders",
@@ -582,6 +580,8 @@ func updateTransforms(doc3 *openapi3.T) {
 			EnvironmentVariables: deployTransformReq.EnvironmentVariables,
 		}
 
+		// We copy the majority of the propertis from an existing endpoint description, so
+		// that we don't need to construct all properties of the openapi3.Operation struct.
 		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
 		transformsOperation.OperationID = "TransformService_DeployTransform"
 		transformsOperation.Summary = "Deploy Transform"
@@ -616,7 +616,7 @@ func updateTransforms(doc3 *openapi3.T) {
 				},
 			}),
 		)
-		doc3.Paths.Value("/v1alpha1/transforms").Post = &transformsOperation
+		doc3.Paths.Value("/v1alpha1/transforms").Put = &transformsOperation
 	}
 	// Get /transforms/{name}
 	{

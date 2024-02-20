@@ -2948,7 +2948,7 @@ paths:
       summary: List Transforms
       tags:
         - TransformService
-    post:
+    put:
       description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
       operationId: TransformService_DeployTransform
       requestBody:
