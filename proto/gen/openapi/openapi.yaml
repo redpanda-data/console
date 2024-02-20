@@ -2919,6 +2919,78 @@ paths:
       summary: List Transforms
       tags:
         - TransformService
+    post:
+      description: 'Deploy a new transform. This endpoint requires a request body that '
+      operationId: TransformService_DeployTransform
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                metadata:
+                  description: Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.
+                  example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+                  type: string
+                wasm_binary:
+                  description: Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.
+                  format: binary
+                  type: string
+              type: object
+        description: Transform metadata as well as the WASM binary
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                next_page_token: ""
+                transforms:
+                  - environment_variables: []
+                    input_topic_name: topic1
+                    name: transform1
+                    output_topic_names:
+                      - output-topic11
+                      - output-topic12
+                    statuses:
+                      - broker_id: 1
+                        lag: 1
+                        partition_id: 1
+                        status: PARTITION_STATUS_RUNNING
+                  - environment_variables: []
+                    input_topic_name: topic2
+                    name: transform2
+                    output_topic_names:
+                      - output-topic21
+                      - output-topic22
+                    statuses:
+                      - broker_id: 2
+                        lag: 2
+                        partition_id: 2
+                        status: PARTITION_STATUS_RUNNING
+              schema:
+                $ref: '#/components/schemas/ListTransformsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Deploy Transform
+      tags:
+        - TransformService
   /v1alpha1/transforms/{name}:
     delete:
       description: Delete a WASM transform with the requested name.
