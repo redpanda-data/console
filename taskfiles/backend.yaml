@@ -75,13 +75,13 @@ tasks:
 
   install-gomock:
     vars:
-      GOMOCK_VERSION: 1.6.0
+      GOMOCK_VERSION: 0.4.0
     desc: install gomock
     deps:
       - install-go
     cmds:
       - |
-        {{ .PATH_PREFIX }} go install github.com/golang/mock/mockgen@v{{ .GOMOCK_VERSION }}
+        {{ .PATH_PREFIX }} go install go.uber.org/mock/mockgen@v{{ .GOMOCK_VERSION }}
     status:
       - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/mockgen >/dev/null 2>&1"
       - "[[ $({{ .BUILD_ROOT }}/bin/go/mockgen --version) == 'v{{.GOMOCK_VERSION}}' ]]"

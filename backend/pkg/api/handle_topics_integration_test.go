@@ -26,9 +26,11 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/redpanda-data/console/backend/pkg/api/mocks"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -92,25 +94,18 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	t.Run("no see permission", func(t *testing.T) {
 		topicName := testutil.TopicNameForTest("get_topics_1")
 
-		oldHooks := s.api.Hooks
-		newHooks := newAssertHooks(t, map[string]map[string]assertCallReturnValue{
-			"CanSeeTopic": {
-				testutil.TopicNameForTest("get_topics_0"): assertCallReturnValue{BoolValue: true, Err: nil},
-				topicName: assertCallReturnValue{BoolValue: false, Err: nil},
-				testutil.TopicNameForTest("get_topics_2"): assertCallReturnValue{BoolValue: true, Err: nil},
-			},
-			"AllowedTopicActions": {
-				"any": assertCallReturnValue{BoolValue: true, Err: nil},
-			},
-		})
+		oldAuthHooks := s.api.Hooks.Authorization
+		mockCtrl := gomock.NewController(t)
+		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
+		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), topicName).Times(1).Return(false, nil)
+		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), gomock.Not(topicName)).AnyTimes().Return(true, nil)
+		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), gomock.Any()).AnyTimes().Return([]string{"all"}, nil)
 
-		if newHooks != nil {
-			s.api.Hooks = newHooks
-		}
+		s.api.Hooks.Authorization = mockAuthzHooks
 
 		defer func() {
-			if oldHooks != nil {
-				s.api.Hooks = oldHooks
+			if oldAuthHooks != nil {
+				s.api.Hooks.Authorization = oldAuthHooks
 			}
 		}()
 
@@ -130,37 +125,31 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		err := json.Unmarshal(body, &getRes)
 		require.NoError(err)
 
-		require.Len(getRes.Topics, 2)
-		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
-		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[1].TopicName)
+		require.Len(getRes.Topics, 3)
+		assert.Equal("_schemas", getRes.Topics[0].TopicName)
+		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[1].TopicName)
+		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
 	})
 
 	t.Run("allow topic action error", func(t *testing.T) {
 		topicName := testutil.TopicNameForTest("get_topics_1")
 
-		oldHooks := s.api.Hooks
-		newHooks := newAssertHooks(t, map[string]map[string]assertCallReturnValue{
-			"CanSeeTopic": {
-				"any": assertCallReturnValue{BoolValue: true, Err: nil},
-			},
-			"AllowedTopicActions": {
-				testutil.TopicNameForTest("get_topics_0"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
-				topicName: assertCallReturnValue{Err: &rest.Error{
-					Err:     fmt.Errorf("error from test"),
-					Status:  http.StatusUnauthorized,
-					Message: "public error from test",
-				}},
-				testutil.TopicNameForTest("get_topics_2"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
-			},
+		oldAuthHooks := s.api.Hooks.Authorization
+		mockCtrl := gomock.NewController(t)
+		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
+		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), gomock.Not(topicName)).AnyTimes().Return([]string{}, nil)
+		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), topicName).Times(1).Return(nil, &rest.Error{
+			Err:     fmt.Errorf("error from test"),
+			Status:  http.StatusUnauthorized,
+			Message: "public error from test",
 		})
 
-		if newHooks != nil {
-			s.api.Hooks = newHooks
-		}
+		s.api.Hooks.Authorization = mockAuthzHooks
 
 		defer func() {
-			if oldHooks != nil {
-				s.api.Hooks = oldHooks
+			if oldAuthHooks != nil {
+				s.api.Hooks.Authorization = oldAuthHooks
 			}
 		}()
 

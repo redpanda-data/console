@@ -35,6 +35,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
+//go:generate mockgen -destination=./mocks/authz_hooks.go -package=mocks . AuthorizationHooks
+
 // API represents the server and all it's dependencies to serve incoming user requests
 type API struct {
 	Cfg *config.Config
