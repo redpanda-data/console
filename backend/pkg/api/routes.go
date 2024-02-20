@@ -348,12 +348,5 @@ func (api *API) routes() *chi.Mux {
 		}
 	})
 
-	// Websockets live in it's own group because not all middlewares support websockets
-	baseRouter.Group(func(wsRouter chi.Router) {
-		api.Hooks.Route.ConfigWsRouter(wsRouter)
-
-		wsRouter.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
-	})
-
 	return baseRouter
 }
