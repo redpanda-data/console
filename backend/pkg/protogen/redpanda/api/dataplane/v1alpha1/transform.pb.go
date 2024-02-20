@@ -229,8 +229,8 @@ func (x *PartitionTransformStatus) GetLag() int32 {
 	return 0
 }
 
-// DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
-// still used for validation in the HTTP endpoint.
+// DeployTransformRequest is the metadata that is required to deploy a new WASM
+// transform in a Redpanda cluster.
 type DeployTransformRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

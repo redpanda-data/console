@@ -61,8 +61,8 @@ message PartitionTransformStatus {
   int32 lag = 4;
 }
 
-// DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
-// still used for validation in the HTTP endpoint.
+// DeployTransformRequest is the metadata that is required to deploy a new WASM
+// transform in a Redpanda cluster.
 message DeployTransformRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,

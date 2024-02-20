@@ -432,6 +432,35 @@ components:
       type: object
     DeleteUserResponse:
       type: object
+    DeployTransformRequest:
+      description: |-
+        DeployTransformRequest is the metadata that is required to deploy a new WASM
+        transform in a Redpanda cluster.
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          description: The input topic to apply the transform to.
+          example: orders
+          type: string
+        name:
+          description: The name of the transform.
+          example: redact-payment-details-in-orders
+          type: string
+        output_topic_names:
+          description: The output topic to write the transform results to.
+          example: orders-redacted
+          items:
+            type: string
+          type: array
+      required:
+        - name
+        - input_topic_name
+        - output_topic_names
+      type: object
     EnvironmentVariable:
       properties:
         key:
@@ -2920,17 +2949,16 @@ paths:
       tags:
         - TransformService
     post:
-      description: 'Deploy a new transform. This endpoint requires a request body that '
+      description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
       operationId: TransformService_DeployTransform
       requestBody:
         content:
           multipart/form-data:
             schema:
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
-                  description: Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.
-                  example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
-                  type: string
+                  $ref: '#/components/schemas/DeployTransformRequest'
                 wasm_binary:
                   description: Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.
                   format: binary
@@ -2939,55 +2967,12 @@ paths:
         description: Transform metadata as well as the WASM binary
         required: true
       responses:
-        "200":
-          content:
-            application/json:
-              example:
-                next_page_token: ""
-                transforms:
-                  - environment_variables: []
-                    input_topic_name: topic1
-                    name: transform1
-                    output_topic_names:
-                      - output-topic11
-                      - output-topic12
-                    statuses:
-                      - broker_id: 1
-                        lag: 1
-                        partition_id: 1
-                        status: PARTITION_STATUS_RUNNING
-                  - environment_variables: []
-                    input_topic_name: topic2
-                    name: transform2
-                    output_topic_names:
-                      - output-topic21
-                      - output-topic22
-                    statuses:
-                      - broker_id: 2
-                        lag: 2
-                        partition_id: 2
-                        status: PARTITION_STATUS_RUNNING
-              schema:
-                $ref: '#/components/schemas/ListTransformsResponse'
-          description: OK
-        "401":
+        "201":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
+                $ref: '#/components/schemas/TransformMetadata'
+          description: Created
       summary: Deploy Transform
       tags:
         - TransformService
@@ -3352,8 +3337,8 @@ servers:
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
   - name: ACLService
+  - name: TransformService
   - name: KafkaConnectService
   - name: SecretService
   - name: TopicService
-  - name: TransformService
   - name: UserService

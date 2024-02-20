@@ -204,8 +204,8 @@ proto3.util.setEnumType(PartitionTransformStatus_PartitionStatus, "redpanda.api.
 ]);
 
 /**
- * DeployTransformRequest is not used in a gRPC/Protobuf endpoint but it's
- * still used for validation in the HTTP endpoint.
+ * DeployTransformRequest is the metadata that is required to deploy a new WASM
+ * transform in a Redpanda cluster.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest
  */

@@ -13,6 +13,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -521,9 +522,10 @@ func updateTransforms(doc3 *openapi3.T) {
 	}
 	// POST /transforms
 	{
+		// Create request sample
 		// We copy the majority of the propertis from an existing endpoint description, so
 		// that we don't need to construct all properties of the openapi3.Operation struct.
-		transformMetadata := v1alpha1.DeployTransformRequest{
+		deployTransformReq := v1alpha1.DeployTransformRequest{
 			Name:             "redact-orders",
 			InputTopicName:   "orders",
 			OutputTopicNames: []string{"orders-redacted"},
@@ -534,42 +536,86 @@ func updateTransforms(doc3 *openapi3.T) {
 				},
 			},
 		}
-		marshaledTransformMetadata, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&transformMetadata)
+		deployTransformReqMarshaled, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&deployTransformReq)
 		if err != nil {
 			panic(err)
 		}
 
 		multipartProps := openapi3.Schemas{}
 		multipartProps["metadata"] = &openapi3.SchemaRef{
+			Ref: "#/components/schemas/DeployTransformRequest",
 			Value: &openapi3.Schema{
-				Type:        "string",
-				Description: "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
-				Example:     string(marshaledTransformMetadata),
+				AllowEmptyValue: false,
+				Type:            "string",
+				Description:     "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
+				Example:         string(deployTransformReqMarshaled),
 			},
 		}
 		multipartProps["wasm_binary"] = &openapi3.SchemaRef{
 			Value: &openapi3.Schema{
-				Type:        "string",
-				Format:      "binary",
-				Description: "Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.",
+				AllowEmptyValue: false,
+				Type:            "string",
+				Format:          "binary",
+				Description:     "Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.",
 			},
+		}
+
+		// Create response sample
+		deployTransformResponse := v1alpha1.TransformMetadata{
+			Name:             deployTransformReq.Name,
+			InputTopicName:   deployTransformReq.InputTopicName,
+			OutputTopicNames: deployTransformReq.OutputTopicNames,
+			Statuses: []*v1alpha1.PartitionTransformStatus{
+				{
+					BrokerId:    0,
+					PartitionId: 0,
+					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Lag:         0,
+				},
+				{
+					BrokerId:    1,
+					PartitionId: 1,
+					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Lag:         0,
+				},
+			},
+			EnvironmentVariables: deployTransformReq.EnvironmentVariables,
 		}
 
 		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
 		transformsOperation.OperationID = "TransformService_DeployTransform"
 		transformsOperation.Summary = "Deploy Transform"
-		transformsOperation.Description = "Deploy a new transform. This endpoint requires a request body that "
+		transformsOperation.Description = "Initiate deployment of a new WASM transform. This endpoint uses " +
+			"multipart/form-data encoding. Following deployment, a brief period is required before the WASM " +
+			"transform becomes operational. Monitor the partition statuses to ascertain the activation " +
+			"of the transform. This usually takes around 3s, but no longer than 10s."
+		transformsOperation.Parameters = nil
 		transformsOperation.RequestBody = &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: "Transform metadata as well as the WASM binary",
 				Required:    true,
-				Content: openapi3.NewContentWithFormDataSchema(&openapi3.Schema{
-					Type:       "object",
-					Properties: multipartProps,
+				Content: openapi3.NewContentWithFormDataSchemaRef(&openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:       "object",
+						Example:    string(deployTransformReqMarshaled),
+						Properties: multipartProps,
+					},
 				}),
 			},
 		}
-		transformsOperation.Parameters = openapi3.Parameters{}
+		transformsOperation.Responses = openapi3.NewResponses(
+			openapi3.WithStatus(http.StatusCreated, &openapi3.ResponseRef{
+				Value: &openapi3.Response{
+					Description: kmsg.StringPtr("Created"),
+					Content: openapi3.NewContentWithJSONSchemaRef(&openapi3.SchemaRef{
+						Ref: "#/components/schemas/TransformMetadata",
+						Value: &openapi3.Schema{
+							Example: toExample(&deployTransformResponse, "Deploy Transform Response", "Sample res", false),
+						},
+					}),
+				},
+			}),
+		)
 		doc3.Paths.Value("/v1alpha1/transforms").Post = &transformsOperation
 	}
 	// Get /transforms/{name}
