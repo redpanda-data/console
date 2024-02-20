@@ -25,7 +25,6 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/schema v1.2.1
-	github.com/gorilla/websocket v1.5.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0
 	github.com/hamba/avro/v2 v2.18.0
 	github.com/jarcoal/httpmock v1.0.8
@@ -50,6 +49,7 @@ require (
 	github.com/twmb/go-cache v1.2.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
+	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0
 	go.opentelemetry.io/otel/sdk/metric v1.22.0
 	go.uber.org/zap v1.26.0
@@ -167,7 +167,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
