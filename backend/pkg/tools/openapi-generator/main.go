@@ -486,7 +486,7 @@ func updateUsers(doc3 *openapi3.T) {
 }
 
 func updateTransforms(doc3 *openapi3.T) {
-	// List /transforms
+	// GET /transforms
 	{
 		transforms := []*v1alpha1.TransformMetadata{
 			{
@@ -518,6 +518,59 @@ func updateTransforms(doc3 *openapi3.T) {
 		}
 		responseExample := toExample(&v1alpha1.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
 		doc3.Paths.Value("/v1alpha1/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// POST /transforms
+	{
+		// We copy the majority of the propertis from an existing endpoint description, so
+		// that we don't need to construct all properties of the openapi3.Operation struct.
+		transformMetadata := v1alpha1.DeployTransformRequest{
+			Name:             "redact-orders",
+			InputTopicName:   "orders",
+			OutputTopicNames: []string{"orders-redacted"},
+			EnvironmentVariables: []*v1alpha1.TransformMetadata_EnvironmentVariable{
+				{
+					Key:   "LOGGER_LEVEL",
+					Value: "DEBUG",
+				},
+			},
+		}
+		marshaledTransformMetadata, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&transformMetadata)
+		if err != nil {
+			panic(err)
+		}
+
+		multipartProps := openapi3.Schemas{}
+		multipartProps["metadata"] = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type:        "string",
+				Description: "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
+				Example:     string(marshaledTransformMetadata),
+			},
+		}
+		multipartProps["wasm_binary"] = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				Type:        "string",
+				Format:      "binary",
+				Description: "Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.",
+			},
+		}
+
+		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
+		transformsOperation.OperationID = "TransformService_DeployTransform"
+		transformsOperation.Summary = "Deploy Transform"
+		transformsOperation.Description = "Deploy a new transform. This endpoint requires a request body that "
+		transformsOperation.RequestBody = &openapi3.RequestBodyRef{
+			Value: &openapi3.RequestBody{
+				Description: "Transform metadata as well as the WASM binary",
+				Required:    true,
+				Content: openapi3.NewContentWithFormDataSchema(&openapi3.Schema{
+					Type:       "object",
+					Properties: multipartProps,
+				}),
+			},
+		}
+		transformsOperation.Parameters = openapi3.Parameters{}
+		doc3.Paths.Value("/v1alpha1/transforms").Post = &transformsOperation
 	}
 	// Get /transforms/{name}
 	{
