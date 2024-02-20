@@ -484,6 +484,26 @@ func (s *APISuite) TestGetTransform() {
 		assert.Contains(err.Error(), "does not exist")
 	})
 
+	t.Run("get non-existent transform (http)", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		t.Cleanup(cancel)
+
+		var httpRes string
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + "/v1alpha1/transforms/" + "does-not-exist").
+			ToJSON(&httpRes).
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Error(err)
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
+		assert.Contains(errResponse, "does not exist")
+		assert.Contains(errResponse, "REASON_RESOURCE_NOT_FOUND")
+	})
+
 	t.Run("try to get transform without name (connect-go)", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
