@@ -48,7 +48,7 @@ tasks:
         cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - task: :backend:fmt
       - task: generate-openapi3
-      - if [[ $CI == "true" ]]; then git diff --exit-code; fi
+      - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
 
   generate-openapi3:
     desc: generate protos

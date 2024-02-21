@@ -5,12 +5,14 @@ package redpanda.api.dataplane.v1alpha1;
 
 import "google/protobuf/empty.proto";
 import "google/rpc/error_details.proto";
+import "redpanda/api/dataplane/v1alpha1/transform.proto";
 
 message DummyMethodResponse {
   google.rpc.BadRequest bad_request = 1;
   google.rpc.ErrorInfo error_info = 2;
   google.rpc.QuotaFailure quota_failure = 3;
   google.rpc.Help help = 4;
+  DeployTransformRequest deploy_transform_request = 5;
 }
 
 service DummyService {
