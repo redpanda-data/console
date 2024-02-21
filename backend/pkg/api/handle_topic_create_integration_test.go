@@ -24,8 +24,10 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/api/mocks"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -228,20 +230,16 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	t.Run("no permission", func(t *testing.T) {
 		topicName := testutil.TopicNameForTest("no_permission")
 
-		oldHooks := s.api.Hooks
-		newHooks := newAssertHooks(t, map[string]map[string]assertCallReturnValue{
-			"CanCreateTopic": {
-				topicName: assertCallReturnValue{BoolValue: false, Err: nil},
-			},
-		})
+		oldAuthHooks := s.api.Hooks.Authorization
+		mockCtrl := gomock.NewController(t)
+		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
+		mockAuthzHooks.EXPECT().CanCreateTopic(gomock.Any(), topicName).Times(1).Return(false, nil)
 
-		if newHooks != nil {
-			s.api.Hooks = newHooks
-		}
+		s.api.Hooks.Authorization = mockAuthzHooks
 
 		defer func() {
-			if oldHooks != nil {
-				s.api.Hooks = oldHooks
+			if oldAuthHooks != nil {
+				s.api.Hooks.Authorization = oldAuthHooks
 			}
 		}()
 

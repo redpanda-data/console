@@ -20,7 +20,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/go-resty/resty/v2 v2.11.0
-	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
@@ -52,6 +51,7 @@ require (
 	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0
 	go.opentelemetry.io/otel/sdk/metric v1.22.0
+	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.26.0
 	go.vallahaye.net/connect-gateway v0.3.1
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
