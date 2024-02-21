@@ -428,7 +428,52 @@ components:
       type: object
     DeleteTopicResponse:
       type: object
+    DeleteTransformResponse:
+      type: object
     DeleteUserResponse:
+      type: object
+    DeployTransformRequest:
+      description: |-
+        DeployTransformRequest is the metadata that is required to deploy a new WASM
+        transform in a Redpanda cluster.
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          description: The input topic to apply the transform to.
+          example: orders
+          type: string
+        name:
+          description: The name of the transform.
+          example: redact-payment-details-in-orders
+          type: string
+        output_topic_names:
+          description: The output topic to write the transform results to.
+          example: orders-redacted
+          items:
+            type: string
+          type: array
+      required:
+        - name
+        - input_topic_name
+        - output_topic_names
+      type: object
+    EnvironmentVariable:
+      properties:
+        key:
+          description: The key of your environment variable.
+          example: LOG_LEVEL
+          type: string
+        value:
+          description: The key of your environment variable.
+          example: DEBUG
+          type: string
+      required:
+        - key
+        - value
       type: object
     ErrorInfo:
       description: |-
@@ -577,6 +622,11 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
+    GetTransformResponse:
+      properties:
+        transform:
+          $ref: '#/components/schemas/TransformMetadata'
+      type: object
     Help:
       description: |-
         Provides links to documentation or for performing an out of band action.
@@ -717,6 +767,20 @@ components:
           format: int32
           type: integer
       type: object
+    ListTransformsRequest.Filter:
+      properties:
+        name:
+          type: string
+      type: object
+    ListTransformsResponse:
+      properties:
+        next_page_token:
+          type: string
+        transforms:
+          items:
+            $ref: '#/components/schemas/TransformMetadata'
+          type: array
+      type: object
     ListUsersRequest.Filter:
       properties:
         name:
@@ -763,6 +827,27 @@ components:
           type: boolean
         only_failed:
           type: boolean
+      type: object
+    PartitionStatus:
+      enum:
+        - PARTITION_STATUS_RUNNING
+        - PARTITION_STATUS_INACTIVE
+        - PARTITION_STATUS_ERRORED
+        - PARTITION_STATUS_UNKNOWN
+      type: string
+    PartitionTransformStatus:
+      properties:
+        broker_id:
+          format: int32
+          type: integer
+        lag:
+          format: int32
+          type: integer
+        partition_id:
+          format: int32
+          type: integer
+        status:
+          $ref: '#/components/schemas/PartitionStatus'
       type: object
     PermissionType:
       enum:
@@ -1007,6 +1092,26 @@ components:
           type: string
         worker_id:
           type: string
+      type: object
+    TransformMetadata:
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          type: string
+        name:
+          type: string
+        output_topic_names:
+          items:
+            type: string
+          type: array
+        statuses:
+          items:
+            $ref: '#/components/schemas/PartitionTransformStatus'
+          type: array
       type: object
     UpdateConfiguration:
       properties:
@@ -2777,6 +2882,204 @@ paths:
       summary: Set Topic Configurations
       tags:
         - TopicService
+  /v1alpha1/transforms:
+    get:
+      description: Retrieve a list of transforms with optional filtering
+      operationId: TransformService_ListTransforms
+      parameters:
+        - in: query
+          name: filter.name
+          schema:
+            type: string
+        - in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                next_page_token: ""
+                transforms:
+                  - environment_variables: []
+                    input_topic_name: topic1
+                    name: transform1
+                    output_topic_names:
+                      - output-topic11
+                      - output-topic12
+                    statuses:
+                      - broker_id: 1
+                        lag: 1
+                        partition_id: 1
+                        status: PARTITION_STATUS_RUNNING
+                  - environment_variables: []
+                    input_topic_name: topic2
+                    name: transform2
+                    output_topic_names:
+                      - output-topic21
+                      - output-topic22
+                    statuses:
+                      - broker_id: 2
+                        lag: 2
+                        partition_id: 2
+                        status: PARTITION_STATUS_RUNNING
+              schema:
+                $ref: '#/components/schemas/ListTransformsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Transforms
+      tags:
+        - TransformService
+    put:
+      description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
+      operationId: TransformService_DeployTransform
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              properties:
+                metadata:
+                  $ref: '#/components/schemas/DeployTransformRequest'
+                wasm_binary:
+                  description: Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.
+                  format: binary
+                  type: string
+              type: object
+        description: Transform metadata as well as the WASM binary
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformMetadata'
+          description: Created
+      summary: Deploy Transform
+      tags:
+        - TransformService
+  /v1alpha1/transforms/{name}:
+    delete:
+      description: Delete a WASM transform with the requested name.
+      operationId: TransformService_DeleteTransform
+      parameters:
+        - example:
+            name: transform1
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              example: {}
+              schema: {}
+          description: Transform deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Transform
+      tags:
+        - TransformService
+    get:
+      description: Get Transform!
+      operationId: TransformService_GetTransform
+      parameters:
+        - example:
+            name: transform1
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                transform:
+                  environment_variables: []
+                  input_topic_name: topic1
+                  name: transform1
+                  output_topic_names:
+                    - output-topic1
+                    - output-topic2
+                  statuses:
+                    - broker_id: 1
+                      lag: 1
+                      partition_id: 1
+                      status: PARTITION_STATUS_RUNNING
+              schema:
+                $ref: '#/components/schemas/GetTransformResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Transform
+      tags:
+        - TransformService
   /v1alpha1/users:
     get:
       description: List Users
@@ -3034,6 +3337,7 @@ servers:
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
   - name: ACLService
+  - name: TransformService
   - name: KafkaConnectService
   - name: SecretService
   - name: TopicService
