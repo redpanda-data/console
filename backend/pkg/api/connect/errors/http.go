@@ -31,23 +31,21 @@ import (
 	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 )
 
-var (
-	protoJsonMarshaler = &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			UseProtoNames: true, // use snake_case
-			// Do not use EmitUnpopulated, so we don't emit nulls (they are ugly, and provide no benefit. they transport no information, even in "normal" json).
-			EmitUnpopulated: false,
-			// Instead, use EmitDefaultValues, which is new and like EmitUnpopulated, but
-			// skips nulls (which we consider ugly, and provides no benefit over skipping the field)
-			EmitDefaultValues: true,
-		},
-		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true,
-		},
-	}
-)
+var protoJSONMarshaler = &runtime.JSONPb{
+	MarshalOptions: protojson.MarshalOptions{
+		UseProtoNames: true, // use snake_case
+		// Do not use EmitUnpopulated, so we don't emit nulls (they are ugly, and provide no benefit. they transport no information, even in "normal" json).
+		EmitUnpopulated: false,
+		// Instead, use EmitDefaultValues, which is new and like EmitUnpopulated, but
+		// skips nulls (which we consider ugly, and provides no benefit over skipping the field)
+		EmitDefaultValues: true,
+	},
+	UnmarshalOptions: protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	},
+}
 
-// HandleHTTPError serializes the given error and writes it using the protoJsonMarshaler.
+// HandleHTTPError serializes the given error and writes it using the protoJSONMarshaler.
 // This function can handle errors of type connect.Error as well, so that err details are
 // printed properly.
 func HandleHTTPError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
@@ -73,13 +71,13 @@ func HandleHTTPError(ctx context.Context, w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	NiceHTTPErrorHandler(ctx, nil, protoJsonMarshaler, w, r, status.ErrorProto(st))
+	NiceHTTPErrorHandler(ctx, nil, protoJSONMarshaler, w, r, status.ErrorProto(st))
 }
 
 // NiceHTTPErrorHandler is a clone of grpc-gateway's
 // runtime.DefaultHTTPErrorHandler, with one difference: it uses a modified
 // variant of google.rpc.Status, where code is ENUM instead of int32.
-func NiceHTTPErrorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) { //nolint:revive // we must follow the function signature demanded by grpc-gateway
+func NiceHTTPErrorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	const fallback = `{"code":"INTERNAL", "message":"failed to marshal error message"}`
 
 	var customStatus *runtime.HTTPStatusError
