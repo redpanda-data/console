@@ -55,8 +55,12 @@ func (s *APISuite) TestCreateTopic() {
 				},
 			},
 		}
-		_, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
+		createTopicRes, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
 		require.NoError(err)
+
+		assert.Equal(topicName, createTopicRes.Msg.Name)
+		assert.EqualValues(partitionCount, createTopicRes.Msg.PartitionCount)
+		assert.EqualValues(1, createTopicRes.Msg.ReplicationFactor)
 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -154,10 +158,10 @@ func (s *APISuite) TestCreateTopic() {
 				Name  string `json:"name"`
 				Value string `json:"value"`
 			} `json:"configs"`
-			ReplicaAssignment []struct {
+			ReplicaAssignments []struct {
 				Partition int   `json:"partition"`
 				Replicas  []int `json:"replicas"`
-			} `json:"replica_assignment"`
+			} `json:"replica_assignments"`
 		}
 
 		topicName := "console-integration-test-valid-request-rest"
@@ -176,10 +180,18 @@ func (s *APISuite) TestCreateTopic() {
 				},
 			},
 		}
+
+		type createTopicsResponse struct {
+			Name              string `json:"name"`
+			PartitionCount    int    `json:"partition_count"`
+			ReplicationFactor int    `json:"replication_factor"`
+		}
+		var httpRes createTopicsResponse
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/topics").
 			BodyJSON(&httpReq).
+			ToJSON(&httpRes).
 			Post().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusCreated), // Allows 2xx otherwise
@@ -188,6 +200,8 @@ func (s *APISuite) TestCreateTopic() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
+		assert.Equal(topicName, httpRes.Name)
+		assert.Equal(partitionCount, httpRes.PartitionCount)
 
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -263,7 +277,7 @@ func (s *APISuite) TestCreateTopic() {
 		assert.Contains(errResponse, "name") // Check for field name
 	})
 
-	t.Run("try to create topic with an empty topic (http)", func(t *testing.T) {
+	t.Run("try to create topic with a blank name (http)", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -602,12 +616,12 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 			TopicName: topicName,
 			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
-					Key:       "cleanup.policy",
+					Name:      "cleanup.policy",
 					Value:     nil,
 					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
 				},
 				{
-					Key:       "compression.type",
+					Name:      "compression.type",
 					Value:     kmsg.StringPtr("producer"),
 					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
@@ -669,15 +683,15 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
 		type updateTopicConfigRequest struct {
-			Key       string  `json:"key"`
+			Name      string  `json:"name"`
 			Value     *string `json:"value"`
 			Operation string  `json:"operation"`
 		}
 		type updateTopicConfigResponse struct {
 			ConfigSynonyms []any   `json:"config_synonyms"`
 			Documentation  string  `json:"documentation"`
-			IsReadOnly     bool    `json:"is_read_only"`
-			IsSensitive    bool    `json:"is_sensitive"`
+			ReadOnly       bool    `json:"read_only"`
+			Sensitive      bool    `json:"sensitive"`
 			Name           string  `json:"name"`
 			Source         string  `json:"source"`
 			Type           string  `json:"type"`
@@ -687,12 +701,12 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 		var httpRes []updateTopicConfigResponse
 		httpReq := []updateTopicConfigRequest{
 			{
-				Key:       "cleanup.policy",
+				Name:      "cleanup.policy",
 				Value:     nil,
 				Operation: "CONFIG_ALTER_OPERATION_DELETE",
 			},
 			{
-				Key:       "compression.type",
+				Name:      "compression.type",
 				Value:     kmsg.StringPtr("producer"),
 				Operation: "CONFIG_ALTER_OPERATION_SET",
 			},
@@ -769,12 +783,12 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 			TopicName: topicName,
 			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
-					Key:       "cleanup.policy",
+					Name:      "cleanup.policy",
 					Value:     kmsg.StringPtr("compact"), // Value must be empty for delete operation
 					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
 				},
 				{
-					Key:       "compression.type",
+					Name:      "compression.type",
 					Value:     kmsg.StringPtr("producer"),
 					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
@@ -792,13 +806,13 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 		defer cancel()
 
 		type updateTopicConfigRequest struct {
-			Key       string  `json:"key"`
+			Name      string  `json:"name"`
 			Value     *string `json:"value"`
 			Operation string  `json:"operation"`
 		}
 		httpReq := []updateTopicConfigRequest{
 			{
-				Key:       "cleanup.policy",
+				Name:      "cleanup.policy",
 				Value:     nil,
 				Operation: "CONFIG_ALTER_OPERATION_DELETE",
 			},
@@ -888,11 +902,11 @@ func (s *APISuite) TestSetTopicConfiguration() {
 			TopicName: topicName,
 			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
 				{
-					Key:   "cleanup.policy",
+					Name:  "cleanup.policy",
 					Value: kmsg.StringPtr("delete"),
 				},
 				{
-					Key:   "compression.type",
+					Name:  "compression.type",
 					Value: kmsg.StringPtr("producer"),
 				},
 			},
@@ -952,14 +966,14 @@ func (s *APISuite) TestSetTopicConfiguration() {
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
 		type setTopicConfigRequest struct {
-			Key   string  `json:"key"`
+			Name  string  `json:"name"`
 			Value *string `json:"value"`
 		}
 		type setTopicConfigResponse struct {
 			ConfigSynonyms []any   `json:"config_synonyms"`
 			Documentation  string  `json:"documentation"`
-			IsReadOnly     bool    `json:"is_read_only"`
-			IsSensitive    bool    `json:"is_sensitive"`
+			ReadOnly       bool    `json:"read_only"`
+			Sensitive      bool    `json:"sensitive"`
 			Name           string  `json:"name"`
 			Source         string  `json:"source"`
 			Type           string  `json:"type"`
@@ -969,11 +983,11 @@ func (s *APISuite) TestSetTopicConfiguration() {
 		var httpRes []setTopicConfigResponse
 		httpReq := []setTopicConfigRequest{
 			{
-				Key:   "cleanup.policy",
+				Name:  "cleanup.policy",
 				Value: kmsg.StringPtr("delete"),
 			},
 			{
-				Key:   "compression.type",
+				Name:  "compression.type",
 				Value: kmsg.StringPtr("producer"),
 			},
 		}
@@ -1049,7 +1063,7 @@ func (s *APISuite) TestSetTopicConfiguration() {
 			TopicName: topicName,
 			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
 				{
-					Key:   "key-doesnt-exist",
+					Name:  "key-doesnt-exist",
 					Value: kmsg.StringPtr("delete"),
 				},
 			},
@@ -1070,7 +1084,7 @@ func (s *APISuite) TestSetTopicConfiguration() {
 			TopicName: "topic-does-not-exist",
 			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
 				{
-					Key:   "cleanup.policy",
+					Name:  "cleanup.policy",
 					Value: kmsg.StringPtr("delete"),
 				},
 			},
@@ -1087,12 +1101,12 @@ func (s *APISuite) TestSetTopicConfiguration() {
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
 		type setTopicConfigRequest struct {
-			Key   string  `json:"key"`
+			Name  string  `json:"name"`
 			Value *string `json:"value"`
 		}
 		httpReq := []setTopicConfigRequest{
 			{
-				Key:   "cleanup.policy",
+				Name:  "cleanup.policy",
 				Value: kmsg.StringPtr("delete"),
 			},
 		}

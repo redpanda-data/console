@@ -13,6 +13,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -63,6 +64,7 @@ func main() { //nolint:cyclop,gocognit // this is just some tool
 	updateSecurity(doc3)
 	updateOperations(doc3)
 	updateUsers(doc3)
+	updateTransforms(doc3)
 	updateAny(doc3)
 	removeDummies(doc3)
 
@@ -481,6 +483,180 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			true)
 		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
+	}
+}
+
+func updateTransforms(doc3 *openapi3.T) {
+	// GET /transforms
+	{
+		transforms := []*v1alpha1.TransformMetadata{
+			{
+				Name:             "transform1",
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic11", "output-topic12"},
+				Statuses: []*v1alpha1.PartitionTransformStatus{
+					{
+						BrokerId:    int32(1),
+						PartitionId: int32(1),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(1),
+					},
+				},
+			},
+			{
+				Name:             "transform2",
+				InputTopicName:   "topic2",
+				OutputTopicNames: []string{"output-topic21", "output-topic22"},
+				Statuses: []*v1alpha1.PartitionTransformStatus{
+					{
+						BrokerId:    int32(2),
+						PartitionId: int32(2),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(2),
+					},
+				},
+			},
+		}
+		responseExample := toExample(&v1alpha1.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
+		doc3.Paths.Value("/v1alpha1/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// PUT /transforms
+	{
+		// Create request sample
+		deployTransformReq := v1alpha1.DeployTransformRequest{
+			Name:             "redact-orders",
+			InputTopicName:   "orders",
+			OutputTopicNames: []string{"orders-redacted"},
+			EnvironmentVariables: []*v1alpha1.TransformMetadata_EnvironmentVariable{
+				{
+					Key:   "LOGGER_LEVEL",
+					Value: "DEBUG",
+				},
+			},
+		}
+		deployTransformReqMarshaled, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&deployTransformReq)
+		if err != nil {
+			panic(err)
+		}
+
+		multipartProps := openapi3.Schemas{}
+		multipartProps["metadata"] = &openapi3.SchemaRef{
+			Ref: "#/components/schemas/DeployTransformRequest",
+			Value: &openapi3.Schema{
+				AllowEmptyValue: false,
+				Type:            "string",
+				Description:     "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
+				Example:         string(deployTransformReqMarshaled),
+			},
+		}
+		multipartProps["wasm_binary"] = &openapi3.SchemaRef{
+			Value: &openapi3.Schema{
+				AllowEmptyValue: false,
+				Type:            "string",
+				Format:          "binary",
+				Description:     "Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.",
+			},
+		}
+
+		// Create response sample
+		deployTransformResponse := v1alpha1.TransformMetadata{
+			Name:             deployTransformReq.Name,
+			InputTopicName:   deployTransformReq.InputTopicName,
+			OutputTopicNames: deployTransformReq.OutputTopicNames,
+			Statuses: []*v1alpha1.PartitionTransformStatus{
+				{
+					BrokerId:    0,
+					PartitionId: 0,
+					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Lag:         0,
+				},
+				{
+					BrokerId:    1,
+					PartitionId: 1,
+					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Lag:         0,
+				},
+			},
+			EnvironmentVariables: deployTransformReq.EnvironmentVariables,
+		}
+
+		// We copy the majority of the propertis from an existing endpoint description, so
+		// that we don't need to construct all properties of the openapi3.Operation struct.
+		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
+		transformsOperation.OperationID = "TransformService_DeployTransform"
+		transformsOperation.Summary = "Deploy Transform"
+		transformsOperation.Description = "Initiate deployment of a new WASM transform. This endpoint uses " +
+			"multipart/form-data encoding. Following deployment, a brief period is required before the WASM " +
+			"transform becomes operational. Monitor the partition statuses to ascertain the activation " +
+			"of the transform. This usually takes around 3s, but no longer than 10s."
+		transformsOperation.Parameters = nil
+		transformsOperation.RequestBody = &openapi3.RequestBodyRef{
+			Value: &openapi3.RequestBody{
+				Description: "Transform metadata as well as the WASM binary",
+				Required:    true,
+				Content: openapi3.NewContentWithFormDataSchemaRef(&openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:       "object",
+						Example:    string(deployTransformReqMarshaled),
+						Properties: multipartProps,
+					},
+				}),
+			},
+		}
+		transformsOperation.Responses = openapi3.NewResponses(
+			openapi3.WithStatus(http.StatusCreated, &openapi3.ResponseRef{
+				Value: &openapi3.Response{
+					Description: kmsg.StringPtr("Created"),
+					Content: openapi3.NewContentWithJSONSchemaRef(&openapi3.SchemaRef{
+						Ref: "#/components/schemas/TransformMetadata",
+						Value: &openapi3.Schema{
+							Example: toExample(&deployTransformResponse, "Deploy Transform Response", "Sample res", false),
+						},
+					}),
+				},
+			}),
+		)
+		doc3.Paths.Value("/v1alpha1/transforms").Put = &transformsOperation
+	}
+	// Get /transforms/{name}
+	{
+		// Request
+		request := &v1alpha1.GetTransformRequest{
+			Name: "transform1",
+		}
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Parameters[0].Value.Example = toExample(request, "Get Transform", "Get transform", false).Value
+
+		// Response
+		response := &v1alpha1.GetTransformResponse{
+			Transform: &v1alpha1.TransformMetadata{
+				Name:             "transform1",
+				InputTopicName:   "topic1",
+				OutputTopicNames: []string{"output-topic1", "output-topic2"},
+				Statuses: []*v1alpha1.PartitionTransformStatus{
+					{
+						BrokerId:    int32(1),
+						PartitionId: int32(1),
+						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Lag:         int32(1),
+					},
+				},
+			},
+		}
+		responseExample := toExample(response, "Get Transform", "Get transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+	}
+	// Delete /transforms/{name}
+	{
+		// Request
+		request := &v1alpha1.DeleteTransformRequest{
+			Name: "transform1",
+		}
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Parameters[0].Value.Example = toExample(request, "Delete Transform", "Delete transform", false).Value
+
+		// Response
+		response := &v1alpha1.DeleteTransformResponse{}
+		responseExample := toExample(response, "Delete Transform", "Delete transform", true)
+		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 }
 

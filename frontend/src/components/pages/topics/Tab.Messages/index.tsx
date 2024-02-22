@@ -566,7 +566,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
-        const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize)
+        const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -1034,7 +1034,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         if (value.isPayloadTooLarge) {
             return <Flex color="orange.600" alignItems="center" gap="4">
                 <WarningIcon fontSize="1.25em" />
-                Message content is too large and has been omitted
+                Message content is too large to display in the UI
             </Flex>
         }
 
@@ -1275,7 +1275,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
         <Heading as="h4">Deserialization Troubleshoot Report</Heading>
         <Alert status="error" variant="subtle" my={4} flexDirection="column" background="red.50">
             <AlertTitle display="flex" flexDirection="row" alignSelf="flex-start" alignItems="center" pb="4" fontWeight="normal">
-                <AlertIcon /> Errors were encoutnered when deserializing this message
+                <AlertIcon /> Errors were encountered when deserializing this message
                 <Link pl="2" onClick={() => setShow(!show)} >{show ? 'Hide' : 'Show'}</Link>
             </AlertTitle>
             <AlertDescription whiteSpace="pre-wrap" display={show ? undefined : 'none'}>

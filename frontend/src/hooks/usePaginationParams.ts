@@ -10,22 +10,29 @@ import { useLocation } from 'react-router-dom';
  * 'pageIndex' defaults to 0 if not present in the URL.
  *
  * @param {number} [defaultPageSize=10] - The default number of items per page if not specified in the URL.
+ * @param {number} totalDataLength - The total length of the data to paginate over.
  * @returns {{ pageSize: number; pageIndex: number }} An object containing the pageSize and pageIndex.
  *
  * @example
  * // In a component using react-router
  * const { pageSize, pageIndex } = usePaginationParams(20);
  */
-const usePaginationParams = (defaultPageSize: number = 10): { pageSize: number; pageIndex: number } => {
+const usePaginationParams = (defaultPageSize: number = 10, totalDataLength: number): { pageSize: number; pageIndex: number } => {
     const { search} = useLocation();
 
     return useMemo(() => {
-        const searchParams = new URLSearchParams(search)
+        const searchParams = new URLSearchParams(search);
+        const pageSize = searchParams.has('pageSize') ? Number(searchParams.get('pageSize')) : defaultPageSize;
+        const pageIndex = searchParams.has('page') ? Number(searchParams.get('page')) : 0;
+        const totalPages = Math.ceil(totalDataLength / pageSize);
+
+        const boundedPageIndex = Math.max(0, Math.min(pageIndex, totalPages - 1));
+
         return {
-            pageSize: searchParams.has('pageSize') ? Number(searchParams.get('pageSize')) : defaultPageSize,
-            pageIndex: searchParams.has('page') ? Number(searchParams.get('page')) : 0,
+            pageSize,
+            pageIndex: boundedPageIndex,
         }
-    }, [search, defaultPageSize])
+    }, [search, defaultPageSize, totalDataLength])
 };
 
 export default usePaginationParams;

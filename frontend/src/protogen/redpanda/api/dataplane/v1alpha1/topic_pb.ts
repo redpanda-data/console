@@ -63,14 +63,14 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   source = ConfigSource.UNSPECIFIED;
 
   /**
-   * @generated from field: bool is_read_only = 5;
+   * @generated from field: bool read_only = 5;
    */
-  isReadOnly = false;
+  readOnly = false;
 
   /**
-   * @generated from field: bool is_sensitive = 6;
+   * @generated from field: bool sensitive = 6;
    */
-  isSensitive = false;
+  sensitive = false;
 
   /**
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConfigSynonym config_synonyms = 7;
@@ -94,8 +94,8 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
     { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(ConfigType) },
     { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "source", kind: "enum", T: proto3.getEnumType(ConfigSource) },
-    { no: 5, name: "is_read_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "is_sensitive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "read_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "sensitive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "config_synonyms", kind: "message", T: ConfigSynonym, repeated: true },
     { no: 8, name: "documentation", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
@@ -177,7 +177,7 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
   name = "";
 
   /**
-   * NumPartitions is how many partitions to give a topic. This must
+   * PartitionCount is how many partitions to give a topic. This must
    * be null if specifying partitions manually (see ReplicaAssignment)
    * or, to use the cluster default partitions.
    *
@@ -199,9 +199,9 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
    * partitions for a topic. If using this, both ReplicationFactor and
    * NumPartitions must be -1.
    *
-   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignment = 4;
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignments = 4;
    */
-  replicaAssignment: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
+  replicaAssignments: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
 
   /**
    * Configs is an array of key value config pairs for a topic.
@@ -222,7 +222,7 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 4, name: "replica_assignment", kind: "message", T: CreateTopicRequest_Topic_ReplicaAssignment, repeated: true },
+    { no: 4, name: "replica_assignments", kind: "message", T: CreateTopicRequest_Topic_ReplicaAssignment, repeated: true },
     { no: 5, name: "configs", kind: "message", T: CreateTopicRequest_Topic_Config, repeated: true },
   ]);
 
@@ -297,16 +297,16 @@ export class CreateTopicRequest_Topic_ReplicaAssignment extends Message<CreateTo
   /**
    * Partition is a partition to create.
    *
-   * @generated from field: int32 partition = 1;
+   * @generated from field: int32 partition_id = 1;
    */
-  partition = 0;
+  partitionId = 0;
 
   /**
-   * Replicas are broker IDs the partition must exist on.
+   * Replicas are the broker IDs the partition must exist on.
    *
-   * @generated from field: repeated int32 replicas = 2;
+   * @generated from field: repeated int32 replica_ids = 2;
    */
-  replicas: number[] = [];
+  replicaIds: number[] = [];
 
   constructor(data?: PartialMessage<CreateTopicRequest_Topic_ReplicaAssignment>) {
     super();
@@ -316,8 +316,8 @@ export class CreateTopicRequest_Topic_ReplicaAssignment extends Message<CreateTo
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "partition", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "replicas", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 1, name: "partition_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "replica_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicRequest_Topic_ReplicaAssignment {
@@ -348,6 +348,26 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
    */
   name = "";
 
+  /**
+   * PartitionCount is how many partitions were created for this topic.
+   * This field has a default of -1, which may be returned if the broker
+   * does not support v5+ of this request which added support for returning
+   * this information.
+   *
+   * @generated from field: int32 partition_count = 2;
+   */
+  partitionCount = 0;
+
+  /**
+   * ReplicationFactor is how many replicas every partition has for this topic.
+   * This field has a default of -1, which may be returned if the broker
+   * does not support v5+ of this request which added support for returning
+   * this information.
+   *
+   * @generated from field: int32 replication_factor = 3;
+   */
+  replicationFactor = 0;
+
   constructor(data?: PartialMessage<CreateTopicResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -357,6 +377,8 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateTopicResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTopicResponse {
@@ -517,9 +539,9 @@ export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> 
   name = "";
 
   /**
-   * @generated from field: bool is_internal = 2;
+   * @generated from field: bool internal = 2;
    */
-  isInternal = false;
+  internal = false;
 
   /**
    * @generated from field: int32 partition_count = 3;
@@ -540,7 +562,7 @@ export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> 
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTopicsResponse.Topic";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "is_internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "internal", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -752,9 +774,9 @@ export class UpdateTopicConfigurationsRequest extends Message<UpdateTopicConfigu
  */
 export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Message<UpdateTopicConfigurationsRequest_UpdateConfiguration> {
   /**
-   * @generated from field: string key = 1;
+   * @generated from field: string name = 1;
    */
-  key = "";
+  name = "";
 
   /**
    * @generated from field: optional string value = 2;
@@ -774,7 +796,7 @@ export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Messag
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsRequest.UpdateConfiguration";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "operation", kind: "enum", T: proto3.getEnumType(ConfigAlterOperation) },
   ]);
@@ -883,9 +905,9 @@ export class SetTopicConfigurationsRequest extends Message<SetTopicConfiguration
  */
 export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetTopicConfigurationsRequest_SetConfiguration> {
   /**
-   * @generated from field: string key = 1;
+   * @generated from field: string name = 1;
    */
-  key = "";
+  name = "";
 
   /**
    * @generated from field: optional string value = 2;
@@ -900,7 +922,7 @@ export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetT
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsRequest.SetConfiguration";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
