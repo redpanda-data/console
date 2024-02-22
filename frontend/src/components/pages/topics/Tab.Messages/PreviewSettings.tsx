@@ -14,7 +14,7 @@ import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { DragDropContext, Draggable, DraggableProvided, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
-import { api } from '../../../../state/backendApi';
+import { MessageSearch } from '../../../../state/backendApi';
 import { PreviewTagV2 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { IsDev } from '../../../../utils/env';
@@ -34,16 +34,16 @@ const PatternHelpDrawer = () => {
                 margin: '0 2px',
                 color: 'hsl(205deg, 100%, 50%)',
                 textDecoration: 'underline dotted'
-            }}><InfoIcon size={15}/>&nbsp;glob patterns</button>
+            }}><InfoIcon size={15} />&nbsp;glob patterns</button>
             <Drawer
                 isOpen={isOpen}
                 placement="right"
                 size="xl"
                 onClose={onClose}
             >
-                <DrawerOverlay/>
+                <DrawerOverlay />
                 <DrawerContent>
-                    <DrawerCloseButton/>
+                    <DrawerCloseButton />
                     <DrawerHeader>Glob Pattern Examples</DrawerHeader>
 
                     <DrawerBody>
@@ -141,11 +141,15 @@ const globHelp = <div>
 </div>;
 
 @observer
-export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+export class PreviewSettings extends Component<{
+    messageSearch: MessageSearch,
+    getShowDialog: () => boolean,
+    setShowDialog: (show: boolean) => void
+}> {
     @computed.struct get allCurrentKeys() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const unused = api.messages.length;
-        return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
+        const unused = this.props.messageSearch.messages.length;
+        return getAllMessageKeys(this.props.messageSearch.messages).map(p => p.propertyName).distinct();
     }
 
     constructor(p: any) {
@@ -199,7 +203,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                                                 {...draggableProvided.draggableProps}
                                             >
                                                 <PreviewTagSettings tag={tag} index={index}
-                                                                    draggableProvided={draggableProvided}
+                                                    draggableProvided={draggableProvided}
                                                     onRemove={() => tags.removeAll(t => t.id == tag.id)}
                                                     allCurrentKeys={currentKeys}
                                                 />
@@ -232,7 +236,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                 <div className="previewTagsSettings" >
                     <OptionGroup<'caseSensitive' | 'ignoreCase'>
                         label="Matching"
-                        options={{'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive'}}
+                        options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
                         value={uiState.topicSettings.previewTagsCaseSensitive}
                         onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
                     />
@@ -325,7 +329,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                     onChange={(value) => {
                         tag.pattern = value
                     }}
-                    options={allCurrentKeys.map(t => ({label: t, value: t}))}
+                    options={allCurrentKeys.map(t => ({ label: t, value: t }))}
                 />
             </Box>
 

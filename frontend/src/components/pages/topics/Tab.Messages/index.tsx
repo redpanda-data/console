@@ -17,7 +17,7 @@ import React, { Component, FC, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { api, MessageSearchRequest } from '../../../../state/backendApi';
+import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
@@ -32,7 +32,7 @@ import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
-import { toJson } from '../../../../utils/jsonUtils';
+import { clone, toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import {
     Ellipsis,
@@ -105,7 +105,7 @@ import { MultiValue, Select as ChakraReactSelect } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
-import { WarningIcon } from '@chakra-ui/icons';
+import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import { proto3 } from '@bufbuild/protobuf';
 import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
@@ -229,7 +229,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     @observable fetchError = null as any | null;
 
-    messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
+    messageSearch = createMessageSearch();
+    messageSource = new FilterableDataSource<TopicMessage>(() => this.messageSearch.messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
@@ -283,6 +284,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.autoSearchReaction();
         if (this.quickSearchReaction)
             this.quickSearchReaction();
+
+        this.messageSearch.stopMessageSearch();
     }
 
     render() {
@@ -413,16 +416,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                     {/* Refresh Button */}
                     <Flex>
-                        {api.messageSearchPhase == null && (
+                        {this.messageSearch.messageSearchPhase == null && (
                             <Tooltip label="Repeat current search" placement="top" hasArrow>
                                 <Button variant="outline" onClick={() => this.searchFunc('manual')}>
                                     <SyncIcon size={20} />
                                 </Button>
                             </Tooltip>
                         )}
-                        {api.messageSearchPhase != null && (
+                        {this.messageSearch.messageSearchPhase != null && (
                             <Tooltip label="Stop searching" placement="top" hasArrow>
-                                <Button variant="solid" colorScheme="red" onClick={() => api.stopMessageSearch()}
+                                <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopMessageSearch()}
                                     style={{ padding: 0, width: '48px' }}>
                                     <XCircleIcon size={20} />
                                 </Button>
@@ -452,14 +455,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </Flex>
 
                     {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                    {Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
+                    {Boolean(this.messageSearch.messageSearchPhase && this.messageSearch.messageSearchPhase.length > 0) &&
                         <StatusIndicator
                             identityKey="messageSearch"
-                            fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
-                            statusText={api.messageSearchPhase!}
-                            progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
-                            messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
+                        fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={this.messageSearch.messageSearchPhase!}
+                        progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.messagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.messagesTotalConsumed) : undefined}
                         />
                     }
 
@@ -478,7 +481,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     {/* Filter Tags */}
                     {searchParams.filtersEnabled && (
                         <div style={{ paddingTop: '1em', width: '100%' }}>
-                            <MessageSearchFilterBar />
+                            <MessageSearchFilterBar messageSearch={this.messageSearch} />
                         </div>
                     )}
 
@@ -510,7 +513,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
 
         untracked(() => {
-            const phase = api.messageSearchPhase;
+            const phase = this.messageSearch.messageSearchPhase;
 
             if (searchParams == this.currentSearchRun && source == 'auto') {
                 console.log('ignoring serach, search params are up to date, and source is auto', {
@@ -524,7 +527,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
             // Abort current search if one is running
             if (phase != 'Done') {
-                api.stopMessageSearch();
+                this.messageSearch.stopMessageSearch();
             }
 
             console.log('starting a new message search', {
@@ -550,7 +553,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         });
     };
 
-    cancelSearch = () => api.stopMessageSearch();
+    cancelSearch = () => this.messageSearch.stopMessageSearch();
 
     isFilterMatch(str: string, m: TopicMessage) {
         str = uiState.topicSettings.quickSearch.toLowerCase();
@@ -558,6 +561,45 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
+    }
+
+    async loadLargeMessage(topicName: string, partitionID: number, offset: number) {
+        // Create a new search that looks for only this message specifically
+        const search = createMessageSearch();
+        const searchReq: MessageSearchRequest = {
+            filterInterpreterCode: '',
+            maxResults: 1,
+            partitionId: partitionID,
+            startOffset: offset,
+            startTimestamp: 0,
+            topicName: topicName,
+            includeRawPayload: true,
+            ignoreSizeLimit: true,
+            keyDeserializer: uiState.topicSettings.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.valueDeserializer,
+        };
+        const messages = await search.startMessageSearch(searchReq).catch(err => {
+            console.error('failed to lazy load a large message', {
+                searchReq,
+                err,
+            });
+        });
+
+        if (messages && messages.length == 1) {
+            // We must update the old message (that still says "payload too large")
+            // So we just find its index and replace it in the array we are currently displaying
+            const indexOfOldMessage = this.messageSearch.messages.findIndex(x => x.partitionID == partitionID && x.offset == offset);
+            if (indexOfOldMessage > -1) {
+                this.messageSearch.messages[indexOfOldMessage] = messages[0];
+            } else {
+                console.error('loadLargeMessage: cannot find old message to replace', {
+                    searchReq,
+                    messages
+                })
+            }
+        } else {
+            console.error('loadLargeMessage: messages response is empty', { messages });
+        }
     }
 
     @computed
@@ -673,13 +715,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         query['pageSize'] = String(pageSize)
                     })
                 })}
-                subComponent={({ row: { original } }) => renderExpandedMessage(original)}
+                subComponent={({ row: { original } }) => renderExpandedMessage(
+                    original,
+                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
+                )}
             />
             <Button variant="outline"
                 onClick={() => {
-                    this.downloadMessages = api.messages;
+                    this.downloadMessages = this.messageSearch.messages;
                 }}
-                isDisabled={!api.messages || api.messages.length == 0}
+                isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length == 0}
             >
                 <span style={{ paddingRight: '4px' }}><DownloadIcon /></span>
                 Save Messages
@@ -689,7 +734,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
             {
                 (this.messageSource?.data?.length > 0) &&
-                <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)} />
+                <PreviewSettings
+                    messageSearch={this.messageSearch}
+                    getShowDialog={() => showPreviewSettings}
+                    setShowDialog={s => setShowPreviewSettings(s)}
+                />
             }
 
             <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
@@ -755,7 +804,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return transaction(async () => {
             try {
                 this.fetchError = null;
-                return api.startMessageSearchNew(request).catch(err => {
+                return this.messageSearch.startMessageSearch(request).catch(err => {
                     const msg = ((err as Error).message ?? String(err));
                     console.error('error in searchTopicMessages: ' + msg);
                     this.fetchError = err;
@@ -1025,16 +1074,16 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         const value = msg.value;
 
         if (value.troubleshootReport && value.troubleshootReport.length > 0) {
-            return <Flex color="red.600" alignItems="center" gap="4">
+            return <Flex color="red.600" alignItems="center" gap="2">
                 <WarningIcon fontSize="1.25em" />
                 There were issues deserializing the value
             </Flex>
         }
 
         if (value.isPayloadTooLarge) {
-            return <Flex color="orange.600" alignItems="center" gap="4">
-                <WarningIcon fontSize="1.25em" />
-                Message content is too large to display in the UI
+            return <Flex color="blue.500" alignItems="center" gap="2">
+                <InfoIcon fontSize="1.25em" />
+                Message size exceeds the display limit.
             </Flex>
         }
 
@@ -1091,7 +1140,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => void, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
         <RpTabs
@@ -1104,7 +1153,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
                     isDisabled: msg.key == null || msg.key.size == 0,
                     component: <>
                         <TroubleshootReportViewer payload={msg.key} />
-                        {renderPayload(msg.key, shouldExpand)}
+                        {renderPayload(msg.key, loadLargeMessage, shouldExpand)}
                     </>
                 },
                 {
@@ -1112,7 +1161,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
                     name: <Box minWidth="6rem">Value</Box>,
                     component: <>
                         <TroubleshootReportViewer payload={msg.value} />
-                        {renderPayload(msg.value, shouldExpand)}
+                        {renderPayload(msg.value, loadLargeMessage, shouldExpand)}
                     </>
                 },
                 {
@@ -1126,7 +1175,20 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     </div>;
 }
 
-function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderPayload(payload: Payload, loadLargeMessage: () => void, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+
+    if (payload.isPayloadTooLarge) {
+        console.log('message too large', clone(payload));
+        return <Flex flexDirection="column" gap="4">
+            <Flex alignItems="center" gap="2">
+                Because this message size exceeds the diplay limit, loading it could cause performance degradation.
+            </Flex>
+            <Button variant="outline" width="10rem" size="small" onClick={loadLargeMessage}>
+                Load anyway
+            </Button>
+        </Flex>
+    }
+
     try {
         if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
             return <code>null</code>;
@@ -1551,7 +1613,7 @@ const helpEntries = [
 ].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
-class MessageSearchFilterBar extends Component {
+class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }> {
     /*
     todo:
         - does a click outside of the editor mean "ok" or "cancel"?
@@ -1574,6 +1636,7 @@ class MessageSearchFilterBar extends Component {
 
     render() {
         const settings = uiState.topicSettings.searchParams;
+        const messageSearch = this.props.messageSearch;
 
         return <div className={styles.filterbar}>
 
@@ -1626,11 +1689,11 @@ class MessageSearchFilterBar extends Component {
                 </Tag>
             </div>
 
-            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
+            {messageSearch.messageSearchPhase === null || messageSearch.messageSearchPhase === 'Done'
                 ? (
                     <div className={styles.metaSection}>
-                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ''}</span>
+                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.messagesBytesConsumed)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.messagesElapsedMs ? prettyMilliseconds(messageSearch.messagesElapsedMs) : ''}</span>
                     </div>
                 )
                 : (
