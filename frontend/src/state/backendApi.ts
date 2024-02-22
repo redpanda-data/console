@@ -1476,27 +1476,36 @@ const apiStore = {
 
 export function createMessageSearch() {
     const messageSearch = {
-        messagesFor: '', // for what topic?
+        // Parameters last passed to 'startMessageSearch'
         searchRequest: null as MessageSearchRequest | null,
 
-        messageSearchPhase: null as string | null,
+        // Some statistics that might be interesting to show in the UI
+        searchPhase: null as string | null, // A search has different phases, like "waiting for mssages", or "creating consumers", this string is directly reported by the backend
+        elapsedMs: null as null | number, // Reported by the backend, only set once the search is done
+        bytesConsumed: 0,
+        totalMessagesConsumed: 0,
+
+        // Call 'stopSearch' instead of using this directly
+        abortController: null as AbortController | null,
+
+        // Live view of messages, gets updated as new messages arrive
         messages: observable([] as TopicMessage[], { deep: false }),
-        messagesElapsedMs: null as null | number,
-        messagesBytesConsumed: 0,
-        messagesTotalConsumed: 0,
-        messageSearchAbortController: null as AbortController | null,
 
 
-        async startMessageSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
+        async startSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
             // https://connectrpc.com/docs/web/using-clients
             // https://github.com/connectrpc/connect-es
             // https://github.com/connectrpc/examples-es
-
             const client = appConfig.consoleClient;
 
             if (!client) {
                 // this shouldn't happen but better to explicitly throw
                 throw new Error('No console client configured');
+            }
+
+            if (this.searchPhase) {
+                // There is a search running already, abort it
+                this.stopSearch('starting a new search');
             }
 
             const searchRequest = {
@@ -1509,14 +1518,13 @@ export function createMessageSearch() {
                 } : {})
             }
             this.searchRequest = searchRequest;
-            this.messageSearchPhase = 'Connecting';
-            this.messagesBytesConsumed = 0;
-            this.messagesTotalConsumed = 0;
-            this.messagesFor = searchRequest.topicName;
+            this.searchPhase = 'Connecting';
+            this.bytesConsumed = 0;
+            this.totalMessagesConsumed = 0;
             this.messages.length = 0;
-            this.messagesElapsedMs = null;
+            this.elapsedMs = null;
 
-            const messageSearchAbortController = this.messageSearchAbortController = new AbortController();
+            const messageSearchAbortController = this.abortController = new AbortController();
 
             // do it
             const req = new ListMessagesRequest();
@@ -1548,19 +1556,19 @@ export function createMessageSearch() {
                         switch (res.controlMessage.case) {
                             case 'phase':
                                 console.log('phase: ' + res.controlMessage.value.phase)
-                                this.messageSearchPhase = res.controlMessage.value.phase;
+                                this.searchPhase = res.controlMessage.value.phase;
                                 break;
                             case 'progress':
                                 console.log('progress: ' + res.controlMessage.value.messagesConsumed)
-                                this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                                this.messagesTotalConsumed = Number(res.controlMessage.value.messagesConsumed);
+                                this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                                this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
                                 break;
                             case 'done':
-                                this.messagesElapsedMs = Number(res.controlMessage.value.elapsedMs);
-                                this.messagesBytesConsumed = Number(res.controlMessage.value.bytesConsumed);
+                                this.elapsedMs = Number(res.controlMessage.value.elapsedMs);
+                                this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                                 // this.MessageSearchCancelled = msg.isCancelled;
-                                this.messageSearchPhase = 'Done';
-                                this.messageSearchPhase = null;
+                                this.searchPhase = 'Done';
+                                this.searchPhase = null;
                                 break;
                             case 'error':
                                 // error doesn't necessarily mean the whole request is done
@@ -1760,11 +1768,11 @@ export function createMessageSearch() {
                     }
                 }
             } catch (e) {
-                this.messageSearchAbortController = null;
-                this.messageSearchPhase = 'Done';
-                this.messagesBytesConsumed = 0;
-                this.messagesTotalConsumed = 0;
-                this.messageSearchPhase = null;
+                this.abortController = null;
+                this.searchPhase = 'Done';
+                this.bytesConsumed = 0;
+                this.totalMessagesConsumed = 0;
+                this.searchPhase = null;
                 // https://connectrpc.com/docs/web/errors
                 if (messageSearchAbortController.signal.aborted) {
                     // Do not throw, this is a user cancellation
@@ -1775,21 +1783,21 @@ export function createMessageSearch() {
             }
 
             // one done
-            this.stopMessageSearch();
+            this.stopSearch();
             return this.messages;
         },
 
-        stopMessageSearch() {
-            if (this.messageSearchAbortController) {
-                this.messageSearchAbortController.abort('aborted by user');
-                this.messageSearchAbortController = null;
+        stopSearch(reason?: string) {
+            if (this.abortController) {
+                this.abortController.abort(reason ?? 'aborted by user');
+                this.abortController = null;
             }
 
-            if (this.messageSearchPhase != null) {
-                this.messageSearchPhase = 'Done';
-                this.messagesBytesConsumed = 0;
-                this.messagesTotalConsumed = 0;
-                this.messageSearchPhase = null;
+            if (this.searchPhase != null) {
+                this.searchPhase = 'Done';
+                this.bytesConsumed = 0;
+                this.totalMessagesConsumed = 0;
+                this.searchPhase = null;
             }
         },
     };
