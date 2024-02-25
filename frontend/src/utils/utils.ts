@@ -806,3 +806,23 @@ export function retrier<T>(operation: () => Promise<T>, { attempts = Infinity, d
  * performing indexing
  */
 export type ElementOf<T> = T extends (infer E)[] ? E : T extends readonly (infer F)[] ? F : never;
+
+/**
+ * Truncates a string to a specified length and adds an ellipsis (...) if the truncation occurs.
+ *
+ * @param {string} input The string to truncate.
+ * @param {number} maxLength The maximum length of the string, including the ellipsis.
+ * @returns {string} The truncated string with ellipsis if truncation was necessary, otherwise the original string.
+ */
+export function substringWithEllipsis(input: string, maxLength: number): string {
+    // Check if the input length is greater than the maxLength
+    // Note: We account for the length of the ellipsis in the comparison
+    if (input.length > maxLength) {
+        // Subtract 3 from maxLength to accommodate the ellipsis
+        // Ensure maxLength is at least 4 to avoid negative substring lengths
+        const effectiveLength = Math.max(maxLength - 3, 1);
+        return input.substring(0, effectiveLength) + '...';
+    } else {
+        return input;
+    }
+}

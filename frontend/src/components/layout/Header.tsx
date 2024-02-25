@@ -17,7 +17,7 @@ import { uiState } from '../../state/uiState';
 import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 import { IsDev } from '../../utils/env';
-import { Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbLinkProps, ColorModeSwitch, Flex } from '@redpanda-data/ui';
+import { Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbLinkProps, CopyButton, ColorModeSwitch, Flex } from '@redpanda-data/ui';
 
 const AppPageHeader = observer(() => {
     const showRefresh = useShouldShowRefresh();
@@ -41,10 +41,7 @@ const AppPageHeader = observer(() => {
                             as: 'span',
                             fontWeight: 700,
                             fontSize: 'xl',
-                            wordBreak: 'break-all',
-                            whiteSpace: 'break-spaces',
                         } : {
-                            whiteSpace: 'nowrap'
                         };
 
                         return (
@@ -54,15 +51,26 @@ const AppPageHeader = observer(() => {
                                     as={isCurrentPage ? 'span' : Link}
                                     noOfLines={1}
                                     {...currentBreadcrumbProps}
+                                    {...(entry.options?.canBeTruncated ? {
+                                        wordBreak: 'break-all',
+                                        whiteSpace: 'break-spaces',
+                                    } : {
+                                        whiteSpace: 'nowrap'
+                                    })}
                                 >
                                     {entry.title}
                                 </BreadcrumbLink>
 
-                                {isCurrentPage && showRefresh && (
-                                    <Box minW={250}>
-                                        <DataRefreshButton/>
-                                    </Box>
-                                )}
+                                <Flex ml={2}>
+                                    {isCurrentPage && entry.options?.canBeCopied && <CopyButton content={entry.title} variant="ghost"/>}
+
+                                    {isCurrentPage && showRefresh && (
+                                        <Box minW={250}>
+                                            <DataRefreshButton/>
+                                        </Box>
+                                    )}
+                                </Flex>
+
                             </BreadcrumbItem>
                         );
                     }

@@ -226,7 +226,7 @@ function EditSchemaCompatibility(p: {
 
             <GridItem>
                 {(subjectName && schema) && <>
-                    <Text mt="4" fontSize="lg" fontWeight="bold">{subjectName}</Text>
+                    <Text mt="4" fontSize="lg" fontWeight="bold" wordBreak="break-word" whiteSpace="break-spaces">{subjectName}</Text>
 
                     <Text mt="8" mb="4" fontSize="lg" fontWeight="bold">Schema</Text>
                     <Box maxHeight="600px" overflow="scroll">
