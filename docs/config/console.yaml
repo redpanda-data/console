@@ -51,11 +51,13 @@ kafka:
   #     clientSecret: # can be set via the --kafka.sasl.oauth.clientSecret flag as well
   #     tokenEndpoint: # can be set via the --kafka.sasl.oauth.tokenEndpoint flag as well. Will be used to fetch a short living token if specified
   #     scope: # can be set via the --kafka.sasl.oauth.scope flag as well
-  #   awsMskIam:
+  #   awsMskIam: # either set both accessKey and secretKey or leave both empty to use default AWS configuration in your environment
   #     accessKey:
   #     secretKey: # can be set via the --kafka.sasl.aws-msk-iam.secret-key flag as well
   #     sessionToken: # can be set via the --kafka.sasl.aws-msk-iam.session-token flag as well
   #     userAgent:
+  #     region: # AWS region to send the API requests to
+  #     clientTimeout: # duration for AWS API client. Default is 10 seconds. Can be set via the --kafka.sasl.aws-msk-iam.client-timeout flag as well
   # tls:
   #   enabled: false
   #   caFilepath:
