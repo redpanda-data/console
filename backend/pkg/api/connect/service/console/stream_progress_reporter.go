@@ -25,7 +25,6 @@ import (
 
 // streamProgressReporter is in charge of sending status updates and messages regularly to the frontend.
 type streamProgressReporter struct {
-	ctx     context.Context
 	logger  *zap.Logger
 	request *console.ListMessageRequest
 	stream  *connect.ServerStream[v1alpha.ListMessagesResponse]
@@ -36,7 +35,7 @@ type streamProgressReporter struct {
 	writeMutex sync.Mutex
 }
 
-func (p *streamProgressReporter) Start() {
+func (p *streamProgressReporter) Start(ctx context.Context) {
 	// We should report progress in two scenarios.
 	// If filter is enabled it could take a while to find the matching record(s).
 	// If search is for newest records it could take a while to get new records.
@@ -62,7 +61,7 @@ func (p *streamProgressReporter) Start() {
 
 		for {
 			select {
-			case <-p.ctx.Done():
+			case <-ctx.Done():
 				ticker.Stop()
 				return
 			case <-ticker.C:
@@ -81,11 +80,13 @@ func (p *streamProgressReporter) reportProgress() {
 		BytesConsumed:    p.bytesConsumed.Load(),
 	}
 
-	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Progress{
-			Progress: msg,
+	if err := p.stream.Send(
+		&v1alpha.ListMessagesResponse{
+			ControlMessage: &v1alpha.ListMessagesResponse_Progress{
+				Progress: msg,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		p.logger.Error("send error in stream reportProgress", zap.Error(err))
 	}
 }
@@ -98,11 +99,13 @@ func (p *streamProgressReporter) OnPhase(name string) {
 		Phase: name,
 	}
 
-	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Phase{
-			Phase: msg,
+	if err := p.stream.Send(
+		&v1alpha.ListMessagesResponse{
+			ControlMessage: &v1alpha.ListMessagesResponse_Phase{
+				Phase: msg,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		p.logger.Error("send error in stream OnPhase", zap.Error(err))
 	}
 }
@@ -124,10 +127,12 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 
 	for _, mh := range message.Headers {
 		mh := mh
-		headers = append(headers, &v1alpha.KafkaRecordHeader{
-			Key:   mh.Key,
-			Value: mh.Value,
-		})
+		headers = append(
+			headers, &v1alpha.KafkaRecordHeader{
+				Key:   mh.Key,
+				Value: mh.Value,
+			},
+		)
 	}
 
 	compression := v1alpha.CompressionType_COMPRESSION_TYPE_UNSPECIFIED
@@ -182,26 +187,32 @@ func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
 	data.Key.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Key.Troubleshooting))
 	for _, ts := range message.Key.Troubleshooting {
 		ts := ts
-		data.Key.TroubleshootReport = append(data.Key.TroubleshootReport, &v1alpha.TroubleshootReport{
-			SerdeName: ts.SerdeName,
-			Message:   ts.Message,
-		})
+		data.Key.TroubleshootReport = append(
+			data.Key.TroubleshootReport, &v1alpha.TroubleshootReport{
+				SerdeName: ts.SerdeName,
+				Message:   ts.Message,
+			},
+		)
 	}
 
 	data.Value.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Value.Troubleshooting))
 	for _, ts := range message.Value.Troubleshooting {
 		ts := ts
-		data.Value.TroubleshootReport = append(data.Value.TroubleshootReport, &v1alpha.TroubleshootReport{
-			SerdeName: ts.SerdeName,
-			Message:   ts.Message,
-		})
+		data.Value.TroubleshootReport = append(
+			data.Value.TroubleshootReport, &v1alpha.TroubleshootReport{
+				SerdeName: ts.SerdeName,
+				Message:   ts.Message,
+			},
+		)
 	}
 
-	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Data{
-			Data: data,
+	if err := p.stream.Send(
+		&v1alpha.ListMessagesResponse{
+			ControlMessage: &v1alpha.ListMessagesResponse_Data{
+				Data: data,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		p.logger.Error("send error in stream OnMessage", zap.Error(err))
 	}
 }
@@ -217,11 +228,13 @@ func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
 		BytesConsumed:    p.bytesConsumed.Load(),
 	}
 
-	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Done{
-			Done: msg,
+	if err := p.stream.Send(
+		&v1alpha.ListMessagesResponse{
+			ControlMessage: &v1alpha.ListMessagesResponse_Done{
+				Done: msg,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		p.logger.Error("send error in stream OnComplete", zap.Error(err))
 	}
 }
@@ -234,11 +247,13 @@ func (p *streamProgressReporter) OnError(message string) {
 		Message: message,
 	}
 
-	if err := p.stream.Send(&v1alpha.ListMessagesResponse{
-		ControlMessage: &v1alpha.ListMessagesResponse_Error{
-			Error: msg,
+	if err := p.stream.Send(
+		&v1alpha.ListMessagesResponse{
+			ControlMessage: &v1alpha.ListMessagesResponse_Error{
+				Error: msg,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		p.logger.Error("send error in stream OnError", zap.Error(err))
 	}
 }
