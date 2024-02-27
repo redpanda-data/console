@@ -12,7 +12,11 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 	// demonstration of the issue
 	// see comment in code
 
-	r := httptest.NewRequest("GET", "http://example.com/api/schema-registry/subjects/%252F/versions/last", http.NoBody)
+	r := httptest.NewRequest(
+		http.MethodGet,
+		"http://example.com/api/schema-registry/subjects/%252F/versions/last",
+		http.NoBody,
+	)
 	assert.Equal(t, "/api/schema-registry/subjects/%2F/versions/last", r.URL.Path)
 	assert.Equal(t, "", r.URL.RawPath)
 
@@ -98,9 +102,11 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", tt.target, http.NoBody)
-			assert.Equal(t, tt.expected, getSubjectFromRequestPath(r))
-		})
+		t.Run(
+			tt.name, func(t *testing.T) {
+				r := httptest.NewRequest(http.MethodGet, tt.target, http.NoBody)
+				assert.Equal(t, tt.expected, getSubjectFromRequestPath(r))
+			},
+		)
 	}
 }

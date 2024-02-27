@@ -39,10 +39,11 @@ linters:
     - staticcheck
     - unused
     # Not enabled by default: we want a good chunk
-    - typecheck
+    - asasalint
     - asciicheck
     - bidichk
     - bodyclose
+    - containedctx
     - cyclop
     - durationcheck
     - errname
@@ -50,6 +51,7 @@ linters:
     - exhaustive
     - exportloopref
     - gci
+    - gocheckcompilerdirectives
     - gocognit
     - goconst
     - gocritic
@@ -64,13 +66,16 @@ linters:
     - nilerr
     - noctx
     - nolintlint
+    - reassign
     - revive
     - rowserrcheck
     - sqlclosecheck
     - stylecheck
     - tenv
+    - typecheck
     - unconvert
     - unparam
+    - usestdlibvars
     - wastedassign
     - whitespace
 linters-settings:
@@ -80,7 +85,6 @@ linters-settings:
     default-signifies-exhaustive: true
   # If we want to opt out of a lint, we require an explanation.
   nolintlint:
-    allow-leading-space: true
     allow-unused: false
     require-explanation: true
     require-specific: true
@@ -92,7 +96,7 @@ linters-settings:
   #
   # https://github.com/mvdan/gofumpt/issues/137
   gofumpt:
-    lang-version: "1.21"
+    lang-version: "1.22"
   gosec:
     excludes:
       - G104 # unhandled errors, we exclude for the same reason we do not use errcheck
@@ -113,7 +117,6 @@ linters-settings:
   gocognit:
     min-complexity: 30
   gci:
-    no-prefix-comments: true # no leading comment; we allow inline for nolint
     sections:
       - standard # stdlib
       - default # everything not std, not within project
@@ -149,8 +152,6 @@ linters-settings:
     enable-all-rules: true
     severity: warning
     confidence: 0.7
-    error-code: 1
-    warning-code: 1
     rules:
       # removed because replacing the version of a proto is easier if we use it
       # as alias
