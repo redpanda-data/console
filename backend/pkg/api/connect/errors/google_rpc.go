@@ -19,7 +19,7 @@ import (
 // googlestatus.Status type that can be used to present errors.
 func ConnectErrorToGrpcStatus(connectErr *connect.Error) *googlestatus.Status {
 	return &googlestatus.Status{
-		Code:    int32(connect.CodeUnknown),
+		Code:    int32(connectErr.Code()),
 		Message: connectErr.Error(),
 		Details: connectErrDetailsAsAny(connectErr.Details()),
 	}
