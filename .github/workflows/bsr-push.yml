@@ -1,0 +1,30 @@
+name: Push to Buf Schema Registry
+
+on:
+  workflow_dispatch
+
+jobs:
+  push-module:
+    runs-on: ubuntu-latest
+    steps:
+      # Run `git checkout`
+      - uses: actions/checkout@v2
+      # Install the `buf` CLI
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+      # Lint Protobuf sources
+      - uses: bufbuild/buf-lint-action@v1
+        with:
+          input: proto
+      # Run breaking change detection for Protobuf sources against the current `main` branch
+      - uses: bufbuild/buf-breaking-action@v1
+        with:
+          against: https://github.com/acme/weather.git#branch=main,ref=HEAD~1,subdir=proto
+      # Push module to the BSR
+      - uses: bufbuild/buf-push-action@v1
+        with:
+          input: proto
+          buf_token: ${{ secrets.BUF_TOKEN }}
+          create_visibility: private
+          draft: ${{ github.ref_name != 'main'}}
