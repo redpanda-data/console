@@ -1,7 +1,15 @@
 name: Push to Buf Schema Registry
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - master
+    paths:
+      - proto/**.proto
+  workflow_dispatch:
+  
+permissions:
+  contents: read
 
 jobs:
   push-module:
