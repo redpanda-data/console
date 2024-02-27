@@ -35,4 +35,4 @@ jobs:
           input: proto
           buf_token: ${{ secrets.BUF_TOKEN }}
           create_visibility: private
-          draft: ${{ github.ref_name != 'main'}}
+          draft: ${{ github.ref_name != 'master'}}
