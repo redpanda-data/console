@@ -33,6 +33,7 @@ enum PayloadEncoding {
   PAYLOAD_ENCODING_BINARY = 12;
   PAYLOAD_ENCODING_UINT = 13;
   PAYLOAD_ENCODING_CONSUMER_OFFSETS = 14;
+  PAYLOAD_ENCODING_REST = 15;
 }
 
 message TroubleshootReport {

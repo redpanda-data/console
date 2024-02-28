@@ -24,6 +24,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/rest"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -121,7 +122,16 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		}
 	}
 
-	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc)
+	// REST service
+	var restSvc *rest.Service
+	if cfg.Kafka.REST.Enabled {
+		restSvc, err = rest.NewService(cfg.Kafka.REST)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create REST service: %w", err)
+		}
+	}
+
+	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc, restSvc)
 
 	return &Service{
 		Config:           cfg,

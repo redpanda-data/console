@@ -144,7 +144,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'null' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile';
+export type MessageDataType = 'null' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile' | 'rest';
 export enum CompressionType {
     Unknown = 'unknown',
 

@@ -22,9 +22,10 @@ type Kafka struct {
 	RackID   string   `yaml:"rackId"`
 
 	// Schema Registry
-	Schema      Schema  `yaml:"schemaRegistry"`
-	Protobuf    Proto   `yaml:"protobuf"`
-	MessagePack Msgpack `yaml:"messagePack"`
+	Schema      Schema    `yaml:"schemaRegistry"`
+	Protobuf    Proto     `yaml:"protobuf"`
+	MessagePack Msgpack   `yaml:"messagePack"`
+	REST        RestSerde `yaml:"rest"`
 
 	TLS  KafkaTLS  `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
@@ -66,6 +67,11 @@ func (c *Kafka) Validate() error {
 	err = c.MessagePack.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate msgpack config: %w", err)
+	}
+
+	err = c.REST.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate REST config: %w", err)
 	}
 
 	err = c.Startup.Validate()

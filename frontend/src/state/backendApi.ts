@@ -1668,6 +1668,9 @@ export function createMessageSearch() {
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.key.encoding = 'consumerOffsets';
                                         break;
+                                    case PayloadEncoding.REST:
+                                        m.key.encoding = 'rest';
+                                        break;
                                     default:
                                         console.log('unhandled key encoding type', {
                                             encoding: key?.encoding,
@@ -1737,6 +1740,9 @@ export function createMessageSearch() {
                                         break;
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.value.encoding = 'consumerOffsets';
+                                        break;
+                                    case PayloadEncoding.REST:
+                                        m.value.encoding = 'rest';
                                         break;
                                     default:
                                         console.log('unhandled value encoding type', {

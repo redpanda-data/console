@@ -1490,6 +1490,7 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
         { value: PayloadEncoding.XML, label: 'XML' },
         { value: PayloadEncoding.TEXT, label: 'Plain Text' },
         { value: PayloadEncoding.UTF8, label: 'UTF-8' },
+        { value: PayloadEncoding.REST, label: 'REST' },
         { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
         { value: PayloadEncoding.SMILE, label: 'Smile' },
         { value: PayloadEncoding.BINARY, label: 'Binary' },

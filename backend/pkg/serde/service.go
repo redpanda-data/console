@@ -18,6 +18,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/rest"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
@@ -28,7 +29,7 @@ type Service struct {
 }
 
 // NewService creates the new serde service.
-func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
+func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service, restSvc *rest.Service) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},
@@ -38,6 +39,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			AvroSerde{SchemaSvc: schemaService},
 			ProtobufSerde{ProtoSvc: protoSvc},
 			ProtobufSchemaSerde{ProtoSvc: protoSvc},
+			RestSerde{restSvc},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
 			UTF8Serde{},

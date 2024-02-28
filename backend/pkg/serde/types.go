@@ -43,6 +43,8 @@ const (
 	PayloadEncodingSmile PayloadEncoding = "smile"
 	// PayloadEncodingUint is the enum of Uint types.
 	PayloadEncodingUint PayloadEncoding = "uint"
+	// PayloadEncodingREST is the enum of REST encoded types.
+	PayloadEncodingREST PayloadEncoding = "rest"
 )
 
 // HeaderEncoding is an enum for different header encoding types.
