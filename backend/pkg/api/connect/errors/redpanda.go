@@ -12,6 +12,7 @@ package errors
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,7 +28,7 @@ import (
 // errors, extracts relevant information, and constructs detailed error
 // messages. Additionally, it handles timeouts gracefully by generating specific
 // error messages for canceled requests.
-func NewConnectErrorFromRedpandaAdminAPIError(err error) *connect.Error {
+func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *connect.Error {
 	var httpErr *adminapi.HTTPResponseError
 	if errors.As(err, &httpErr) {
 		connectCode := CodeFromHTTPStatus(httpErr.Response.StatusCode)
@@ -36,7 +37,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error) *connect.Error {
 		if err != nil {
 			return NewConnectError(
 				connectCode,
-				errors.New(httpErr.Error()),
+				errors.New(prefixErrMsg+httpErr.Error()),
 				NewErrorInfo(
 					v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
 						Key:   "adminapi_status_code",
@@ -49,7 +50,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error) *connect.Error {
 		// Bubble up original Redpanda adminapi error message
 		return NewConnectError(
 			connectCode,
-			errors.New(adminApiErr.Message),
+			errors.New(prefixErrMsg+adminApiErr.Message),
 			NewErrorInfo(
 				v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
 					Key:   "adminapi_status_code",
@@ -63,14 +64,14 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error) *connect.Error {
 	if errors.Is(err, context.Canceled) {
 		return NewConnectError(
 			connect.CodeCanceled,
-			errors.New("the request to the Redpanda admin API timed out"),
+			errors.New(prefixErrMsg+"the request to the Redpanda admin API timed out"),
 			NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
 	return NewConnectError(
 		connect.CodeInternal,
-		err,
+		fmt.Errorf("%v%w", prefixErrMsg, err),
 		NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 	)
 }

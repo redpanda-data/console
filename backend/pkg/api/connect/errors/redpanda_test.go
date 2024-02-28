@@ -37,6 +37,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 	tests := []struct {
 		name           string
 		inputError     error
+		inputMsgPrefix string
 		expectedResult *connect.Error
 	}{
 		{
@@ -51,6 +52,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 					Body: []byte("mock error message"),
 				}
 			}(),
+			inputMsgPrefix: "",
 			expectedResult: NewConnectError(
 				CodeFromHTTPStatus(http.StatusInternalServerError),
 				// Same error as given is expected to be wrapped
@@ -90,6 +92,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 					Body: body,
 				}
 			}(),
+			inputMsgPrefix: "",
 			expectedResult: NewConnectError(
 				connect.CodeNotFound,
 				errors.New("decoded message"),
@@ -103,13 +106,26 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 			),
 		},
 		{
-			name: "Context canceled error",
+			name: "Context canceled error with prefix",
 			inputError: func() error {
 				return fmt.Errorf("some random msg with a wrapped cancelled context err: %w", context.Canceled)
 			}(),
+			inputMsgPrefix: "listing transforms failed: ",
 			expectedResult: NewConnectError(
 				connect.CodeCanceled,
-				errors.New("the request to the Redpanda admin API timed out"),
+				errors.New("listing transforms failed: the request to the Redpanda admin API timed out"),
+				NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+			),
+		},
+		{
+			name: "Any other error",
+			inputError: func() error {
+				return fmt.Errorf("some random error message")
+			}(),
+			inputMsgPrefix: "listing transforms failed: ",
+			expectedResult: NewConnectError(
+				connect.CodeInternal,
+				errors.New("listing transforms failed: some random error message"),
 				NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 			),
 		},
@@ -119,7 +135,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {
-				result := NewConnectErrorFromRedpandaAdminAPIError(tt.inputError)
+				result := NewConnectErrorFromRedpandaAdminAPIError(tt.inputError, tt.inputMsgPrefix)
 
 				expected := tt.expectedResult
 				assert.Equal(t, expected.Code().String(), result.Code().String())
