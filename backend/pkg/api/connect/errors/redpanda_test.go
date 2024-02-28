@@ -11,6 +11,7 @@ package errors
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -18,23 +19,21 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/google/go-cmp/cmp"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
-// HTTPResponseErrorInterface abstracts adminapi.HTTPResponseError for mocking.
-//
-//go:generate mockgen -destination=./mocks/http_response_error.go -package=mocks github.com/redpanda-data/console/backend/pkg/api/connect/errors HTTPResponseErrorInterface
-type HTTPResponseErrorInterface interface {
-	Error() string
-	DecodeGenericErrorBody() (*adminapi.GenericErrorBody, error)
-	GetResponse() *http.Response
-}
-
 // Define the test cases
 func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	tests := []struct {
 		name           string
 		inputError     error
@@ -43,16 +42,26 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 		{
 			name: "HTTPResponseError with undecodable body",
 			inputError: func() error {
-				/*
-					mockErr := new(MockHTTPResponseError)
-					mockErr.On("Error").Return("mock error message")
-					mockErr.Response = &http.Response{StatusCode: http.StatusInternalServerError}
-					return mockErr*/
-				return nil
+				return &adminapi.HTTPResponseError{
+					Method: http.MethodGet,
+					URL:    "http://localhost",
+					Response: &http.Response{
+						StatusCode: http.StatusInternalServerError,
+					},
+					Body: []byte("mock error message"),
+				}
 			}(),
 			expectedResult: NewConnectError(
 				CodeFromHTTPStatus(http.StatusInternalServerError),
-				errors.New("mock error message"),
+				// Same error as given is expected to be wrapped
+				adminapi.HTTPResponseError{
+					Method: http.MethodGet,
+					URL:    "http://localhost",
+					Response: &http.Response{
+						StatusCode: http.StatusInternalServerError,
+					},
+					Body: []byte("mock error message"),
+				},
 				NewErrorInfo(
 					v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(),
 					KeyVal{
@@ -65,19 +74,21 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 		{
 			name: "HTTPResponseError with decodable body",
 			inputError: func() error {
-				/*
-					mockErr := new(MockHTTPResponseError)
-					mockErr.On("Error").Return("mock error message")
-					mockErr.On("DecodeGenericErrorBodyBody").Return(
-						&adminapi.GenericErrorBody{
-							Message: "decoded message",
-							Code:    http.StatusNotFound,
-						}, nil,
-					)
-					mockErr.Response = &http.Response{StatusCode: http.StatusOK}
-					return mockErr
-				*/
-				return nil
+				responseBody := &adminapi.GenericErrorBody{
+					Message: "decoded message",
+					Code:    http.StatusNotFound,
+				}
+				body, err := json.Marshal(responseBody)
+				require.NoError(t, err)
+
+				return &adminapi.HTTPResponseError{
+					Method: http.MethodGet,
+					URL:    "http://localhost",
+					Response: &http.Response{
+						StatusCode: http.StatusNotFound,
+					},
+					Body: body,
+				}
 			}(),
 			expectedResult: NewConnectError(
 				connect.CodeNotFound,
@@ -109,7 +120,21 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 		t.Run(
 			tt.name, func(t *testing.T) {
 				result := NewConnectErrorFromRedpandaAdminAPIError(tt.inputError)
-				assert.Equal(t, tt.expectedResult, result)
+
+				expected := tt.expectedResult
+				assert.Equal(t, expected.Code().String(), result.Code().String())
+				assert.Equal(t, expected.Message(), result.Message())
+				expectedDetails := expected.Details()
+				resultDetails := result.Details()
+				require.Equal(t, len(expectedDetails), len(resultDetails))
+				for i, detail := range expectedDetails {
+					expectedProto, err := detail.Value()
+					require.NoError(t, err)
+					resultProto, err := resultDetails[i].Value()
+					require.NoError(t, err)
+
+					assert.Empty(t, cmp.Diff(expectedProto, resultProto, protocmp.Transform()))
+				}
 			},
 		)
 	}
