@@ -98,6 +98,11 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 			target:   "/api/schema-registry/subjects/with%252Fslash/versions/last",
 			expected: "with%2Fslash",
 		},
+		{
+			name:     "with query",
+			target:   "https://console-123.cn456.fmc.ppd.cloud.redpanda.com/api/schema-registry/subjects/repro?permanent=false",
+			expected: "repro",
+		},
 	}
 
 	for _, tt := range tests {
