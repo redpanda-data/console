@@ -42,7 +42,7 @@ test.describe('Topic', () => {
             timeout: 10000,
         })
 
-        // // cleanup, let's delete the topic now
+        // cleanup, let's delete the topic now
         await page.goto('/topics');
         await page.getByTestId(`delete-topic-button-${topicName}`).click()
         await page.getByTestId('delete-topic-confirm-button').click()
