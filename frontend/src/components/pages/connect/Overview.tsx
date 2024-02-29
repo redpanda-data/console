@@ -21,7 +21,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { DataTable, Tooltip } from '@redpanda-data/ui';
+import { DataTable, Tooltip, Text } from '@redpanda-data/ui';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -212,9 +212,9 @@ class TabTasks extends Component {
                         header: 'Connector',
                         accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
                         cell: ({ row: { original } }) => (
-                            <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
+                            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1} className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
                 {original.connectorName}
-            </span>
+            </Text>
                         ),
                         size: 300
                     },

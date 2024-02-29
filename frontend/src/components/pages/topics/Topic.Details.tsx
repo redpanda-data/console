@@ -158,7 +158,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         p.title = topicName;
         p.addBreadcrumb('Topics', '/topics');
-        p.addBreadcrumb(topicName, '/topics/' + topicName);
+        p.addBreadcrumb(topicName, '/topics/' + topicName, {
+            canBeCopied: true,
+            canBeTruncated: true,
+        });
 
         // clear messages from different topic if we have some
         if (api.messagesFor != '' && api.messagesFor != topicName) {

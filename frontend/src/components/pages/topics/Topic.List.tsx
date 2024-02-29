@@ -42,8 +42,10 @@ import {
     Box,
     Button,
     Checkbox,
+    CopyButton,
     DataTable,
     Flex,
+    Grid,
     Icon,
     Popover,
     Text,
@@ -214,12 +216,13 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 {
                     header: 'Name',
                     accessorKey: 'topicName',
-                    cell: ({row: {original: topic}}) => <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>,
+                    cell: ({row: {original: topic}}) => <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}><Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link></Box>,
                     size: Infinity,
                 },
                 {
                     header: 'Partitions',
                     accessorKey: 'partitions',
+                    enableResizing: true,
                     cell: ({row: {original: topic}}) => topic.partitionCount,
                 },
                 {
@@ -310,12 +313,14 @@ const renderName = (topic: Topic) => {
     );
 
     return (
-        <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
+        <Box wordBreak="break-word" whiteSpace="break-spaces">
+            <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
             <span>
                 {topic.topicName}
                 {iconClosedEye}
             </span>
-        </Popover>
+            </Popover>
+        </Box>
     );
 };
 
@@ -476,7 +481,7 @@ function makeCreateTopicModal(parent: TopicList) {
     return createAutoModal<void, CreateTopicModalState>({
         modalProps: {
             title: 'Create Topic',
-            style: { width: '80%', minWidth: '600px', maxWidth: '1000px', top: '50px' },
+            style: { width: '80%', minWidth: '600px', maxWidth: '1000px', top: '50px', paddingTop: '10px', paddingBottom: '10px' },
 
             okText: 'Create',
             successTitle: 'Topic created!',
@@ -548,18 +553,31 @@ function makeCreateTopicModal(parent: TopicList) {
                 configs: config.filter(x => x.name.length > 0),
             });
 
-            return <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'auto auto',
-                justifyContent: 'center',
-                justifyItems: 'end',
-                columnGap: '8px',
-                rowGap: '4px'
-            }}>
-                <span>Name:</span><span style={{ justifySelf: 'start' }}>{result.topicName}</span>
-                <span>Partitions:</span><span style={{ justifySelf: 'start' }}>{String(result.partitionCount).replace('-1', '(Default)')}</span>
-                <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{String(result.replicationFactor).replace('-1', '(Default)')}</span>
-            </div>
+            return (
+                <Grid
+                    templateColumns="auto auto"
+                    justifyContent="center"
+                    alignItems="center"
+                    justifyItems="end"
+                    columnGap={2}
+                    rowGap={1}
+                    py={2}
+                >
+                    <Text>Name:</Text>
+                    <Flex justifySelf="start" gap={2} alignItems="center">
+                        <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{result.topicName}</Text>
+                        <CopyButton content={result.topicName} variant="ghost"/>
+                    </Flex>
+                    <Text>Partitions:</Text>
+                    <Text justifySelf="start">
+                        {String(result.partitionCount).replace('-1', '(Default)')}
+                    </Text>
+                    <Text>Replication Factor:</Text>
+                    <Text justifySelf="start">
+                        {String(result.replicationFactor).replace('-1', '(Default)')}
+                    </Text>
+                </Grid>
+            )
         },
         onSuccess: (_state, _result) => {
             parent.refreshData(true);
