@@ -33,7 +33,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 	if errors.As(err, &httpErr) {
 		connectCode := CodeFromHTTPStatus(httpErr.Response.StatusCode)
 
-		adminApiErr, err := httpErr.DecodeGenericErrorBody()
+		adminAPIErr, err := httpErr.DecodeGenericErrorBody()
 		if err != nil {
 			return NewConnectError(
 				connectCode,
@@ -50,7 +50,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 		// Bubble up original Redpanda adminapi error message
 		return NewConnectError(
 			connectCode,
-			errors.New(prefixErrMsg+adminApiErr.Message),
+			errors.New(prefixErrMsg+adminAPIErr.Message),
 			NewErrorInfo(
 				v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
 					Key:   "adminapi_status_code",
