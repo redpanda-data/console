@@ -158,13 +158,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         p.title = topicName;
         p.addBreadcrumb('Topics', '/topics');
-        p.addBreadcrumb(topicName, '/topics/' + topicName);
-
-        // clear messages from different topic if we have some
-        if (api.messagesFor != '' && api.messagesFor != topicName) {
-            api.messages.length = 0;
-            api.messagesFor = '';
-        }
+        p.addBreadcrumb(topicName, '/topics/' + topicName, {
+            canBeCopied: true,
+            canBeTruncated: true,
+        });
     }
 
     refreshData(force: boolean) {
@@ -236,11 +233,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             location.hash = anchor;
             appGlobal.history.replace(location);
         }
-    }
-
-    componentWillUnmount() {
-        // leaving the topic details view, stop any pending message searches
-        api.stopMessageSearch();
     }
 
     render() {

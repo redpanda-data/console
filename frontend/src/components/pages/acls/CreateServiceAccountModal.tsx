@@ -208,7 +208,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
                         </Box>
                         <Box>
                             <Flex alignItems="center" gap={2}>
-                                <Text textOverflow="ellipsis" whiteSpace="nowrap" overflow="hidden" isTruncated={true}>
+                                <Text wordBreak="break-all" overflow="hidden">
                                     {p.state.username}
                                 </Text>
 

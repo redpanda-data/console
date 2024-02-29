@@ -15,7 +15,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
-import { base64ToUInt8Array, isValidBase64 } from '../../../utils/utils';
+import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import { isEmbedded } from '../../../config';
 
 type EncodingOption = {
@@ -518,6 +518,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                     field: { onChange, value },
                                 }) => (
                                     <KowlEditor
+                                        data-testid="produce-message-value"
                                         onMount={setTheme}
                                         height={300}
                                         value={value}
@@ -528,6 +529,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                             />
                         </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
+                        <input {...register('value.data')} data-testid="valueData"/>
                     </Flex>
                 </Flex>
 
@@ -537,7 +539,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     </Alert>}
 
                 <Flex gap={4} alignItems="center">
-                    <Button type="submit" colorScheme="brand" isLoading={isSubmitting}>Produce</Button>
+                    <Button type="submit" colorScheme="brand" isLoading={isSubmitting} data-testid="produce-button">Produce</Button>
                     <Link to={`/topics/${encodeURIComponent(topicName)}`} as={ReactRouterLink}>Go Back</Link>
                 </Flex>
             </Grid>
@@ -552,7 +554,8 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
         const topicName = this.props.topicName;
         p.title = 'Produce'
         p.addBreadcrumb('Topics', '/topics');
-        p.addBreadcrumb(topicName, '/topics/' + topicName);
+        p.addBreadcrumb(substringWithEllipsis(topicName, 50), '/topics/' + topicName);
+
         p.addBreadcrumb('Produce record', '/produce-record')
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -566,7 +569,9 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
         return (
             <Box>
                 <Heading as="h1" noOfLines={1} py={2}>Produce Kafka record</Heading>
-                <Text fontSize="lg">This will produce a single record to the <strong>{this.props.topicName}</strong> topic.</Text>
+                <Text fontSize="lg">
+                    This will produce a single record to the topic.
+                </Text>
 
                 <Box my={6}>
                     <PublishTopicForm topicName={this.props.topicName} />

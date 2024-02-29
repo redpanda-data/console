@@ -25,7 +25,7 @@ import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, Icon, redpandaToastOptions, SearchField, Tooltip, Text, redpandaTheme, Menu, MenuButton, MenuItem, MenuList, Result, DataTable } from '@redpanda-data/ui';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Text, Tooltip } from '@redpanda-data/ui';
 import React, { FC, useRef } from 'react';
 import { openCreateUserModal } from './CreateServiceAccountModal';
 
@@ -142,15 +142,17 @@ class AclList extends PageComponent {
                                             this.editorType = 'edit';
                                             this.edittingPrincipalGroup = clone(record);
                                         }}>
-                                            <Badge variant="subtle" mr="2">{principalType}</Badge>
-                                            <span>{record.principalName}</span>
-                                            {showWarning && (
-                                                <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
+                                            <Flex>
+                                                <Badge variant="subtle" mr="2">{principalType}</Badge>
+                                                <Text as="span" wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{record.principalName}</Text>
+                                                {showWarning && (
+                                                    <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
                                 <span style={{marginLeft: '4px'}}>
                                     <QuestionIcon fill="orange" size={16}/>
                                 </span>
-                                                </Tooltip>
-                                            )}
+                                                    </Tooltip>
+                                                )}
+                                            </Flex>
                                         </button>
                                     );
                                 },
