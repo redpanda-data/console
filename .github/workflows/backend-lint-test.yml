@@ -22,10 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version-file: 'backend/go.mod'
-      
+          go-version-file: 'stable'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.56
+          working-directory: backend
+          args: --timeout=10m --config=.golangci.yaml
+
       - name: Install Task
         uses: arduino/setup-task@v1
         with:
