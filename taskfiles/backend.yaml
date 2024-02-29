@@ -60,7 +60,7 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go install github.com/daixiang0/gci@v{{.GCI_VERSION}}
     status:
-      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/gci >/dev/null 2>&1'
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/gci --version) == v{{.GCI_VERSION}} ]]'
 
   install-tparse:
     vars:
@@ -112,7 +112,7 @@ tasks:
       - '{{ .BUILD_ROOT }}/bin/go/gofumpt -l -w .'
       # https://github.com/daixiang0/gci/issues/174
       # moves "maps" into the wrong place
-      # - '{{ .BUILD_ROOT }}/bin/go/gci write -s default -s standard -s ''prefix(github.com/redpanda-data/console/backend)'' .'
+      - '{{ .BUILD_ROOT }}/bin/go/gci write -s default -s standard -s ''prefix(github.com/redpanda-data/console/backend)'' .'
 
   lint:
     desc: Run Go linters for backend code
