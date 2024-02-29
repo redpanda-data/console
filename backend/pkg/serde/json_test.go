@@ -77,7 +77,7 @@ func TestJsonSerde_DeserializePayload(t *testing.T) {
 				Value: []byte(`this is no valid JSON`),
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 			},
 		},

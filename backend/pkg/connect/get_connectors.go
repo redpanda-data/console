@@ -453,7 +453,7 @@ func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTask
 		connStatus = ConnectorStatusPaused
 	} else if status.Connector.State == connectorStateStopped {
 		connStatus = ConnectorStatusStopped
-	} else if (status.Connector.State == connectorStateRestarting) ||
+	} else if (status.Connector.State == connectorStateRestarting) || //nolint:revive // large if else
 		(aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Restarting > 0) {
 		connStatus = ConnectorStatusRestarting
 	} else if (status.Connector.State == connectorStateUnassigned) ||
@@ -487,7 +487,7 @@ func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTask
 			Title:   errTitle,
 			Content: traceToErrorContent(defaultContent, status.Connector.Trace),
 		})
-	} else if len(status.Connector.Trace) > 0 {
+	} else if status.Connector.Trace != "" {
 		errTitle := "Connector " + status.Name + " has an error"
 		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
 			Type:    connectorErrorTypeError,
@@ -515,7 +515,7 @@ func connectorsResponseToClusterConnectorInfo(configHook KafkaConnectToConsoleHo
 
 	connectorClass := getMapValueOrString(c.Info.Config, "connector.class", "unknown")
 	if configHook == nil {
-		configHook = func(pluginClassName string, configs map[string]string) map[string]string {
+		configHook = func(_ string, configs map[string]string) map[string]string {
 			return configs
 		}
 	}

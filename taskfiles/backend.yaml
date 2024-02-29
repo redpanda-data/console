@@ -17,7 +17,7 @@ tasks:
   install-golangci-lint:
     desc: install golangci linter
     vars:
-      GO_LINT_VERSION: 1.55.2
+      GO_LINT_VERSION: 1.56.2
     cmds:
       - mkdir -p {{ .BUILD_ROOT}}/bin
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "{{ .BUILD_ROOT }}"/bin/go v{{ .GO_LINT_VERSION }}
@@ -27,17 +27,19 @@ tasks:
 
   install-goimports:
     desc: install goimports
+    vars:
+      GOIMPORTS_VERSION: v0.18.0
     deps:
       - install-go
     cmds:
       - |
-        {{ .PATH_PREFIX }} go install golang.org/x/tools/cmd/goimports@latest
+        {{ .PATH_PREFIX }} go install golang.org/x/tools/cmd/goimports@{{ .GOIMPORTS_VERSION }}
     status:
       - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/goimports >/dev/null 2>&1'
 
   install-gofumpt:
     vars:
-      GOFUMPT_VERSION: 0.5.0
+      GOFUMPT_VERSION: 0.6.0
     desc: install gofumpt go formater
     deps:
       - install-go
@@ -50,7 +52,7 @@ tasks:
 
   install-gci:
     vars:
-      GCI_VERSION: 0.12.1
+      GCI_VERSION: 0.13.0
     desc: install gci
     deps:
       - install-go
@@ -62,7 +64,7 @@ tasks:
 
   install-tparse:
     vars:
-      TPARSE_VERSION: 0.12.1
+      TPARSE_VERSION: 0.13.2
     desc: install tparse go test parser
     deps:
       - install-go

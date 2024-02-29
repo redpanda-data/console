@@ -29,10 +29,11 @@ import (
 
 func (s *APISuite) TestListUsers() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("list users with valid request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
@@ -81,6 +82,9 @@ func (s *APISuite) TestListUsers() {
 	})
 
 	t.Run("list users with valid request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
@@ -142,6 +146,9 @@ func (s *APISuite) TestListUsers() {
 	})
 
 	t.Run("list users with valid filter (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()

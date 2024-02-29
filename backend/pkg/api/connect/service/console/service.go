@@ -84,7 +84,7 @@ func (api *Service) ListMessages(
 		}
 	}
 
-	if len(lmq.FilterInterpreterCode) > 0 {
+	if lmq.FilterInterpreterCode != "" {
 		canUseMessageSearchFilters, restErr := api.authHooks.CanUseMessageSearchFilters(ctx, &lmq)
 		if restErr != nil || !canUseMessageSearchFilters {
 			err := errors.New("you don't have permissions to use search filters")

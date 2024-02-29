@@ -49,7 +49,7 @@ func TestNullSerde_DeserializePayload(t *testing.T) {
 				Value: []byte(""),
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 			},
 		},
@@ -59,7 +59,7 @@ func TestNullSerde_DeserializePayload(t *testing.T) {
 				Value: []byte("\n"),
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 			},
 		},
