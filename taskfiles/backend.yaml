@@ -146,8 +146,6 @@ tasks:
   test-unit:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run Go unit tests
-    deps:
-      - generate
     cmds:
       - |
         {{ .PATH_PREFIX }} go test ./...
@@ -155,8 +153,6 @@ tasks:
   test-integration:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests
-    deps:
-      - generate
     cmds:
       - |
         {{ .PATH_PREFIX }} go test -v -race --tags=integration -p=1 {{.CLI_ARGS | default "./..." }}
@@ -177,4 +173,5 @@ tasks:
     desc: Run lint and tests
     cmds:
       - task: 'lint'
+      - task: 'generate'
       - task: 'test-integration'
