@@ -518,6 +518,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                     field: { onChange, value },
                                 }) => (
                                     <KowlEditor
+                                        data-testid="produce-message-value"
                                         onMount={setTheme}
                                         height={300}
                                         value={value}
@@ -528,6 +529,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                             />
                         </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
+                        <input {...register('value.data')} data-testid="valueData"/>
                     </Flex>
                 </Flex>
 
@@ -537,7 +539,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     </Alert>}
 
                 <Flex gap={4} alignItems="center">
-                    <Button type="submit" colorScheme="brand" isLoading={isSubmitting}>Produce</Button>
+                    <Button type="submit" colorScheme="brand" isLoading={isSubmitting} data-testid="produce-button">Produce</Button>
                     <Link to={`/topics/${encodeURIComponent(topicName)}`} as={ReactRouterLink}>Go Back</Link>
                 </Flex>
             </Grid>
