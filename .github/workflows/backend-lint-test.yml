@@ -8,10 +8,12 @@ on:
       - master
     paths:
       - 'backend/**.go'
+      - 'backend/go.mod'
       - '.github/workflows/backend-lint-test.yml'
   pull_request:
     paths:
       - 'backend/**.go'
+      - 'backend/go.mod'
       - '.github/workflows/backend-lint-test.yml'
 
 permissions:
@@ -19,7 +21,7 @@ permissions:
 
 jobs:
   verify:
-    name: verify
+    name: Lint & Test Backend
     runs-on: ubuntu-latest-4
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +43,10 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: verify
-        run: task backend:verify
+      - name: Unit Tests
+        run: task backend:test-unit
+        working-directory: backend
+
+      - name: Integration Tests
+        run: task backend:test-integration
         working-directory: backend
