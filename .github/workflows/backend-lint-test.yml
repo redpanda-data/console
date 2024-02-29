@@ -45,8 +45,6 @@ jobs:
 
       - name: Unit Tests
         run: task backend:test-unit
-        working-directory: backend
 
       - name: Integration Tests
         run: task backend:test-integration
-        working-directory: backend
