@@ -11,7 +11,7 @@
 
 import { makeAutoObservable } from 'mobx';
 import React from 'react';
-import { uiState } from '../../state/uiState';
+import { BreadcrumbOptions, uiState } from '../../state/uiState';
 
 
 //
@@ -24,7 +24,7 @@ export class PageInitHelper {
         makeAutoObservable(this);
     }
     set title(title: string) { uiState.pageTitle = title; }
-    addBreadcrumb(title: string, to: string) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to }) }
+    addBreadcrumb(title: string, to: string, options?: BreadcrumbOptions) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to, options }) }
 }
 export abstract class PageComponent<TRouteParams = Record<string, unknown>> extends React.Component<PageProps<TRouteParams>> {
 

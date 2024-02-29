@@ -60,7 +60,12 @@ func (c *KafkaSASLOAuthBearer) AcquireToken(ctx context.Context) (string, error)
 	queryParams.Set("grant_type", "client_credentials")
 	queryParams.Set("scope", c.Scope)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", c.TokenEndpoint, strings.NewReader(queryParams.Encode()))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		c.TokenEndpoint,
+		strings.NewReader(queryParams.Encode()),
+	)
 	if err != nil {
 		return "", err
 	}

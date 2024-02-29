@@ -40,7 +40,8 @@ type Service struct {
 }
 
 // NewService creates a new Console service handler.
-func NewService(logger *zap.Logger,
+func NewService(
+	logger *zap.Logger,
 	consoleSvc console.Servicer,
 	authHooks hooks.AuthorizationHooks,
 ) *Service {
@@ -52,7 +53,11 @@ func NewService(logger *zap.Logger,
 }
 
 // ListMessages consumes a Kafka topic and streams the Kafka records back.
-func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alpha.ListMessagesRequest], stream *connect.ServerStream[v1alpha.ListMessagesResponse]) error {
+func (api *Service) ListMessages(
+	ctx context.Context,
+	req *connect.Request[v1alpha.ListMessagesRequest],
+	stream *connect.ServerStream[v1alpha.ListMessagesResponse],
+) error {
 	lmq := httptypes.ListMessagesRequest{
 		TopicName:             req.Msg.GetTopic(),
 		StartOffset:           req.Msg.GetStartOffset(),
@@ -143,14 +148,13 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 	defer cancel()
 
 	progress := &streamProgressReporter{
-		ctx:              ctx,
 		logger:           api.logger,
 		request:          &listReq,
 		stream:           stream,
 		messagesConsumed: atomic.Int64{},
 		bytesConsumed:    atomic.Int64{},
 	}
-	progress.Start()
+	progress.Start(ctx)
 
 	return api.consoleSvc.ListMessages(ctx, listReq, progress)
 }
@@ -158,7 +162,10 @@ func (api *Service) ListMessages(ctx context.Context, req *connect.Request[v1alp
 // PublishMessage serialized and produces the records.
 //
 //nolint:gocognit,cyclop // complicated response logic
-func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1alpha.PublishMessageRequest]) (*connect.Response[v1alpha.PublishMessageResponse], error) {
+func (api *Service) PublishMessage(
+	ctx context.Context,
+	req *connect.Request[v1alpha.PublishMessageRequest],
+) (*connect.Response[v1alpha.PublishMessageResponse], error) {
 	msg := req.Msg
 
 	canPublish, restErr := api.authHooks.CanPublishTopicRecords(ctx, msg.GetTopic())
@@ -178,18 +185,22 @@ func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1a
 
 	recordHeaders := make([]kgo.RecordHeader, 0, len(req.Msg.GetHeaders()))
 	for _, h := range req.Msg.GetHeaders() {
-		recordHeaders = append(recordHeaders, kgo.RecordHeader{
-			Key:   h.GetKey(),
-			Value: h.GetValue(),
-		})
+		recordHeaders = append(
+			recordHeaders, kgo.RecordHeader{
+				Key:   h.GetKey(),
+				Value: h.GetValue(),
+			},
+		)
 	}
 
 	keyInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetKey())
 	valueInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetValue())
 	compression := rpcCompressionTypeToKgoCodec(msg.GetCompression())
 
-	prRes, prErr := api.consoleSvc.PublishRecord(ctx, msg.GetTopic(), msg.GetPartitionId(), recordHeaders,
-		keyInput, valueInput, req.Msg.GetUseTransactions(), compression)
+	prRes, prErr := api.consoleSvc.PublishRecord(
+		ctx, msg.GetTopic(), msg.GetPartitionId(), recordHeaders,
+		keyInput, valueInput, req.Msg.GetUseTransactions(), compression,
+	)
 
 	if prErr == nil && prRes != nil && prRes.Error != "" {
 		prErr = errors.New(prRes.Error)
@@ -205,9 +216,11 @@ func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1a
 				code = connect.CodeInvalidArgument
 
 				for _, ktr := range prRes.KeyTroubleshooting {
-					errInfo := apierrors.NewErrorInfo(dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-						Key: ktr.SerdeName, Value: ktr.Message,
-					})
+					errInfo := apierrors.NewErrorInfo(
+						dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+							Key: ktr.SerdeName, Value: ktr.Message,
+						},
+					)
 
 					if detail, detailErr := connect.NewErrorDetail(errInfo); detailErr == nil {
 						details = append(details, detail)
@@ -219,9 +232,11 @@ func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1a
 				code = connect.CodeInvalidArgument
 
 				for _, vtr := range prRes.ValueTroubleshooting {
-					errInfo := apierrors.NewErrorInfo(dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-						Key: vtr.SerdeName, Value: vtr.Message,
-					})
+					errInfo := apierrors.NewErrorInfo(
+						dataplane.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
+							Key: vtr.SerdeName, Value: vtr.Message,
+						},
+					)
 
 					if detail, detailErr := connect.NewErrorDetail(errInfo); detailErr == nil {
 						details = append(details, detail)
@@ -243,9 +258,11 @@ func (api *Service) PublishMessage(ctx context.Context, req *connect.Request[v1a
 		return nil, err
 	}
 
-	return connect.NewResponse(&v1alpha.PublishMessageResponse{
-		Topic:       prRes.TopicName,
-		PartitionId: prRes.PartitionID,
-		Offset:      prRes.Offset,
-	}), nil
+	return connect.NewResponse(
+		&v1alpha.PublishMessageResponse{
+			Topic:       prRes.TopicName,
+			PartitionId: prRes.PartitionID,
+			Offset:      prRes.Offset,
+		},
+	), nil
 }

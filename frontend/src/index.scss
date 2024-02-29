@@ -1531,10 +1531,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     background-color: rgba(255, 187, 0, 0.185);
 }
 
-.pageTitle {
-    /* background: rgba(255, 0, 0, 0.089); */
-}
-
 .ant-breadcrumb {
     /* don't allow wrapping */
     white-space: nowrap;
@@ -2756,8 +2752,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     padding: .5em;
     border-radius: 4px;
     background: rgba(200, 205, 210, 0.16);
-
-    max-height: 300px;
 
     .moveHandle {
         display: inline-flex;

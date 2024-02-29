@@ -12,7 +12,11 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 	// demonstration of the issue
 	// see comment in code
 
-	r := httptest.NewRequest("GET", "http://example.com/api/schema-registry/subjects/%252F/versions/last", http.NoBody)
+	r := httptest.NewRequest(
+		http.MethodGet,
+		"http://example.com/api/schema-registry/subjects/%252F/versions/last",
+		http.NoBody,
+	)
 	assert.Equal(t, "/api/schema-registry/subjects/%2F/versions/last", r.URL.Path)
 	assert.Equal(t, "", r.URL.RawPath)
 
@@ -94,13 +98,20 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 			target:   "/api/schema-registry/subjects/with%252Fslash/versions/last",
 			expected: "with%2Fslash",
 		},
+		{
+			name:     "with query",
+			target:   "https://console-123.cn456.fmc.ppd.cloud.redpanda.com/api/schema-registry/subjects/repro?permanent=false",
+			expected: "repro",
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", tt.target, http.NoBody)
-			assert.Equal(t, tt.expected, getSubjectFromRequestPath(r))
-		})
+		t.Run(
+			tt.name, func(t *testing.T) {
+				r := httptest.NewRequest(http.MethodGet, tt.target, http.NoBody)
+				assert.Equal(t, tt.expected, getSubjectFromRequestPath(r))
+			},
+		)
 	}
 }

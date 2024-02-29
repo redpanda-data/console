@@ -89,7 +89,10 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         uiState.pageTitle = subjectNameRaw;
         uiState.pageBreadcrumbs = [];
         uiState.pageBreadcrumbs.push({ title: 'Schema Registry', linkTo: '/schema-registry' });
-        uiState.pageBreadcrumbs.push({ title: subjectNameRaw, linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}` });
+        uiState.pageBreadcrumbs.push({ title: subjectNameRaw, linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`, options: {
+            canBeTruncated: true,
+            canBeCopied: true,
+        }});
     }
 
     refreshData(force?: boolean) {

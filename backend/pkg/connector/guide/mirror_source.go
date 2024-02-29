@@ -57,6 +57,7 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 							"producer.override.compression.type",
 							"producer.override.max.request.size",
 							"consumer.auto.offset.reset",
+							"offset.lag.max",
 						},
 					},
 				},

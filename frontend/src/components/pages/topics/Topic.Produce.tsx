@@ -15,7 +15,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
-import { base64ToUInt8Array, isValidBase64 } from '../../../utils/utils';
+import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import { isEmbedded } from '../../../config';
 
 type EncodingOption = {
@@ -554,7 +554,8 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
         const topicName = this.props.topicName;
         p.title = 'Produce'
         p.addBreadcrumb('Topics', '/topics');
-        p.addBreadcrumb(topicName, '/topics/' + topicName);
+        p.addBreadcrumb(substringWithEllipsis(topicName, 50), '/topics/' + topicName);
+
         p.addBreadcrumb('Produce record', '/produce-record')
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -568,7 +569,9 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
         return (
             <Box>
                 <Heading as="h1" noOfLines={1} py={2}>Produce Kafka record</Heading>
-                <Text fontSize="lg">This will produce a single record to the <strong>{this.props.topicName}</strong> topic.</Text>
+                <Text fontSize="lg">
+                    This will produce a single record to the topic.
+                </Text>
 
                 <Box my={6}>
                     <PublishTopicForm topicName={this.props.topicName} />

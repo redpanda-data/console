@@ -14,10 +14,15 @@ import { PageDefinition } from '../components/routes';
 import { api } from './backendApi';
 import { uiSettings, TopicDetailsSettings as TopicSettings } from './ui';
 
+export interface BreadcrumbOptions {
+    canBeTruncated?: boolean;
+    canBeCopied?: boolean;
+}
 
 export interface BreadcrumbEntry {
     title: string;
     linkTo: string;
+    options?: BreadcrumbOptions;
 }
 
 

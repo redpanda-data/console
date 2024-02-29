@@ -20,7 +20,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 import { isEmbedded } from '../../../config';
 import { Link } from 'react-router-dom';
-import { Box, Button, DataTable } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/restInterfaces';
 import SearchBar from '../../misc/SearchBar';
 import { uiSettings } from '../../../state/ui';
@@ -116,7 +116,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     accessorKey: 'name',
                                     cell: ({row: {original}}) => (
                                         <Link to={`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(original.name)}`}>
-                                            {original.name}
+                                            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{original.name}</Text>
                                         </Link>
                                     ),
                                     size: Infinity

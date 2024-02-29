@@ -19,6 +19,7 @@ import (
 	"os"
 	"time"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -146,12 +147,36 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 
 		// AWS MSK IAM
 		if cfg.SASL.Mechanism == config.SASLMechanismAWSManagedStreamingIAM {
-			mechanism := aws.Auth{
-				AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
-				SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
-				SessionToken: cfg.SASL.AWSMskIam.SessionToken,
-				UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
-			}.AsManagedStreamingIAMMechanism()
+			var mechanism sasl.Mechanism
+			// when both are set, use them
+			if cfg.SASL.AWSMskIam.AccessKey != "" && cfg.SASL.AWSMskIam.SecretKey != "" {
+				// SessionToken is optional
+				mechanism = aws.Auth{
+					AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
+					SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
+					SessionToken: cfg.SASL.AWSMskIam.SessionToken,
+					UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
+				}.AsManagedStreamingIAMMechanism()
+			} else {
+				ctx, cancel := context.WithTimeout(context.Background(), cfg.SASL.AWSMskIam.ClientTimeOutDuration)
+				defer cancel()
+				cfgVal, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(cfg.SASL.AWSMskIam.Region))
+				if err != nil {
+					return nil, err
+				}
+
+				creds, err := cfgVal.Credentials.Retrieve(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				mechanism = aws.Auth{
+					AccessKey:    creds.AccessKeyID,
+					SecretKey:    creds.SecretAccessKey,
+					SessionToken: creds.SessionToken,
+					UserAgent:    creds.Source,
+				}.AsManagedStreamingIAMMechanism()
+			}
 			opts = append(opts, kgo.SASL(mechanism))
 		}
 	}

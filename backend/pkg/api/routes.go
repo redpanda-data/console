@@ -30,6 +30,7 @@ import (
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	apiaclsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl"
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
@@ -83,7 +84,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Setup gRPC-Gateway
 	gwMux := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(GetHTTPResponseModifier()),
-		runtime.WithErrorHandler(NiceHTTPErrorHandler),
+		runtime.WithErrorHandler(apierrors.NiceHTTPErrorHandler),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
 			Marshaler: &runtime.JSONPb{
 				MarshalOptions: protojson.MarshalOptions{

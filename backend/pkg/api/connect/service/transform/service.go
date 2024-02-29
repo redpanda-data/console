@@ -62,16 +62,7 @@ func (s *Service) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		zap.String("request_path", r.URL.Path),
 	)
 
-	writeErr := s.errorWriter.Write(w, r, err)
-	if writeErr != nil {
-		childLogger.Error("failed to write error",
-			zap.NamedError("error_to_write", err),
-			zap.Error(err))
-
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"code":"INTERNAL","message":"failed to write error with error writer"}`))
-		return
-	}
+	apierrors.HandleHTTPError(r.Context(), w, r, err)
 	childLogger.Warn("", zap.Error(err))
 }
 
