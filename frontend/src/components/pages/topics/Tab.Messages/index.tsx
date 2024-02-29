@@ -1193,9 +1193,11 @@ const PayloadComponent = observer((p: {
     if (payload.isPayloadTooLarge) {
         return <Flex flexDirection="column" gap="4">
             <Flex alignItems="center" gap="2">
-                Because this message size exceeds the diplay limit, loading it could cause performance degradation.
+                Because this message size exceeds the display limit, loading it could cause performance degradation.
             </Flex>
-            <Button variant="outline" width="10rem" size="small"
+            <Button
+                variant="outline" width="10rem" size="small"
+                data-testid="load-anyway-button"
                 isLoading={isLoadingLargeMessage}
                 loadingText="Loading..."
                 onClick={() => {
@@ -1262,11 +1264,11 @@ const PayloadComponent = observer((p: {
         if (payload.encoding == 'utf8WithControlChars') {
             const elements = highlightControlChars(val);
 
-            return <div className="codeBox">{elements}</div>;
+            return <div className="codeBox" data-testid="payload-content">{elements}</div>;
         }
 
         if (isPrimitive) {
-            return <div className="codeBox">{String(val)}</div>;
+            return <div className="codeBox" data-testid="payload-content">{String(val)}</div>;
         }
 
         return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;

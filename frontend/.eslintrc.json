@@ -56,5 +56,18 @@
         "eqeqeq": [
             "off"
         ]
-    }
+    },
+    "overrides": [
+      {
+        "files": [
+          "tests/**/*.js",
+          "tests/**/*.jsx",
+          "tests/**/*.ts",
+          "tests/**/*.tsx"
+        ],
+        "rules": {
+          "testing-library/prefer-screen-queries": "off"
+        }
+      }
+    ]
 }

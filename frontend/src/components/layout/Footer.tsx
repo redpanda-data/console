@@ -34,7 +34,7 @@ export const VersionInfo = () => {
         : getBuildDate();
 
     return <>
-        <div className="versionTitle">{appName} {mode}</div>
+        <div data-testid="versionTitle" className="versionTitle">{appName} {mode}</div>
         <div className="versionDate">(built {buildDate?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})</div>
         <div className="versionGitData">{ref} {sha}</div>
     </>;

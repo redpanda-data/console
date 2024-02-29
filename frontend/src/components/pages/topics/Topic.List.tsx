@@ -161,6 +161,7 @@ class TopicList extends PageComponent {
                             colorScheme="brand"
                             onClick={() => this.showCreateTopicModal()}
                             style={{ minWidth: '160px', marginBottom: '12px' }}
+                            data-testid="create-topic-button"
                         >
                             Create topic
                         </Button>
@@ -242,6 +243,7 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                         <Flex gap={1}>
                             <DeleteDisabledTooltip topic={record}>
                                 <button
+                                    data-testid={`delete-topic-button-${record.topicName}`}
                                     onClick={(event) => {
                                         event.stopPropagation();
                                         onDelete(record)
@@ -378,7 +380,9 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
                         <Button ref={cancelRef} onClick={cancel} variant="ghost">
                             Cancel
                         </Button>
-                        <Button isLoading={deletionPending} colorScheme="brand" onClick={() => {
+                        <Button
+                            data-testid="delete-topic-confirm-button"
+                            isLoading={deletionPending} colorScheme="brand" onClick={() => {
                             setDeletionPending(true);
                             api.deleteTopic(topicToDelete!.topicName) // modal is not shown when topic is null
                                 .then(finish)
