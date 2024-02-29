@@ -33,3 +33,23 @@ jobs:
           REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
           REACT_APP_DEV_HINT=true
           npm run build 
+  
+  e2e-test:
+    needs: "lint-and-compile"
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.10.0'
+      - name: Install dependencies 
+        run: |
+          cd frontend
+          npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright tests
+        run: |
+          cd frontend
+          npm run e2e-test
