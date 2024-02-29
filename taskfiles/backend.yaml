@@ -122,7 +122,7 @@ tasks:
       FIX: '{{ .FIX  | default "" }}'
     dir: "{{.BACKEND_ROOT}}"
     cmds:
-      - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run {{ .FIX }} --timeout 10m ./...'
+      - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run {{ .FIX }} -v --timeout 10m ./...'
 
   lint-fix:
     desc: Run Go linters for backend code fixing fixable issues
