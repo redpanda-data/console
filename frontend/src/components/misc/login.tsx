@@ -107,7 +107,9 @@ class Login extends Component {
                         <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
                     </ModalBody>
                     <ModalFooter gap={2}>
-                        <Button onClick={() => {
+                        <Button
+                            data-testid="login-error__ok-button"
+                            onClick={() => {
                               uiState.loginError = null;
                         }}>
                            OK
@@ -230,6 +232,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
         <Box display="grid" width="300px" margin="1rem auto" textAlign="start" fontFamily='"Inter"'>
             <FormLabel>User</FormLabel>
             <Input
+                data-testid="auth-username-input"
                 borderColor="whiteAlpha.500"
                 disabled={state.isLoading}
                 value={state.username}
@@ -238,6 +241,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
 
             <FormLabel mt="2">Password</FormLabel>
             <Input
+                data-testid="auth-password-input"
                 borderColor="whiteAlpha.500"
                 type="password"
                 disabled={state.isLoading}
@@ -246,6 +250,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
             />
 
         <Button
+                data-testid="auth-submit"
                 marginTop="1rem"
                 colorScheme="brand"
                 disabled={state.isLoading}
