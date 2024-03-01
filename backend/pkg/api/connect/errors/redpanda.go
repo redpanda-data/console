@@ -35,6 +35,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 
 		adminAPIErr, err := httpErr.DecodeGenericErrorBody()
 		if err != nil {
+
 			return NewConnectError(
 				connectCode,
 				errors.New(prefixErrMsg+httpErr.Error()),
@@ -90,17 +91,17 @@ func CodeFromHTTPStatus(status int) connect.Code {
 	case http.StatusBadRequest:
 		return connect.CodeInvalidArgument
 	case http.StatusGatewayTimeout:
-		return connect.CodeDeadlineExceeded
+		return connect.CodeUnavailable
 	case http.StatusNotFound:
 		return connect.CodeNotFound
 	case http.StatusConflict:
-		return connect.CodeAlreadyExists
+		return connect.CodeAborted
 	case http.StatusForbidden:
 		return connect.CodePermissionDenied
 	case http.StatusUnauthorized:
 		return connect.CodeUnauthenticated
 	case http.StatusTooManyRequests:
-		return connect.CodeResourceExhausted
+		return connect.CodeUnavailable
 	case http.StatusNotImplemented:
 		return connect.CodeUnimplemented
 	case http.StatusServiceUnavailable:
