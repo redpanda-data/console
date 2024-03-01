@@ -35,7 +35,6 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 
 		adminAPIErr, err := httpErr.DecodeGenericErrorBody()
 		if err != nil {
-
 			return NewConnectError(
 				connectCode,
 				errors.New(prefixErrMsg+httpErr.Error()),
