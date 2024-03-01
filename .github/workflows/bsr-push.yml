@@ -28,7 +28,7 @@ jobs:
       # Run breaking change detection for Protobuf sources against the current `main` branch
       - uses: bufbuild/buf-breaking-action@v1
         with:
-          against: https://github.com/redpanda-data/console.git#branch=main,ref=HEAD~1,subdir=proto
+          against: https://github.com/redpanda-data/console.git#branch=master,ref=HEAD~1,subdir=proto
       # Push module to the BSR
       - uses: bufbuild/buf-push-action@v1
         with:
