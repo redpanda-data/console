@@ -31,10 +31,11 @@ import (
 
 func (s *APISuite) TestCreateTopic() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("create topic with valid request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -98,6 +99,9 @@ func (s *APISuite) TestCreateTopic() {
 	})
 
 	t.Run("create topic with invalid topic name (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
@@ -115,6 +119,8 @@ func (s *APISuite) TestCreateTopic() {
 	})
 
 	t.Run("create topic in dry-run (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -146,6 +152,9 @@ func (s *APISuite) TestCreateTopic() {
 	})
 
 	t.Run("create topic with default request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -239,6 +248,8 @@ func (s *APISuite) TestCreateTopic() {
 	})
 
 	t.Run("create topic with an invalid topic name (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -278,6 +289,8 @@ func (s *APISuite) TestCreateTopic() {
 	})
 
 	t.Run("try to create topic with a blank name (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -306,10 +319,11 @@ func (s *APISuite) TestCreateTopic() {
 
 func (s *APISuite) TestDeleteTopic() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("delete topic with valid request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -344,6 +358,9 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 
 	t.Run("delete topic with valid request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -386,6 +403,8 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 
 	t.Run("try to delete a non-existent topic (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -397,6 +416,8 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 
 	t.Run("try to delete a non-existent topic (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -418,6 +439,8 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 
 	t.Run("request topic deletion with invalid characters (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -429,6 +452,9 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 
 	t.Run("request topic deletion with invalid characters (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -451,10 +477,11 @@ func (s *APISuite) TestDeleteTopic() {
 
 func (s *APISuite) TestGetTopicConfiguration() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -503,6 +530,8 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	})
 
 	t.Run("get topic configuration of a non-existent topic (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -514,6 +543,8 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	})
 
 	t.Run("get topic configuration of a bad topic name (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -525,6 +556,9 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	})
 
 	t.Run("get topic configuration of a valid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -567,6 +601,8 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	})
 
 	t.Run("get topic configuration of a non-existent topic (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -586,10 +622,11 @@ func (s *APISuite) TestGetTopicConfiguration() {
 
 func (s *APISuite) TestUpdateTopicConfiguration() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("update topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -661,6 +698,9 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 	})
 
 	t.Run("update topic configuration of a valid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -757,6 +797,9 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 	})
 
 	t.Run("update topic configuration with invalid payload (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -802,6 +845,8 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 	})
 
 	t.Run("update topic configuration for non existent topic (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -834,6 +879,9 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 	})
 
 	t.Run("update topic configuration with empty payload (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -872,10 +920,11 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 
 func (s *APISuite) TestSetTopicConfiguration() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("set topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -944,6 +993,9 @@ func (s *APISuite) TestSetTopicConfiguration() {
 	})
 
 	t.Run("set topic configuration of a valid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -1037,6 +1089,9 @@ func (s *APISuite) TestSetTopicConfiguration() {
 	})
 
 	t.Run("set topic configuration with an invalid request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -1075,6 +1130,8 @@ func (s *APISuite) TestSetTopicConfiguration() {
 	})
 
 	t.Run("set topic configuration for a non existent topic (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -1096,6 +1153,9 @@ func (s *APISuite) TestSetTopicConfiguration() {
 	})
 
 	t.Run("set topic configuration for a non existent topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 

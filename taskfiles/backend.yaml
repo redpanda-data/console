@@ -17,7 +17,7 @@ tasks:
   install-golangci-lint:
     desc: install golangci linter
     vars:
-      GO_LINT_VERSION: 1.55.2
+      GO_LINT_VERSION: 1.56.2
     cmds:
       - mkdir -p {{ .BUILD_ROOT}}/bin
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "{{ .BUILD_ROOT }}"/bin/go v{{ .GO_LINT_VERSION }}
@@ -27,17 +27,19 @@ tasks:
 
   install-goimports:
     desc: install goimports
+    vars:
+      GOIMPORTS_VERSION: v0.18.0
     deps:
       - install-go
     cmds:
       - |
-        {{ .PATH_PREFIX }} go install golang.org/x/tools/cmd/goimports@latest
+        {{ .PATH_PREFIX }} go install golang.org/x/tools/cmd/goimports@{{ .GOIMPORTS_VERSION }}
     status:
       - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/goimports >/dev/null 2>&1'
 
   install-gofumpt:
     vars:
-      GOFUMPT_VERSION: 0.5.0
+      GOFUMPT_VERSION: 0.6.0
     desc: install gofumpt go formater
     deps:
       - install-go
@@ -50,7 +52,7 @@ tasks:
 
   install-gci:
     vars:
-      GCI_VERSION: 0.12.1
+      GCI_VERSION: 0.13.0
     desc: install gci
     deps:
       - install-go
@@ -58,11 +60,11 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go install github.com/daixiang0/gci@v{{.GCI_VERSION}}
     status:
-      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/gci >/dev/null 2>&1'
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/gci --version) == v{{.GCI_VERSION}} ]]'
 
   install-tparse:
     vars:
-      TPARSE_VERSION: 0.12.1
+      TPARSE_VERSION: 0.13.2
     desc: install tparse go test parser
     deps:
       - install-go
@@ -110,7 +112,7 @@ tasks:
       - '{{ .BUILD_ROOT }}/bin/go/gofumpt -l -w .'
       # https://github.com/daixiang0/gci/issues/174
       # moves "maps" into the wrong place
-      # - '{{ .BUILD_ROOT }}/bin/go/gci write -s default -s standard -s ''prefix(github.com/redpanda-data/console/backend)'' .'
+      - '{{ .BUILD_ROOT }}/bin/go/gci write -s default -s standard -s ''prefix(github.com/redpanda-data/console/backend)'' .'
 
   lint:
     desc: Run Go linters for backend code
@@ -144,8 +146,6 @@ tasks:
   test-unit:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run Go unit tests
-    deps:
-      - generate
     cmds:
       - |
         {{ .PATH_PREFIX }} go test ./...
@@ -153,8 +153,6 @@ tasks:
   test-integration:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests
-    deps:
-      - generate
     cmds:
       - |
         {{ .PATH_PREFIX }} go test -v -race --tags=integration -p=1 {{.CLI_ARGS | default "./..." }}
@@ -175,4 +173,5 @@ tasks:
     desc: Run lint and tests
     cmds:
       - task: 'lint'
+      - task: 'generate'
       - task: 'test-integration'

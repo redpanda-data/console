@@ -22,7 +22,7 @@ import (
 // sets a specific http status code, based on a header received from the gRPC
 // handler.
 func GetHTTPResponseModifier() func(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
-	return func(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+	return func(ctx context.Context, w http.ResponseWriter, _ proto.Message) error {
 		md, ok := runtime.ServerMetadataFromContext(ctx)
 		if !ok {
 			return nil

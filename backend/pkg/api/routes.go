@@ -59,7 +59,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		otelconnect.WithMeterProvider(meterProvider),
 		otelconnect.WithoutServerPeerAttributes(),
 		otelconnect.WithoutTracing(),
-		otelconnect.WithAttributeFilter(func(spec connect.Spec, attrs attribute.KeyValue) bool {
+		otelconnect.WithAttributeFilter(func(_ connect.Spec, attrs attribute.KeyValue) bool {
 			switch attrs.Key {
 			case semconv.NetPeerPortKey, semconv.NetPeerNameKey, "rpc.system":
 				return false

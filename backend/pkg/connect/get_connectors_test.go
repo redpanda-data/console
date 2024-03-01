@@ -1647,7 +1647,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 		},
 		{
 			name: "healthy - apply hook",
-			configHook: func(pluginClassName string, configs map[string]string) map[string]string {
+			configHook: func(_ string, configs map[string]string) map[string]string {
 				result := make(map[string]string)
 				for key, value := range configs {
 					switch key {

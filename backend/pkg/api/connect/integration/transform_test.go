@@ -1,3 +1,14 @@
+// Copyright 2024 Redpanda Data, Inc.
+//
+// Use of this software is governed by the Business Source License
+// included in the file licenses/BSL.md
+//
+// As of the Change Date specified in that file, in accordance with
+// the Business Source License, use of this software will be governed
+// by the Apache License, Version 2.0
+
+//go:build integration
+
 package integration
 
 import (
@@ -32,8 +43,6 @@ var identityTransform []byte
 // DirectDeployAndTestTransform encapsulates the logic for creating a transform and asserting its successful creation.
 func (s *APISuite) TestDeployTransform() {
 	t := s.T()
-	require := requirepkg.New(t)
-	assert := assertpkg.New(t)
 
 	type KeyVal struct {
 		Key   string `json:"key"`
@@ -48,6 +57,9 @@ func (s *APISuite) TestDeployTransform() {
 	}
 
 	t.Run("deploy transform with valid request (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 24*time.Second)
 		defer cancel()
 
@@ -159,6 +171,9 @@ func (s *APISuite) TestDeployTransform() {
 	})
 
 	t.Run("try to deploy transform with an invalid request - incomplete metadata (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -203,6 +218,9 @@ func (s *APISuite) TestDeployTransform() {
 	})
 
 	t.Run("try to deploy transform with an invalid request - protected env var (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -251,6 +269,9 @@ func (s *APISuite) TestDeployTransform() {
 	})
 
 	t.Run("try to deploy transform with an invalid request - no wasm binary (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -289,6 +310,9 @@ func (s *APISuite) TestDeployTransform() {
 	})
 
 	t.Run("try to deploy transform with an invalid request - no request body (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -308,6 +332,9 @@ func (s *APISuite) TestDeployTransform() {
 	})
 
 	t.Run("try to deploy transform with an error reported back by Redpanda (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -331,6 +358,7 @@ func (s *APISuite) TestDeployTransform() {
 
 func (s *APISuite) TestGetTransform() {
 	t := s.T()
+
 	assert := assertpkg.New(t)
 	require := requirepkg.New(t)
 
@@ -371,6 +399,9 @@ func (s *APISuite) TestGetTransform() {
 	})
 
 	t.Run("get transform with valid request (connect-go)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+		require := requirepkg.New(t)
+
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
@@ -389,6 +420,9 @@ func (s *APISuite) TestGetTransform() {
 	})
 
 	t.Run("get transform with valid request (http)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+		require := requirepkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -472,6 +506,8 @@ func (s *APISuite) TestGetTransform() {
 	})
 
 	t.Run("get non-existent transform (connect-go)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
@@ -485,6 +521,8 @@ func (s *APISuite) TestGetTransform() {
 	})
 
 	t.Run("get non-existent transform (http)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		t.Cleanup(cancel)
 
@@ -505,6 +543,8 @@ func (s *APISuite) TestGetTransform() {
 	})
 
 	t.Run("try to get transform without name (connect-go)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
@@ -563,6 +603,9 @@ func (s *APISuite) TestListTransforms() {
 	})
 
 	t.Run("list transforms with valid request (connect-go)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{}))
 		assert.NoError(err)
 
@@ -578,6 +621,9 @@ func (s *APISuite) TestListTransforms() {
 	})
 
 	t.Run("list transforms with valid request (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		type transformStatus struct {
 			BrokerID  int    `json:"broker_id"`
 			Partition int    `json:"partition"`
@@ -617,6 +663,9 @@ func (s *APISuite) TestListTransforms() {
 	})
 
 	t.Run("list transforms with filter (connect-go)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		listTransformsRes, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
 			Filter: &v1alpha1.ListTransformsRequest_Filter{Name: tfNameOne},
 		}))
@@ -658,6 +707,9 @@ func (s *APISuite) TestDeleteTransforms() {
 	transformClient := v1alpha1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 
 	t.Run("delete transform with valid request (connect-go)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		tfName := "delete-transform-valid-request-connect-go"
 		_, err := createTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfName,
@@ -684,6 +736,9 @@ func (s *APISuite) TestDeleteTransforms() {
 	})
 
 	t.Run("delete transform with valid request (http)", func(t *testing.T) {
+		require := requirepkg.New(t)
+		assert := assertpkg.New(t)
+
 		tfName := "delete-transform-valid-request-connect-go"
 		_, err := createTransform(ctx, s.redpandaAdminClient, adminapi.TransformMetadata{
 			Name:         tfName,
@@ -716,6 +771,8 @@ func (s *APISuite) TestDeleteTransforms() {
 	})
 
 	t.Run("try to delete non-existent transform (connect-go)", func(t *testing.T) {
+		assert := assertpkg.New(t)
+
 		_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha1.DeleteTransformRequest{
 			Name: "some-transform-name-that-does-not-exist",
 		}))
