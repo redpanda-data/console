@@ -47,6 +47,13 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 			)
 		}
 
+		// If message is exactly "Not found" we can assume it's a non-existent route in
+		// Console For resources that do not exist we receive a different error message,
+		// hence we default to CodeNotFound for 404 response codes.
+		if adminAPIErr.Message == "Not found" {
+			connectCode = connect.CodeUnimplemented
+		}
+
 		// Bubble up original Redpanda adminapi error message
 		return NewConnectError(
 			connectCode,
