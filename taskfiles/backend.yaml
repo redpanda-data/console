@@ -148,10 +148,6 @@ tasks:
     desc: Run Go unit tests
     cmds:
       - |
-        ls -la
-      - |
-        ls -la ..
-      - |
         {{ .PATH_PREFIX }} go test ./...
 
   test-integration:
