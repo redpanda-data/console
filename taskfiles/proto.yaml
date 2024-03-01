@@ -26,6 +26,15 @@ tasks:
       - |
         {{ .PATH_PREFIX }} buf mod update {{.ROOT_DIR}}/proto
 
+  push:
+    deps:
+      - lint
+    desc: push to BSR
+    dir: "{{.ROOT_DIR}}/proto"
+    cmds:
+      - |
+        {{ .PATH_PREFIX }} buf push
+
   generate:
     dir: "{{.ROOT_DIR}}"
     desc: generate protos
