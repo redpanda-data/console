@@ -838,7 +838,10 @@ const apiStore = {
                     this.schemaMode = r.mode;
                 }
             })
-            .catch(addError);
+            .catch((err) => {
+                this.schemaMode = 'Unknown'
+                console.warn('failed to request schema mode', err)
+            });
     },
 
     refreshSchemaCompatibilityConfig(force?: boolean) {
