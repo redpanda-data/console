@@ -1,12 +1,11 @@
 .configGroupTable {
-    width: max(500px, 50%);
+    width: 100%;
 
     display: grid;
-    /* columns:            name, value, isEditted, <space>, buttons  */
-    grid-template-columns:
-        minmax(200px, auto) minmax(250px, auto) auto 1fr auto;
+    /* columns:            name + value, isEdited, buttons  */
+    grid-template-columns: minmax(500px, auto) auto 1fr;
     align-items: center;
-    gap: 11px 8px;
+    gap: 12px;
 
     .searchBar {
         grid-column-start: span 5;
@@ -14,7 +13,7 @@
     }
 
     .configGroupSpacer {
-        grid-column-start: span 5;
+        grid-column-start: span 3;
         margin: 1em 0em;
         height: 1px;
         background: hsl(0deg, 0%, 80%);
@@ -25,32 +24,15 @@
     }
 
     .configGroupTitle {
-        grid-column-start: span 5;
+        grid-column-start: span 3;
         font-size: 1.5em;
         font-weight: 600;
     }
 
-    .configName {
-        display: flex;
-        align-items: center;
-        align-self: flex-start;
-        padding-right: 1em;
-
-        font-weight: 500;
-    }
-
-    .configValue {
-        padding-left: 12px;
-        margin-right: auto;
-
-        .ant-select {
-            min-width: 12em;
-        }
-    }
-
     .isEditted {
         opacity: .5;
-        margin-right: 3em;
+        margin-left: 20px;
+        margin-right: 20px;
     }
 
     .configButtons {
