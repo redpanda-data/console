@@ -2219,6 +2219,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       responses:
         "204":
@@ -2268,6 +2269,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       responses:
         "200":
@@ -2318,6 +2320,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       requestBody:
         content:
@@ -2466,6 +2469,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       responses:
         "204":
@@ -2509,6 +2513,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       responses:
         "200":
@@ -2553,6 +2558,7 @@ paths:
           name: id
           required: true
           schema:
+            pattern: .+
             type: string
       requestBody:
         content:
