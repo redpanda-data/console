@@ -244,10 +244,11 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                 <Text fontWeight="600">
                     {p.entry.name}
                 </Text>
-                <Text>
-                    {friendlyValue}
-                </Text>
             </Flex>
+
+            <Text>
+                {friendlyValue}
+            </Text>
 
             <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
 

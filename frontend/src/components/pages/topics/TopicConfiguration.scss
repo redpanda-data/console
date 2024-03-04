@@ -2,18 +2,18 @@
     width: 100%;
 
     display: grid;
-    /* columns:            name + value, isEdited, buttons  */
-    grid-template-columns: minmax(500px, auto) auto 1fr;
+    /* columns:            name, value, isEdited, buttons  */
+    grid-template-columns: minmax(300px, auto) auto auto 1fr;
     align-items: center;
     gap: 12px;
 
     .searchBar {
-        grid-column-start: span 5;
+        grid-column-start: span 4;
         margin-bottom: 1em;
     }
 
     .configGroupSpacer {
-        grid-column-start: span 3;
+        grid-column-start: span 4;
         margin: 1em 0em;
         height: 1px;
         background: hsl(0deg, 0%, 80%);
@@ -24,7 +24,7 @@
     }
 
     .configGroupTitle {
-        grid-column-start: span 3;
+        grid-column-start: span 4;
         font-size: 1.5em;
         font-weight: 600;
     }
