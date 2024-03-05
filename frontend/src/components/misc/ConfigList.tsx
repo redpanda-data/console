@@ -18,7 +18,7 @@ import { equalsIgnoreCase } from '../../utils/utils';
 
 import styles from './ConfigList.module.scss';
 
-import { DataTable, Flex, Tooltip } from '@redpanda-data/ui';
+import { DataTable, Flex, Tooltip, Text } from '@redpanda-data/ui';
 import { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
@@ -53,8 +53,10 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
         {
             header: 'Value',
             accessorKey: 'value',
-            cell: ({row: {original: record}}) => <span
-                className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</span>
+            size: Infinity,
+            cell: ({row: {original: record}}) => <Text
+                wordBreak="break-all" whiteSpace="break-spaces" noOfLines={4}
+                className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</Text>
         },
     ]
 

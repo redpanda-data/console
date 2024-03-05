@@ -240,13 +240,17 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
 
     return (
         <>
-            <span className="configName">{p.entry.name}</span>
+            <Flex direction="column">
+                <Text fontWeight="600">
+                    {p.entry.name}
+                </Text>
+            </Flex>
 
-            <span className="configValue">{friendlyValue}</span>
+            <Text>
+                {friendlyValue}
+            </Text>
 
             <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
-
-            <span className="spacer"></span>
 
             <span className="configButtons">
                 <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
