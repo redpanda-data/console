@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer, observable, transaction } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { MessageSearchRequest, api } from '../../../state/backendApi';
+import { MessageSearch, MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
 import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance, TopicMessage } from '../../../state/restInterfaces';
 import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -494,13 +494,6 @@ const ConnectorDetails = observer((p: {
     </Grid>
 });
 
-type LogsTabState = {
-    messages: TopicMessage[];
-    error?: string;
-    isComplete: boolean;
-};
-
-
 const LogsTab = observer((p: {
     clusterName: string,
     connectClusterStore: ConnectClusterStore,
@@ -512,24 +505,60 @@ const LogsTab = observer((p: {
     const topic = api.topics?.first(x => x.topicName == topicName);
 
     const createLogsTabState = () => {
-        const s = observable({
-            messages: [],
+        const search: MessageSearch = createMessageSearch();
+        const state = observable({
+            messages: search.messages,
             isComplete: false,
-        } as LogsTabState);
+            error: null as string | null,
+            search,
+        });
+
         // Start search immediately
-        const searchPromise = executeMessageSearch(topicName, connectorName);
-        searchPromise.catch(x => s.error = String(x)).then(() => s.isComplete = true);
-        // TODO:
-        // this is really unclean, the search api should return an *instance* of a search, which should
-        // be observable (containing an observable array of results, and error if any) but refactoring
-        // this in the same PR would be too much
-        s.messages = api.messages;
-        return s;
+        const searchPromise = executeMessageSearch(search, topicName, connectorName);
+        searchPromise.catch(x => state.error = String(x)).finally(() => state.isComplete = true);
+        return state;
     };
 
     const [state, setState] = useState(createLogsTabState);
 
-    const paginationParams = usePaginationParams(10);
+    const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
+        // Create a new search that looks for only this message specifically
+        const search = createMessageSearch();
+        const searchReq: MessageSearchRequest = {
+            filterInterpreterCode: '',
+            maxResults: 1,
+            partitionId: partitionID,
+            startOffset: offset,
+            startTimestamp: 0,
+            topicName: topicName,
+            includeRawPayload: true,
+            ignoreSizeLimit: true,
+            keyDeserializer: uiState.topicSettings.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.valueDeserializer,
+        };
+        const messages = await search.startSearch(searchReq);
+
+        if (messages && messages.length == 1) {
+            // We must update the old message (that still says "payload too large")
+            // So we just find its index and replace it in the array we are currently displaying
+            const indexOfOldMessage = state.messages.findIndex(x => x.partitionID == partitionID && x.offset == offset);
+            if (indexOfOldMessage > -1) {
+                state.messages[indexOfOldMessage] = messages[0];
+            } else {
+                console.error('LoadLargeMessage: cannot find old message to replace', {
+                    searchReq,
+                    messages
+                });
+                throw new Error('LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)');
+            }
+        } else {
+            console.error('LoadLargeMessage: messages response is empty', { messages });
+            throw new Error('LoadLargeMessage: Couldn\'t load the message content, the response was empty');
+        }
+
+    }
+
+    const paginationParams = usePaginationParams(10, state.messages.length);
     const messageTableColumns: ColumnDef<TopicMessage>[] = [
         {
             header: 'Timestamp',
@@ -572,7 +601,10 @@ const LogsTab = observer((p: {
                 pagination={paginationParams}
                 // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
                 //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-                subComponent={({ row: { original } }) => renderExpandedMessage(original)}
+                subComponent={({ row: { original } }) => renderExpandedMessage(
+                    original,
+                    () => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
+                )}
             />
 
         </Section>
@@ -588,7 +620,7 @@ function isFilterMatch(str: string, m: TopicMessage) {
 }
 
 
-async function executeMessageSearch(topicName: string, connectorKey: string) {
+async function executeMessageSearch(search: MessageSearch, topicName: string, connectorKey: string) {
     const filterCode: string = `return key == "${connectorKey}";`;
 
     const lastXHours = 5;
@@ -613,17 +645,14 @@ async function executeMessageSearch(topicName: string, connectorKey: string) {
     // so any changes in phase, messages, error, etc can be used immediately in the ui
     return transaction(async () => {
         try {
-            // this.fetchError = null;
-            return api.startMessageSearchNew(request)
+            search.startSearch(request)
                 .catch(err => {
                     const msg = ((err as Error).message ?? String(err));
                     console.error('error in connectorLogsMessageSearch: ' + msg);
-                    // this.fetchError = err;
                     return [];
                 });
         } catch (error: any) {
             console.error('error in connectorLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
-            // this.fetchError = error;
             return [];
         }
     });
