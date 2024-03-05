@@ -132,6 +132,21 @@ class SchemaList extends PageComponent<{}> {
         return subject.name.toLowerCase().includes(filterString.toLowerCase());
     }
 
+    componentDidMount() {
+        this.triggerSearchBySchemaId();
+    }
+
+    triggerSearchBySchemaId() {
+        const searchAsNum = Number(uiSettings.schemaList.quickSearch.trim());
+        if (!isNaN(searchAsNum)) {
+            // Keep calling it to keep the list updated
+            // Extra calls (even when we already have data) will be automatically caught by caching
+            this.isLoadingSchemaVersionMatches = true;
+            api.refreshSchemaUsagesById(searchAsNum)
+                .finally(() => this.isLoadingSchemaVersionMatches = false);
+        }
+    }
+
     render() {
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
         if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
@@ -168,17 +183,9 @@ class SchemaList extends PageComponent<{}> {
                         searchText={uiSettings.schemaList.quickSearch}
                         setSearchText={action(filterText => {
                             uiSettings.schemaList.quickSearch = filterText;
-
-                            const searchAsNum = Number(filterText.trim());
-                            if (!isNaN(searchAsNum)) {
-                                // Keep calling it to keep the list updated
-                                // Extra calls (even when we already have data) will be automatically caught by caching
-                                this.isLoadingSchemaVersionMatches = true;
-                                api.refreshSchemaUsagesById(searchAsNum)
-                                    .finally(() => this.isLoadingSchemaVersionMatches = false);
-                            }
+                            this.triggerSearchBySchemaId();
                         })}
-                        placeholderText="Enter search term/regex"
+                        placeholderText="Enter subject name or schema ID"
 
                     />
                     <Spinner size="md" visibility={this.isLoadingSchemaVersionMatches ? undefined : 'hidden'} />
