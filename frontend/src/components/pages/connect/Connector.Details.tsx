@@ -22,7 +22,7 @@ import { ConfigPage } from './dynamic-ui/components';
 import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
-import { delay, encodeBase64 } from '../../../utils/utils';
+import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable, SearchField } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
@@ -88,7 +88,7 @@ const KafkaConnectorMain = observer(
                 {/* [Pause/Resume] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
                     <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                        <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
+                        <Button isDisabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                             {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                         </Button>
                     </Tooltip>
@@ -96,14 +96,14 @@ const KafkaConnectorMain = observer(
 
                 {/* [Restart] */}
                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                    <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
+                    <Button isDisabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                         Restart
                     </Button>
                 </Tooltip>
 
                 {/* [Delete] */}
                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                    <Button variant="outline" colorScheme="red" disabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
+                    <Button variant="outline" colorScheme="red" isDisabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
                         Delete
                     </Button>
                 </Tooltip>
@@ -133,7 +133,7 @@ const KafkaConnectorMain = observer(
                                     <Button
                                         variant="outline"
                                         style={{ width: '200px' }}
-                                        disabled={(() => {
+                                        isDisabled={(() => {
                                             if (!canEdit) return true;
                                             if (!connector) return true;
                                             if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
@@ -299,7 +299,7 @@ const ConfigOverviewTab = observer((p: {
                     <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
 
                     <Flex flexDirection="column">
-                        <Text fontWeight="semibold" fontSize="3xl">{connector.status}</Text>
+                        <Text fontWeight="semibold" fontSize="3xl">{titleCase(connector.status)}</Text>
                         <Text opacity=".5">Status</Text>
                     </Flex>
                 </Flex>
@@ -538,7 +538,7 @@ const LogsTab = observer((p: {
             header: 'Value',
             accessorKey: 'value',
             cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => []} isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false} />,
-            size: 700
+            size: Number.MAX_SAFE_INTEGER
         }
     ];
 
