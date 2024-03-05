@@ -27,10 +27,11 @@ import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
-import { Box, Spinner, createStandaloneToast } from '@chakra-ui/react';
+import { Box, Spinner, Tooltip, createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
 import { encodeURIComponentPercents } from './Schema.Details';
+import { QuestionOutlineIcon } from '@chakra-ui/icons';
 
 const { ToastContainer, toast } = createStandaloneToast()
 
@@ -128,7 +129,7 @@ class SchemaList extends PageComponent<{}> {
         } catch {
         }
 
-    // Find by normal string matching
+        // Find by normal string matching
         return subject.name.toLowerCase().includes(filterString.toLowerCase());
     }
 
@@ -188,7 +189,16 @@ class SchemaList extends PageComponent<{}> {
                         placeholderText="Enter subject name or schema ID"
 
                     />
-                    <Spinner size="md" visibility={this.isLoadingSchemaVersionMatches ? undefined : 'hidden'} />
+                    <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
+                    <Tooltip placement="end" hasArrow label={
+                        <Flex flexDirection="column" gap="2">
+                            <Box>Enter a subject name, regex, or schema ID.</Box>
+                            <Box>When searching for a name or based on a regex only the subject name is checked.</Box>
+                            <Box>When searching for a schema ID (a positive number), the search will match all subjects containing a schema with the given ID.</Box>
+                        </Flex>
+                    }>
+                        <QuestionOutlineIcon boxSize={5} color="gray.500" />
+                    </Tooltip>
                 </Flex>
 
                 <Section>
