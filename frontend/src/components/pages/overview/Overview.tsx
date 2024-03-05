@@ -251,7 +251,7 @@ type DetailsBlockProps = { title: string, children?: React.ReactNode }
 
 const DetailsBlock: FC<DetailsBlockProps> = ({title, children}) => {
     return <>
-        <GridItem colSpan={3}>
+        <GridItem colSpan={{base: 1, lg: 3}}>
             <Heading
                 as="h4"
                 fontSize={10}
@@ -265,7 +265,7 @@ const DetailsBlock: FC<DetailsBlockProps> = ({title, children}) => {
             </Heading>
         </GridItem>
         {children}
-        <GridItem colSpan={3} height={0.25} my={4} bg="#ddd" />
+        <GridItem colSpan={{base: 1, lg: 3}} height={0.25} my={4} bg="#ddd" />
     </>;
 };
 
@@ -334,9 +334,8 @@ function ClusterDetails() {
     });
 
     return <Grid
-        minW={300}
         w="full"
-        templateColumns={'repeat(3, auto)'}
+        templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }}
         gap={2}
         alignItems="center"
     >
