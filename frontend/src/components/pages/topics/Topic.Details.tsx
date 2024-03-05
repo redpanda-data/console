@@ -162,12 +162,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             canBeCopied: true,
             canBeTruncated: true,
         });
-
-        // clear messages from different topic if we have some
-        if (api.messagesFor != '' && api.messagesFor != topicName) {
-            api.messages.length = 0;
-            api.messagesFor = '';
-        }
     }
 
     refreshData(force: boolean) {
@@ -239,11 +233,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             location.hash = anchor;
             appGlobal.history.replace(location);
         }
-    }
-
-    componentWillUnmount() {
-        // leaving the topic details view, stop any pending message searches
-        api.stopMessageSearch();
     }
 
     render() {

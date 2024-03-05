@@ -19,7 +19,9 @@ type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
 export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco }
 
-export type KowlEditorProps = EditorProps & {};
+export type KowlEditorProps = EditorProps & {
+    'data-testid'?: string;
+};
 export type KowlDiffEditorProps = DiffEditorProps & {};
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {

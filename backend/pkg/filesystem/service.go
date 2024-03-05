@@ -166,7 +166,6 @@ func (c *Service) readFiles() (map[string]File, error) {
 
 			return nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to load files from file system: %w", err)
 		}

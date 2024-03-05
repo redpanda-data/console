@@ -37,7 +37,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 
 	schemaStr := "{\"type\": \"string\"}"
 	httpmock.RegisterResponder("GET", baseURL+"/schemas/ids/1000",
-		func(req *http.Request) (*http.Response, error) {
+		func(*http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(http.StatusOK, map[string]string{
 				"schema": schemaStr,
 			})
@@ -62,7 +62,7 @@ func TestClient_GetSubjects(t *testing.T) {
 
 	subjects := []string{"subject1", "subject2"}
 	httpmock.RegisterResponder("GET", baseURL+"/subjects",
-		func(req *http.Request) (*http.Response, error) {
+		func(*http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(http.StatusOK, subjects)
 		})
 
@@ -84,7 +84,7 @@ func TestClient_GetSubjectVersions(t *testing.T) {
 
 	versions := []int{1, 2, 3}
 	httpmock.RegisterResponder("GET", baseURL+"/subjects/orders/versions",
-		func(req *http.Request) (*http.Response, error) {
+		func(_ *http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(http.StatusOK, versions)
 		})
 

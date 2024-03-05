@@ -113,22 +113,19 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 
 		// 3. Deploy WASM transform by calling the Redpanda Admin API
 		if err := s.redpandaSvc.DeployWasmTransform(r.Context(), s.mapper.deployTransformReqToAdminAPI(&deployTransformReq), wasmBinary); err != nil {
-			s.writeError(w, r, apierrors.NewConnectError(
-				connect.CodeInvalidArgument,
-				fmt.Errorf("could not deploy wasm transform: %w", err),
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-			))
+			connectErr := apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "could not deploy wasm transform: ")
+			s.writeError(w, r, connectErr)
 			return
 		}
 
 		// 4. List transforms and find the just deployed transform from the response
 		transforms, err := s.redpandaSvc.ListWasmTransforms(r.Context())
 		if err != nil {
-			s.writeError(w, r, apierrors.NewConnectError(
-				connect.CodeInternal,
-				fmt.Errorf("deployed wasm transform, but could not list wasm transforms from Redpanda cluster: %w", err),
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-			))
+			connectErr := apierrors.NewConnectErrorFromRedpandaAdminAPIError(
+				err,
+				"deployed wasm transform, but could not list wasm transforms from Redpanda cluster: ",
+			)
+			s.writeError(w, r, connectErr)
 			return
 		}
 

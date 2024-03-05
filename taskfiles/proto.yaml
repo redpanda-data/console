@@ -26,6 +26,15 @@ tasks:
       - |
         {{ .PATH_PREFIX }} buf mod update {{.ROOT_DIR}}/proto
 
+  push:
+    deps:
+      - lint
+    desc: push to BSR
+    dir: "{{.ROOT_DIR}}/proto"
+    cmds:
+      - |
+        {{ .PATH_PREFIX }} buf push
+
   generate:
     dir: "{{.ROOT_DIR}}"
     desc: generate protos
@@ -68,7 +77,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.28.1
+      BUF_VERSION: 1.29.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
@@ -84,7 +93,7 @@ tasks:
     desc: install yq
     run: once
     vars:
-      YQ_VERSION: 4.35.1
+      YQ_VERSION: 4.42.1
     cmds:
       - '{{ .PATH_PREFIX }} go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
     status:
@@ -96,7 +105,7 @@ tasks:
       - :backend:install-go
     desc: install connect-gateway
     vars:
-      VERSION: 0.3.1
+      VERSION: 0.4.1
     cmds:
       - |
         {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}

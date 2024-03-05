@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.4.4 / 2024-03-04
+
+- [FIX] Fix for glob patterns for adapting the preview in the list messages table [#1116](https://github.com/redpanda-data/console/pull/1116).
+- [FIX] Show last available page in paginated search results to avoid blank page content [#1121](https://github.com/redpanda-data/console/pull/1121).
+- [FIX] Send heartbeats in HTTP stream to load messages to avoid idle timeouts from LoadBalancers and reverse proxies [#1109](https://github.com/redpanda-data/console/pull/1109).
+- [IMPROVEMENT] Better handling for long resource names (e.g. topic names) in the UI [#1124](https://github.com/redpanda-data/console/pull/1124).
+- [IMPROVEMENT] Add option to download messages that are too large to be displayed by default [#1129](https://github.com/redpanda-data/console/pull/1129).
+- [IMPROVEMENT] Add `offset.lag.max` option to advanced configuration in the MirrorMaker2 connector setup [#1131](https://github.com/redpanda-data/console/pull/1131).
+
 ## v2.4.3 / 2024-02-08
 
 - [FIX] Persist pagination settings in local storage [#1095](https://github.com/redpanda-data/console/pull/1095).

@@ -46,7 +46,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 		index := indexOriginal
 		// If there's an active URL rewrite we need to replace the marker in the index.html with the
 		// used base path so that the frontend knows what base URL to use for all subsequent requests.
-		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
+		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && basePath != "" {
 			// prefix must end with slash! otherwise the last segment gets
 			// cut off: 'a/b/c' -> "can't find host/a/b/resource"
 			if !strings.HasSuffix(basePath, "/") {
@@ -65,7 +65,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 
 		// Check if the client sent 'If-None-Match' potentially return "304" (not mofified / unchanged)
 		clientEtag := r.Header.Get("If-None-Match")
-		if len(clientEtag) > 0 && hash == clientEtag {
+		if clientEtag != "" && hash == clientEtag {
 			// Client already has the latest version of the file
 			w.WriteHeader(http.StatusNotModified)
 			return
@@ -117,7 +117,7 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 		if hashFound {
 			w.Header().Set("ETag", hash)
 			clientEtag := r.Header.Get("If-None-Match")
-			if len(clientEtag) > 0 && hash == clientEtag {
+			if clientEtag != "" && hash == clientEtag {
 				// Client already has the latest version of the file
 				w.WriteHeader(http.StatusNotModified)
 				return
@@ -133,7 +133,7 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 // It returns a map from file path to sha256 (already pre formatted in hex).
 func getHashes(fsys fs.FS) (map[string]string, error) {
 	fileHashes := make(map[string]string)
-	err := fs.WalkDir(fsys, ".", func(path string, info fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, ".", func(path string, info fs.DirEntry, _ error) error {
 		if !info.IsDir() {
 			fileBytes, err := fs.ReadFile(fsys, path)
 			if err != nil {

@@ -73,11 +73,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 	// 2. List users
 	users, err := s.redpandaSvc.ListUsers(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	// doesUserPassFilter returns true if either no filter is provided or
@@ -157,11 +153,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 4. Create user
 	err = s.redpandaSvc.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	res := &v1alpha1.CreateUserResponse{
@@ -211,11 +203,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 4. Update user
 	err = s.redpandaSvc.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	return connect.NewResponse(&v1alpha1.UpdateUserResponse{
@@ -255,11 +243,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// always returns ok, regardless whether the user exists or not.
 	listedUsers, err := s.redpandaSvc.ListUsers(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to list users: ")
 	}
 	exists := false
 	for _, user := range listedUsers {
@@ -279,11 +263,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 	// 4. Delete user
 	err = s.redpandaSvc.DeleteUser(ctx, req.Msg.Name)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
 	}
 
 	return connect.NewResponse(&v1alpha1.DeleteUserResponse{}), nil

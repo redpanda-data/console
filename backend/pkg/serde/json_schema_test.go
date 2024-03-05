@@ -95,7 +95,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				Value: []byte(`[10, 20, 30, 40, 50, 60, 70, 80, 90]`),
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte for json schema", err.Error())
 			},
@@ -106,7 +106,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				Value: []byte(`this is no valid JSON`),
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte for json schema", err.Error())
 			},

@@ -74,11 +74,7 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 	transformsProto, err := s.mapper.transformMetadataToProto(transforms)
 	if err != nil {
@@ -119,11 +115,7 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha1.
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	tfs, err := s.mapper.transformMetadataToProto(transforms)
@@ -158,11 +150,7 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
-		)
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	tfs, err := s.mapper.transformMetadataToProto(transforms)

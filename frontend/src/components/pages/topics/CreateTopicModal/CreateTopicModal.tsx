@@ -69,7 +69,7 @@ export class CreateTopicModalContent extends Component<Props> {
 
             <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
                 <Label text="Topic Name">
-                    <Input value={state.topicName} onChange={e => state.topicName = e.target.value} width="100%" autoFocus />
+                    <Input data-testid="topic-name" value={state.topicName} onChange={e => state.topicName = e.target.value} width="100%" autoFocus />
                 </Label>
 
                 <div style={{ display: 'flex', gap: '2em' }}>
