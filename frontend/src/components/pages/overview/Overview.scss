@@ -67,53 +67,6 @@
 
 }
 
-.clusterDetails {
-    display: grid;
-    grid-template-columns: auto auto 1fr;
-    row-gap: .5em;
-    column-gap: 2em;
-    margin: 1em 0;
-    min-width: 300px;
-
-    white-space: nowrap;
-    overflow: hidden;
-
-    h3 {
-        grid-column: 1 / span 3;
-        margin: 0;
-    }
-
-    h4 {
-        font-size: 18px;
-        font-weight: 600;
-        color: rgb(0 0 0 / 75%);
-        grid-column: 1 / span 3;
-
-        font-size: 10px;
-        color: hsl(0deg 0% 35%);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 600;
-        margin-bottom: 4px;
-    }
-
-    h5 {
-        font-weight: 600;
-    }
-
-    .separationLine {
-        grid-column: 1 / span 3;
-        margin: 1rem 0;
-        background: #ddd;
-        height: 1px;
-    }
-
-    a {
-        text-decoration: 1px solid underline;
-        color: unset;
-    }
-}
-
 .resource-list {
     list-style: none;
     display: flex;

@@ -21,10 +21,10 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import React from 'react';
+import React, { FC } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 
@@ -247,6 +247,49 @@ const ResourcesBadge = (p: { type?: string | undefined }) => {
 };
 
 
+type DetailsBlockProps = { title: string, children?: React.ReactNode }
+
+const DetailsBlock: FC<DetailsBlockProps> = ({title, children}) => {
+    return <>
+        <GridItem colSpan={3}>
+            <Heading
+                as="h4"
+                fontSize={10}
+                fontWeight={600}
+                color="gray.500"
+                textTransform="uppercase"
+                letterSpacing={0.8}
+                mb={1}
+            >
+                {title}
+            </Heading>
+        </GridItem>
+        {children}
+        <GridItem colSpan={3} height={0.25} my={4} bg="#ddd" />
+    </>;
+};
+
+type DetailsProps = { title: string, content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[] }
+
+const Details: FC<DetailsProps> = ({title, content}) => {
+    const [[firstLeft, firstRight] = [], ...rest] = content;
+    return (
+        <>
+            <GridItem>
+                <Heading as="h5">{title}</Heading>
+            </GridItem>
+            <GridItem>{firstLeft}</GridItem>
+            <GridItem>{firstRight}</GridItem>
+
+            {rest?.map(([left, right] = [], idx) => <React.Fragment key={idx}>
+                <GridItem/>
+                <GridItem>{left}</GridItem>
+                <GridItem>{right}</GridItem>
+            </React.Fragment>)}
+        </>
+    );
+};
+
 function ClusterDetails() {
     const overview = api.clusterOverview;
     const brokers = api.brokers;
@@ -270,41 +313,6 @@ function ClusterDetails() {
     const redpandaLicense = prettyLicense(overview.redpanda.license);
 
 
-    const DetailsBlock = (p: { title: string, children?: React.ReactNode }) => {
-        return <>
-            <h4>{p.title}</h4>
-            {p.children}
-            <div className="separationLine"></div>
-        </>
-    }
-
-    const Details = (p: { title: string, content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[] }) => {
-        const { title, content } = p;
-
-        const lines = [];
-        for (let i = 0; i < content.length; i++) {
-            const pair = content[i];
-            if (!pair) continue;
-            let [left, right] = pair;
-            if (!left) continue;
-
-            if (typeof left == 'string')
-                left = <div>{left}</div>
-            if (typeof right == 'string')
-                right = <div>{right}</div>
-
-            const isFirst = i == 0;
-
-            lines.push(<React.Fragment key={i}>
-                {isFirst ? <h5>{title}</h5> : <div />}
-                {left}
-                {right ? right : <div />}
-            </React.Fragment>);
-        }
-
-        return <>{lines}</>;
-    };
-
     const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
         let status = <div>{titleCase(overviewStatus.status)}</div>;
         if (overviewStatus.statusReason)
@@ -325,14 +333,20 @@ function ClusterDetails() {
         }
     });
 
-    return <div className="clusterDetails">
+    return <Grid
+        minW={300}
+        w="full"
+        templateColumns={'repeat(3, auto)'}
+        gap={2}
+        alignItems="center"
+    >
         <DetailsBlock title="Services">
             <Details title="Kafka Connect" content={hasConnect
                 ? clusterLines.map(c => [c.name, c.status])
                 : [
                     ['Not configured']
                 ]
-            } />
+            }/>
             <Details title="Schema Registry" content={overview.schemaRegistry.isConfigured
                 ? [
                     [
@@ -345,43 +359,40 @@ function ClusterDetails() {
                 : [
                     ['Not configured']
                 ]
-            } />
+            }/>
 
         </DetailsBlock>
-
 
         <DetailsBlock title="Storage">
             <Details title="Total Bytes" content={[
                 [prettyBytesOrNA(totalStorageBytes)]
-            ]} />
+            ]}/>
 
             <Details title="Primary" content={[
                 [prettyBytesOrNA(totalPrimaryStorageBytes)]
-            ]} />
+            ]}/>
 
             <Details title="Replicated" content={[
                 [prettyBytesOrNA(totalReplicatedStorageBytes)]
-            ]} />
+            ]}/>
         </DetailsBlock>
 
 
-        <DetailsBlock title="Security" >
+        <DetailsBlock title="Security">
             <Details title="Service Accounts" content={[
                 [<Link key={0} as={ReactRouterLink} to="/acls/">{serviceAccounts}</Link>]
-            ]} />
+            ]}/>
 
             <Details title="ACLs" content={[
                 [<Link key={0} as={ReactRouterLink} to="/acls/">{aclCount}</Link>]
-            ]} />
+            ]}/>
         </DetailsBlock>
-
 
         <Details title="Licensing" content={[
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
-        ]} />
-
-    </div>
+        ]}/>
+    </Grid>;
 }
 
 function prettyLicenseType(type: string) {
