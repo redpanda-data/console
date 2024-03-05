@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateSecretRequest, CreateSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetSecretRequest, GetSecretResponse, ListSecretsRequest, ListSecretsResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
+import { CreateConnectSecretRequest, CreateConnectSecretResponse, CreateSecretRequest, CreateSecretResponse, DeleteConnectSecretRequest, DeleteConnectSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetConnectSecretRequest, GetConnectSecretResponse, GetSecretRequest, GetSecretResponse, ListConnectSecretsRequest, ListConnectSecretsResponse, ListSecretsRequest, ListSecretsResponse, UpdateConnectSecretRequest, UpdateConnectSecretResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -65,6 +65,61 @@ export const SecretService = {
       name: "DeleteSecret",
       I: DeleteSecretRequest,
       O: DeleteSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetConnectSecret retrieves the specific secret for a specific Connect.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.GetConnectSecret
+     */
+    getConnectSecret: {
+      name: "GetConnectSecret",
+      I: GetConnectSecretRequest,
+      O: GetConnectSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListConnectSecrets lists the Connect secrets based on optional filter.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.ListConnectSecrets
+     */
+    listConnectSecrets: {
+      name: "ListConnectSecrets",
+      I: ListConnectSecretsRequest,
+      O: ListConnectSecretsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateConnectSecret creates the secret for a Connect.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.CreateConnectSecret
+     */
+    createConnectSecret: {
+      name: "CreateConnectSecret",
+      I: CreateConnectSecretRequest,
+      O: CreateConnectSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateConnectSecret updates the Connect secret.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.UpdateConnectSecret
+     */
+    updateConnectSecret: {
+      name: "UpdateConnectSecret",
+      I: UpdateConnectSecretRequest,
+      O: UpdateConnectSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeleteSecret deletes the secret.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.DeleteConnectSecret
+     */
+    deleteConnectSecret: {
+      name: "DeleteConnectSecret",
+      I: DeleteConnectSecretRequest,
+      O: DeleteConnectSecretResponse,
       kind: MethodKind.Unary,
     },
   }

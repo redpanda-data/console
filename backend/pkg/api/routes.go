@@ -30,11 +30,13 @@ import (
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/connect/interceptor"
 	apiaclsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl"
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apikafkaconnectsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect"
 	topicsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic"
+	transformsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/transform"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
@@ -57,7 +59,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		otelconnect.WithMeterProvider(meterProvider),
 		otelconnect.WithoutServerPeerAttributes(),
 		otelconnect.WithoutTracing(),
-		otelconnect.WithAttributeFilter(func(spec connect.Spec, attrs attribute.KeyValue) bool {
+		otelconnect.WithAttributeFilter(func(_ connect.Spec, attrs attribute.KeyValue) bool {
 			switch attrs.Key {
 			case semconv.NetPeerPortKey, semconv.NetPeerNameKey, "rpc.system":
 				return false
@@ -82,7 +84,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Setup gRPC-Gateway
 	gwMux := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(GetHTTPResponseModifier()),
-		runtime.WithErrorHandler(NiceHTTPErrorHandler),
+		runtime.WithErrorHandler(apierrors.NiceHTTPErrorHandler),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.HTTPBodyMarshaler{
 			Marshaler: &runtime.JSONPb{
 				MarshalOptions: protojson.MarshalOptions{
@@ -98,6 +100,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 				},
 			},
 		}),
+		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptReserved),
 	)
 
 	// Call Hook
@@ -118,12 +121,17 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
+	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+
+	// Wasm Transforms
+	r.Put("/v1alpha1/transforms", transformSvc.HandleDeployTransform())
 
 	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	aclSvcPath, aclSvcHandler := dataplanev1alpha1connect.NewACLServiceHandler(aclSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	kafkaConnectPath, kafkaConnectHandler := dataplanev1alpha1connect.NewKafkaConnectServiceHandler(kafkaConnectSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	consoleServicePath, consoleServiceHandler := consolev1alpha1connect.NewConsoleServiceHandler(consoleSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	topicSvcPath, topicSvcHandler := dataplanev1alpha1connect.NewTopicServiceHandler(topicSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+	transformSvcPath, transformSvcHandler := dataplanev1alpha1connect.NewTransformServiceHandler(transformSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -151,6 +159,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   topicSvcPath,
 			Handler:     topicSvcHandler,
 		},
+		{
+			ServiceName: dataplanev1alpha1connect.TransformServiceName,
+			MountPath:   transformSvcPath,
+			Handler:     transformSvcHandler,
+		},
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
@@ -168,6 +181,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1alpha1connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha1connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1alpha1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	reflector := grpcreflect.NewStaticReflector(reflectServiceNames...)
 	r.Mount(grpcreflect.NewHandlerV1(reflector))
@@ -346,13 +360,6 @@ func (api *API) routes() *chi.Mux {
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")
 		}
-	})
-
-	// Websockets live in it's own group because not all middlewares support websockets
-	baseRouter.Group(func(wsRouter chi.Router) {
-		api.Hooks.Route.ConfigWsRouter(wsRouter)
-
-		wsRouter.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
 	})
 
 	return baseRouter

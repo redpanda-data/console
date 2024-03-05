@@ -66,10 +66,11 @@ func (*APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, resou
 
 func (s *APISuite) TestCreateACL() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("create ACL with default request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -116,6 +117,9 @@ func (s *APISuite) TestCreateACL() {
 	})
 
 	t.Run("create ACL with default request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -181,6 +185,8 @@ func (s *APISuite) TestCreateACL() {
 	})
 
 	t.Run("create bad ACL create request (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
@@ -237,10 +243,11 @@ func (s *APISuite) TestCreateACL() {
 
 func (s *APISuite) TestListACLs() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("list ACLs with default request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -324,6 +331,8 @@ func (s *APISuite) TestListACLs() {
 	})
 
 	t.Run("list ACLs with invalid filter (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -339,6 +348,9 @@ func (s *APISuite) TestListACLs() {
 	})
 
 	t.Run("list ACLs with default request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -408,10 +420,11 @@ func (s *APISuite) TestListACLs() {
 
 func (s *APISuite) TestDeleteACLs() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("delete ACLs with a filter that matches all three created ACLs (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -466,6 +479,8 @@ func (s *APISuite) TestDeleteACLs() {
 	})
 
 	t.Run("delete ACLs with invalid filter (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -483,6 +498,9 @@ func (s *APISuite) TestDeleteACLs() {
 	})
 
 	t.Run("delete ACLs with a filter that matches all three created ACLs (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -543,6 +561,8 @@ func (s *APISuite) TestDeleteACLs() {
 	})
 
 	t.Run("delete ACLs with missing filter (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -572,6 +592,8 @@ func (s *APISuite) TestDeleteACLs() {
 	})
 
 	t.Run("delete ACLs with an invalid filter (http)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 

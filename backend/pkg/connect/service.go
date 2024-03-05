@@ -41,10 +41,20 @@ type ClientWithConfig struct {
 // NewService creates a new connect.Service. It tests the connectivity for each configured
 // Kafka connect cluster proactively.
 func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
-	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
+	clientsByCluster := make(map[string]*ClientWithConfig)
+
+	if len(cfg.Clusters) == 0 {
+		return &Service{
+			Cfg:              cfg,
+			Logger:           logger,
+			ClientsByCluster: clientsByCluster,
+			Interceptor:      interceptor.NewInterceptor(),
+		}, nil
+	}
 
 	// 1. Create a client for each configured Connect cluster
-	clientsByCluster := make(map[string]*ClientWithConfig)
+	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
+
 	for _, clusterCfg := range cfg.Clusters {
 		// Create dedicated Connect HTTP Client for each cluster
 		childLogger := logger.With(

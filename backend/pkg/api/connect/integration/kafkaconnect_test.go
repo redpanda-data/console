@@ -30,10 +30,10 @@ import (
 
 func (s *APISuite) TestListConnectors() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("list Connectors with invalid Request (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -47,6 +47,9 @@ func (s *APISuite) TestListConnectors() {
 	})
 
 	t.Run("list connectors with default request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -63,10 +66,10 @@ func (s *APISuite) TestListConnectors() {
 
 func (s *APISuite) TestListConnectClusters() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
 
 	t.Run("list connect clusters request (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -80,6 +83,9 @@ func (s *APISuite) TestListConnectClusters() {
 	})
 
 	t.Run("list connect clusters request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -119,15 +125,14 @@ func (s *APISuite) TestListConnectClusters() {
 
 func (s *APISuite) TestGetConnectorAndStatus() {
 	t := s.T()
-	require := require.New(t)
-	assert := assert.New(t)
+	requireT := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	// Run HTTPBin container
 	httpC, err := testutil.RunHTTPBinContainer(ctx, network.WithNetwork([]string{"httpbin", "local-httpbin"}, s.network))
-	require.NoError(err)
+	requireT.NoError(err)
 
 	client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 
@@ -157,7 +162,7 @@ func (s *APISuite) TestGetConnectorAndStatus() {
 
 	_, err = client.CreateConnector(ctx, connect.NewRequest(input))
 
-	require.NoError(err)
+	requireT.NoError(err)
 
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
@@ -170,14 +175,17 @@ func (s *APISuite) TestGetConnectorAndStatus() {
 				Name:        input.Connector.Name,
 			},
 		))
-		require.NoError(err)
+		requireT.NoError(err)
 
 		// Stop HTTPBin container
 		err = httpC.Terminate(ctx)
-		require.NoError(err)
+		requireT.NoError(err)
 	})
 
 	t.Run("Get connector request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -193,6 +201,9 @@ func (s *APISuite) TestGetConnectorAndStatus() {
 	})
 
 	t.Run("Get connector request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -221,6 +232,9 @@ func (s *APISuite) TestGetConnectorAndStatus() {
 	})
 
 	t.Run("Get connector status (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -235,6 +249,9 @@ func (s *APISuite) TestGetConnectorAndStatus() {
 	})
 
 	t.Run("Get connector status request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 

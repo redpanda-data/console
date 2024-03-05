@@ -362,7 +362,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
     return <>
         <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
             <AlertIcon />
-            {p.error.title}
+            <Box wordBreak="break-all" whiteSpace="break-spaces">{p.error.title}</Box>
             <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View details</Button>
         </Alert>
 
@@ -394,7 +394,10 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         p.title = connector;
         p.addBreadcrumb('Connectors', '/connect-clusters');
         p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
-        p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`);
+        p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`, {
+            canBeTruncated: true,
+            canBeCopied: true
+        });
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }

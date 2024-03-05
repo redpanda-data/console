@@ -8,30 +8,40 @@ on:
       - master
     paths:
       - 'backend/**.go'
+      - 'backend/go.mod'
+      - '.github/workflows/backend-lint-test.yml'
   pull_request:
     paths:
       - 'backend/**.go'
+      - 'backend/go.mod'
+      - '.github/workflows/backend-lint-test.yml'
 
 permissions:
   contents: read
 
 jobs:
   verify:
-    name: verify
+    name: Lint & Test Backend
     runs-on: ubuntu-latest-4
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version-file: 'backend/go.mod'
-      
+          go-version: 'stable'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.56
+          working-directory: backend
+          args: --timeout=10m --config=.golangci.yaml
+
       - name: Install Task
         uses: arduino/setup-task@v1
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: verify
-        run: task backend:verify
-        working-directory: backend
+      - name: Unit & Integration Tests
+        run: task backend:test-integration

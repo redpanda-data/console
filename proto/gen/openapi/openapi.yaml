@@ -280,10 +280,27 @@ components:
       type: object
     CreateACLResponse:
       type: object
+    CreateConnectSecretResponse:
+      description: CreateConnectSecretResponse is the response of CreateConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     CreateConnectorResponse:
       properties:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
+      type: object
+    CreateSecretRequest:
+      description: CreateSecretRequest is the request of CreateSecret.
+      properties:
+        id:
+          description: Secret identifier.
+          type: string
+        secret:
+          $ref: '#/components/schemas/SecretInput'
+      required:
+        - secret
       type: object
     CreateSecretResponse:
       description: CreateSecretResponse is the response of CreateSecret.
@@ -403,12 +420,60 @@ components:
             $ref: '#/components/schemas/MatchingACL'
           type: array
       type: object
+    DeleteConnectSecretResponse:
+      description: DeleteConnectSecretResponse is the response of DeleteConnectSecret.
+      type: object
     DeleteSecretResponse:
-      title: DeleteSecretResponse is the response of DeleteSecret
+      description: DeleteSecretResponse is the response of DeleteSecret.
       type: object
     DeleteTopicResponse:
       type: object
+    DeleteTransformResponse:
+      type: object
     DeleteUserResponse:
+      type: object
+    DeployTransformRequest:
+      description: |-
+        DeployTransformRequest is the metadata that is required to deploy a new WASM
+        transform in a Redpanda cluster.
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          description: The input topic to apply the transform to.
+          example: orders
+          type: string
+        name:
+          description: The name of the transform.
+          example: redact-payment-details-in-orders
+          type: string
+        output_topic_names:
+          description: The output topic to write the transform results to.
+          example: orders-redacted
+          items:
+            type: string
+          type: array
+      required:
+        - name
+        - input_topic_name
+        - output_topic_names
+      type: object
+    EnvironmentVariable:
+      properties:
+        key:
+          description: The key of your environment variable.
+          example: LOG_LEVEL
+          type: string
+        value:
+          description: The key of your environment variable.
+          example: DEBUG
+          type: string
+      required:
+        - key
+        - value
       type: object
     ErrorInfo:
       description: |-
@@ -521,6 +586,12 @@ components:
         cluster:
           $ref: '#/components/schemas/ConnectCluster'
       type: object
+    GetConnectSecretResponse:
+      description: GetConnectSecretResponse is the response of GetConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     GetConnectorConfigResponse:
       properties:
         config:
@@ -550,6 +621,11 @@ components:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
+      type: object
+    GetTransformResponse:
+      properties:
+        transform:
+          $ref: '#/components/schemas/TransformMetadata'
       type: object
     Help:
       description: |-
@@ -610,6 +686,18 @@ components:
             $ref: '#/components/schemas/ConnectCluster'
           type: array
       type: object
+    ListConnectSecretsResponse:
+      description: ListConnectSecretsResponse is the response of ListConnectSecrets.
+      properties:
+        next_page_token:
+          description: Token to retrieve the next page.
+          type: string
+        secrets:
+          description: Secrets retrieved.
+          items:
+            $ref: '#/components/schemas/Secret'
+          type: array
+      type: object
     ListConnectorTopicsResponse:
       properties:
         topics:
@@ -628,10 +716,10 @@ components:
           description: Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint.
           type: string
       type: object
-    ListSecretsRequest.Filter:
-      description: Defines the filter for querying the secrets.
+    ListSecretsFilter:
+      description: ListSecretsFilter are the filter options for listing secrets.
       properties:
-        labels[string]:
+        labels[string][string]:
           additionalProperties:
             type: string
           description: The secret labels to search for.
@@ -679,6 +767,20 @@ components:
           format: int32
           type: integer
       type: object
+    ListTransformsRequest.Filter:
+      properties:
+        name:
+          type: string
+      type: object
+    ListTransformsResponse:
+      properties:
+        next_page_token:
+          type: string
+        transforms:
+          items:
+            $ref: '#/components/schemas/TransformMetadata'
+          type: array
+      type: object
     ListUsersRequest.Filter:
       properties:
         name:
@@ -725,6 +827,27 @@ components:
           type: boolean
         only_failed:
           type: boolean
+      type: object
+    PartitionStatus:
+      enum:
+        - PARTITION_STATUS_RUNNING
+        - PARTITION_STATUS_INACTIVE
+        - PARTITION_STATUS_ERRORED
+        - PARTITION_STATUS_UNKNOWN
+      type: string
+    PartitionTransformStatus:
+      properties:
+        broker_id:
+          format: int32
+          type: integer
+        lag:
+          format: int32
+          type: integer
+        partition_id:
+          format: int32
+          type: integer
+        status:
+          $ref: '#/components/schemas/PartitionStatus'
       type: object
     PermissionType:
       enum:
@@ -850,9 +973,6 @@ components:
     SecretInput:
       description: SecretInput defienes the secret input for secret API actions.
       properties:
-        id:
-          description: Secret identifier.
-          type: string
         labels:
           additionalProperties:
             type: string
@@ -973,6 +1093,26 @@ components:
         worker_id:
           type: string
       type: object
+    TransformMetadata:
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          type: string
+        name:
+          type: string
+        output_topic_names:
+          items:
+            type: string
+          type: array
+        statuses:
+          items:
+            $ref: '#/components/schemas/PartitionTransformStatus'
+          type: array
+      type: object
     UpdateConfiguration:
       properties:
         name:
@@ -982,6 +1122,12 @@ components:
         value:
           nullable: true
           type: string
+      type: object
+    UpdateConnectSecretResponse:
+      description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
       type: object
     UpdateSecretResponse:
       description: UpdateSecretResponse is the response of UpdateSecret.
@@ -1940,14 +2086,75 @@ paths:
       summary: Reset connector topics
       tags:
         - KafkaConnectService
-  /v1alpha1/secret/{secret.id}:
-    put:
-      description: Update a Secret content.
-      operationId: SecretService_UpdateSecret
+  /v1alpha1/connect/clusters/{cluster_name}/secrets:
+    get:
+      description: List Kafka Connect cluster secrets based on optional filter.
+      operationId: SecretService_ListConnectSecrets
       parameters:
-        - description: Secret identifier.
+        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
           in: path
-          name: secret.id
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: The secret ID or name to search for.
+          in: query
+          name: filter.name
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.labels[string][string]
+          schema:
+            type: string
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSecretsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Connect Cluster Secrets
+      tags:
+        - SecretService
+    post:
+      description: Create a Kafka Connect cluster secret.
+      operationId: SecretService_CreateConnectSecret
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
           required: true
           schema:
             type: string
@@ -1955,20 +2162,168 @@ paths:
         content:
           application/json:
             schema:
+              description: CreateConnectSecretRequest is the request of CreateConnectSecret.
               properties:
-                labels:
-                  additionalProperties:
-                    type: string
-                  description: Secret labels.
-                  type: object
-                secret_data:
-                  description: The secret data.
-                  format: byte
+                name:
+                  description: The Connect name.
                   type: string
+                secret:
+                  $ref: '#/components/schemas/SecretInput'
               required:
-                - secret_data
-              title: The input for the secret to update.
+                - name
+                - secret
               type: object
+        required: true
+        x-originalParamName: body
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Secret created.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create Connect Cluster Secret
+      tags:
+        - SecretService
+  /v1alpha1/connect/clusters/{cluster_name}/secrets/{id}:
+    delete:
+      description: Delete a Kafka Connect cluster secret.
+      operationId: SecretService_DeleteConnectSecret
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: The id of the secret to delete.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Secret was deleted successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Connect Cluster Secret
+      tags:
+        - SecretService
+    get:
+      description: Get a specific Kafka Connect cluster secret.
+      operationId: SecretService_GetConnectSecret
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: The id of the secret to retrieve.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Connect Cluster Secret
+      tags:
+        - SecretService
+    put:
+      description: Update a Kafka Connect cluster secret.
+      operationId: SecretService_UpdateConnectSecret
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: The id of the secret to retrieve.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretInput'
         description: The input for the secret to update.
         required: true
         x-originalParamName: secret
@@ -2003,12 +2358,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Update Secret
+      summary: Update Connect Cluster Secret
       tags:
         - SecretService
   /v1alpha1/secrets:
     get:
-      description: List Secrets
+      description: List secrets based on optional filter.
       operationId: SecretService_ListSecrets
       parameters:
         - description: The secret ID or name to search for.
@@ -2063,23 +2418,23 @@ paths:
       tags:
         - SecretService
     post:
-      description: Create a Secret.
+      description: Create a secret.
       operationId: SecretService_CreateSecret
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SecretInput'
-        description: The input for the secret to create.
+              $ref: '#/components/schemas/CreateSecretRequest'
+        description: CreateSecretRequest is the request of CreateSecret.
         required: true
-        x-originalParamName: secret
+        x-originalParamName: body
       responses:
         "201":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Secret Created.
+          description: Secret created.
         "401":
           content:
             application/json:
@@ -2103,7 +2458,7 @@ paths:
         - SecretService
   /v1alpha1/secrets/{id}:
     delete:
-      description: Delete a Secret.
+      description: Delete a specific secret.
       operationId: SecretService_DeleteSecret
       parameters:
         - description: The id of the secret to delete.
@@ -2146,7 +2501,7 @@ paths:
       tags:
         - SecretService
     get:
-      description: Get a secret.
+      description: Get a specific secret.
       operationId: SecretService_GetSecret
       parameters:
         - description: The id of the secret to retrieve.
@@ -2186,7 +2541,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Get Secret
+      summary: Get secret
+      tags:
+        - SecretService
+    put:
+      description: Update a secret.
+      operationId: SecretService_UpdateSecret
+      parameters:
+        - description: Secret identifier.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretInput'
+        description: The input for the secret to update.
+        required: true
+        x-originalParamName: secret
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secret'
+          description: Ok
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Update Secret
       tags:
         - SecretService
   /v1alpha1/topics:
@@ -2475,6 +2882,204 @@ paths:
       summary: Set Topic Configurations
       tags:
         - TopicService
+  /v1alpha1/transforms:
+    get:
+      description: Retrieve a list of transforms with optional filtering
+      operationId: TransformService_ListTransforms
+      parameters:
+        - in: query
+          name: filter.name
+          schema:
+            type: string
+        - in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                next_page_token: ""
+                transforms:
+                  - environment_variables: []
+                    input_topic_name: topic1
+                    name: transform1
+                    output_topic_names:
+                      - output-topic11
+                      - output-topic12
+                    statuses:
+                      - broker_id: 1
+                        lag: 1
+                        partition_id: 1
+                        status: PARTITION_STATUS_RUNNING
+                  - environment_variables: []
+                    input_topic_name: topic2
+                    name: transform2
+                    output_topic_names:
+                      - output-topic21
+                      - output-topic22
+                    statuses:
+                      - broker_id: 2
+                        lag: 2
+                        partition_id: 2
+                        status: PARTITION_STATUS_RUNNING
+              schema:
+                $ref: '#/components/schemas/ListTransformsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List Transforms
+      tags:
+        - TransformService
+    put:
+      description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
+      operationId: TransformService_DeployTransform
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              properties:
+                metadata:
+                  $ref: '#/components/schemas/DeployTransformRequest'
+                wasm_binary:
+                  description: Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.
+                  format: binary
+                  type: string
+              type: object
+        description: Transform metadata as well as the WASM binary
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformMetadata'
+          description: Created
+      summary: Deploy Transform
+      tags:
+        - TransformService
+  /v1alpha1/transforms/{name}:
+    delete:
+      description: Delete a WASM transform with the requested name.
+      operationId: TransformService_DeleteTransform
+      parameters:
+        - example:
+            name: transform1
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              example: {}
+              schema: {}
+          description: Transform deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete Transform
+      tags:
+        - TransformService
+    get:
+      description: Get Transform!
+      operationId: TransformService_GetTransform
+      parameters:
+        - example:
+            name: transform1
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                transform:
+                  environment_variables: []
+                  input_topic_name: topic1
+                  name: transform1
+                  output_topic_names:
+                    - output-topic1
+                    - output-topic2
+                  statuses:
+                    - broker_id: 1
+                      lag: 1
+                      partition_id: 1
+                      status: PARTITION_STATUS_RUNNING
+              schema:
+                $ref: '#/components/schemas/GetTransformResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get Transform
+      tags:
+        - TransformService
   /v1alpha1/users:
     get:
       description: List Users
@@ -2732,6 +3337,7 @@ servers:
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
   - name: ACLService
+  - name: TransformService
   - name: KafkaConnectService
   - name: SecretService
   - name: TopicService

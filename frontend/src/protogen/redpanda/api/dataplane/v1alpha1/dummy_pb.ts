@@ -8,6 +8,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { BadRequest, ErrorInfo, Help, QuotaFailure } from "../../../../google/rpc/error_details_pb";
+import { DeployTransformRequest } from "./transform_pb";
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha1.DummyMethodResponse
@@ -33,6 +34,11 @@ export class DummyMethodResponse extends Message<DummyMethodResponse> {
    */
   help?: Help;
 
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha1.DeployTransformRequest deploy_transform_request = 5;
+   */
+  deployTransformRequest?: DeployTransformRequest;
+
   constructor(data?: PartialMessage<DummyMethodResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -45,6 +51,7 @@ export class DummyMethodResponse extends Message<DummyMethodResponse> {
     { no: 2, name: "error_info", kind: "message", T: ErrorInfo },
     { no: 3, name: "quota_failure", kind: "message", T: QuotaFailure },
     { no: 4, name: "help", kind: "message", T: Help },
+    { no: 5, name: "deploy_transform_request", kind: "message", T: DeployTransformRequest },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DummyMethodResponse {

@@ -96,6 +96,13 @@ func (s *SerdeIntegrationTestSuite) consumerClientForTopic(topicName string) *kg
 		kgo.SeedBrokers(s.seedBroker),
 		kgo.ConsumeTopics(topicName),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		// We've seen issues in integration tests with the default being applied for
+		// the metadata min age. The issue we observed is that the metadata with
+		// leader information for each partition was outdated/wrong, shortly
+		// after we created a new topic to produce data to this topic. This
+		// caused the client to wait for several seconds before re-fetching
+		// new metadata.
+		kgo.MetadataMinAge(250*time.Millisecond),
 	)
 	require.NoError(err)
 

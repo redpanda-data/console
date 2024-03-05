@@ -90,7 +90,7 @@ func TestTextSerde_DeserializePayload(t *testing.T) {
 				Value: []byte{0xff, 0xfe, 0xfd},
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 			},
 		},
@@ -154,7 +154,7 @@ func TestTextSerde_SerializeObject(t *testing.T) {
 			name:        "invalid type",
 			input:       map[string]any{},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, res []byte, err error) {
+			validationFunc: func(t *testing.T, _ []byte, err error) {
 				require.Error(t, err)
 				assert.Equal(t, "unsupported type map[string]interface {} for text serialization", err.Error())
 			},

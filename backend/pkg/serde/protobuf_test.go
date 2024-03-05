@@ -34,7 +34,7 @@ import (
 
 func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	// NO OP schema registry API server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
@@ -155,7 +155,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				Topic: "protobuf_serde_test_orders_123",
 			},
 			payloadType: PayloadTypeKey,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				require.Error(t, err)
 				assert.Equal(t, "failed to get message descriptor for payload: no prototype found for the given topic 'protobuf_serde_test_orders_123'. Check your configured protobuf mappings", err.Error())
 			},

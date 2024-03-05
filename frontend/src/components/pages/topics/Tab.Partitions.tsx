@@ -29,8 +29,6 @@ type TopicPartitionsProps = {
 };
 
 export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
-    const paginationParams = usePaginationParams(uiState.topicSettings.partitionPageSize);
-
     let partitions = api.topicPartitions.get(topic.topicName);
     if (partitions === undefined) return DefaultSkeleton;
     if (partitions === null) partitions = []; // todo: show the error (if one was reported);
@@ -42,6 +40,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                 Topic cleanupPolicy is 'compact'. Message Count is an estimate!
             </Alert>
         );
+
+    const paginationParams = usePaginationParams(uiState.topicSettings.partitionPageSize, partitions.length);
 
     return (
         <>

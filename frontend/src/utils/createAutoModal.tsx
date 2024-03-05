@@ -199,6 +199,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                                 Cancel
                             </Button>}
                             <Button
+                                data-testid="onOk-button"
                                 variant="solid"
                                 isLoading={state.loading}
                                 isDisabled={!options.isOkEnabled?.(userState!)}

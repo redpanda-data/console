@@ -214,7 +214,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				Value: []byte{0, 1, 2, 3},
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "payload size is <= 5", err.Error())
 			},
@@ -225,7 +225,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				Value: []byte{1, 2, 3, 4, 5, 6, 7},
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Equal(t, "incorrect magic byte for protobuf schema", err.Error())
 			},
@@ -236,7 +236,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				Value: msgData2,
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "schema ID 1001 not found")
 			},

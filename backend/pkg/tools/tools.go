@@ -10,4 +10,4 @@
 // Package tools  contains imports required for additional tooling
 package tools
 
-import _ "github.com/golang/mock/mockgen/model" // blank import to add mock mockgen module to go mod
+import _ "go.uber.org/mock/mockgen/model" // blank import to add mock mockgen module to go mod
