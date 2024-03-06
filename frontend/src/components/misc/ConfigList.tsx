@@ -55,7 +55,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             accessorKey: 'value',
             size: Infinity,
             cell: ({row: {original: record}}) => <Text
-                wordBreak="break-all" whiteSpace="break-spaces" noOfLines={4}
+                wordBreak="break-all" whiteSpace="break-spaces"
                 className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</Text>
         },
     ]

@@ -144,7 +144,7 @@ class AclList extends PageComponent {
                                         }}>
                                             <Flex>
                                                 <Badge variant="subtle" mr="2">{principalType}</Badge>
-                                                <Text as="span" wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{record.principalName}</Text>
+                                                <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">{record.principalName}</Text>
                                                 {showWarning && (
                                                     <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
                                 <span style={{marginLeft: '4px'}}>

@@ -108,13 +108,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 : record.topicName;
 
                             if (this.props.throttledTopics.includes(record.topicName)) {
-                                return <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}>
+                                return <Box wordBreak="break-word" whiteSpace="break-spaces">
                                     <span>{content}</span>
                                     <WarningToolip content="Topic replication is throttled" position="top"/>
                                 </Box>
                             }
 
-                            return <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={4}>{content}</Box>;
+                            return <Box wordBreak="break-word" whiteSpace="break-spaces">{content}</Box>;
                         },
                         size: Infinity,
                     },
