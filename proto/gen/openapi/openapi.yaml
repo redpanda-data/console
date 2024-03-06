@@ -248,8 +248,8 @@ components:
       properties:
         host:
           description: |-
-            Host is the host address to use for this acl. Each host to allow
-            the principal access from must be specified as a new creation.
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
@@ -257,14 +257,13 @@ components:
           $ref: '#/components/schemas/PermissionType'
         principal:
           description: |-
-            Principal is the user to apply this acl for. With the Kafka simple
-            authorizer, this must begin with "User:".
+            The user to apply this ACL for. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           type: string
         resource_name:
           description: |-
-            ResourceName is the name of the resource this acl entry will be on.
-            For requests with resource_type CLUSTER, this will default to the expected
-            value "kafka-cluster".
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -1144,7 +1143,7 @@ openapi: 3.0.3
 paths:
   /v1alpha1/acls:
     delete:
-      description: Delete all ACLs that match the given filter
+      description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
       operationId: ACLService_DeleteACLs
       parameters:
         - in: query
@@ -1240,7 +1239,7 @@ paths:
       tags:
         - ACLService
     get:
-      description: List ACLs
+      description: List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
       operationId: ACLService_ListACLs
       parameters:
         - in: query
@@ -1345,7 +1344,7 @@ paths:
       tags:
         - ACLService
     post:
-      description: Create ACL
+      description: Create a new ACL.
       operationId: ACLService_CreateACL
       requestBody:
         content:
