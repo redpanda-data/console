@@ -27,11 +27,10 @@ import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
-import { Box, Spinner, Tooltip, createStandaloneToast } from '@chakra-ui/react';
+import { Box, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerHeader, DrawerOverlay, Heading, Spinner, createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
 import { encodeURIComponentPercents } from './Schema.Details';
-import { QuestionOutlineIcon } from '@chakra-ui/icons';
 
 const { ToastContainer, toast } = createStandaloneToast()
 
@@ -81,6 +80,7 @@ class SchemaList extends PageComponent<{}> {
     @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
     @observable filteredSchemaSubjects: { name: string }[];
     @observable isLoadingSchemaVersionMatches = false;
+    @observable isHelpSidebarOpen = false;
 
     constructor(p: any) {
         super(p);
@@ -179,27 +179,51 @@ class SchemaList extends PageComponent<{}> {
 
                 {renderRequestErrors()}
 
-                <Flex alignItems="center" gap="4" mb=".5rem">
+                <Flex alignItems="center" gap="4" >
                     <SearchField width="350px"
                         searchText={uiSettings.schemaList.quickSearch}
                         setSearchText={action(filterText => {
                             uiSettings.schemaList.quickSearch = filterText;
                             this.triggerSearchBySchemaId();
                         })}
-                        placeholderText="Enter subject name or schema ID"
+                        placeholderText="Filter by subject name or schema ID..."
 
                     />
                     <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
-                    <Tooltip placement="end" hasArrow label={
-                        <Flex flexDirection="column" gap="2">
-                            <Box>Enter a subject name, regex, or schema ID.</Box>
-                            <Box>When searching for a name or based on a regex only the subject name is checked.</Box>
-                            <Box>When searching for a schema ID (a positive number), the search will match all subjects containing a schema with the given ID.</Box>
-                        </Flex>
-                    }>
-                        <QuestionOutlineIcon boxSize={5} color="gray.500" />
-                    </Tooltip>
                 </Flex>
+
+                <Flex
+                    textDecoration="underline"
+                    mr="auto"
+                    cursor="pointer"
+                    mb=".5rem"
+                    onClick={() => this.isHelpSidebarOpen = true}
+                >
+                    Help with schema search
+                </Flex>
+                <Drawer
+                    isOpen={this.isHelpSidebarOpen}
+                    placement="right"
+                    size="md"
+                    onClose={() => this.isHelpSidebarOpen = false}
+                >
+                    <DrawerOverlay />
+                    <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader>Schema Search Help</DrawerHeader>
+
+                        <DrawerBody>
+                            <Heading size="md" mt={4}>Filtering schemas</Heading>
+                            There are two ways to filter schemas, and they work a little differently.
+
+                            <Heading size="md" mt={4}>Schema ID</Heading>
+                            If a number matches a schema ID, the results include all subjects referencing that schema.
+
+                            <Heading size="md" mt={4}>Subject name</Heading>
+                            To search subject names, enter that specific name or a regex.
+                        </DrawerBody>
+                    </DrawerContent>
+                </Drawer>
 
                 <Section>
                     <Flex justifyContent={'space-between'} pb={3}>
