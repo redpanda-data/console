@@ -212,7 +212,7 @@ class TabTasks extends Component {
                         header: 'Connector',
                         accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
                         cell: ({ row: { original } }) => (
-                            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1} className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
+                            <Text wordBreak="break-word" whiteSpace="break-spaces" className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
                 {original.connectorName}
             </Text>
                         ),

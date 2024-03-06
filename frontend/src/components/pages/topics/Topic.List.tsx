@@ -217,7 +217,7 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 {
                     header: 'Name',
                     accessorKey: 'topicName',
-                    cell: ({row: {original: topic}}) => <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}><Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link></Box>,
+                    cell: ({row: {original: topic}}) => <Box wordBreak="break-word" whiteSpace="break-spaces"><Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link></Box>,
                     size: Infinity,
                 },
                 {

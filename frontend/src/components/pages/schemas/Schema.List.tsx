@@ -168,7 +168,7 @@ class SchemaList extends PageComponent<{}> {
                         columns={[
                             {
                                 header: 'Name', accessorKey: 'name', size: Infinity, cell: ({ row: { original: { name } } }) =>
-                                    <Box wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>
+                                    <Box wordBreak="break-word" whiteSpace="break-spaces">
                                         <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
                                     </Box>
                             },
