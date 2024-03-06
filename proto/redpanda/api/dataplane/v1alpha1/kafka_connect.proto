@@ -156,8 +156,8 @@ message RestartConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 
   Options options = 3;
@@ -181,8 +181,8 @@ message DeleteConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -204,8 +204,8 @@ message PauseConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -227,8 +227,8 @@ message ResumeConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -250,8 +250,8 @@ message StopConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -273,8 +273,8 @@ message GetConnectorRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -417,8 +417,8 @@ message GetConnectorStatusRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -444,8 +444,8 @@ message ListConnectorTopicsRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -471,8 +471,8 @@ message ResetConnectorTopicsRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.max_len = 1024,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 

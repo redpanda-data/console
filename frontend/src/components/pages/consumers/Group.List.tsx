@@ -25,7 +25,7 @@ import { BrokerList } from '../../misc/BrokerList';
 import { ShortNum } from '../../misc/ShortNum';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { DataTable, Flex, SearchField, Tag, Text } from '@redpanda-data/ui';
+import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 import { Link } from 'react-router-dom';
 
@@ -189,16 +189,16 @@ class GroupList extends PageComponent {
     GroupId = (p: { group: GroupDescription }) => {
         const protocol = p.group.protocolType;
 
-        const groupIdEl = <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{p.group.groupId}</Text>
+        const groupIdEl = <Text wordBreak="break-word" whiteSpace="break-spaces">{p.group.groupId}</Text>
 
         if (protocol == 'consumer') {
             return groupIdEl;
         }
 
-        return <Flex alignItems="center" gap={2}>
+        return <Grid templateColumns="auto 1fr" alignItems="center" gap={2}>
             <Tag>Protocol: {protocol}</Tag>
             {groupIdEl}
-        </Flex>;
+        </Grid>;
     }
 }
 

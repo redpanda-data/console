@@ -116,7 +116,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     accessorKey: 'name',
                                     cell: ({row: {original}}) => (
                                         <Link to={`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(original.name)}`}>
-                                            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>{original.name}</Text>
+                                            <Text wordBreak="break-word" whiteSpace="break-spaces">{original.name}</Text>
                                         </Link>
                                     ),
                                     size: Infinity
