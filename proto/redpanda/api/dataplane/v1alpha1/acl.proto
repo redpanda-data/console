@@ -104,8 +104,8 @@ message CreateACLRequest {
       ": ''",
   };
 
-  // ResourceType determines the type of the resource (Topic, ConsumerGroup etc) this
-  // ACL shall target.
+  // The type of resource (topic, consumer group, etc.) this
+  // ACL targets.
   ACL.ResourceType resource_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -118,13 +118,12 @@ message CreateACLRequest {
     (buf.validate.field).required = true
   ];
 
-  // ResourceName is the name of the resource this acl entry will be on.
-  // For requests with resource_type CLUSTER, this will default to the expected
-  // value "kafka-cluster".
+  // The name of the resource this ACL targets.
+  // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
   string resource_name = 2;
 
-  // ResourcePattern type determines the strategy how the provided resource_name
-  // is matched (exact match, prefixed, ...) against the actual resource names.
+  // The pattern to use for matching the specified resource_name
+  // (any, exact match, literal, or prefixed).
   ACL.ResourcePatternType resource_pattern_type = 3 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -137,16 +136,16 @@ message CreateACLRequest {
     (buf.validate.field).required = true
   ];
 
-  // Principal is the user to apply this acl for. With the Kafka simple
-  // authorizer, this must begin with "User:".
+  // The user to apply this ACL for. With the Kafka simple
+  // authorizer, you must include the prefix "User:" with the user name.
   string principal = 4 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "User:"
   ];
 
-  // Host is the host address to use for this acl. Each host to allow
-  // the principal access from must be specified as a new creation.
+  // The host address to use for this ACL. To allow a principal
+  // access from multiple hosts, you must create an ACL for each host.
   string host = 5 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -157,7 +156,7 @@ message CreateACLRequest {
     }
   ];
 
-  // Operation is the operation that shall be allowed (e.g. READ).
+  // The operation that is allowed or denied (e.g. READ).
   ACL.Operation operation = 6 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -170,7 +169,7 @@ message CreateACLRequest {
     (buf.validate.field).required = true
   ];
 
-  // PermissionType determines whether the operation should be allowed or denied.
+  // Whether the operation should be allowed or denied.
   ACL.PermissionType permission_type = 7 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -257,7 +256,7 @@ service ACLService {
     option (google.api.http) = {get: "/v1alpha1/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List ACLs"
-      description: "List ACLs"
+      description: "List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
       responses: {
         key: "200"
         value: {
@@ -277,7 +276,7 @@ service ACLService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create ACL"
-      description: "Create ACL"
+      description: "Create a new ACL."
       responses: {
         key: "201"
         value: {
@@ -294,7 +293,7 @@ service ACLService {
     option (google.api.http) = {delete: "/v1alpha1/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete ACLs"
-      description: "Delete all ACLs that match the given filter"
+      description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
       responses: {
         key: "200"
         value: {
