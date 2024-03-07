@@ -74,6 +74,16 @@ export class SecretCreationError extends CustomError { }
  * if (p.definition.type == DataType.Boolean && value == null) value = false;
  */
 
+const safeJSONParse = (text: string) => {
+    let parsed;
+
+    try {
+        parsed = JSON.parse(text);
+    } catch {}
+
+    return parsed;
+}
+
 const sanitizeBoolean = (val: any) => {
     if (typeof val === 'boolean') return val;
     if (typeof val === 'string') {
@@ -384,7 +394,7 @@ export class Secret {
 export class ConnectorPropertiesStore {
     allGroups: PropertyGroup[] = [];
     propsByName = observable.map<string, Property>();
-    jsonText = '';
+    private _jsonText = '';
     error: string | undefined = undefined;
     crud: 'create' | 'update' = 'create';
     secrets: SecretsStore | null = null;
@@ -403,7 +413,8 @@ export class ConnectorPropertiesStore {
         private appliedConfig: Record<string, any> | undefined,
         features?: ConnectorClusterFeatures
     ) {
-        makeAutoObservable(this, {
+        makeAutoObservable<ConnectorPropertiesStore, '_jsonText'>(this, {
+            _jsonText: observable,
             fallbackGroupName: false,
             reactionDisposers: false,
             initConfig: action.bound,
@@ -411,8 +422,21 @@ export class ConnectorPropertiesStore {
         if (features?.secretStore) this.secrets = new SecretsStore();
         if (features?.editing) this.crud = 'update';
 
+        console.log('features', { secretStore: features?.secretStore, editting: features?.editing })
+
         this.fallbackGroupName = removeNamespace(this.pluginClassName);
         this.initConfig();
+    }
+
+    get jsonText(): string {
+       return this._jsonText;
+    }
+
+    set jsonText(value: string) {
+        const parsed =   Object.assign({
+            'connector.class': this.pluginClassName,
+        }, safeJSONParse(value));
+        this._jsonText = JSON.stringify(parsed, undefined, 4);
     }
 
     createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
@@ -440,11 +464,7 @@ export class ConnectorPropertiesStore {
         } as any;
 
         if (this.viewMode == 'json') {
-            let parsedConfig = {};
-            try {
-                parsedConfig = JSON.parse(this.jsonText);
-            } catch { }
-            Object.assign(config, parsedConfig);
+            Object.assign(config, safeJSONParse(this._jsonText));
 
             return config;
         }
@@ -535,10 +555,15 @@ export class ConnectorPropertiesStore {
             this.reactionDisposers.push(
                 reaction(
                     () => {
-                        return this.getConfigObject();
+                        console.log('updateJSON: getting config object');
+                        const configObj = this.getConfigObject();
+                        const jsonText = JSON.stringify(configObj);
+                        return { configObj, jsonText };
                     },
-                    (config) => {
-                        this.jsonText = JSON.stringify(config, undefined, 4);
+                    (p) => {
+                        const config = p.configObj;
+                        console.log('updateJSON: reaction, updating json text');
+                        this._jsonText = JSON.stringify(config, undefined, 4);
                     },
                     { delay: 100, fireImmediately: true, equals: comparer.structural }
                 )
@@ -548,9 +573,14 @@ export class ConnectorPropertiesStore {
             this.reactionDisposers.push(
                 reaction(
                     () => {
-                        return this.getConfigObject();
+                        console.log('validateOnChange: getting config object');
+                        const configObj = this.getConfigObject();
+                        const jsonText = JSON.stringify(configObj);
+                        return { configObj, jsonText };
                     },
-                    (config) => {
+                    (p) => {
+                        const config = p.configObj;
+                        console.log('updateJSON: calling validate');
                         this.validate(config);
                     },
                     { delay: 300, fireImmediately: true, equals: comparer.structural }
