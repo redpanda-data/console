@@ -198,6 +198,7 @@ class SchemaList extends PageComponent<{}> {
                     cursor="pointer"
                     mb=".5rem"
                     onClick={() => this.isHelpSidebarOpen = true}
+                    data-testid="schema-search-help"
                 >
                     Help with schema search
                 </Flex>
@@ -210,7 +211,7 @@ class SchemaList extends PageComponent<{}> {
                     <DrawerOverlay />
                     <DrawerContent>
                         <DrawerCloseButton />
-                        <DrawerHeader>Schema Search Help</DrawerHeader>
+                        <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
 
                         <DrawerBody>
                             <Heading size="md" mt={4}>Filtering schemas</Heading>
@@ -249,7 +250,10 @@ class SchemaList extends PageComponent<{}> {
                             {
                                 header: 'Name', accessorKey: 'name', size: Infinity, cell: ({ row: { original: { name } } }) =>
                                     <Box wordBreak="break-word" whiteSpace="break-spaces">
-                                        <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
+                                        <Link
+                                            data-testid="schema-registry-table-name"
+                                            to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
+                                        >{name}</Link>
                                     </Box>
                             },
                             { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
