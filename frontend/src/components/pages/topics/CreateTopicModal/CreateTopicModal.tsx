@@ -52,6 +52,8 @@ type CreateTopicModalState = {
         readonly cleanupPolicy: string | undefined;
         readonly minInSyncReplicas: string | undefined;
     }
+
+    hasErrors: boolean;
 };
 
 type Props = {
@@ -64,6 +66,18 @@ export class CreateTopicModalContent extends Component<Props> {
 
     render() {
         const state = this.props.state;
+
+        let replicationFactorError = '';
+        if (api.clusterOverview)
+            if (state.replicationFactor != null)
+                if (api.clusterOverview.kafka.distribution == 'REDPANDA') {
+                    // enforce odd numbers
+                    const isOdd = ((state.replicationFactor % 2) == 1);
+                    if (!isOdd) {
+                        replicationFactorError = 'Replication factor must be an odd number';
+                    }
+                }
+
 
         return <div className="createTopicModal" >
 
@@ -81,13 +95,18 @@ export class CreateTopicModalContent extends Component<Props> {
                         />
                     </Label>
                     <Label text="Replication Factor" style={{ flexBasis: '160px' }}>
-                        <NumInput
-                            value={state.replicationFactor}
-                            onChange={e => state.replicationFactor = e}
-                            min={1}
-                            placeholder={state.defaults.replicationFactor}
-                            disabled={isServerless()}
-                        />
+                        <Box>
+                            <NumInput
+                                value={state.replicationFactor}
+                                onChange={e => state.replicationFactor = e}
+                                min={1}
+                                placeholder={state.defaults.replicationFactor}
+                                disabled={isServerless()}
+                            />
+                            <Box color="red.500" fontWeight={500} fontSize="12px" visibility={replicationFactorError ? undefined : 'hidden'}>
+                                {replicationFactorError}
+                            </Box>
+                        </Box>
                     </Label>
 
                     {!api.isRedpanda &&
