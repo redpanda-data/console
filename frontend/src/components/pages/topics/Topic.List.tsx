@@ -523,9 +523,10 @@ function makeCreateTopicModal(parent: TopicList) {
                 get minInSyncReplicas() {
                     return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
                 },
-            }
+            },
+            hasErrors: false,
         }),
-        isOkEnabled: state => /^\S+$/.test(state.topicName),
+        isOkEnabled: state => /^\S+$/.test(state.topicName) && !state.hasErrors,
         onOk: async state => {
 
             if (!state.topicName) throw new Error('"Topic Name" must be set');
