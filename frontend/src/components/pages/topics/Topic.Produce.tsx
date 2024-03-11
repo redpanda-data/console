@@ -4,7 +4,7 @@ import { autorun, computed } from 'mobx';
 import { api } from '../../../state/backendApi';
 import { observer } from 'mobx-react';
 import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
-import { FC, useEffect } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { SingleSelect } from '../../misc/Select';
 import { Label } from '../../../utils/tsxUtils';
 import { proto3 } from '@bufbuild/protobuf';
@@ -108,6 +108,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     const keyPayloadOptions = watch('key')
     const valuePayloadOptions = watch('value')
 
+    const [isKeyExpanded, setKeyExpanded] = useState(false);
     useEffect(() => {
         if (keyPayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(keyPayloadOptions.data)) {
             setError('key.data', {
@@ -412,21 +413,40 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     </Label>}
 
                     {keyPayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
-                        <Controller
-                            control={control}
-                            name="key.data"
-                            render={({
-                                field: { onChange, value },
-                            }) => (
-                                <KowlEditor
-                                    onMount={setTheme}
-                                    height={300}
-                                    value={value}
-                                    onChange={onChange}
-                                    language={encodingToLanguage(keyPayloadOptions?.encoding)}
+                        <Box>
+                            {isKeyExpanded
+                                ? < Controller
+                                    control={control}
+                                    name="key.data"
+                                    render={({
+                                        field: { onChange, value },
+                                    }) => (
+                                        <KowlEditor
+                                            onMount={setTheme}
+                                            height={300}
+                                            value={value}
+                                            onChange={onChange}
+                                            language={encodingToLanguage(keyPayloadOptions?.encoding)}
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                                : <Controller
+                                    control={control}
+                                    name="key.data"
+                                    render={({
+                                        field: { onChange, value },
+                                    }) => (
+                                        <Input
+                                            value={value}
+                                            onChange={onChange}
+                                        />
+                                    )}
+                                />
+                            }
+                            <Button size="sm" variant="link" onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} mt={1}>
+                                {isKeyExpanded ? 'Collapse' : 'Expand'}
+                            </Button>
+                        </Box>
                     </Label>}
                     {errors?.key?.data && <Text color="red.500">{errors.key.data.message}</Text>}
                 </Flex>
@@ -529,7 +549,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                             />
                         </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
-                        <input {...register('value.data')} data-testid="valueData"/>
+                        <input {...register('value.data')} data-testid="valueData" />
                     </Flex>
                 </Flex>
 
