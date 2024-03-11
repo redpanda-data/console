@@ -196,15 +196,18 @@ export function NumInput(p: {
 
             onBlur={() => {
                 const s = editValue;
+
                 if (s == undefined || s == '') {
                     // still a valid value, meaning "default"
                     commit(undefined);
+                    setEditValue('');
                     return;
                 }
 
                 const n = Number(s);
                 if (!Number.isFinite(n)) {
                     commit(undefined);
+                    setEditValue('');
                     return;
                 }
                 commit(n);
@@ -249,9 +252,11 @@ function RetentionTimeSelect(p: {
     if (unit == 'infinite')
         placeholder = 'Infinite';
 
+    console.log('value', { value, unit, placeholder })
+
     return <NumInput
         value={numDisabled ? undefined : value}
-        onChange={x => p.onChangeValue(x ?? -1)}
+        onChange={x => p.onChangeValue(x ?? 0)}
         min={0}
         placeholder={placeholder}
         disabled={numDisabled}
