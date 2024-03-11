@@ -271,8 +271,6 @@ function RetentionTimeSelect(p: {
     if (unit == 'infinite')
         placeholder = 'Infinite';
 
-    console.log('value', { value, unit, placeholder })
-
     return <NumInput
         value={numDisabled ? undefined : value}
         onChange={x => p.onChangeValue(x ?? 0)}
