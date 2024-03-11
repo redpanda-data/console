@@ -24,6 +24,7 @@ import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/restInterfaces';
 import SearchBar from '../../misc/SearchBar';
 import { uiSettings } from '../../../state/ui';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 
 @observer
@@ -55,30 +56,27 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     }
 
     isFilterMatch(filter: string, item: ClusterConnectorInfo): boolean {
-        return item.name.toLowerCase().includes(filter.toLowerCase());
+        try {
+            const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i')
+            return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp))
+        } catch (e) {
+            console.warn('Invalid expression');
+            return item.name.toLowerCase().includes(filter.toLowerCase());
+        }
     }
 
     render() {
+        if (!api.connectConnectors) return DefaultSkeleton;
+
         const clusterName = decodeURIComponent(this.props.clusterName);
-
-        if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
-
-        const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
-        let connectors = cluster?.connectors;
-
-        const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
-
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i')
-
-            connectors = connectors?.filter(x => {
-                return x.name.match(quickSearchRegExp) || x.class.match(quickSearchRegExp)
-            }) ?? []
-
-        } catch (e) {
-            console.warn('Invalid expression')
+        if (api.connectConnectors?.isConfigured === false) {
+            return <NotConfigured />;
         }
 
+        const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
+        const connectors = cluster?.connectors;
+
+        const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
 
         return (
             <PageContent>
@@ -106,7 +104,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                         </Box>
 
                         <DataTable<ClusterConnectorInfo>
-                            data={connectors ?? []}
+                            data={this.filteredResults}
                             pagination
                             defaultPageSize={10}
                             sorting

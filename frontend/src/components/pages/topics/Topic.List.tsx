@@ -64,7 +64,7 @@ class TopicList extends PageComponent {
     quickSearchReaction: IReactionDisposer;
 
     @observable topicToDelete: null | Topic = null;
-    @observable filteredTopics: Topic[];
+    @observable filteredTopics: Topic[] = [];
 
     CreateTopicModal;
     showCreateTopicModal;
@@ -110,8 +110,13 @@ class TopicList extends PageComponent {
     }
 
     isFilterMatch(filter: string, item: Topic): boolean {
-        if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
-        return false;
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return Boolean(item.topicName.match(quickSearchRegExp));
+        } catch (e) {
+            console.warn('Invalid expression');
+            return item.topicName.toLowerCase().includes(filter.toLowerCase())
+        }
     }
 
     render() {
@@ -121,17 +126,6 @@ class TopicList extends PageComponent {
         if (uiSettings.topicList.hideInternalTopics) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
-
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch.toLowerCase(), 'i')
-
-            topics = topics.filter(x => {
-                return x.topicName.toLowerCase().match(quickSearchRegExp);
-            });
-        } catch (e) {
-            console.warn('Invalid expression')
-        }
-
 
         const partitionCount = topics.sum((x) => x.partitionCount);
         const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
@@ -178,7 +172,7 @@ class TopicList extends PageComponent {
                         <this.CreateTopicModal />
                     </div>
                     <Box my={4}>
-                        <TopicsTable topics={topics} onDelete={(record) => {
+                        <TopicsTable topics={this.filteredTopics} onDelete={(record) => {
                             this.topicToDelete = record;
                         }} />
                     </Box>
