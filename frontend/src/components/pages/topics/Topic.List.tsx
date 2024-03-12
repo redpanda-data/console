@@ -10,7 +10,7 @@
  */
 
 import React, { FC, useRef, useState } from 'react';
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -119,13 +119,18 @@ class TopicList extends PageComponent {
         }
     }
 
-    render() {
-        if (!api.topics) return DefaultSkeleton;
-
-        let topics = api.topics;
+    @computed get topics() {
+        let topics = api.topics ?? []
         if (uiSettings.topicList.hideInternalTopics) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
+        return topics
+    }
+
+    render() {
+        if (!api.topics) return DefaultSkeleton;
+
+        const topics = this.topics
 
         const partitionCount = topics.sum((x) => x.partitionCount);
         const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
@@ -143,7 +148,7 @@ class TopicList extends PageComponent {
                 <Box pt={6}>
                     <SearchBar<Topic>
                         placeholderText="Enter search term/regex"
-                        dataSource={() => topics || []}
+                        dataSource={() => this.topics}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.topicList.quickSearch}
                         onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
@@ -163,6 +168,7 @@ class TopicList extends PageComponent {
                         </Button>
 
                         <Checkbox
+                            data-testid="show-internal-topics-checkbox"
                             isChecked={!uiSettings.topicList.hideInternalTopics}
                             onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
                             style={{ marginLeft: 'auto' }}>
