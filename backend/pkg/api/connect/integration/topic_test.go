@@ -14,6 +14,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"testing"
 	"time"
@@ -28,6 +29,173 @@ import (
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
+
+func (s *APISuite) TestListTopics() {
+	t := s.T()
+
+	// Seed some topics that can be listed
+	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Second)
+	t.Cleanup(cancel)
+
+	topicPrefix := "console-integration-test-list-topics-"
+	topicsToCreate := 5
+
+	createdTopics := make(map[string]struct{})
+	for topicsToCreate > 0 {
+		topicName := fmt.Sprintf("%v%d", topicPrefix, topicsToCreate)
+		require.NoError(t, createKafkaTopic(ctx, s.kafkaAdminClient, topicName, 1))
+		createdTopics[topicName] = struct{}{}
+		topicsToCreate--
+	}
+
+	connectClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+
+	t.Run("list all topics with a valid request (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		t.Cleanup(cancel)
+
+		// 1. List topics
+		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(&v1alpha1.ListTopicsRequest{}))
+		require.NoError(err)
+		assert.GreaterOrEqual(len(listTopicsRes.Msg.GetTopics()), len(createdTopics))
+
+		// 2. Ensure that we can find all of our previously created topics
+		toFind := maps.Clone(createdTopics)
+		for _, topic := range listTopicsRes.Msg.GetTopics() {
+			if _, exists := toFind[topic.Name]; !exists {
+				continue
+			}
+			delete(toFind, topic.Name)
+			if len(toFind) == 0 {
+				break
+			}
+		}
+		assert.Emptyf(toFind, "expected all previously created topics in list topics response")
+	})
+
+	t.Run("list all topics with a valid filter (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		t.Cleanup(cancel)
+
+		// 1. List topics
+		listReq := &v1alpha1.ListTopicsRequest{Filter: &v1alpha1.ListTopicsRequest_Filter{
+			NameContains: topicPrefix,
+		}}
+		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(listReq))
+		require.NoError(err)
+		assert.Len(listTopicsRes.Msg.GetTopics(), len(createdTopics))
+
+		// 2. Ensure that we can find all of our previously created topics
+		toFind := maps.Clone(createdTopics)
+		for _, topic := range listTopicsRes.Msg.GetTopics() {
+			if _, exists := toFind[topic.Name]; !exists {
+				continue
+			}
+			delete(toFind, topic.Name)
+			if len(toFind) == 0 {
+				break
+			}
+		}
+		assert.Emptyf(toFind, "expected all previously created topics in list topics response")
+	})
+
+	t.Run("list all topics with pagination (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		t.Cleanup(cancel)
+
+		toFind := maps.Clone(createdTopics)
+
+		// 1. List topics (on page 1)
+		listReq := &v1alpha1.ListTopicsRequest{
+			Filter: &v1alpha1.ListTopicsRequest_Filter{
+				NameContains: topicPrefix,
+			},
+			PageSize: 3,
+		}
+
+		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(listReq))
+		require.NoError(err)
+		assert.Len(listTopicsRes.Msg.GetTopics(), 3)
+		require.NotEmpty(listTopicsRes.Msg.GetNextPageToken())
+
+		// 2. Remove the topics found on page one from the toFind map
+		for _, topic := range listTopicsRes.Msg.GetTopics() {
+			if _, exists := toFind[topic.Name]; !exists {
+				continue
+			}
+			delete(toFind, topic.Name)
+		}
+
+		// 3. List topics (on page 2)
+		listReq.PageToken = listTopicsRes.Msg.GetNextPageToken()
+		listTopicsRes, err = connectClient.ListTopics(ctx, connect.NewRequest(listReq))
+		require.NoError(err)
+		assert.Len(listTopicsRes.Msg.GetTopics(), 2)
+		assert.Empty(listTopicsRes.Msg.GetNextPageToken())
+
+		// 4. Remove the topics found on page two from the toFind map
+		for _, topic := range listTopicsRes.Msg.GetTopics() {
+			if _, exists := toFind[topic.Name]; !exists {
+				continue
+			}
+			delete(toFind, topic.Name)
+		}
+
+		assert.Emptyf(toFind, "expected all previously created topics in list topics response")
+	})
+
+	t.Run("list topics with default request (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+
+		type topic struct {
+			Name              string `json:"name"`
+			Internal          bool   `json:"internal"`
+			PartitionCount    int    `json:"partition_count"`
+			ReplicationFactor int    `json:"replication_factor"`
+		}
+		type listTopicsResponse struct {
+			Topics        []topic `json:"topics"`
+			NextPageToken string  `json:"next_page_token"`
+		}
+		var httpRes listTopicsResponse
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1alpha1/topics").
+			ToJSON(&httpRes).
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Empty(errResponse)
+		require.NoError(err)
+
+		assert.GreaterOrEqual(len(httpRes.Topics), len(createdTopics))
+
+		// 2. Ensure that we can find all of our previously created topics
+		toFind := maps.Clone(createdTopics)
+		for _, topic := range httpRes.Topics {
+			if _, exists := toFind[topic.Name]; !exists {
+				continue
+			}
+			delete(toFind, topic.Name)
+			if len(toFind) == 0 {
+				break
+			}
+		}
+		assert.Emptyf(toFind, "expected all previously created topics in list topics response")
+	})
+}
 
 func (s *APISuite) TestCreateTopic() {
 	t := s.T()
