@@ -50,9 +50,18 @@ function renderNotConfigured() {
 class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }> {
 
     initPage(p: PageInitHelper): void {
+        const subjectName = this.props.subjectName;
+
         p.title = 'Edit Schema Compatibility';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb('Edit Compatibility', '/schema-registry');
+        if(subjectName) {
+            p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, {
+                canBeTruncated: true
+            })
+            p.addBreadcrumb('Edit Compatibility', `/schema-registry/subjects/${subjectName}/edit-compatibility`)
+        } else {
+            p.addBreadcrumb('Edit Compatibility', '/schema-registry/edit-compatibility');
+        }
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
