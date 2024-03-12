@@ -192,16 +192,19 @@ class SchemaList extends PageComponent<{}> {
                     <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
                 </Flex>
 
-                <Flex
+                <Button
                     textDecoration="underline"
                     mr="auto"
                     cursor="pointer"
                     mb=".5rem"
                     onClick={() => this.isHelpSidebarOpen = true}
                     data-testid="schema-search-help"
+                    variant="link"
+                    paddingInline={0}
+                    fontWeight={400}
                 >
                     Help with schema search
-                </Flex>
+                </Button>
                 <Drawer
                     isOpen={this.isHelpSidebarOpen}
                     placement="right"
