@@ -1,6 +1,6 @@
 module github.com/redpanda-data/console/backend
 
-go 1.22
+go 1.22.0
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20231115204500-e097f827e652.1
@@ -34,7 +34,7 @@ require (
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.18.0
-	github.com/redpanda-data/common-go/api v0.0.0-20240229140756-0837495565ba
+	github.com/redpanda-data/common-go/api v0.0.0-20240312123558-20eb1cef5eee
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20240105044330-c094966ca0cf
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.9.0
