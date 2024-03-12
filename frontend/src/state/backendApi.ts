@@ -918,11 +918,20 @@ const apiStore = {
         }).catch(() => { });
     },
 
-    refreshSchemaUsagesById(schemaId: number, force?: boolean) {
-        cachedApiRequest<SchemaVersion[]>(`${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, force)
+    async refreshSchemaUsagesById(schemaId: number, force?: boolean): Promise<void> {
+        await cachedApiRequest<SchemaVersion[]>(`${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, force)
             .then(r => {
                 this.schemaUsagesById.set(schemaId, r);
-            }, addError);
+            }, err => {
+                if (err instanceof Error) {
+                    // Currently we don't get helpful status codes (502) so we have to inspect the message
+                    if (err.message.includes('404') && err.message.includes('not found')) {
+                        // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
+                        return null;
+                    }
+                }
+                throw err;
+            });
     },
 
     async setSchemaRegistryCompatibilityMode(mode: SchemaRegistryCompatibilityMode): Promise<SchemaRegistryConfigResponse> {
