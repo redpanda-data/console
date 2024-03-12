@@ -396,11 +396,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
                         <StatusIndicator
                             identityKey="messageSearch"
-                        fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={this.messageSearch.searchPhase!}
-                        progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
+                            fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                            statusText={this.messageSearch.searchPhase!}
+                            progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
+                            messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
                         />
                     }
 
@@ -1004,7 +1004,7 @@ class StartOffsetDateTimePicker extends Component {
 }
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
+export class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value;
@@ -1076,7 +1076,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
         <RpTabs

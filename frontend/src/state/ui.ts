@@ -211,6 +211,11 @@ const defaultUiSettings = {
         quickSearch: ''
     },
 
+    connectorsDetails: {
+        logsQuickSearch: '',
+        sorting: [] as SortingState,
+    },
+
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',
