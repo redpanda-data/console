@@ -56,55 +56,6 @@ export class Secret extends Message<Secret> {
 }
 
 /**
- * SecretInput defienes the secret input for secret API actions.
- *
- * @generated from message redpanda.api.dataplane.v1alpha1.SecretInput
- */
-export class SecretInput extends Message<SecretInput> {
-  /**
-   * Secret labels.
-   *
-   * @generated from field: map<string, string> labels = 2;
-   */
-  labels: { [key: string]: string } = {};
-
-  /**
-   * The secret data.
-   *
-   * @generated from field: bytes secret_data = 3;
-   */
-  secretData = new Uint8Array(0);
-
-  constructor(data?: PartialMessage<SecretInput>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.SecretInput";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecretInput {
-    return new SecretInput().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecretInput {
-    return new SecretInput().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecretInput {
-    return new SecretInput().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SecretInput | PlainMessage<SecretInput> | undefined, b: SecretInput | PlainMessage<SecretInput> | undefined): boolean {
-    return proto3.util.equals(SecretInput, a, b);
-  }
-}
-
-/**
  * ListSecretsResponse is the response of ListSecrets.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.ListSecretsResponse
@@ -356,11 +307,18 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
   id = "";
 
   /**
-   * The input for the secret to create.
+   * Secret labels.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 2;
+   * @generated from field: map<string, string> labels = 2;
    */
-  secret?: SecretInput;
+  labels: { [key: string]: string } = {};
+
+  /**
+   * The secret data.
+   *
+   * @generated from field: bytes secret_data = 3;
+   */
+  secretData = new Uint8Array(0);
 
   constructor(data?: PartialMessage<CreateSecretRequest>) {
     super();
@@ -371,7 +329,8 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.CreateSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "secret", kind: "message", T: SecretInput },
+    { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateSecretRequest {
@@ -446,11 +405,18 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   id = "";
 
   /**
-   * The input for the secret to update.
+   * Secret labels.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 2;
+   * @generated from field: map<string, string> labels = 2;
    */
-  secret?: SecretInput;
+  labels: { [key: string]: string } = {};
+
+  /**
+   * The secret data.
+   *
+   * @generated from field: bytes secret_data = 3;
+   */
+  secretData = new Uint8Array(0);
 
   constructor(data?: PartialMessage<UpdateSecretRequest>) {
     super();
@@ -461,7 +427,8 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.UpdateSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "secret", kind: "message", T: SecretInput },
+    { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateSecretRequest {
@@ -707,11 +674,18 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
   name = "";
 
   /**
-   * The input for the secret to create.
+   * Secret labels.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 3;
+   * @generated from field: map<string, string> labels = 3;
    */
-  secret?: SecretInput;
+  labels: { [key: string]: string } = {};
+
+  /**
+   * The secret data.
+   *
+   * @generated from field: bytes secret_data = 4;
+   */
+  secretData = new Uint8Array(0);
 
   constructor(data?: PartialMessage<CreateConnectSecretRequest>) {
     super();
@@ -723,7 +697,8 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "secret", kind: "message", T: SecretInput },
+    { no: 3, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectSecretRequest {
@@ -920,11 +895,18 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
   id = "";
 
   /**
-   * The input for the secret to update.
+   * Secret labels.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha1.SecretInput secret = 3;
+   * @generated from field: map<string, string> labels = 3;
    */
-  secret?: SecretInput;
+  labels: { [key: string]: string } = {};
+
+  /**
+   * The secret data.
+   *
+   * @generated from field: bytes secret_data = 4;
+   */
+  secretData = new Uint8Array(0);
 
   constructor(data?: PartialMessage<UpdateConnectSecretRequest>) {
     super();
@@ -936,7 +918,8 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "secret", kind: "message", T: SecretInput },
+    { no: 3, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectSecretRequest {

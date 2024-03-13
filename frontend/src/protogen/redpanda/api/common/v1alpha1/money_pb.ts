@@ -19,17 +19,11 @@ export enum Currency {
    * @generated from enum value: CURRENCY_CURRENCY_USD_CENTS = 1;
    */
   CURRENCY_USD_CENTS = 1,
-
-  /**
-   * @generated from enum value: CURRENCY_CURRENCY_CRT = 2;
-   */
-  CURRENCY_CRT = 2,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Currency)
 proto3.util.setEnumType(Currency, "redpanda.api.common.v1alpha1.Currency", [
   { no: 0, name: "CURRENCY_UNSPECIFIED" },
   { no: 1, name: "CURRENCY_CURRENCY_USD_CENTS" },
-  { no: 2, name: "CURRENCY_CURRENCY_CRT" },
 ]);
 
 /**
