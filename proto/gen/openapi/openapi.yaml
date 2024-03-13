@@ -297,10 +297,17 @@ components:
         id:
           description: Secret identifier.
           type: string
-        secret:
-          $ref: '#/components/schemas/SecretInput'
+        labels:
+          additionalProperties:
+            type: string
+          description: Secret labels.
+          type: object
+        secret_data:
+          description: The secret data.
+          format: byte
+          type: string
       required:
-        - secret
+        - secret_data
       type: object
     CreateSecretResponse:
       description: CreateSecretResponse is the response of CreateSecret.
@@ -969,21 +976,6 @@ components:
             type: string
           description: Secret labels.
           type: object
-      type: object
-    SecretInput:
-      description: SecretInput defienes the secret input for secret API actions.
-      properties:
-        labels:
-          additionalProperties:
-            type: string
-          description: Secret labels.
-          type: object
-        secret_data:
-          description: The secret data.
-          format: byte
-          type: string
-      required:
-        - secret_data
       type: object
     SetConfiguration:
       properties:
@@ -2164,14 +2156,21 @@ paths:
             schema:
               description: CreateConnectSecretRequest is the request of CreateConnectSecret.
               properties:
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: Secret labels.
+                  type: object
                 name:
                   description: The Connect name.
                   type: string
-                secret:
-                  $ref: '#/components/schemas/SecretInput'
+                secret_data:
+                  description: The secret data.
+                  format: byte
+                  type: string
               required:
                 - name
-                - secret
+                - secret_data
               type: object
         required: true
         x-originalParamName: body
@@ -2323,10 +2322,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SecretInput'
-        description: The input for the secret to update.
+              description: UpdateConnectSecretRequest is the request of UpdateConnectSecret.
+              properties:
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: Secret labels.
+                  type: object
+                secret_data:
+                  description: The secret data.
+                  format: byte
+                  type: string
+              required:
+                - secret_data
+              type: object
         required: true
-        x-originalParamName: secret
+        x-originalParamName: body
       responses:
         "200":
           content:
@@ -2558,10 +2569,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SecretInput'
-        description: The input for the secret to update.
+              description: UpdateSecretRequest is the request of UpdateSecret.
+              properties:
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: Secret labels.
+                  type: object
+                secret_data:
+                  description: The secret data.
+                  format: byte
+                  type: string
+              required:
+                - secret_data
+              type: object
         required: true
-        x-originalParamName: secret
+        x-originalParamName: body
       responses:
         "200":
           content:
