@@ -20,13 +20,7 @@ import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import {
-    ColumnList, DataColumnKey,
-    FilterEntry,
-    PartitionOffsetOrigin,
-    PreviewTagV2,
-    TimestampDisplayFormat,
-} from '../../../../state/ui';
+import { ColumnList, DataColumnKey, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat, } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
@@ -34,74 +28,18 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import {
-    Ellipsis,
-    Label,
-    navigatorClipboardErrorHandler,
-    numberToThousandsString,
-    OptionGroup,
-    StatusIndicator,
-    TimestampDisplay,
-    toSafeString
-} from '../../../../utils/tsxUtils';
-import {
-    base64FromUInt8Array,
-    cullText,
-    encodeBase64,
-    prettyBytes,
-    prettyMilliseconds,
-    titleCase
-} from '../../../../utils/utils';
+import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import {
-    Alert,
-    AlertDescription,
-    AlertIcon,
-    AlertTitle,
-    Box,
-    Button,
-    Checkbox,
-    DataTable,
-    DateTimeInput,
-    Empty,
-    Flex,
-    Grid,
-    GridItem,
-    Heading,
-    Input,
-    Link,
-    Menu,
-    MenuButton,
-    MenuItem,
-    MenuList,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Popover,
-    RadioGroup,
-    SearchField,
-    Switch,
-    Tabs as RpTabs,
-    Tag,
-    TagCloseButton,
-    TagLabel,
-    Text,
-    Tooltip,
-    useToast,
-    VStack
-} from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
-import { MultiValue, Select as ChakraReactSelect } from 'chakra-react-select';
+import { MultiValue } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
@@ -458,11 +396,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
                         <StatusIndicator
                             identityKey="messageSearch"
-                        fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={this.messageSearch.searchPhase!}
-                        progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
+                            fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                            statusText={this.messageSearch.searchPhase!}
+                            progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
+                            messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
                         />
                     }
 
@@ -1066,7 +1004,7 @@ class StartOffsetDateTimePicker extends Component {
 }
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
+export class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value;
@@ -1138,7 +1076,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
         <RpTabs
@@ -1589,14 +1527,15 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         value: column.dataIndex
     }));
 
-    return <ChakraReactSelect<{ label: string; value: DataColumnKey }, true>
-        isMulti={true}
+    return <Select
+        isMulti
         name=""
         options={defaultColumnList.map((column: ColumnList) => ({
             label: column.title,
             value: column.dataIndex,
         }))}
         value={value}
+        // @ts-ignore - we need to add support for isMulti generic in @redpanda-data/ui
         onChange={handleColumnListChange}
     />
 }

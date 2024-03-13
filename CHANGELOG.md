@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.4.5 / 2024-03-06
+
+- [SECURITY] Update Go to v1.22.1 to address multiple [CVEs](https://groups.google.com/g/golang-announce/c/5pwGVUPoMbg).
+- [IMPROVEMENT] Wrap long topic names instead of truncating them in the topics list [#1159](https://github.com/redpanda-data/console/pull/1159).
+
 ## v2.4.4 / 2024-03-04
 
 - [FIX] Fix for glob patterns for adapting the preview in the list messages table [#1116](https://github.com/redpanda-data/console/pull/1116).

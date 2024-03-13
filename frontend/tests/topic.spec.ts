@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 test.describe('Topic', () => {
@@ -46,5 +46,15 @@ test.describe('Topic', () => {
         await page.goto('/topics');
         await page.getByTestId(`delete-topic-button-${topicName}`).click()
         await page.getByTestId('delete-topic-confirm-button').click()
+    });
+    test('should show internal topics if the corresponding checkbox is checked', async ({page}) => {
+        await page.goto('/topics');
+        await page.getByTestId('show-internal-topics-checkbox').check();
+        await expect(page.getByTestId('data-table-cell').getByText('_internal_connectors_status')).toBeVisible()
+    });
+    test('should hide internal topics if the corresponding checkbox is unchecked', async ({page}) => {
+        await page.goto('/topics');
+        await page.getByTestId('show-internal-topics-checkbox').uncheck();
+        await expect(page.getByTestId('data-table-cell').getByText('_internal_connectors_status')).not.toBeVisible()
     });
 });

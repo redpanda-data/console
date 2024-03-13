@@ -11,22 +11,29 @@
 
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
-import { comparer } from 'mobx';
+import { comparer, observable, transaction } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
-import { Code } from '../../../utils/tsxUtils';
+import { MessageSearch, MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
+import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance, TopicMessage } from '../../../state/restInterfaces';
+import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import { ConfigPage } from './dynamic-ui/components';
 import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
-import { delay } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable } from '@redpanda-data/ui';
+import { delay, encodeBase64, titleCase } from '../../../utils/utils';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable, SearchField } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
+import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
+import { ColumnDef } from '@tanstack/react-table';
+import { MessagePreview, renderExpandedMessage } from '../topics/Tab.Messages';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { uiState } from '../../../state/uiState';
+import { sanitizeString } from '../../../utils/filterHelper';
+import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -81,7 +88,7 @@ const KafkaConnectorMain = observer(
                 {/* [Pause/Resume] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
                     <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                        <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
+                        <Button isDisabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                             {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                         </Button>
                     </Tooltip>
@@ -89,14 +96,14 @@ const KafkaConnectorMain = observer(
 
                 {/* [Restart] */}
                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                    <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
+                    <Button isDisabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                         Restart
                     </Button>
                 </Tooltip>
 
                 {/* [Delete] */}
                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
-                    <Button variant="outline" colorScheme="red" disabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
+                    <Button variant="outline" colorScheme="red" isDisabled={!canEdit} onClick={() => ($state.deletingConnector = connectorName)} minWidth="32">
                         Delete
                     </Button>
                 </Tooltip>
@@ -109,7 +116,7 @@ const KafkaConnectorMain = observer(
                         key: 'overview',
                         name: 'Overview',
                         component: <Box mt="8">
-                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector}/>
+                            <ConfigOverviewTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
                         </Box>
                     },
                     {
@@ -125,20 +132,27 @@ const KafkaConnectorMain = observer(
                                 <Tooltip placement="top" isDisabled={canEdit !== true} label={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'} hasArrow={true}>
                                     <Button
                                         variant="outline"
-                                        style={{width: '200px'}}
-                                        disabled={(() => {
+                                        style={{ width: '200px' }}
+                                        isDisabled={(() => {
                                             if (!canEdit) return true;
                                             if (!connector) return true;
                                             if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
                                         })()}
                                         onClick={() => {
-                                            $state.updatingConnector = {clusterName, connectorName};
+                                            $state.updatingConnector = { clusterName, connectorName };
                                         }}
                                     >
                                         Update Config
                                     </Button>
                                 </Tooltip>
                             </Flex>
+                        </Box>
+                    },
+                    {
+                        key: 'logs',
+                        name: 'Logs',
+                        component: <Box mt="8">
+                            <LogsTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
                         </Box>
                     }
                 ]}
@@ -285,7 +299,7 @@ const ConfigOverviewTab = observer((p: {
                     <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
 
                     <Flex flexDirection="column">
-                        <Text fontWeight="semibold" fontSize="3xl">{connector.status}</Text>
+                        <Text fontWeight="semibold" fontSize="3xl">{titleCase(connector.status)}</Text>
                         <Text opacity=".5">Status</Text>
                     </Flex>
                 </Flex>
@@ -308,17 +322,17 @@ const ConfigOverviewTab = observer((p: {
                             header: 'Task',
                             accessorKey: 'taskId',
                             size: 200,
-                            cell: ({row: {original: {taskId}}}) => <Code nowrap>Task-{taskId}</Code>,
+                            cell: ({ row: { original: { taskId } } }) => <Code nowrap>Task-{taskId}</Code>,
                         },
                         {
                             header: 'Status',
                             accessorKey: 'state',
-                            cell: ({row: {original}}) => <TaskState observable={original} />,
+                            cell: ({ row: { original } }) => <TaskState observable={original} />,
                         },
                         {
                             header: 'Worker',
                             accessorKey: 'workerId',
-                            cell: ({row: {original}}) => <Code nowrap>{original.workerId}</Code>,
+                            cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
                         }
                     ]}
                 />
@@ -393,6 +407,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         await api.refreshConnectClusters(force);
 
         // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
+        // and show the logs tab
         api.refreshTopics(force);
     }
 
@@ -478,3 +493,167 @@ const ConnectorDetails = observer((p: {
         )}
     </Grid>
 });
+
+const LogsTab = observer((p: {
+    clusterName: string,
+    connectClusterStore: ConnectClusterStore,
+    connector: ClusterConnectorInfo,
+}) => {
+    const { connector } = p;
+    const connectorName = connector.name;
+    const topicName = '__redpanda.connectors_logs';
+    const topic = api.topics?.first(x => x.topicName == topicName);
+
+    const createLogsTabState = () => {
+        const search: MessageSearch = createMessageSearch();
+        const state = observable({
+            messages: search.messages,
+            isComplete: false,
+            error: null as string | null,
+            search,
+        });
+
+        // Start search immediately
+        const searchPromise = executeMessageSearch(search, topicName, connectorName);
+        searchPromise.catch(x => state.error = String(x)).finally(() => state.isComplete = true);
+        return state;
+    };
+
+    const [state, setState] = useState(createLogsTabState);
+
+    const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
+        // Create a new search that looks for only this message specifically
+        const search = createMessageSearch();
+        const searchReq: MessageSearchRequest = {
+            filterInterpreterCode: '',
+            maxResults: 1,
+            partitionId: partitionID,
+            startOffset: offset,
+            startTimestamp: 0,
+            topicName: topicName,
+            includeRawPayload: true,
+            ignoreSizeLimit: true,
+            keyDeserializer: uiState.topicSettings.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.valueDeserializer,
+        };
+        const messages = await search.startSearch(searchReq);
+
+        if (messages && messages.length == 1) {
+            // We must update the old message (that still says "payload too large")
+            // So we just find its index and replace it in the array we are currently displaying
+            const indexOfOldMessage = state.messages.findIndex(x => x.partitionID == partitionID && x.offset == offset);
+            if (indexOfOldMessage > -1) {
+                state.messages[indexOfOldMessage] = messages[0];
+            } else {
+                console.error('LoadLargeMessage: cannot find old message to replace', {
+                    searchReq,
+                    messages
+                });
+                throw new Error('LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)');
+            }
+        } else {
+            console.error('LoadLargeMessage: messages response is empty', { messages });
+            throw new Error('LoadLargeMessage: Couldn\'t load the message content, the response was empty');
+        }
+
+    }
+
+    const paginationParams = usePaginationParams(10, state.messages.length);
+    const messageTableColumns: ColumnDef<TopicMessage>[] = [
+        {
+            header: 'Timestamp',
+            accessorKey: 'timestamp',
+            cell: ({ row: { original: { timestamp } } }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+            size: 30
+        },
+        {
+            header: 'Value',
+            accessorKey: 'value',
+            cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => []} isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false} />,
+            size: Number.MAX_SAFE_INTEGER
+        }
+    ];
+
+    const filteredMessages = state.messages.filter(x => {
+        if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+        return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
+    })
+
+
+    return <>
+        <Box my="1rem">The logs below are for the last three hours.</Box>
+
+        <Section minWidth="800px">
+            <Flex mb="6">
+                <SearchField width="230px" searchText={uiSettings.connectorsDetails.logsQuickSearch} setSearchText={x => (uiSettings.connectorsDetails.logsQuickSearch = x)} />
+                <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>Refresh logs</Button>
+            </Flex>
+
+            <DataTable<TopicMessage>
+                data={filteredMessages}
+                emptyText="No messages"
+                columns={messageTableColumns}
+
+                sorting={uiSettings.connectorsDetails.sorting ?? []}
+                onSortingChange={sorting => {
+                    uiSettings.connectorsDetails.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+                }}
+                pagination={paginationParams}
+                // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
+                //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
+                subComponent={({ row: { original } }) => renderExpandedMessage(
+                    original,
+                    () => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
+                )}
+            />
+
+        </Section>
+    </>
+});
+
+function isFilterMatch(str: string, m: TopicMessage) {
+    str = str.toLowerCase();
+    if (m.offset.toString().toLowerCase().includes(str)) return true;
+    if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
+    if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+    return false;
+}
+
+
+async function executeMessageSearch(search: MessageSearch, topicName: string, connectorKey: string) {
+    const filterCode: string = `return key == "${connectorKey}";`;
+
+    const lastXHours = 5;
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - lastXHours);
+
+    const request = {
+        topicName: topicName,
+        partitionId: -1,
+
+        startOffset: PartitionOffsetOrigin.Timestamp,
+        startTimestamp: startTime.getTime(),
+        maxResults: 1000,
+        filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
+        includeRawPayload: false,
+
+        keyDeserializer: PayloadEncoding.UNSPECIFIED,
+        valueDeserializer: PayloadEncoding.UNSPECIFIED,
+    } as MessageSearchRequest;
+
+    // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
+    // so any changes in phase, messages, error, etc can be used immediately in the ui
+    return transaction(async () => {
+        try {
+            search.startSearch(request)
+                .catch(err => {
+                    const msg = ((err as Error).message ?? String(err));
+                    console.error('error in connectorLogsMessageSearch: ' + msg);
+                    return [];
+                });
+        } catch (error: any) {
+            console.error('error in connectorLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
+            return [];
+        }
+    });
+}

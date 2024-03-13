@@ -19,15 +19,15 @@ import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
-import { makeObservable, observable } from 'mobx';
+import { action, makeObservable, observable } from 'mobx';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Checkbox, DataTable, Divider, Empty, Flex, Skeleton, Text, VStack } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Checkbox, DataTable, Divider, Empty, Flex, SearchField, Skeleton, Text, VStack } from '@redpanda-data/ui';
 import { SmallStat } from '../../misc/SmallStat';
 import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
-import { Box, createStandaloneToast } from '@chakra-ui/react';
+import { Box, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerHeader, DrawerOverlay, Heading, Spinner, createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
 import { encodeURIComponentPercents } from './Schema.Details';
@@ -61,7 +61,7 @@ function renderNotConfigured() {
                     <Empty description="Not Configured" />
                     <Text textAlign="center">
                         Schema Registry is not configured in Redpanda Console.
-                        <br/>
+                        <br />
                         To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
                     </Text>
 
@@ -79,6 +79,8 @@ function renderNotConfigured() {
 class SchemaList extends PageComponent<{}> {
     @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
     @observable filteredSchemaSubjects: { name: string }[];
+    @observable isLoadingSchemaVersionMatches = false;
+    @observable isHelpSidebarOpen = false;
 
     constructor(p: any) {
         super(p);
@@ -97,25 +99,66 @@ class SchemaList extends PageComponent<{}> {
         api.refreshSchemaMode(force);
         api.refreshSchemaSubjects(force);
         api.refreshSchemaTypes(force);
+
+        // Forcing a refresh means clearing cached information
+        // For all the above calls this happens automatically, but schema usages are a cached map
+        api.schemaUsagesById.clear();
     }
 
-    isFilterMatch(filterString: string, subject: { name: string }) {
+    isFilterMatch(filterString: string, subject: SchemaRegistrySubject) {
+
+        // Find by schema ID
+        const filterAsNumber = Number(filterString.trim());
+        if (!isNaN(filterAsNumber)) {
+            console.log('finding by num', { num: filterAsNumber })
+            // Filter is a number, lets see if we can find a matching schema(-version)
+            const schemas = api.schemaUsagesById.get(filterAsNumber);
+            const matches = schemas?.filter(s => s.subject == subject.name);
+            if (matches && matches.length > 0) {
+                for (const m of matches)
+                    console.log('found match: ' + m.subject + ' v' + m.version)
+                return true;
+            }
+        }
+
+        // Find by regex
+        try {
+            const quickSearchRegExp = new RegExp(filterString, 'i');
+            if (subject.name.match(quickSearchRegExp))
+                return true;
+        } catch {
+        }
+
+        // Find by normal string matching
         return subject.name.toLowerCase().includes(filterString.toLowerCase());
+    }
+
+    componentDidMount() {
+        this.triggerSearchBySchemaId();
+    }
+
+    triggerSearchBySchemaId() {
+        const searchAsNum = Number(uiSettings.schemaList.quickSearch.trim());
+        if (!isNaN(searchAsNum)) {
+            // Keep calling it to keep the list updated
+            // Extra calls (even when we already have data) will be automatically caught by caching
+            this.isLoadingSchemaVersionMatches = true;
+            api.refreshSchemaUsagesById(searchAsNum)
+                .finally(() => this.isLoadingSchemaVersionMatches = false);
+        }
     }
 
     render() {
         if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
         if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
 
-        let filteredSubjects = api.schemaSubjects
-
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.schemaList.quickSearch, 'i');
-            filteredSubjects = filteredSubjects.filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
-                .filter(x => x.name.toLowerCase().match(quickSearchRegExp));
-        } catch (e) {
-            console.warn('Invalid expression')
+        let filteredSubjects = api.schemaSubjects;
+        if (uiSettings.schemaList.quickSearch) {
+            filteredSubjects = filteredSubjects
+                .filter(x => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted))
+                .filter(s => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
         }
+
 
         return (
             <PageContent key="b">
@@ -136,14 +179,55 @@ class SchemaList extends PageComponent<{}> {
 
                 {renderRequestErrors()}
 
-                <SearchBar<{ name: string }>
-                    placeholderText="Enter search term/regex"
-                    dataSource={() => (api.schemaSubjects || []).map(str => ({ name: str.name }))}
-                    isFilterMatch={this.isFilterMatch}
-                    filterText={uiSettings.schemaList.quickSearch}
-                    onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
-                    onFilteredDataChanged={data => this.filteredSchemaSubjects = data}
-                />
+                <Flex alignItems="center" gap="4" >
+                    <SearchField width="350px"
+                        searchText={uiSettings.schemaList.quickSearch}
+                        setSearchText={action(filterText => {
+                            uiSettings.schemaList.quickSearch = filterText;
+                            this.triggerSearchBySchemaId();
+                        })}
+                        placeholderText="Filter by subject name or schema ID..."
+
+                    />
+                    <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
+                </Flex>
+
+                <Button
+                    textDecoration="underline"
+                    mr="auto"
+                    cursor="pointer"
+                    mb=".5rem"
+                    onClick={() => this.isHelpSidebarOpen = true}
+                    data-testid="schema-search-help"
+                    variant="link"
+                    paddingInline={0}
+                    fontWeight={400}
+                >
+                    Help with schema search
+                </Button>
+                <Drawer
+                    isOpen={this.isHelpSidebarOpen}
+                    placement="right"
+                    size="md"
+                    onClose={() => this.isHelpSidebarOpen = false}
+                >
+                    <DrawerOverlay />
+                    <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
+
+                        <DrawerBody>
+                            <Heading size="md" mt={4}>Filtering schemas</Heading>
+                            There are two ways to filter schemas, and they work a little differently.
+
+                            <Heading size="md" mt={4}>Schema ID</Heading>
+                            If a number matches a schema ID, the results include all subjects referencing that schema.
+
+                            <Heading size="md" mt={4}>Subject name</Heading>
+                            To search subject names, enter that specific name or a regex.
+                        </DrawerBody>
+                    </DrawerContent>
+                </Drawer>
 
                 <Section>
                     <Flex justifyContent={'space-between'} pb={3}>
@@ -169,63 +253,66 @@ class SchemaList extends PageComponent<{}> {
                             {
                                 header: 'Name', accessorKey: 'name', size: Infinity, cell: ({ row: { original: { name } } }) =>
                                     <Box wordBreak="break-word" whiteSpace="break-spaces">
-                                        <Link to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}>{name}</Link>
+                                        <Link
+                                            data-testid="schema-registry-table-name"
+                                            to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
+                                        >{name}</Link>
                                     </Box>
                             },
-                            { header: 'Type', cell: ({row: {original: r}}) => <SchemaTypeColumn name={r.name} />, size: 100 },
-                            { header: 'Compatibility', cell: ({row: {original: r}}) => <SchemaCompatibilityColumn name={r.name} />, size: 100 },
-                            { header: 'Latest Version', cell: ({row: {original: r}}) => <LatestVersionColumn name={r.name} />, size: 100 },
+                            { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
+                            { header: 'Compatibility', cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />, size: 100 },
+                            { header: 'Latest Version', cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />, size: 100 },
                             {
                                 header: '',
                                 id: 'actions',
-                                cell: ({row: {original: r}}) =>
+                                cell: ({ row: { original: r } }) =>
                                     <Button variant="icon"
-                                            height="16px" color="gray.500"
-                                            disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
-                                            onClick={e => {
-                                                e.stopPropagation();
-                                                e.preventDefault();
+                                        height="16px" color="gray.500"
+                                        disabledReason={api.userData?.canDeleteSchemas === false ? 'You don\'t have the \'canDeleteSchemas\' permission' : undefined}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
 
-                                                if (r.isSoftDeleted) {
-                                                    openPermanentDeleteModal(r.name, () => {
-                                                        api.deleteSchemaSubject(r.name, true)
-                                                            .then(async () => {
-                                                                toast({
-                                                                    status: 'success', duration: 4000, isClosable: false,
-                                                                    title: 'Subject permanently deleted'
-                                                                });
-                                                                api.refreshSchemaSubjects(true);
-                                                                appGlobal.history.push('/schema-registry/');
-                                                            })
-                                                            .catch(err => {
-                                                                toast({
-                                                                    status: 'error', duration: null, isClosable: true,
-                                                                    title: 'Failed to permanently delete subject',
-                                                                    description: String(err),
-                                                                })
+                                            if (r.isSoftDeleted) {
+                                                openPermanentDeleteModal(r.name, () => {
+                                                    api.deleteSchemaSubject(r.name, true)
+                                                        .then(async () => {
+                                                            toast({
+                                                                status: 'success', duration: 4000, isClosable: false,
+                                                                title: 'Subject permanently deleted'
                                                             });
-                                                    })
-                                                } else {
-                                                    openDeleteModal(r.name, () => {
-                                                        api.deleteSchemaSubject(r.name, false)
-                                                            .then(async () => {
-                                                                toast({
-                                                                    status: 'success', duration: 4000, isClosable: false,
-                                                                    title: 'Subject soft-deleted'
-                                                                });
-                                                                api.refreshSchemaSubjects(true);
+                                                            api.refreshSchemaSubjects(true);
+                                                            appGlobal.history.push('/schema-registry/');
+                                                        })
+                                                        .catch(err => {
+                                                            toast({
+                                                                status: 'error', duration: null, isClosable: true,
+                                                                title: 'Failed to permanently delete subject',
+                                                                description: String(err),
                                                             })
-                                                            .catch(err => {
-                                                                toast({
-                                                                    status: 'error', duration: null, isClosable: true,
-                                                                    title: 'Failed to soft-delete subject',
-                                                                    description: String(err),
-                                                                })
+                                                        });
+                                                })
+                                            } else {
+                                                openDeleteModal(r.name, () => {
+                                                    api.deleteSchemaSubject(r.name, false)
+                                                        .then(async () => {
+                                                            toast({
+                                                                status: 'success', duration: 4000, isClosable: false,
+                                                                title: 'Subject soft-deleted'
                                                             });
-                                                    })
-                                                }
+                                                            api.refreshSchemaSubjects(true);
+                                                        })
+                                                        .catch(err => {
+                                                            toast({
+                                                                status: 'error', duration: null, isClosable: true,
+                                                                title: 'Failed to soft-delete subject',
+                                                                description: String(err),
+                                                            })
+                                                        });
+                                                })
+                                            }
 
-                                            }}>
+                                        }}>
                                         <TrashIcon />
                                     </Button>,
                                 size: 1

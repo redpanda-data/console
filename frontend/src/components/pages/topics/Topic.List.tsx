@@ -10,7 +10,7 @@
  */
 
 import React, { FC, useRef, useState } from 'react';
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -64,7 +64,7 @@ class TopicList extends PageComponent {
     quickSearchReaction: IReactionDisposer;
 
     @observable topicToDelete: null | Topic = null;
-    @observable filteredTopics: Topic[];
+    @observable filteredTopics: Topic[] = [];
 
     CreateTopicModal;
     showCreateTopicModal;
@@ -110,28 +110,27 @@ class TopicList extends PageComponent {
     }
 
     isFilterMatch(filter: string, item: Topic): boolean {
-        if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
-        return false;
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return Boolean(item.topicName.match(quickSearchRegExp));
+        } catch (e) {
+            console.warn('Invalid expression');
+            return item.topicName.toLowerCase().includes(filter.toLowerCase())
+        }
+    }
+
+    @computed get topics() {
+        let topics = api.topics ?? []
+        if (uiSettings.topicList.hideInternalTopics) {
+            topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
+        }
+        return topics
     }
 
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        let topics = api.topics;
-        if (uiSettings.topicList.hideInternalTopics) {
-            topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
-        }
-
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch.toLowerCase(), 'i')
-
-            topics = topics.filter(x => {
-                return x.topicName.toLowerCase().match(quickSearchRegExp);
-            });
-        } catch (e) {
-            console.warn('Invalid expression')
-        }
-
+        const topics = this.topics
 
         const partitionCount = topics.sum((x) => x.partitionCount);
         const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
@@ -149,7 +148,7 @@ class TopicList extends PageComponent {
                 <Box pt={6}>
                     <SearchBar<Topic>
                         placeholderText="Enter search term/regex"
-                        dataSource={() => topics || []}
+                        dataSource={() => this.topics}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.topicList.quickSearch}
                         onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
@@ -169,6 +168,7 @@ class TopicList extends PageComponent {
                         </Button>
 
                         <Checkbox
+                            data-testid="show-internal-topics-checkbox"
                             isChecked={!uiSettings.topicList.hideInternalTopics}
                             onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
                             style={{ marginLeft: 'auto' }}>
@@ -178,7 +178,7 @@ class TopicList extends PageComponent {
                         <this.CreateTopicModal />
                     </div>
                     <Box my={4}>
-                        <TopicsTable topics={topics} onDelete={(record) => {
+                        <TopicsTable topics={this.filteredTopics} onDelete={(record) => {
                             this.topicToDelete = record;
                         }} />
                     </Box>
@@ -523,9 +523,10 @@ function makeCreateTopicModal(parent: TopicList) {
                 get minInSyncReplicas() {
                     return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
                 },
-            }
+            },
+            hasErrors: false,
         }),
-        isOkEnabled: state => /^\S+$/.test(state.topicName),
+        isOkEnabled: state => /^\S+$/.test(state.topicName) && !state.hasErrors,
         onOk: async state => {
 
             if (!state.topicName) throw new Error('"Topic Name" must be set');
