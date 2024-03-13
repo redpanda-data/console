@@ -291,30 +291,6 @@ components:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
-    CreateSecretRequest:
-      description: CreateSecretRequest is the request of CreateSecret.
-      properties:
-        id:
-          description: Secret identifier.
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          description: Secret labels.
-          type: object
-        secret_data:
-          description: The secret data.
-          format: byte
-          type: string
-      required:
-        - secret_data
-      type: object
-    CreateSecretResponse:
-      description: CreateSecretResponse is the response of CreateSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
-      type: object
     CreateTopicRequest.Topic:
       properties:
         configs:
@@ -429,9 +405,6 @@ components:
       type: object
     DeleteConnectSecretResponse:
       description: DeleteConnectSecretResponse is the response of DeleteConnectSecret.
-      type: object
-    DeleteSecretResponse:
-      description: DeleteSecretResponse is the response of DeleteSecret.
       type: object
     DeleteTopicResponse:
       type: object
@@ -616,12 +589,6 @@ components:
         status:
           $ref: '#/components/schemas/ConnectorStatus'
       type: object
-    GetSecretResponse:
-      description: GetSecretResponse is the response of GetSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
-      type: object
     GetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -726,7 +693,7 @@ components:
     ListSecretsFilter:
       description: ListSecretsFilter are the filter options for listing secrets.
       properties:
-        labels[string][string]:
+        labels[string]:
           additionalProperties:
             type: string
           description: The secret labels to search for.
@@ -1117,12 +1084,6 @@ components:
       type: object
     UpdateConnectSecretResponse:
       description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
-      type: object
-    UpdateSecretResponse:
-      description: UpdateSecretResponse is the response of UpdateSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
@@ -2096,7 +2057,7 @@ paths:
             type: string
         - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
-          name: filter.labels[string][string]
+          name: filter.labels[string]
           schema:
             type: string
         - description: |-
@@ -2370,253 +2331,6 @@ paths:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
       summary: Update Connect Cluster Secret
-      tags:
-        - SecretService
-  /v1alpha1/secrets:
-    get:
-      description: List secrets based on optional filter.
-      operationId: SecretService_ListSecrets
-      parameters:
-        - description: The secret ID or name to search for.
-          in: query
-          name: filter.name
-          schema:
-            type: string
-        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          name: filter.labels[string]
-          schema:
-            type: string
-        - description: |-
-            Value of the next_page_token field returned by the previous response.
-            If not provided, the system assumes the first page is requested.
-          in: query
-          name: page_token
-          schema:
-            type: string
-        - description: Limit the paginated response to a number of items.
-          in: query
-          name: page_size
-          schema:
-            format: int32
-            type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListSecretsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: List Secrets
-      tags:
-        - SecretService
-    post:
-      description: Create a secret.
-      operationId: SecretService_CreateSecret
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSecretRequest'
-        description: CreateSecretRequest is the request of CreateSecret.
-        required: true
-        x-originalParamName: body
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-          description: Secret created.
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Create Secret
-      tags:
-        - SecretService
-  /v1alpha1/secrets/{id}:
-    delete:
-      description: Delete a specific secret.
-      operationId: SecretService_DeleteSecret
-      parameters:
-        - description: The id of the secret to delete.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          content:
-            application/json:
-              schema: {}
-          description: Secret was deleted successfully.
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Delete Secret
-      tags:
-        - SecretService
-    get:
-      description: Get a specific secret.
-      operationId: SecretService_GetSecret
-      parameters:
-        - description: The id of the secret to retrieve.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-          description: Ok
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get secret
-      tags:
-        - SecretService
-    put:
-      description: Update a secret.
-      operationId: SecretService_UpdateSecret
-      parameters:
-        - description: Secret identifier.
-          in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              description: UpdateSecretRequest is the request of UpdateSecret.
-              properties:
-                labels:
-                  additionalProperties:
-                    type: string
-                  description: Secret labels.
-                  type: object
-                secret_data:
-                  description: The secret data.
-                  format: byte
-                  type: string
-              required:
-                - secret_data
-              type: object
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-          description: Ok
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Update Secret
       tags:
         - SecretService
   /v1alpha1/topics:
@@ -2978,7 +2692,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
