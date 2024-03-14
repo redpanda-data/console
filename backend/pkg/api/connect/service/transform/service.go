@@ -89,35 +89,34 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 		)
 	}
 
-	noFilterApplied := c.Msg.GetFilter() == nil || c.Msg.GetFilter().GetNameContains() == ""
-	if noFilterApplied {
-		return &connect.Response[v1alpha1.ListTransformsResponse]{
-			Msg: &v1alpha1.ListTransformsResponse{
-				Transforms: transformsProto,
-			},
-		}, nil
+	hasFilter := c.Msg.GetFilter() != nil && c.Msg.GetFilter().GetNameContains() != ""
+	if hasFilter {
+		transformsProto = findTransformsByNameContains(transformsProto, c.Msg.GetFilter().GetNameContains())
 	}
 
-	transformsFiltered := findTransformsByNameContains(transformsProto, c.Msg.GetFilter().GetNameContains())
-
 	// Add pagination
-	sort.SliceStable(transformsFiltered, func(i, j int) bool {
-		return transformsFiltered[i].Name < transformsFiltered[j].Name
-	})
-	page, nextPageToken, err := pagination.SliceToPaginatedWithToken(transformsFiltered, int(c.Msg.PageSize), c.Msg.GetPageToken(), "name", func(x *v1alpha1.TransformMetadata) string {
-		return x.GetName()
-	})
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to apply pagination: %w", err),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
+	var nextPageToken string
+	if c.Msg.GetPageSize() > 0 {
+		sort.SliceStable(transformsProto, func(i, j int) bool {
+			return transformsProto[i].Name < transformsProto[j].Name
+		})
+		page, token, err := pagination.SliceToPaginatedWithToken(transformsProto, int(c.Msg.PageSize), c.Msg.GetPageToken(), "name", func(x *v1alpha1.TransformMetadata) string {
+			return x.GetName()
+		})
+		if err != nil {
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("failed to apply pagination: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
+		}
+		nextPageToken = token
+		transformsProto = page
 	}
 
 	return &connect.Response[v1alpha1.ListTransformsResponse]{
 		Msg: &v1alpha1.ListTransformsResponse{
-			Transforms:    page,
+			Transforms:    transformsProto,
 			NextPageToken: nextPageToken,
 		},
 	}, nil
