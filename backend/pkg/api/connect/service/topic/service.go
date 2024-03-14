@@ -15,10 +15,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
@@ -63,9 +65,27 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.
 		kafkaRes.Topics = filteredTopics
 	}
 
-	protoResponse := s.mapper.kafkaMetadataToProto(kafkaRes)
+	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
+	if req.Msg.GetPageSize() == 0 {
+		return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: topics, NextPageToken: ""}), nil
+	}
 
-	return connect.NewResponse(protoResponse), nil
+	// Add pagination
+	sort.SliceStable(topics, func(i, j int) bool {
+		return topics[i].Name < topics[j].Name
+	})
+	page, nextPageToken, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListTopicsResponse_Topic) string {
+		return x.GetName()
+	})
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to apply pagination: %w", err),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+
+	return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: page, NextPageToken: nextPageToken}), nil
 }
 
 // DeleteTopic deletes a Kafka topic.
