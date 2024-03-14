@@ -111,11 +111,11 @@ export class ListSecretsResponse extends Message<ListSecretsResponse> {
  */
 export class ListSecretsFilter extends Message<ListSecretsFilter> {
   /**
-   * The secret ID or name to search for.
+   * Filter results based on secret name substring.
    *
-   * @generated from field: string name = 1;
+   * @generated from field: string name_contains = 1;
    */
-  name = "";
+  nameContains = "";
 
   /**
    * The secret labels to search for.
@@ -132,7 +132,7 @@ export class ListSecretsFilter extends Message<ListSecretsFilter> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListSecretsFilter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 

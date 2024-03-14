@@ -698,8 +698,8 @@ components:
             type: string
           description: The secret labels to search for.
           type: object
-        name:
-          description: The secret ID or name to search for.
+        name_contains:
+          description: Filter results based on secret name substring.
           type: string
       type: object
     ListSecretsResponse:
@@ -2050,9 +2050,9 @@ paths:
           required: true
           schema:
             type: string
-        - description: The secret ID or name to search for.
+        - description: Filter results based on secret name substring.
           in: query
-          name: filter.name
+          name: filter.name_contains
           schema:
             type: string
         - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
@@ -2692,7 +2692,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
