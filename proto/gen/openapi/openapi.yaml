@@ -743,7 +743,7 @@ components:
       type: object
     ListTransformsRequest.Filter:
       properties:
-        name:
+        name_contains:
           type: string
       type: object
     ListTransformsResponse:
@@ -2625,13 +2625,19 @@ paths:
       operationId: TransformService_ListTransforms
       parameters:
         - in: query
-          name: filter.name
+          name: filter.name_contains
           schema:
             type: string
         - in: query
           name: page_token
           schema:
             type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
       responses:
         "200":
           content:

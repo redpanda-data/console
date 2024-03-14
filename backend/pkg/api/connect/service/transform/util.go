@@ -16,13 +16,14 @@ import (
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
-func findTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {
+func findTransformsByNameContains(transforms []*v1alpha1.TransformMetadata, name string) []*v1alpha1.TransformMetadata {
+	matchedTransforms := make([]*v1alpha1.TransformMetadata, 0, len(transforms))
 	for _, transform := range transforms {
 		if strings.Contains(transform.Name, name) {
-			return transform, nil
+			matchedTransforms = append(matchedTransforms, transform)
 		}
 	}
-	return nil, fmt.Errorf("the requested transform %q does not exist", name)
+	return matchedTransforms
 }
 
 func findExactTransformByName(transforms []*v1alpha1.TransformMetadata, name string) (*v1alpha1.TransformMetadata, error) {

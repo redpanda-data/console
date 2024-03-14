@@ -667,16 +667,16 @@ func (s *APISuite) TestListTransforms() {
 		assert := assertpkg.New(t)
 
 		listTransformsRes, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
-			Filter: &v1alpha1.ListTransformsRequest_Filter{Name: tfNameOne},
+			Filter: &v1alpha1.ListTransformsRequest_Filter{NameContains: tfNameTwo},
 		}))
 		assert.NoError(err)
 
-		require.Len(listTransformsRes.Msg.Transforms, 1)
+		require.Len(listTransformsRes.Msg.GetTransforms(), 1)
 
 		transforms := listTransformsRes.Msg.GetTransforms()
 		require.Len(transforms, 1)
 		transform := transforms[0]
-		assert.Equal(tfNameOne, transform.Name)
+		assert.Equal(tfNameTwo, transform.Name)
 		assert.Equal(inputTopicName, transform.InputTopicName)
 		assert.Equal([]string{outputTopicName}, transform.OutputTopicNames)
 	})
