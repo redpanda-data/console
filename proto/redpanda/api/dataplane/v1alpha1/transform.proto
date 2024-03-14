@@ -117,7 +117,7 @@ message DeployTransformRequest {
 
 message ListTransformsRequest {
   message Filter {
-    string name = 1 [
+    string name_contains = 1 [
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128,
       (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
@@ -125,6 +125,11 @@ message ListTransformsRequest {
   }
   Filter filter = 1;
   string page_token = 2;
+  int32 page_size = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Limit the paginated response to a number of items.",
+    minimum: 1,
+    maximum: 1000
+  }];
 }
 
 message ListTransformsResponse {
