@@ -13,11 +13,11 @@ import (
 	"errors"
 	"fmt"
 
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kerr"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 )
 
 // handleKafkaTopicError handles topic specific error codes, such as UNKNOWN_TOPIC_OR_PARTITION and

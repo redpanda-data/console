@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
@@ -22,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	commonv1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 

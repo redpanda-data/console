@@ -170,14 +170,13 @@ func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha1.UpdateTopicC
 	return &kafkaReq, nil
 }
 
-func (k *kafkaClientMapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) *v1alpha1.ListTopicsResponse {
+func (k *kafkaClientMapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) []*v1alpha1.ListTopicsResponse_Topic {
 	topics := make([]*v1alpha1.ListTopicsResponse_Topic, len(metadata.Topics))
 	for i, topicMetadata := range metadata.Topics {
 		topics[i] = k.kafkaTopicMetadataToProto(topicMetadata)
 	}
-	return &v1alpha1.ListTopicsResponse{
-		Topics: topics,
-	}
+
+	return topics
 }
 
 func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1alpha1.ListTopicsResponse_Topic {
