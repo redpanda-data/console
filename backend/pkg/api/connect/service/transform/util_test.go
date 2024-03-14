@@ -28,27 +28,18 @@ func TestFindTransformByName(t *testing.T) {
 		name           string
 		transforms     []*v1alpha1.TransformMetadata
 		searchName     string
-		expectedResult *v1alpha1.TransformMetadata
-		expectedError  string
+		expectedResult []*v1alpha1.TransformMetadata
 	}{
-		{"ExistingTransform", transforms, "transform1", &v1alpha1.TransformMetadata{Name: "transform1"}, ""},
-		{"NonExistingTransform", transforms, "non-existing", nil, "the requested transform \"non-existing\" does not exist"},
-		{"EmptyTransformList", []*v1alpha1.TransformMetadata{}, "transform1", nil, "the requested transform \"transform1\" does not exist"},
-		{"DuplicateTransformNames", []*v1alpha1.TransformMetadata{{Name: "transform1"}, {Name: "transform1"}}, "transform1", &v1alpha1.TransformMetadata{Name: "transform1"}, ""},
-		{"NilSlice", nil, "transform1", nil, "the requested transform \"transform1\" does not exist"},
+		{"ExistingTransform", transforms, "transform1", []*v1alpha1.TransformMetadata{{Name: "transform1"}}},
+		{"NonExistingTransform", transforms, "non-existing", []*v1alpha1.TransformMetadata{}},
+		{"EmptyTransformList", []*v1alpha1.TransformMetadata{}, "transform1", []*v1alpha1.TransformMetadata{}},
+		{"NilSlice", nil, "transform1", []*v1alpha1.TransformMetadata{}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := findTransformByName(tt.transforms, tt.searchName)
-
-			if tt.expectedError != "" {
-				assert.EqualError(t, err, tt.expectedError)
-				assert.Nil(t, result)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResult, result)
-			}
+			result := findTransformsByNameContains(tt.transforms, tt.searchName)
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }

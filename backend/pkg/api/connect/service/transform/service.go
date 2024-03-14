@@ -12,12 +12,15 @@ package transform
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -76,6 +79,7 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
+
 	transformsProto, err := s.mapper.transformMetadataToProto(transforms)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
@@ -85,7 +89,8 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 		)
 	}
 
-	if c.Msg.GetFilter() == nil || c.Msg.GetFilter().GetName() == "" {
+	noFilterApplied := c.Msg.GetFilter() == nil || c.Msg.GetFilter().GetNameContains() == ""
+	if noFilterApplied {
 		return &connect.Response[v1alpha1.ListTransformsResponse]{
 			Msg: &v1alpha1.ListTransformsResponse{
 				Transforms: transformsProto,
@@ -93,16 +98,27 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 		}, nil
 	}
 
-	transformsFiltered, err := findTransformByName(transformsProto, c.Msg.GetFilter().GetName())
+	transformsFiltered := findTransformsByNameContains(transformsProto, c.Msg.GetFilter().GetNameContains())
+
+	// Add pagination
+	sort.SliceStable(transformsFiltered, func(i, j int) bool {
+		return transformsFiltered[i].Name < transformsFiltered[j].Name
+	})
+	page, nextPageToken, err := pagination.SliceToPaginatedWithToken(transformsFiltered, int(c.Msg.PageSize), c.Msg.GetPageToken(), "name", func(x *v1alpha1.TransformMetadata) string {
+		return x.GetName()
+	})
 	if err != nil {
 		return nil, apierrors.NewConnectError(
-			connect.CodeNotFound,
-			err,
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()))
+			connect.CodeInternal,
+			fmt.Errorf("failed to apply pagination: %w", err),
+			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
 	}
+
 	return &connect.Response[v1alpha1.ListTransformsResponse]{
 		Msg: &v1alpha1.ListTransformsResponse{
-			Transforms: []*v1alpha1.TransformMetadata{transformsFiltered},
+			Transforms:    page,
+			NextPageToken: nextPageToken,
 		},
 	}, nil
 }
