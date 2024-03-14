@@ -275,6 +275,11 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
    */
   pageToken = "";
 
+  /**
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize = 0;
+
   constructor(data?: PartialMessage<ListTransformsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -285,6 +290,7 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "filter", kind: "message", T: ListTransformsRequest_Filter },
     { no: 2, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTransformsRequest {
@@ -309,9 +315,9 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
  */
 export class ListTransformsRequest_Filter extends Message<ListTransformsRequest_Filter> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: string name_contains = 1;
    */
-  name = "";
+  nameContains = "";
 
   constructor(data?: PartialMessage<ListTransformsRequest_Filter>) {
     super();
@@ -321,7 +327,7 @@ export class ListTransformsRequest_Filter extends Message<ListTransformsRequest_
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListTransformsRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTransformsRequest_Filter {
