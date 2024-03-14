@@ -667,7 +667,7 @@ func (s *APISuite) TestListTransforms() {
 		assert := assertpkg.New(t)
 
 		listTransformsRes, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha1.ListTransformsRequest{
-			Filter: &v1alpha1.ListTransformsRequest_Filter{NameContains: tfNameOne},
+			Filter: &v1alpha1.ListTransformsRequest_Filter{NameContains: tfNameTwo},
 		}))
 		assert.NoError(err)
 
