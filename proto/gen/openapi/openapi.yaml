@@ -764,6 +764,9 @@ components:
       type: object
     ListUsersResponse:
       properties:
+        next_page_token:
+          description: Token to retrieve the next page.
+          type: string
         users:
           items:
             $ref: '#/components/schemas/ListUsersResponse.User'
@@ -1472,6 +1475,12 @@ paths:
           name: page_token
           schema:
             type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
       responses:
         "200":
           content:
@@ -2836,11 +2845,25 @@ paths:
           name: filter.name_contains
           schema:
             type: string
+        - description: Limit the paginated response to a number of items.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
       responses:
         "200":
           content:
             application/json:
               example:
+                next_page_token: ""
                 users:
                   - name: payment-service
                   - name: jane

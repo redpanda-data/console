@@ -14,10 +14,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
@@ -110,8 +112,29 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 		})
 	}
 
+	var nextPageToken string
+	if req.Msg.GetPageSize() > 0 {
+		// Add pagination
+		sort.SliceStable(filteredUsers, func(i, j int) bool {
+			return filteredUsers[i].Name < filteredUsers[j].Name
+		})
+		page, token, err := pagination.SliceToPaginatedWithToken(filteredUsers, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListUsersResponse_User) string {
+			return x.GetName()
+		})
+		if err != nil {
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("failed to apply pagination: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
+		}
+		filteredUsers = page
+		nextPageToken = token
+	}
+
 	return connect.NewResponse(&v1alpha1.ListUsersResponse{
-		Users: filteredUsers,
+		Users:         filteredUsers,
+		NextPageToken: nextPageToken,
 	}), nil
 }
 

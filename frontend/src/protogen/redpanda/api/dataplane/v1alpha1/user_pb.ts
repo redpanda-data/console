@@ -41,6 +41,19 @@ export class ListUsersRequest extends Message<ListUsersRequest> {
    */
   filter?: ListUsersRequest_Filter;
 
+  /**
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -50,6 +63,8 @@ export class ListUsersRequest extends Message<ListUsersRequest> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "filter", kind: "message", T: ListUsersRequest_Filter },
+    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsersRequest {
@@ -121,6 +136,13 @@ export class ListUsersResponse extends Message<ListUsersResponse> {
    */
   users: ListUsersResponse_User[] = [];
 
+  /**
+   * Token to retrieve the next page.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -130,6 +152,7 @@ export class ListUsersResponse extends Message<ListUsersResponse> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "users", kind: "message", T: ListUsersResponse_User, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsersResponse {

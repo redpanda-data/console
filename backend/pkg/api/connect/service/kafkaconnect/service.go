@@ -13,13 +13,16 @@ package kafkaconnect
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"sort"
 
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -71,6 +74,26 @@ func (s *Service) ListConnectors(ctx context.Context, req *connect.Request[v1alp
 				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
 			),
 		)
+	}
+
+	if req.Msg.GetPageSize() > 0 {
+		connectors := listConnectorsResponse.Connectors
+
+		sort.SliceStable(connectors, func(i, j int) bool {
+			return connectors[i].Name < connectors[j].Name
+		})
+		page, nextPageToken, err := pagination.SliceToPaginatedWithToken(connectors, int(req.Msg.GetPageSize()), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListConnectorsResponse_ConnectorInfoStatus) string {
+			return x.GetName()
+		})
+		if err != nil {
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("failed to apply pagination: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
+		}
+		listConnectorsResponse.Connectors = page
+		listConnectorsResponse.NextPageToken = nextPageToken
 	}
 
 	return connect.NewResponse(listConnectorsResponse), nil
