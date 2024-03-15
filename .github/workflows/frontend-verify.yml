@@ -15,18 +15,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18.10.0'
-
       - name: Install dependencies 
-        run: |
-          cd frontend
-          npm ci
+        working-directory: frontend
+        run: npm ci
       - name: Run lint
-        run: |
-          cd frontend
-          npm run lint
+        working-directory: frontend
+        run: npm run lint
       - name: Run build frontend
+        working-directory: frontend
         run: |
-          cd frontend
           REACT_APP_BUSINESS=true 
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
           REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
@@ -44,12 +41,10 @@ jobs:
         with:
           node-version: '18'
       - name: Install dependencies 
-        run: |
-          cd frontend
-          npm ci
+        working-directory: frontend
+        run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run Playwright tests
-        run: |
-          cd frontend
-          npm run e2e-test
+        working-directory: frontend
+        run: npm run e2e-test
