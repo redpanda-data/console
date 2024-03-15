@@ -132,6 +132,11 @@ message ListConnectorsRequest {
   ];
   // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
   string page_token = 2;
+  int32 page_size = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Limit the paginated response to a number of items.",
+    minimum: 1,
+    maximum: 1000
+  }];
 }
 
 message RestartConnectorRequest {
