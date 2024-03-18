@@ -61,9 +61,13 @@ export class SchemaCreatePage extends PageComponent<{}> {
 export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
 
     initPage(p: PageInitHelper): void {
+        const subjectName = this.props.subjectName;
         p.title = 'Add schema version';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb('Create schema', '/schema-registry');
+        p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, {
+            canBeTruncated: true
+        })
+        p.addBreadcrumb('Create schema', `/schema-registry/subjects/${subjectName}/add-version`);
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
