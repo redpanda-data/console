@@ -53,11 +53,13 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',
+    timeout: 120 * 1000,
   },
   {
     command: 'npm run start',
     url: 'http://localhost:3000',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
   }]
 });
