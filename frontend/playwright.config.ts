@@ -27,7 +27,7 @@ export default defineConfig({
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.REACT_APP_ORIGIN ??
-          'http://localhost:3001',
+          'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -35,7 +35,6 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    // { name: 'setup', testMatch: /.*\.setup\.ts/ },
     {
       name: 'chromium',
       use: {
@@ -43,14 +42,22 @@ export default defineConfig({
         // Use prepared auth state.
         // storageState: 'playwright/.auth/user.json',
       },
-      // dependencies: ['setup'],
     },
   ],
 
   /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://127.0.0.1:3001',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  webServer: [{
+    cwd: '../backend/cmd/api',
+    command: 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
+    url: 'http://localhost:9090/admin/startup',
+    reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  },
+  {
+    command: 'npm run start',
+    url: 'http://localhost:3000',
+    timeout: 120 * 1000,
+    reuseExistingServer: !process.env.CI,
+  }]
 });
