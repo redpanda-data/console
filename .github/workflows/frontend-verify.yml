@@ -46,6 +46,14 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+      - name: Setup Go
+        uses: actions/setup-go@v4
+      - name: Install dependencies
+        working-directory: backend/cmd/api
+        run: go get .
+      - name: Build
+        working-directory: backend/cmd/api
+        run: go build -v ./...
       - name: Start dependencies
         uses: isbang/compose-action@v1.5.1
         with:
