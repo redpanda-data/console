@@ -49,7 +49,7 @@ jobs:
       - name: Start dependencies
         uses: isbang/compose-action@v1.5.1
         with:
-          compose-file: "./frontend/tests/config/docker-compose.yml"
+          compose-file: "./frontend/tests/config/docker-compose.yaml"
           down-flags: "--volumes"
       - name: Run Playwright tests
         working-directory: frontend
