@@ -25,9 +25,10 @@ import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Text, Tooltip } from '@redpanda-data/ui';
-import React, { FC, useRef } from 'react';
+import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Box, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Tabs, Text, Tooltip } from '@redpanda-data/ui';
+import { FC, useRef, useState } from 'react';
 import { openCreateUserModal } from './CreateServiceAccountModal';
+import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -39,10 +40,11 @@ const { ToastContainer, toast } = createStandaloneToast({
     }
 })
 
+export type AclListTab = 'users' | 'roles' | 'acls';
+
 @observer
-class AclList extends PageComponent {
+class AclList extends PageComponent<{ tab: AclListTab }> {
     editorType: 'create' | 'edit' = 'create';
-    @observable aclFailed: { err: unknown } | null = null;
     @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
     constructor(p: any) {
@@ -51,8 +53,8 @@ class AclList extends PageComponent {
     }
 
     initPage(p: PageInitHelper): void {
-        p.title = 'Kafka Access Control';
-        p.addBreadcrumb('Kafka Access Control', '/acls');
+        p.title = 'Access control';
+        p.addBreadcrumb('Access control', '/security');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -87,173 +89,33 @@ class AclList extends PageComponent {
             : null;
 
 
-        let groups = this.principalGroups
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
-            groups = groups.filter(
-                aclGroup => aclGroup.principalName.match(quickSearchRegExp)
-            );
-        } catch (e) {
-            console.warn('Invalid expression')
+        const tabs = [
+            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
+            { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab /> },
+            { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={this.principalGroups} /> },
+        ] as TabsItemProps[];
+
+        // todo: maybe there is a better way to sync the tab control to the path
+        const activeTab = tabs.findIndex(x => x.key == this.props.tab);
+        if (activeTab == -1) {
+            // No tab selected, default to users
+            appGlobal.history.push('/security/users');
         }
 
         return <>
-            <AlertDeleteFailed aclFailed={this.aclFailed} onClose={() => {
-                this.aclFailed = null
-            }}/>
             <ToastContainer />
+
+            {warning}
+            {noAclAuthorizer}
+
             <PageContent>
-
-                {this.edittingPrincipalGroup &&
-                    <AclPrincipalGroupEditor
-                        // @ts-ignore
-                        principalGroup={this.edittingPrincipalGroup}
-                        type={this.editorType}
-                        onClose={() => {
-                            this.edittingPrincipalGroup = undefined;
-                            this.refreshData(true);
-                        }}
-                    />}
-
-                <Section>
-                    <this.SearchControls />
-
-                    {warning}
-                    {noAclAuthorizer}
-
-                    <DataTable<AclPrincipalGroup>
-                        data={groups}
-                        pagination
-                        sorting
-                        columns={[
-                            {
-                                size: Infinity,
-                                header: 'Principal',
-                                accessorKey: 'principal',
-                                cell: ({row: {original: record}}) => {
-                                    const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                                    const isComplete = api.serviceAccounts?.isComplete === true;
-                                    const showWarning = isComplete && !userExists && !record.principalName.includes('*');
-                                    const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
-                                        ? 'User Group'
-                                        : record.principalType;
-                                    return (
-                                        <button className="hoverLink" onClick={() => {
-                                            this.editorType = 'edit';
-                                            this.edittingPrincipalGroup = clone(record);
-                                        }}>
-                                            <Flex>
-                                                <Badge variant="subtle" mr="2">{principalType}</Badge>
-                                                <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">{record.principalName}</Text>
-                                                {showWarning && (
-                                                    <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
-                                <span style={{marginLeft: '4px'}}>
-                                    <QuestionIcon fill="orange" size={16}/>
-                                </span>
-                                                    </Tooltip>
-                                                )}
-                                            </Flex>
-                                        </button>
-                                    );
-                                },
-                            },
-                            {
-                                header: 'Host',
-                                accessorKey: 'host',
-                                cell: ({row: {original: {host}}}) => (!host || host == '*') ? <Badge variant="subtle">Any</Badge> : host
-                            },
-                            {
-                                size: 60,
-                                id: 'menu',
-                                header: '',
-                                cell: ({row: {original: record}}) => {
-                                    const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                                    const hasAcls = record.sourceEntries.length > 0;
-
-                                    const onDelete = async (user: boolean, acls: boolean) => {
-                                        if (acls) {
-                                            try {
-                                                await api.deleteACLs({
-                                                    resourceType: 'Any',
-                                                    resourceName: undefined,
-                                                    resourcePatternType: 'Any',
-                                                    principal: record.principalType + ':' + record.principalName,
-                                                    host: record.host,
-                                                    operation: 'Any',
-                                                    permissionType: 'Any',
-                                                });
-                                                toast({
-                                                    status: 'success',
-                                                    description: <Text as="span">Deleted ACLs for <Code>{record.principalName}</Code></Text>
-                                                });
-                                            } catch (err: unknown) {
-                                                console.error('failed to delete acls', { error: err });
-
-                                                this.aclFailed = {
-                                                    err,
-                                                }
-                                            }
-                                        }
-
-                                        if (user) {
-                                            try {
-                                                await api.deleteServiceAccount(record.principalName);
-                                                toast({
-                                                    status: 'success',
-                                                    description: <Text as="span">Deleted user <Code>{record.principalName}</Code></Text>
-                                                });
-                                            } catch (err: unknown) {
-                                                console.error('failed to delete acls', { error: err });
-
-                                                this.aclFailed = {
-                                                    err,
-                                                }
-                                            }
-                                        }
-
-                                        await this.refreshData(true);
-                                    }
-
-
-                                    return <Menu>
-                                        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
-                                            <Icon as={TrashIcon} />
-                                        </MenuButton>
-                                        <MenuList>
-                                            <MenuItem
-                                                isDisabled={!userExists || !Features.deleteUser || !hasAcls}
-                                                onClick={(e) => {
-                                                    void onDelete(true, true);
-                                                    e.stopPropagation()
-                                                }}
-                                            >
-                                                Delete (User and ACLs)
-                                            </MenuItem>
-                                            <MenuItem
-                                                isDisabled={!userExists || !Features.deleteUser}
-                                                onClick={(e) => {
-                                                    void onDelete(true, false);
-                                                    e.stopPropagation()
-                                                }}
-                                            >
-                                                Delete (User only)
-                                            </MenuItem>
-                                            <MenuItem
-                                                isDisabled={!hasAcls}
-                                                onClick={(e) => {
-                                                    void onDelete(false, true);
-                                                    e.stopPropagation()
-                                                }}
-                                            >
-                                                Delete (ACLs only)
-                                            </MenuItem>
-                                        </MenuList>
-                                    </Menu>
-                                }
-                            },
-                        ]}
-                    />
-                </Section>
+                <Tabs
+                    index={activeTab >= 0 ? activeTab : 0}
+                    items={tabs}
+                    onChange={(_, key) => {
+                        appGlobal.history.push(`/security/${key}`);
+                    }}
+                />
             </PageContent>
         </>
     }
@@ -346,66 +208,326 @@ class AclList extends PageComponent {
 
         return result;
     }
-
-    SearchControls = observer(() => {
-        return (
-            <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <SearchField
-                    width="300px"
-                    searchText={uiSettings.aclList.configTable.quickSearch}
-                    setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)}
-                    placeholderText="Enter search term/regex"
-                />
-
-                <span style={{ marginLeft: 'auto' }}> </span>
-
-                <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
-                    <Button variant="outline"
-                            isDisabled={!Features.createUser}
-                            onClick={() => openCreateUserModal()}>
-                        Create user
-                    </Button>
-                </Tooltip>
-
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        this.editorType = 'create';
-                        this.edittingPrincipalGroup = {
-                            host: '',
-                            principalType: 'User',
-                            principalName: '',
-                            topicAcls: [createEmptyTopicAcl()],
-                            consumerGroupAcls: [createEmptyConsumerGroupAcl()],
-                            transactionalIdAcls: [createEmptyTransactionalIdAcl()],
-                            clusterAcls: createEmptyClusterAcl(),
-                            sourceEntries: []
-                        };
-                    }}
-                >
-                    Create ACLs
-                </Button>
-            </div>
-        );
-    });
 }
 
 export default AclList;
 
-// function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
-//     if (regex.test(entry.host)) return true;
-//     if (regex.test(entry.principalName)) return true;
-//
-//     for (const e of entry.sourceEntries) {
-//         if (regex.test(e.operation)) return true;
-//         if (regex.test(e.resourceType)) return true;
-//         if (regex.test(e.resourceName)) return true;
-//     }
-//
-//     return false;
-// }
+const UsersTab = observer(() => {
 
-const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null, onClose: () => void }> = ({aclFailed, onClose}) => {
+    const users = api.serviceAccounts?.users ?? [];
+
+    return <Flex flexDirection="column" gap="4">
+        <Box>
+            These users are Redpanda SASL users. They are users who can authenticate to the cluster via SASL/SCRAM.
+            You can create and manage these users from within Redpanda. Other principals (OIDC, Kerberos, mTLS) will not be listed here.
+            Their permissions can be found in the ACLs tab.
+        </Box>
+
+        <SearchField
+            width="300px"
+            searchText={uiSettings.aclList.usersTab.quickSearch}
+            setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
+            placeholderText="Filter by name"
+        />
+
+        <Section>
+            <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
+                <Button variant="outline"
+                    isDisabled={!Features.createUser}
+                    onClick={() => openCreateUserModal()}>
+                    Create user
+                </Button>
+            </Tooltip>
+
+            <DataTable<string>
+                data={users}
+                pagination
+                sorting
+                columns={[
+                    {
+                        id: 'name',
+                        size: Infinity,
+                        header: 'Name',
+                        cell: (ctx) => {
+                            return <>{ctx.row.original}</>
+                        }
+                    },
+                    {
+                        size: 60,
+                        id: 'menu',
+                        header: '',
+                        cell: (_ctx) => {
+                            // todo: implement delete
+                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                                <Icon as={TrashIcon} />
+                            </Button>;
+                        }
+                    },
+                ]}
+            />
+        </Section>
+    </Flex>
+});
+
+const RolesTab = observer(() => {
+
+    const users = api.serviceAccounts?.users ?? [];
+
+    return <Flex flexDirection="column" gap="4">
+        <Box>
+            Roles are groups of ACLs abstracted under a single name. Roles can be assigned to users.
+        </Box>
+
+        <SearchField
+            width="300px"
+            searchText={uiSettings.aclList.rolesTab.quickSearch}
+            setSearchText={x => (uiSettings.aclList.rolesTab.quickSearch = x)}
+            placeholderText="Filter by name"
+        />
+
+        <Section>
+            <Button variant="outline">Create role</Button>
+
+            <DataTable<string>
+                data={users}
+                pagination
+                sorting
+                columns={[
+                    {
+                        id: 'name',
+                        size: Infinity,
+                        header: 'Role name',
+                        cell: (ctx) => {
+                            return <>{ctx.row.original}</>
+                        }
+                    },
+                    {
+                        id: 'assignedPrincipals',
+                        header: 'Assigned principals',
+                        cell: (ctx) => {
+                            return <>{ctx.row.original}</>
+                        }
+                    },
+                    {
+                        size: 60,
+                        id: 'menu',
+                        header: '',
+                        cell: (_ctx) => {
+                            // todo: implement delete
+                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                                <Icon as={TrashIcon} />
+                            </Button>;
+                        }
+                    },
+                ]}
+            />
+        </Section>
+    </Flex>
+});
+
+const AclsTab = observer((p: {
+    principalGroups: AclPrincipalGroup[]
+}) => {
+
+    const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
+    const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
+    const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
+
+    let groups = p.principalGroups;
+    try {
+        const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
+        groups = groups.filter(
+            aclGroup => aclGroup.principalName.match(quickSearchRegExp)
+        );
+    } catch (e) {
+        console.warn('Invalid expression')
+    }
+
+    return <Flex flexDirection="column" gap="4">
+        <Box>
+            Access-control lists (ACLs) are the primary mechanism used by Redpanda to manage user permissions.
+            ACLs are assigned to principals, which then access resources within Redpanda.
+        </Box>
+
+        <SearchField
+            width="300px"
+            searchText={uiSettings.aclList.configTable.quickSearch}
+            setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)}
+            placeholderText="Filter by name"
+        />
+
+        <Section>
+            {edittingPrincipalGroup &&
+                <AclPrincipalGroupEditor
+        // @ts-ignore
+                principalGroup={edittingPrincipalGroup}
+                type={editorType}
+                onClose={() => {
+                        setEdittingPrincipalGroup(null);
+                        api.refreshAcls(AclRequestDefault, true);
+                        api.refreshServiceAccounts(true);
+                    }}
+                />}
+
+            <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
+
+            <Button
+                variant="outline"
+                onClick={() => {
+                    setEditorType('create');
+                    setEdittingPrincipalGroup({
+                        host: '',
+                        principalType: 'User',
+                        principalName: '',
+                        topicAcls: [createEmptyTopicAcl()],
+                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
+                        clusterAcls: createEmptyClusterAcl(),
+                        sourceEntries: []
+                    });
+                }}
+            >
+                Create ACLs
+            </Button>
+
+            <DataTable<AclPrincipalGroup>
+                data={groups}
+                pagination
+                sorting
+                columns={[
+                    {
+                        size: Infinity,
+                        header: 'Principal',
+                        accessorKey: 'principal',
+                        cell: ({ row: { original: record } }) => {
+                            const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                            const isComplete = api.serviceAccounts?.isComplete === true;
+                            const showWarning = isComplete && !userExists && !record.principalName.includes('*');
+                            const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
+                                ? 'User Group'
+                                : record.principalType;
+                            return (
+                                <button className="hoverLink" onClick={() => {
+                                    setEditorType('edit');
+                                    setEdittingPrincipalGroup(clone(record));
+                                }}>
+                                    <Flex>
+                                        <Badge variant="subtle" mr="2">{principalType}</Badge>
+                                        <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">{record.principalName}</Text>
+                                        {showWarning && (
+                                            <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
+                                                <span style={{ marginLeft: '4px' }}>
+                                                    <QuestionIcon fill="orange" size={16} />
+                                                </span>
+                                            </Tooltip>
+                                        )}
+                                    </Flex>
+                                </button>
+                            );
+                        },
+                    },
+                    {
+                        header: 'Host',
+                        accessorKey: 'host',
+                        cell: ({ row: { original: { host } } }) => (!host || host == '*') ? <Badge variant="subtle">Any</Badge> : host
+                    },
+                    {
+                        size: 60,
+                        id: 'menu',
+                        header: '',
+                        cell: ({ row: { original: record } }) => {
+                            const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                            const hasAcls = record.sourceEntries.length > 0;
+
+                            const onDelete = async (user: boolean, acls: boolean) => {
+                                if (acls) {
+                                    try {
+                                        await api.deleteACLs({
+                                            resourceType: 'Any',
+                                            resourceName: undefined,
+                                            resourcePatternType: 'Any',
+                                            principal: record.principalType + ':' + record.principalName,
+                                            host: record.host,
+                                            operation: 'Any',
+                                            permissionType: 'Any',
+                                        });
+                                        toast({
+                                            status: 'success',
+                                            description: <Text as="span">Deleted ACLs for <Code>{record.principalName}</Code></Text>
+                                        });
+                                    } catch (err: unknown) {
+                                        console.error('failed to delete acls', { error: err });
+                                        setAclFailed({ err });
+                                    }
+                                }
+
+                                if (user) {
+                                    try {
+                                        await api.deleteServiceAccount(record.principalName);
+                                        toast({
+                                            status: 'success',
+                                            description: <Text as="span">Deleted user <Code>{record.principalName}</Code></Text>
+                                        });
+                                    } catch (err: unknown) {
+                                        console.error('failed to delete acls', { error: err });
+                                        setAclFailed({ err });
+                                    }
+                                }
+
+                                await Promise.allSettled([
+                                    api.refreshAcls(AclRequestDefault, true),
+                                    api.refreshServiceAccounts(true)
+                                ]);
+                            }
+
+
+                            return <Menu>
+                                <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                                    <Icon as={TrashIcon} />
+                                </MenuButton>
+                                <MenuList>
+                                    <MenuItem
+                                        isDisabled={!userExists || !Features.deleteUser || !hasAcls}
+                                        onClick={(e) => {
+                                            void onDelete(true, true);
+                                            e.stopPropagation()
+                                        }}
+                                    >
+                                        Delete (User and ACLs)
+                                    </MenuItem>
+                                    <MenuItem
+                                        isDisabled={!userExists || !Features.deleteUser}
+                                        onClick={(e) => {
+                                            void onDelete(true, false);
+                                            e.stopPropagation()
+                                        }}
+                                    >
+                                        Delete (User only)
+                                    </MenuItem>
+                                    <MenuItem
+                                        isDisabled={!hasAcls}
+                                        onClick={(e) => {
+                                            void onDelete(false, true);
+                                            e.stopPropagation()
+                                        }}
+                                    >
+                                        Delete (ACLs only)
+                                    </MenuItem>
+                                </MenuList>
+                            </Menu>
+                        }
+                    },
+                ]}
+            />
+        </Section>
+
+    </Flex>
+
+
+});
+
+
+const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null, onClose: () => void }> = ({ aclFailed, onClose }) => {
     const ref = useRef(null)
     return (
         <AlertDialog isOpen={aclFailed !== null} onClose={onClose} leastDestructiveRef={ref}>
@@ -435,7 +557,7 @@ const PermissionDenied = <>
                 status={403}
                 userMessage={<Text>
                     You are not allowed to view this page.
-                    <br/>
+                    <br />
                     Contact the administrator if you think this is an error.
                 </Text>
                 }

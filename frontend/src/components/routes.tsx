@@ -23,7 +23,7 @@ import AdminPage from './pages/admin/AdminPage';
 import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
-import AclList from './pages/acls/Acl.List';
+import AclList, { AclListTab } from './pages/acls/Acl.List';
 import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
@@ -243,9 +243,10 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'Security', ShieldCheckIcon, true,
+    MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
+    MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
 
     MakeRoute<{}>('/quotas', QuotasList, 'Quotas', ScaleIcon, true,
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])

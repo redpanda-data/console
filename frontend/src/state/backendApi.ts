@@ -1486,6 +1486,13 @@ const apiStore = {
 
 };
 
+// This is a fake api to emulate working with the new "acl roles" feature.
+// TODO: REMOVE BEFORE MERGE
+export const rbacApi = observable({
+
+});
+
+
 export function createMessageSearch() {
     const messageSearch = {
         // Parameters last passed to 'startMessageSearch'
