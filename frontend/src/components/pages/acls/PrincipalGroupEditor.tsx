@@ -18,7 +18,7 @@ import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Box, Button, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
+import { Box, Button, Flex, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 
@@ -202,49 +202,47 @@ export const AclPrincipalGroupEditor = observer((p: {
                             </Button>
                         </HStack>
 
-                        <VStack spacing={8} pr={2} w="full" maxHeight="calc(100vh - 300px)" overflowY="auto">
-                            <section style={{ width: '100%' }}>
-                                <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Topics</span>
-                                <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
+                        <VStack spacing={8} pr={2} w="full">
+                            <Box w="full" as="section">
+                                <Text my={4} fontWeight={500}>Topics</Text>
+                                <Flex gap={4} flexDirection="column">
                                     {group.topicAcls.map((t, i) => (
                                         <ResourceACLsEditor key={i} resourceType="Topic" resource={t} onDelete={() => group.topicAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.topicAcls.push(createEmptyTopicAcl())}>
                                         Add Topic ACL
                                     </Button>
-                                </div>
-                            </section>
+                                </Flex>
+                            </Box>
 
-                            <section style={{ width: '100%' }}>
-                                <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Consumer Groups</span>
-                                <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
+                            <Box w="full" as="section">
+                                <Text my={4} fontWeight={500}>Consumer Groups</Text>
+                                <Flex gap={4} flexDirection="column">
                                     {group.consumerGroupAcls.map((t, i) => (
                                         <ResourceACLsEditor key={i} resourceType="Group" resource={t} onDelete={() => group.consumerGroupAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}>
                                         Add Consumer Group ACL
                                     </Button>
-                                </div>
-                            </section>
+                                </Flex>
+                            </Box>
 
-                            <section style={{ width: '100%' }}>
-                                <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Transactional ID</span>
-                                <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
+                            <Box w="full" as="section">
+                                <Text my={4} fontWeight={500}>Transactional ID</Text>
+                                <Flex gap={4} flexDirection="column">
                                     {group.transactionalIdAcls.map((t, i) => (
                                         <ResourceACLsEditor key={i} resourceType="TransactionalID" resource={t} onDelete={() => group.transactionalIdAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.transactionalIdAcls.push(createEmptyTransactionalIdAcl())}>
                                         Add Transactional ID ACL
                                     </Button>
-                                </div>
-                            </section>
+                                </Flex>
+                            </Box>
 
-                            <section style={{ width: '100%' }}>
-                                <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Cluster</span>
-                                <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
-                                    <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls} />
-                                </div>
-                            </section>
+                            <Box w="full" as="section">
+                                <Text my={4} fontWeight={500}>Cluster</Text>
+                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls}/>
+                            </Box>
                         </VStack>
                     </VStack>
                 </ModalBody>
@@ -272,20 +270,14 @@ const ResourceACLsEditor = observer((p: {
     if (p.resourceType == 'TransactionalID') resourceName = 'Transactional ID';
 
     return (
-        <div
-            style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'row',
-                gap: '2.5em',
-                padding: '1.5em',
-                background: 'hsl(0deg 0% 97%)'
-            }}
+        <Flex
+            flexDirection="row"
+            gap={10}
+            p={6}
+            bgColor="gray.50"
         >
             {isCluster ? (
-                <div style={{ width: '300px' }}>
-                    <b>Applies to whole cluster</b>
-                </div>
+                <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
             ) : (
                 <Label
                     text={`Selector (${resourceName} Name)`}
@@ -299,7 +291,7 @@ const ResourceACLsEditor = observer((p: {
                             <br />
                             Input <code>*</code> to match any name (wildcard).
                             <br />
-                            Or speficy a prefix selector by adding a star at the end. <br />
+                            Or specify a prefix selector by adding a star at the end. <br />
                             For example <code>abc-*</code> would match any resource that starts with <code>abc-</code>.
                         </LabelTooltip>
                     }
@@ -334,6 +326,6 @@ const ResourceACLsEditor = observer((p: {
                     </Button>
                 </AnimatePresence>
             )}
-        </div>
+        </Flex>
     );
 });
