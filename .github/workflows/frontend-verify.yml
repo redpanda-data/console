@@ -36,6 +36,22 @@ jobs:
     needs: "lint-and-compile"
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    services:
+      redpanda:
+        image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
+        volumes:
+          - config:/etc/redpanda
+        ports:
+          - 18081:18081
+          - 18082:18082
+          - 19092:19092
+          - 19644:9644
+      owlshop:
+        image: quay.io/cloudhut/owl-shop:sha-5211ad3
+        env:
+          CONFIG_FILEPATH: /tmp/owlshop.yml
+        volumes:
+          - config:/tmp
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,11 +70,11 @@ jobs:
       - name: Build
         working-directory: backend/cmd/api
         run: go build -v ./...
-      - name: Start dependencies
-        uses: isbang/compose-action@v1.5.1
-        with:
-          compose-file: "./frontend/tests/config/docker-compose.yaml"
-          down-flags: "--volumes"
+      # - name: Start dependencies
+      #   uses: isbang/compose-action@v1.5.1
+      #   with:
+      #     compose-file: "./frontend/tests/config/docker-compose.yaml"
+      #     down-flags: "--volumes"
       - name: Run Playwright tests
         working-directory: frontend
         run: npm run e2e-test

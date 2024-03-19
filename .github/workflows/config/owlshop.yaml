@@ -1,0 +1,9 @@
+shop:
+  requestRate: 1
+  interval: 0.1s
+  topicReplicationFactor: 1
+  topicPartitionCount: 1
+kafka:
+  brokers: "localhost:19092"
+schemaRegistry:
+  address: "http://localhost:18081"
