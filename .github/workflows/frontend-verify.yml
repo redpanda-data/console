@@ -49,7 +49,7 @@ jobs:
       owlshop:
         image: quay.io/cloudhut/owl-shop:sha-5211ad3
         env:
-          CONFIG_FILEPATH: /tmp/owlshop.yml
+          CONFIG_FILEPATH: /tmp/owlshop.yaml
         volumes:
           - config:/tmp
       connect:

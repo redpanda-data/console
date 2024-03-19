@@ -20,3 +20,5 @@ server:
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
   # debug: 
   #   enabled: true
+logger:
+  level: "debug"
