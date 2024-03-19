@@ -52,6 +52,29 @@ jobs:
           CONFIG_FILEPATH: /tmp/owlshop.yml
         volumes:
           - config:/tmp
+      connect:
+        image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
+        env:
+          CONNECT_CONFIGURATION: |
+            key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+            value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+            group.id=connectors-cluster
+            offset.storage.topic=_internal_connectors_offsets
+            config.storage.topic=_internal_connectors_configs
+            status.storage.topic=_internal_connectors_status
+            config.storage.replication.factor=-1
+            offset.storage.replication.factor=-1
+            status.storage.replication.factor=-1
+            offset.flush.interval.ms=1000
+            producer.linger.ms=50
+            producer.batch.size=131072
+          CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+          CONNECT_GC_LOG_ENABLED: "false"
+          CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+          CONNECT_LOG_LEVEL: info
+          CONNECT_TOPIC_LOG_ENABLED: "true"
+        ports:
+          - 8083:8083
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
