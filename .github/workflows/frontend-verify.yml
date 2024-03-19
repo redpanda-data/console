@@ -74,7 +74,7 @@ jobs:
           CONNECT_LOG_LEVEL: info
           CONNECT_TOPIC_LOG_ENABLED: "true"
         ports:
-          - 8083:8083
+          - 18083:8083
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

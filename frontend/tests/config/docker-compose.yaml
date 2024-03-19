@@ -73,7 +73,7 @@ services:
     depends_on:
       - redpanda
     ports:
-      - "8083:8083"
+      - "18083:8083"
     environment:
       CONNECT_CONFIGURATION: |
         key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
