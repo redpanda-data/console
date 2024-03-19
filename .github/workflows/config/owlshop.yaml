@@ -4,6 +4,6 @@ shop:
   topicReplicationFactor: 1
   topicPartitionCount: 1
 kafka:
-  brokers: "localhost:19092"
+  brokers: "localhost:9092"
 schemaRegistry:
-  address: "http://localhost:18081"
+  address: "http://localhost:8081"

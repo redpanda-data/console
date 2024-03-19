@@ -27,7 +27,7 @@ export default defineConfig({
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.REACT_APP_ORIGIN ??
-          'http://localhost:3000',
+      'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -45,10 +45,12 @@ export default defineConfig({
     },
   ],
 
+
   /* Run your local dev server before starting the tests */
   webServer: [{
     cwd: '../backend/cmd/api',
-    command: 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
+    command: process.env.CI ? 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml' :
+      'go run . --config.filepath=../../../.github/workflows/config/console.yaml',
     url: 'http://localhost:9090/admin/startup',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
