@@ -39,6 +39,9 @@ export class ACL extends Message<ACL> {
 }
 
 /**
+ * The type of resource (topic, consumer group, etc.) this
+ * ACL targets.
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ACL.ResourceType
  */
 export enum ACL_ResourceType {
@@ -95,6 +98,9 @@ proto3.util.setEnumType(ACL_ResourceType, "redpanda.api.dataplane.v1alpha1.ACL.R
 ]);
 
 /**
+ * The pattern to use for matching the specified resource_name
+ * (any, exact match, literal, or prefixed).
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ACL.ResourcePatternType
  */
 export enum ACL_ResourcePatternType {
@@ -133,6 +139,8 @@ proto3.util.setEnumType(ACL_ResourcePatternType, "redpanda.api.dataplane.v1alpha
 ]);
 
 /**
+ * The operation that is allowed or denied (e.g. READ).
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ACL.Operation
  */
 export enum ACL_Operation {
@@ -231,6 +239,8 @@ proto3.util.setEnumType(ACL_Operation, "redpanda.api.dataplane.v1alpha1.ACL.Oper
 ]);
 
 /**
+ * Whether the operation should be allowed or denied.
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ACL.PermissionType
  */
 export enum ACL_PermissionType {
@@ -319,36 +329,55 @@ export class ListACLsRequest extends Message<ListACLsRequest> {
  */
 export class ListACLsRequest_Filter extends Message<ListACLsRequest_Filter> {
   /**
+   * The type of resource (topic, consumer group, etc.) this
+   * ACL targets.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourceType resource_type = 1;
    */
   resourceType = ACL_ResourceType.UNSPECIFIED;
 
   /**
+   * The name of the resource this ACL targets.
+   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+   *
    * @generated from field: optional string resource_name = 2;
    */
   resourceName?: string;
 
   /**
+   * The pattern to use for matching the specified resource_name
+   * (any, exact match, literal, or prefixed).
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourcePatternType resource_pattern_type = 3;
    */
   resourcePatternType = ACL_ResourcePatternType.UNSPECIFIED;
 
   /**
+   * The user for whom this ACL applies. With the Kafka simple
+   * authorizer, you must include the prefix "User:" with the user name.
+   *
    * @generated from field: optional string principal = 4;
    */
   principal?: string;
 
   /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
    * @generated from field: optional string host = 5;
    */
   host?: string;
 
   /**
+   * The operation that is allowed or denied (e.g. READ).
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Operation operation = 6;
    */
   operation = ACL_Operation.UNSPECIFIED;
 
   /**
+   * Whether the operation should be allowed or denied.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.PermissionType permission_type = 7;
    */
   permissionType = ACL_PermissionType.UNSPECIFIED;
@@ -539,9 +568,6 @@ export class ListACLsResponse_Resource extends Message<ListACLsResponse_Resource
  */
 export class CreateACLRequest extends Message<CreateACLRequest> {
   /**
-   * The type of resource (topic, consumer group, etc.) this
-   * ACL targets.
-   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourceType resource_type = 1;
    */
   resourceType = ACL_ResourceType.UNSPECIFIED;
@@ -555,15 +581,12 @@ export class CreateACLRequest extends Message<CreateACLRequest> {
   resourceName = "";
 
   /**
-   * The pattern to use for matching the specified resource_name
-   * (any, exact match, literal, or prefixed).
-   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourcePatternType resource_pattern_type = 3;
    */
   resourcePatternType = ACL_ResourcePatternType.UNSPECIFIED;
 
   /**
-   * The user to apply this ACL for. With the Kafka simple
+   * The user for whom this ACL applies. With the Kafka simple
    * authorizer, you must include the prefix "User:" with the user name.
    *
    * @generated from field: string principal = 4;
@@ -579,15 +602,11 @@ export class CreateACLRequest extends Message<CreateACLRequest> {
   host = "";
 
   /**
-   * The operation that is allowed or denied (e.g. READ).
-   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Operation operation = 6;
    */
   operation = ACL_Operation.UNSPECIFIED;
 
   /**
-   * Whether the operation should be allowed or denied.
-   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.PermissionType permission_type = 7;
    */
   permissionType = ACL_PermissionType.UNSPECIFIED;
@@ -699,36 +718,55 @@ export class DeleteACLsRequest extends Message<DeleteACLsRequest> {
  */
 export class DeleteACLsRequest_Filter extends Message<DeleteACLsRequest_Filter> {
   /**
+   * The type of resource (topic, consumer group, etc.) this
+   * ACL targets.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourceType resource_type = 1;
    */
   resourceType = ACL_ResourceType.UNSPECIFIED;
 
   /**
+   * The name of the resource this ACL targets.
+   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+   *
    * @generated from field: optional string resource_name = 2;
    */
   resourceName?: string;
 
   /**
+   * The pattern to use for matching the specified resource_name
+   * (any, exact match, literal, or prefixed).
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.ResourcePatternType resource_pattern_type = 3;
    */
   resourcePatternType = ACL_ResourcePatternType.UNSPECIFIED;
 
   /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
    * @generated from field: optional string principal = 4;
    */
   principal?: string;
 
   /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
    * @generated from field: optional string host = 5;
    */
   host?: string;
 
   /**
+   * The operation that is allowed or denied (e.g. READ).
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.Operation operation = 6;
    */
   operation = ACL_Operation.UNSPECIFIED;
 
   /**
+   * Whether the operation should be allowed or denied.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ACL.PermissionType permission_type = 7;
    */
   permissionType = ACL_PermissionType.UNSPECIFIED;

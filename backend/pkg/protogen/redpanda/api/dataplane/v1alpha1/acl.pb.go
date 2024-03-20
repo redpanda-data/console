@@ -25,6 +25,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The type of resource (topic, consumer group, etc.) this
+// ACL targets.
 type ACL_ResourceType int32
 
 const (
@@ -89,6 +91,8 @@ func (ACL_ResourceType) EnumDescriptor() ([]byte, []int) {
 	return file_redpanda_api_dataplane_v1alpha1_acl_proto_rawDescGZIP(), []int{0, 0}
 }
 
+// The pattern to use for matching the specified resource_name
+// (any, exact match, literal, or prefixed).
 type ACL_ResourcePatternType int32
 
 const (
@@ -144,6 +148,7 @@ func (ACL_ResourcePatternType) EnumDescriptor() ([]byte, []int) {
 	return file_redpanda_api_dataplane_v1alpha1_acl_proto_rawDescGZIP(), []int{0, 1}
 }
 
+// The operation that is allowed or denied (e.g. READ).
 type ACL_Operation int32
 
 const (
@@ -229,6 +234,7 @@ func (ACL_Operation) EnumDescriptor() ([]byte, []int) {
 	return file_redpanda_api_dataplane_v1alpha1_acl_proto_rawDescGZIP(), []int{0, 2}
 }
 
+// Whether the operation should be allowed or denied.
 type ACL_PermissionType int32
 
 const (
@@ -436,24 +442,18 @@ type CreateACLRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The type of resource (topic, consumer group, etc.) this
-	// ACL targets.
 	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
 	// The name of the resource this ACL targets.
 	// For requests with resource_type CLUSTER, this will default to "kafka-cluster".
-	ResourceName string `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
-	// The pattern to use for matching the specified resource_name
-	// (any, exact match, literal, or prefixed).
+	ResourceName        string                  `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
-	// The user to apply this ACL for. With the Kafka simple
+	// The user for whom this ACL applies. With the Kafka simple
 	// authorizer, you must include the prefix "User:" with the user name.
 	Principal string `protobuf:"bytes,4,opt,name=principal,proto3" json:"principal,omitempty"`
 	// The host address to use for this ACL. To allow a principal
 	// access from multiple hosts, you must create an ACL for each host.
-	Host string `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
-	// The operation that is allowed or denied (e.g. READ).
-	Operation ACL_Operation `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
-	// Whether the operation should be allowed or denied.
+	Host           string             `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
+	Operation      ACL_Operation      `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
 	PermissionType ACL_PermissionType `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
 }
 
@@ -675,13 +675,25 @@ type ListACLsRequest_Filter struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceType        ACL_ResourceType        `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
-	ResourceName        *string                 `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
+	// The type of resource (topic, consumer group, etc.) this
+	// ACL targets.
+	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
+	// The name of the resource this ACL targets.
+	// For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+	ResourceName *string `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
+	// The pattern to use for matching the specified resource_name
+	// (any, exact match, literal, or prefixed).
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
-	Principal           *string                 `protobuf:"bytes,4,opt,name=principal,proto3,oneof" json:"principal,omitempty"`
-	Host                *string                 `protobuf:"bytes,5,opt,name=host,proto3,oneof" json:"host,omitempty"`
-	Operation           ACL_Operation           `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
-	PermissionType      ACL_PermissionType      `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
+	// The user for whom this ACL applies. With the Kafka simple
+	// authorizer, you must include the prefix "User:" with the user name.
+	Principal *string `protobuf:"bytes,4,opt,name=principal,proto3,oneof" json:"principal,omitempty"`
+	// The host address to use for this ACL. To allow a principal
+	// access from multiple hosts, you must create an ACL for each host.
+	Host *string `protobuf:"bytes,5,opt,name=host,proto3,oneof" json:"host,omitempty"`
+	// The operation that is allowed or denied (e.g. READ).
+	Operation ACL_Operation `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
+	// Whether the operation should be allowed or denied.
+	PermissionType ACL_PermissionType `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
 }
 
 func (x *ListACLsRequest_Filter) Reset() {
@@ -912,13 +924,25 @@ type DeleteACLsRequest_Filter struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceType        ACL_ResourceType        `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
-	ResourceName        *string                 `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
+	// The type of resource (topic, consumer group, etc.) this
+	// ACL targets.
+	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
+	// The name of the resource this ACL targets.
+	// For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+	ResourceName *string `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
+	// The pattern to use for matching the specified resource_name
+	// (any, exact match, literal, or prefixed).
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
-	Principal           *string                 `protobuf:"bytes,4,opt,name=principal,proto3,oneof" json:"principal,omitempty"`
-	Host                *string                 `protobuf:"bytes,5,opt,name=host,proto3,oneof" json:"host,omitempty"`
-	Operation           ACL_Operation           `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
-	PermissionType      ACL_PermissionType      `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
+	// The host address to use for this ACL. To allow a principal
+	// access from multiple hosts, you must create an ACL for each host.
+	Principal *string `protobuf:"bytes,4,opt,name=principal,proto3,oneof" json:"principal,omitempty"`
+	// The host address to use for this ACL. To allow a principal
+	// access from multiple hosts, you must create an ACL for each host.
+	Host *string `protobuf:"bytes,5,opt,name=host,proto3,oneof" json:"host,omitempty"`
+	// The operation that is allowed or denied (e.g. READ).
+	Operation ACL_Operation `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
+	// Whether the operation should be allowed or denied.
+	PermissionType ACL_PermissionType `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
 }
 
 func (x *DeleteACLsRequest_Filter) Reset() {

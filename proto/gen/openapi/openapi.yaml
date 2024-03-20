@@ -1,6 +1,7 @@
 components:
   schemas:
     ACL.Operation:
+      description: The operation that is allowed or denied (e.g. READ).
       enum:
         - OPERATION_ANY
         - OPERATION_ALL
@@ -257,7 +258,7 @@ components:
           $ref: '#/components/schemas/PermissionType'
         principal:
           description: |-
-            The user to apply this ACL for. With the Kafka simple
+            The user for whom this ACL applies. With the Kafka simple
             authorizer, you must include the prefix "User:" with the user name.
           type: string
         resource_name:
@@ -373,6 +374,9 @@ components:
     DeleteACLsRequest.Filter:
       properties:
         host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           nullable: true
           type: string
         operation:
@@ -380,9 +384,15 @@ components:
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           nullable: true
           type: string
         resource_name:
+          description: |-
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
           nullable: true
           type: string
         resource_pattern_type:
@@ -628,6 +638,9 @@ components:
     ListACLsRequest.Filter:
       properties:
         host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           nullable: true
           type: string
         operation:
@@ -635,9 +648,15 @@ components:
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           nullable: true
           type: string
         resource_name:
+          description: |-
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
           nullable: true
           type: string
         resource_pattern_type:
@@ -826,6 +845,7 @@ components:
           $ref: '#/components/schemas/PartitionStatus'
       type: object
     PermissionType:
+      description: Whether the operation should be allowed or denied.
       enum:
         - PERMISSION_TYPE_ANY
         - PERMISSION_TYPE_DENY
@@ -912,6 +932,9 @@ components:
           $ref: '#/components/schemas/ResourceType'
       type: object
     ResourcePatternType:
+      description: |-
+        The pattern to use for matching the specified resource_name
+        (any, exact match, literal, or prefixed).
       enum:
         - RESOURCE_PATTERN_TYPE_ANY
         - RESOURCE_PATTERN_TYPE_MATCH
@@ -919,6 +942,9 @@ components:
         - RESOURCE_PATTERN_TYPE_PREFIXED
       type: string
     ResourceType:
+      description: |-
+        The type of resource (topic, consumer group, etc.) this
+        ACL targets.
       enum:
         - RESOURCE_TYPE_ANY
         - RESOURCE_TYPE_TOPIC
@@ -1146,7 +1172,10 @@ paths:
       description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
       operationId: ACLService_DeleteACLs
       parameters:
-        - in: query
+        - description: |-
+            The type of resource (topic, consumer group, etc.) this
+            ACL targets.
+          in: query
           name: filter.resource_type
           required: true
           schema:
@@ -1159,11 +1188,17 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - in: query
+        - description: |-
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+          in: query
           name: filter.resource_name
           schema:
             type: string
-        - in: query
+        - description: |-
+            The pattern to use for matching the specified resource_name
+            (any, exact match, literal, or prefixed).
+          in: query
           name: filter.resource_pattern_type
           required: true
           schema:
@@ -1173,15 +1208,22 @@ paths:
               - RESOURCE_PATTERN_TYPE_LITERAL
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
-        - in: query
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
           name: filter.principal
           schema:
             type: string
-        - in: query
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
           name: filter.host
           schema:
             type: string
-        - in: query
+        - description: The operation that is allowed or denied (e.g. READ).
+          in: query
           name: filter.operation
           required: true
           schema:
@@ -1201,7 +1243,8 @@ paths:
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
             type: string
-        - in: query
+        - description: Whether the operation should be allowed or denied.
+          in: query
           name: filter.permission_type
           required: true
           schema:
@@ -1242,7 +1285,10 @@ paths:
       description: List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
       operationId: ACLService_ListACLs
       parameters:
-        - in: query
+        - description: |-
+            The type of resource (topic, consumer group, etc.) this
+            ACL targets.
+          in: query
           name: filter.resource_type
           schema:
             enum:
@@ -1254,11 +1300,17 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - in: query
+        - description: |-
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+          in: query
           name: filter.resource_name
           schema:
             type: string
-        - in: query
+        - description: |-
+            The pattern to use for matching the specified resource_name
+            (any, exact match, literal, or prefixed).
+          in: query
           name: filter.resource_pattern_type
           schema:
             enum:
@@ -1267,15 +1319,22 @@ paths:
               - RESOURCE_PATTERN_TYPE_LITERAL
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
-        - in: query
+        - description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          in: query
           name: filter.principal
           schema:
             type: string
-        - in: query
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
           name: filter.host
           schema:
             type: string
-        - in: query
+        - description: The operation that is allowed or denied (e.g. READ).
+          in: query
           name: filter.operation
           schema:
             enum:
@@ -1294,7 +1353,8 @@ paths:
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
             type: string
-        - in: query
+        - description: Whether the operation should be allowed or denied.
+          in: query
           name: filter.permission_type
           schema:
             enum:

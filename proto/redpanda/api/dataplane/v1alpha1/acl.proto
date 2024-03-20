@@ -9,6 +9,8 @@ import "google/rpc/status.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 message ACL {
+  // The type of resource (topic, consumer group, etc.) this
+  // ACL targets.
   enum ResourceType {
     RESOURCE_TYPE_UNSPECIFIED = 0;
     RESOURCE_TYPE_ANY = 1;
@@ -20,6 +22,8 @@ message ACL {
     RESOURCE_TYPE_USER = 7;
   }
 
+  // The pattern to use for matching the specified resource_name
+  // (any, exact match, literal, or prefixed).
   enum ResourcePatternType {
     RESOURCE_PATTERN_TYPE_UNSPECIFIED = 0;
     RESOURCE_PATTERN_TYPE_ANY = 1;
@@ -28,6 +32,7 @@ message ACL {
     RESOURCE_PATTERN_TYPE_PREFIXED = 4;
   }
 
+  // The operation that is allowed or denied (e.g. READ).
   enum Operation {
     OPERATION_UNSPECIFIED = 0;
     OPERATION_ANY = 1;
@@ -45,7 +50,7 @@ message ACL {
     OPERATION_CREATE_TOKENS = 13;
     OPERATION_DESCRIBE_TOKENS = 14;
   }
-
+  // Whether the operation should be allowed or denied.
   enum PermissionType {
     PERMISSION_TYPE_UNSPECIFIED = 0;
     PERMISSION_TYPE_ANY = 1;
@@ -56,12 +61,24 @@ message ACL {
 
 message ListACLsRequest {
   message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
     ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {defined_only: true}];
+    // The name of the resource this ACL targets.
+    // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
     optional string resource_name = 2;
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
     ACL.ResourcePatternType resource_pattern_type = 3 [(buf.validate.field).enum.defined_only = true];
+    // The user for whom this ACL applies. With the Kafka simple
+    // authorizer, you must include the prefix "User:" with the user name.
     optional string principal = 4;
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
     optional string host = 5;
+    // The operation that is allowed or denied (e.g. READ).
     ACL.Operation operation = 6 [(buf.validate.field).enum.defined_only = true];
+    // Whether the operation should be allowed or denied.
     ACL.PermissionType permission_type = 7 [(buf.validate.field).enum.defined_only = true];
   }
 
@@ -104,8 +121,6 @@ message CreateACLRequest {
       ": ''",
   };
 
-  // The type of resource (topic, consumer group, etc.) this
-  // ACL targets.
   ACL.ResourceType resource_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -122,8 +137,6 @@ message CreateACLRequest {
   // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
   string resource_name = 2;
 
-  // The pattern to use for matching the specified resource_name
-  // (any, exact match, literal, or prefixed).
   ACL.ResourcePatternType resource_pattern_type = 3 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -136,7 +149,7 @@ message CreateACLRequest {
     (buf.validate.field).required = true
   ];
 
-  // The user to apply this ACL for. With the Kafka simple
+  // The user for whom this ACL applies. With the Kafka simple
   // authorizer, you must include the prefix "User:" with the user name.
   string principal = 4 [
     (google.api.field_behavior) = REQUIRED,
@@ -156,7 +169,6 @@ message CreateACLRequest {
     }
   ];
 
-  // The operation that is allowed or denied (e.g. READ).
   ACL.Operation operation = 6 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -169,7 +181,6 @@ message CreateACLRequest {
     (buf.validate.field).required = true
   ];
 
-  // Whether the operation should be allowed or denied.
   ACL.PermissionType permission_type = 7 [
     (buf.validate.field).enum = {
       defined_only: true,
@@ -187,6 +198,8 @@ message CreateACLResponse {}
 
 message DeleteACLsRequest {
   message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
     ACL.ResourceType resource_type = 1 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -196,8 +209,12 @@ message DeleteACLsRequest {
       }
     ];
 
+    // The name of the resource this ACL targets.
+    // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
     optional string resource_name = 2;
 
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
     ACL.ResourcePatternType resource_pattern_type = 3 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -207,10 +224,15 @@ message DeleteACLsRequest {
       }
     ];
 
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
     optional string principal = 4;
 
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
     optional string host = 5;
 
+    // The operation that is allowed or denied (e.g. READ).
     ACL.Operation operation = 6 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -220,6 +242,7 @@ message DeleteACLsRequest {
       }
     ];
 
+    // Whether the operation should be allowed or denied.
     ACL.PermissionType permission_type = 7 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
