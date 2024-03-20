@@ -77,6 +77,8 @@ jobs:
         ports:
           - 8083:8083
     steps:
+      - name: Update CA Certificates
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
