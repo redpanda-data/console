@@ -31,15 +31,7 @@ jobs:
           REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
           REACT_APP_DEV_HINT=true
           npm run build 
-      - name: Cache Workflow Redpanda Config
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/.github/workflows/config/redpanda.yaml
-          key: ${{ runner.os }}-build-${{ hashFiles('.github/workflows/config/redpanda.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-  
+ 
   e2e-test:
     needs: "lint-and-compile"
     timeout-minutes: 60
@@ -95,18 +87,8 @@ jobs:
     #     ports:
     #       - 8083:8083
     steps:
-      - name: Cache Workflow Redpanda Config
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/.github/workflows/config/redpanda.yaml
-          key: ${{ runner.os }}-build-${{ hashFiles('.github/workflows/config/redpanda.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Check code
-        run: ls -al ${{ github.workspace }}
       # - name: Create Redpanda container
-        # run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
+      #   run: /usr/bin/docker run -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
       # - name: Verify Redpanda connection from host
       #   run: |
       #     echo "${{ toJson(job) }}"
@@ -128,8 +110,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Docker run ownshop host
-        run: docker run -d --name owlshophost --platform linux/amd64 --network host -e KAFKA_BROKERS=localhost:19092 -e SCHEMAREGISTRY_ADDRESS=localhost:18081 quay.io/cloudhut/owl-shop:master
+      # - name: Docker run ownshop host
+      #   run: docker run -d --name owlshophost --platform linux/amd64 --network host -e KAFKA_BROKERS=localhost:19092 -e SCHEMAREGISTRY_ADDRESS=localhost:18081 quay.io/cloudhut/owl-shop:master
       - name: Install frontend dependencies 
         working-directory: frontend
         run: npm ci
@@ -149,10 +131,10 @@ jobs:
         run: docker logs redpanda
       - name: Log owlshop
         run: docker logs owlshop
-      - name: Log connect
-        run: docker logs connect
-      - name: Log owlshophost
-        run: docker logs owlshophost
+      # - name: Log connect
+      #   run: docker logs connect
+      # - name: Log owlshophost
+      #   run: docker logs owlshophost
       # - name: Start dependencies
       #   uses: isbang/compose-action@v1.5.1
       #   with:

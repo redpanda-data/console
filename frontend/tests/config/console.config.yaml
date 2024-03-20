@@ -8,17 +8,17 @@ redpanda:
   adminApi:
     enabled: true
     urls: ["http://localhost:19644"]
-connect:
-  enabled: true
-  clusters:
-    - name: local-connect-cluster
-      url: http://localhost:18083
-    - name: local-connect-cluster2
-      url: http://localhost:18083
+# connect:
+#   enabled: true
+#   clusters:
+#     - name: local-connect-cluster
+#       url: http://localhost:18083
+#     - name: local-connect-cluster2
+#       url: http://localhost:18083
 server:
   listenPort: 9090
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
   # debug: 
   #   enabled: true
-logger:
-  level: "debug"
+# logger:
+#   level: "debug"
