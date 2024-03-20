@@ -131,8 +131,8 @@ jobs:
         run: docker logs redpanda
       - name: Log owlshop
         run: docker logs owlshop
-      # - name: Log connect
-      #   run: docker logs connect
+      - name: Log connect
+        run: docker logs connect
       # - name: Log owlshophost
       #   run: docker logs owlshophost
       # - name: Start dependencies
