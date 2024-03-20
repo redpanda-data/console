@@ -42,10 +42,10 @@ jobs:
         volumes:
           - config:/etc/redpanda
         ports:
-          - 18081:18081
-          - 18082:18082
-          - 19092:19092
-          - 19644:9644
+          - 8081:8081
+          - 8082:8082
+          - 9092:9092
+          - 9644:9644
       owlshop:
         image: quay.io/cloudhut/owl-shop:sha-5211ad3
         env:
@@ -68,13 +68,13 @@ jobs:
             offset.flush.interval.ms=1000
             producer.linger.ms=50
             producer.batch.size=131072
-          CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+          CONNECT_BOOTSTRAP_SERVERS: localhost:9092
           CONNECT_GC_LOG_ENABLED: "false"
           CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
           CONNECT_LOG_LEVEL: info
           CONNECT_TOPIC_LOG_ENABLED: "true"
         ports:
-          - 18083:8083
+          - 8083:8083
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
