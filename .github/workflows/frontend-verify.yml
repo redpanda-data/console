@@ -12,7 +12,8 @@ jobs:
   lint-and-compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Cache node modules
         id: cache-npm
         uses: actions/cache@v3
@@ -26,7 +27,8 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '18.10.0'
       - name: Install dependencies 
@@ -50,7 +52,8 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Cache node modules
         id: cache-npm
         uses: actions/cache@v3
@@ -64,7 +67,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-
       - name: Docker compose up
         working-directory: frontend
         run: /usr/bin/docker compose --file tests/config/docker-compose.yaml up --detach
@@ -80,14 +82,14 @@ jobs:
       - name: Install frontend dependencies 
         working-directory: frontend
         run: npm ci
-      - name: Install Playwright Browsers
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
       - name: Install Go dependencies
         working-directory: backend/cmd/api
         run: go get .
       - name: Build Go server
         working-directory: backend/cmd/api
-        run: go build -buildvcs=false -v ./...
+        run: go build -v ./...
       - name: Log networks
         if:  runner.debug == '1'
         continue-on-error: true
@@ -111,7 +113,8 @@ jobs:
       - name: Run Playwright tests
         working-directory: frontend
         run: npm run e2e-test
-      - uses: actions/upload-artifact@v4
+      - name: Upload Playwright report artifact
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
