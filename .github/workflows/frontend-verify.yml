@@ -31,6 +31,11 @@ jobs:
           REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
           REACT_APP_DEV_HINT=true
           npm run build 
+      - name: Cache Workflow Redpanda Config
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/.github/workflows/config/redpanda.yaml
+          key: ${{ runner.os }}-build-${{ hashFiles('.github/workflows/config/redpanda.yaml') }}
   
   e2e-test:
     needs: "lint-and-compile"
@@ -87,8 +92,10 @@ jobs:
     #     ports:
     #       - 8083:8083
     steps:
-      - name: Create Redpanda container
-        run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
+      - name: Check code
+        run: ls -al ${{ github.workspace }}
+      # - name: Create Redpanda container
+        # run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
       # - name: Verify Redpanda connection from host
       #   run: |
       #     echo "${{ toJson(job) }}"
@@ -97,6 +104,9 @@ jobs:
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
+      - name: Docker compose up
+        working-directory: frontend
+        run: /usr/bin/docker compose --file tests/config/docker-compose.yaml up
       # - name: Check code
       #   run: ls -al ${{ github.workspace }}
       - name: Setup Go
