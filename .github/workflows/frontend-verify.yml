@@ -36,7 +36,7 @@ jobs:
     needs: "lint-and-compile"
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: golang:1.22-alpine
+    container: ubuntu:latest
     services:
       redpanda:
         image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
@@ -86,8 +86,8 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      # - name: Setup Go
-      #   uses: actions/setup-go@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
       - name: Install dependencies
         working-directory: backend/cmd/api
         run: go get .
