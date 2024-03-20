@@ -1,5 +1,5 @@
 version: '3.7'
-name: redpanda-owl-shop
+name: redpanda-e2e
 networks:
   redpanda_network:
     driver: bridge
@@ -8,6 +8,7 @@ volumes:
 services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.8
+    container_name: redpanda
     command:
       - redpanda start
       - --smp 1
@@ -43,6 +44,7 @@ services:
       start_period: 5s
 
   owl-shop:
+    container_name: owlshop
     image: quay.io/cloudhut/owl-shop:sha-5211ad3
     networks:
       - redpanda_network
