@@ -78,7 +78,7 @@ jobs:
           - 8083:8083
     steps:
       - name: Update CA Certificates
-        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install git
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -95,13 +95,9 @@ jobs:
       - name: Install dependencies
         working-directory: backend/cmd/api
         run: go get .
-        env:
-          GOPROXY: direct
       - name: Build
         working-directory: backend/cmd/api
         run: go build -v ./...
-        env:
-          GOPROXY: direct
       # - name: Start dependencies
       #   uses: isbang/compose-action@v1.5.1
       #   with:
