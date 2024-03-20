@@ -68,32 +68,32 @@ services:
     depends_on:
       - redpanda
   
-  # connect:
-  #   image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
-  #   hostname: connect
-  #   container_name: connect
-  #   networks:
-  #     - redpanda_network
-  #   depends_on:
-  #     - redpanda
-  #   ports:
-  #     - "18083:8083"
-  #   environment:
-  #     CONNECT_CONFIGURATION: |
-  #       key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-  #       value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-  #       group.id=connectors-cluster
-  #       offset.storage.topic=_internal_connectors_offsets
-  #       config.storage.topic=_internal_connectors_configs
-  #       status.storage.topic=_internal_connectors_status
-  #       config.storage.replication.factor=-1
-  #       offset.storage.replication.factor=-1
-  #       status.storage.replication.factor=-1
-  #       offset.flush.interval.ms=1000
-  #       producer.linger.ms=50
-  #       producer.batch.size=131072
-  #     CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
-  #     CONNECT_GC_LOG_ENABLED: "false"
-  #     CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
-  #     CONNECT_LOG_LEVEL: info
-  #     CONNECT_TOPIC_LOG_ENABLED: "true"
+  connect:
+    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
+    hostname: connect
+    container_name: connect
+    networks:
+      - redpanda_network
+    depends_on:
+      - redpanda
+    ports:
+      - "18083:8083"
+    environment:
+      CONNECT_CONFIGURATION: |
+        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        group.id=connectors-cluster
+        offset.storage.topic=_internal_connectors_offsets
+        config.storage.topic=_internal_connectors_configs
+        status.storage.topic=_internal_connectors_status
+        config.storage.replication.factor=-1
+        offset.storage.replication.factor=-1
+        status.storage.replication.factor=-1
+        offset.flush.interval.ms=1000
+        producer.linger.ms=50
+        producer.batch.size=131072
+      CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+      CONNECT_GC_LOG_ENABLED: "false"
+      CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+      CONNECT_LOG_LEVEL: info
+      CONNECT_TOPIC_LOG_ENABLED: "true"

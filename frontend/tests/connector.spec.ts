@@ -8,7 +8,7 @@ export const S3_BUCKET_NAME = 's3bucketname';
 
 test.describe('Connector', async () => {
     test.skip()
-    
+
     test('should create and delete S3 connector', async ({page}) => {
         const connectorName = `connector-test-${randomUUID()}`
 

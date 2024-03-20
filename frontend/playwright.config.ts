@@ -49,8 +49,6 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [{
     cwd: '../backend/cmd/api',
-    // command: process.env.CI ? 'go run . --config.filepath=../../../.github/workflows/config/console.yaml' :
-    //   'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
     command: 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
     url: 'http://localhost:9090/admin/startup',
     reuseExistingServer: !process.env.CI,
