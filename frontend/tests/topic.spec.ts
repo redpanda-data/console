@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
+test.use({
+    permissions: ['clipboard-write']
+})
+
 test.describe('Topic', () => {
     test('should create a message that exceeds the display limit, checks that the exceed limit message appears', async ({page}) => {
         const topicName = `too-big-message-test-${randomUUID()}`
