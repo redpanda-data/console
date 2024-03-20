@@ -91,8 +91,6 @@ jobs:
         # run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
       - name: Check if we have code alrady
         run: ls ${{ github.workspace }}
-      - name: Cat config file
-        run: cat ${{ github.workspace }}/.github/workflows/config/redpanda.yaml
       - name: Verify Redpanda connection from host
         run: |
           echo "${{ toJson(job) }}"
@@ -101,6 +99,8 @@ jobs:
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
+      - name: Check code
+        run: ls ${{ github.workspace }}
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
