@@ -45,10 +45,10 @@ jobs:
         volumes:
           - config:/etc/redpanda
         ports:
-          - 8081:8081
-          - 8082:8082
-          - 9092:9092
-          - 9644:9644
+        - 18081:18081
+        - 18082:18082
+        - 19092:19092
+        - 19644:9644
       owlshop:
         image: quay.io/cloudhut/owl-shop:sha-5211ad3
         env:
@@ -79,25 +79,26 @@ jobs:
         ports:
           - 8083:8083
     steps:
-      - name: Update CA Certificates
+      - name: Install base image dependencies
         run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.22'
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Install dependencies 
+      - name: Install frontend dependencies 
         working-directory: frontend
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      - name: Install dependencies
+      - name: Install Go dependencies
         working-directory: backend/cmd/api
         run: go get .
-      - name: Build
+      - name: Build Go server
         working-directory: backend/cmd/api
         run: go build -buildvcs=false -v ./...
       # - name: Start dependencies

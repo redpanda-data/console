@@ -10,7 +10,7 @@ redpanda:
           port: 9092
           name: internal
         - address: 0.0.0.0
-          port: 9092
+          port: 19092
           name: external
     admin:
         - address: 0.0.0.0
@@ -23,7 +23,7 @@ redpanda:
           port: 9092
           name: internal
         - address: localhost
-          port: 9092
+          port: 19092
           name: external
     developer_mode: true
     auto_create_topics_enabled: true
@@ -42,20 +42,20 @@ pandaproxy:
           port: 8082
           name: internal
         - address: 0.0.0.0
-          port: 8082
+          port: 18082
           name: external
     advertised_pandaproxy_api:
         - address: redpanda
           port: 8082
           name: internal
         - address: localhost
-          port: 8082
+          port: 18082
           name: external
 schema_registry:
     schema_registry_api:
         - address: 0.0.0.0
           port: 8081
           name: internal
-        - address: localhost
-          port: 8081
+        - address: 0.0.0.0
+          port: 18081
           name: external
