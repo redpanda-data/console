@@ -1,20 +1,20 @@
 serveFrontend: false
 kafka:
-  brokers: ["redpanda:19092"]
-  schemaRegistry:
-    enabled: false
-    urls: ["http://redpanda:18081"]
-redpanda:
-  adminApi:
-    enabled: false
-    urls: ["http://redpanda:19644"]
-connect:
-  enabled: false
-  clusters:
-    - name: local-connect-cluster
-      url: http://connect:18083
-    - name: local-connect-cluster2
-      url: http://connect:18083
+  brokers: ["localhost:19092"]
+#   schemaRegistry:
+#     enabled: true
+#     urls: ["http://redpanda:18081"]
+# redpanda:
+#   adminApi:
+#     enabled: true
+#     urls: ["http://redpanda:19644"]
+# connect:
+#   enabled: true
+#   clusters:
+#     - name: local-connect-cluster
+#       url: http://connect:18083
+#     - name: local-connect-cluster2
+#       url: http://connect:18083
 server:
   listenPort: 9090
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
