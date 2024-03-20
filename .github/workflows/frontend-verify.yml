@@ -78,6 +78,10 @@ jobs:
           - 8083:8083
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -86,13 +90,9 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.22'
-      - name: Install dependencies
-        working-directory: backend/cmd/api
-        run: go get .
+      # - name: Install dependencies
+      #   working-directory: backend/cmd/api
+      #   run: go get .
       - name: Build
         working-directory: backend/cmd/api
         run: go build -v ./...
