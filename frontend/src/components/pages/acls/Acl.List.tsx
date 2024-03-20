@@ -11,7 +11,7 @@
 
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
+import { RedpandaRole, api, rolesApi } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { comparer, computed, makeObservable, observable } from 'mobx';
@@ -20,7 +20,7 @@ import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, collectTransactionalIdAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl } from './Models';
+import { AclFlat, AclPrincipalGroup, PrincipalType, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, collectTransactionalIdAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
@@ -160,11 +160,11 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         for (const { items } of g) {
             const { principal, host } = items[0];
 
-            let principalType: string;
+            let principalType: PrincipalType;
             let principalName: string;
             if (principal.includes(':')) {
                 const split = principal.split(':', 2);
-                principalType = split[0];
+                principalType = split[0] as PrincipalType;
                 principalName = split[1];
             } else {
                 principalType = 'User';
@@ -271,7 +271,8 @@ const UsersTab = observer(() => {
 
 const RolesTab = observer(() => {
 
-    const users = api.serviceAccounts?.users ?? [];
+    const roles = rolesApi.roles ?? [];
+    const _isLoading = rolesApi.roles == null;
 
     return <Flex flexDirection="column" gap="4">
         <Box>
@@ -288,8 +289,8 @@ const RolesTab = observer(() => {
         <Section>
             <Button variant="outline">Create role</Button>
 
-            <DataTable<string>
-                data={users}
+            <DataTable<RedpandaRole>
+                data={roles}
                 pagination
                 sorting
                 columns={[
@@ -375,7 +376,7 @@ const AclsTab = observer((p: {
                 variant="outline"
                 onClick={() => {
                     setEditorType('create');
-                    setEdittingPrincipalGroup({
+                    setEdittingPrincipalGroup(observable({
                         host: '',
                         principalType: 'User',
                         principalName: '',
@@ -384,7 +385,7 @@ const AclsTab = observer((p: {
                         transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: []
-                    });
+                    }) as AclPrincipalGroup);
                 }}
             >
                 Create ACLs
