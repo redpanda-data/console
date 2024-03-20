@@ -49,6 +49,11 @@ jobs:
         - 18082:18082
         - 19092:19092
         - 19644:9644
+        # options: >-
+        #   --health-cmd "redis-cli ping"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
       owlshop:
         image: quay.io/cloudhut/owl-shop:sha-5211ad3
         env:
@@ -79,6 +84,10 @@ jobs:
         ports:
           - 8083:8083
     steps:
+      - name: Verify Redpanda connection from host
+        run: |
+          echo "${{ toJson(job) }}"
+          docker logs "${{ job.services.redpanda.id }}"
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
