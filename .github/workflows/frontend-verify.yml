@@ -42,13 +42,12 @@ jobs:
     services:
       redpanda:
         image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
-        volumes:
-          - config:/etc/redpanda
         ports:
-        - 18081:18081
-        - 18082:18082
-        - 19092:19092
-        - 19644:9644
+        - 8081:8081
+        - 8082:8082
+        - 9092:9092
+        - 9644:9644
+        options: --entrypoint "redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
         # options: >-
         #   --health-cmd "redis-cli ping"
         #   --health-interval 10s
@@ -87,8 +86,7 @@ jobs:
       - name: Verify Redpanda connection from host
         run: |
           echo "${{ toJson(job) }}"
-          ls -al /etc/redpanda
-          cat /etc/redpanda/redpanda.yaml
+          ls -al /etc
           docker logs "${{ job.services.redpanda.id }}"
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
