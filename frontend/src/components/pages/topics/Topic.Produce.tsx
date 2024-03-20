@@ -16,7 +16,6 @@ import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../pr
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
-import { isEmbedded } from '../../../config';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -260,9 +259,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         }
     };
 
-    const filteredEncodingOptions = isEmbedded()
-        ? encodingOptions.filter(x => x.value != PayloadEncoding.AVRO)
-        : encodingOptions;
+    const filteredEncodingOptions = encodingOptions.filter(x => x.value != PayloadEncoding.AVRO);
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
