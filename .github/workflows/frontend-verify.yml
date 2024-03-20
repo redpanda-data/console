@@ -36,8 +36,8 @@ jobs:
     # needs: "lint-and-compile"
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: 
-      image: ubuntu:latest
+    # container: 
+      # image: ubuntu:latest
       # options: --user 1001 # https://github.com/actions/runner/issues/2033#issuecomment-1598547465
     services:
       redpanda:
@@ -79,8 +79,8 @@ jobs:
         ports:
           - 8083:8083
     steps:
-      - name: Install base image dependencies
-        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
+      # - name: Install base image dependencies
+        # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
