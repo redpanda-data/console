@@ -128,6 +128,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+      - name: Docker run ownshop host
+        run: docker run -d --name owlshophost --platform linux/amd64 --network host -e KAFKA_BROKERS=localhost:19092 -e SCHEMAREGISTRY_ADDRESS=localhost:18081 quay.io/cloudhut/owl-shop:master
       - name: Install frontend dependencies 
         working-directory: frontend
         run: npm ci
@@ -141,12 +143,16 @@ jobs:
         run: go build -buildvcs=false -v ./...
       - name: Log netwokrs
         run: docker network ls
+      - name: Network inspect
+        run: docker network inspect redpanda-e2e_redpanda_network
       - name: Log redpanda
         run: docker logs redpanda
       - name: Log owlshop
         run: docker logs owlshop
       - name: Log connect
         run: docker logs connect
+      - name: Log owlshophost
+        run: docker logs owlshophost
       # - name: Start dependencies
       #   uses: isbang/compose-action@v1.5.1
       #   with:

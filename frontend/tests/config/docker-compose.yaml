@@ -45,7 +45,8 @@ services:
 
   owl-shop:
     container_name: owlshop
-    image: quay.io/cloudhut/owl-shop:sha-5211ad3
+    # image: quay.io/cloudhut/owl-shop:sha-5211ad3
+    image: quay.io/cloudhut/owl-shop:master
     networks:
       - redpanda_network
     platform: 'linux/amd64'
