@@ -8,6 +8,7 @@ volumes:
 services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.8
+    # hostname: redpanda
     container_name: redpanda
     command:
       - redpanda start
@@ -43,16 +44,17 @@ services:
       retries: 5
       start_period: 5s
 
-  owl-shop:
+  owlshop:
+    # hostname: owlshop
     container_name: owlshop
     # image: quay.io/cloudhut/owl-shop:sha-5211ad3
     image: quay.io/cloudhut/owl-shop:master
-    network_mode: host
-    # networks:
-    #   - redpanda_network
+    # network_mode: host
+    networks:
+      - redpanda_network
     platform: 'linux/amd64'
     entrypoint: /bin/sh
-    command: -c "echo \"$$OWLSHOP_CONFIG_FILE\" > /tmp/config.yml; /app/owlshop"
+    command: -c "sleep 5; echo \"$$OWLSHOP_CONFIG_FILE\" > /tmp/config.yml; /app/owlshop"
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
       OWLSHOP_CONFIG_FILE: |
@@ -62,15 +64,16 @@ services:
           topicReplicationFactor: 1
           topicPartitionCount: 1
         kafka:
-          brokers: "localhost:19092"
+          brokers: "redpanda:9092"
         schemaRegistry:
-          address: "http://localhost:18081"
+          address: "http://redpanda:8081"
+    restart: unless-stopped
     depends_on:
       - redpanda
   
   connect:
     image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
-    hostname: connect
+    # hostname: connect
     container_name: connect
     networks:
       - redpanda_network
