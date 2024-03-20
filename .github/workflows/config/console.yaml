@@ -1,20 +1,20 @@
 serveFrontend: false
 kafka:
-  brokers: ["localhost:9092"]
+  brokers: ["redpanda:9092"]
   schemaRegistry:
     enabled: true
-    urls: ["http://localhost:8081"]
+    urls: ["http://redpanda:8081"]
 redpanda:
   adminApi:
     enabled: true
-    urls: ["http://localhost:9644"]
+    urls: ["http://redpanda:9644"]
 connect:
   enabled: true
   clusters:
     - name: local-connect-cluster
-      url: http://localhost:8083
+      url: http://connect:8083
     - name: local-connect-cluster2
-      url: http://localhost:8083
+      url: http://connect:8083
 server:
   listenPort: 9090
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
