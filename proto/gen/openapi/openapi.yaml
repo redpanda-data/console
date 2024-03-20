@@ -251,8 +251,6 @@ components:
           description: |-
             The host address to use for this ACL. To allow a principal
             access from multiple hosts, you must create an ACL for each host.
-            The host address to use for this ACL. To allow a principal
-            access from multiple hosts, you must create an ACL for each host.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
@@ -265,8 +263,6 @@ components:
           type: string
         resource_name:
           description: |-
-            The name of the resource this ACL targets.
-            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
             The name of the resource this ACL targets.
             For requests with resource_type CLUSTER, this will default to "kafka-cluster".
           type: string
@@ -389,8 +385,8 @@ components:
           $ref: '#/components/schemas/PermissionType'
         principal:
           description: |-
-            The host address to use for this ACL. To allow a principal
-            access from multiple hosts, you must create an ACL for each host.
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           nullable: true
           type: string
         resource_name:
@@ -1213,8 +1209,8 @@ paths:
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
         - description: |-
-            The host address to use for this ACL. To allow a principal
-            access from multiple hosts, you must create an ACL for each host.
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           in: query
           name: filter.principal
           schema:
@@ -2770,7 +2766,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

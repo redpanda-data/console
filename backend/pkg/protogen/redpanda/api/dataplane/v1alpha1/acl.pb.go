@@ -933,8 +933,8 @@ type DeleteACLsRequest_Filter struct {
 	// The pattern to use for matching the specified resource_name
 	// (any, exact match, literal, or prefixed).
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
-	// The host address to use for this ACL. To allow a principal
-	// access from multiple hosts, you must create an ACL for each host.
+	// The user for whom this ACL applies. With the Kafka simple
+	// authorizer, you must include the prefix "User:" with the user name.
 	Principal *string `protobuf:"bytes,4,opt,name=principal,proto3,oneof" json:"principal,omitempty"`
 	// The host address to use for this ACL. To allow a principal
 	// access from multiple hosts, you must create an ACL for each host.
