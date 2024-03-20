@@ -77,8 +77,6 @@ jobs:
         ports:
           - 8083:8083
     steps:
-      - name: Update CA Certificates
-        run: update-ca-certificates
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
