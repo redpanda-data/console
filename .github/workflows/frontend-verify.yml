@@ -77,6 +77,8 @@ jobs:
         ports:
           - 8083:8083
     steps:
+      - name: Update CA Certificates
+        run: update-ca-certificates
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -90,12 +92,16 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      # - name: Install dependencies
-      #   working-directory: backend/cmd/api
-      #   run: go get .
+      - name: Install dependencies
+        working-directory: backend/cmd/api
+        run: go get .
+        env:
+          GOPROXY: direct
       - name: Build
         working-directory: backend/cmd/api
         run: go build -v ./...
+        env:
+          GOPROXY: direct
       # - name: Start dependencies
       #   uses: isbang/compose-action@v1.5.1
       #   with:
