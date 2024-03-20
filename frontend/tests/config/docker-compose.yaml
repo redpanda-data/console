@@ -8,7 +8,6 @@ volumes:
 services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.8
-    # hostname: redpanda
     container_name: redpanda
     command:
       - redpanda start
@@ -45,11 +44,8 @@ services:
       start_period: 5s
 
   owlshop:
-    # hostname: owlshop
     container_name: owlshop
-    # image: quay.io/cloudhut/owl-shop:sha-5211ad3
     image: quay.io/cloudhut/owl-shop:master
-    # network_mode: host
     networks:
       - redpanda_network
     platform: 'linux/amd64'
@@ -73,7 +69,6 @@ services:
   
   connect:
     image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
-    # hostname: connect
     container_name: connect
     networks:
       - redpanda_network

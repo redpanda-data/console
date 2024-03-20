@@ -36,82 +36,34 @@ jobs:
     needs: "lint-and-compile"
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    # container: 
-      # image: ubuntu:latest
-      # options: --user 1001 # https://github.com/actions/runner/issues/2033#issuecomment-1598547465
-    
-    # https://github.com/actions/runner/issues/2276
-    # https://github.com/actions/runner/discussions/1872
-    # https://github.com/orgs/community/discussions/26688
-    # services:
-    #   redpanda:
-    #     image: docker.redpanda.com/redpandadata/redpanda:latest
-    #     ports:
-    #     - 8081:8081
-    #     - 8082:8082
-    #     - 9092:9092
-    #     - 9644:9644
-        # options: --entrypoint "rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-    #   owlshop:
-    #     image: quay.io/cloudhut/owl-shop:sha-5211ad3
-    #     env:
-    #       CONFIG_FILEPATH: /tmp/owlshop.yaml
-    #     volumes:
-    #       - config:/tmp
-    #   connect:
-    #     image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
-    #     env:
-    #       CONNECT_CONFIGURATION: |
-    #         key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-    #         value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-    #         group.id=connectors-cluster
-    #         offset.storage.topic=_internal_connectors_offsets
-    #         config.storage.topic=_internal_connectors_configs
-    #         status.storage.topic=_internal_connectors_status
-    #         config.storage.replication.factor=-1
-    #         offset.storage.replication.factor=-1
-    #         status.storage.replication.factor=-1
-    #         offset.flush.interval.ms=1000
-    #         producer.linger.ms=50
-    #         producer.batch.size=131072
-    #       CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
-    #       CONNECT_GC_LOG_ENABLED: "false"
-    #       CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
-    #       CONNECT_LOG_LEVEL: info
-    #       CONNECT_TOPIC_LOG_ENABLED: "true"
-    #     ports:
-    #       - 8083:8083
     steps:
-      # - name: Create Redpanda container
-      #   run: /usr/bin/docker run -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
-      # - name: Verify Redpanda connection from host
-      #   run: |
-      #     echo "${{ toJson(job) }}"
-      #     ls -al /etc
-      #     docker logs "${{ job.services.redpanda.id }}"
-      # - name: Install base image dependencies
-        # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
       - name: Docker compose up
         working-directory: frontend
         run: /usr/bin/docker compose --file tests/config/docker-compose.yaml up --detach
-      # - name: Check code
-      #   run: ls -al ${{ github.workspace }}
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.22'
+          cache-dependency-path: backend/go.sum
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      # - name: Docker run ownshop host
-      #   run: docker run -d --name owlshophost --platform linux/amd64 --network host -e KAFKA_BROKERS=localhost:19092 -e SCHEMAREGISTRY_ADDRESS=localhost:18081 quay.io/cloudhut/owl-shop:master
       - name: Install frontend dependencies 
         working-directory: frontend
         run: npm ci
@@ -133,13 +85,6 @@ jobs:
         run: docker logs owlshop
       - name: Log connect
         run: docker logs connect
-      # - name: Log owlshophost
-      #   run: docker logs owlshophost
-      # - name: Start dependencies
-      #   uses: isbang/compose-action@v1.5.1
-      #   with:
-      #     compose-file: "./frontend/tests/config/docker-compose.yaml"
-      #     down-flags: "--volumes"
       - name: Run Playwright tests
         working-directory: frontend
         run: npm run e2e-test

@@ -18,7 +18,3 @@ connect:
 server:
   listenPort: 9090
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
-  # debug: 
-  #   enabled: true
-# logger:
-#   level: "debug"
