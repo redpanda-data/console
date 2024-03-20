@@ -277,7 +277,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
         const customStartOffsetValid = !isNaN(Number(customStartOffsetValue));
 
-        const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
+        const isCompacted = this.props.topic.cleanupPolicy === 'compact';
 
         const startOffsetOptions = [
             { value: PartitionOffsetOrigin.End, label: 'Newest' },

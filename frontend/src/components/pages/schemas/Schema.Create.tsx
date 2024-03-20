@@ -16,7 +16,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { observable } from 'mobx';
-import { Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast, Alert, AlertIcon } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, FormField, Heading, IconButton, Input, RadioGroup, useToast } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 import KowlEditor from '../../misc/KowlEditor';
 import { ElementOf } from '../../../utils/utils';
@@ -163,11 +163,7 @@ const SchemaPageButtons = observer((p: {
 
                 if (!validationResponse.isValid || validationResponse.isCompatible === false) {
                     // Something is wrong with the schema, abort
-                    toast({
-                        status: 'error', duration: 4000, isClosable: false,
-                        title: 'Error',
-                        description: 'Schema validation failed'
-                    });
+                    openValidationErrorsModal(validationResponse);
                     return;
                 }
 
