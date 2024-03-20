@@ -135,7 +135,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 }
                             >
                                 <InputGroup>
-                                    <Box mr={2} minW={150}>
+                                    <Box mr={2} minW={180} zIndex={1}>
                                         <SingleSelect<PrincipalType>
                                             value={group.principalType}
                                             options={[
@@ -144,13 +144,11 @@ export const AclPrincipalGroupEditor = observer((p: {
                                                     value: 'User',
                                                 },
                                                 {
-                                                    label: 'Redpanda role',
+                                                    label: 'Redpanda Role',
                                                     value: 'RedpandaRole'
                                                 }
                                             ]}
-                                            onChange={(value) => {
-                                                group.principalType = value
-                                            }}
+                                            onChange={(value) => group.principalType = value}
                                         />
                                     </Box>
 
