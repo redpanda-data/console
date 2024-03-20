@@ -26,6 +26,8 @@ import { SingleSelect } from '../../../misc/Select';
 import { api } from '../../../../state/backendApi';
 import { isServerless } from '../../../../config';
 
+type CleanupPolicyType = 'compact' | 'delete' | 'compact,delete';
+
 
 type CreateTopicModalState = {
     topicName: string; // required
@@ -34,7 +36,7 @@ type CreateTopicModalState = {
     replicationFactor?: number;
     minInSyncReplicas?: number;
 
-    cleanupPolicy: 'delete' | 'compact';  // required
+    cleanupPolicy: CleanupPolicyType;  // required
 
     retentionTimeMs: number;
     retentionTimeUnit: RetentionTimeUnit
@@ -123,9 +125,10 @@ export class CreateTopicModalContent extends Component<Props> {
 
                 <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
                     {!isServerless() && <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
-                        <SingleSelect<'delete' | 'compact'> options={[
+                        <SingleSelect<CleanupPolicyType> options={[
                             { value: 'delete', label: 'delete' },
                             { value: 'compact', label: 'compact' },
+                            { value: 'compact,delete', label: 'compact,delete' },
                         ]}
                             isReadOnly={isServerless()}
                             value={state.cleanupPolicy}
