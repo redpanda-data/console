@@ -39,6 +39,10 @@ jobs:
     # container: 
       # image: ubuntu:latest
       # options: --user 1001 # https://github.com/actions/runner/issues/2033#issuecomment-1598547465
+    
+    # https://github.com/actions/runner/issues/2276
+    # https://github.com/actions/runner/discussions/1872
+    # https://github.com/orgs/community/discussions/26688
     services:
       redpanda:
         image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
@@ -47,7 +51,7 @@ jobs:
         - 8082:8082
         - 9092:9092
         - 9644:9644
-        options: --entrypoint "/usr/bin/rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
+        # options: --entrypoint "rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
         # options: >-
         #   --health-cmd "redis-cli ping"
         #   --health-interval 10s
