@@ -139,6 +139,8 @@ jobs:
       - name: Build Go server
         working-directory: backend/cmd/api
         run: go build -buildvcs=false -v ./...
+      - name: Log netwokrs
+        run: docker network ls
       - name: Log redpanda
         run: docker logs redpanda
       - name: Log owlshop
