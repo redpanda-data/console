@@ -1,13 +1,13 @@
 serveFrontend: false
 kafka:
   brokers: ["localhost:19092"]
-#   schemaRegistry:
-#     enabled: true
-#     urls: ["http://redpanda:18081"]
-# redpanda:
-#   adminApi:
-#     enabled: true
-#     urls: ["http://redpanda:19644"]
+  schemaRegistry:
+    enabled: true
+    urls: ["http://redpanda:18081"]
+redpanda:
+  adminApi:
+    enabled: true
+    urls: ["http://redpanda:19644"]
 # connect:
 #   enabled: true
 #   clusters:
@@ -20,5 +20,5 @@ server:
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
   # debug: 
   #   enabled: true
-logger:
-  level: "debug"
+# logger:
+#   level: "debug"

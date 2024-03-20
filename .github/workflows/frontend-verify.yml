@@ -95,6 +95,14 @@ jobs:
     #     ports:
     #       - 8083:8083
     steps:
+      - name: Cache Workflow Redpanda Config
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/.github/workflows/config/redpanda.yaml
+          key: ${{ runner.os }}-build-${{ hashFiles('.github/workflows/config/redpanda.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - name: Check code
         run: ls -al ${{ github.workspace }}
       # - name: Create Redpanda container
