@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     container: 
       image: ubuntu:latest
-      options: --user 1001 # https://github.com/actions/runner/issues/2033#issuecomment-1598547465
+      # options: --user 1001 # https://github.com/actions/runner/issues/2033#issuecomment-1598547465
     services:
       redpanda:
         image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
@@ -80,7 +80,7 @@ jobs:
           - 8083:8083
     steps:
       - name: Update CA Certificates
-        run: sudo apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
