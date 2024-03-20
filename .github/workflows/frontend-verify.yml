@@ -97,7 +97,7 @@ jobs:
         run: go get .
       - name: Build
         working-directory: backend/cmd/api
-        run: go build -v ./...
+        run: go build -buildvcs=false -v ./...
       # - name: Start dependencies
       #   uses: isbang/compose-action@v1.5.1
       #   with:
