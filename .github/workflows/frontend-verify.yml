@@ -47,7 +47,7 @@ jobs:
         - 8082:8082
         - 9092:9092
         - 9644:9644
-        options: --entrypoint "redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
+        options: --entrypoint "/usr/bin/rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
         # options: >-
         #   --health-cmd "redis-cli ping"
         #   --health-interval 10s
