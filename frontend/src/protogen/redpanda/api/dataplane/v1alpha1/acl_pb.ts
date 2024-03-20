@@ -575,6 +575,8 @@ export class CreateACLRequest extends Message<CreateACLRequest> {
   /**
    * The name of the resource this ACL targets.
    * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+   * The name of the resource this ACL targets.
+   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
    *
    * @generated from field: string resource_name = 2;
    */
@@ -594,6 +596,8 @@ export class CreateACLRequest extends Message<CreateACLRequest> {
   principal = "";
 
   /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
    * The host address to use for this ACL. To allow a principal
    * access from multiple hosts, you must create an ACL for each host.
    *

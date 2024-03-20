@@ -135,6 +135,8 @@ message CreateACLRequest {
 
   // The name of the resource this ACL targets.
   // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+  // The name of the resource this ACL targets.
+  // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
   string resource_name = 2;
 
   ACL.ResourcePatternType resource_pattern_type = 3 [
@@ -157,6 +159,8 @@ message CreateACLRequest {
     (buf.validate.field).string.prefix = "User:"
   ];
 
+  // The host address to use for this ACL. To allow a principal
+  // access from multiple hosts, you must create an ACL for each host.
   // The host address to use for this ACL. To allow a principal
   // access from multiple hosts, you must create an ACL for each host.
   string host = 5 [
@@ -280,6 +284,7 @@ service ACLService {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List ACLs"
       description: "List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
+      description: "List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
       responses: {
         key: "200"
         value: {
@@ -316,6 +321,7 @@ service ACLService {
     option (google.api.http) = {delete: "/v1alpha1/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete ACLs"
+      description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
       description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
       responses: {
         key: "200"
