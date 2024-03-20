@@ -87,6 +87,8 @@ jobs:
       - name: Verify Redpanda connection from host
         run: |
           echo "${{ toJson(job) }}"
+          ls -al /etc/redpanda
+          cat /etc/redpanda/redpanda.yaml
           docker logs "${{ job.services.redpanda.id }}"
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
