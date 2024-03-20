@@ -33,7 +33,7 @@ jobs:
           npm run build 
   
   e2e-test:
-    # needs: "lint-and-compile"
+    needs: "lint-and-compile"
     timeout-minutes: 60
     runs-on: ubuntu-latest
     # container: 
@@ -89,6 +89,12 @@ jobs:
     steps:
       # - name: Create Redpanda container
         # run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
+      - name: Check if we have code alrady
+        run: |
+          echo "VAR"
+          ls ${{ github.workspace }}
+          echo "ENV"
+          ls $GITHUB_WORKSPACE
       - name: Verify Redpanda connection from host
         run: |
           echo "${{ toJson(job) }}"
