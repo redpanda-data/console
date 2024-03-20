@@ -2,11 +2,13 @@ module github.com/redpanda-data/console/backend
 
 go 1.22.0
 
+replace github.com/redpanda-data/common-go/api => /Users/martinschneppenheim/Documents/GitHub/redpanda-data/common-go/api
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20231115204500-e097f827e652.1
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240308150626-33e02aaad4d0.1
 	connectrpc.com/connect v1.15.0
 	connectrpc.com/grpcreflect v1.2.0
-	connectrpc.com/otelconnect v0.7.0
 	github.com/aws/aws-sdk-go-v2/config v1.8.3
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bufbuild/protovalidate-go v0.4.3
@@ -33,7 +35,7 @@ require (
 	github.com/knadh/koanf v1.5.0
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/redpanda-data/common-go/api v0.0.0-20240312123558-20eb1cef5eee
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20240105044330-c094966ca0cf
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -50,9 +52,7 @@ require (
 	github.com/twmb/go-cache v1.2.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
-	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0
-	go.opentelemetry.io/otel/sdk/metric v1.22.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.26.0
 	go.vallahaye.net/connect-gateway v0.3.1
@@ -63,12 +63,11 @@ require (
 	google.golang.org/genproto v0.0.0-20240123012728-ef4313101c80
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe
-	google.golang.org/grpc v1.62.0
+	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 )
 
 require (
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240308150626-33e02aaad4d0.1 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -139,7 +138,6 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20231016141302-07b5767bb0ed // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
@@ -160,7 +158,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sethgrid/pester v1.2.0 // indirect
@@ -179,8 +177,10 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
+	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect

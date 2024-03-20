@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -22,7 +23,10 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	redpandainterceptor "github.com/redpanda-data/common-go/api/interceptor"
+	"github.com/redpanda-data/common-go/api/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -74,11 +78,37 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	// Define interceptors that shall be used in the community version of Console. We may add further
 	// interceptors by calling the hooks.
+	apiProm, err := metrics.NewPrometheus(
+		metrics.WithRegistry(prometheus.DefaultRegisterer),
+		metrics.WithDynamicLabel("test", func(ctx context.Context, metadata *redpandainterceptor.RequestMetadata) string {
+			return "val"
+		}),
+	)
+	if err != nil {
+		api.Logger.Fatal("failed to create prometheus adapter", zap.Error(err))
+	}
+	apiProm.ObserverAdapter()
+
+	// Define interceptors that shall be used in the community version of Console. We may add further
+	// interceptors by calling the hooks.
+	observerInterceptor := redpandainterceptor.NewObserver(func(_ context.Context, rm *redpandainterceptor.RequestMetadata) {
+		api.Logger.Info("",
+			zap.String("duration", rm.Duration().String()),
+			zap.String("procedure", rm.Procedure()),
+			zap.String("request_uri", rm.RequestURI()),
+			zap.String("protocol", rm.Protocol()),
+			zap.String("status_code", rm.StatusCode()),
+			zap.Int64("bytes_read", rm.BytesReceived()),
+			zap.Int64("bytes_sent", rm.BytesSent()),
+			zap.String("peer", rm.PeerAddress()))
+	})
+	r.Use(observerInterceptor.WrapHandler)
 	baseInterceptors := []connect.Interceptor{
 		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log"), api.Hooks.Console.AdditionalLogFields),
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
 		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
 		otelInterceptor,
+		observerInterceptor,
 	}
 
 	// Setup gRPC-Gateway
