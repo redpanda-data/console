@@ -18,7 +18,7 @@ import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, TimeSince } from '../utils/utils';
+import { decodeBase64, delay, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
     GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
@@ -1488,8 +1488,77 @@ const apiStore = {
 
 // This is a fake api to emulate working with the new "acl roles" feature.
 // TODO: REMOVE BEFORE MERGE
-export const rbacApi = observable({
+export type RolePrincipal = { name: string; principal_type: 'User' };
+export type RedpandaRole = {
+    name: string
+};
+export type ModifyRoleMembersRequest = {
+    add: RolePrincipal[],
+    remove: RolePrincipal[]
+};
+export const rolesApi = observable({
+    roles: undefined as undefined | RedpandaRole[],
+    roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+    // roleAcls: new Map<string,>(); // RoleName -> ACLs
 
+    async createRole(name: string) {
+        if (!this.roleMembers.has(name)) {
+            if (!this.roles)
+                this.roles = [];
+            this.roles.push({ name });
+            this.roleMembers.set(name, []);
+        }
+        else
+            throw new Error('role with this name already exists');
+    },
+
+    async modifyRoleMembers(role: string, req: ModifyRoleMembersRequest) {
+        const members = this.roleMembers.get(role)
+        if (!members) return;
+
+        members.pushDistinct(...req.add);
+        for (const r of req.remove)
+            members.removeAll(member => member.name == r.name);
+    },
+
+    async deleteRole(name: string) {
+        await delay(150);
+        if (this.roleMembers.has(name))
+            this.roleMembers.delete(name);
+        else
+            throw new Error('role with this name does not exist');
+    },
+
+
+    async refreshRoleAcls() {
+        const _req: GetAclsRequest = {
+            resourceType: 'Any',
+            resourcePatternTypeFilter: 'Any',
+            operation: 'Any',
+            permissionType: 'Any',
+        };
+
+// const response: GetAclOverviewResponse = {
+//     isAuthorizerEnabled: true,
+//     aclResources: [
+//         {
+//             resourceName: 'placeholder',
+//             resourcePatternType: 'Any',
+//             resourceType: 'Any',
+//             acls: [
+//                 {
+//                     host: 'host placeholder',
+//                     operation: 'Create',
+//                     principal
+//                 }
+//             ]
+//
+//         }
+//     ]
+// };
+
+        // GetAclOverviewResponse -> normalizeACLs
+    }
 });
 
 

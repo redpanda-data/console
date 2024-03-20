@@ -16,7 +16,7 @@ import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../stat
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
+import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
 import { Box, Button, Flex, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
@@ -136,17 +136,17 @@ export const AclPrincipalGroupEditor = observer((p: {
                             >
                                 <InputGroup>
                                     <Box mr={2} minW={150}>
-                                        <SingleSelect<string>
+                                        <SingleSelect<PrincipalType>
                                             value={group.principalType}
                                             options={[
                                                 {
                                                     label: 'User',
                                                     value: 'User',
                                                 },
-                                                // {
-                                                //     label: 'Group',
-                                                //     value: 'Group'
-                                                // }
+                                                {
+                                                    label: 'Redpanda role',
+                                                    value: 'RedpandaRole'
+                                                }
                                             ]}
                                             onChange={(value) => {
                                                 group.principalType = value

@@ -11,6 +11,7 @@
 
 import { AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType } from '../../../state/restInterfaces';
 
+export type PrincipalType = 'User' | 'RedpandaRole';
 export type AclFlat = {
     // AclResource
     resourceType: AclStrResourceType;
@@ -25,7 +26,7 @@ export type AclFlat = {
 }
 
 export type AclPrincipalGroup = {
-    principalType: string;
+    principalType: PrincipalType;
     principalName: string;
 
     host: string;

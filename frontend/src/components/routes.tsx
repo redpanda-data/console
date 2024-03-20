@@ -248,6 +248,9 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
     MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
 
+    // MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', xxxxxx, 'Security'),
+    // MakeRoute<{}>('/security/roles/create', xxxxxx, 'Security'),
+
     MakeRoute<{}>('/quotas', QuotasList, 'Quotas', ScaleIcon, true,
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
