@@ -3,11 +3,11 @@ kafka:
   brokers: ["localhost:19092"]
   schemaRegistry:
     enabled: true
-    urls: ["http://redpanda:18081"]
+    urls: ["http://localhost:18081"]
 redpanda:
   adminApi:
     enabled: true
-    urls: ["http://redpanda:19644"]
+    urls: ["http://localhost:19644"]
 # connect:
 #   enabled: true
 #   clusters:
