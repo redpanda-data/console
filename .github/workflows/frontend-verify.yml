@@ -43,55 +43,57 @@ jobs:
     # https://github.com/actions/runner/issues/2276
     # https://github.com/actions/runner/discussions/1872
     # https://github.com/orgs/community/discussions/26688
-    services:
-      redpanda:
-        image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
-        ports:
-        - 8081:8081
-        - 8082:8082
-        - 9092:9092
-        - 9644:9644
-        # options: --entrypoint "rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
-        # options: >-
-        #   --health-cmd "redis-cli ping"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
-      owlshop:
-        image: quay.io/cloudhut/owl-shop:sha-5211ad3
-        env:
-          CONFIG_FILEPATH: /tmp/owlshop.yaml
-        volumes:
-          - config:/tmp
-      connect:
-        image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
-        env:
-          CONNECT_CONFIGURATION: |
-            key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-            value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
-            group.id=connectors-cluster
-            offset.storage.topic=_internal_connectors_offsets
-            config.storage.topic=_internal_connectors_configs
-            status.storage.topic=_internal_connectors_status
-            config.storage.replication.factor=-1
-            offset.storage.replication.factor=-1
-            status.storage.replication.factor=-1
-            offset.flush.interval.ms=1000
-            producer.linger.ms=50
-            producer.batch.size=131072
-          CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
-          CONNECT_GC_LOG_ENABLED: "false"
-          CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
-          CONNECT_LOG_LEVEL: info
-          CONNECT_TOPIC_LOG_ENABLED: "true"
-        ports:
-          - 8083:8083
+    # services:
+    #   redpanda:
+    #     image: docker.redpanda.com/redpandadata/redpanda:v23.3.9
+    #     ports:
+    #     - 8081:8081
+    #     - 8082:8082
+    #     - 9092:9092
+    #     - 9644:9644
+    #     # options: --entrypoint "rpk redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false"
+    #     # options: >-
+    #     #   --health-cmd "redis-cli ping"
+    #     #   --health-interval 10s
+    #     #   --health-timeout 5s
+    #     #   --health-retries 5
+    #   owlshop:
+    #     image: quay.io/cloudhut/owl-shop:sha-5211ad3
+    #     env:
+    #       CONFIG_FILEPATH: /tmp/owlshop.yaml
+    #     volumes:
+    #       - config:/tmp
+    #   connect:
+    #     image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
+    #     env:
+    #       CONNECT_CONFIGURATION: |
+    #         key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+    #         value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+    #         group.id=connectors-cluster
+    #         offset.storage.topic=_internal_connectors_offsets
+    #         config.storage.topic=_internal_connectors_configs
+    #         status.storage.topic=_internal_connectors_status
+    #         config.storage.replication.factor=-1
+    #         offset.storage.replication.factor=-1
+    #         status.storage.replication.factor=-1
+    #         offset.flush.interval.ms=1000
+    #         producer.linger.ms=50
+    #         producer.batch.size=131072
+    #       CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+    #       CONNECT_GC_LOG_ENABLED: "false"
+    #       CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+    #       CONNECT_LOG_LEVEL: info
+    #       CONNECT_TOPIC_LOG_ENABLED: "true"
+    #     ports:
+    #       - 8083:8083
     steps:
-      - name: Verify Redpanda connection from host
-        run: |
-          echo "${{ toJson(job) }}"
-          ls -al /etc
-          docker logs "${{ job.services.redpanda.id }}"
+      - name: Create Redpanda container
+        run: /usr/bin/docker create -p 8081:8081 -p 8082:8082 -p 9092:9092 -p 9644:9644 -e GITHUB_ACTIONS=true -e CI=true docker.redpanda.com/redpandadata/redpanda:latest
+      # - name: Verify Redpanda connection from host
+      #   run: |
+      #     echo "${{ toJson(job) }}"
+      #     ls -al /etc
+      #     docker logs "${{ job.services.redpanda.id }}"
       # - name: Install base image dependencies
         # run: apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get install -y --no-install-recommends git
       - uses: actions/checkout@v4
