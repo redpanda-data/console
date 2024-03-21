@@ -1303,19 +1303,6 @@ paths:
               - PERMISSION_TYPE_DENY
               - PERMISSION_TYPE_ALLOW
             type: string
-        - description: Limit the paginated response to a number of items.
-          in: query
-          name: page_size
-          schema:
-            format: int32
-            type: integer
-        - description: |-
-            Value of the next_page_token field returned by the previous response.
-            If not provided, the system assumes the first page is requested.
-          in: query
-          name: page_token
-          schema:
-            type: string
       responses:
         "200":
           content:
