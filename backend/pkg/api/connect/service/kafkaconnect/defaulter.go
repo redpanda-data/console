@@ -11,7 +11,7 @@ package kafkaconnect
 
 import v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 
-// Defaulter updates a given Topic input request with defaults.
+// Defaulter updates a given kafkaconnect request with defaults.
 type defaulter struct{}
 
 func (*defaulter) applyListConnectorsRequest(req *v1alpha1.ListConnectorsRequest) {

@@ -11,7 +11,7 @@ package transform
 
 import v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 
-// Defaulter updates a given Topic input request with defaults.
+// Defaulter updates a given transforms request with defaults.
 type defaulter struct{}
 
 func (*defaulter) applyListTransformsRequest(req *v1alpha1.ListTransformsRequest) {
