@@ -207,6 +207,12 @@ const defaultUiSettings = {
         configViewType: 'structured' as 'structured' | 'table',
     },
 
+    clusterOverview: {
+        connectorsList: {
+            quickSearch: ''
+        }
+    },
+
     connectorsList: {
         quickSearch: ''
     },

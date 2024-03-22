@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
+import { observer, useLocalObservable } from 'mobx-react';
 import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -21,7 +21,8 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { DataTable, Tooltip, Text } from '@redpanda-data/ui';
+import { Box, DataTable, Text, Tooltip } from '@redpanda-data/ui';
+import SearchBar from '../../misc/SearchBar';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -124,15 +125,43 @@ interface ConnectorType extends ClusterConnectorInfo {
     cluster: ClusterConnectors
 }
 
-@observer
-class TabConnectors extends Component {
-    render() {
-        const clusters = api.connectConnectors!.clusters;
-        const allConnectors: ConnectorType[] = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c }))) ?? [];
 
-        return (
+const TabConnectors = observer(() => {
+    const clusters = api.connectConnectors!.clusters;
+    const allConnectors: ConnectorType[] = clusters?.flatMap(cluster => cluster.connectors.map(c => ({cluster, ...c}))) ?? [];
+
+    const state = useLocalObservable<{
+        filteredResults: ConnectorType[]
+    }>(() => ({
+        filteredResults: []
+    }))
+
+    const isFilterMatch = (filter: string, item: ConnectorType): boolean => {
+        try {
+            const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i')
+            return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp))
+        } catch (e) {
+            console.warn('Invalid expression');
+            return item.name.toLowerCase().includes(filter.toLowerCase());
+        }
+    }
+
+    return (
+        <Box>
+            <SearchBar<ConnectorType>
+                isFilterMatch={isFilterMatch}
+                filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
+                onQueryChanged={x => {
+                    uiSettings.clusterOverview.connectorsList.quickSearch = x;
+                }}
+                dataSource={() => allConnectors}
+                placeholderText="Enter search term/regex"
+                onFilteredDataChanged={data => {
+                    state.filteredResults = data
+                }}
+            />
             <DataTable<ConnectorType>
-                data={allConnectors}
+                data={state.filteredResults}
                 pagination
                 sorting={false}
                 columns={[
@@ -175,9 +204,9 @@ class TabConnectors extends Component {
                     }
                 ]}
             />
-        );
-    }
-}
+        </Box>
+    );
+});
 
 interface TaskType extends ClusterConnectorTaskInfo {
     connector: ConnectorType;
