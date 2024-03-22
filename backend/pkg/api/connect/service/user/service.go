@@ -40,6 +40,7 @@ type Service struct {
 	logger      *zap.Logger
 	consoleSvc  console.Servicer
 	redpandaSvc *redpanda.Service
+	defaulter   defaulter
 
 	isProtectedUserFn func(userName string) bool
 }
@@ -56,6 +57,7 @@ func NewService(cfg *config.Config,
 		logger:            logger,
 		consoleSvc:        consoleSvc,
 		redpandaSvc:       redpandaSvc,
+		defaulter:         defaulter{},
 		isProtectedUserFn: isProtectedUserFn,
 	}
 }
@@ -71,6 +73,7 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
 		)
 	}
+	s.defaulter.applyListUsersRequest(req.Msg)
 
 	// 2. List users
 	users, err := s.redpandaSvc.ListUsers(ctx)
