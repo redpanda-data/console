@@ -361,8 +361,10 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
         password:
+          description: Password.
           type: string
       type: object
     CreateUserResponse:
@@ -375,6 +377,7 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          title: Name of newly-created user
           type: string
       type: object
     DeleteACLsRequest.Filter:
@@ -787,8 +790,10 @@ components:
     ListUsersRequest.Filter:
       properties:
         name:
+          description: Username.
           type: string
         name_contains:
+          description: Substring match on username. Case-sensitive.
           type: string
       type: object
     ListUsersResponse:
@@ -806,6 +811,7 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
       type: object
     MatchingACL:
@@ -966,6 +972,7 @@ components:
         - RESOURCE_TYPE_USER
       type: string
     SASLMechanism:
+      description: SASL mechanism to use for authentication.
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
@@ -1145,8 +1152,10 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
         password:
+          description: Password.
           type: string
       type: object
     UpdateUserResponse:
@@ -1155,6 +1164,7 @@ components:
           $ref: '#/components/schemas/UpdateUserResponse.User'
       type: object
     UpdateUserResponse.User:
+      description: Updated user's name and SASL mechanism.
       properties:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
@@ -2914,14 +2924,16 @@ paths:
         - TransformService
   /v1alpha1/users:
     get:
-      description: List Users
+      description: List users that meet the filter criteria.
       operationId: UserService_ListUsers
       parameters:
-        - in: query
+        - description: Username.
+          in: query
           name: filter.name
           schema:
             type: string
-        - in: query
+        - description: Substring match on username. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
@@ -2972,7 +2984,7 @@ paths:
       tags:
         - UserService
     post:
-      description: Create a User.
+      description: Create a new user.
       operationId: UserService_CreateUser
       requestBody:
         content:
@@ -2995,7 +3007,7 @@ paths:
                   name: payment-service
               schema:
                 $ref: '#/components/schemas/CreateUserRequest.User'
-          description: Creates a user
+          description: User created
         "400":
           content:
             application/json:
@@ -3015,7 +3027,7 @@ paths:
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Bad Request. Check API documentation and update request.
+          description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:
@@ -3039,10 +3051,11 @@ paths:
         - UserService
   /v1alpha1/users/{name}:
     delete:
-      description: Delete Users
+      description: Delete the specified user
       operationId: UserService_DeleteUser
       parameters:
-        - in: path
+        - description: Username
+          in: path
           name: name
           required: true
           schema:
@@ -3053,7 +3066,7 @@ paths:
             application/json:
               example: {}
               schema: {}
-          description: User was deleted successfully.
+          description: User deleted successfully
         "401":
           content:
             application/json:
@@ -3086,15 +3099,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete Users
+      summary: Delete User
       tags:
         - UserService
   /v1alpha1/users/{user.name}:
     put:
-      description: Update a User.
+      description: Update a user's credentials.
       operationId: UserService_UpdateUser
       parameters:
-        - in: path
+        - description: Username.
+          in: path
           name: user.name
           required: true
           schema:
@@ -3111,6 +3125,7 @@ paths:
                 mechanism:
                   $ref: '#/components/schemas/SASLMechanism'
                 password:
+                  description: Password.
                   type: string
               type: object
         required: true
@@ -3125,7 +3140,7 @@ paths:
                   name: payment-service
               schema:
                 $ref: '#/components/schemas/UpdateUserResponse.User'
-          description: Ok
+          description: OK
         "400":
           content:
             application/json:
@@ -3145,7 +3160,7 @@ paths:
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Bad Request. Check API documentation and update request.
+          description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:

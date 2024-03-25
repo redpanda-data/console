@@ -8,7 +8,9 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 message ListUsersRequest {
   message Filter {
+    // Username.
     string name = 1;
+    // Substring match on username. Case-sensitive.
     string name_contains = 2;
   }
   Filter filter = 1;
@@ -22,6 +24,7 @@ message ListUsersRequest {
   string page_token = 3;
 }
 
+// SASL mechanism to use for authentication.
 enum SASLMechanism {
   SASL_MECHANISM_UNSPECIFIED = 0;
   SASL_MECHANISM_SCRAM_SHA_256 = 1;
@@ -30,6 +33,7 @@ enum SASLMechanism {
 
 message ListUsersResponse {
   message User {
+    // Username.
     string name = 1;
     optional SASLMechanism mechanism = 2;
   }
@@ -41,11 +45,13 @@ message ListUsersResponse {
 
 message CreateUserRequest {
   message User {
+    // Username.
     string name = 1 [
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128
     ];
+    // Password.
     string password = 2 [
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 3,
@@ -64,6 +70,7 @@ message CreateUserRequest {
 
 message CreateUserResponse {
   message User {
+    // Name of newly-created user
     string name = 1;
     optional SASLMechanism mechanism = 2;
   }
@@ -72,11 +79,13 @@ message CreateUserResponse {
 
 message UpdateUserRequest {
   message User {
+    // Username.
     string name = 1 [
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128
     ];
+    // Password.
     string password = 2 [
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 3,
@@ -94,6 +103,7 @@ message UpdateUserRequest {
 }
 
 message UpdateUserResponse {
+  // Updated user's name and SASL mechanism.
   message User {
     string name = 1;
     optional SASLMechanism mechanism = 2;
@@ -102,6 +112,7 @@ message UpdateUserResponse {
 }
 
 message DeleteUserRequest {
+  // Username
   string name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
@@ -120,11 +131,11 @@ service UserService {
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create User"
-      description: "Create a User."
+      description: "Create a new user."
       responses: {
         key: "201"
         value: {
-          description: "Creates a user"
+          description: "User created"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
           }
@@ -133,7 +144,7 @@ service UserService {
       responses: {
         key: "400"
         value: {
-          description: "Bad Request. Check API documentation and update request."
+          description: "Bad request. Check API documentation and update request."
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
@@ -148,11 +159,11 @@ service UserService {
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update User"
-      description: "Update a User."
+      description: "Update a user's credentials."
       responses: {
         key: "200"
         value: {
-          description: "Ok"
+          description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}
           }
@@ -161,7 +172,7 @@ service UserService {
       responses: {
         key: "400"
         value: {
-          description: "Bad Request. Check API documentation and update request."
+          description: "Bad request. Check API documentation and update request."
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
@@ -173,7 +184,7 @@ service UserService {
     option (google.api.http) = {get: "/v1alpha1/users"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Users"
-      description: "List Users"
+      description: "List users that meet the filter criteria."
       responses: {
         key: "200"
         value: {
@@ -188,12 +199,12 @@ service UserService {
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1alpha1/users/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete Users"
-      description: "Delete Users"
+      summary: "Delete User"
+      description: "Delete the specified user"
       responses: {
         key: "204"
         value: {
-          description: "User was deleted successfully."
+          description: "User deleted successfully"
           schema: {}
         }
       }
