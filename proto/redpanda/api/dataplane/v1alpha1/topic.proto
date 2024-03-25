@@ -240,7 +240,7 @@ service TopicService {
     option (google.api.http) = {get: "/v1alpha1/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Topics"
-      description: "List topics, with partition count and replication factor."
+      description: "List topics, with partition count and replication factor. Optional: filter based on topic name."
       responses: {
         key: "200"
         value: {

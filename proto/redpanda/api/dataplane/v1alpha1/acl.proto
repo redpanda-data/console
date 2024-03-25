@@ -279,7 +279,7 @@ service ACLService {
     option (google.api.http) = {get: "/v1alpha1/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List ACLs"
-      description: "List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
+      description: "List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
       responses: {
         key: "200"
         value: {
@@ -316,7 +316,7 @@ service ACLService {
     option (google.api.http) = {delete: "/v1alpha1/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete ACLs"
-      description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched."
+      description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
       responses: {
         key: "200"
         value: {

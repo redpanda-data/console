@@ -1195,7 +1195,7 @@ openapi: 3.0.3
 paths:
   /v1alpha1/acls:
     delete:
-      description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
+      description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_DeleteACLs
       parameters:
         - description: |-
@@ -1308,7 +1308,7 @@ paths:
       tags:
         - ACLService
     get:
-      description: List all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions. If no filters are specified, all ACLs are matched.
+      description: List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_ListACLs
       parameters:
         - description: |-
@@ -2135,7 +2135,7 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/secrets:
     get:
-      description: List Kafka Connect cluster secrets based on optional filter.
+      description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListConnectSecrets
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
@@ -2429,7 +2429,7 @@ paths:
         - SecretService
   /v1alpha1/topics:
     get:
-      description: List topics, with partition count and replication factor.
+      description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
       operationId: TopicService_ListTopics
       parameters:
         - description: Substring match on topic name. Case-sensitive.
@@ -2924,7 +2924,7 @@ paths:
         - TransformService
   /v1alpha1/users:
     get:
-      description: List users that meet the filter criteria.
+      description: 'List users. Optional: filter based on username.'
       operationId: UserService_ListUsers
       parameters:
         - description: Username.
