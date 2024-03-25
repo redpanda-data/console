@@ -40,7 +40,6 @@ jobs:
       - name: Run build frontend
         working-directory: frontend
         run: |
-          REACT_APP_BUSINESS=true 
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
           REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
           REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
@@ -115,7 +114,7 @@ jobs:
         run: npm run e2e-test
       - name: Upload Playwright report artifact
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ failure() }}
         with:
           name: playwright-report
           path: frontend/playwright-report/

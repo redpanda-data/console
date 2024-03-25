@@ -7,6 +7,8 @@ export const SECRET_ACCESS_KEY = 'secretaccesskey';
 export const S3_BUCKET_NAME = 's3bucketname';
 
 test.describe('Connector', async () => {
+    // TODO: The S3 connector test fails reliably locally and in CI
+    // Skip for now until fixed.
     test.skip()
 
     test('should create and delete S3 connector', async ({page}) => {

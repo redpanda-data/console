@@ -4,6 +4,11 @@ kafka:
   schemaRegistry:
     enabled: true
     urls: ["http://localhost:18081"]
+  protobuf:
+    enabled: true
+    schemaRegistry:
+      enabled: true
+      refreshInterval: 5m
 redpanda:
   adminApi:
     enabled: true
