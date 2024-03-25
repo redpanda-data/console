@@ -52,12 +52,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	// Define interceptors that shall be used in the community version of Console. We may add further
 	// interceptors by calling the hooks.
-	constLabels := make(map[string]string)
-	constLabels["service"] = "console"
 	apiProm, err := metrics.NewPrometheus(
 		metrics.WithRegistry(prometheus.DefaultRegisterer),
 		metrics.WithMetricsNamespace("redpanda_api"),
-		metrics.WithConstLabels(constLabels),
 	)
 	if err != nil {
 		api.Logger.Fatal("failed to create prometheus adapter", zap.Error(err))
