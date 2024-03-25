@@ -726,7 +726,7 @@ components:
           description: The secret labels to search for.
           type: object
         name_contains:
-          description: Filter results based on secret name substring.
+          description: Substring match on secret name. Case-sensitive.
           type: string
       type: object
     ListSecretsResponse:
@@ -978,7 +978,7 @@ components:
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
     Secret:
-      description: Secret defienes the secret resource.
+      description: Defines the secret resource.
       properties:
         id:
           description: Secret identifier.
@@ -2144,7 +2144,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: Filter results based on secret name substring.
+        - description: Substring match on secret name. Case-sensitive.
           in: query
           name: filter.name_contains
           schema:
@@ -2217,7 +2217,7 @@ paths:
                   description: Secret labels.
                   type: object
                 name:
-                  description: The Connect name.
+                  description: Name of secret.
                   type: string
                 secret_data:
                   description: The secret data.
@@ -2235,7 +2235,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Secret created.
+          description: Secret created
         "401":
           content:
             application/json:
@@ -2268,7 +2268,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to delete.
+        - description: ID of the secret to delete.
           in: path
           name: id
           required: true
@@ -2279,7 +2279,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Secret was deleted successfully.
+          description: Secret deleted successfully
         "401":
           content:
             application/json:
@@ -2317,7 +2317,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to retrieve.
+        - description: The ID of the secret to retrieve.
           in: path
           name: id
           required: true
@@ -2329,7 +2329,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2367,7 +2367,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to retrieve.
+        - description: ID of the secret to retrieve.
           in: path
           name: id
           required: true
@@ -2399,7 +2399,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
