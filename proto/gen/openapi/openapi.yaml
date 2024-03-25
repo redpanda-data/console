@@ -33,11 +33,11 @@ components:
     Config:
       properties:
         name:
-          description: Name is a topic level config key (e.g. segment.bytes).
+          description: A topic-level config key (e.g. segment.bytes).
           type: string
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
-          title: Value is a topic level config value (e.g. 1073741824)
           type: string
       type: object
     ConfigAlterOperation:
@@ -81,10 +81,16 @@ components:
     Configuration:
       properties:
         config_synonyms:
+          description: |-
+            If no config value is set at the topic level, it will inherit the value
+            set at the broker or cluster level. Name is the corresponding config
+            key whose value is inherited. Source indicates whether the inherited
+            config is default, broker, etc.
           items:
             $ref: '#/components/schemas/ConfigSynonym'
           type: array
         documentation:
+          description: Config documentation.
           nullable: true
           type: string
         name:
@@ -295,13 +301,13 @@ components:
       properties:
         configs:
           description: |-
-            Configs is an array of key value config pairs for a topic.
-            These correspond to Kafka Topic-Level Configs.
+            An array of key-value config pairs for a topic.
+            These correspond to Kafka topic-level configs.
           items:
             $ref: '#/components/schemas/Config'
           type: array
         name:
-          description: Name is the topic's name.
+          description: Name of topic.
           type: string
         partition_count:
           description: |-
@@ -331,19 +337,19 @@ components:
     CreateTopicResponse:
       properties:
         name:
-          description: Name is the topic's name.
+          description: Name of topic.
           type: string
         partition_count:
           description: |-
-            PartitionCount is how many partitions were created for this topic.
-            This field has a default of -1, which may be returned if the broker
+            The number of partitions created for the topic.
+            This field has a default value of -1, which may be returned if the broker
             does not support v5+ of this request which added support for returning
             this information.
           format: int32
           type: integer
         replication_factor:
           description: |-
-            ReplicationFactor is how many replicas every partition has for this topic.
+            The number of replicas per topic partition.
             This field has a default of -1, which may be returned if the broker
             does not support v5+ of this request which added support for returning
             this information.
@@ -735,6 +741,7 @@ components:
     ListTopicsRequest.Filter:
       properties:
         name_contains:
+          description: Substring match on topic name. Case-sensitive.
           type: string
       type: object
     ListTopicsResponse:
@@ -749,13 +756,17 @@ components:
     ListTopicsResponse.Topic:
       properties:
         internal:
+          description: Whether topic is internal only.
           type: boolean
         name:
+          description: Topic name.
           type: string
         partition_count:
+          description: Topic partition count.
           format: int32
           type: integer
         replication_factor:
+          description: Topic replication factor.
           format: int32
           type: integer
       type: object
@@ -908,11 +919,11 @@ components:
     ReplicaAssignment:
       properties:
         partition_id:
-          description: Partition is a partition to create.
+          description: A partition to create.
           format: int32
           type: integer
         replica_ids:
-          description: Replicas are the broker IDs the partition must exist on.
+          description: The broker IDs the partition replicas are assigned to.
           items:
             format: int32
             type: integer
@@ -975,14 +986,17 @@ components:
     SetConfiguration:
       properties:
         name:
+          description: A topic-level config key (e.g. segment.bytes).
           type: string
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
     SetTopicConfigurationsResponse:
       properties:
         configurations:
+          description: Topic's complete set of configurations after this update.
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -1103,10 +1117,12 @@ components:
     UpdateConfiguration:
       properties:
         name:
+          description: A topic-level config key (e.g. segment.bytes).
           type: string
         operation:
           $ref: '#/components/schemas/ConfigAlterOperation'
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
@@ -1119,7 +1135,7 @@ components:
     UpdateTopicConfigurationsResponse:
       properties:
         configurations:
-          description: Topic's complete set of configurations after this partial patch has been applied.
+          description: Topic's complete set of configurations after applying this partial patch.
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -2403,10 +2419,11 @@ paths:
         - SecretService
   /v1alpha1/topics:
     get:
-      description: List Topics
+      description: List topics, with partition count and replication factor.
       operationId: TopicService_ListTopics
       parameters:
-        - in: query
+        - description: Substring match on topic name. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
@@ -2450,11 +2467,11 @@ paths:
       tags:
         - TopicService
     post:
-      description: Create a Topic.
+      description: Create a topic.
       operationId: TopicService_CreateTopic
       parameters:
         - description: |-
-            ValidateOnly makes this request a dry-run; everything is validated but
+            If true, makes this request a dry run; everything is validated but
             no topics are actually created.
           in: query
           name: validate_only
@@ -2465,7 +2482,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTopicRequest.Topic'
-        description: Topic is the topic to attempt to create.
+        description: The topic to create.
         required: true
         x-originalParamName: topic
       responses:
@@ -2474,7 +2491,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v1alpha1.Topic'
-          description: Topic Created
+          description: Topic created
         "401":
           content:
             application/json:
@@ -2498,10 +2515,11 @@ paths:
         - TopicService
   /v1alpha1/topics/{name}:
     delete:
-      description: Deletes the Kafka topic with the requested name.
+      description: Delete the Kafka topic with the requested name.
       operationId: TopicService_DeleteTopic
       parameters:
-        - in: path
+        - description: Topic name.
+          in: path
           name: name
           required: true
           schema:
@@ -2511,7 +2529,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Topic was deleted successfully
+          description: Topic deleted successfully
         "401":
           content:
             application/json:
@@ -2523,7 +2541,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: The requested topic does not exist
+          description: Requested topic does not exist
         "500":
           content:
             application/json:
@@ -2536,15 +2554,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete a Kafka topic
+      summary: Delete Topic
       tags:
         - TopicService
   /v1alpha1/topics/{topic_name}/configurations:
     get:
-      description: Get Topic Configurations.
+      description: Get key-value configs for a topic.
       operationId: TopicService_GetTopicConfigurations
       parameters:
-        - in: path
+        - description: Topic name
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2555,7 +2574,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2584,10 +2603,11 @@ paths:
       tags:
         - TopicService
     patch:
-      description: Updates a subset of the topic configuration.
+      description: Update a subset of the topic configurations.
       operationId: TopicService_UpdateTopicConfigurations
       parameters:
-        - in: path
+        - description: Topic name
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2607,7 +2627,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2619,7 +2639,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not Found
+          description: Not found
         "500":
           content:
             application/json:
@@ -2636,10 +2656,11 @@ paths:
       tags:
         - TopicService
     put:
-      description: Set the entire set of configurations for a topic. Config entries that are not provided in the request are removed and will fall-back to their default values.
+      description: Update the entire set of key-value configurations for a topic. Config entries that are not provided in the request are removed and will fall back to their default values.
       operationId: TopicService_SetTopicConfigurations
       parameters:
-        - in: path
+        - description: Name of topic.
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2659,7 +2680,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2671,7 +2692,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not Found
+          description: Not found
         "500":
           content:
             application/json:
@@ -2766,7 +2787,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

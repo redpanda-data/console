@@ -73,11 +73,18 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   sensitive = false;
 
   /**
+   * If no config value is set at the topic level, it will inherit the value
+   * set at the broker or cluster level. Name is the corresponding config
+   * key whose value is inherited. Source indicates whether the inherited
+   * config is default, broker, etc.
+   *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConfigSynonym config_synonyms = 7;
    */
   configSynonyms: ConfigSynonym[] = [];
 
   /**
+   * Config documentation.
+   *
    * @generated from field: optional string documentation = 8;
    */
   documentation?: string;
@@ -122,14 +129,14 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
  */
 export class CreateTopicRequest extends Message<CreateTopicRequest> {
   /**
-   * Topic is the topic to attempt to create.
+   * The topic to create.
    *
    * @generated from field: redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic topic = 1;
    */
   topic?: CreateTopicRequest_Topic;
 
   /**
-   * ValidateOnly makes this request a dry-run; everything is validated but
+   * If true, makes this request a dry run; everything is validated but
    * no topics are actually created.
    *
    * @generated from field: bool validate_only = 2;
@@ -170,7 +177,7 @@ export class CreateTopicRequest extends Message<CreateTopicRequest> {
  */
 export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> {
   /**
-   * Name is the topic's name.
+   * Name of topic.
    *
    * @generated from field: string name = 1;
    */
@@ -204,8 +211,8 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
   replicaAssignments: CreateTopicRequest_Topic_ReplicaAssignment[] = [];
 
   /**
-   * Configs is an array of key value config pairs for a topic.
-   * These correspond to Kafka Topic-Level Configs.
+   * An array of key-value config pairs for a topic.
+   * These correspond to Kafka topic-level configs.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.Config configs = 5;
    */
@@ -248,14 +255,14 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
  */
 export class CreateTopicRequest_Topic_Config extends Message<CreateTopicRequest_Topic_Config> {
   /**
-   * Name is a topic level config key (e.g. segment.bytes).
+   * A topic-level config key (e.g. segment.bytes).
    *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * Value is a topic level config value (e.g. 1073741824)
+   * A topic-level config value (e.g. 1073741824).
    *
    * @generated from field: optional string value = 2;
    */
@@ -295,14 +302,14 @@ export class CreateTopicRequest_Topic_Config extends Message<CreateTopicRequest_
  */
 export class CreateTopicRequest_Topic_ReplicaAssignment extends Message<CreateTopicRequest_Topic_ReplicaAssignment> {
   /**
-   * Partition is a partition to create.
+   * A partition to create.
    *
    * @generated from field: int32 partition_id = 1;
    */
   partitionId = 0;
 
   /**
-   * Replicas are the broker IDs the partition must exist on.
+   * The broker IDs the partition replicas are assigned to.
    *
    * @generated from field: repeated int32 replica_ids = 2;
    */
@@ -342,15 +349,15 @@ export class CreateTopicRequest_Topic_ReplicaAssignment extends Message<CreateTo
  */
 export class CreateTopicResponse extends Message<CreateTopicResponse> {
   /**
-   * Name is the topic's name.
+   * Name of topic.
    *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * PartitionCount is how many partitions were created for this topic.
-   * This field has a default of -1, which may be returned if the broker
+   * The number of partitions created for the topic.
+   * This field has a default value of -1, which may be returned if the broker
    * does not support v5+ of this request which added support for returning
    * this information.
    *
@@ -359,7 +366,7 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   partitionCount = 0;
 
   /**
-   * ReplicationFactor is how many replicas every partition has for this topic.
+   * The number of replicas per topic partition.
    * This field has a default of -1, which may be returned if the broker
    * does not support v5+ of this request which added support for returning
    * this information.
@@ -454,6 +461,8 @@ export class ListTopicsRequest extends Message<ListTopicsRequest> {
  */
 export class ListTopicsRequest_Filter extends Message<ListTopicsRequest_Filter> {
   /**
+   * Substring match on topic name. Case-sensitive.
+   *
    * @generated from field: string name_contains = 1;
    */
   nameContains = "";
@@ -534,21 +543,29 @@ export class ListTopicsResponse extends Message<ListTopicsResponse> {
  */
 export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> {
   /**
+   * Topic name.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Whether topic is internal only.
+   *
    * @generated from field: bool internal = 2;
    */
   internal = false;
 
   /**
+   * Topic partition count.
+   *
    * @generated from field: int32 partition_count = 3;
    */
   partitionCount = 0;
 
   /**
+   * Topic replication factor.
+   *
    * @generated from field: int32 replication_factor = 4;
    */
   replicationFactor = 0;
@@ -589,6 +606,8 @@ export class ListTopicsResponse_Topic extends Message<ListTopicsResponse_Topic> 
  */
 export class DeleteTopicRequest extends Message<DeleteTopicRequest> {
   /**
+   * Topic name.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -657,6 +676,8 @@ export class DeleteTopicResponse extends Message<DeleteTopicResponse> {
  */
 export class GetTopicConfigurationsRequest extends Message<GetTopicConfigurationsRequest> {
   /**
+   * Topic name
+   *
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
@@ -731,6 +752,8 @@ export class GetTopicConfigurationsResponse extends Message<GetTopicConfiguratio
  */
 export class UpdateTopicConfigurationsRequest extends Message<UpdateTopicConfigurationsRequest> {
   /**
+   * Topic name
+   *
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
@@ -774,16 +797,22 @@ export class UpdateTopicConfigurationsRequest extends Message<UpdateTopicConfigu
  */
 export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Message<UpdateTopicConfigurationsRequest_UpdateConfiguration> {
   /**
+   * A topic-level config key (e.g. segment.bytes).
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * A topic-level config value (e.g. 1073741824).
+   *
    * @generated from field: optional string value = 2;
    */
   value?: string;
 
   /**
+   * The update operation to apply to the topic config.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigAlterOperation operation = 3;
    */
   operation = ConfigAlterOperation.UNSPECIFIED;
@@ -823,7 +852,7 @@ export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Messag
  */
 export class UpdateTopicConfigurationsResponse extends Message<UpdateTopicConfigurationsResponse> {
   /**
-   * Topic's complete set of configurations after this partial patch has been applied.
+   * Topic's complete set of configurations after applying this partial patch.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configurations = 1;
    */
@@ -862,6 +891,8 @@ export class UpdateTopicConfigurationsResponse extends Message<UpdateTopicConfig
  */
 export class SetTopicConfigurationsRequest extends Message<SetTopicConfigurationsRequest> {
   /**
+   * Name of topic.
+   *
    * @generated from field: string topic_name = 1;
    */
   topicName = "";
@@ -905,11 +936,15 @@ export class SetTopicConfigurationsRequest extends Message<SetTopicConfiguration
  */
 export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetTopicConfigurationsRequest_SetConfiguration> {
   /**
+   * A topic-level config key (e.g. segment.bytes).
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * A topic-level config value (e.g. 1073741824).
+   *
    * @generated from field: optional string value = 2;
    */
   value?: string;
@@ -948,6 +983,8 @@ export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetT
  */
 export class SetTopicConfigurationsResponse extends Message<SetTopicConfigurationsResponse> {
   /**
+   * Topic's complete set of configurations after this update.
+   *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.Topic.Configuration configurations = 1;
    */
   configurations: Topic_Configuration[] = [];
