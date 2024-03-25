@@ -585,10 +585,10 @@ func updateTransforms(doc3 *openapi3.T) {
 		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
 		transformsOperation.OperationID = "TransformService_DeployTransform"
 		transformsOperation.Summary = "Deploy Transform"
-		transformsOperation.Description = "Initiate deployment of a new WASM transform. This endpoint uses " +
-			"multipart/form-data encoding. Following deployment, a brief period is required before the WASM " +
-			"transform becomes operational. Monitor the partition statuses to ascertain the activation " +
-			"of the transform. This usually takes around 3s, but no longer than 10s."
+		transformsOperation.Description = "Initiate deployment of a new Wasm transform. This endpoint uses " +
+			"multipart/form-data encoding. Following deployment, a brief period is required before the Wasm " +
+			"transform becomes operational. Monitor the partition statuses to check whether the " +
+			"transform is active. This usually takes around 3s, but no longer than 10s."
 		transformsOperation.Parameters = nil
 		transformsOperation.RequestBody = &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{

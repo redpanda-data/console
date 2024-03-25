@@ -315,6 +315,8 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
  */
 export class ListTransformsRequest_Filter extends Message<ListTransformsRequest_Filter> {
   /**
+   * Substring match on transform name. Case-sensitive.
+   *
    * @generated from field: string name_contains = 1;
    */
   nameContains = "";

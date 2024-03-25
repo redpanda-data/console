@@ -466,7 +466,7 @@ components:
           example: LOG_LEVEL
           type: string
         value:
-          description: The key of your environment variable.
+          description: The value of your environment variable.
           example: DEBUG
           type: string
       required:
@@ -776,6 +776,7 @@ components:
     ListTransformsRequest.Filter:
       properties:
         name_contains:
+          description: Substring match on transform name. Case-sensitive.
           type: string
       type: object
     ListTransformsResponse:
@@ -2720,10 +2721,11 @@ paths:
         - TopicService
   /v1alpha1/transforms:
     get:
-      description: Retrieve a list of transforms with optional filtering
+      description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
       operationId: TransformService_ListTransforms
       parameters:
-        - in: query
+        - description: Substring match on transform name. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
@@ -2791,13 +2793,13 @@ paths:
       tags:
         - TransformService
     put:
-      description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
+      description: Initiate deployment of a new Wasm transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the Wasm transform becomes operational. Monitor the partition statuses to check whether the transform is active. This usually takes around 3s, but no longer than 10s.
       operationId: TransformService_DeployTransform
       requestBody:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -2820,7 +2822,7 @@ paths:
         - TransformService
   /v1alpha1/transforms/{name}:
     delete:
-      description: Delete a WASM transform with the requested name.
+      description: Delete a Wasm transform with the requested name.
       operationId: TransformService_DeleteTransform
       parameters:
         - example:
@@ -2865,7 +2867,7 @@ paths:
       tags:
         - TransformService
     get:
-      description: Get Transform!
+      description: Get a specific Wasm transform.
       operationId: TransformService_GetTransform
       parameters:
         - example:
