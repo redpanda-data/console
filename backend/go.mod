@@ -50,7 +50,6 @@ require (
 	github.com/twmb/go-cache v1.2.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
-	go.opentelemetry.io/otel/exporters/prometheus v0.45.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.26.0
 	go.vallahaye.net/connect-gateway v0.3.1
@@ -178,7 +177,6 @@ require (
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
