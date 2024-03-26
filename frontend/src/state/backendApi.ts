@@ -1497,9 +1497,19 @@ export type ModifyRoleMembersRequest = {
     remove: RolePrincipal[]
 };
 export const rolesApi = observable({
-    roles: undefined as undefined | RedpandaRole[],
+    roles: [
+        { name: 'role1', },
+        { name: 'role2', },
+        { name: 'role3', },
+        { name: 'role4', },
+        { name: 'role5', },
+    ] as undefined | RedpandaRole[],
     roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
     // roleAcls: new Map<string,>(); // RoleName -> ACLs
+
+    async refreshRoles(_force?: boolean) {
+        await delay(200);
+    },
 
     async createRole(name: string) {
         if (!this.roleMembers.has(name)) {

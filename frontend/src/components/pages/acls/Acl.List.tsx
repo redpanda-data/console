@@ -27,7 +27,6 @@ import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Box, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Tabs, Text, Tooltip } from '@redpanda-data/ui';
 import { FC, useRef, useState } from 'react';
-import { openCreateUserModal } from './CreateServiceAccountModal';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -214,7 +213,17 @@ export default AclList;
 
 const UsersTab = observer(() => {
 
-    const users = api.serviceAccounts?.users ?? [];
+    const users = (api.serviceAccounts?.users ?? [])
+        .filter(u => {
+            const filter = uiSettings.aclList.usersTab.quickSearch;
+            if (!filter) return true;
+
+            try {
+                const quickSearchRegExp = new RegExp(filter, 'i');
+                return u.match(quickSearchRegExp);
+            } catch { return false; }
+        });
+
 
     return <Flex flexDirection="column" gap="4">
         <Box>
@@ -234,7 +243,7 @@ const UsersTab = observer(() => {
             <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
-                    onClick={() => openCreateUserModal()}>
+                    onClick={() => appGlobal.history.push('/security/users/create')}>
                     Create user
                 </Button>
             </Tooltip>
@@ -247,7 +256,7 @@ const UsersTab = observer(() => {
                     {
                         id: 'name',
                         size: Infinity,
-                        header: 'Name',
+                        header: 'User',
                         cell: (ctx) => {
                             return <>{ctx.row.original}</>
                         }
@@ -271,7 +280,15 @@ const UsersTab = observer(() => {
 
 const RolesTab = observer(() => {
 
-    const roles = rolesApi.roles ?? [];
+    const roles = (rolesApi.roles ?? [])
+        .filter(u => {
+            const filter = uiSettings.aclList.rolesTab.quickSearch;
+            if (!filter) return true;
+            try {
+                const quickSearchRegExp = new RegExp(filter, 'i');
+                return u.name.match(quickSearchRegExp);
+            } catch { return false; }
+        });
     const _isLoading = rolesApi.roles == null;
 
     return <Flex flexDirection="column" gap="4">
@@ -299,14 +316,14 @@ const RolesTab = observer(() => {
                         size: Infinity,
                         header: 'Role name',
                         cell: (ctx) => {
-                            return <>{ctx.row.original}</>
+                            return <>{ctx.row.original.name}</>
                         }
                     },
                     {
                         id: 'assignedPrincipals',
                         header: 'Assigned principals',
-                        cell: (ctx) => {
-                            return <>{ctx.row.original}</>
+                        cell: (_ctx) => {
+                            return <>{'placeholder'}</>
                         }
                     },
                     {
