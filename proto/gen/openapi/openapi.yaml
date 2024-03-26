@@ -1389,19 +1389,6 @@ paths:
               - PERMISSION_TYPE_DENY
               - PERMISSION_TYPE_ALLOW
             type: string
-        - description: Limit the paginated response to a number of items.
-          in: query
-          name: page_size
-          schema:
-            format: int32
-            type: integer
-        - description: |-
-            Value of the next_page_token field returned by the previous response.
-            If not provided, the system assumes the first page is requested.
-          in: query
-          name: page_token
-          schema:
-            type: string
       responses:
         "200":
           content:
@@ -1561,7 +1548,7 @@ paths:
           name: page_token
           schema:
             type: string
-        - description: Limit the paginated response to a number of items.
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
@@ -2162,7 +2149,7 @@ paths:
           name: page_token
           schema:
             type: string
-        - description: Limit the paginated response to a number of items.
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
@@ -2368,7 +2355,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: ID of the secret to retrieve.
+        - description: The id of the secret to update.
           in: path
           name: id
           required: true
@@ -2438,7 +2425,7 @@ paths:
           name: filter.name_contains
           schema:
             type: string
-        - description: Limit the paginated response to a number of items.
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
@@ -2733,7 +2720,7 @@ paths:
           name: page_token
           schema:
             type: string
-        - description: Limit the paginated response to a number of items.
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:
@@ -2939,7 +2926,7 @@ paths:
           name: filter.name_contains
           schema:
             type: string
-        - description: Limit the paginated response to a number of items.
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
           schema:

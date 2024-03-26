@@ -281,19 +281,6 @@ export class ListACLsRequest extends Message<ListACLsRequest> {
    */
   filter?: ListACLsRequest_Filter;
 
-  /**
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize = 0;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken = "";
-
   constructor(data?: PartialMessage<ListACLsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -303,8 +290,6 @@ export class ListACLsRequest extends Message<ListACLsRequest> {
   static readonly typeName = "redpanda.api.dataplane.v1alpha1.ListACLsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "filter", kind: "message", T: ListACLsRequest_Filter },
-    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListACLsRequest {

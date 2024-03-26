@@ -40,10 +40,12 @@ type Service struct {
 	logger     *zap.Logger
 	consoleSvc console.Servicer
 	mapper     kafkaClientMapper
+	defaulter  defaulter
 }
 
 // ListTopics lists all Kafka topics with their most important metadata.
 func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
+	s.defaulter.applyListTopicsRequest(req.Msg)
 	kafkaReq := kmsg.NewMetadataRequest()
 	kafkaRes, err := s.consoleSvc.GetMetadata(ctx, &kafkaReq)
 	if err != nil {
@@ -66,26 +68,28 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.
 	}
 
 	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
-	if req.Msg.GetPageSize() == 0 {
-		return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: topics, NextPageToken: ""}), nil
-	}
 
 	// Add pagination
-	sort.SliceStable(topics, func(i, j int) bool {
-		return topics[i].Name < topics[j].Name
-	})
-	page, nextPageToken, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListTopicsResponse_Topic) string {
-		return x.GetName()
-	})
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to apply pagination: %w", err),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
+	var nextPageToken string
+	if req.Msg.GetPageSize() > 0 {
+		sort.SliceStable(topics, func(i, j int) bool {
+			return topics[i].Name < topics[j].Name
+		})
+		page, token, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListTopicsResponse_Topic) string {
+			return x.GetName()
+		})
+		if err != nil {
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				fmt.Errorf("failed to apply pagination: %w", err),
+				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
+		}
+		topics = page
+		nextPageToken = token
 	}
 
-	return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: page, NextPageToken: nextPageToken}), nil
+	return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: topics, NextPageToken: nextPageToken}), nil
 }
 
 // DeleteTopic deletes a Kafka topic.
@@ -337,6 +341,7 @@ func NewService(cfg *config.Config,
 		logger:     logger,
 		consoleSvc: consoleSvc,
 		mapper:     kafkaClientMapper{},
+		defaulter:  defaulter{},
 	}
 }
 

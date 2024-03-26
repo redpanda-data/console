@@ -123,7 +123,7 @@ message ListConnectorsRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -132,11 +132,17 @@ message ListConnectorsRequest {
   ];
   // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
   string page_token = 2;
-  int32 page_size = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Limit the paginated response to a number of items.",
-    minimum: 1,
-    maximum: 1000
-  }];
+  int32 page_size = 3 [
+    (buf.validate.field).int32 = {
+      gte: -1,
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+      minimum: -1,
+      maximum: 1000
+    }
+  ];
 }
 
 message RestartConnectorRequest {
@@ -149,7 +155,7 @@ message RestartConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -174,7 +180,7 @@ message DeleteConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -197,7 +203,7 @@ message PauseConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -220,7 +226,7 @@ message ResumeConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -243,7 +249,7 @@ message StopConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -266,7 +272,7 @@ message GetConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -289,7 +295,7 @@ message CreateConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -326,7 +332,7 @@ message GetConnectClusterRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -351,7 +357,7 @@ message UpsertConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -364,7 +370,7 @@ message UpsertConnectorRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 
   map<string, string> config = 3 [
@@ -383,7 +389,7 @@ message GetConnectorConfigRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -396,7 +402,7 @@ message GetConnectorConfigRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 }
 
@@ -410,7 +416,7 @@ message GetConnectorStatusRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -437,7 +443,7 @@ message ListConnectorTopicsRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
@@ -464,7 +470,7 @@ message ResetConnectorTopicsRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-z0-9-_]+$",
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
       description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
