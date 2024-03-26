@@ -41,6 +41,7 @@ import { BrokerDetails } from './pages/overview/Broker.Details';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaCreatePage, SchemaAddVersionPage } from './pages/schemas/Schema.Create';
 import { TopicProducePage } from './pages/topics/Topic.Produce';
+import UserCreatePage from './pages/acls/UserCreate';
 
 //
 //	Route Types
@@ -247,6 +248,8 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [], ['canListAcls'])
     ),
     MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
+
+    MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
 
     // MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', xxxxxx, 'Security'),
     // MakeRoute<{}>('/security/roles/create', xxxxxx, 'Security'),
