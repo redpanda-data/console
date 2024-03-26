@@ -55,11 +55,11 @@ type ACLResource struct {
 // ACLRule describes a Kafka ACL rule with all it's properties.
 type ACLRule struct {
 	Principal      string           `json:"principal"`
+	PrincipalType  ACLPrincipalType `json:"principalType"`
+	PrincipalName  string           `json:"principalName"`
 	Host           string           `json:"host"`
 	Operation      string           `json:"operation"`
 	PermissionType string           `json:"permissionType"`
-	PrincipalName  string           `json:"principalName"`
-	PrincipalType  ACLPrincipalType `json:"principalType"`
 }
 
 // ListAllACLs returns a list of all stored ACLs.
