@@ -2355,7 +2355,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to update.
+        - description: ID of the secret to update.
           in: path
           name: id
           required: true
