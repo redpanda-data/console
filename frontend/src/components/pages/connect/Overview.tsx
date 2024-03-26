@@ -67,7 +67,9 @@ export default KafkaConnectOverview;
 class TabClusters extends Component {
     render() {
         const clusters = api.connectConnectors?.clusters;
-        if (clusters == null) return null;
+        if (clusters === null || clusters === undefined)  {
+            return null;
+        }
 
         return (
             <DataTable<ClusterConnectors>
@@ -83,8 +85,10 @@ class TabClusters extends Component {
                             if (r.error) {
                                 return (
                                     <Tooltip label={r.error} placement="top" hasArrow={true}>
-                                        <span style={mr05}>{errIcon}</span>
-                                        {r.clusterName}
+                                        <>
+                                            <span style={mr05}>{errIcon}</span>
+                                            {r.clusterName}
+                                        </>
                                     </Tooltip>
                                 );
                             }
