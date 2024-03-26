@@ -12,9 +12,25 @@ package console
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+)
+
+// ACLPrincipalType is the type of principal.
+// Example "User", or "RedpandaRole".
+type ACLPrincipalType string
+
+const (
+	// ACLPrincipalTypeUnknown is the default unknown principal type.
+	ACLPrincipalTypeUnknown ACLPrincipalType = "UNKNOWN"
+	// ACLPrincipalTypeUser is the User principal type.
+	ACLPrincipalTypeUser ACLPrincipalType = "USER"
+	// ACLPrincipalTypeGroup is the Group principal type.
+	ACLPrincipalTypeGroup ACLPrincipalType = "GROUP"
+	// ACLPrincipalTypeRedpandaRole is the RedpandaRole principal type.
+	ACLPrincipalTypeRedpandaRole ACLPrincipalType = "REDPANDA_ROLE"
 )
 
 // ACLOverview contains all acl resources along with the information whether an
@@ -38,10 +54,12 @@ type ACLResource struct {
 
 // ACLRule describes a Kafka ACL rule with all it's properties.
 type ACLRule struct {
-	Principal      string `json:"principal"`
-	Host           string `json:"host"`
-	Operation      string `json:"operation"`
-	PermissionType string `json:"permissionType"`
+	Principal      string           `json:"principal"`
+	Host           string           `json:"host"`
+	Operation      string           `json:"operation"`
+	PermissionType string           `json:"permissionType"`
+	PrincipalName  string           `json:"principalName"`
+	PrincipalType  ACLPrincipalType `json:"principalType"`
 }
 
 // ListAllACLs returns a list of all stored ACLs.
@@ -78,6 +96,23 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 				Host:           acl.Host,
 				Operation:      acl.Operation.String(),
 				PermissionType: acl.PermissionType.String(),
+			}
+
+			p := strings.ToLower(acl.Principal)
+
+			switch {
+			case strings.HasPrefix(p, "user:"):
+				acls[j].PrincipalType = ACLPrincipalTypeUser
+				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
+			case strings.HasPrefix(p, "group:"):
+				acls[j].PrincipalType = ACLPrincipalTypeGroup
+				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
+			case strings.HasPrefix(p, "redpandarole:"):
+				acls[j].PrincipalType = ACLPrincipalTypeRedpandaRole
+				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
+			default:
+				acls[j].PrincipalType = ACLPrincipalTypeUnknown
+				acls[j].PrincipalName = p
 			}
 		}
 		overview.ACLs = acls
