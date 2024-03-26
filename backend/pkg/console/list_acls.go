@@ -98,21 +98,19 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 				PermissionType: acl.PermissionType.String(),
 			}
 
-			p := strings.ToLower(acl.Principal)
-
 			switch {
-			case strings.HasPrefix(p, "user:"):
+			case strings.HasPrefix(acl.Principal, "User:"):
 				acls[j].PrincipalType = ACLPrincipalTypeUser
-				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
-			case strings.HasPrefix(p, "group:"):
+				acls[j].PrincipalName = acl.Principal[strings.IndexRune(acl.Principal, ':')+1:]
+			case strings.HasPrefix(acl.Principal, "Group:"):
 				acls[j].PrincipalType = ACLPrincipalTypeGroup
-				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
-			case strings.HasPrefix(p, "redpandarole:"):
+				acls[j].PrincipalName = acl.Principal[strings.IndexRune(acl.Principal, ':')+1:]
+			case strings.HasPrefix(acl.Principal, "RedpandaRole:"):
 				acls[j].PrincipalType = ACLPrincipalTypeRedpandaRole
-				acls[j].PrincipalName = p[strings.IndexRune(p, ':')+1:]
+				acls[j].PrincipalName = acl.Principal[strings.IndexRune(acl.Principal, ':')+1:]
 			default:
 				acls[j].PrincipalType = ACLPrincipalTypeUnknown
-				acls[j].PrincipalName = p
+				acls[j].PrincipalName = acl.Principal
 			}
 		}
 		overview.ACLs = acls
