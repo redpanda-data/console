@@ -2,7 +2,7 @@ import { Page, test, expect } from '@playwright/test';
 import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './connector.spec';
 
 export const createConnector = async(page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string}) => {
-    return await test.step('Delete connector', async () => {
+    return await test.step('Create connector', async () => {
         await page.goto(`/connect-clusters/${clusterName}`)
         await page
             .getByRole('button', {name: 'Create connector', exact: true})
