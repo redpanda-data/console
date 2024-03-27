@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
+test.use({
+    permissions: ['clipboard-write']
+})
+
 test.describe('Topic', () => {
     test('should create a message that exceeds the display limit, checks that the exceed limit message appears', async ({page}) => {
         const topicName = `too-big-message-test-${randomUUID()}`
@@ -16,7 +20,7 @@ test.describe('Topic', () => {
         const fillText = 'example content ';
         const content = fillText.repeat((maxMessageSize / fillText.length) + 1);
 
-        const monacoEditor = page.locator('.monaco-editor').nth(1);
+        const monacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').nth(0);
         await monacoEditor.click();
         await page.evaluate(`navigator.clipboard.writeText("${content}")`);
 
