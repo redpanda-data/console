@@ -35,13 +35,15 @@ message TransformMetadata {
       }
     ];
   }
-
+  // Name of transform.
   string name = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
   ];
+  // Input topic to apply the transform to.
   string input_topic_name = 2;
+  // Output topics to write the transform results to.
   repeated string output_topic_names = 3;
   repeated PartitionTransformStatus statuses = 4;
   repeated TransformMetadata.EnvironmentVariable environment_variables = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}];
@@ -61,7 +63,7 @@ message PartitionTransformStatus {
   int32 lag = 4;
 }
 
-// DeployTransformRequest is the metadata that is required to deploy a new WASM
+// Metadata required to deploy a new Wasm
 // transform in a Redpanda cluster.
 message DeployTransformRequest {
   string name = 1 [
@@ -71,7 +73,7 @@ message DeployTransformRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The name of the transform.",
+      description: "Name of the transform.",
       example: "\"redact-payment-details-in-orders\"",
     }
   ];
@@ -102,7 +104,7 @@ message DeployTransformRequest {
       }
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The output topic to write the transform results to.",
+      description: "Output topic to write the transform results to.",
       example: "\"orders-redacted\"",
     }
   ];
@@ -125,6 +127,8 @@ message ListTransformsRequest {
     ];
   }
   Filter filter = 1;
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
   string page_token = 2;
   int32 page_size = 3 [
     (buf.validate.field).int32 = {
@@ -140,11 +144,13 @@ message ListTransformsRequest {
 }
 
 message ListTransformsResponse {
+  // Token to retrieve the next page.
   string next_page_token = 1;
   repeated TransformMetadata transforms = 2;
 }
 
 message GetTransformRequest {
+  // Name of transform.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -159,6 +165,7 @@ message GetTransformResponse {
 }
 
 message DeleteTransformRequest {
+  // Name of transform.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,

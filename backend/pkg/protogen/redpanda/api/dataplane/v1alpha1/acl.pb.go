@@ -1016,14 +1016,17 @@ type DeleteACLsResponse_MatchingACL struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceType        ACL_ResourceType        `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
+	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
+	// The name of the resource this ACL targets.
 	ResourceName        string                  `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
-	Principal           string                  `protobuf:"bytes,4,opt,name=principal,proto3" json:"principal,omitempty"`
-	Host                string                  `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
-	Operation           ACL_Operation           `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
-	PermissionType      ACL_PermissionType      `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
-	Error               *status.Status          `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
+	// The user for whom this ACL applies.
+	Principal string `protobuf:"bytes,4,opt,name=principal,proto3" json:"principal,omitempty"`
+	// The host address to for this ACL.
+	Host           string             `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
+	Operation      ACL_Operation      `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
+	PermissionType ACL_PermissionType `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`
+	Error          *status.Status     `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
 }
 
 func (x *DeleteACLsResponse_MatchingACL) Reset() {

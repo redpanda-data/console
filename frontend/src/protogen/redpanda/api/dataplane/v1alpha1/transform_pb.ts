@@ -11,16 +11,22 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  */
 export class TransformMetadata extends Message<TransformMetadata> {
   /**
+   * Name of transform.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Input topic to apply the transform to.
+   *
    * @generated from field: string input_topic_name = 2;
    */
   inputTopicName = "";
 
   /**
+   * Output topics to write the transform results to.
+   *
    * @generated from field: repeated string output_topic_names = 3;
    */
   outputTopicNames: string[] = [];
@@ -204,7 +210,7 @@ proto3.util.setEnumType(PartitionTransformStatus_PartitionStatus, "redpanda.api.
 ]);
 
 /**
- * DeployTransformRequest is the metadata that is required to deploy a new WASM
+ * Metadata required to deploy a new Wasm
  * transform in a Redpanda cluster.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.DeployTransformRequest
@@ -271,6 +277,9 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
   filter?: ListTransformsRequest_Filter;
 
   /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
    * @generated from field: string page_token = 2;
    */
   pageToken = "";
@@ -354,6 +363,8 @@ export class ListTransformsRequest_Filter extends Message<ListTransformsRequest_
  */
 export class ListTransformsResponse extends Message<ListTransformsResponse> {
   /**
+   * Token to retrieve the next page.
+   *
    * @generated from field: string next_page_token = 1;
    */
   nextPageToken = "";
@@ -397,6 +408,8 @@ export class ListTransformsResponse extends Message<ListTransformsResponse> {
  */
 export class GetTransformRequest extends Message<GetTransformRequest> {
   /**
+   * Name of transform.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -471,6 +484,8 @@ export class GetTransformResponse extends Message<GetTransformResponse> {
  */
 export class DeleteTransformRequest extends Message<DeleteTransformRequest> {
   /**
+   * Name of transform.
+   *
    * @generated from field: string name = 1;
    */
   name = "";

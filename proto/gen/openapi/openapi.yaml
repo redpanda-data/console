@@ -435,7 +435,7 @@ components:
       type: object
     DeployTransformRequest:
       description: |-
-        DeployTransformRequest is the metadata that is required to deploy a new WASM
+        Metadata required to deploy a new Wasm
         transform in a Redpanda cluster.
       properties:
         environment_variables:
@@ -448,11 +448,11 @@ components:
           example: orders
           type: string
         name:
-          description: The name of the transform.
+          description: Name of the transform.
           example: redact-payment-details-in-orders
           type: string
         output_topic_names:
-          description: The output topic to write the transform results to.
+          description: Output topic to write the transform results to.
           example: orders-redacted
           items:
             type: string
@@ -785,6 +785,7 @@ components:
     ListTransformsResponse:
       properties:
         next_page_token:
+          description: Token to retrieve the next page.
           type: string
         transforms:
           items:
@@ -823,14 +824,17 @@ components:
         error:
           $ref: '#/components/schemas/Status'
         host:
+          description: The host address to for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: The user for whom this ACL applies.
           type: string
         resource_name:
+          description: The name of the resource this ACL targets.
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -1116,10 +1120,13 @@ components:
             $ref: '#/components/schemas/EnvironmentVariable'
           type: array
         input_topic_name:
+          description: Input topic to apply the transform to.
           type: string
         name:
+          description: Name of transform.
           type: string
         output_topic_names:
+          description: Output topics to write the transform results to.
           items:
             type: string
           type: array
@@ -2722,7 +2729,10 @@ paths:
           name: filter.name_contains
           schema:
             type: string
-        - in: query
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
           name: page_token
           schema:
             type: string
@@ -2818,7 +2828,8 @@ paths:
       description: Delete a Wasm transform with the requested name.
       operationId: TransformService_DeleteTransform
       parameters:
-        - example:
+        - description: Name of transform.
+          example:
             name: transform1
           in: path
           name: name
@@ -2863,7 +2874,8 @@ paths:
       description: Get a specific Wasm transform.
       operationId: TransformService_GetTransform
       parameters:
-        - example:
+        - description: Name of transform.
+          example:
             name: transform1
           in: path
           name: name

@@ -843,6 +843,8 @@ export class DeleteACLsResponse_MatchingACL extends Message<DeleteACLsResponse_M
   resourceType = ACL_ResourceType.UNSPECIFIED;
 
   /**
+   * The name of the resource this ACL targets.
+   *
    * @generated from field: string resource_name = 2;
    */
   resourceName = "";
@@ -853,11 +855,15 @@ export class DeleteACLsResponse_MatchingACL extends Message<DeleteACLsResponse_M
   resourcePatternType = ACL_ResourcePatternType.UNSPECIFIED;
 
   /**
+   * The user for whom this ACL applies.
+   *
    * @generated from field: string principal = 4;
    */
   principal = "";
 
   /**
+   * The host address to for this ACL.
+   *
    * @generated from field: string host = 5;
    */
   host = "";
