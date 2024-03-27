@@ -20,7 +20,7 @@ test.describe('Topic', () => {
         const fillText = 'example content ';
         const content = fillText.repeat((maxMessageSize / fillText.length) + 1);
 
-        const monacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor');
+        const monacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').nth(0);
         await monacoEditor.click();
         await page.evaluate(`navigator.clipboard.writeText("${content}")`);
 
