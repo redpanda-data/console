@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -47,6 +48,11 @@ const (
 	RecordValue
 )
 
+type regexProtoTopicMapping struct {
+	config.ProtoTopicMapping
+	r *regexp.Regexp
+}
+
 // Service is in charge of deserializing protobuf encoded payloads. It supports payloads that were
 // encoded with involvement of the schema registry as well as plain protobuf-encoded messages.
 // This service is also in charge of reading the proto source files from the configured provider.
@@ -54,10 +60,11 @@ type Service struct {
 	cfg    config.Proto
 	logger *zap.Logger
 
-	mappingsByTopic map[string]config.ProtoTopicMapping
-	gitSvc          *git.Service
-	fsSvc           *filesystem.Service
-	schemaSvc       *schema.Service
+	strictMappingsByTopic map[string]config.ProtoTopicMapping
+	mappingsRegex         []regexProtoTopicMapping
+	gitSvc                *git.Service
+	fsSvc                 *filesystem.Service
+	schemaSvc             *schema.Service
 
 	// fileDescriptorsBySchemaID are used to find the right schema type for messages at deserialization time. The type
 	// index is encoded as part of the serialized message.
@@ -112,23 +119,46 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		}
 	}
 
-	mappingsByTopic := make(map[string]config.ProtoTopicMapping)
-	for _, mapping := range cfg.Mappings {
-		mappingsByTopic[mapping.TopicName] = mapping
+	strictMappingsByTopic, mappingsRegex, err := setMappingsByTopic(cfg.Mappings, logger)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Service{
 		cfg:    cfg,
 		logger: logger,
 
-		mappingsByTopic: mappingsByTopic,
-		gitSvc:          gitSvc,
-		fsSvc:           fsSvc,
-		schemaSvc:       schemaSvc,
+		strictMappingsByTopic: strictMappingsByTopic,
+		mappingsRegex:         mappingsRegex,
+		gitSvc:                gitSvc,
+		fsSvc:                 fsSvc,
+		schemaSvc:             schemaSvc,
 
 		// registry has to be created afterwards
 		registry: nil,
 	}, nil
+}
+
+func setMappingsByTopic(mappings []config.ProtoTopicMapping, logger *zap.Logger) (strictMappingsByTopic map[string]config.ProtoTopicMapping, mappingsRegex []regexProtoTopicMapping, err error) {
+	strictMappingsByTopic = make(map[string]config.ProtoTopicMapping)
+	mappingsRegex = make([]regexProtoTopicMapping, 0)
+
+	for _, mapping := range mappings {
+		r, err := regexp.Compile(mapping.TopicName)
+		if err != nil {
+			strictMappingsByTopic[mapping.TopicName] = mapping
+			logger.Warn("topic name handled as a strict match", zap.String("topic_name", mapping.TopicName))
+			continue
+		}
+
+		mappingsRegex = append(mappingsRegex, regexProtoTopicMapping{
+			ProtoTopicMapping: mapping,
+			r:                 r,
+		})
+		continue
+	}
+
+	return strictMappingsByTopic, mappingsRegex, err
 }
 
 // Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these
@@ -308,12 +338,35 @@ func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
 	return s.cfg.SchemaRegistry.Enabled
 }
 
+func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopicMapping, err error) {
+	mapping, strictExists := s.strictMappingsByTopic[topicName]
+	if strictExists {
+		return mapping, nil
+	}
+
+	var match bool
+	for _, rMapping := range s.mappingsRegex {
+		match = rMapping.r.MatchString(topicName)
+		if match {
+			mapping = rMapping.ProtoTopicMapping
+			s.strictMappingsByTopic[topicName] = mapping
+			break
+		}
+	}
+
+	if !match {
+		return mapping, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
+	}
+
+	return mapping, nil
+}
+
 // GetMessageDescriptor tries to find the apr
 func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
-	mapping, exists := s.mappingsByTopic[topicName]
-	if !exists {
-		return nil, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
+	mapping, err := s.getMatchingMapping(topicName)
+	if err != nil {
+		return nil, err
 	}
 
 	var protoTypeURL string
