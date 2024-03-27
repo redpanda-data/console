@@ -43,39 +43,51 @@ export class Topic extends Message<Topic> {
  */
 export class Topic_Configuration extends Message<Topic_Configuration> {
   /**
+   * A topic-level config key (e.g. `segment.bytes`).
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Config data type.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigType type = 2;
    */
   type = ConfigType.UNSPECIFIED;
 
   /**
+   * A topic-level config value (e.g. 1073741824).
+   *
    * @generated from field: optional string value = 3;
    */
   value?: string;
 
   /**
+   * Where the config entry is from.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ConfigSource source = 4;
    */
   source = ConfigSource.UNSPECIFIED;
 
   /**
+   * Whether the config is read-only, or is dynamic and can be altered.
+   *
    * @generated from field: bool read_only = 5;
    */
   readOnly = false;
 
   /**
+   * Whether this is a config
+   *
    * @generated from field: bool sensitive = 6;
    */
   sensitive = false;
 
   /**
    * If no config value is set at the topic level, it will inherit the value
-   * set at the broker or cluster level. Name is the corresponding config
-   * key whose value is inherited. Source indicates whether the inherited
+   * set at the broker or cluster level. `name` is the corresponding config
+   * key whose value is inherited. `source` indicates whether the inherited
    * config is default, broker, etc.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConfigSynonym config_synonyms = 7;
@@ -184,27 +196,26 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
   name = "";
 
   /**
-   * PartitionCount is how many partitions to give a topic. This must
-   * be null if specifying partitions manually (see ReplicaAssignment)
-   * or, to use the cluster default partitions.
+   * The number of partitions to give the topic. If specifying
+   * partitions manually (see `replica_assignments`), set to -1.
+   * Or, to use the cluster default partition count, set to null.
    *
    * @generated from field: optional int32 partition_count = 2;
    */
   partitionCount?: number;
 
   /**
-   * ReplicationFactor is how many replicas every partition must have.
-   * This must be null if specifying partitions manually (see ReplicaAssignment)
-   * or, to use the cluster default replication factor.
+   * The number of replicas every partition must have.
+   * If specifying partitions manually (see `replica_assignments`), set to -1.
+   * Or, to use the cluster default replication factor, set to null.
    *
    * @generated from field: optional int32 replication_factor = 3;
    */
   replicationFactor?: number;
 
   /**
-   * ReplicaAssignment is an array to manually dictate replicas and their
-   * partitions for a topic. If using this, both ReplicationFactor and
-   * NumPartitions must be -1.
+   * Manually specify broker ID assignments for partition replicas. If manually assigning replicas, both `replication_factor` and
+   * `partition_count` must be -1.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.CreateTopicRequest.Topic.ReplicaAssignment replica_assignments = 4;
    */
@@ -255,7 +266,7 @@ export class CreateTopicRequest_Topic extends Message<CreateTopicRequest_Topic> 
  */
 export class CreateTopicRequest_Topic_Config extends Message<CreateTopicRequest_Topic_Config> {
   /**
-   * A topic-level config key (e.g. segment.bytes).
+   * A topic-level config key (e.g. `segment.bytes`).
    *
    * @generated from field: string name = 1;
    */
@@ -797,7 +808,7 @@ export class UpdateTopicConfigurationsRequest extends Message<UpdateTopicConfigu
  */
 export class UpdateTopicConfigurationsRequest_UpdateConfiguration extends Message<UpdateTopicConfigurationsRequest_UpdateConfiguration> {
   /**
-   * A topic-level config key (e.g. segment.bytes).
+   * A topic-level config key (e.g. `segment.bytes`).
    *
    * @generated from field: string name = 1;
    */
@@ -936,7 +947,7 @@ export class SetTopicConfigurationsRequest extends Message<SetTopicConfiguration
  */
 export class SetTopicConfigurationsRequest_SetConfiguration extends Message<SetTopicConfigurationsRequest_SetConfiguration> {
   /**
-   * A topic-level config key (e.g. segment.bytes).
+   * A topic-level config key (e.g. `segment.bytes`).
    *
    * @generated from field: string name = 1;
    */

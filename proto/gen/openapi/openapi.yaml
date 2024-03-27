@@ -33,7 +33,7 @@ components:
     Config:
       properties:
         name:
-          description: A topic-level config key (e.g. segment.bytes).
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         value:
           description: A topic-level config value (e.g. 1073741824).
@@ -83,8 +83,8 @@ components:
         config_synonyms:
           description: |-
             If no config value is set at the topic level, it will inherit the value
-            set at the broker or cluster level. Name is the corresponding config
-            key whose value is inherited. Source indicates whether the inherited
+            set at the broker or cluster level. `name` is the corresponding config
+            key whose value is inherited. `source` indicates whether the inherited
             config is default, broker, etc.
           items:
             $ref: '#/components/schemas/ConfigSynonym'
@@ -94,16 +94,20 @@ components:
           nullable: true
           type: string
         name:
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         read_only:
+          description: Whether the config is read-only, or is dynamic and can be altered.
           type: boolean
         sensitive:
+          title: Whether this is a config
           type: boolean
         source:
           $ref: '#/components/schemas/ConfigSource'
         type:
           $ref: '#/components/schemas/ConfigType'
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
@@ -311,25 +315,24 @@ components:
           type: string
         partition_count:
           description: |-
-            PartitionCount is how many partitions to give a topic. This must
-            be null if specifying partitions manually (see ReplicaAssignment)
-            or, to use the cluster default partitions.
+            The number of partitions to give the topic. If specifying
+            partitions manually (see `replica_assignments`), set to -1.
+            Or, to use the cluster default partition count, set to null.
           format: int32
           nullable: true
           type: integer
         replica_assignments:
           description: |-
-            ReplicaAssignment is an array to manually dictate replicas and their
-            partitions for a topic. If using this, both ReplicationFactor and
-            NumPartitions must be -1.
+            Manually specify broker ID assignments for partition replicas. If manually assigning replicas, both `replication_factor` and
+            `partition_count` must be -1.
           items:
             $ref: '#/components/schemas/ReplicaAssignment'
           type: array
         replication_factor:
           description: |-
-            ReplicationFactor is how many replicas every partition must have.
-            This must be null if specifying partitions manually (see ReplicaAssignment)
-            or, to use the cluster default replication factor.
+            The number of replicas every partition must have.
+            If specifying partitions manually (see `replica_assignments`), set to -1.
+            Or, to use the cluster default replication factor, set to null.
           format: int32
           nullable: true
           type: integer
@@ -872,12 +875,14 @@ components:
     Policy:
       properties:
         host:
+          description: The host address for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: The user for whom this ACL applies.
           type: string
       type: object
     QuotaFailure:
@@ -943,6 +948,7 @@ components:
             $ref: '#/components/schemas/Policy'
           type: array
         resource_name:
+          description: The name of the resource this ACL targets.
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -994,7 +1000,7 @@ components:
     SetConfiguration:
       properties:
         name:
-          description: A topic-level config key (e.g. segment.bytes).
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         value:
           description: A topic-level config value (e.g. 1073741824).
@@ -1125,7 +1131,7 @@ components:
     UpdateConfiguration:
       properties:
         name:
-          description: A topic-level config key (e.g. segment.bytes).
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         operation:
           $ref: '#/components/schemas/ConfigAlterOperation'

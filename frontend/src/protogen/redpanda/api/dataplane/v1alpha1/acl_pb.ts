@@ -443,11 +443,15 @@ export class ListACLsResponse extends Message<ListACLsResponse> {
  */
 export class ListACLsResponse_Policy extends Message<ListACLsResponse_Policy> {
   /**
+   * The user for whom this ACL applies.
+   *
    * @generated from field: string principal = 1;
    */
   principal = "";
 
   /**
+   * The host address for this ACL.
+   *
    * @generated from field: string host = 2;
    */
   host = "";
@@ -503,6 +507,8 @@ export class ListACLsResponse_Resource extends Message<ListACLsResponse_Resource
   resourceType = ACL_ResourceType.UNSPECIFIED;
 
   /**
+   * The name of the resource this ACL targets.
+   *
    * @generated from field: string resource_name = 2;
    */
   resourceName = "";

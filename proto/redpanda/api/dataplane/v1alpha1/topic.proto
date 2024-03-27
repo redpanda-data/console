@@ -9,15 +9,21 @@ import "redpanda/api/dataplane/v1alpha1/common.proto";
 
 message Topic {
   message Configuration {
+    // A topic-level config key (e.g. `segment.bytes`).
     string name = 1;
+    // Config data type.
     ConfigType type = 2;
+    // A topic-level config value (e.g. 1073741824).
     optional string value = 3;
+    // Where the config entry is from.
     ConfigSource source = 4;
+    // Whether the config is read-only, or is dynamic and can be altered.
     bool read_only = 5;
+    // Whether this is a config
     bool sensitive = 6;
     // If no config value is set at the topic level, it will inherit the value
-    // set at the broker or cluster level. Name is the corresponding config
-    // key whose value is inherited. Source indicates whether the inherited
+    // set at the broker or cluster level. `name` is the corresponding config
+    // key whose value is inherited. `source` indicates whether the inherited
     // config is default, broker, etc.
     repeated ConfigSynonym config_synonyms = 7;
     // Config documentation.
@@ -28,7 +34,7 @@ message Topic {
 message CreateTopicRequest {
   message Topic {
     message Config {
-      // A topic-level config key (e.g. segment.bytes).
+      // A topic-level config key (e.g. `segment.bytes`).
       string name = 1 [
         (buf.validate.field).string.min_len = 1,
         (buf.validate.field).string.max_len = 255,
@@ -55,22 +61,21 @@ message CreateTopicRequest {
       (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
     ];
 
-    // PartitionCount is how many partitions to give a topic. This must
-    // be null if specifying partitions manually (see ReplicaAssignment)
-    // or, to use the cluster default partitions.
-    optional int32 partition_count = 2;
+    // The number of partitions to give the topic. If specifying
+    // partitions manually (see `replica_assignments`), set to -1.
+    // Or, to use the cluster default partition count, set to null.
+    optional int32 partition_count = 2 [(buf.validate.field).int32.gte = -1];
 
-    // ReplicationFactor is how many replicas every partition must have.
-    // This must be null if specifying partitions manually (see ReplicaAssignment)
-    // or, to use the cluster default replication factor.
+    // The number of replicas every partition must have.
+    // If specifying partitions manually (see `replica_assignments`), set to -1.
+    // Or, to use the cluster default replication factor, set to null.
     optional int32 replication_factor = 3 [
-      (buf.validate.field).int32.gte = 1,
+      (buf.validate.field).int32.gte = -1,
       (buf.validate.field).int32.lte = 5
     ];
 
-    // ReplicaAssignment is an array to manually dictate replicas and their
-    // partitions for a topic. If using this, both ReplicationFactor and
-    // NumPartitions must be -1.
+    // Manually specify broker ID assignments for partition replicas. If manually assigning replicas, both `replication_factor` and
+    // `partition_count` must be -1.
     repeated ReplicaAssignment replica_assignments = 4;
 
     // An array of key-value config pairs for a topic.
@@ -170,7 +175,7 @@ message GetTopicConfigurationsResponse {
 
 message UpdateTopicConfigurationsRequest {
   message UpdateConfiguration {
-    // A topic-level config key (e.g. segment.bytes).
+    // A topic-level config key (e.g. `segment.bytes`).
     string name = 1 [
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1,
@@ -207,7 +212,7 @@ message UpdateTopicConfigurationsResponse {
 
 message SetTopicConfigurationsRequest {
   message SetConfiguration {
-    // A topic-level config key (e.g. segment.bytes).
+    // A topic-level config key (e.g. `segment.bytes`).
     string name = 1;
     // A topic-level config value (e.g. 1073741824).
     optional string value = 2;

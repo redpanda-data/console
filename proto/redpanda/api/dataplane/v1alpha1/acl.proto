@@ -87,7 +87,9 @@ message ListACLsRequest {
 
 message ListACLsResponse {
   message Policy {
+    // The user for whom this ACL applies.
     string principal = 1;
+    // The host address for this ACL.
     string host = 2;
     ACL.Operation operation = 3;
     ACL.PermissionType permission_type = 4;
@@ -95,6 +97,7 @@ message ListACLsResponse {
 
   message Resource {
     ACL.ResourceType resource_type = 1;
+    // The name of the resource this ACL targets.
     string resource_name = 2;
     ACL.ResourcePatternType resource_pattern_type = 3;
     repeated Policy acls = 4;
