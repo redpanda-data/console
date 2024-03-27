@@ -13,7 +13,7 @@ test.describe('Connector', async () => {
 
         await createConnector(page, {clusterName, connectorName});
         await page.getByRole('tab', { name: 'Logs' }).click({
-            timeout: 10000
+            timeout: 11000 // 11s because there is a max timer of 10s in connector create wait operation
         })
 
         await page.getByTestId('data-table-cell').nth(0).getByRole('button').click()
