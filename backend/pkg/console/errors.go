@@ -9,8 +9,33 @@
 
 package console
 
-import "errors"
+import (
+	"fmt"
 
-// ErrSchemaRegistryNotConfigured is an error that declares the schema registry has not
-// been configured in Redpanda Console and thus the request could not be processed.
-var ErrSchemaRegistryNotConfigured = errors.New("no schema registry configured")
+	"github.com/twmb/franz-go/pkg/kerr"
+)
+
+type KafkaErrorWithDynamicMessage struct {
+	Static               *kerr.Error
+	DynamicServerMessage *string
+}
+
+func (e *KafkaErrorWithDynamicMessage) Error() string {
+	if e.DynamicServerMessage == nil {
+		return e.Static.Error()
+	}
+	return fmt.Sprintf("%s: %s", e.Static.Message, *e.DynamicServerMessage)
+}
+
+// Unwrap returns the original error so that it can be matched using errors.Is().
+func (e *KafkaErrorWithDynamicMessage) Unwrap() error {
+	return e.Static
+}
+
+func newKafkaErrorWithDynamicMessage(code int16, msg *string) error {
+	kafkaErr := kerr.TypedErrorForCode(code)
+	if kafkaErr == nil {
+		return nil
+	}
+	return &KafkaErrorWithDynamicMessage{Static: kafkaErr, DynamicServerMessage: msg}
+}
