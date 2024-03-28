@@ -1,0 +1,596 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message Security {
+  enum PrincipalType {
+    PRINCIPAL_TYPE_UNSPECIFIED = 0;
+    PRINCIPAL_TYPE_USER = 1;
+    PRINCIPAL_TYPE_GROUP = 2;
+    PRINCIPAL_TYPE_REDPANDA_ROLE = 3;
+  }
+}
+
+// Role defienes a role in the system.
+message Role {
+  // The name of the role.
+  string name = 1;
+}
+
+// ListRolesRequest is the request for ListRoles.
+message ListRolesRequest {
+  // Filter results only roles named with the prefix.
+  optional string prefix_filter = 1 [
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+  ];
+
+  // Return only roles assigned to this principal.
+  optional string principal = 2 [(buf.validate.field).string.max_len = 128];
+
+  // Return only roles of this principal type.
+  optional Security.PrincipalType principal_type = 3;
+}
+
+// ListRolesResponse is the response for ListReponse.
+message ListRolesResponse {
+  // The roles in the system.
+  repeated Role roles = 1;
+}
+
+// CreateRoleRequest is the request for CreateRole.
+message CreateRoleRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The role name. i.e. the principal is `RedpandaRole:<role>`",
+      example: "\"admin\""
+    }
+  ];
+}
+
+// CreateRoleResponse is the response for CreateRole.
+message CreateRoleResponse {
+  string role = 1;
+}
+
+// CreateRoleRequest is the request for CreateRole.
+message GetRoleRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The role name. i.e. the principal is `RedpandaRole:<role>`",
+      example: "\"admin\""
+    }
+  ];
+}
+
+// GetRoleResponse is the response to GetRole.
+message GetRoleResponse {
+  // The name of the role.
+  string name = 1;
+
+  // The principal type.
+  Security.PrincipalType principal_type = 2;
+}
+
+// UpdateRoleRequest is the request for UpdateRole.
+message UpdateRoleRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The role name. i.e. the principal is `RedpandaRole:<role>`",
+      example: "\"admin\""
+    }
+  ];
+
+  // The new role name.
+  string new_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+}
+
+// UpdateRoleResponse is the response for UpdateRole.
+message UpdateRoleResponse {
+  string role = 1;
+}
+
+// DeleteRoleRequest is the request for DeleteRole.
+message DeleteRoleRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Whether to delete the ACLs bound to the role.
+  optional bool delete_acls = 2;
+}
+
+// DeleteRoleResponse is the response for DeleteRole.
+message DeleteRoleResponse {}
+
+// List role members for a role. That is user principals assigned to that role.
+message ListRoleMembersRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Filter results only mamber names with the prefix.
+  optional string prefix_filter = 2 [(buf.validate.field).string.max_len = 128];
+}
+
+// ListRoleMembersResponse is the response for ListRoleMembers.
+message ListRoleMembersResponse {
+  // Members assigned to the role.
+  repeated RoleMembership members = 1;
+}
+
+// RoleMembership is the role membership.
+message RoleMembership {
+  // The name of the principal assigned to the role.
+  string name = 1;
+
+  // The principal type.
+  Security.PrincipalType principal_type = 2;
+}
+
+// UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
+message UpdateRoleMembershipRequest {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Create the role if it doesn't already exist.
+  // If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
+  optional bool create = 2;
+
+  // Members to assign to the role.
+  repeated RoleMembership add = 3;
+
+  // Members to remove from the role.
+  repeated RoleMembership remove = 4;
+}
+
+// UpdateRoleMembershipResponse is the response for UpdateRoleMembership.
+message UpdateRoleMembershipResponse {
+  // The role name.
+  string role = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Members assigned to the role.
+  repeated RoleMembership added = 2;
+
+  // Members removed from the role.
+  repeated RoleMembership removed = 3;
+}
+
+// ListUserRolesRequest is the request for ListUserRoles.
+message ListUserRolesRequest {
+  // Filter results only roles named with the prefix.
+  optional string prefix_filter = 1 [
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+  ];
+}
+
+// ListUserRolesResponse is the response for ListUserRoles.
+message ListUserRolesResponse {
+  // The roles in the system.
+  repeated Role roles = 1;
+}
+
+service SecurityService {
+  // ListRoles lists all the roles in the system based on optional filter.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {get: "/v1alpha1/security/roles"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List all roles"
+      description: "Lists all the roles in the system based on optional filter."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListRoles"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/security/roles"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create role"
+      description: "Create a new role in the system."
+      responses: {
+        key: "201"
+        value: {
+          description: "Role created."
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.CreateRoleResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "Bad request"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "409"
+        value: {
+          description: "Confict"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // GetRole retrieves the specific role.
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/security/roles/{role}"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get role."
+      description: "Get a specific role."
+      responses: {
+        key: "200"
+        value: {
+          description: "Ok"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetRoleResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha1/security/roles/{role}"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update role"
+      description: "Update an existing role in the system."
+      responses: {
+        key: "200"
+        value: {
+          description: "Role update."
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.UpdateRoleResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "Bad request"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "409"
+        value: {
+          description: "Confict"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // DeleteRole deletes the role from the system.
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/security/roles/{role}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete role"
+      description: "Delete a specific role from the system."
+      responses: {
+        key: "204"
+        value: {
+          description: "Role was deleted successfully."
+          schema: {}
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // ListRoleMembership lists all the members assigned to a role based on optional filter.
+  rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {
+    option (google.api.http) = {get: "/v1alpha1/security/roles/{role}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List all role members"
+      description: "List all the members assigned to a role based on optional filter."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListRoleMembersResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // UpdateRoleMembership updates role membership.
+  // Partially update role membership, adding or removing from a role
+  // ONLY those members listed in the “add” or “remove” fields, respectively.
+  // Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
+  // and the rest of the members will be added and removed and reported.
+  rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {
+    option (google.api.http) = {post: "/v1alpha1/security/roles/{role}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update role membership"
+      description: "Partially update role membership, adding or removing from a role ONLY those members listed in the “add” or “remove” fields, respectively. Adding a member that is already assigned to the role (or removing one that is not) is a no-op, and the rest of the members will be added and removed and reported."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.UpdateRoleMembershipResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // ListUserRoles lists all the uthonticated user's roles based on optional filter.
+  rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse) {
+    option (google.api.http) = {get: "/v1alpha1/security/users/roles"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List all roles assigned to the authonticated user"
+      description: "List all roles assigned to the authonticated user based on optional filter."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListRoleMembersResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}
