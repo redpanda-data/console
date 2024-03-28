@@ -95,7 +95,7 @@ func (s *APISuite) SetupSuite() {
 		ctx,
 		[]string{"redpanda:29092"},
 		network.WithNetwork([]string{"kconnect"}, s.network),
-		testcontainers.WithImage("docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-44344ad"),
+		testcontainers.WithImage("docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest"),
 	)
 	require.NoError(err)
 
