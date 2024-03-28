@@ -117,25 +117,26 @@ export class Role extends Message<Role> {
  */
 export class ListRolesRequest extends Message<ListRolesRequest> {
   /**
-   * Filter results only roles named with the prefix.
+   * Optional filter.
    *
-   * @generated from field: optional string prefix_filter = 1;
+   * @generated from field: optional redpanda.api.console.v1alpha1.ListRolesRequest.Filter filter = 1;
    */
-  prefixFilter?: string;
+  filter?: ListRolesRequest_Filter;
 
   /**
-   * Return only roles assigned to this principal.
+   * Page size.
    *
-   * @generated from field: optional string principal = 2;
+   * @generated from field: int32 page_size = 2;
    */
-  principal?: string;
+  pageSize = 0;
 
   /**
-   * Return only roles of this principal type.
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
    *
-   * @generated from field: optional redpanda.api.console.v1alpha1.Security.PrincipalType principal_type = 3;
+   * @generated from field: string page_token = 3;
    */
-  principalType?: Security_PrincipalType;
+  pageToken = "";
 
   constructor(data?: PartialMessage<ListRolesRequest>) {
     super();
@@ -145,9 +146,9 @@ export class ListRolesRequest extends Message<ListRolesRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "prefix_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 3, name: "principal_type", kind: "enum", T: proto3.getEnumType(Security_PrincipalType), opt: true },
+    { no: 1, name: "filter", kind: "message", T: ListRolesRequest_Filter, opt: true },
+    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest {
@@ -164,6 +165,63 @@ export class ListRolesRequest extends Message<ListRolesRequest> {
 
   static equals(a: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined, b: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined): boolean {
     return proto3.util.equals(ListRolesRequest, a, b);
+  }
+}
+
+/**
+ * Filter options.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.ListRolesRequest.Filter
+ */
+export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
+  /**
+   * Filter results only roles named with the prefix.
+   *
+   * @generated from field: string name_prefix = 1;
+   */
+  namePrefix = "";
+
+  /**
+   * Return only roles assigned to this principal.
+   *
+   * @generated from field: optional string principal = 2;
+   */
+  principal?: string;
+
+  /**
+   * Return only roles of this principal type.
+   *
+   * @generated from field: optional redpanda.api.console.v1alpha1.Security.PrincipalType principal_type = 3;
+   */
+  principalType?: Security_PrincipalType;
+
+  constructor(data?: PartialMessage<ListRolesRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "principal_type", kind: "enum", T: proto3.getEnumType(Security_PrincipalType), opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest_Filter {
+    return new ListRolesRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRolesRequest_Filter {
+    return new ListRolesRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRolesRequest_Filter {
+    return new ListRolesRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListRolesRequest_Filter | PlainMessage<ListRolesRequest_Filter> | undefined, b: ListRolesRequest_Filter | PlainMessage<ListRolesRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListRolesRequest_Filter, a, b);
   }
 }
 
@@ -256,6 +314,8 @@ export class CreateRoleRequest extends Message<CreateRoleRequest> {
  */
 export class CreateRoleResponse extends Message<CreateRoleResponse> {
   /**
+   * The role name.
+   *
    * @generated from field: string role = 1;
    */
   role = "";
@@ -434,6 +494,8 @@ export class UpdateRoleRequest extends Message<UpdateRoleRequest> {
  */
 export class UpdateRoleResponse extends Message<UpdateRoleResponse> {
   /**
+   * The role name.
+   *
    * @generated from field: string role = 1;
    */
   role = "";
@@ -562,11 +624,26 @@ export class ListRoleMembersRequest extends Message<ListRoleMembersRequest> {
   role = "";
 
   /**
-   * Filter results only mamber names with the prefix.
+   * Optional filter.
    *
-   * @generated from field: optional string prefix_filter = 2;
+   * @generated from field: optional redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter filter = 2;
    */
-  prefixFilter?: string;
+  filter?: ListRoleMembersRequest_Filter;
+
+  /**
+   * Page size.
+   *
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
 
   constructor(data?: PartialMessage<ListRoleMembersRequest>) {
     super();
@@ -577,7 +654,9 @@ export class ListRoleMembersRequest extends Message<ListRoleMembersRequest> {
   static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "prefix_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "filter", kind: "message", T: ListRoleMembersRequest_Filter, opt: true },
+    { no: 3, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersRequest {
@@ -594,6 +673,47 @@ export class ListRoleMembersRequest extends Message<ListRoleMembersRequest> {
 
   static equals(a: ListRoleMembersRequest | PlainMessage<ListRoleMembersRequest> | undefined, b: ListRoleMembersRequest | PlainMessage<ListRoleMembersRequest> | undefined): boolean {
     return proto3.util.equals(ListRoleMembersRequest, a, b);
+  }
+}
+
+/**
+ * Filter options.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter
+ */
+export class ListRoleMembersRequest_Filter extends Message<ListRoleMembersRequest_Filter> {
+  /**
+   * Filter results to only mamber named with the prefix.
+   *
+   * @generated from field: string name_prefix = 1;
+   */
+  namePrefix = "";
+
+  constructor(data?: PartialMessage<ListRoleMembersRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersRequest_Filter {
+    return new ListRoleMembersRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRoleMembersRequest_Filter {
+    return new ListRoleMembersRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRoleMembersRequest_Filter {
+    return new ListRoleMembersRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListRoleMembersRequest_Filter | PlainMessage<ListRoleMembersRequest_Filter> | undefined, b: ListRoleMembersRequest_Filter | PlainMessage<ListRoleMembersRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListRoleMembersRequest_Filter, a, b);
   }
 }
 
@@ -817,11 +937,26 @@ export class UpdateRoleMembershipResponse extends Message<UpdateRoleMembershipRe
  */
 export class ListUserRolesRequest extends Message<ListUserRolesRequest> {
   /**
-   * Filter results only roles named with the prefix.
+   * Optional filter.
    *
-   * @generated from field: optional string prefix_filter = 1;
+   * @generated from field: optional redpanda.api.console.v1alpha1.ListUserRolesRequest.Filter filter = 1;
    */
-  prefixFilter?: string;
+  filter?: ListUserRolesRequest_Filter;
+
+  /**
+   * Page size.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
 
   constructor(data?: PartialMessage<ListUserRolesRequest>) {
     super();
@@ -831,7 +966,9 @@ export class ListUserRolesRequest extends Message<ListUserRolesRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.ListUserRolesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "prefix_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "filter", kind: "message", T: ListUserRolesRequest_Filter, opt: true },
+    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUserRolesRequest {
@@ -848,6 +985,47 @@ export class ListUserRolesRequest extends Message<ListUserRolesRequest> {
 
   static equals(a: ListUserRolesRequest | PlainMessage<ListUserRolesRequest> | undefined, b: ListUserRolesRequest | PlainMessage<ListUserRolesRequest> | undefined): boolean {
     return proto3.util.equals(ListUserRolesRequest, a, b);
+  }
+}
+
+/**
+ * Filter options.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.ListUserRolesRequest.Filter
+ */
+export class ListUserRolesRequest_Filter extends Message<ListUserRolesRequest_Filter> {
+  /**
+   * Filter results to only roles named with the prefix.
+   *
+   * @generated from field: string name_prefix = 1;
+   */
+  namePrefix = "";
+
+  constructor(data?: PartialMessage<ListUserRolesRequest_Filter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListUserRolesRequest.Filter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUserRolesRequest_Filter {
+    return new ListUserRolesRequest_Filter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUserRolesRequest_Filter {
+    return new ListUserRolesRequest_Filter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUserRolesRequest_Filter {
+    return new ListUserRolesRequest_Filter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUserRolesRequest_Filter | PlainMessage<ListUserRolesRequest_Filter> | undefined, b: ListUserRolesRequest_Filter | PlainMessage<ListUserRolesRequest_Filter> | undefined): boolean {
+    return proto3.util.equals(ListUserRolesRequest_Filter, a, b);
   }
 }
 

@@ -24,17 +24,40 @@ message Role {
 
 // ListRolesRequest is the request for ListRoles.
 message ListRolesRequest {
-  // Filter results only roles named with the prefix.
-  optional string prefix_filter = 1 [
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+  // Filter options.
+  message Filter {
+    // Filter results only roles named with the prefix.
+    string name_prefix = 1 [
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+    ];
+
+    // Return only roles assigned to this principal.
+    optional string principal = 2 [(buf.validate.field).string.max_len = 128];
+
+    // Return only roles of this principal type.
+    optional Security.PrincipalType principal_type = 3;
+  }
+
+  // Optional filter.
+  optional Filter filter = 1;
+
+  // Page size.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1,
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+      minimum: -1,
+      maximum: 1000
+    }
   ];
 
-  // Return only roles assigned to this principal.
-  optional string principal = 2 [(buf.validate.field).string.max_len = 128];
-
-  // Return only roles of this principal type.
-  optional Security.PrincipalType principal_type = 3;
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
 }
 
 // ListRolesResponse is the response for ListReponse.
@@ -61,6 +84,7 @@ message CreateRoleRequest {
 
 // CreateRoleResponse is the response for CreateRole.
 message CreateRoleResponse {
+  // The role name.
   string role = 1;
 }
 
@@ -116,6 +140,7 @@ message UpdateRoleRequest {
 
 // UpdateRoleResponse is the response for UpdateRole.
 message UpdateRoleResponse {
+  // The role name.
   string role = 1;
 }
 
@@ -139,6 +164,12 @@ message DeleteRoleResponse {}
 
 // List role members for a role. That is user principals assigned to that role.
 message ListRoleMembersRequest {
+  // Filter options.
+  message Filter {
+    // Filter results to only mamber named with the prefix.
+    string name_prefix = 1 [(buf.validate.field).string.max_len = 128];
+  }
+
   // The role name.
   string role = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -148,8 +179,25 @@ message ListRoleMembersRequest {
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
   ];
 
-  // Filter results only mamber names with the prefix.
-  optional string prefix_filter = 2 [(buf.validate.field).string.max_len = 128];
+  // Optional filter.
+  optional Filter filter = 2;
+
+  // Page size.
+  int32 page_size = 3 [
+    (buf.validate.field).int32 = {
+      gte: -1,
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+      minimum: -1,
+      maximum: 1000
+    }
+  ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 4;
 }
 
 // ListRoleMembersResponse is the response for ListRoleMembers.
@@ -209,11 +257,34 @@ message UpdateRoleMembershipResponse {
 
 // ListUserRolesRequest is the request for ListUserRoles.
 message ListUserRolesRequest {
-  // Filter results only roles named with the prefix.
-  optional string prefix_filter = 1 [
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+  // Filter options.
+  message Filter {
+    // Filter results to only roles named with the prefix.
+    string name_prefix = 1 [
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+    ];
+  }
+
+  // Optional filter.
+  optional Filter filter = 1;
+
+  // Page size.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1,
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+      minimum: -1,
+      maximum: 1000
+    }
   ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
 }
 
 // ListUserRolesResponse is the response for ListUserRoles.
