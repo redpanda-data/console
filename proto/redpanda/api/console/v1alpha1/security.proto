@@ -36,6 +36,7 @@ message ListRolesRequest {
     optional string principal = 2 [(buf.validate.field).string.max_len = 128];
 
     // Return only roles of this principal type.
+    // Qualifies parameter principal has no effect on its own.
     optional Security.PrincipalType principal_type = 3;
   }
 
@@ -293,13 +294,60 @@ message ListUserRolesResponse {
   repeated Role roles = 1;
 }
 
+// ListRolesWithMembersRequest is the request for ListRolesWithMembers.
+message ListRolesWithMembersRequest {
+  // Filter options.
+  message Filter {
+    // Filter results only roles named with the prefix.
+    string name_prefix = 1 [
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+    ];
+  }
+
+  // Optional filter.
+  optional Filter filter = 1;
+
+  // Page size.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1,
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
+      minimum: -1,
+      maximum: 1000
+    }
+  ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+// RoleWithMembers is role data with members assigned to the role.
+message RoleWithMembers {
+  // The name of the role.
+  string name = 1;
+
+  // Members assigned to the role.
+  repeated RoleMembership members = 2;
+}
+
+// ListRolesWithMembersResponse is the response for ListRolesWithMembers.
+message ListRolesWithMembersResponse {
+  // The roles in the system.
+  repeated RoleWithMembers roles = 1;
+}
+
 service SecurityService {
-  // ListRoles lists all the roles in the system based on optional filter.
+  // ListRoles lists all the roles based on optional filter.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1alpha1/security/roles"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List all roles"
-      description: "Lists all the roles in the system based on optional filter."
+      description: "Lists all the roles based on optional filter."
       responses: {
         key: "200"
         value: {
@@ -657,6 +705,42 @@ service SecurityService {
         key: "401"
         value: {
           description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // ListRolesWithMembers lists all the roles and their members based on optional filter.
+  rpc ListRolesWithMembers(ListRolesWithMembersRequest) returns (ListRolesWithMembersResponse) {
+    option (google.api.http) = {get: "/v1alpha1/security/roles_and_members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List all roles and their members"
+      description: "Lists all the roles and their members based on optional filter."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListRolesWithMembersResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "401"
+        value: {
+          description: "Unauthorized"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+      responses: {
+        key: "403"
+        value: {
+          description: "Forbidden"
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }

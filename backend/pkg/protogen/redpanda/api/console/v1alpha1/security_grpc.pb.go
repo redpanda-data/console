@@ -28,13 +28,14 @@ const (
 	SecurityService_ListRoleMembers_FullMethodName      = "/redpanda.api.console.v1alpha1.SecurityService/ListRoleMembers"
 	SecurityService_UpdateRoleMembership_FullMethodName = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRoleMembership"
 	SecurityService_ListUserRoles_FullMethodName        = "/redpanda.api.console.v1alpha1.SecurityService/ListUserRoles"
+	SecurityService_ListRolesWithMembers_FullMethodName = "/redpanda.api.console.v1alpha1.SecurityService/ListRolesWithMembers"
 )
 
 // SecurityServiceClient is the client API for SecurityService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SecurityServiceClient interface {
-	// ListRoles lists all the roles in the system based on optional filter.
+	// ListRoles lists all the roles based on optional filter.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*CreateRoleResponse, error)
 	// GetRole retrieves the specific role.
@@ -52,6 +53,8 @@ type SecurityServiceClient interface {
 	UpdateRoleMembership(ctx context.Context, in *UpdateRoleMembershipRequest, opts ...grpc.CallOption) (*UpdateRoleMembershipResponse, error)
 	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
 	ListUserRoles(ctx context.Context, in *ListUserRolesRequest, opts ...grpc.CallOption) (*ListUserRolesResponse, error)
+	// ListRolesWithMembers lists all the roles and their members based on optional filter.
+	ListRolesWithMembers(ctx context.Context, in *ListRolesWithMembersRequest, opts ...grpc.CallOption) (*ListRolesWithMembersResponse, error)
 }
 
 type securityServiceClient struct {
@@ -134,11 +137,20 @@ func (c *securityServiceClient) ListUserRoles(ctx context.Context, in *ListUserR
 	return out, nil
 }
 
+func (c *securityServiceClient) ListRolesWithMembers(ctx context.Context, in *ListRolesWithMembersRequest, opts ...grpc.CallOption) (*ListRolesWithMembersResponse, error) {
+	out := new(ListRolesWithMembersResponse)
+	err := c.cc.Invoke(ctx, SecurityService_ListRolesWithMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SecurityServiceServer is the server API for SecurityService service.
 // All implementations must embed UnimplementedSecurityServiceServer
 // for forward compatibility
 type SecurityServiceServer interface {
-	// ListRoles lists all the roles in the system based on optional filter.
+	// ListRoles lists all the roles based on optional filter.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	// GetRole retrieves the specific role.
@@ -156,6 +168,8 @@ type SecurityServiceServer interface {
 	UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error)
 	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
 	ListUserRoles(context.Context, *ListUserRolesRequest) (*ListUserRolesResponse, error)
+	// ListRolesWithMembers lists all the roles and their members based on optional filter.
+	ListRolesWithMembers(context.Context, *ListRolesWithMembersRequest) (*ListRolesWithMembersResponse, error)
 	mustEmbedUnimplementedSecurityServiceServer()
 }
 
@@ -186,6 +200,9 @@ func (UnimplementedSecurityServiceServer) UpdateRoleMembership(context.Context, 
 }
 func (UnimplementedSecurityServiceServer) ListUserRoles(context.Context, *ListUserRolesRequest) (*ListUserRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUserRoles not implemented")
+}
+func (UnimplementedSecurityServiceServer) ListRolesWithMembers(context.Context, *ListRolesWithMembersRequest) (*ListRolesWithMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRolesWithMembers not implemented")
 }
 func (UnimplementedSecurityServiceServer) mustEmbedUnimplementedSecurityServiceServer() {}
 
@@ -344,6 +361,24 @@ func _SecurityService_ListUserRoles_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SecurityService_ListRolesWithMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRolesWithMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecurityServiceServer).ListRolesWithMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecurityService_ListRolesWithMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecurityServiceServer).ListRolesWithMembers(ctx, req.(*ListRolesWithMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SecurityService_ServiceDesc is the grpc.ServiceDesc for SecurityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -382,6 +417,10 @@ var SecurityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListUserRoles",
 			Handler:    _SecurityService_ListUserRoles_Handler,
+		},
+		{
+			MethodName: "ListRolesWithMembers",
+			Handler:    _SecurityService_ListRolesWithMembers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -25,6 +25,7 @@ type SecurityServiceGatewayServer struct {
 	listRoleMembers      connect_gateway.UnaryHandler[v1alpha1.ListRoleMembersRequest, v1alpha1.ListRoleMembersResponse]
 	updateRoleMembership connect_gateway.UnaryHandler[v1alpha1.UpdateRoleMembershipRequest, v1alpha1.UpdateRoleMembershipResponse]
 	listUserRoles        connect_gateway.UnaryHandler[v1alpha1.ListUserRolesRequest, v1alpha1.ListUserRolesResponse]
+	listRolesWithMembers connect_gateway.UnaryHandler[v1alpha1.ListRolesWithMembersRequest, v1alpha1.ListRolesWithMembersResponse]
 }
 
 // NewSecurityServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecurityService
@@ -39,6 +40,7 @@ func NewSecurityServiceGatewayServer(svc SecurityServiceHandler, opts ...connect
 		listRoleMembers:      connect_gateway.NewUnaryHandler(SecurityServiceListRoleMembersProcedure, svc.ListRoleMembers, opts...),
 		updateRoleMembership: connect_gateway.NewUnaryHandler(SecurityServiceUpdateRoleMembershipProcedure, svc.UpdateRoleMembership, opts...),
 		listUserRoles:        connect_gateway.NewUnaryHandler(SecurityServiceListUserRolesProcedure, svc.ListUserRoles, opts...),
+		listRolesWithMembers: connect_gateway.NewUnaryHandler(SecurityServiceListRolesWithMembersProcedure, svc.ListRolesWithMembers, opts...),
 	}
 }
 
@@ -72,6 +74,10 @@ func (s *SecurityServiceGatewayServer) UpdateRoleMembership(ctx context.Context,
 
 func (s *SecurityServiceGatewayServer) ListUserRoles(ctx context.Context, req *v1alpha1.ListUserRolesRequest) (*v1alpha1.ListUserRolesResponse, error) {
 	return s.listUserRoles(ctx, req)
+}
+
+func (s *SecurityServiceGatewayServer) ListRolesWithMembers(ctx context.Context, req *v1alpha1.ListRolesWithMembersRequest) (*v1alpha1.ListRolesWithMembersResponse, error) {
+	return s.listRolesWithMembers(ctx, req)
 }
 
 // RegisterSecurityServiceHandlerGatewayServer registers the Connect handlers for the
