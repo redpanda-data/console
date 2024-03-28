@@ -15,12 +15,16 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 )
 
-type KafkaErrorWithDynamicMessage struct {
+// KerrWithDynamicMessageError wraps the franz-go Kafka error and can be used to construct
+// errors that both contain the kerr.Err as well as an optional dynamic server message
+// that further describes the error.
+type KerrWithDynamicMessageError struct {
 	Static               *kerr.Error
 	DynamicServerMessage *string
 }
 
-func (e *KafkaErrorWithDynamicMessage) Error() string {
+// Error returns the error in a string presentation.
+func (e *KerrWithDynamicMessageError) Error() string {
 	if e.DynamicServerMessage == nil {
 		return e.Static.Error()
 	}
@@ -28,7 +32,7 @@ func (e *KafkaErrorWithDynamicMessage) Error() string {
 }
 
 // Unwrap returns the original error so that it can be matched using errors.Is().
-func (e *KafkaErrorWithDynamicMessage) Unwrap() error {
+func (e *KerrWithDynamicMessageError) Unwrap() error {
 	return e.Static
 }
 
@@ -37,5 +41,5 @@ func newKafkaErrorWithDynamicMessage(code int16, msg *string) error {
 	if kafkaErr == nil {
 		return nil
 	}
-	return &KafkaErrorWithDynamicMessage{Static: kafkaErr, DynamicServerMessage: msg}
+	return &KerrWithDynamicMessageError{Static: kafkaErr, DynamicServerMessage: msg}
 }
