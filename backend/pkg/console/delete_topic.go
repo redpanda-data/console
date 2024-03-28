@@ -49,8 +49,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	}
 
 	topicRes := res.Topics[0]
-	err = kerr.ErrorForCode(topicRes.ErrorCode)
-	if err != nil {
+	if err := newKafkaErrorWithDynamicMessage(topicRes.ErrorCode, topicRes.ErrorMessage); err != nil {
 		return &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,

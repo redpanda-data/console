@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,15 +70,14 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", err)
 	}
 
-	kafkaErr := kerr.TypedErrorForCode(aclResponses.ErrorCode)
-	if kafkaErr != nil {
-		if kafkaErr == kerr.SecurityDisabled {
+	if err := newKafkaErrorWithDynamicMessage(aclResponses.ErrorCode, aclResponses.ErrorMessage); err != nil {
+		if errors.Is(err, kerr.SecurityDisabled) {
 			return &ACLOverview{
 				ACLResources:        nil,
 				IsAuthorizerEnabled: false,
 			}, nil
 		}
-		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", kafkaErr)
+		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", err)
 	}
 
 	resources := make([]*ACLResource, len(aclResponses.Resources))

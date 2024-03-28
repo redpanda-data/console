@@ -15,7 +15,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 )
@@ -99,7 +98,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 
 	// Resources should always be of length = 1
 	for _, resource := range res.Resources {
-		err := kerr.TypedErrorForCode(resource.ErrorCode)
+		err := newKafkaErrorWithDynamicMessage(resource.ErrorCode, resource.ErrorMessage)
 		if err != nil {
 			return nil, &rest.Error{
 				Err:      err,
