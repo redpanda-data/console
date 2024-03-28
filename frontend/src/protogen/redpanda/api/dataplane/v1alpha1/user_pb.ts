@@ -7,6 +7,8 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * SASL mechanism to use for authentication.
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.SASLMechanism
  */
 export enum SASLMechanism {
@@ -89,11 +91,15 @@ export class ListUsersRequest extends Message<ListUsersRequest> {
  */
 export class ListUsersRequest_Filter extends Message<ListUsersRequest_Filter> {
   /**
+   * Username.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Substring match on username. Case-sensitive.
+   *
    * @generated from field: string name_contains = 2;
    */
   nameContains = "";
@@ -177,6 +183,8 @@ export class ListUsersResponse extends Message<ListUsersResponse> {
  */
 export class ListUsersResponse_User extends Message<ListUsersResponse_User> {
   /**
+   * Username.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -257,11 +265,15 @@ export class CreateUserRequest extends Message<CreateUserRequest> {
  */
 export class CreateUserRequest_User extends Message<CreateUserRequest_User> {
   /**
+   * Username.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Password.
+   *
    * @generated from field: string password = 2;
    */
   password = "";
@@ -343,6 +355,8 @@ export class CreateUserResponse extends Message<CreateUserResponse> {
  */
 export class CreateUserResponse_User extends Message<CreateUserResponse_User> {
   /**
+   * Name of newly-created user
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -423,11 +437,15 @@ export class UpdateUserRequest extends Message<UpdateUserRequest> {
  */
 export class UpdateUserRequest_User extends Message<UpdateUserRequest_User> {
   /**
+   * Username.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Password.
+   *
    * @generated from field: string password = 2;
    */
   password = "";
@@ -505,6 +523,8 @@ export class UpdateUserResponse extends Message<UpdateUserResponse> {
 }
 
 /**
+ * Updated user's name and SASL mechanism.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User
  */
 export class UpdateUserResponse_User extends Message<UpdateUserResponse_User> {
@@ -552,6 +572,8 @@ export class UpdateUserResponse_User extends Message<UpdateUserResponse_User> {
  */
 export class DeleteUserRequest extends Message<DeleteUserRequest> {
   /**
+   * Username
+   *
    * @generated from field: string name = 1;
    */
   name = "";
