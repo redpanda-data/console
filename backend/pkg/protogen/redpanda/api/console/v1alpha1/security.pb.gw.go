@@ -161,7 +161,7 @@ func request_SecurityService_UpdateRole_0(ctx context.Context, marshaler runtime
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Role); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -172,14 +172,14 @@ func request_SecurityService_UpdateRole_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["role"]
+	val, ok = pathParams["role_name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "role")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "role_name")
 	}
 
-	protoReq.Role, err = runtime.String(val)
+	protoReq.RoleName, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "role", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "role_name", err)
 	}
 
 	msg, err := client.UpdateRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -195,7 +195,7 @@ func local_request_SecurityService_UpdateRole_0(ctx context.Context, marshaler r
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Role); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -206,14 +206,14 @@ func local_request_SecurityService_UpdateRole_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["role"]
+	val, ok = pathParams["role_name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "role")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "role_name")
 	}
 
-	protoReq.Role, err = runtime.String(val)
+	protoReq.RoleName, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "role", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "role_name", err)
 	}
 
 	msg, err := server.UpdateRole(ctx, &protoReq)
@@ -592,7 +592,7 @@ func RegisterSecurityServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole", runtime.WithHTTPPathPattern("/v1alpha1/security/roles/{role}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole", runtime.WithHTTPPathPattern("/v1alpha1/security/roles/{role_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -605,7 +605,7 @@ func RegisterSecurityServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_UpdateRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -847,7 +847,7 @@ func RegisterSecurityServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole", runtime.WithHTTPPathPattern("/v1alpha1/security/roles/{role}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole", runtime.WithHTTPPathPattern("/v1alpha1/security/roles/{role_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -859,7 +859,7 @@ func RegisterSecurityServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_UpdateRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_UpdateRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -994,6 +994,15 @@ func (m response_SecurityService_GetRole_0) XXX_ResponseBody() interface{} {
 	return response.Role
 }
 
+type response_SecurityService_UpdateRole_0 struct {
+	proto.Message
+}
+
+func (m response_SecurityService_UpdateRole_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*UpdateRoleResponse)
+	return response.Role
+}
+
 var (
 	pattern_SecurityService_ListRoles_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha1", "security", "roles"}, ""))
 
@@ -1001,7 +1010,7 @@ var (
 
 	pattern_SecurityService_GetRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "security", "roles", "role"}, ""))
 
-	pattern_SecurityService_UpdateRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "security", "roles", "role"}, ""))
+	pattern_SecurityService_UpdateRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "security", "roles", "role_name"}, ""))
 
 	pattern_SecurityService_DeleteRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1alpha1", "security", "roles", "role"}, ""))
 

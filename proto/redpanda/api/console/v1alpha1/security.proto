@@ -19,7 +19,17 @@ message Security {
 // Role defines a role in the system.
 message Role {
   // The name of the role.
-  string name = 1;
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The role name.",
+      example: "\"admin\""
+    }
+  ];
 }
 
 // ListRolesRequest is the request for ListRoles.
@@ -78,18 +88,8 @@ message ListRolesResponse {
 
 // CreateRoleRequest is the request for CreateRole.
 message CreateRoleRequest {
-  // The role name.
-  string role = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The role name.",
-      example: "\"admin\""
-    }
-  ];
+  // The role to create.
+  Role role = 1;
 }
 
 // CreateRoleResponse is the response for CreateRole.
@@ -126,7 +126,7 @@ message GetRoleResponse {
 // UpdateRoleRequest is the request for UpdateRole.
 message UpdateRoleRequest {
   // The role name.
-  string role = 1 [
+  string role_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
@@ -138,14 +138,8 @@ message UpdateRoleRequest {
     }
   ];
 
-  // The new role name.
-  string new_name = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
-  ];
+  // The updated role.
+  Role role = 2;
 }
 
 // UpdateRoleResponse is the response for UpdateRole.
@@ -460,7 +454,7 @@ service SecurityService {
       responses: {
         key: "409"
         value: {
-          description: "Confict"
+          description: "Conflict"
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
@@ -519,8 +513,9 @@ service SecurityService {
 
   rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {
     option (google.api.http) = {
-      put: "/v1alpha1/security/roles/{role}"
-      body: "*"
+      put: "/v1alpha1/security/roles/{role_name}"
+      body: "role"
+      response_body: "role"
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -574,7 +569,7 @@ service SecurityService {
       responses: {
         key: "409"
         value: {
-          description: "Confict"
+          description: "Conflict"
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
@@ -724,8 +719,8 @@ service SecurityService {
   rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse) {
     option (google.api.http) = {get: "/v1alpha1/security/users/roles"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List all roles assigned to the authonticated user"
-      description: "List all roles assigned to the authonticated user based on optional filter."
+      summary: "List all roles assigned to the authenticated user"
+      description: "List all roles assigned to the authenticated user based on optional filter."
       responses: {
         key: "200"
         value: {

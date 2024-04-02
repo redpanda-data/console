@@ -290,11 +290,11 @@ export class ListRolesResponse extends Message<ListRolesResponse> {
  */
 export class CreateRoleRequest extends Message<CreateRoleRequest> {
   /**
-   * The role name.
+   * The role to create.
    *
-   * @generated from field: string role = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
    */
-  role = "";
+  role?: Role;
 
   constructor(data?: PartialMessage<CreateRoleRequest>) {
     super();
@@ -304,7 +304,7 @@ export class CreateRoleRequest extends Message<CreateRoleRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.CreateRoleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "role", kind: "message", T: Role },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRoleRequest {
@@ -464,16 +464,16 @@ export class UpdateRoleRequest extends Message<UpdateRoleRequest> {
   /**
    * The role name.
    *
-   * @generated from field: string role = 1;
+   * @generated from field: string role_name = 1;
    */
-  role = "";
+  roleName = "";
 
   /**
-   * The new role name.
+   * The updated role.
    *
-   * @generated from field: string new_name = 2;
+   * @generated from field: redpanda.api.console.v1alpha1.Role role = 2;
    */
-  newName = "";
+  role?: Role;
 
   constructor(data?: PartialMessage<UpdateRoleRequest>) {
     super();
@@ -483,8 +483,8 @@ export class UpdateRoleRequest extends Message<UpdateRoleRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.UpdateRoleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "role", kind: "message", T: Role },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRoleRequest {
