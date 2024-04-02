@@ -51,7 +51,7 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(ctx context.Context, in *UpdateRoleMembershipRequest, opts ...grpc.CallOption) (*UpdateRoleMembershipResponse, error)
-	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
+	// ListUserRoles lists all the authenticated user's roles based on optional filter.
 	ListUserRoles(ctx context.Context, in *ListUserRolesRequest, opts ...grpc.CallOption) (*ListUserRolesResponse, error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(ctx context.Context, in *ListRolesWithMembersRequest, opts ...grpc.CallOption) (*ListRolesWithMembersResponse, error)
@@ -166,7 +166,7 @@ type SecurityServiceServer interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error)
-	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
+	// ListUserRoles lists all the authenticated user's roles based on optional filter.
 	ListUserRoles(context.Context, *ListUserRolesRequest) (*ListUserRolesResponse, error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *ListRolesWithMembersRequest) (*ListRolesWithMembersResponse, error)

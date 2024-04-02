@@ -555,7 +555,7 @@ func RegisterSecurityServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_CreateRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -580,7 +580,7 @@ func RegisterSecurityServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_GetRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -815,7 +815,7 @@ func RegisterSecurityServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_CreateRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_CreateRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -837,7 +837,7 @@ func RegisterSecurityServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_SecurityService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SecurityService_GetRole_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecurityService_GetRole_0{resp}, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -974,6 +974,24 @@ func RegisterSecurityServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 	})
 
 	return nil
+}
+
+type response_SecurityService_CreateRole_0 struct {
+	proto.Message
+}
+
+func (m response_SecurityService_CreateRole_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*CreateRoleResponse)
+	return response.Role
+}
+
+type response_SecurityService_GetRole_0 struct {
+	proto.Message
+}
+
+func (m response_SecurityService_GetRole_0) XXX_ResponseBody() interface{} {
+	response := m.Message.(*GetRoleResponse)
+	return response.Role
 }
 
 var (

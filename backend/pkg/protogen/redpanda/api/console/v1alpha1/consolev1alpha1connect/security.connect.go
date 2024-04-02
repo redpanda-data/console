@@ -95,7 +95,7 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error)
-	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
+	// ListUserRoles lists all the authenticated user's roles based on optional filter.
 	ListUserRoles(context.Context, *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error)
@@ -246,7 +246,7 @@ type SecurityServiceHandler interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error)
-	// ListUserRoles lists all the uthonticated user's roles based on optional filter.
+	// ListUserRoles lists all the authenticated user's roles based on optional filter.
 	ListUserRoles(context.Context, *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error)

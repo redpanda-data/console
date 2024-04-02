@@ -90,7 +90,7 @@ export const SecurityService = {
       kind: MethodKind.Unary,
     },
     /**
-     * ListUserRoles lists all the uthonticated user's roles based on optional filter.
+     * ListUserRoles lists all the authenticated user's roles based on optional filter.
      *
      * @generated from rpc redpanda.api.console.v1alpha1.SecurityService.ListUserRoles
      */
