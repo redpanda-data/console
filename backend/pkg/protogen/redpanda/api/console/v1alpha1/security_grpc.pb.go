@@ -27,7 +27,6 @@ const (
 	SecurityService_DeleteRole_FullMethodName           = "/redpanda.api.console.v1alpha1.SecurityService/DeleteRole"
 	SecurityService_ListRoleMembers_FullMethodName      = "/redpanda.api.console.v1alpha1.SecurityService/ListRoleMembers"
 	SecurityService_UpdateRoleMembership_FullMethodName = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRoleMembership"
-	SecurityService_ListUserRoles_FullMethodName        = "/redpanda.api.console.v1alpha1.SecurityService/ListUserRoles"
 	SecurityService_ListRolesWithMembers_FullMethodName = "/redpanda.api.console.v1alpha1.SecurityService/ListRolesWithMembers"
 )
 
@@ -51,8 +50,6 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(ctx context.Context, in *UpdateRoleMembershipRequest, opts ...grpc.CallOption) (*UpdateRoleMembershipResponse, error)
-	// ListUserRoles lists all the authenticated user's roles based on optional filter.
-	ListUserRoles(ctx context.Context, in *ListUserRolesRequest, opts ...grpc.CallOption) (*ListUserRolesResponse, error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(ctx context.Context, in *ListRolesWithMembersRequest, opts ...grpc.CallOption) (*ListRolesWithMembersResponse, error)
 }
@@ -128,15 +125,6 @@ func (c *securityServiceClient) UpdateRoleMembership(ctx context.Context, in *Up
 	return out, nil
 }
 
-func (c *securityServiceClient) ListUserRoles(ctx context.Context, in *ListUserRolesRequest, opts ...grpc.CallOption) (*ListUserRolesResponse, error) {
-	out := new(ListUserRolesResponse)
-	err := c.cc.Invoke(ctx, SecurityService_ListUserRoles_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *securityServiceClient) ListRolesWithMembers(ctx context.Context, in *ListRolesWithMembersRequest, opts ...grpc.CallOption) (*ListRolesWithMembersResponse, error) {
 	out := new(ListRolesWithMembersResponse)
 	err := c.cc.Invoke(ctx, SecurityService_ListRolesWithMembers_FullMethodName, in, out, opts...)
@@ -166,8 +154,6 @@ type SecurityServiceServer interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error)
-	// ListUserRoles lists all the authenticated user's roles based on optional filter.
-	ListUserRoles(context.Context, *ListUserRolesRequest) (*ListUserRolesResponse, error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *ListRolesWithMembersRequest) (*ListRolesWithMembersResponse, error)
 	mustEmbedUnimplementedSecurityServiceServer()
@@ -197,9 +183,6 @@ func (UnimplementedSecurityServiceServer) ListRoleMembers(context.Context, *List
 }
 func (UnimplementedSecurityServiceServer) UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRoleMembership not implemented")
-}
-func (UnimplementedSecurityServiceServer) ListUserRoles(context.Context, *ListUserRolesRequest) (*ListUserRolesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListUserRoles not implemented")
 }
 func (UnimplementedSecurityServiceServer) ListRolesWithMembers(context.Context, *ListRolesWithMembersRequest) (*ListRolesWithMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRolesWithMembers not implemented")
@@ -343,24 +326,6 @@ func _SecurityService_UpdateRoleMembership_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecurityService_ListUserRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListUserRolesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SecurityServiceServer).ListUserRoles(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SecurityService_ListUserRoles_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecurityServiceServer).ListUserRoles(ctx, req.(*ListUserRolesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SecurityService_ListRolesWithMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRolesWithMembersRequest)
 	if err := dec(in); err != nil {
@@ -413,10 +378,6 @@ var SecurityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRoleMembership",
 			Handler:    _SecurityService_UpdateRoleMembership_Handler,
-		},
-		{
-			MethodName: "ListUserRoles",
-			Handler:    _SecurityService_ListUserRoles_Handler,
 		},
 		{
 			MethodName: "ListRolesWithMembers",

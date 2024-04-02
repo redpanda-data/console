@@ -55,9 +55,6 @@ const (
 	// SecurityServiceUpdateRoleMembershipProcedure is the fully-qualified name of the SecurityService's
 	// UpdateRoleMembership RPC.
 	SecurityServiceUpdateRoleMembershipProcedure = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRoleMembership"
-	// SecurityServiceListUserRolesProcedure is the fully-qualified name of the SecurityService's
-	// ListUserRoles RPC.
-	SecurityServiceListUserRolesProcedure = "/redpanda.api.console.v1alpha1.SecurityService/ListUserRoles"
 	// SecurityServiceListRolesWithMembersProcedure is the fully-qualified name of the SecurityService's
 	// ListRolesWithMembers RPC.
 	SecurityServiceListRolesWithMembersProcedure = "/redpanda.api.console.v1alpha1.SecurityService/ListRolesWithMembers"
@@ -73,7 +70,6 @@ var (
 	securityServiceDeleteRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("DeleteRole")
 	securityServiceListRoleMembersMethodDescriptor      = securityServiceServiceDescriptor.Methods().ByName("ListRoleMembers")
 	securityServiceUpdateRoleMembershipMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("UpdateRoleMembership")
-	securityServiceListUserRolesMethodDescriptor        = securityServiceServiceDescriptor.Methods().ByName("ListUserRoles")
 	securityServiceListRolesWithMembersMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("ListRolesWithMembers")
 )
 
@@ -95,8 +91,6 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error)
-	// ListUserRoles lists all the authenticated user's roles based on optional filter.
-	ListUserRoles(context.Context, *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error)
 }
@@ -154,12 +148,6 @@ func NewSecurityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(securityServiceUpdateRoleMembershipMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listUserRoles: connect.NewClient[v1alpha1.ListUserRolesRequest, v1alpha1.ListUserRolesResponse](
-			httpClient,
-			baseURL+SecurityServiceListUserRolesProcedure,
-			connect.WithSchema(securityServiceListUserRolesMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		listRolesWithMembers: connect.NewClient[v1alpha1.ListRolesWithMembersRequest, v1alpha1.ListRolesWithMembersResponse](
 			httpClient,
 			baseURL+SecurityServiceListRolesWithMembersProcedure,
@@ -178,7 +166,6 @@ type securityServiceClient struct {
 	deleteRole           *connect.Client[v1alpha1.DeleteRoleRequest, v1alpha1.DeleteRoleResponse]
 	listRoleMembers      *connect.Client[v1alpha1.ListRoleMembersRequest, v1alpha1.ListRoleMembersResponse]
 	updateRoleMembership *connect.Client[v1alpha1.UpdateRoleMembershipRequest, v1alpha1.UpdateRoleMembershipResponse]
-	listUserRoles        *connect.Client[v1alpha1.ListUserRolesRequest, v1alpha1.ListUserRolesResponse]
 	listRolesWithMembers *connect.Client[v1alpha1.ListRolesWithMembersRequest, v1alpha1.ListRolesWithMembersResponse]
 }
 
@@ -217,11 +204,6 @@ func (c *securityServiceClient) UpdateRoleMembership(ctx context.Context, req *c
 	return c.updateRoleMembership.CallUnary(ctx, req)
 }
 
-// ListUserRoles calls redpanda.api.console.v1alpha1.SecurityService.ListUserRoles.
-func (c *securityServiceClient) ListUserRoles(ctx context.Context, req *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error) {
-	return c.listUserRoles.CallUnary(ctx, req)
-}
-
 // ListRolesWithMembers calls redpanda.api.console.v1alpha1.SecurityService.ListRolesWithMembers.
 func (c *securityServiceClient) ListRolesWithMembers(ctx context.Context, req *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error) {
 	return c.listRolesWithMembers.CallUnary(ctx, req)
@@ -246,8 +228,6 @@ type SecurityServiceHandler interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error)
-	// ListUserRoles lists all the authenticated user's roles based on optional filter.
-	ListUserRoles(context.Context, *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error)
 	// ListRolesWithMembers lists all the roles and their members based on optional filter.
 	ListRolesWithMembers(context.Context, *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error)
 }
@@ -300,12 +280,6 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(securityServiceUpdateRoleMembershipMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	securityServiceListUserRolesHandler := connect.NewUnaryHandler(
-		SecurityServiceListUserRolesProcedure,
-		svc.ListUserRoles,
-		connect.WithSchema(securityServiceListUserRolesMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	securityServiceListRolesWithMembersHandler := connect.NewUnaryHandler(
 		SecurityServiceListRolesWithMembersProcedure,
 		svc.ListRolesWithMembers,
@@ -328,8 +302,6 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 			securityServiceListRoleMembersHandler.ServeHTTP(w, r)
 		case SecurityServiceUpdateRoleMembershipProcedure:
 			securityServiceUpdateRoleMembershipHandler.ServeHTTP(w, r)
-		case SecurityServiceListUserRolesProcedure:
-			securityServiceListUserRolesHandler.ServeHTTP(w, r)
 		case SecurityServiceListRolesWithMembersProcedure:
 			securityServiceListRolesWithMembersHandler.ServeHTTP(w, r)
 		default:
@@ -367,10 +339,6 @@ func (UnimplementedSecurityServiceHandler) ListRoleMembers(context.Context, *con
 
 func (UnimplementedSecurityServiceHandler) UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.UpdateRoleMembership is not implemented"))
-}
-
-func (UnimplementedSecurityServiceHandler) ListUserRoles(context.Context, *connect.Request[v1alpha1.ListUserRolesRequest]) (*connect.Response[v1alpha1.ListUserRolesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.ListUserRoles is not implemented"))
 }
 
 func (UnimplementedSecurityServiceHandler) ListRolesWithMembers(context.Context, *connect.Request[v1alpha1.ListRolesWithMembersRequest]) (*connect.Response[v1alpha1.ListRolesWithMembersResponse], error) {

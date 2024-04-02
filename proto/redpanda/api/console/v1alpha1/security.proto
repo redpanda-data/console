@@ -229,46 +229,6 @@ message UpdateRoleMembershipResponse {
   repeated RoleMembership removed = 3;
 }
 
-// ListUserRolesRequest is the request for ListUserRoles.
-message ListUserRolesRequest {
-  // Filter options.
-  message Filter {
-    // Filter results to only roles named with the prefix.
-    string name_prefix = 1 [
-      (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
-    ];
-
-    // Filter results to only roles with names which contain the string.
-    string name_contains = 2 [
-      (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
-    ];
-  }
-
-  // Optional filter.
-  optional Filter filter = 1;
-
-  // Page size.
-  int32 page_size = 2 [(buf.validate.field).int32 = {
-    gte: -1,
-    lte: 1000
-  }];
-
-  // Value of the next_page_token field returned by the previous response.
-  // If not provided, the system assumes the first page is requested.
-  string page_token = 3;
-}
-
-// ListUserRolesResponse is the response for ListUserRoles.
-message ListUserRolesResponse {
-  // The roles in the system.
-  repeated Role roles = 1;
-
-  // Token to retrieve the next page.
-  string next_page_token = 2;
-}
-
 // ListRolesWithMembersRequest is the request for ListRolesWithMembers.
 message ListRolesWithMembersRequest {
   // Filter options.
@@ -341,9 +301,6 @@ service SecurityService {
   // Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
   // and the rest of the members will be added and removed and reported.
   rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {}
-
-  // ListUserRoles lists all the authenticated user's roles based on optional filter.
-  rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse) {}
 
   // ListRolesWithMembers lists all the roles and their members based on optional filter.
   rpc ListRolesWithMembers(ListRolesWithMembersRequest) returns (ListRolesWithMembersResponse) {}
