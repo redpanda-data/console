@@ -7,69 +7,6 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.Security
- */
-export class Security extends Message<Security> {
-  constructor(data?: PartialMessage<Security>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.Security";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Security {
-    return new Security().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Security {
-    return new Security().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Security {
-    return new Security().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Security | PlainMessage<Security> | undefined, b: Security | PlainMessage<Security> | undefined): boolean {
-    return proto3.util.equals(Security, a, b);
-  }
-}
-
-/**
- * @generated from enum redpanda.api.console.v1alpha1.Security.PrincipalType
- */
-export enum Security_PrincipalType {
-  /**
-   * @generated from enum value: PRINCIPAL_TYPE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: PRINCIPAL_TYPE_USER = 1;
-   */
-  USER = 1,
-
-  /**
-   * @generated from enum value: PRINCIPAL_TYPE_GROUP = 2;
-   */
-  GROUP = 2,
-
-  /**
-   * @generated from enum value: PRINCIPAL_TYPE_REDPANDA_ROLE = 3;
-   */
-  REDPANDA_ROLE = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(Security_PrincipalType)
-proto3.util.setEnumType(Security_PrincipalType, "redpanda.api.console.v1alpha1.Security.PrincipalType", [
-  { no: 0, name: "PRINCIPAL_TYPE_UNSPECIFIED" },
-  { no: 1, name: "PRINCIPAL_TYPE_USER" },
-  { no: 2, name: "PRINCIPAL_TYPE_GROUP" },
-  { no: 3, name: "PRINCIPAL_TYPE_REDPANDA_ROLE" },
-]);
-
-/**
  * Role defines a role in the system.
  *
  * @generated from message redpanda.api.console.v1alpha1.Role
@@ -195,14 +132,6 @@ export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
    */
   principal?: string;
 
-  /**
-   * Return only roles of this principal type.
-   * Qualifies parameter principal has no effect on its own.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.Security.PrincipalType principal_type = 4;
-   */
-  principalType?: Security_PrincipalType;
-
   constructor(data?: PartialMessage<ListRolesRequest_Filter>) {
     super();
     proto3.util.initPartial(data, this);
@@ -214,7 +143,6 @@ export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
     { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "principal_type", kind: "enum", T: proto3.getEnumType(Security_PrincipalType), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest_Filter {
@@ -804,13 +732,6 @@ export class RoleMembership extends Message<RoleMembership> {
    */
   name = "";
 
-  /**
-   * The principal type.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Security.PrincipalType principal_type = 2;
-   */
-  principalType = Security_PrincipalType.UNSPECIFIED;
-
   constructor(data?: PartialMessage<RoleMembership>) {
     super();
     proto3.util.initPartial(data, this);
@@ -820,7 +741,6 @@ export class RoleMembership extends Message<RoleMembership> {
   static readonly typeName = "redpanda.api.console.v1alpha1.RoleMembership";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "principal_type", kind: "enum", T: proto3.getEnumType(Security_PrincipalType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RoleMembership {

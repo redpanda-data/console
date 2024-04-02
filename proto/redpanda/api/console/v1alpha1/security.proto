@@ -4,15 +4,6 @@ package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
 
-message Security {
-  enum PrincipalType {
-    PRINCIPAL_TYPE_UNSPECIFIED = 0;
-    PRINCIPAL_TYPE_USER = 1;
-    PRINCIPAL_TYPE_GROUP = 2;
-    PRINCIPAL_TYPE_REDPANDA_ROLE = 3;
-  }
-}
-
 // Role defines a role in the system.
 message Role {
   // The name of the role.
@@ -42,10 +33,6 @@ message ListRolesRequest {
 
     // Return only roles assigned to this principal.
     optional string principal = 3 [(buf.validate.field).string.max_len = 128];
-
-    // Return only roles of this principal type.
-    // Qualifies parameter principal has no effect on its own.
-    optional Security.PrincipalType principal_type = 4;
   }
 
   // Optional filter.
@@ -186,9 +173,6 @@ message ListRoleMembersResponse {
 message RoleMembership {
   // The name of the principal assigned to the role.
   string name = 1;
-
-  // The principal type.
-  Security.PrincipalType principal_type = 2;
 }
 
 // UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
