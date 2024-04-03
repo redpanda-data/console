@@ -42,6 +42,11 @@ import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaCreatePage, SchemaAddVersionPage } from './pages/schemas/Schema.Create';
 import { TopicProducePage } from './pages/topics/Topic.Produce';
 import UserCreatePage from './pages/acls/UserCreate';
+import UserDetailsPage from './pages/acls/UserDetails';
+import UserEditPage from './pages/acls/UserEdit';
+import RoleCreatePage from './pages/acls/RoleCreate';
+import RoleDetailsPage from './pages/acls/RoleDetails';
+import RoleEditPage from './pages/acls/RoleEditPage';
 
 //
 //	Route Types
@@ -250,9 +255,13 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
 
     MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
+    MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
+    MakeRoute<{ userName: string }>('/security/users/:userName/edit', UserEditPage, 'Security'),
 
-    // MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', xxxxxx, 'Security'),
-    // MakeRoute<{}>('/security/roles/create', xxxxxx, 'Security'),
+    MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
+    MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),
+    MakeRoute<{ roleName: string }>('/security/roles/:roleName/edit', RoleEditPage, 'Security'),
+
 
     MakeRoute<{}>('/quotas', QuotasList, 'Quotas', ScaleIcon, true,
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
