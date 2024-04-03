@@ -213,55 +213,6 @@ message UpdateRoleMembershipResponse {
   repeated RoleMembership removed = 3;
 }
 
-// ListRolesWithMembersRequest is the request for ListRolesWithMembers.
-message ListRolesWithMembersRequest {
-  // Filter options.
-  message Filter {
-    // Filter results only roles named with the prefix.
-    string name_prefix = 1 [
-      (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
-    ];
-
-    // Filter results to only roles with names which contain the string.
-    string name_contains = 2 [
-      (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
-    ];
-  }
-
-  // Optional filter.
-  optional Filter filter = 1;
-
-  // Page size.
-  int32 page_size = 2 [(buf.validate.field).int32 = {
-    gte: -1,
-    lte: 1000
-  }];
-
-  // Value of the next_page_token field returned by the previous response.
-  // If not provided, the system assumes the first page is requested.
-  string page_token = 3;
-}
-
-// RoleWithMembers is role data with members assigned to the role.
-message RoleWithMembers {
-  // The role.
-  Role role = 1;
-
-  // Members assigned to the role.
-  repeated RoleMembership members = 2;
-}
-
-// ListRolesWithMembersResponse is the response for ListRolesWithMembers.
-message ListRolesWithMembersResponse {
-  // The roles in the system.
-  repeated RoleWithMembers roles = 1;
-
-  // Token to retrieve the next page.
-  string next_page_token = 2;
-}
-
 service SecurityService {
   // ListRoles lists all the roles based on optional filter.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {}
@@ -285,7 +236,4 @@ service SecurityService {
   // Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
   // and the rest of the members will be added and removed and reported.
   rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {}
-
-  // ListRolesWithMembers lists all the roles and their members based on optional filter.
-  rpc ListRolesWithMembers(ListRolesWithMembersRequest) returns (ListRolesWithMembersResponse) {}
 }

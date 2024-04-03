@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse, GetRoleRequest, GetRoleResponse, ListRoleMembersRequest, ListRoleMembersResponse, ListRolesRequest, ListRolesResponse, ListRolesWithMembersRequest, ListRolesWithMembersResponse, UpdateRoleMembershipRequest, UpdateRoleMembershipResponse, UpdateRoleRequest, UpdateRoleResponse } from "./security_pb";
+import { CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse, GetRoleRequest, GetRoleResponse, ListRoleMembersRequest, ListRoleMembersResponse, ListRolesRequest, ListRolesResponse, UpdateRoleMembershipRequest, UpdateRoleMembershipResponse, UpdateRoleRequest, UpdateRoleResponse } from "./security_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -87,17 +87,6 @@ export const SecurityService = {
       name: "UpdateRoleMembership",
       I: UpdateRoleMembershipRequest,
       O: UpdateRoleMembershipResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * ListRolesWithMembers lists all the roles and their members based on optional filter.
-     *
-     * @generated from rpc redpanda.api.console.v1alpha1.SecurityService.ListRolesWithMembers
-     */
-    listRolesWithMembers: {
-      name: "ListRolesWithMembers",
-      I: ListRolesWithMembersRequest,
-      O: ListRolesWithMembersResponse,
       kind: MethodKind.Unary,
     },
   }
