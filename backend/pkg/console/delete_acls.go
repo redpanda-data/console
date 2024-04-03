@@ -15,7 +15,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -50,7 +49,7 @@ func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestF
 		DeletedACLs:   0,
 	}
 	for _, aclRes := range res.Results {
-		err = kerr.ErrorForCode(aclRes.ErrorCode)
+		err := newKafkaErrorWithDynamicMessage(aclRes.ErrorCode, aclRes.ErrorMessage)
 		if err != nil {
 			return DeleteACLsResponse{}, &rest.Error{
 				Err:          err,
@@ -63,7 +62,7 @@ func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestF
 
 		for _, item := range aclRes.MatchingACLs {
 			deleteAclsRes.MatchedACLs++
-			err = kerr.ErrorForCode(item.ErrorCode)
+			err := newKafkaErrorWithDynamicMessage(item.ErrorCode, item.ErrorMessage)
 			if err != nil {
 				deleteAclsRes.ErrorMessages = append(deleteAclsRes.ErrorMessages, err.Error())
 				continue

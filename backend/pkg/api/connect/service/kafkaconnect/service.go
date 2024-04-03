@@ -39,6 +39,7 @@ type Service struct {
 	logger     *zap.Logger
 	connectSvc *kafkaconnect.Service
 	mapper     *mapper
+	defaulter  defaulter
 }
 
 // NewService creates a new user service handler.
@@ -51,11 +52,14 @@ func NewService(cfg *config.Config,
 		logger:     logger,
 		connectSvc: kafkaConnectSrv,
 		mapper:     &mapper{},
+		defaulter:  defaulter{},
 	}
 }
 
 // ListConnectors implements the handler for the list connectors operation.
 func (s *Service) ListConnectors(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorsRequest]) (*connect.Response[v1alpha1.ListConnectorsResponse], error) {
+	s.defaulter.applyListConnectorsRequest(req.Msg)
+
 	response, err := s.connectSvc.GetClusterConnectors(ctx, req.Msg.ClusterName)
 	if err != nil {
 		return nil, s.matchError(err)

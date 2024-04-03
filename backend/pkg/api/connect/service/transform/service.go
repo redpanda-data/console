@@ -40,6 +40,7 @@ type Service struct {
 	validator   *protovalidate.Validator
 	mapper      mapper
 	errorWriter *connect.ErrorWriter
+	defaulter   defaulter
 }
 
 // NewService creates a new transform service handler.
@@ -55,6 +56,7 @@ func NewService(cfg *config.Config,
 		validator:   protoValidator,
 		mapper:      mapper{},
 		errorWriter: connect.NewErrorWriter(),
+		defaulter:   defaulter{},
 	}
 }
 
@@ -74,6 +76,8 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
+
+	s.defaulter.applyListTransformsRequest(c.Msg)
 
 	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
 	if err != nil {

@@ -15,7 +15,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
@@ -47,8 +46,8 @@ func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 	patchedConfigs := make([]IncrementalAlterConfigsResourceResponse, len(configRes.Resources))
 	for i, res := range configRes.Resources {
 		errMessage := ""
-		err := kerr.ErrorForCode(res.ErrorCode)
-		if err != nil {
+		kafkaErr := newKafkaErrorWithDynamicMessage(res.ErrorCode, res.ErrorMessage)
+		if kafkaErr != nil {
 			errMessage = err.Error()
 		}
 		patchedConfigs[i] = IncrementalAlterConfigsResourceResponse{

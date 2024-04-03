@@ -16,7 +16,6 @@ import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../pr
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
-import { isEmbedded } from '../../../config';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -260,9 +259,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         }
     };
 
-    const filteredEncodingOptions = isEmbedded()
-        ? encodingOptions.filter(x => x.value != PayloadEncoding.AVRO)
-        : encodingOptions;
+    const filteredEncodingOptions = encodingOptions.filter(x => x.value != PayloadEncoding.AVRO);
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -413,7 +410,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     </Label>}
 
                     {keyPayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
-                        <Box>
+                        <Box data-testid="produce-key-editor">
                             {isKeyExpanded
                                 ? < Controller
                                     control={control}
@@ -531,22 +528,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         </Label>}
 
                         {valuePayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
-                            <Controller
-                                control={control}
-                                name="value.data"
-                                render={({
-                                    field: { onChange, value },
-                                }) => (
-                                    <KowlEditor
-                                        data-testid="produce-message-value"
-                                        onMount={setTheme}
-                                        height={300}
-                                        value={value}
-                                        onChange={onChange}
-                                        language={encodingToLanguage(valuePayloadOptions?.encoding)}
-                                    />
-                                )}
-                            />
+                            <Box data-testid="produce-value-editor">
+                                <Controller
+                                    control={control}
+                                    name="value.data"
+                                    render={({
+                                                 field: {onChange, value},
+                                             }) => (
+                                        <KowlEditor
+                                            data-testid="produce-message-value"
+                                            onMount={setTheme}
+                                            height={300}
+                                            value={value}
+                                            onChange={onChange}
+                                            language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                                        />
+                                    )}
+                                />
+                            </Box>
                         </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
                         <input {...register('value.data')} data-testid="valueData" />

@@ -478,7 +478,7 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
   clusterName = "";
 
   /**
-   * The id of the secret to retrieve.
+   * The id of the secret to update.
    *
    * @generated from field: string id = 2;
    */
