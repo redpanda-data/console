@@ -32,7 +32,7 @@ message ListRolesRequest {
     ];
 
     // Return only roles assigned to this principal.
-    optional string principal = 3 [(buf.validate.field).string.max_len = 128];
+    string principal = 3 [(buf.validate.field).string.max_len = 128];
   }
 
   // Optional filter.

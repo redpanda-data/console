@@ -128,9 +128,9 @@ export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
   /**
    * Return only roles assigned to this principal.
    *
-   * @generated from field: optional string principal = 3;
+   * @generated from field: string principal = 3;
    */
-  principal?: string;
+  principal = "";
 
   constructor(data?: PartialMessage<ListRolesRequest_Filter>) {
     super();
@@ -142,7 +142,7 @@ export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest_Filter {
