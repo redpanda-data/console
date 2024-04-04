@@ -113,7 +113,7 @@ message UpdateRoleResponse {
 // DeleteRoleRequest is the request for DeleteRole.
 message DeleteRoleRequest {
   // The role name.
-  string role = 1 [
+  string role_name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
@@ -131,15 +131,12 @@ message DeleteRoleResponse {}
 message ListRoleMembersRequest {
   // Filter options.
   message Filter {
-    // Filter results to only members named with the prefix.
-    string name_prefix = 1 [(buf.validate.field).string.max_len = 128];
-
     // Filter results to only members with names which contain the string.
-    string name_contains = 2 [(buf.validate.field).string.max_len = 128];
+    string name_contains = 1 [(buf.validate.field).string.max_len = 128];
   }
 
   // The role name.
-  string role = 1 [
+  string role_name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
@@ -172,13 +169,13 @@ message ListRoleMembersResponse {
 // RoleMembership is the role membership.
 message RoleMembership {
   // The name of the principal assigned to the role.
-  string name = 1;
+  string principal = 1;
 }
 
 // UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
 message UpdateRoleMembershipRequest {
   // The role name.
-  string role = 1 [
+  string role_name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
@@ -199,7 +196,7 @@ message UpdateRoleMembershipRequest {
 // UpdateRoleMembershipResponse is the response for UpdateRoleMembership.
 message UpdateRoleMembershipResponse {
   // The role name.
-  string role = 1 [
+  string role_name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
