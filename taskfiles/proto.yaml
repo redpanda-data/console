@@ -52,7 +52,7 @@ tasks:
       - task: lint
       - task: format
       - |
-        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common
+        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml
       - for: { var: BUF_INPUTS }
         cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - task: :backend:fmt
