@@ -26,7 +26,7 @@ import SchemaDetailsView from './pages/schemas/Schema.Details';
 import AclList, { AclListTab } from './pages/acls/Acl.List';
 import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
-import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
+import { Feature, FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
 import { UserPermissions } from '../state/restInterfaces';
 import KafkaConnectOverview from './pages/connect/Overview';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
@@ -187,7 +187,7 @@ function routeVisibility(
     requiredAppFeatures?: AppFeature[],
 ): () => MenuItemState {
     return () => {
-        const v = typeof visible === 'boolean'
+        let v = typeof visible === 'boolean'
             ? visible
             : visible();
 
@@ -195,7 +195,11 @@ function routeVisibility(
         if (requiredFeatures)
             for (const f of requiredFeatures) {
                 if (!isSupported(f)) {
-                    disabledReasons.push(DisabledReasons.notSupported);
+                    if (shouldHideIfNotSupported(f)) {
+                        v = false
+                    } else {
+                        disabledReasons.push(DisabledReasons.notSupported);
+                    }
                     break;
                 }
             }
