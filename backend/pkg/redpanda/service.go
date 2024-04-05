@@ -208,3 +208,85 @@ func (s *Service) DeployWasmTransform(ctx context.Context, t adminapi.TransformM
 func (s *Service) DeleteWasmTransform(ctx context.Context, name string) error {
 	return s.adminClient.DeleteWasmTransform(ctx, name)
 }
+
+// Custom implementation of RBAC Admin API.
+
+// Role is a representation of a Role as returned by the Admin API.
+type Role struct {
+	Name string `json:"name" yaml:"name"`
+}
+
+// RoleMember is a representation of a principal.
+type RoleMember struct {
+	Name          string `json:"name" yaml:"name"`
+	PrincipalType string `json:"principal_type" yaml:"principal_type"`
+}
+
+// RolesResponse represent the response from Roles method.
+type RolesResponse struct {
+	Roles []Role `json:"roles" yaml:"roles"`
+}
+
+// CreateRole is both the request and response from the CreateRole method.
+type CreateRole struct {
+	RoleName string `json:"role" yaml:"role"`
+}
+
+// PatchRoleResponse is the response of the PatchRole method.
+type PatchRoleResponse struct {
+	RoleName string       `json:"role" yaml:"role"`
+	Added    []RoleMember `json:"added" yaml:"added"`
+	Removed  []RoleMember `json:"removed" yaml:"removed"`
+}
+
+type patchRoleRequest struct {
+	Add    []RoleMember `json:"add,omitempty"`
+	Remove []RoleMember `json:"remove,omitempty"`
+}
+
+// RoleMemberResponse is the response of the RoleMembers method.
+type RoleMemberResponse struct {
+	Members []RoleMember `json:"members"`
+}
+
+// ListRoles lists all roles in the Redpanda cluster.
+func (s *Service) ListRoles(ctx context.Context, prefix, principal, principalType string) (RolesResponse, error) {
+	// return s.adminClient.Roles(ctx, prefix, principal, principalType)
+	return RolesResponse{}, nil
+}
+
+// CreateRole creates a new role in the Redpanda cluster.
+func (s *Service) CreateRole(ctx context.Context, name string) (CreateRole, error) {
+	// return s.adminClient.CreateRole(ctx, name)
+	return CreateRole{}, nil
+}
+
+// DeleteRole deletes a Role in Redpanda with the given name. If deleteACL is
+// true, Redpanda will delete ACLs bound to the role.
+func (s *Service) DeleteRole(ctx context.Context, name string, deleteACL bool) error {
+	// return s.adminClient.DeleteRole(ctx, name, deleteACL)
+	return nil
+}
+
+// AssignRole assign the role 'roleName' to the passed members.
+func (s *Service) AssignRole(ctx context.Context, roleName string, add []RoleMember) (PatchRoleResponse, error) {
+	// return s.adminClient.AssignRole(ctx, roleName, add)
+	return PatchRoleResponse{}, nil
+}
+
+// UnassignRole unassigns the role 'roleName' from the passed members.
+func (s *Service) UnassignRole(ctx context.Context, roleName string, remove []RoleMember) (PatchRoleResponse, error) {
+	// return s.adminClient.UnassignRole(ctx, roleName, remove)
+	return PatchRoleResponse{}, nil
+}
+
+// RoleMembers returns the list of RoleMembers of a given role.
+func (s *Service) RoleMembers(ctx context.Context, roleName string) (RoleMemberResponse, error) {
+	// return s.adminClient.RoleMembers(ctx, roleName)
+	return RoleMemberResponse{}, nil
+}
+
+func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []RoleMember) (PatchRoleResponse, error) {
+	// return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove)
+	return PatchRoleResponse{}, nil
+}

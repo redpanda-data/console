@@ -34,6 +34,7 @@ import (
 	apiaclsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl"
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apikafkaconnectsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect"
+	securitysvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/security"
 	topicsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic"
 	transformsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/transform"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user"
@@ -109,6 +110,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	securitySvc := securitysvc.NewService(api.Logger.Named("security_service"), api.RedpandaSvc, api.Hooks.Authorization)
 
 	// Wasm Transforms
 	r.Put("/v1alpha1/transforms", transformSvc.HandleDeployTransform())
@@ -119,6 +121,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	consoleServicePath, consoleServiceHandler := consolev1alpha1connect.NewConsoleServiceHandler(consoleSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	topicSvcPath, topicSvcHandler := dataplanev1alpha1connect.NewTopicServiceHandler(topicSvc, connect.WithInterceptors(hookOutput.Interceptors...))
 	transformSvcPath, transformSvcHandler := dataplanev1alpha1connect.NewTransformServiceHandler(transformSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+	securityServicePath, securityServiceHandler := consolev1alpha1connect.NewSecurityServiceHandler(securitySvc, connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -150,6 +153,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: dataplanev1alpha1connect.TransformServiceName,
 			MountPath:   transformSvcPath,
 			Handler:     transformSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.SecurityServiceName,
+			MountPath:   securityServicePath,
+			Handler:     securityServiceHandler,
 		},
 	}
 
