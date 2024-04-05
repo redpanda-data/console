@@ -121,7 +121,7 @@ message DeleteRoleRequest {
   ];
 
   // Whether to delete the ACLs bound to the role.
-  optional bool delete_acls = 2;
+  bool delete_acls = 2;
 }
 
 // DeleteRoleResponse is the response for DeleteRole.
@@ -159,11 +159,14 @@ message ListRoleMembersRequest {
 
 // ListRoleMembersResponse is the response for ListRoleMembers.
 message ListRoleMembersResponse {
+  // The role name.
+  string role_name = 1;
+
   // Members assigned to the role.
-  repeated RoleMembership members = 1;
+  repeated RoleMembership members = 2;
 
   // Token to retrieve the next page.
-  string next_page_token = 2;
+  string next_page_token = 3;
 }
 
 // RoleMembership is the role membership.
@@ -184,7 +187,7 @@ message UpdateRoleMembershipRequest {
 
   // Create the role if it doesn't already exist.
   // If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
-  optional bool create = 2;
+  bool create = 2;
 
   // Members to assign to the role.
   repeated RoleMembership add = 3;

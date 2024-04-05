@@ -489,9 +489,9 @@ export class DeleteRoleRequest extends Message<DeleteRoleRequest> {
   /**
    * Whether to delete the ACLs bound to the role.
    *
-   * @generated from field: optional bool delete_acls = 2;
+   * @generated from field: bool delete_acls = 2;
    */
-  deleteAcls?: boolean;
+  deleteAcls = false;
 
   constructor(data?: PartialMessage<DeleteRoleRequest>) {
     super();
@@ -502,7 +502,7 @@ export class DeleteRoleRequest extends Message<DeleteRoleRequest> {
   static readonly typeName = "redpanda.api.console.v1alpha1.DeleteRoleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "delete_acls", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 2, name: "delete_acls", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteRoleRequest {
@@ -669,16 +669,23 @@ export class ListRoleMembersRequest_Filter extends Message<ListRoleMembersReques
  */
 export class ListRoleMembersResponse extends Message<ListRoleMembersResponse> {
   /**
+   * The role name.
+   *
+   * @generated from field: string role_name = 1;
+   */
+  roleName = "";
+
+  /**
    * Members assigned to the role.
    *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
    */
   members: RoleMembership[] = [];
 
   /**
    * Token to retrieve the next page.
    *
-   * @generated from field: string next_page_token = 2;
+   * @generated from field: string next_page_token = 3;
    */
   nextPageToken = "";
 
@@ -690,8 +697,9 @@ export class ListRoleMembersResponse extends Message<ListRoleMembersResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: RoleMembership, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "members", kind: "message", T: RoleMembership, repeated: true },
+    { no: 3, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersResponse {
@@ -769,9 +777,9 @@ export class UpdateRoleMembershipRequest extends Message<UpdateRoleMembershipReq
    * Create the role if it doesn't already exist.
    * If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
    *
-   * @generated from field: optional bool create = 2;
+   * @generated from field: bool create = 2;
    */
-  create?: boolean;
+  create = false;
 
   /**
    * Members to assign to the role.
@@ -796,7 +804,7 @@ export class UpdateRoleMembershipRequest extends Message<UpdateRoleMembershipReq
   static readonly typeName = "redpanda.api.console.v1alpha1.UpdateRoleMembershipRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 2, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "add", kind: "message", T: RoleMembership, repeated: true },
     { no: 4, name: "remove", kind: "message", T: RoleMembership, repeated: true },
   ]);
