@@ -144,7 +144,18 @@ func (s *Service) UpdateRole(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.UpdateRole is not implemented"))
+	res, err := s.redpandaSvc.UpdateRole(ctx, req.Msg.GetRoleName(), redpanda.UpdateRole{
+		RoleName: req.Msg.GetRole().GetName(),
+	})
+	if err != nil {
+		if err != nil {
+			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+		}
+	}
+
+	return connect.NewResponse(&v1alpha1.UpdateRoleResponse{
+		Role: &v1alpha1.Role{Name: res.RoleName},
+	}), nil
 }
 
 // DeleteRole deletes a role.

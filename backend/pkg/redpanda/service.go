@@ -255,6 +255,11 @@ type GetRoleResponse struct {
 	Members  []RoleMember `json:"members"`
 }
 
+// UpdateRole is the request and response of the UpdateRole method.
+type UpdateRole struct {
+	RoleName string `json:"name" yaml:"name"`
+}
+
 // ListRoles lists all roles in the Redpanda cluster.
 func (s *Service) ListRoles(ctx context.Context, prefix, principal, principalType string) (RolesResponse, error) {
 	// return s.adminClient.Roles(ctx, prefix, principal, principalType)
@@ -292,11 +297,18 @@ func (s *Service) RoleMembers(ctx context.Context, roleName string) (RoleMemberR
 	return RoleMemberResponse{}, nil
 }
 
-// RoleMembers returns the list of RoleMembers of a given role.
+// RoleMembers returns the role.
 func (s *Service) GetRole(ctx context.Context, roleName string) (GetRoleResponse, error) {
 	// TODO needs to be implemented in Admin API Client
 	// return s.adminClient.GetRole(ctx, roleName)
 	return GetRoleResponse{}, nil
+}
+
+// UpdateRole updates the role.
+func (s *Service) UpdateRole(ctx context.Context, roleName string, role UpdateRole) (UpdateRole, error) {
+	// TODO needs to be implemented in Admin API Client
+	// return s.adminClient.GetRole(ctx, roleName, role)
+	return UpdateRole{}, nil
 }
 
 func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []RoleMember) (PatchRoleResponse, error) {
