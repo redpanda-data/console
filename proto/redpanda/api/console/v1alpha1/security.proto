@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+
+// Role defines a role in the system.
+message Role {
+  // The name of the role.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+}
+
+// ListRolesRequest is the request for ListRoles.
+message ListRolesRequest {
+  // Filter options.
+  message Filter {
+    // Filter results only roles named with the prefix.
+    string name_prefix = 1 [
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+    ];
+
+    // Filter results to only roles with names which contain the string.
+    string name_contains = 2 [
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+    ];
+
+    // Return only roles assigned to this principal.
+    string principal = 3 [(buf.validate.field).string.max_len = 128];
+  }
+
+  // Optional filter.
+  optional Filter filter = 1;
+
+  // Page size.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: -1,
+    lte: 1000
+  }];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+// ListRolesResponse is the response for ListRoles.
+message ListRolesResponse {
+  // The roles in the system.
+  repeated Role roles = 1;
+
+  // Token to retrieve the next page.
+  string next_page_token = 2;
+}
+
+// CreateRoleRequest is the request for CreateRole.
+message CreateRoleRequest {
+  // The role to create.
+  Role role = 1;
+}
+
+// CreateRoleResponse is the response for CreateRole.
+message CreateRoleResponse {
+  // The role.
+  Role role = 1;
+}
+
+// CreateRoleRequest is the request for CreateRole.
+message GetRoleRequest {
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+}
+
+// GetRoleResponse is the response to GetRole.
+message GetRoleResponse {
+  // The Role.
+  Role role = 1;
+
+  // Members assigned to the role.
+  repeated RoleMembership members = 2;
+}
+
+// UpdateRoleRequest is the request for UpdateRole.
+message UpdateRoleRequest {
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // The updated role.
+  Role role = 2;
+}
+
+// UpdateRoleResponse is the response for UpdateRole.
+message UpdateRoleResponse {
+  // The role.
+  Role role = 1;
+}
+
+// DeleteRoleRequest is the request for DeleteRole.
+message DeleteRoleRequest {
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Whether to delete the ACLs bound to the role.
+  bool delete_acls = 2;
+}
+
+// DeleteRoleResponse is the response for DeleteRole.
+message DeleteRoleResponse {}
+
+// List role members for a role. That is user principals assigned to that role.
+message ListRoleMembersRequest {
+  // Filter options.
+  message Filter {
+    // Filter results to only members with names which contain the string.
+    string name_contains = 1 [(buf.validate.field).string.max_len = 128];
+  }
+
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Optional filter.
+  optional Filter filter = 2;
+
+  // Page size.
+  int32 page_size = 3 [(buf.validate.field).int32 = {
+    gte: -1,
+    lte: 1000
+  }];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 4;
+}
+
+// ListRoleMembersResponse is the response for ListRoleMembers.
+message ListRoleMembersResponse {
+  // The role name.
+  string role_name = 1;
+
+  // Members assigned to the role.
+  repeated RoleMembership members = 2;
+
+  // Token to retrieve the next page.
+  string next_page_token = 3;
+}
+
+// RoleMembership is the role membership.
+message RoleMembership {
+  // The name of the principal assigned to the role.
+  string principal = 1;
+}
+
+// UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
+message UpdateRoleMembershipRequest {
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Create the role if it doesn't already exist.
+  // If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
+  bool create = 2;
+
+  // Members to assign to the role.
+  repeated RoleMembership add = 3;
+
+  // Members to remove from the role.
+  repeated RoleMembership remove = 4;
+}
+
+// UpdateRoleMembershipResponse is the response for UpdateRoleMembership.
+message UpdateRoleMembershipResponse {
+  // The role name.
+  string role_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+  ];
+
+  // Members assigned to the role.
+  repeated RoleMembership added = 2;
+
+  // Members removed from the role.
+  repeated RoleMembership removed = 3;
+}
+
+service SecurityService {
+  // ListRoles lists all the roles based on optional filter.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {}
+
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {}
+
+  // GetRole retrieves the specific role.
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {}
+
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {}
+
+  // DeleteRole deletes the role from the system.
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {}
+
+  // ListRoleMembership lists all the members assigned to a role based on optional filter.
+  rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {}
+
+  // UpdateRoleMembership updates role membership.
+  // Partially update role membership, adding or removing from a role
+  // ONLY those members listed in the “add” or “remove” fields, respectively.
+  // Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
+  // and the rest of the members will be added and removed and reported.
+  rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {}
+}
