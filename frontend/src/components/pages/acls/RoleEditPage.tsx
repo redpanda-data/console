@@ -42,7 +42,8 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles(force),
+            rolesApi.refreshRoles(),
+            rolesApi.refreshRoleMembers(),
         ]);
     }
 

@@ -11,16 +11,18 @@
 
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
+import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Box, Button, Flex, Heading } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
 
 import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
+import React from 'react';
+import { AclPrincipalGroup, principalGroupsView } from './Models';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -98,30 +100,214 @@ export default UserDetailsPage;
 const UserPermissionAssignments = observer((p: {
     userName: string;
 }) => {
-
     // Get all roles, and ACL sets that apply to this user
+    const roles = [];
+    for (const [roleName, members] of rolesApi.roleMembers) {
+        if (!members.any(m => m.name == p.userName))
+            continue; // this role doesn't contain our user
+        roles.push(roleName);
+    }
 
     return <Flex>
-        Roles for {p.userName}
-        <ChakraLink as={ReactRouterLink} to={'/'}>
-            placeholderRole1
-        </ChakraLink>
-        <Box whiteSpace="pre" userSelect="none">{', '}</Box>
-        <ChakraLink as={ReactRouterLink} to={'/'}>
-            placeholderRole2
-        </ChakraLink>
+        {roles.map(r =>
+            <React.Fragment key={r}>
+                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}>{r}</ChakraLink>
+                <Box whiteSpace="pre" userSelect="none">{', '}</Box>
+            </React.Fragment>
+        )}
     </Flex>
 });
 
 const PermissionAssignemntsDetails = observer((p: {
     userName: string;
 }) => {
-
     // Get all roles and ACLs matching this user
     // For each "AclPrincipalGroup" show its name, then a table that shows the details
+    const roles = [];
+    for (const [roleName, members] of rolesApi.roleMembers) {
+        if (!members.any(m => m.name == p.userName))
+            continue; // this role doesn't contain our user
+        roles.push(roleName);
+    }
+
+    // DEBUG
+    const placeholderAcl = principalGroupsView.principalGroups[0];
+    roles.push(placeholderAcl.principalType + ': ' + placeholderAcl.principalName);
+
+    return <>
+        {roles.map(r =>
+            <>
+                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}><Heading as="h3" mt="4">{r}</Heading></ChakraLink>
+                <AclPrincipalGroupPermissionsTable group={placeholderAcl} />
+            </>
+        )}
+    </>
+});
+
+const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
+
+    const entries: {
+        type: string;
+        selector: string;
+        operations: {
+            allow: string[];
+            deny: string[];
+        };
+    }[] = [];
+
+    console.log('gathering permissions about group', { group: p.group })
+
+    // Convert all entries of the group into a table row
+    const group = p.group;
+    for (const topicAcl of group.topicAcls) {
+        const allow: string[] = [];
+        const deny: string[] = [];
+
+        if (topicAcl.all == 'Allow')
+            allow.push('All');
+        else if (topicAcl.all == 'Deny')
+            deny.push('All');
+        else {
+            for (const [permName, value] of Object.entries(topicAcl.permissions)) {
+                if (value == 'Allow')
+                    allow.push(permName);
+                if (value == 'Deny')
+                    deny.push(permName);
+            }
+        }
+
+        entries.push({
+            type: 'Topic',
+            selector: topicAcl.selector,
+            operations: { allow, deny }
+        })
+    }
+
+    for (const groupAcl of group.consumerGroupAcls) {
+        const allow: string[] = [];
+        const deny: string[] = [];
+
+        if (groupAcl.all == 'Allow')
+            allow.push('All');
+        else if (groupAcl.all == 'Deny')
+            deny.push('All');
+        else {
+            for (const [permName, value] of Object.entries(groupAcl.permissions)) {
+                if (value == 'Allow')
+                    allow.push(permName);
+                if (value == 'Deny')
+                    deny.push(permName);
+            }
+        }
+
+        entries.push({
+            type: 'ConsumerGroup',
+            selector: groupAcl.selector,
+            operations: { allow, deny }
+        })
+    }
+
+    for (const transactId of group.transactionalIdAcls) {
+        const allow: string[] = [];
+        const deny: string[] = [];
+
+        if (transactId.all == 'Allow')
+            allow.push('All');
+        else if (transactId.all == 'Deny')
+            deny.push('All');
+        else {
+            for (const [permName, value] of Object.entries(transactId.permissions)) {
+                if (value == 'Allow')
+                    allow.push(permName);
+                if (value == 'Deny')
+                    deny.push(permName);
+            }
+        }
+
+        entries.push({
+            type: 'TransactionalID',
+            selector: transactId.selector,
+            operations: { allow, deny }
+        })
+    }
+
+    // Cluster
+    {
+        const clusterAcls = group.clusterAcls;
+
+        const allow: string[] = [];
+        const deny: string[] = [];
+
+        if (clusterAcls.all == 'Allow')
+            allow.push('All');
+        else if (clusterAcls.all == 'Deny')
+            deny.push('All');
+        else {
+            for (const [permName, value] of Object.entries(clusterAcls.permissions)) {
+                if (value == 'Allow')
+                    allow.push(permName);
+                if (value == 'Deny')
+                    deny.push(permName);
+            }
+        }
+
+        // Cluster only appears once, so it won't be filtered automatically,
+        // we need to manually skip this entry if there isn't any content
+        if (allow.length + deny.length > 0)
+            entries.push({
+                type: 'Cluster',
+                selector: '',
+                operations: { allow, deny }
+            })
+    }
 
 
     return <>
-        PermissionAssignemntsDetails: {p.userName}
+        <DataTable
+            data={entries}
+            columns={[
+                {
+                    header: 'Type',
+                    accessorKey: 'type',
+                    size: 150,
+                },
+                {
+                    header: 'Selector',
+                    accessorKey: 'selector',
+                    size: 300,
+                },
+                {
+                    header: 'Operations',
+                    size: Number.POSITIVE_INFINITY,
+                    cell: ({ row: { original: record } }) => {
+
+                        const allow = record.operations.allow;
+                        const deny = record.operations.deny;
+
+                        return <Box>
+                            <Box whiteSpace="pre">
+                                {allow.length > 0
+                                    ? <>
+                                        <Text as="span" fontWeight="semibold">Allow: </Text>
+                                        <Text as="span" >{allow.join(', ')}</Text>
+                                    </>
+                                    : <Text>{' '}</Text>
+                                }
+                            </Box>
+                            <Box>
+                                {deny.length > 0
+                                    ? <>
+                                        <Text as="span" fontWeight="semibold">Deny: </Text>
+                                        <Text as="span" >{deny.join(', ')}</Text>
+                                    </>
+                                    : <Text>{' '}</Text>
+                                }
+                            </Box>
+                        </Box>
+                    },
+                }
+            ]}
+        />
+
     </>
-});
+})
