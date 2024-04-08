@@ -24,7 +24,7 @@ import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
 import AclList from './pages/acls/Acl.List';
-import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
+import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon, FolderDownloadIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
 import { UserPermissions } from '../state/restInterfaces';
@@ -41,6 +41,8 @@ import { BrokerDetails } from './pages/overview/Broker.Details';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaCreatePage, SchemaAddVersionPage } from './pages/schemas/Schema.Create';
 import { TopicProducePage } from './pages/topics/Topic.Produce';
+import ConsumerGroupList from './pages/consumer-groups/ConsumerGroup.List';
+import ConsumerGroupDetails from './pages/consumer-groups/ConsumerGroup.Details';
 
 //
 //	Route Types
@@ -238,6 +240,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ subjectName: string }>('/schema-registry/edit-compatibility', EditSchemaCompatibilityPage, 'Edit Schema Compatibility'),
     MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName/edit-compatibility', EditSchemaCompatibilityPage, 'Edit Schema Compatibility'),
 
+    MakeRoute<{}>('/consumer-groups', ConsumerGroupList, 'Consumer Groups', FolderDownloadIcon, undefined,
+        routeVisibility(true, [Feature.ConsumerGroups])
+    ),
+    MakeRoute<{ groupId: string }>('/consumer-groups/:groupId/', ConsumerGroupDetails, 'Consumer Groups'),
+
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', FilterIcon, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
     ),
@@ -270,6 +277,3 @@ export const APP_ROUTES: IRouteEntry[] = [
 
 
 ].filterNull();
-
-
-
