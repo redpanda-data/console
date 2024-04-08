@@ -1504,7 +1504,24 @@ export const rolesApi = observable({
         { name: 'role4', },
         { name: 'role5', },
     ] as undefined | RedpandaRole[],
-    roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+    roleMembers: new Map<string, RolePrincipal[]>([
+        [
+            'role2', [
+                { name: 'abc', 'principal_type': 'User' },
+                { name: 'testUser1', 'principal_type': 'User' },
+            ]
+        ],
+        [
+            'role3', [
+                { name: 'testUser1', 'principal_type': 'User' },
+            ]
+        ],
+        [
+            'role4', [
+                { name: 'abc', 'principal_type': 'User' },
+            ]
+        ],
+    ]), // RoleName -> Principals
     // roleAcls: new Map<string,>(); // RoleName -> ACLs
 
     async refreshRoles(_force?: boolean) {
@@ -1548,24 +1565,24 @@ export const rolesApi = observable({
             permissionType: 'Any',
         };
 
-// const response: GetAclOverviewResponse = {
-//     isAuthorizerEnabled: true,
-//     aclResources: [
-//         {
-//             resourceName: 'placeholder',
-//             resourcePatternType: 'Any',
-//             resourceType: 'Any',
-//             acls: [
-//                 {
-//                     host: 'host placeholder',
-//                     operation: 'Create',
-//                     principal
-//                 }
-//             ]
-//
-//         }
-//     ]
-// };
+        // const response: GetAclOverviewResponse = {
+        //     isAuthorizerEnabled: true,
+        //     aclResources: [
+        //         {
+        //             resourceName: 'placeholder',
+        //             resourcePatternType: 'Any',
+        //             resourceType: 'Any',
+        //             acls: [
+        //                 {
+        //                     host: 'host placeholder',
+        //                     operation: 'Create',
+        //                     principal
+        //                 }
+        //             ]
+        //
+        //         }
+        //     ]
+        // };
 
         // GetAclOverviewResponse -> normalizeACLs
     }
