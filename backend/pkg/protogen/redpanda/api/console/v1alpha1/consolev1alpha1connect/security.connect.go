@@ -43,9 +43,6 @@ const (
 	SecurityServiceCreateRoleProcedure = "/redpanda.api.console.v1alpha1.SecurityService/CreateRole"
 	// SecurityServiceGetRoleProcedure is the fully-qualified name of the SecurityService's GetRole RPC.
 	SecurityServiceGetRoleProcedure = "/redpanda.api.console.v1alpha1.SecurityService/GetRole"
-	// SecurityServiceUpdateRoleProcedure is the fully-qualified name of the SecurityService's
-	// UpdateRole RPC.
-	SecurityServiceUpdateRoleProcedure = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole"
 	// SecurityServiceDeleteRoleProcedure is the fully-qualified name of the SecurityService's
 	// DeleteRole RPC.
 	SecurityServiceDeleteRoleProcedure = "/redpanda.api.console.v1alpha1.SecurityService/DeleteRole"
@@ -63,7 +60,6 @@ var (
 	securityServiceListRolesMethodDescriptor            = securityServiceServiceDescriptor.Methods().ByName("ListRoles")
 	securityServiceCreateRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("CreateRole")
 	securityServiceGetRoleMethodDescriptor              = securityServiceServiceDescriptor.Methods().ByName("GetRole")
-	securityServiceUpdateRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("UpdateRole")
 	securityServiceDeleteRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("DeleteRole")
 	securityServiceListRoleMembersMethodDescriptor      = securityServiceServiceDescriptor.Methods().ByName("ListRoleMembers")
 	securityServiceUpdateRoleMembershipMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("UpdateRoleMembership")
@@ -76,7 +72,6 @@ type SecurityServiceClient interface {
 	CreateRole(context.Context, *connect.Request[v1alpha1.CreateRoleRequest]) (*connect.Response[v1alpha1.CreateRoleResponse], error)
 	// GetRole retrieves the specific role.
 	GetRole(context.Context, *connect.Request[v1alpha1.GetRoleRequest]) (*connect.Response[v1alpha1.GetRoleResponse], error)
-	UpdateRole(context.Context, *connect.Request[v1alpha1.UpdateRoleRequest]) (*connect.Response[v1alpha1.UpdateRoleResponse], error)
 	// DeleteRole deletes the role from the system.
 	DeleteRole(context.Context, *connect.Request[v1alpha1.DeleteRoleRequest]) (*connect.Response[v1alpha1.DeleteRoleResponse], error)
 	// ListRoleMembership lists all the members assigned to a role based on optional filter.
@@ -118,12 +113,6 @@ func NewSecurityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(securityServiceGetRoleMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		updateRole: connect.NewClient[v1alpha1.UpdateRoleRequest, v1alpha1.UpdateRoleResponse](
-			httpClient,
-			baseURL+SecurityServiceUpdateRoleProcedure,
-			connect.WithSchema(securityServiceUpdateRoleMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		deleteRole: connect.NewClient[v1alpha1.DeleteRoleRequest, v1alpha1.DeleteRoleResponse](
 			httpClient,
 			baseURL+SecurityServiceDeleteRoleProcedure,
@@ -150,7 +139,6 @@ type securityServiceClient struct {
 	listRoles            *connect.Client[v1alpha1.ListRolesRequest, v1alpha1.ListRolesResponse]
 	createRole           *connect.Client[v1alpha1.CreateRoleRequest, v1alpha1.CreateRoleResponse]
 	getRole              *connect.Client[v1alpha1.GetRoleRequest, v1alpha1.GetRoleResponse]
-	updateRole           *connect.Client[v1alpha1.UpdateRoleRequest, v1alpha1.UpdateRoleResponse]
 	deleteRole           *connect.Client[v1alpha1.DeleteRoleRequest, v1alpha1.DeleteRoleResponse]
 	listRoleMembers      *connect.Client[v1alpha1.ListRoleMembersRequest, v1alpha1.ListRoleMembersResponse]
 	updateRoleMembership *connect.Client[v1alpha1.UpdateRoleMembershipRequest, v1alpha1.UpdateRoleMembershipResponse]
@@ -169,11 +157,6 @@ func (c *securityServiceClient) CreateRole(ctx context.Context, req *connect.Req
 // GetRole calls redpanda.api.console.v1alpha1.SecurityService.GetRole.
 func (c *securityServiceClient) GetRole(ctx context.Context, req *connect.Request[v1alpha1.GetRoleRequest]) (*connect.Response[v1alpha1.GetRoleResponse], error) {
 	return c.getRole.CallUnary(ctx, req)
-}
-
-// UpdateRole calls redpanda.api.console.v1alpha1.SecurityService.UpdateRole.
-func (c *securityServiceClient) UpdateRole(ctx context.Context, req *connect.Request[v1alpha1.UpdateRoleRequest]) (*connect.Response[v1alpha1.UpdateRoleResponse], error) {
-	return c.updateRole.CallUnary(ctx, req)
 }
 
 // DeleteRole calls redpanda.api.console.v1alpha1.SecurityService.DeleteRole.
@@ -199,7 +182,6 @@ type SecurityServiceHandler interface {
 	CreateRole(context.Context, *connect.Request[v1alpha1.CreateRoleRequest]) (*connect.Response[v1alpha1.CreateRoleResponse], error)
 	// GetRole retrieves the specific role.
 	GetRole(context.Context, *connect.Request[v1alpha1.GetRoleRequest]) (*connect.Response[v1alpha1.GetRoleResponse], error)
-	UpdateRole(context.Context, *connect.Request[v1alpha1.UpdateRoleRequest]) (*connect.Response[v1alpha1.UpdateRoleResponse], error)
 	// DeleteRole deletes the role from the system.
 	DeleteRole(context.Context, *connect.Request[v1alpha1.DeleteRoleRequest]) (*connect.Response[v1alpha1.DeleteRoleResponse], error)
 	// ListRoleMembership lists all the members assigned to a role based on optional filter.
@@ -236,12 +218,6 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(securityServiceGetRoleMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	securityServiceUpdateRoleHandler := connect.NewUnaryHandler(
-		SecurityServiceUpdateRoleProcedure,
-		svc.UpdateRole,
-		connect.WithSchema(securityServiceUpdateRoleMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	securityServiceDeleteRoleHandler := connect.NewUnaryHandler(
 		SecurityServiceDeleteRoleProcedure,
 		svc.DeleteRole,
@@ -268,8 +244,6 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 			securityServiceCreateRoleHandler.ServeHTTP(w, r)
 		case SecurityServiceGetRoleProcedure:
 			securityServiceGetRoleHandler.ServeHTTP(w, r)
-		case SecurityServiceUpdateRoleProcedure:
-			securityServiceUpdateRoleHandler.ServeHTTP(w, r)
 		case SecurityServiceDeleteRoleProcedure:
 			securityServiceDeleteRoleHandler.ServeHTTP(w, r)
 		case SecurityServiceListRoleMembersProcedure:
@@ -295,10 +269,6 @@ func (UnimplementedSecurityServiceHandler) CreateRole(context.Context, *connect.
 
 func (UnimplementedSecurityServiceHandler) GetRole(context.Context, *connect.Request[v1alpha1.GetRoleRequest]) (*connect.Response[v1alpha1.GetRoleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.GetRole is not implemented"))
-}
-
-func (UnimplementedSecurityServiceHandler) UpdateRole(context.Context, *connect.Request[v1alpha1.UpdateRoleRequest]) (*connect.Response[v1alpha1.UpdateRoleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.UpdateRole is not implemented"))
 }
 
 func (UnimplementedSecurityServiceHandler) DeleteRole(context.Context, *connect.Request[v1alpha1.DeleteRoleRequest]) (*connect.Response[v1alpha1.DeleteRoleResponse], error) {

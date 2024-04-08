@@ -23,7 +23,6 @@ const (
 	SecurityService_ListRoles_FullMethodName            = "/redpanda.api.console.v1alpha1.SecurityService/ListRoles"
 	SecurityService_CreateRole_FullMethodName           = "/redpanda.api.console.v1alpha1.SecurityService/CreateRole"
 	SecurityService_GetRole_FullMethodName              = "/redpanda.api.console.v1alpha1.SecurityService/GetRole"
-	SecurityService_UpdateRole_FullMethodName           = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRole"
 	SecurityService_DeleteRole_FullMethodName           = "/redpanda.api.console.v1alpha1.SecurityService/DeleteRole"
 	SecurityService_ListRoleMembers_FullMethodName      = "/redpanda.api.console.v1alpha1.SecurityService/ListRoleMembers"
 	SecurityService_UpdateRoleMembership_FullMethodName = "/redpanda.api.console.v1alpha1.SecurityService/UpdateRoleMembership"
@@ -38,7 +37,6 @@ type SecurityServiceClient interface {
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*CreateRoleResponse, error)
 	// GetRole retrieves the specific role.
 	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*GetRoleResponse, error)
-	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*UpdateRoleResponse, error)
 	// DeleteRole deletes the role from the system.
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*DeleteRoleResponse, error)
 	// ListRoleMembership lists all the members assigned to a role based on optional filter.
@@ -86,15 +84,6 @@ func (c *securityServiceClient) GetRole(ctx context.Context, in *GetRoleRequest,
 	return out, nil
 }
 
-func (c *securityServiceClient) UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*UpdateRoleResponse, error) {
-	out := new(UpdateRoleResponse)
-	err := c.cc.Invoke(ctx, SecurityService_UpdateRole_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *securityServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*DeleteRoleResponse, error) {
 	out := new(DeleteRoleResponse)
 	err := c.cc.Invoke(ctx, SecurityService_DeleteRole_FullMethodName, in, out, opts...)
@@ -131,7 +120,6 @@ type SecurityServiceServer interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	// GetRole retrieves the specific role.
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
-	UpdateRole(context.Context, *UpdateRoleRequest) (*UpdateRoleResponse, error)
 	// DeleteRole deletes the role from the system.
 	DeleteRole(context.Context, *DeleteRoleRequest) (*DeleteRoleResponse, error)
 	// ListRoleMembership lists all the members assigned to a role based on optional filter.
@@ -157,9 +145,6 @@ func (UnimplementedSecurityServiceServer) CreateRole(context.Context, *CreateRol
 }
 func (UnimplementedSecurityServiceServer) GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRole not implemented")
-}
-func (UnimplementedSecurityServiceServer) UpdateRole(context.Context, *UpdateRoleRequest) (*UpdateRoleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateRole not implemented")
 }
 func (UnimplementedSecurityServiceServer) DeleteRole(context.Context, *DeleteRoleRequest) (*DeleteRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRole not implemented")
@@ -237,24 +222,6 @@ func _SecurityService_GetRole_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecurityService_UpdateRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SecurityServiceServer).UpdateRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SecurityService_UpdateRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecurityServiceServer).UpdateRole(ctx, req.(*UpdateRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SecurityService_DeleteRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRoleRequest)
 	if err := dec(in); err != nil {
@@ -327,10 +294,6 @@ var SecurityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRole",
 			Handler:    _SecurityService_GetRole_Handler,
-		},
-		{
-			MethodName: "UpdateRole",
-			Handler:    _SecurityService_UpdateRole_Handler,
 		},
 		{
 			MethodName: "DeleteRole",
