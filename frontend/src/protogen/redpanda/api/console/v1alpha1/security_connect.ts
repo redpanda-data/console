@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse, GetRoleRequest, GetRoleResponse, ListRoleMembersRequest, ListRoleMembersResponse, ListRolesRequest, ListRolesResponse, UpdateRoleMembershipRequest, UpdateRoleMembershipResponse, UpdateRoleRequest, UpdateRoleResponse } from "./security_pb";
+import { CreateRoleRequest, CreateRoleResponse, DeleteRoleRequest, DeleteRoleResponse, GetRoleRequest, GetRoleResponse, ListRoleMembersRequest, ListRoleMembersResponse, ListRolesRequest, ListRolesResponse, UpdateRoleMembershipRequest, UpdateRoleMembershipResponse } from "./security_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -41,15 +41,6 @@ export const SecurityService = {
       name: "GetRole",
       I: GetRoleRequest,
       O: GetRoleResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.console.v1alpha1.SecurityService.UpdateRole
-     */
-    updateRole: {
-      name: "UpdateRole",
-      I: UpdateRoleRequest,
-      O: UpdateRoleResponse,
       kind: MethodKind.Unary,
     },
     /**
