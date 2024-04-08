@@ -136,26 +136,6 @@ func (s *Service) GetRole(ctx context.Context, req *connect.Request[v1alpha1.Get
 	}), nil
 }
 
-// UpdateRole updates role name and any other properties.
-func (s *Service) UpdateRole(ctx context.Context, req *connect.Request[v1alpha1.UpdateRoleRequest]) (*connect.Response[v1alpha1.UpdateRoleResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
-	res, err := s.redpandaSvc.UpdateRole(ctx, req.Msg.GetRoleName(), redpanda.UpdateRole{
-		RoleName: req.Msg.GetRole().GetName(),
-	})
-	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
-	}
-
-	return connect.NewResponse(&v1alpha1.UpdateRoleResponse{
-		Role: &v1alpha1.Role{Name: res.RoleName},
-	}), nil
-}
-
 // DeleteRole deletes a role.
 func (s *Service) DeleteRole(ctx context.Context, req *connect.Request[v1alpha1.DeleteRoleRequest]) (*connect.Response[v1alpha1.DeleteRoleResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
