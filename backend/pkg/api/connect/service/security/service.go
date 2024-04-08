@@ -12,7 +12,6 @@ package security
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -234,10 +233,27 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 }
 
 // UpdateRoleMembership updates role membership, adding and removing principals assigned to the role.
-func (s *Service) UpdateRoleMembership(context.Context, *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error) {
+func (s *Service) UpdateRoleMembership(ctx context.Context, req *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecurityService.UpdateRoleMembership is not implemented"))
+	toAdd := protoRoleMemberToAdminAPIRoleMember(req.Msg.GetAdd())
+	toRemove := protoRoleMemberToAdminAPIRoleMember(req.Msg.GetRemove())
+
+	res, err := s.redpandaSvc.UpdateRoleMembership(ctx, req.Msg.GetRoleName(), toAdd, toRemove, req.Msg.GetCreate())
+	if err != nil {
+		if err != nil {
+			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+		}
+	}
+
+	added := adminAPIRoleMembersToProto(res.Added)
+	removed := adminAPIRoleMembersToProto(res.Removed)
+
+	return connect.NewResponse(&v1alpha1.UpdateRoleMembershipResponse{
+		RoleName: res.RoleName,
+		Added:    added,
+		Removed:  removed,
+	}), nil
 }

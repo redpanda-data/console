@@ -311,7 +311,8 @@ func (s *Service) UpdateRole(ctx context.Context, roleName string, role UpdateRo
 	return UpdateRole{}, nil
 }
 
-func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []RoleMember) (PatchRoleResponse, error) {
+func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []RoleMember, createRole bool) (PatchRoleResponse, error) {
+	// TODO needs to be implemented in Admin API Client
 	// return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove)
 	return PatchRoleResponse{}, nil
 }

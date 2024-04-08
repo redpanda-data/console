@@ -54,3 +54,15 @@ func adminAPIRoleMembersToProto(members []redpanda.RoleMember) []*v1alpha1.RoleM
 
 	return out
 }
+
+func protoRoleMemberToAdminAPIRoleMember(members []*v1alpha1.RoleMembership) []redpanda.RoleMember {
+	out := make([]redpanda.RoleMember, 0, len(members))
+
+	for _, r := range members {
+		r := r
+		principalType, principal := parsePrincipal(r.GetPrincipal())
+		out = append(out, redpanda.RoleMember{Name: principal, PrincipalType: principalType})
+	}
+
+	return out
+}
