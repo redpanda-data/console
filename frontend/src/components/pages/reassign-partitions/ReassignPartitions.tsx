@@ -510,13 +510,15 @@ class ReassignPartitions extends PageComponent {
                 // No errors
                 toast.update(toastRef, {
                     status: 'success',
+                    description: 'Reassignment successful',
                     duration: 2500,
-                })
+                });
                 return true;
             } else if (startedCount > 0) {
                 // Some errors
                 toast.update(toastRef, {
                     status: 'success',
+                    description: 'Reassignment successful',
                     duration: 2500,
                 })
                 this.setReassignError(startedCount, errors);
