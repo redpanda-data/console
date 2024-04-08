@@ -19,9 +19,9 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/common-go/api/pagination"
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -82,7 +82,6 @@ func (s *Service) ListRoles(ctx context.Context, req *connect.Request[v1alpha1.L
 		page, token, err := pagination.SliceToPaginatedWithToken(protoRoles, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.Role) string {
 			return x.GetName()
 		})
-
 		if err != nil {
 			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,
@@ -214,7 +213,6 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 		page, token, err := pagination.SliceToPaginatedWithToken(protoMembers, int(req.Msg.PageSize), req.Msg.GetPageToken(), "principal", func(x *v1alpha1.RoleMembership) string {
 			return x.GetPrincipal()
 		})
-
 		if err != nil {
 			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,

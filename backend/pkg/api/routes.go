@@ -110,7 +110,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
-	securitySvc := securitysvc.NewService(api.Logger.Named("security_service"), api.RedpandaSvc, api.Hooks.Authorization)
+	securitySvc := securitysvc.NewService(api.Cfg, api.Logger.Named("security_service"), api.RedpandaSvc, api.Hooks.Authorization)
 
 	// Wasm Transforms
 	r.Put("/v1alpha1/transforms", transformSvc.HandleDeployTransform())
