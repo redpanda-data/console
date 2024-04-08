@@ -17,8 +17,10 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Box } from '@redpanda-data/ui';
+import { Box, Button, Flex, Heading } from '@redpanda-data/ui';
 
+import { Link as ReactRouterLink } from 'react-router-dom'
+import { Link as ChakraLink } from '@chakra-ui/react'
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -44,6 +46,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         p.title = 'Create user';
         p.addBreadcrumb('Access control', '/security');
         p.addBreadcrumb('Users', '/security/users');
+        p.addBreadcrumb(this.props.userName, '/security/users/');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -60,11 +63,28 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 
     render() {
         if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+        const userName = this.props.userName;
 
         return <>
-
             <PageContent>
-                <Box></Box>
+                <Flex gap="4">
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/users/${userName}/edit`)}>
+                        Edit
+                    </Button>
+                    {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
+                    <Button variant="outline-delete">
+                        Delete
+                    </Button>
+                </Flex>
+
+                <Heading as="h3" mt="4">Permissions</Heading>
+                <Box>Below are all of the permissions assigned to this SCRAM user.</Box>
+
+                <Heading as="h3" mt="4">Assignments</Heading>
+                <UserPermissionAssignments userName={userName} />
+
+                <PermissionAssignemntsDetails userName={userName} />
+
             </PageContent>
         </>
     }
@@ -75,3 +95,33 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 export default UserDetailsPage;
 
 
+const UserPermissionAssignments = observer((p: {
+    userName: string;
+}) => {
+
+    // Get all roles, and ACL sets that apply to this user
+
+    return <Flex>
+        Roles for {p.userName}
+        <ChakraLink as={ReactRouterLink} to={'/'}>
+            placeholderRole1
+        </ChakraLink>
+        <Box whiteSpace="pre" userSelect="none">{', '}</Box>
+        <ChakraLink as={ReactRouterLink} to={'/'}>
+            placeholderRole2
+        </ChakraLink>
+    </Flex>
+});
+
+const PermissionAssignemntsDetails = observer((p: {
+    userName: string;
+}) => {
+
+    // Get all roles and ACLs matching this user
+    // For each "AclPrincipalGroup" show its name, then a table that shows the details
+
+
+    return <>
+        PermissionAssignemntsDetails: {p.userName}
+    </>
+});

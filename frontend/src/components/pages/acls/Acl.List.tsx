@@ -28,6 +28,9 @@ import { Features } from '../../../state/supportedFeatures';
 import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Box, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Tabs, Text, Tooltip } from '@redpanda-data/ui';
 import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { Link as ReactRouterLink } from 'react-router-dom'
+import { Link as ChakraLink } from '@chakra-ui/react'
+
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -258,7 +261,12 @@ const UsersTab = observer(() => {
                         size: Infinity,
                         header: 'User',
                         cell: (ctx) => {
-                            return <>{ctx.row.original}</>
+                            const entry = ctx.row.original;
+                            return <>
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry}/details`}>
+                                    {entry}
+                                </ChakraLink>
+                            </>
                         }
                     },
                     {
@@ -377,7 +385,7 @@ const AclsTab = observer((p: {
         <Section>
             {edittingPrincipalGroup &&
                 <AclPrincipalGroupEditor
-        // @ts-ignore
+                // @ts-ignore
                 principalGroup={edittingPrincipalGroup}
                 type={editorType}
                 onClose={() => {
