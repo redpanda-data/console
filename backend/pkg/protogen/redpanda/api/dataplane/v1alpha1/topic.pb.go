@@ -715,7 +715,7 @@ type Topic_Configuration struct {
 	Source ConfigSource `protobuf:"varint,4,opt,name=source,proto3,enum=redpanda.api.dataplane.v1alpha1.ConfigSource" json:"source,omitempty"`
 	// Whether the config is read-only, or is dynamic and can be altered.
 	ReadOnly bool `protobuf:"varint,5,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// Whether this is a config
+	// Whether this is a sensitive config key and value.
 	Sensitive bool `protobuf:"varint,6,opt,name=sensitive,proto3" json:"sensitive,omitempty"`
 	// If no config value is set at the topic level, it will inherit the value
 	// set at the broker or cluster level. `name` is the corresponding config

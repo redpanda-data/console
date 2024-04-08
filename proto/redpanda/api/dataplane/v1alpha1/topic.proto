@@ -19,7 +19,7 @@ message Topic {
     ConfigSource source = 4;
     // Whether the config is read-only, or is dynamic and can be altered.
     bool read_only = 5;
-    // Whether this is a config
+    // Whether this is a sensitive config key and value.
     bool sensitive = 6;
     // If no config value is set at the topic level, it will inherit the value
     // set at the broker or cluster level. `name` is the corresponding config

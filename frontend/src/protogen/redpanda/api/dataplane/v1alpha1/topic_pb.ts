@@ -78,7 +78,7 @@ export class Topic_Configuration extends Message<Topic_Configuration> {
   readOnly = false;
 
   /**
-   * Whether this is a config
+   * Whether this is a sensitive config key and value.
    *
    * @generated from field: bool sensitive = 6;
    */

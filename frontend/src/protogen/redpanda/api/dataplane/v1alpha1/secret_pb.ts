@@ -257,7 +257,7 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
   clusterName = "";
 
   /**
-   * Name of secret.
+   * Name of connector.
    *
    * @generated from field: string name = 2;
    */

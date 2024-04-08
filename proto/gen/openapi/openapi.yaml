@@ -100,7 +100,7 @@ components:
           description: Whether the config is read-only, or is dynamic and can be altered.
           type: boolean
         sensitive:
-          title: Whether this is a config
+          description: Whether this is a sensitive config key and value.
           type: boolean
         source:
           $ref: '#/components/schemas/ConfigSource'
@@ -2218,7 +2218,7 @@ paths:
                   description: Secret labels.
                   type: object
                 name:
-                  description: Name of secret.
+                  description: Name of connector.
                   type: string
                 secret_data:
                   description: The secret data.
