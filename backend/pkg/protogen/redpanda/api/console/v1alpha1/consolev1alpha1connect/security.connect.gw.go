@@ -20,7 +20,6 @@ type SecurityServiceGatewayServer struct {
 	listRoles            connect_gateway.UnaryHandler[v1alpha1.ListRolesRequest, v1alpha1.ListRolesResponse]
 	createRole           connect_gateway.UnaryHandler[v1alpha1.CreateRoleRequest, v1alpha1.CreateRoleResponse]
 	getRole              connect_gateway.UnaryHandler[v1alpha1.GetRoleRequest, v1alpha1.GetRoleResponse]
-	updateRole           connect_gateway.UnaryHandler[v1alpha1.UpdateRoleRequest, v1alpha1.UpdateRoleResponse]
 	deleteRole           connect_gateway.UnaryHandler[v1alpha1.DeleteRoleRequest, v1alpha1.DeleteRoleResponse]
 	listRoleMembers      connect_gateway.UnaryHandler[v1alpha1.ListRoleMembersRequest, v1alpha1.ListRoleMembersResponse]
 	updateRoleMembership connect_gateway.UnaryHandler[v1alpha1.UpdateRoleMembershipRequest, v1alpha1.UpdateRoleMembershipResponse]
@@ -33,7 +32,6 @@ func NewSecurityServiceGatewayServer(svc SecurityServiceHandler, opts ...connect
 		listRoles:            connect_gateway.NewUnaryHandler(SecurityServiceListRolesProcedure, svc.ListRoles, opts...),
 		createRole:           connect_gateway.NewUnaryHandler(SecurityServiceCreateRoleProcedure, svc.CreateRole, opts...),
 		getRole:              connect_gateway.NewUnaryHandler(SecurityServiceGetRoleProcedure, svc.GetRole, opts...),
-		updateRole:           connect_gateway.NewUnaryHandler(SecurityServiceUpdateRoleProcedure, svc.UpdateRole, opts...),
 		deleteRole:           connect_gateway.NewUnaryHandler(SecurityServiceDeleteRoleProcedure, svc.DeleteRole, opts...),
 		listRoleMembers:      connect_gateway.NewUnaryHandler(SecurityServiceListRoleMembersProcedure, svc.ListRoleMembers, opts...),
 		updateRoleMembership: connect_gateway.NewUnaryHandler(SecurityServiceUpdateRoleMembershipProcedure, svc.UpdateRoleMembership, opts...),
@@ -50,10 +48,6 @@ func (s *SecurityServiceGatewayServer) CreateRole(ctx context.Context, req *v1al
 
 func (s *SecurityServiceGatewayServer) GetRole(ctx context.Context, req *v1alpha1.GetRoleRequest) (*v1alpha1.GetRoleResponse, error) {
 	return s.getRole(ctx, req)
-}
-
-func (s *SecurityServiceGatewayServer) UpdateRole(ctx context.Context, req *v1alpha1.UpdateRoleRequest) (*v1alpha1.UpdateRoleResponse, error) {
-	return s.updateRole(ctx, req)
 }
 
 func (s *SecurityServiceGatewayServer) DeleteRole(ctx context.Context, req *v1alpha1.DeleteRoleRequest) (*v1alpha1.DeleteRoleResponse, error) {

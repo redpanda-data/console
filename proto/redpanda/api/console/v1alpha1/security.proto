@@ -90,26 +90,6 @@ message GetRoleResponse {
   repeated RoleMembership members = 2;
 }
 
-// UpdateRoleRequest is the request for UpdateRole.
-message UpdateRoleRequest {
-  // The role name.
-  string role_name = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
-  ];
-
-  // The updated role.
-  Role role = 2;
-}
-
-// UpdateRoleResponse is the response for UpdateRole.
-message UpdateRoleResponse {
-  // The role.
-  Role role = 1;
-}
-
 // DeleteRoleRequest is the request for DeleteRole.
 message DeleteRoleRequest {
   // The role name.
@@ -221,8 +201,6 @@ service SecurityService {
 
   // GetRole retrieves the specific role.
   rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {}
-
-  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {}
 
   // DeleteRole deletes the role from the system.
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {}
