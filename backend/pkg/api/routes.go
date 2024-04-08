@@ -14,7 +14,6 @@ import (
 
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
-	"connectrpc.com/otelconnect"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
@@ -22,10 +21,10 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	commoninterceptor "github.com/redpanda-data/common-go/api/interceptor"
+	"github.com/redpanda-data/common-go/api/metrics"
 	"go.uber.org/zap"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -51,35 +50,23 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 	}
 
-	// The exposed metrics are pretty verbose (highly cardinal), but as of today we don't
-	// have a way to modify what is being exposed. The buf team has an issue about making
-	// this more flexible: https://github.com/connectrpc/connect-go/issues/665
-	meterProvider := metric.NewMeterProvider(metric.WithReader(api.promExporter))
-	otelInterceptor, err := otelconnect.NewInterceptor(
-		otelconnect.WithMeterProvider(meterProvider),
-		otelconnect.WithoutServerPeerAttributes(),
-		otelconnect.WithoutTracing(),
-		otelconnect.WithAttributeFilter(func(_ connect.Spec, attrs attribute.KeyValue) bool {
-			switch attrs.Key {
-			case semconv.NetPeerPortKey, semconv.NetPeerNameKey, "rpc.system":
-				return false
-			default:
-				return true
-			}
-		}),
-	)
-	if err != nil {
-		api.Logger.Fatal("failed to create open telemetry interceptor", zap.Error(err))
-	}
-
 	// Define interceptors that shall be used in the community version of Console. We may add further
 	// interceptors by calling the hooks.
+	apiProm, err := metrics.NewPrometheus(
+		metrics.WithRegistry(prometheus.DefaultRegisterer),
+		metrics.WithMetricsNamespace("redpanda_api"),
+	)
+	if err != nil {
+		api.Logger.Fatal("failed to create prometheus adapter", zap.Error(err))
+	}
+	observerInterceptor := commoninterceptor.NewObserver(apiProm.ObserverAdapter())
 	baseInterceptors := []connect.Interceptor{
+		observerInterceptor,
 		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log"), api.Hooks.Console.AdditionalLogFields),
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
 		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
-		otelInterceptor,
 	}
+	r.Use(observerInterceptor.WrapHandler)
 
 	// Setup gRPC-Gateway
 	gwMux := runtime.NewServeMux(

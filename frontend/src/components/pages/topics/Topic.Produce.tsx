@@ -410,7 +410,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     </Label>}
 
                     {keyPayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
-                        <Box>
+                        <Box data-testid="produce-key-editor">
                             {isKeyExpanded
                                 ? < Controller
                                     control={control}
@@ -528,22 +528,24 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                         </Label>}
 
                         {valuePayloadOptions.encoding !== PayloadEncoding.NULL && <Label text="Data">
-                            <Controller
-                                control={control}
-                                name="value.data"
-                                render={({
-                                    field: { onChange, value },
-                                }) => (
-                                    <KowlEditor
-                                        data-testid="produce-message-value"
-                                        onMount={setTheme}
-                                        height={300}
-                                        value={value}
-                                        onChange={onChange}
-                                        language={encodingToLanguage(valuePayloadOptions?.encoding)}
-                                    />
-                                )}
-                            />
+                            <Box data-testid="produce-value-editor">
+                                <Controller
+                                    control={control}
+                                    name="value.data"
+                                    render={({
+                                                 field: {onChange, value},
+                                             }) => (
+                                        <KowlEditor
+                                            data-testid="produce-message-value"
+                                            onMount={setTheme}
+                                            height={300}
+                                            value={value}
+                                            onChange={onChange}
+                                            language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                                        />
+                                    )}
+                                />
+                            </Box>
                         </Label>}
                         {errors?.value?.data && <Text color="red.500">{errors.value.data.message}</Text>}
                         <input {...register('value.data')} data-testid="valueData" />

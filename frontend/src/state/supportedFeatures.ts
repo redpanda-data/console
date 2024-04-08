@@ -52,6 +52,14 @@ export function isSupported(f: FeatureEntry): boolean {
     return false;
 }
 
+/**
+ * A list of features we should hide instead of showing a disabled message.
+ */
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas]
+export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
+    return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f)
+}
+
 class SupportedFeatures {
     @computed get clusterConfig(): boolean { return isSupported(Feature.ClusterConfig); }
     @computed get consumerGroups(): boolean { return isSupported(Feature.ConsumerGroups); }

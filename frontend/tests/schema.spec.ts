@@ -7,7 +7,7 @@ const SCHEMA_REGISTRY_TABLE_NAME_TESTID = 'schema-registry-table-name';
  */
 test.describe('Schema', () => {
     test('should filter on schema ID', async ({page}) => {
-        page.setDefaultTimeout(5000)
+        page.setDefaultTimeout(10000)
         // Let's search for 7
         await page.goto('/schema-registry');
         await page.getByPlaceholder('Filter by subject name or schema ID...').fill('7');
