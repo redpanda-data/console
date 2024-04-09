@@ -2,6 +2,8 @@ module github.com/redpanda-data/console/backend
 
 go 1.22.0
 
+replace github.com/redpanda-data/common-go/adminapi => /Users/bojandjurkovic/rp/common-go/adminapi
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20231115204500-e097f827e652.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240308150626-33e02aaad4d0.1
@@ -34,6 +36,7 @@ require (
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.19.0
+	github.com/redpanda-data/common-go/adminapi v0.0.0-00010101000000-000000000000
 	github.com/redpanda-data/common-go/api v0.0.0-20240325132346-9b1c10a2ec14
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20240105044330-c094966ca0cf
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -51,7 +54,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/mock v0.4.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	go.vallahaye.net/connect-gateway v0.3.1
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 	golang.org/x/net v0.21.0

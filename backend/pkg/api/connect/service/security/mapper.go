@@ -12,8 +12,9 @@ package security
 import (
 	"strings"
 
+	"github.com/redpanda-data/common-go/adminapi"
+
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 const (
@@ -33,7 +34,7 @@ func parsePrincipal(p string) (principalType string, name string) {
 	return "User", p
 }
 
-func adminAPIRolesToProto(roles []redpanda.Role) []*v1alpha1.Role {
+func adminAPIRolesToProto(roles []adminapi.Role) []*v1alpha1.Role {
 	out := make([]*v1alpha1.Role, 0, len(roles))
 
 	for _, r := range roles {
@@ -44,7 +45,7 @@ func adminAPIRolesToProto(roles []redpanda.Role) []*v1alpha1.Role {
 	return out
 }
 
-func adminAPIRoleMembersToProto(members []redpanda.RoleMember) []*v1alpha1.RoleMembership {
+func adminAPIRoleMembersToProto(members []adminapi.RoleMember) []*v1alpha1.RoleMembership {
 	out := make([]*v1alpha1.RoleMembership, 0, len(members))
 
 	for _, r := range members {
@@ -55,13 +56,13 @@ func adminAPIRoleMembersToProto(members []redpanda.RoleMember) []*v1alpha1.RoleM
 	return out
 }
 
-func protoRoleMemberToAdminAPIRoleMember(members []*v1alpha1.RoleMembership) []redpanda.RoleMember {
-	out := make([]redpanda.RoleMember, 0, len(members))
+func protoRoleMemberToAdminAPIRoleMember(members []*v1alpha1.RoleMembership) []adminapi.RoleMember {
+	out := make([]adminapi.RoleMember, 0, len(members))
 
 	for _, r := range members {
 		r := r
 		principalType, principal := parsePrincipal(r.GetPrincipal())
-		out = append(out, redpanda.RoleMember{Name: principal, PrincipalType: principalType})
+		out = append(out, adminapi.RoleMember{Name: principal, PrincipalType: principalType})
 	}
 
 	return out

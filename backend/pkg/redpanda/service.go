@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	"github.com/redpanda-data/common-go/adminapi"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/net"
 	"go.uber.org/zap"
 
@@ -211,100 +211,43 @@ func (s *Service) DeleteWasmTransform(ctx context.Context, name string) error {
 
 // Custom implementation of RBAC Admin API.
 
-// Role is a representation of a Role as returned by the Admin API.
-type Role struct {
-	Name string `json:"name" yaml:"name"`
-}
-
-// RoleMember is a representation of a principal.
-type RoleMember struct {
-	Name          string `json:"name" yaml:"name"`
-	PrincipalType string `json:"principal_type" yaml:"principal_type"`
-}
-
-// RolesResponse represent the response from Roles method.
-type RolesResponse struct {
-	Roles []Role `json:"roles" yaml:"roles"`
-}
-
-// CreateRole is both the request and response from the CreateRole method.
-type CreateRole struct {
-	RoleName string `json:"role" yaml:"role"`
-}
-
-// PatchRoleResponse is the response of the PatchRole method.
-type PatchRoleResponse struct {
-	RoleName string       `json:"role" yaml:"role"`
-	Added    []RoleMember `json:"added" yaml:"added"`
-	Removed  []RoleMember `json:"removed" yaml:"removed"`
-}
-
-type patchRoleRequest struct {
-	Add    []RoleMember `json:"add,omitempty"`
-	Remove []RoleMember `json:"remove,omitempty"`
-}
-
-// RoleMemberResponse is the response of the RoleMembers method.
-type RoleMemberResponse struct {
-	Members []RoleMember `json:"members"`
-}
-
-// GetRoleMemberResponse is the response of the GetRole method.
-type GetRoleResponse struct {
-	RoleName string       `json:"name" yaml:"name"`
-	Members  []RoleMember `json:"members"`
-}
-
-// UpdateRole is the request and response of the UpdateRole method.
-type UpdateRole struct {
-	RoleName string `json:"name" yaml:"name"`
-}
-
 // ListRoles lists all roles in the Redpanda cluster.
-func (s *Service) ListRoles(ctx context.Context, prefix, principal, principalType string) (RolesResponse, error) {
-	// return s.adminClient.Roles(ctx, prefix, principal, principalType)
-	return RolesResponse{}, nil
+func (s *Service) ListRoles(ctx context.Context, prefix, principal, principalType string) (adminapi.RolesResponse, error) {
+	return s.adminClient.Roles(ctx, prefix, principal, principalType)
 }
 
 // CreateRole creates a new role in the Redpanda cluster.
-func (s *Service) CreateRole(ctx context.Context, name string) (CreateRole, error) {
-	// return s.adminClient.CreateRole(ctx, name)
-	return CreateRole{}, nil
+func (s *Service) CreateRole(ctx context.Context, name string) (adminapi.CreateRole, error) {
+	return s.adminClient.CreateRole(ctx, name)
 }
 
 // DeleteRole deletes a Role in Redpanda with the given name. If deleteACL is
 // true, Redpanda will delete ACLs bound to the role.
 func (s *Service) DeleteRole(ctx context.Context, name string, deleteACL bool) error {
-	// return s.adminClient.DeleteRole(ctx, name, deleteACL)
-	return nil
+	return s.adminClient.DeleteRole(ctx, name, deleteACL)
 }
 
 // AssignRole assign the role 'roleName' to the passed members.
-func (s *Service) AssignRole(ctx context.Context, roleName string, add []RoleMember) (PatchRoleResponse, error) {
-	// return s.adminClient.AssignRole(ctx, roleName, add)
-	return PatchRoleResponse{}, nil
+func (s *Service) AssignRole(ctx context.Context, roleName string, add []adminapi.RoleMember) (adminapi.PatchRoleResponse, error) {
+	return s.adminClient.AssignRole(ctx, roleName, add)
 }
 
 // UnassignRole unassigns the role 'roleName' from the passed members.
-func (s *Service) UnassignRole(ctx context.Context, roleName string, remove []RoleMember) (PatchRoleResponse, error) {
-	// return s.adminClient.UnassignRole(ctx, roleName, remove)
-	return PatchRoleResponse{}, nil
+func (s *Service) UnassignRole(ctx context.Context, roleName string, remove []adminapi.RoleMember) (adminapi.PatchRoleResponse, error) {
+	return s.adminClient.UnassignRole(ctx, roleName, remove)
 }
 
 // RoleMembers returns the list of RoleMembers of a given role.
-func (s *Service) RoleMembers(ctx context.Context, roleName string) (RoleMemberResponse, error) {
-	// return s.adminClient.RoleMembers(ctx, roleName)
-	return RoleMemberResponse{}, nil
+func (s *Service) RoleMembers(ctx context.Context, roleName string) (adminapi.RoleMemberResponse, error) {
+	return s.adminClient.RoleMembers(ctx, roleName)
 }
 
-// RoleMembers returns the role.
-func (s *Service) GetRole(ctx context.Context, roleName string) (GetRoleResponse, error) {
-	// TODO needs to be implemented in Admin API Client
-	// return s.adminClient.GetRole(ctx, roleName)
-	return GetRoleResponse{}, nil
+// GetRole returns the role.
+func (s *Service) GetRole(ctx context.Context, roleName string) (adminapi.RoleDetailResponse, error) {
+	return s.adminClient.Role(ctx, roleName)
 }
 
-func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []RoleMember, createRole bool) (PatchRoleResponse, error) {
-	// return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove)
-	return PatchRoleResponse{}, nil
+// UpdateRoleMembership updates the role membership using Redpanda Admin API.
+func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []adminapi.RoleMember, createRole bool) (adminapi.PatchRoleResponse, error) {
+	return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove, createRole)
 }

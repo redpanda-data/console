@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/redpanda-data/common-go/adminapi"
 	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
 
@@ -169,11 +170,11 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 	}
 
 	nameContains := req.Msg.GetFilter().GetNameContains()
-	var out []redpanda.RoleMember
+	var out []adminapi.RoleMember
 	if nameContains == "" {
 		out = res.Members
 	} else {
-		out = make([]redpanda.RoleMember, 0, len(res.Members))
+		out = make([]adminapi.RoleMember, 0, len(res.Members))
 		for _, m := range res.Members {
 			if strings.Contains(m.Name, nameContains) {
 				out = append(out, m)
