@@ -301,7 +301,7 @@ service ACLService {
       responses: {
         key: "201"
         value: {
-          description: "OK"
+          description: "Created"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateACLResponse"}
           }

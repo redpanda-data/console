@@ -335,7 +335,7 @@ service TopicService {
       responses: {
         key: "404"
         value: {
-          description: "Not found"
+          description: "Not Found"
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }
@@ -364,7 +364,7 @@ service TopicService {
       responses: {
         key: "404"
         value: {
-          description: "Not found"
+          description: "Not Found"
           schema: {
             json_schema: {ref: ".google.rpc.Status"}
           }

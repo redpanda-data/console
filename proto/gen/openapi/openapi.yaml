@@ -1446,7 +1446,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateACLResponse'
-          description: OK
+          description: Created
         "401":
           content:
             application/json:
@@ -2650,7 +2650,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not found
+          description: Not Found
         "500":
           content:
             application/json:
@@ -2703,7 +2703,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Not found
+          description: Not Found
         "500":
           content:
             application/json:
