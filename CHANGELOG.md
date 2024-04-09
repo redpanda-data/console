@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.4.6 / 2024-04-09
+
+- [SECURITY] Update Go to v1.22.2 to address [CVE-2023-45288](https://nvd.nist.gov/vuln/detail/CVE-2023-45288)
+- [SECURITY] Authenticated Console users with assigned viewer permissions were able to successfully perform operations that would require admin permissions (e.g. creating ACLs). This does not affect users in Redpanda Cloud.
+- [FIX] Fix empty toast feedback when reassigning partitions in the UI.
+- [IMPROVEMENT] Surface dynamic broker error messages in the UI if operations such as creating topics failed.
+
 ## v2.4.5 / 2024-03-06
 
 - [SECURITY] Update Go to v1.22.1 to address multiple [CVEs](https://groups.google.com/g/golang-announce/c/5pwGVUPoMbg).
