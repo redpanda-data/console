@@ -687,7 +687,7 @@ func (s *APISuite) TestGetTopicConfiguration() {
 		}
 		require.NotNilf(cleanupPolicyConfig, "Could not find cleanup.policy config in response")
 		require.NotNilf(retentionBytesConfig, "Could not find retention.bytes config in response")
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG, cleanupPolicyConfig.Source)
 		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, retentionBytesConfig.Source)
 		assert.Equal(kmsg.StringPtr("delete"), cleanupPolicyConfig.Value)
 		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
@@ -1152,7 +1152,7 @@ func (s *APISuite) TestSetTopicConfiguration() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source.String())
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source.String())
 
 		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
 		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
@@ -1248,7 +1248,7 @@ func (s *APISuite) TestSetTopicConfiguration() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source)
 
 		assert.Equal("producer", *compressionTypeConfig.Value)
 		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)

@@ -66,9 +66,7 @@ func (s *Service) ListRoles(ctx context.Context, req *connect.Request[v1alpha1.L
 		req.Msg.GetFilter().GetNamePrefix(),
 		principal, principalType)
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	protoRoles := adminAPIRolesToProto(res.Roles)
@@ -108,9 +106,7 @@ func (s *Service) CreateRole(ctx context.Context, req *connect.Request[v1alpha1.
 
 	res, err := s.redpandaSvc.CreateRole(ctx, req.Msg.GetRole().GetName())
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	return connect.NewResponse(&v1alpha1.CreateRoleResponse{
@@ -126,9 +122,7 @@ func (s *Service) GetRole(ctx context.Context, req *connect.Request[v1alpha1.Get
 
 	res, err := s.redpandaSvc.GetRole(ctx, req.Msg.GetRoleName())
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	return connect.NewResponse(&v1alpha1.GetRoleResponse{
@@ -145,9 +139,7 @@ func (s *Service) DeleteRole(ctx context.Context, req *connect.Request[v1alpha1.
 
 	err := s.redpandaSvc.DeleteRole(ctx, req.Msg.GetRoleName(), req.Msg.GetDeleteAcls())
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	connectResponse := connect.NewResponse(&v1alpha1.DeleteRoleResponse{})
@@ -164,9 +156,7 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 
 	res, err := s.redpandaSvc.RoleMembers(ctx, req.Msg.GetRoleName())
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	nameContains := req.Msg.GetFilter().GetNameContains()
@@ -206,6 +196,7 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 	}
 
 	return connect.NewResponse(&v1alpha1.ListRoleMembersResponse{
+		RoleName:      req.Msg.GetRoleName(),
 		Members:       protoMembers,
 		NextPageToken: nextPageToken,
 	}), nil
@@ -222,9 +213,7 @@ func (s *Service) UpdateRoleMembership(ctx context.Context, req *connect.Request
 
 	res, err := s.redpandaSvc.UpdateRoleMembership(ctx, req.Msg.GetRoleName(), toAdd, toRemove, req.Msg.GetCreate())
 	if err != nil {
-		if err != nil {
-			return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-		}
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
 	added := adminAPIRoleMembersToProto(res.Added)

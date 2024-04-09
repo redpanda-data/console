@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	"github.com/redpanda-data/common-go/adminapi"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -70,7 +70,8 @@ func (s *APISuite) SetupSuite() {
 
 	// 2. Start Redpanda Docker container
 	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.3.5"),
+		// testcontainers.WithImage("redpandadata/redpanda:v23.3.5"),
+		testcontainers.WithImage("redpandadata/redpanda-unstable:v24.1.1-rc4"),
 		redpanda.WithEnableWasmTransform(),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
