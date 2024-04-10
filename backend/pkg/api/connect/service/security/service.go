@@ -12,12 +12,14 @@ package security
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/adminapi"
 	"github.com/redpanda-data/common-go/api/pagination"
@@ -58,6 +60,22 @@ func NewService(
 func (s *Service) ListRoles(ctx context.Context, req *connect.Request[v1alpha1.ListRolesRequest]) (*connect.Response[v1alpha1.ListRolesResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	// Check if logged in user is allowed to list roles for the given request
+	canListRoles, restErr := s.authHooks.CanListKafkaRoles(ctx)
+	if restErr != nil || !canListRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to view Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
 	}
 
 	principalType, principal := parsePrincipal(req.Msg.GetFilter().GetPrincipal())
@@ -104,6 +122,22 @@ func (s *Service) CreateRole(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
+	// Check if logged in user is allowed to create roles for the given request
+	canCreateRoles, restErr := s.authHooks.CanCreateKafkaRoles(ctx)
+	if restErr != nil || !canCreateRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to create Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
+	}
+
 	res, err := s.redpandaSvc.CreateRole(ctx, req.Msg.GetRole().GetName())
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
@@ -118,6 +152,22 @@ func (s *Service) CreateRole(ctx context.Context, req *connect.Request[v1alpha1.
 func (s *Service) GetRole(ctx context.Context, req *connect.Request[v1alpha1.GetRoleRequest]) (*connect.Response[v1alpha1.GetRoleResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	// Check if logged in user is allowed to list roles for the given request
+	canListRoles, restErr := s.authHooks.CanListKafkaRoles(ctx)
+	if restErr != nil || !canListRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to view Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
 	}
 
 	res, err := s.redpandaSvc.GetRole(ctx, req.Msg.GetRoleName())
@@ -135,6 +185,22 @@ func (s *Service) GetRole(ctx context.Context, req *connect.Request[v1alpha1.Get
 func (s *Service) DeleteRole(ctx context.Context, req *connect.Request[v1alpha1.DeleteRoleRequest]) (*connect.Response[v1alpha1.DeleteRoleResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	// Check if logged in user is allowed to delete roles for the given request
+	canDeleteRoles, restErr := s.authHooks.CanDeleteKafkaRoles(ctx)
+	if restErr != nil || !canDeleteRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to delete Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
 	}
 
 	// Admin API DELETE on unknown role return 404, so we have to do a GET check first
@@ -159,6 +225,22 @@ func (s *Service) DeleteRole(ctx context.Context, req *connect.Request[v1alpha1.
 func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1alpha1.ListRoleMembersRequest]) (*connect.Response[v1alpha1.ListRoleMembersResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	// Check if logged in user is allowed to list roles for the given request
+	canListRoles, restErr := s.authHooks.CanListKafkaRoles(ctx)
+	if restErr != nil || !canListRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to view Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
 	}
 
 	res, err := s.redpandaSvc.RoleMembers(ctx, req.Msg.GetRoleName())
@@ -213,6 +295,22 @@ func (s *Service) ListRoleMembers(ctx context.Context, req *connect.Request[v1al
 func (s *Service) UpdateRoleMembership(ctx context.Context, req *connect.Request[v1alpha1.UpdateRoleMembershipRequest]) (*connect.Response[v1alpha1.UpdateRoleMembershipResponse], error) {
 	if !s.cfg.Redpanda.AdminAPI.Enabled {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	// Check if logged in user is allowed to create roles for the given request
+	canCreateRoles, restErr := s.authHooks.CanCreateKafkaRoles(ctx)
+	if restErr != nil || !canCreateRoles {
+		if restErr != nil {
+			err := errors.New("you don't have permissions to create Kafka roles")
+			if restErr.Err != nil {
+				err = restErr.Err
+			}
+			return nil, apierrors.NewConnectError(
+				connect.CodePermissionDenied,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+			)
+		}
 	}
 
 	toAdd := protoRoleMemberToAdminAPIRoleMember(req.Msg.GetAdd())

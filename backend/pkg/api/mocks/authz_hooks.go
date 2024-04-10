@@ -103,6 +103,21 @@ func (mr *MockAuthorizationHooksMockRecorder) CanCreateACL(arg0 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateACL", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateACL), arg0)
 }
 
+// CanCreateKafkaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanCreateKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanCreateKafkaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanCreateKafkaRoles indicates an expected call of CanCreateKafkaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanCreateKafkaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateKafkaRoles), arg0)
+}
+
 // CanCreateKafkaUsers mocks base method.
 func (m *MockAuthorizationHooks) CanCreateKafkaUsers(arg0 context.Context) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -191,6 +206,21 @@ func (m *MockAuthorizationHooks) CanDeleteConsumerGroup(arg0 context.Context, ar
 func (mr *MockAuthorizationHooksMockRecorder) CanDeleteConsumerGroup(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteConsumerGroup", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteConsumerGroup), arg0, arg1)
+}
+
+// CanDeleteKafkaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanDeleteKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanDeleteKafkaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanDeleteKafkaRoles indicates an expected call of CanDeleteKafkaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanDeleteKafkaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteKafkaRoles), arg0)
 }
 
 // CanDeleteKafkaUsers mocks base method.
@@ -311,6 +341,21 @@ func (m *MockAuthorizationHooks) CanListACLs(arg0 context.Context) (bool, *rest.
 func (mr *MockAuthorizationHooksMockRecorder) CanListACLs(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListACLs", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListACLs), arg0)
+}
+
+// CanListKafkaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanListKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanListKafkaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanListKafkaRoles indicates an expected call of CanListKafkaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanListKafkaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListKafkaRoles), arg0)
 }
 
 // CanListKafkaUsers mocks base method.
