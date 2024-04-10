@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/redpanda-data/common-go/adminapi"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/net"
+	"github.com/redpanda-data/common-go/net"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"

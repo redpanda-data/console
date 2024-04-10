@@ -2,7 +2,7 @@ module github.com/redpanda-data/console/backend
 
 go 1.22.0
 
-replace github.com/redpanda-data/common-go/adminapi => /Users/bojandjurkovic/rp/common-go/adminapi
+replace github.com/redpanda-data/common-go/adminapi => github.com/redpanda-data/common-go/adminapi v0.0.0-20240410162206-0448ad99bebb
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20231115204500-e097f827e652.1
@@ -38,7 +38,7 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/redpanda-data/common-go/adminapi v0.0.0-00010101000000-000000000000
 	github.com/redpanda-data/common-go/api v0.0.0-20240325132346-9b1c10a2ec14
-	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20240105044330-c094966ca0cf
+	github.com/redpanda-data/common-go/net v0.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.28.0
@@ -156,7 +156,6 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.2.1 // indirect
-	github.com/spf13/afero v1.11.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
@@ -172,6 +171,7 @@ require (
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
