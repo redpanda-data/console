@@ -661,7 +661,6 @@ type ListACLsRequest_Filter struct {
 	// ACL targets.
 	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
 	// The name of the resource this ACL targets.
-	// For requests with resource_type CLUSTER, this will default to "kafka-cluster".
 	ResourceName *string `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
 	// The pattern to use for matching the specified resource_name
 	// (any, exact match, literal, or prefixed).
@@ -913,7 +912,6 @@ type DeleteACLsRequest_Filter struct {
 	// ACL targets.
 	ResourceType ACL_ResourceType `protobuf:"varint,1,opt,name=resource_type,json=resourceType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourceType" json:"resource_type,omitempty"`
 	// The name of the resource this ACL targets.
-	// For requests with resource_type CLUSTER, this will default to "kafka-cluster".
 	ResourceName *string `protobuf:"bytes,2,opt,name=resource_name,json=resourceName,proto3,oneof" json:"resource_name,omitempty"`
 	// The pattern to use for matching the specified resource_name
 	// (any, exact match, literal, or prefixed).

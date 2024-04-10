@@ -323,7 +323,6 @@ export class ListACLsRequest_Filter extends Message<ListACLsRequest_Filter> {
 
   /**
    * The name of the resource this ACL targets.
-   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
    *
    * @generated from field: optional string resource_name = 2;
    */
@@ -718,7 +717,6 @@ export class DeleteACLsRequest_Filter extends Message<DeleteACLsRequest_Filter> 
 
   /**
    * The name of the resource this ACL targets.
-   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
    *
    * @generated from field: optional string resource_name = 2;
    */

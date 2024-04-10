@@ -402,9 +402,7 @@ components:
           nullable: true
           type: string
         resource_name:
-          description: |-
-            The name of the resource this ACL targets.
-            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+          description: The name of the resource this ACL targets.
           nullable: true
           type: string
         resource_pattern_type:
@@ -666,9 +664,7 @@ components:
           nullable: true
           type: string
         resource_name:
-          description: |-
-            The name of the resource this ACL targets.
-            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+          description: The name of the resource this ACL targets.
           nullable: true
           type: string
         resource_pattern_type:
@@ -1228,9 +1224,7 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - description: |-
-            The name of the resource this ACL targets.
-            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+        - description: The name of the resource this ACL targets.
           in: query
           name: filter.resource_name
           schema:
@@ -1340,9 +1334,7 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - description: |-
-            The name of the resource this ACL targets.
-            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+        - description: The name of the resource this ACL targets.
           in: query
           name: filter.resource_name
           schema:
@@ -2802,7 +2794,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
