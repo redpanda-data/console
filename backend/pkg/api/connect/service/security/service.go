@@ -137,7 +137,14 @@ func (s *Service) DeleteRole(ctx context.Context, req *connect.Request[v1alpha1.
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
-	err := s.redpandaSvc.DeleteRole(ctx, req.Msg.GetRoleName(), req.Msg.GetDeleteAcls())
+	// Admin API DELETE on unknown role return 404, so we have to do a GET check first
+	// https://redpandadata.atlassian.net/browse/CORE-2206
+	_, err := s.redpandaSvc.GetRole(ctx, req.Msg.GetRoleName())
+	if err != nil {
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+	}
+
+	err = s.redpandaSvc.DeleteRole(ctx, req.Msg.GetRoleName(), req.Msg.GetDeleteAcls())
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}

@@ -217,6 +217,7 @@ func (s *APISuite) TestCreateRole() {
 		_, err := client.CreateRole(ctx, connect.NewRequest(&v1alpha1.CreateRoleRequest{
 			Role: &v1alpha1.Role{Name: ""},
 		}))
+
 		assert.Error(err)
 		assert.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	})
@@ -370,7 +371,7 @@ func (s *APISuite) TestDeleteRole() {
 		assert.Contains(err.Error(), "not found")
 	})
 
-	t.Run("delete role with invalid request (connect-go)", func(t *testing.T) {
+	t.Run("delete role with unknown role (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -381,5 +382,159 @@ func (s *APISuite) TestDeleteRole() {
 		}))
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	})
+}
+
+func (s *APISuite) TestUpdateRoleMembership() {
+	t := s.T()
+
+	client := v1alpha1connect.NewSecurityServiceClient(http.DefaultClient, s.httpAddress())
+
+	t.Run("add with create (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		res, err := client.UpdateRoleMembership(ctx, connect.NewRequest(&v1alpha1.UpdateRoleMembershipRequest{
+			RoleName: "update_role_test_connect",
+			Create:   true,
+			Add: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:foo0",
+				},
+				{
+					Principal: "User:bar0",
+				},
+			},
+		}))
+		require.NoError(err)
+		assert.Equal("update_role_test_connect", res.Msg.GetRoleName())
+		assert.Len(res.Msg.GetAdded(), 2)
+
+		roleRes, err := s.redpandaAdminClient.Role(ctx, "update_role_test_connect")
+		assert.NoError(err)
+		assert.Equal("update_role_test_connect", roleRes.RoleName)
+		assert.Len(roleRes.Members, 2)
+
+		s.redpandaAdminClient.DeleteRole(ctx, "update_role_test_connect", true)
+	})
+
+	t.Run("add with create on existing (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := s.redpandaAdminClient.CreateRole(ctx, "update_role_test_connect_existing")
+		require.NoError(err)
+
+		defer func() {
+			s.redpandaAdminClient.DeleteRole(ctx, "update_role_test_connect_existing", true)
+		}()
+
+		res, err := client.UpdateRoleMembership(ctx, connect.NewRequest(&v1alpha1.UpdateRoleMembershipRequest{
+			RoleName: "update_role_test_connect_existing",
+			Create:   true,
+			Add: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:zig0",
+				},
+			},
+		}))
+		require.NoError(err)
+		assert.Equal("update_role_test_connect_existing", res.Msg.GetRoleName())
+		assert.Len(res.Msg.GetAdded(), 1)
+
+		roleRes, err := s.redpandaAdminClient.Role(ctx, "update_role_test_connect_existing")
+		assert.NoError(err)
+		assert.Equal("update_role_test_connect_existing", roleRes.RoleName)
+		assert.Len(roleRes.Members, 1)
+	})
+
+	t.Run("add without create on unknown (connect-go)", func(t *testing.T) {
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		_, err := client.UpdateRoleMembership(ctx, connect.NewRequest(&v1alpha1.UpdateRoleMembershipRequest{
+			RoleName: "update_role_test_connect_unknown_123",
+			Add: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:zig0",
+				},
+			},
+		}))
+
+		assert.Error(err)
+		assert.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	})
+
+	t.Run("add and remove (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		res, err := client.UpdateRoleMembership(ctx, connect.NewRequest(&v1alpha1.UpdateRoleMembershipRequest{
+			RoleName: "update_role_test_add_remove_connect",
+			Create:   true,
+			Add: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:foo0",
+				},
+				{
+					Principal: "User:bar0",
+				},
+			},
+		}))
+		require.NoError(err)
+		assert.Equal("update_role_test_add_remove_connect", res.Msg.GetRoleName())
+		assert.Len(res.Msg.GetAdded(), 2)
+
+		defer func() {
+			s.redpandaAdminClient.DeleteRole(ctx, "update_role_test_add_remove_connect", true)
+		}()
+
+		res, err = client.UpdateRoleMembership(ctx, connect.NewRequest(&v1alpha1.UpdateRoleMembershipRequest{
+			RoleName: "update_role_test_add_remove_connect",
+			Add: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:foo0",
+				},
+				{
+					Principal: "User:zig0",
+				},
+				{
+					Principal: "User:zag0",
+				},
+			},
+			Remove: []*v1alpha1.RoleMembership{
+				{
+					Principal: "User:bar0",
+				},
+			},
+		}))
+		require.NoError(err)
+		assert.Equal("update_role_test_add_remove_connect", res.Msg.GetRoleName())
+		assert.Len(res.Msg.GetAdded(), 2)
+		assert.Len(res.Msg.GetRemoved(), 1)
+
+		roleRes, err := s.redpandaAdminClient.Role(ctx, "update_role_test_add_remove_connect")
+		assert.NoError(err)
+		assert.Equal("update_role_test_add_remove_connect", roleRes.RoleName)
+		require.Len(roleRes.Members, 3)
+
+		members := roleRes.Members
+		sort.Slice(members, func(i, j int) bool {
+			return members[i].Name < members[j].Name
+		})
+		assert.Equal("foo0", members[0].Name)
+		assert.Equal("zag0", members[1].Name)
+		assert.Equal("zig0", members[2].Name)
 	})
 }
