@@ -327,15 +327,15 @@ const RoleSelector = observer((p: { state: string[] }) => {
     // Make sure we have up to date role info
     useEffect(() => {
         rolesApi.refreshRoles();
+        rolesApi.refreshRoleMembers();
     }, []);
     const [searchValue, setSearchValue] = useState('');
 
     const state = p.state;
 
-
     const availableRoles = (rolesApi.roles ?? [])
-        .filter(r => !state.includes(r.name))
-        .map(r => ({ value: r.name }));
+        .filter(r => !state.includes(r))
+        .map(r => ({ value: r }));
 
     return <Flex direction="column" gap={4}>
         <Box w="280px">

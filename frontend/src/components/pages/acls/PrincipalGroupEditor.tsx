@@ -105,6 +105,7 @@ export const AclPrincipalGroupEditor = observer((p: {
         p.onClose();
     }
 
+
     return (
         <Modal isOpen onClose={() => {}}>
             <ModalOverlay />
