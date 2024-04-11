@@ -18,7 +18,7 @@ import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, delay, TimeSince } from '../utils/utils';
+import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
     GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
@@ -1486,89 +1486,98 @@ const apiStore = {
 
 };
 
-// This is a fake api to emulate working with the new "acl roles" feature.
-// TODO: REMOVE BEFORE MERGE
-export type RolePrincipal = { name: string; principal_type: 'User' };
-export type RedpandaRole = {
-    name: string
-};
-export type ModifyRoleMembersRequest = {
-    add: RolePrincipal[],
-    remove: RolePrincipal[]
-};
+export type RolePrincipal = { name: string, principalType: 'User' };
 export const rolesApi = observable({
-    roles: [
-        { name: 'role1', },
-        { name: 'role2', },
-        { name: 'role3', },
-        { name: 'role4', },
-        { name: 'role5', },
-    ] as undefined | RedpandaRole[],
+    roles: [] as string[],
     roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
     // roleAcls: new Map<string,>(); // RoleName -> ACLs
 
-    async refreshRoles(_force?: boolean) {
-        await delay(200);
+    async refreshRoles(): Promise<void> {
+        const client = appConfig.securityClient;
+        if (!client) throw new Error('security client is not initialized');
+
+        const roles: string[] = [];
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken });
+
+            const newRoles = res.roles.map(x => x.name);
+            roles.push(...newRoles);
+
+            if (!res.nextPageToken || res.nextPageToken.length == 0)
+                break;
+
+            nextPageToken = res.nextPageToken;
+        }
+
+        this.roles = roles;
+    },
+
+    async refreshRoleMembers() {
+        const client = appConfig.securityClient;
+        if (!client) throw new Error('security client is not initialized');
+
+        const rolePromises = [];
+        for (const role of this.roles) {
+            rolePromises.push(client.getRole({ roleName: role }));
+        }
+
+        await Promise.allSettled(rolePromises);
+
+        for (const r of rolePromises) {
+            const res = await r;
+            if (res.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+            const roleName = res.role.name;
+
+            const members = res.members.map(x => {
+
+                const principalParts = x.principal.split(':');
+                if (principalParts.length != 2) {
+                    console.error('failed to split principal of role', { roleName, principal: x.principal });
+                    return null;
+                }
+                const principalType = principalParts[0];
+                const name = principalParts[1];
+
+                if (principalType != 'User') {
+                    console.error('unexpected principal type in refreshRoleMembers', { roleName, principal: x.principal });
+                }
+
+                return { principalType, name } as RolePrincipal;
+            }).filterNull();
+
+            this.roleMembers.clear();
+            this.roleMembers.set(roleName, members);
+        }
+
     },
 
     async createRole(name: string) {
-        if (!this.roleMembers.has(name)) {
-            if (!this.roles)
-                this.roles = [];
-            this.roles.push({ name });
-            this.roleMembers.set(name, []);
-        }
-        else
-            throw new Error('role with this name already exists');
+        const client = appConfig.securityClient;
+        if (!client) throw new Error('security client is not initialized');
+
+        await client.createRole({ role: { name } });
     },
 
-    async modifyRoleMembers(role: string, req: ModifyRoleMembersRequest) {
-        const members = this.roleMembers.get(role)
-        if (!members) return;
+    async deleteRole(name: string, deleteAcls: boolean) {
+        const client = appConfig.securityClient;
+        if (!client) throw new Error('security client is not initialized');
 
-        members.pushDistinct(...req.add);
-        for (const r of req.remove)
-            members.removeAll(member => member.name == r.name);
+        await client.deleteRole({ roleName: name, deleteAcls });
     },
 
-    async deleteRole(name: string) {
-        await delay(150);
-        if (this.roleMembers.has(name))
-            this.roleMembers.delete(name);
-        else
-            throw new Error('role with this name does not exist');
-    },
+    async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[]) {
+        const client = appConfig.securityClient;
+        if (!client) throw new Error('security client is not initialized');
 
-
-    async refreshRoleAcls() {
-        const _req: GetAclsRequest = {
-            resourceType: 'Any',
-            resourcePatternTypeFilter: 'Any',
-            operation: 'Any',
-            permissionType: 'Any',
-        };
-
-// const response: GetAclOverviewResponse = {
-//     isAuthorizerEnabled: true,
-//     aclResources: [
-//         {
-//             resourceName: 'placeholder',
-//             resourcePatternType: 'Any',
-//             resourceType: 'Any',
-//             acls: [
-//                 {
-//                     host: 'host placeholder',
-//                     operation: 'Create',
-//                     principal
-//                 }
-//             ]
-//
-//         }
-//     ]
-// };
-
-        // GetAclOverviewResponse -> normalizeACLs
+        await client.updateRoleMembership({
+            roleName: roleName,
+            add: addUsers.map(u => ({ principal: 'User:' + u })),
+            remove: removeUsers.map(u => ({ principal: 'User:' + u })),
+            create: false,
+        });
     }
+
 });
 
 

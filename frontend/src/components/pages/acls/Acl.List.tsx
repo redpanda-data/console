@@ -11,16 +11,16 @@
 
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { RedpandaRole, api, rolesApi } from '../../../state/backendApi';
+import { api, rolesApi } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { comparer, computed, makeObservable, observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { AclFlat, AclPrincipalGroup, PrincipalType, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, collectTransactionalIdAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl } from './Models';
+import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, principalGroupsView } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
@@ -28,6 +28,9 @@ import { Features } from '../../../state/supportedFeatures';
 import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Box, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Tabs, Text, Tooltip } from '@redpanda-data/ui';
 import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { Link as ReactRouterLink } from 'react-router-dom'
+import { Link as ChakraLink } from '@chakra-ui/react'
+
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -64,8 +67,11 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
-            api.refreshServiceAccounts(true)
+            api.refreshServiceAccounts(true),
+            rolesApi.refreshRoles()
         ]);
+
+        await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
     }
 
     render() {
@@ -91,7 +97,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         const tabs = [
             { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
             { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab /> },
-            { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={this.principalGroups} /> },
+            { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
         ] as TabsItemProps[];
 
         // todo: maybe there is a better way to sync the tab control to the path
@@ -117,95 +123,6 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
                 />
             </PageContent>
         </>
-    }
-
-    @computed({ equals: comparer.structural }) get flatAcls() {
-        const acls = api.ACLs;
-        if (!acls || !acls.aclResources || acls.aclResources.length == 0)
-            return [];
-
-        const flattened: AclFlat[] = [];
-        for (const res of acls.aclResources) {
-            for (const rule of res.acls) {
-
-                const flattenedEntry: AclFlat = {
-                    resourceType: res.resourceType,
-                    resourceName: res.resourceName,
-                    resourcePatternType: res.resourcePatternType,
-
-                    principal: rule.principal,
-                    host: rule.host,
-                    operation: rule.operation,
-                    permissionType: rule.permissionType
-                };
-
-                flattened.push(flattenedEntry);
-            }
-        }
-
-        return flattened;
-    }
-
-    @computed({ equals: comparer.structural }) get principalGroups(): AclPrincipalGroup[] {
-        const flat = this.flatAcls;
-
-        const g = flat.groupInto(f => {
-            const groupingKey = (f.principal ?? 'Any') + ' ' + (f.host ?? 'Any');
-            return groupingKey;
-        });
-
-        const result: AclPrincipalGroup[] = [];
-
-        for (const { items } of g) {
-            const { principal, host } = items[0];
-
-            let principalType: PrincipalType;
-            let principalName: string;
-            if (principal.includes(':')) {
-                const split = principal.split(':', 2);
-                principalType = split[0] as PrincipalType;
-                principalName = split[1];
-            } else {
-                principalType = 'User';
-                principalName = principal;
-            }
-
-            const principalGroup: AclPrincipalGroup = {
-                principalType,
-                principalName,
-                host,
-
-                topicAcls: collectTopicAcls(items),
-                consumerGroupAcls: collectConsumerGroupAcls(items),
-                clusterAcls: collectClusterAcls(items),
-                transactionalIdAcls: collectTransactionalIdAcls(items),
-
-                sourceEntries: items,
-            };
-            result.push(principalGroup);
-        }
-
-        // Add service accounts that exist but have no associated acl rules
-        const serviceAccounts = api.serviceAccounts?.users;
-        if (serviceAccounts) {
-            for (const acc of serviceAccounts) {
-                if (!result.any(g => g.principalName == acc)) {
-                    // Doesn't have a group yet, create one
-                    result.push({
-                        principalType: 'User',
-                        host: '',
-                        principalName: acc,
-                        topicAcls: [createEmptyTopicAcl()],
-                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
-                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
-                        clusterAcls: createEmptyClusterAcl(),
-                        sourceEntries: [],
-                    });
-                }
-            }
-        }
-
-        return result;
     }
 }
 
@@ -258,7 +175,12 @@ const UsersTab = observer(() => {
                         size: Infinity,
                         header: 'User',
                         cell: (ctx) => {
-                            return <>{ctx.row.original}</>
+                            const entry = ctx.row.original;
+                            return <>
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry}/details`}>
+                                    {entry}
+                                </ChakraLink>
+                            </>
                         }
                     },
                     {
@@ -286,10 +208,15 @@ const RolesTab = observer(() => {
             if (!filter) return true;
             try {
                 const quickSearchRegExp = new RegExp(filter, 'i');
-                return u.name.match(quickSearchRegExp);
+                return u.match(quickSearchRegExp);
             } catch { return false; }
         });
     const _isLoading = rolesApi.roles == null;
+
+    const rolesWithMembers = roles.map(r => {
+        const members = rolesApi.roleMembers.get(r) ?? [];
+        return { name: r, members };
+    });
 
     return <Flex flexDirection="column" gap="4">
         <Box>
@@ -304,10 +231,12 @@ const RolesTab = observer(() => {
         />
 
         <Section>
-            <Button variant="outline">Create role</Button>
+            <Button variant="outline" onClick={() => {
+                rolesApi.createRole('role1');
+            }}>Create role</Button>
 
-            <DataTable<RedpandaRole>
-                data={roles}
+            <DataTable
+                data={rolesWithMembers}
                 pagination
                 sorting
                 columns={[
@@ -322,8 +251,8 @@ const RolesTab = observer(() => {
                     {
                         id: 'assignedPrincipals',
                         header: 'Assigned principals',
-                        cell: (_ctx) => {
-                            return <>{'placeholder'}</>
+                        cell: (ctx) => {
+                            return <>{ctx.row.original.members.length}</>
                         }
                     },
                     {
@@ -377,7 +306,7 @@ const AclsTab = observer((p: {
         <Section>
             {edittingPrincipalGroup &&
                 <AclPrincipalGroupEditor
-        // @ts-ignore
+                // @ts-ignore
                 principalGroup={edittingPrincipalGroup}
                 type={editorType}
                 onClose={() => {
@@ -427,7 +356,7 @@ const AclsTab = observer((p: {
                             return (
                                 <button className="hoverLink" onClick={() => {
                                     setEditorType('edit');
-                                    setEdittingPrincipalGroup(clone(record));
+                                    setEdittingPrincipalGroup(observable(clone(record)));
                                 }}>
                                     <Flex>
                                         <Badge variant="subtle" mr="2">{principalType}</Badge>

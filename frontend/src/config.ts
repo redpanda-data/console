@@ -19,6 +19,7 @@ import { APP_ROUTES } from './components/routes';
 import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient, PromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
+import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -63,6 +64,7 @@ export interface Breadcrumb {
 interface Config {
     restBasePath: string;
     consoleClient?: PromiseClient<typeof ConsoleService>;
+    securityClient?: PromiseClient<typeof SecurityService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
     jwt?: string;
@@ -94,14 +96,16 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         interceptors: [addBearerTokenInterceptor]
     });
 
-    const grpcClient = createPromiseClient(ConsoleService, transport);
+    const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
+    const securityGrpcClient = createPromiseClient(SecurityService, transport);
     Object.assign(config, {
         jwt,
         isServerless,
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
-        consoleClient: grpcClient,
+        consoleClient: consoleGrpcClient,
+        securityClient: securityGrpcClient,
         ...args,
     });
     return config;

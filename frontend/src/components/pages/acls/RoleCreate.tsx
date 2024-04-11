@@ -68,7 +68,8 @@ class RoleCreatePage extends PageComponent<{}> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles(force),
+            rolesApi.refreshRoles(),
+            rolesApi.refreshRoleMembers(),
         ]);
     }
 
