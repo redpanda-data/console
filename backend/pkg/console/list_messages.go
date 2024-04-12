@@ -121,6 +121,11 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	if err != nil {
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
+	for _, mark := range marks {
+		if mark.Error != nil {
+			return fmt.Errorf("failed to get partition offset for partition %d: %w", mark.PartitionID, mark.Error)
+		}
+	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests, err := s.calculateConsumeRequests(ctx, &listReq, marks)
