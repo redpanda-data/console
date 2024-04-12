@@ -231,7 +231,7 @@ func updateAny(doc3 *openapi3.T) {
 	{
 		schema := doc3.Components.Schemas["Status"].Value
 		schema.Properties["code"].Value.Description = "RPC status code, as described [here](https://github.com/googleapis/googleapis/blob/b4c238feaa1097c53798ed77035bbfeb7fc72e96/google/rpc/code.proto#L32)."
-		schema.Properties["code"].Value.Type = "string"
+		schema.Properties["code"].Value.Type = &openapi3.Types{openapi3.TypeString}
 		schema.Properties["code"].Value.Enum = []any{
 			"OK",
 			"CANCELLED",
@@ -254,7 +254,7 @@ func updateAny(doc3 *openapi3.T) {
 		schema.Properties["message"].Value.Description = "Detailed error message. No compatibility guarantees are given for the text contained in this message."
 		schema.Properties["details"] = &openapi3.SchemaRef{
 			Value: &openapi3.Schema{
-				Type: "array",
+				Type: &openapi3.Types{openapi3.TypeArray},
 				Items: &openapi3.SchemaRef{
 					Value: &openapi3.Schema{
 						Description: "Details of the error.",
@@ -269,7 +269,7 @@ func updateAny(doc3 *openapi3.T) {
 													"@type": &openapi3.SchemaRef{
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
-															Type:        "string",
+															Type:        &openapi3.Types{openapi3.TypeString},
 															Enum: []any{
 																"type.googleapis.com/google.rpc.BadRequest",
 															},
@@ -294,7 +294,7 @@ func updateAny(doc3 *openapi3.T) {
 													"@type": &openapi3.SchemaRef{
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
-															Type:        "string",
+															Type:        &openapi3.Types{openapi3.TypeString},
 															Enum: []any{
 																"type.googleapis.com/google.rpc.ErrorInfo",
 															},
@@ -319,7 +319,7 @@ func updateAny(doc3 *openapi3.T) {
 													"@type": &openapi3.SchemaRef{
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
-															Type:        "string",
+															Type:        &openapi3.Types{openapi3.TypeString},
 															Enum: []any{
 																"type.googleapis.com/google.rpc.QuotaFailure",
 															},
@@ -344,7 +344,7 @@ func updateAny(doc3 *openapi3.T) {
 													"@type": &openapi3.SchemaRef{
 														Value: &openapi3.Schema{
 															Description: "Fully qualified protobuf type name of the underlying response, prefixed with `type.googleapis.com/`.",
-															Type:        "string",
+															Type:        &openapi3.Types{openapi3.TypeString},
 															Enum: []any{
 																"type.googleapis.com/google.rpc.Help",
 															},
@@ -544,7 +544,7 @@ func updateTransforms(doc3 *openapi3.T) {
 			Ref: "#/components/schemas/DeployTransformRequest",
 			Value: &openapi3.Schema{
 				AllowEmptyValue: false,
-				Type:            "string",
+				Type:            &openapi3.Types{openapi3.TypeString},
 				Description:     "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
 				Example:         string(deployTransformReqMarshaled),
 			},
@@ -552,7 +552,7 @@ func updateTransforms(doc3 *openapi3.T) {
 		multipartProps["wasm_binary"] = &openapi3.SchemaRef{
 			Value: &openapi3.Schema{
 				AllowEmptyValue: false,
-				Type:            "string",
+				Type:            &openapi3.Types{openapi3.TypeString},
 				Format:          "binary",
 				Description:     "Binary file containing the compiled WASM transform. The maximum size for this file is 10MiB.",
 			},
@@ -596,7 +596,7 @@ func updateTransforms(doc3 *openapi3.T) {
 				Required:    true,
 				Content: openapi3.NewContentWithFormDataSchemaRef(&openapi3.SchemaRef{
 					Value: &openapi3.Schema{
-						Type:       "object",
+						Type:       &openapi3.Types{openapi3.TypeObject},
 						Example:    string(deployTransformReqMarshaled),
 						Properties: multipartProps,
 					},
