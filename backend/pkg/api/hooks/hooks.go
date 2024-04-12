@@ -130,6 +130,11 @@ type AuthorizationHooks interface {
 	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
+
+	// Kafka Role Hooks
+	CanListKafkaRoles(ctx context.Context) (bool, *rest.Error)
+	CanCreateKafkaRoles(ctx context.Context) (bool, *rest.Error)
+	CanDeleteKafkaRoles(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
