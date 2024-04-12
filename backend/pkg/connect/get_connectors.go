@@ -430,7 +430,7 @@ func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTask
 	// UNKNOWN: Any other scenario.
 	var connStatus connectorStatus
 	var errDetailedContent string
-	//nolint:gocritic,goconst // this if else is easier to read as they map to rules and logic specified above.
+	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
 	if (status.Connector.State == connectorStateRunning) &&
 		aggregatedTasksStatus.Total > 0 && aggregatedTasksStatus.Running == aggregatedTasksStatus.Total {
 		connStatus = ConnectorStatusHealthy
