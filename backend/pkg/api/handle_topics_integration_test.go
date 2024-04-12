@@ -344,7 +344,8 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				drRes.Resources[2].ErrorCode = kerr.InvalidTopicException.Code
 
 				return drRes, nil, true
-
+			case *kmsg.DescribeLogDirsRequest:
+				return nil, fmt.Errorf("not mocked"), false
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
 
