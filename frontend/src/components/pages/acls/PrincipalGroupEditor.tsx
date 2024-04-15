@@ -254,7 +254,7 @@ export const AclPrincipalGroupEditor = observer((p: {
     )
 });
 
-const ResourceACLsEditor = observer((p: {
+export const ResourceACLsEditor = observer((p: {
     resource: ResourceACLs,
     resourceType: AclStrResourceType,
     onDelete?: () => void

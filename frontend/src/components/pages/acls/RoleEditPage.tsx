@@ -13,15 +13,18 @@ import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, Flex } from '@redpanda-data/ui';
+import { RoleForm } from './RoleForm';
+import { principalGroupsView } from './Models';
 
 
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {
+
+    @observable x = 0;
 
     constructor(p: any) {
         super(p);
@@ -29,8 +32,12 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     }
 
     initPage(p: PageInitHelper): void {
+        const roleName = decodeURIComponent(this.props.roleName);
+
         p.title = 'Edit role';
         p.addBreadcrumb('Access control', '/security');
+        p.addBreadcrumb('Roles', '/security/roles');
+        p.addBreadcrumb(roleName, `/security/roles/${roleName}`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -51,19 +58,22 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
         if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
         if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
+        const aclPrincipalGroup = principalGroupsView.principalGroups.find(({
+            principalType,
+            principalName
+        }) => principalType === 'RedpandaRole' && principalName === this.props.roleName);
 
         return <>
 
             <PageContent>
-
-                <Flex gap={4} mt={8}>
-                    <Button colorScheme="brand" >
-                        Save
-                    </Button>
-                    <Button variant="delete" onClick={() => appGlobal.history.push('/security/roles/')}>
-                        Cancel
-                    </Button>
-                </Flex>
+                <RoleForm initialData={{
+                    roleName: this.props.roleName,
+                    topicACLs: aclPrincipalGroup?.topicAcls ?? [],
+                    consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
+                    clusterACLs: aclPrincipalGroup?.clusterAcls,
+                    transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
+                    host: aclPrincipalGroup?.host ?? '',
+                }}/>
             </PageContent>
         </>
     }

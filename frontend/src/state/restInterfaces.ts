@@ -692,6 +692,7 @@ export type AclStrResourceType =
     | 'Cluster'
     | 'TransactionalID'
     | 'DelegationToken'
+    | 'RedpandaRole'
     ;
 
 export type AclStrResourcePatternType =

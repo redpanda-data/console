@@ -11,23 +11,14 @@
 
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { RolePrincipal, api, rolesApi } from '../../../state/backendApi';
+import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, createStandaloneToast, Flex, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
-import { ClusterACLs, ConsumerGroupACLs, TopicACLs, TransactionalIdACLs, createEmptyClusterAcl } from './Models';
-
-const { ToastContainer, toast } = createStandaloneToast({
-    theme: redpandaTheme,
-    defaultOptions: {
-        ...redpandaToastOptions.defaultOptions,
-        isClosable: false,
-        duration: 2000,
-    },
-});
+import { ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs } from './Models';
+import { RoleForm } from './RoleForm';
 
 @observer
 class RoleCreatePage extends PageComponent<{}> {
@@ -39,12 +30,10 @@ class RoleCreatePage extends PageComponent<{}> {
     @observable members: RolePrincipal[] = [];
 
     // Permissions that will be applied to the role
-    @observable topicAcls: TopicACLs[] = [];
-    @observable consumerGroupAcls: ConsumerGroupACLs[] = [];
-    @observable transactionalIdAcls: TransactionalIdACLs[] = [];
+    @observable topicAcls: TopicACLs = createEmptyTopicAcl();
+    @observable consumerGroupAcls: ConsumerGroupACLs = createEmptyConsumerGroupAcl();
+    @observable transactionalIdAcls: TransactionalIdACLs = createEmptyTransactionalIdAcl();
     @observable clusterAcls: ClusterACLs = createEmptyClusterAcl();
-
-    @observable isCreating = false;
 
 
     constructor(p: any) {
@@ -56,6 +45,7 @@ class RoleCreatePage extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Create role';
         p.addBreadcrumb('Access control', '/security');
+        p.addBreadcrumb('Roles', '/security/roles');
         p.addBreadcrumb('Create role', '/security/roles/create');
 
         this.refreshData(true);
@@ -69,7 +59,6 @@ class RoleCreatePage extends PageComponent<{}> {
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
             rolesApi.refreshRoles(),
-            rolesApi.refreshRoleMembers(),
         ]);
     }
 
@@ -77,47 +66,35 @@ class RoleCreatePage extends PageComponent<{}> {
         if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
         if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
-        const onCancel = () => appGlobal.history.push('/security/roles');
-
-        return <>
-            <ToastContainer />
-
+        return (
             <PageContent>
-
-                <Flex gap={4} mt={8}>
-                    <Button colorScheme="brand" onClick={this.onCreateRole} isDisabled={this.isCreating} isLoading={this.isCreating} loadingText="Creating...">
-                        Create
-                    </Button>
-                    <Button variant="link" isDisabled={this.isCreating} onClick={onCancel}>
-                        Cancel
-                    </Button>
-                </Flex>
+                <RoleForm />
             </PageContent>
-        </>
+        );
     }
 
     async onCreateRole(): Promise<void> {
-        try {
-            this.isCreating = true;
-
-            // create role with members
-
-            // create all acls individually
-
-            // Refresh roles
-
-        } catch (err) {
-            toast({
-                status: 'error',
-                duration: null,
-                isClosable: true,
-                title: 'todo todo todo todo todo todo todo',
-                description: String(err),
-            });
-            throw err;
-        } finally {
-            this.isCreating = false;
-        }
+        // try {
+        //     this.isCreating = true;
+        //
+        //     // create role with members
+        //
+        //     // create all acls individually
+        //
+        //     // Refresh roles
+        //
+        // } catch (err) {
+        //     toast({
+        //         status: 'error',
+        //         duration: null,
+        //         isClosable: true,
+        //         title: 'todo todo todo todo todo todo todo',
+        //         description: String(err),
+        //     });
+        //     throw err;
+        // } finally {
+        //     this.isCreating = false;
+        // }
     };
 }
 

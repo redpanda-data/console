@@ -231,9 +231,7 @@ const RolesTab = observer(() => {
         />
 
         <Section>
-            <Button variant="outline" onClick={() => {
-                rolesApi.createRole('role1');
-            }}>Create role</Button>
+            <Button variant="outline" as="a" href="/security/roles/create">Create role</Button>
 
             <DataTable
                 data={rolesWithMembers}
@@ -245,7 +243,12 @@ const RolesTab = observer(() => {
                         size: Infinity,
                         header: 'Role name',
                         cell: (ctx) => {
-                            return <>{ctx.row.original.name}</>
+                            const entry = ctx.row.original;
+                            return <>
+                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}>
+                                    {entry.name}
+                                </ChakraLink>
+                            </>
                         }
                     },
                     {
@@ -260,8 +263,11 @@ const RolesTab = observer(() => {
                         id: 'menu',
                         header: '',
                         cell: (_ctx) => {
-                            // todo: implement delete
-                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }} onClick={async () => {
+                                const entry = _ctx.row.original;
+                                await rolesApi.deleteRole(entry.name, true)
+                                await rolesApi.refreshRoles()
+                            }}>
                                 <Icon as={TrashIcon} />
                             </Button>;
                         }
