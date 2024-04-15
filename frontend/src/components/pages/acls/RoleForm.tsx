@@ -1,5 +1,5 @@
 import { Box, Button, Flex, Heading, HStack, Input, isSingleValue, Select, Tag, TagCloseButton, TagLabel, Text } from '@redpanda-data/ui';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AclPrincipalGroup, ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs, unpackPrincipalGroup } from './Models';
 import { Label } from '../../../utils/tsxUtils';
 import { observer, useLocalObservable } from 'mobx-react';
@@ -37,12 +37,17 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
         ...initialData,
     }))
 
+    const originalUsernames = useMemo(() => initialData?.principals?.map(({name}) => name) ?? [], [])
+    const currentUsernames = formState.principals.map(({name}) => name) ?? []
+
     const editMode: boolean = Boolean(initialData?.roleName)
 
     return (
         <Box>
             <form onSubmit={async (e) => {
                 e.preventDefault()
+
+                const usersToRemove = originalUsernames.filter(item => currentUsernames.indexOf(item) === -1)
 
                 const principalType: AclStrResourceType = 'RedpandaRole'
 
@@ -72,7 +77,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                 const newRole = await rolesApi.updateRoleMembership(
                     formState.roleName,
-                    formState.principals.map(x => x.name), [], true
+                    formState.principals.map(x => x.name), usersToRemove, true
                 );
 
                 unpackPrincipalGroup(aclPrincipalGroup).forEach((async x => {
@@ -235,7 +240,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 </Flex>
 
                 <Flex gap={4} mt={8}>
-                    <Button variant="link" as="a" href="/security/roles">
+                    <Button variant="link" as="a" href={`/security/roles/${initialData?.roleName}/details`}>
                         Cancel
                     </Button>
                     {editMode ?

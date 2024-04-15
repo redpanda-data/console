@@ -24,7 +24,7 @@ import { principalGroupsView } from './Models';
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {
 
-    @observable x = 0;
+    @observable allDataLoaded  = false;
 
     constructor(p: any) {
         super(p);
@@ -49,22 +49,27 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles(),
-            rolesApi.refreshRoleMembers(),
         ]);
+
+        await rolesApi.refreshRoles();
+        await rolesApi.refreshRoleMembers();
+
+        this.allDataLoaded = true
     }
 
     render() {
-        if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-        if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+        // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+        // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+        if (!this.allDataLoaded) return DefaultSkeleton;
 
         const aclPrincipalGroup = principalGroupsView.principalGroups.find(({
             principalType,
             principalName
         }) => principalType === 'RedpandaRole' && principalName === this.props.roleName);
 
-        return <>
+        const principals = rolesApi.roleMembers.get(this.props.roleName)
 
+        return <>
             <PageContent>
                 <RoleForm initialData={{
                     roleName: this.props.roleName,
@@ -73,6 +78,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
                     clusterACLs: aclPrincipalGroup?.clusterAcls,
                     transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
                     host: aclPrincipalGroup?.host ?? '',
+                    principals: principals ?? [],
                 }}/>
             </PageContent>
         </>
