@@ -14,7 +14,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	adminapi "github.com/redpanda-data/common-go/rpadmin"
 )
 
 // handleGetUsers returns a list of Kafka users. Via the Kafka API we can only return users if our

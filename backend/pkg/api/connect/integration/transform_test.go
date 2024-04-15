@@ -25,7 +25,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/carlmjohnson/requests"
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	assertpkg "github.com/stretchr/testify/assert"
 	requirepkg "github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"

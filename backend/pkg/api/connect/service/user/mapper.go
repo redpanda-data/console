@@ -12,7 +12,7 @@ package user
 import (
 	"fmt"
 
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	adminapi "github.com/redpanda-data/common-go/rpadmin"
 
 	dataplanev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
