@@ -322,7 +322,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 });
 
 
-const RoleSelector = observer((p: { state: string[] }) => {
+export const RoleSelector = observer((p: { state: string[] }) => {
 
     // Make sure we have up to date role info
     useEffect(() => {

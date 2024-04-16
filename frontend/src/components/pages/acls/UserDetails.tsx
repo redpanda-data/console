@@ -176,6 +176,9 @@ const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGrou
             }
         }
 
+        if (allow.length == 0 && deny.length == 0)
+            continue;
+
         entries.push({
             type: 'Topic',
             selector: topicAcl.selector,
@@ -200,6 +203,9 @@ const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGrou
             }
         }
 
+        if (allow.length == 0 && deny.length == 0)
+            continue;
+
         entries.push({
             type: 'ConsumerGroup',
             selector: groupAcl.selector,
@@ -223,6 +229,9 @@ const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGrou
                     deny.push(permName);
             }
         }
+
+        if (allow.length == 0 && deny.length == 0)
+            continue;
 
         entries.push({
             type: 'TransactionalID',
