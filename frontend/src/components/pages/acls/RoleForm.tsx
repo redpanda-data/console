@@ -1,7 +1,6 @@
-import { Box, Button, Flex, Heading, HStack, Input, isSingleValue, Select, Tag, TagCloseButton, TagLabel, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Heading, HStack, Input, isSingleValue, Select, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AclPrincipalGroup, ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs, unpackPrincipalGroup } from './Models';
-import { Label } from '../../../utils/tsxUtils';
 import { observer, useLocalObservable } from 'mobx-react';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
 import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
@@ -97,9 +96,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 void history.push(`/security/roles/${newRole.roleName}/details`);
             }}>
                 <Flex gap={10} flexDirection="column">
-                    <HStack gap={10} alignItems="center">
-                        <Label text="Role name">
-                            <>
+                    <Flex flexDirection="row" gap={20}>
+                        <Box>
+                            <FormField label="Role name">
                                 <Input
                                     pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
@@ -108,11 +107,11 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                                     onChange={(v) => (formState.roleName = v.target.value)}
                                     width={300}
                                 />
-                            </>
-                        </Label>
+                            </FormField>
+                        </Box>
 
                         <Button
-                            mt={5}
+                            alignSelf="self-end"
                             variant="outline"
                             onClick={() => {
                                 if (formState.topicACLs.length == 0) formState.topicACLs.push(createEmptyTopicAcl());
@@ -132,20 +131,15 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         >
                             Allow all operations
                         </Button>
-                    </HStack>
-
-                    <Flex flexDirection="column" gap={4}>
-                        Permissions/Host Field
-                        <Label text="Host">
-                            <>
-                                <Input
-                                    value={formState.host}
-                                    onChange={(v) => (formState.host = v.target.value)}
-                                    width={600}
-                                />
-                            </>
-                        </Label>
                     </Flex>
+
+                    <FormField label="Host" description="The host the user needs to connect from in order for the permissions to apply.">
+                        <Input
+                            value={formState.host}
+                            onChange={(v) => (formState.host = v.target.value)}
+                            width={600}
+                        />
+                    </FormField>
 
                     <Flex flexDirection="column" gap={4}>
                         <Heading>Topics</Heading>
@@ -205,9 +199,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                     <Flex flexDirection="column" gap={4}>
                         <Heading>Principals</Heading>
-                        <Text>Assign this role to principals</Text>
-                        <Text>This can be edited later</Text>
-                        <PrincipalSelector state={formState.principals}/>
+                        <FormField label="Assign this role to principals" description="This can be edited later">
+                            <PrincipalSelector state={formState.principals} />
+                        </FormField>
                     </Flex>
                 </Flex>
 

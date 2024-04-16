@@ -17,18 +17,19 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, DataTable, Flex, Heading } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, Text, SearchField } from '@redpanda-data/ui';
 import { principalGroupsView } from './Models';
 import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { Link as ChakraLink } from '@chakra-ui/react';
+import { Box, Link as ChakraLink } from '@chakra-ui/react';
 
 
 @observer
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
     @observable isDeleting: boolean = false;
+    @observable principalSearch: string = '';
 
     constructor(p: any) {
         super(p);
@@ -77,7 +78,15 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             principalName
         }) => principalType === 'RedpandaRole' && principalName === this.props.roleName)
 
-        const members = rolesApi.roleMembers.get(this.props.roleName)
+        let members = rolesApi.roleMembers.get(this.props.roleName) ?? []
+        try {
+            const quickSearchRegExp = new RegExp(this.principalSearch, 'i')
+            members = members.filter(({name}) => name.match(quickSearchRegExp))
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
+
+        const numberOfUsers = rolesApi.roleMembers.get(this.props.roleName)?.length ?? 0;
 
         return <>
             <PageContent>
@@ -97,6 +106,15 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
                 <Flex flexDirection="column">
                     <Heading as="h3" my="4">Principals</Heading>
+                    <Text>This role is assigned to {numberOfUsers} {numberOfUsers === 1 ? 'member' : 'members'}</Text>
+                    <Box my={2}>
+                        <SearchField
+                            width="300px"
+                            searchText={this.principalSearch}
+                            setSearchText={x => (this.principalSearch = x)}
+                            placeholderText="Filter by name"
+                        />
+                    </Box>
                     <DataTable<RolePrincipal>
                         data={members ?? []}
                         pagination
