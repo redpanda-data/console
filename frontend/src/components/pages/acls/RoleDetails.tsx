@@ -11,26 +11,40 @@
 
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { api, rolesApi } from '../../../state/backendApi';
+import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, Flex } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
+import { principalGroupsView } from './Models';
+import { AclPrincipalGroupPermissionsTable } from './UserDetails';
+
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { Box, Link as ChakraLink } from '@chakra-ui/react';
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 
 
 @observer
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
+    @observable isDeleting: boolean = false;
+    @observable principalSearch: string = '';
+
     constructor(p: any) {
         super(p);
         makeObservable(this);
+        this.deleteRole = this.deleteRole.bind(this);
     }
 
     initPage(p: PageInitHelper): void {
+        const roleName = decodeURIComponent(this.props.roleName);
+
         p.title = 'Role details';
         p.addBreadcrumb('Access control', '/security');
+        p.addBreadcrumb('Roles', '/security/roles');
+        p.addBreadcrumb(roleName, `/security/roles/${roleName}`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -42,27 +56,92 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles(),
-            rolesApi.refreshRoleMembers(),
         ]);
+
+        await rolesApi.refreshRoles();
+        await rolesApi.refreshRoleMembers();
+    }
+
+    async deleteRole() {
+        this.isDeleting = true
+        await rolesApi.deleteRole(this.props.roleName, true)
+        await rolesApi.refreshRoles()
+        this.isDeleting = false
+        appGlobal.history.push('/security/roles/');
     }
 
     render() {
         if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
         if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
+        const aclPrincipalGroup = principalGroupsView.principalGroups.find(({
+            principalType,
+            principalName
+        }) => principalType === 'RedpandaRole' && principalName === this.props.roleName)
+
+        let members = rolesApi.roleMembers.get(this.props.roleName) ?? []
+        try {
+            const quickSearchRegExp = new RegExp(this.principalSearch, 'i')
+            members = members.filter(({name}) => name.match(quickSearchRegExp))
+        } catch (e) {
+            console.warn('Invalid expression')
+        }
+
+        const numberOfPrincipals = rolesApi.roleMembers.get(this.props.roleName)?.length ?? 0;
 
         return <>
-
             <PageContent>
-
-                <Flex gap={4} mt={8}>
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/roles/${this.props.roleName}`)}>
+                <Flex gap="4">
+                    <Button variant="outline" as="a" href={`/security/roles/${this.props.roleName}/edit`}>
                         Edit
                     </Button>
-                    <Button variant="delete" >
-                        Delete
-                    </Button>
+                    <DeleteRoleConfirmModal
+                        numberOfPrincipals={numberOfPrincipals}
+                        onConfirm={this.deleteRole}
+                        buttonEl={
+                            <Button variant="outline-delete">
+                                Delete
+                            </Button>
+                        }
+                    />
+                </Flex>
+                <Flex flexDirection="column">
+                    <Heading as="h3" my="4">Permissions</Heading>
+                    {aclPrincipalGroup ? <AclPrincipalGroupPermissionsTable group={aclPrincipalGroup} /> : 'This role has no permissions assigned.'}
+                </Flex>
+
+                <Flex flexDirection="column">
+                    <Heading as="h3" my="4">Principals</Heading>
+                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'member' : 'members'}</Text>
+                    <Box my={2}>
+                        <SearchField
+                            width="300px"
+                            searchText={this.principalSearch}
+                            setSearchText={x => (this.principalSearch = x)}
+                            placeholderText="Filter by name"
+                        />
+                    </Box>
+                    <DataTable<RolePrincipal>
+                        data={members ?? []}
+                        pagination
+                        sorting
+                        emptyText="No users found"
+                        columns={[
+                            {
+                                id: 'name',
+                                size: Infinity,
+                                header: 'User',
+                                cell: (ctx) => {
+                                    const entry = ctx.row.original;
+                                    return <>
+                                        <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                            {entry.name}
+                                        </ChakraLink>
+                                    </>
+                                }
+                            }
+                        ]}
+                    />
                 </Flex>
             </PageContent>
         </>

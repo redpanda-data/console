@@ -30,6 +30,7 @@ import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -231,9 +232,10 @@ const RolesTab = observer(() => {
         />
 
         <Section>
-            <Button variant="outline" onClick={() => {
-                rolesApi.createRole('role1');
-            }}>Create role</Button>
+            <Button
+                variant="outline"
+                onClick={() => appGlobal.history.push('/security/roles/create')}
+            >Create role</Button>
 
             <DataTable
                 data={rolesWithMembers}
@@ -245,7 +247,12 @@ const RolesTab = observer(() => {
                         size: Infinity,
                         header: 'Role name',
                         cell: (ctx) => {
-                            return <>{ctx.row.original.name}</>
+                            const entry = ctx.row.original;
+                            return <>
+                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}>
+                                    {entry.name}
+                                </ChakraLink>
+                            </>
                         }
                     },
                     {
@@ -259,11 +266,22 @@ const RolesTab = observer(() => {
                         size: 60,
                         id: 'menu',
                         header: '',
-                        cell: (_ctx) => {
-                            // todo: implement delete
-                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
-                                <Icon as={TrashIcon} />
-                            </Button>;
+                        cell: (ctx) => {
+                            const entry = ctx.row.original;
+                            return (
+                                <DeleteRoleConfirmModal
+                                    numberOfPrincipals={entry.members.length}
+                                    onConfirm={async () => {
+                                        await rolesApi.deleteRole(entry.name, true);
+                                        await rolesApi.refreshRoles();
+                                    }}
+                                    buttonEl={
+                                        <Button variant="ghost" className="deleteButton" style={{height: 'auto'}}>
+                                            <Icon as={TrashIcon} />
+                                        </Button>
+                                    }
+                                />
+                            );
                         }
                     },
                 ]}

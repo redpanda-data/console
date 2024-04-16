@@ -144,7 +144,7 @@ const PermissionAssignemntsDetails = observer((p: {
     </>
 });
 
-const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
+export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
 
     const entries: {
         type: string;

@@ -21,47 +21,94 @@ import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
-    GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
-    AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError,
-    Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors,
-    ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType,
-    ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse,
-    DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse,
-    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
-    DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest,
-    EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic,
-    EditConsumerGroupOffsetsTopic, EndpointCompatibility,
-    EndpointCompatibilityResponse, GetAllPartitionsResponse,
-    GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse,
-    GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse,
-    GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors,
-    PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest,
-    PartitionReassignments, PartitionReassignmentsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse,
-    PublishRecordsRequest, QuotaResponse, ResourceConfig,
-    Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
-    TopicDocumentation, TopicDocumentationResponse, TopicOffset,
-    TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
-    PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
+    AclRequestDefault,
+    AclResource,
+    AdminInfo,
+    AlterConfigOperation,
+    AlterPartitionReassignmentsResponse,
+    ApiError,
+    Broker,
+    BrokerConfigResponse,
+    BrokerWithConfigAndStorage,
+    ClusterAdditionalInfo,
+    ClusterConnectors,
+    ClusterInfo,
+    ClusterInfoResponse,
+    ClusterOverview,
+    CompressionType,
+    ConfigEntry,
+    ConfigResourceType,
+    ConnectorValidationResult,
+    CreateACLRequest,
+    CreateSecretResponse,
+    CreateTopicRequest,
+    CreateTopicResponse,
+    CreateUserRequest,
+    DeleteACLsRequest,
+    DeleteConsumerGroupOffsetsRequest,
+    DeleteConsumerGroupOffsetsResponse,
+    DeleteConsumerGroupOffsetsResponseTopic,
+    DeleteConsumerGroupOffsetsTopic,
+    DeleteRecordsResponseData,
+    EditConsumerGroupOffsetsRequest,
+    EditConsumerGroupOffsetsResponse,
+    EditConsumerGroupOffsetsResponseTopic,
+    EditConsumerGroupOffsetsTopic,
+    EndpointCompatibility,
+    EndpointCompatibilityResponse,
+    GetAclOverviewResponse,
+    GetAclsRequest,
+    GetAllPartitionsResponse,
+    GetConsumerGroupResponse,
+    GetConsumerGroupsResponse,
+    GetPartitionsResponse,
+    GetTopicConsumersResponse,
+    GetTopicOffsetsByTimestampResponse,
+    GetTopicsResponse,
+    GetUsersResponse,
+    GroupDescription,
+    isApiError,
+    KafkaConnectors,
     OverviewNewsEntry,
+    PartialTopicConfigsResponse,
+    Partition,
+    PartitionReassignmentRequest,
+    PartitionReassignments,
+    PartitionReassignmentsResponse,
+    PatchConfigsRequest,
+    PatchConfigsResponse,
+    PatchTopicConfigsRequest,
     Payload,
+    ProduceRecordsResponse,
+    PublishRecordsRequest,
+    QuotaResponse,
+    RedpandaLicense,
+    ResourceConfig,
+    SchemaReferencedByEntry,
+    SchemaRegistryCompatibilityMode,
+    SchemaRegistryConfigResponse,
+    SchemaRegistryCreateSchema,
+    SchemaRegistryCreateSchemaResponse,
+    SchemaRegistryDeleteSubjectResponse,
+    SchemaRegistryDeleteSubjectVersionResponse,
+    SchemaRegistryModeResponse,
+    SchemaRegistrySchemaTypesResponse,
+    SchemaRegistrySetCompatibilityModeRequest,
     SchemaRegistrySubject,
     SchemaRegistrySubjectDetails,
-    SchemaRegistryModeResponse,
-    SchemaRegistryConfigResponse,
-    SchemaRegistrySchemaTypesResponse,
-    SchemaRegistryCreateSchemaResponse,
-    SchemaRegistryCreateSchema,
-    SchemaRegistryDeleteSubjectVersionResponse,
-    SchemaRegistryDeleteSubjectResponse,
-    SchemaRegistryCompatibilityMode,
-    SchemaRegistrySetCompatibilityModeRequest,
-    SchemaReferencedByEntry,
     SchemaRegistryValidateSchemaResponse,
     SchemaVersion,
+    Topic,
+    TopicConfigResponse,
+    TopicConsumer,
+    TopicDescription,
+    TopicDocumentation,
+    TopicDocumentationResponse,
     TopicMessage,
-    CompressionType
+    TopicOffset,
+    TopicPermissions,
+    UserData,
+    WrappedApiError
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig, isEmbedded } from '../config';
@@ -69,7 +116,7 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 
 import { proto3 } from '@bufbuild/protobuf';
 import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
-import { PayloadEncoding, CompressionType as ProtoCompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
 
@@ -1490,7 +1537,6 @@ export type RolePrincipal = { name: string, principalType: 'User' };
 export const rolesApi = observable({
     roles: [] as string[],
     roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
-    // roleAcls: new Map<string,>(); // RoleName -> ACLs
 
     async refreshRoles(): Promise<void> {
         const client = appConfig.securityClient;
@@ -1546,7 +1592,7 @@ export const rolesApi = observable({
                 return { principalType, name } as RolePrincipal;
             }).filterNull();
 
-            this.roleMembers.clear();
+            // this.roleMembers.clear();
             this.roleMembers.set(roleName, members);
         }
 
@@ -1566,18 +1612,17 @@ export const rolesApi = observable({
         await client.deleteRole({ roleName: name, deleteAcls });
     },
 
-    async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[]) {
+    async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], create = false) {
         const client = appConfig.securityClient;
         if (!client) throw new Error('security client is not initialized');
 
-        await client.updateRoleMembership({
+        return await client.updateRoleMembership({
             roleName: roleName,
             add: addUsers.map(u => ({ principal: 'User:' + u })),
             remove: removeUsers.map(u => ({ principal: 'User:' + u })),
-            create: false,
+            create,
         });
-    }
-
+    },
 });
 
 
