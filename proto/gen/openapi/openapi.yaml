@@ -1,6 +1,7 @@
 components:
   schemas:
     ACL.Operation:
+      description: The operation that is allowed or denied (e.g. READ).
       enum:
         - OPERATION_ANY
         - OPERATION_ALL
@@ -32,11 +33,11 @@ components:
     Config:
       properties:
         name:
-          description: Name is a topic level config key (e.g. segment.bytes).
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
-          title: Value is a topic level config value (e.g. 1073741824)
           type: string
       type: object
     ConfigAlterOperation:
@@ -80,23 +81,33 @@ components:
     Configuration:
       properties:
         config_synonyms:
+          description: |-
+            If no config value is set at the topic level, it will inherit the value
+            set at the broker or cluster level. `name` is the corresponding config
+            key whose value is inherited. `source` indicates whether the inherited
+            config is default, broker, etc.
           items:
             $ref: '#/components/schemas/ConfigSynonym'
           type: array
         documentation:
+          description: Config documentation.
           nullable: true
           type: string
         name:
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         read_only:
+          description: Whether the config is read-only, or is dynamic and can be altered.
           type: boolean
         sensitive:
+          description: Whether this is a sensitive config key and value.
           type: boolean
         source:
           $ref: '#/components/schemas/ConfigSource'
         type:
           $ref: '#/components/schemas/ConfigType'
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
@@ -248,8 +259,8 @@ components:
       properties:
         host:
           description: |-
-            Host is the host address to use for this acl. Each host to allow
-            the principal access from must be specified as a new creation.
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
@@ -257,14 +268,13 @@ components:
           $ref: '#/components/schemas/PermissionType'
         principal:
           description: |-
-            Principal is the user to apply this acl for. With the Kafka simple
-            authorizer, this must begin with "User:".
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           type: string
         resource_name:
           description: |-
-            ResourceName is the name of the resource this acl entry will be on.
-            For requests with resource_type CLUSTER, this will default to the expected
-            value "kafka-cluster".
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -295,35 +305,34 @@ components:
       properties:
         configs:
           description: |-
-            Configs is an array of key value config pairs for a topic.
-            These correspond to Kafka Topic-Level Configs.
+            An array of key-value config pairs for a topic.
+            These correspond to Kafka topic-level configs.
           items:
             $ref: '#/components/schemas/Config'
           type: array
         name:
-          description: Name is the topic's name.
+          description: Name of topic.
           type: string
         partition_count:
           description: |-
-            PartitionCount is how many partitions to give a topic. This must
-            be null if specifying partitions manually (see ReplicaAssignment)
-            or, to use the cluster default partitions.
+            The number of partitions to give the topic. If specifying
+            partitions manually (see `replica_assignments`), set to -1.
+            Or, to use the cluster default partition count, set to null.
           format: int32
           nullable: true
           type: integer
         replica_assignments:
           description: |-
-            ReplicaAssignment is an array to manually dictate replicas and their
-            partitions for a topic. If using this, both ReplicationFactor and
-            NumPartitions must be -1.
+            Manually specify broker ID assignments for partition replicas. If manually assigning replicas, both `replication_factor` and
+            `partition_count` must be -1.
           items:
             $ref: '#/components/schemas/ReplicaAssignment'
           type: array
         replication_factor:
           description: |-
-            ReplicationFactor is how many replicas every partition must have.
-            This must be null if specifying partitions manually (see ReplicaAssignment)
-            or, to use the cluster default replication factor.
+            The number of replicas every partition must have.
+            If specifying partitions manually (see `replica_assignments`), set to -1.
+            Or, to use the cluster default replication factor, set to null.
           format: int32
           nullable: true
           type: integer
@@ -331,19 +340,19 @@ components:
     CreateTopicResponse:
       properties:
         name:
-          description: Name is the topic's name.
+          description: Name of topic.
           type: string
         partition_count:
           description: |-
-            PartitionCount is how many partitions were created for this topic.
-            This field has a default of -1, which may be returned if the broker
+            The number of partitions created for the topic.
+            This field has a default value of -1, which may be returned if the broker
             does not support v5+ of this request which added support for returning
             this information.
           format: int32
           type: integer
         replication_factor:
           description: |-
-            ReplicationFactor is how many replicas every partition has for this topic.
+            The number of replicas per topic partition.
             This field has a default of -1, which may be returned if the broker
             does not support v5+ of this request which added support for returning
             this information.
@@ -355,8 +364,10 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
         password:
+          description: Password.
           type: string
       type: object
     CreateUserResponse:
@@ -369,11 +380,15 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          title: Name of newly-created user
           type: string
       type: object
     DeleteACLsRequest.Filter:
       properties:
         host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           nullable: true
           type: string
         operation:
@@ -381,9 +396,13 @@ components:
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           nullable: true
           type: string
         resource_name:
+          description: The name of the resource this ACL targets.
           nullable: true
           type: string
         resource_pattern_type:
@@ -414,7 +433,7 @@ components:
       type: object
     DeployTransformRequest:
       description: |-
-        DeployTransformRequest is the metadata that is required to deploy a new WASM
+        Metadata required to deploy a new Wasm
         transform in a Redpanda cluster.
       properties:
         environment_variables:
@@ -427,11 +446,11 @@ components:
           example: orders
           type: string
         name:
-          description: The name of the transform.
+          description: Name of the transform.
           example: redact-payment-details-in-orders
           type: string
         output_topic_names:
-          description: The output topic to write the transform results to.
+          description: Output topic to write the transform results to.
           example: orders-redacted
           items:
             type: string
@@ -448,7 +467,7 @@ components:
           example: LOG_LEVEL
           type: string
         value:
-          description: The key of your environment variable.
+          description: The value of your environment variable.
           example: DEBUG
           type: string
       required:
@@ -629,6 +648,9 @@ components:
     ListACLsRequest.Filter:
       properties:
         host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
           nullable: true
           type: string
         operation:
@@ -636,9 +658,13 @@ components:
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
           nullable: true
           type: string
         resource_name:
+          description: The name of the resource this ACL targets.
           nullable: true
           type: string
         resource_pattern_type:
@@ -699,7 +725,7 @@ components:
           description: The secret labels to search for.
           type: object
         name_contains:
-          description: Filter results based on secret name substring.
+          description: Substring match on secret name. Case-sensitive.
           type: string
       type: object
     ListSecretsResponse:
@@ -717,6 +743,7 @@ components:
     ListTopicsRequest.Filter:
       properties:
         name_contains:
+          description: Substring match on topic name. Case-sensitive.
           type: string
       type: object
     ListTopicsResponse:
@@ -731,24 +758,30 @@ components:
     ListTopicsResponse.Topic:
       properties:
         internal:
+          description: Whether topic is internal only.
           type: boolean
         name:
+          description: Topic name.
           type: string
         partition_count:
+          description: Topic partition count.
           format: int32
           type: integer
         replication_factor:
+          description: Topic replication factor.
           format: int32
           type: integer
       type: object
     ListTransformsRequest.Filter:
       properties:
         name_contains:
+          description: Substring match on transform name. Case-sensitive.
           type: string
       type: object
     ListTransformsResponse:
       properties:
         next_page_token:
+          description: Token to retrieve the next page.
           type: string
         transforms:
           items:
@@ -758,8 +791,10 @@ components:
     ListUsersRequest.Filter:
       properties:
         name:
+          description: Username.
           type: string
         name_contains:
+          description: Substring match on username. Case-sensitive.
           type: string
       type: object
     ListUsersResponse:
@@ -777,6 +812,7 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
       type: object
     MatchingACL:
@@ -784,14 +820,17 @@ components:
         error:
           $ref: '#/components/schemas/Status'
         host:
+          description: The host address to for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: The user for whom this ACL applies.
           type: string
         resource_name:
+          description: The name of the resource this ACL targets.
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -827,6 +866,7 @@ components:
           $ref: '#/components/schemas/PartitionStatus'
       type: object
     PermissionType:
+      description: Whether the operation should be allowed or denied.
       enum:
         - PERMISSION_TYPE_ANY
         - PERMISSION_TYPE_DENY
@@ -835,12 +875,14 @@ components:
     Policy:
       properties:
         host:
+          description: The host address for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
         permission_type:
           $ref: '#/components/schemas/PermissionType'
         principal:
+          description: The user for whom this ACL applies.
           type: string
       type: object
     QuotaFailure:
@@ -889,11 +931,11 @@ components:
     ReplicaAssignment:
       properties:
         partition_id:
-          description: Partition is a partition to create.
+          description: A partition to create.
           format: int32
           type: integer
         replica_ids:
-          description: Replicas are the broker IDs the partition must exist on.
+          description: The broker IDs the partition replicas are assigned to.
           items:
             format: int32
             type: integer
@@ -906,6 +948,7 @@ components:
             $ref: '#/components/schemas/Policy'
           type: array
         resource_name:
+          description: The name of the resource this ACL targets.
           type: string
         resource_pattern_type:
           $ref: '#/components/schemas/ResourcePatternType'
@@ -913,6 +956,9 @@ components:
           $ref: '#/components/schemas/ResourceType'
       type: object
     ResourcePatternType:
+      description: |-
+        The pattern to use for matching the specified resource_name
+        (any, exact match, literal, or prefixed).
       enum:
         - RESOURCE_PATTERN_TYPE_ANY
         - RESOURCE_PATTERN_TYPE_MATCH
@@ -920,6 +966,9 @@ components:
         - RESOURCE_PATTERN_TYPE_PREFIXED
       type: string
     ResourceType:
+      description: |-
+        The type of resource (topic, consumer group, etc.) this
+        ACL targets.
       enum:
         - RESOURCE_TYPE_ANY
         - RESOURCE_TYPE_TOPIC
@@ -930,12 +979,13 @@ components:
         - RESOURCE_TYPE_USER
       type: string
     SASLMechanism:
+      description: SASL mechanism to use for authentication.
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
     Secret:
-      description: Secret defienes the secret resource.
+      description: Defines the secret resource.
       properties:
         id:
           description: Secret identifier.
@@ -950,14 +1000,17 @@ components:
     SetConfiguration:
       properties:
         name:
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
     SetTopicConfigurationsResponse:
       properties:
         configurations:
+          description: Topic's complete set of configurations after this update.
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -1063,10 +1116,13 @@ components:
             $ref: '#/components/schemas/EnvironmentVariable'
           type: array
         input_topic_name:
+          description: Input topic to apply the transform to.
           type: string
         name:
+          description: Name of transform.
           type: string
         output_topic_names:
+          description: Output topics to write the transform results to.
           items:
             type: string
           type: array
@@ -1078,10 +1134,12 @@ components:
     UpdateConfiguration:
       properties:
         name:
+          description: A topic-level config key (e.g. `segment.bytes`).
           type: string
         operation:
           $ref: '#/components/schemas/ConfigAlterOperation'
         value:
+          description: A topic-level config value (e.g. 1073741824).
           nullable: true
           type: string
       type: object
@@ -1094,7 +1152,7 @@ components:
     UpdateTopicConfigurationsResponse:
       properties:
         configurations:
-          description: Topic's complete set of configurations after this partial patch has been applied.
+          description: Topic's complete set of configurations after applying this partial patch.
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
@@ -1104,8 +1162,10 @@ components:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
         name:
+          description: Username.
           type: string
         password:
+          description: Password.
           type: string
       type: object
     UpdateUserResponse:
@@ -1114,6 +1174,7 @@ components:
           $ref: '#/components/schemas/UpdateUserResponse.User'
       type: object
     UpdateUserResponse.User:
+      description: Updated user's name and SASL mechanism.
       properties:
         mechanism:
           $ref: '#/components/schemas/SASLMechanism'
@@ -1144,10 +1205,13 @@ openapi: 3.0.3
 paths:
   /v1alpha1/acls:
     delete:
-      description: Delete all ACLs that match the given filter
+      description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_DeleteACLs
       parameters:
-        - in: query
+        - description: |-
+            The type of resource (topic, consumer group, etc.) this
+            ACL targets.
+          in: query
           name: filter.resource_type
           required: true
           schema:
@@ -1160,11 +1224,15 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - in: query
+        - description: The name of the resource this ACL targets.
+          in: query
           name: filter.resource_name
           schema:
             type: string
-        - in: query
+        - description: |-
+            The pattern to use for matching the specified resource_name
+            (any, exact match, literal, or prefixed).
+          in: query
           name: filter.resource_pattern_type
           required: true
           schema:
@@ -1174,15 +1242,22 @@ paths:
               - RESOURCE_PATTERN_TYPE_LITERAL
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
-        - in: query
+        - description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          in: query
           name: filter.principal
           schema:
             type: string
-        - in: query
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
           name: filter.host
           schema:
             type: string
-        - in: query
+        - description: The operation that is allowed or denied (e.g. READ).
+          in: query
           name: filter.operation
           required: true
           schema:
@@ -1202,7 +1277,8 @@ paths:
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
             type: string
-        - in: query
+        - description: Whether the operation should be allowed or denied.
+          in: query
           name: filter.permission_type
           required: true
           schema:
@@ -1240,10 +1316,13 @@ paths:
       tags:
         - ACLService
     get:
-      description: List ACLs
+      description: List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_ListACLs
       parameters:
-        - in: query
+        - description: |-
+            The type of resource (topic, consumer group, etc.) this
+            ACL targets.
+          in: query
           name: filter.resource_type
           schema:
             enum:
@@ -1255,11 +1334,15 @@ paths:
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
             type: string
-        - in: query
+        - description: The name of the resource this ACL targets.
+          in: query
           name: filter.resource_name
           schema:
             type: string
-        - in: query
+        - description: |-
+            The pattern to use for matching the specified resource_name
+            (any, exact match, literal, or prefixed).
+          in: query
           name: filter.resource_pattern_type
           schema:
             enum:
@@ -1268,15 +1351,22 @@ paths:
               - RESOURCE_PATTERN_TYPE_LITERAL
               - RESOURCE_PATTERN_TYPE_PREFIXED
             type: string
-        - in: query
+        - description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          in: query
           name: filter.principal
           schema:
             type: string
-        - in: query
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
           name: filter.host
           schema:
             type: string
-        - in: query
+        - description: The operation that is allowed or denied (e.g. READ).
+          in: query
           name: filter.operation
           schema:
             enum:
@@ -1295,7 +1385,8 @@ paths:
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
             type: string
-        - in: query
+        - description: Whether the operation should be allowed or denied.
+          in: query
           name: filter.permission_type
           schema:
             enum:
@@ -1332,7 +1423,7 @@ paths:
       tags:
         - ACLService
     post:
-      description: Create ACL
+      description: Create a new ACL.
       operationId: ACLService_CreateACL
       requestBody:
         content:
@@ -1347,7 +1438,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateACLResponse'
-          description: OK
+          description: Created
         "401":
           content:
             application/json:
@@ -2037,7 +2128,7 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/secrets:
     get:
-      description: List Kafka Connect cluster secrets based on optional filter.
+      description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListConnectSecrets
       parameters:
         - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
@@ -2046,7 +2137,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: Filter results based on secret name substring.
+        - description: Substring match on secret name. Case-sensitive.
           in: query
           name: filter.name_contains
           schema:
@@ -2119,7 +2210,7 @@ paths:
                   description: Secret labels.
                   type: object
                 name:
-                  description: The Connect name.
+                  description: Name of connector.
                   type: string
                 secret_data:
                   description: The secret data.
@@ -2137,7 +2228,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Secret created.
+          description: Secret created
         "401":
           content:
             application/json:
@@ -2170,7 +2261,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to delete.
+        - description: ID of the secret to delete.
           in: path
           name: id
           required: true
@@ -2181,7 +2272,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Secret was deleted successfully.
+          description: Secret deleted successfully
         "401":
           content:
             application/json:
@@ -2219,7 +2310,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to retrieve.
+        - description: The ID of the secret to retrieve.
           in: path
           name: id
           required: true
@@ -2231,7 +2322,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2269,7 +2360,7 @@ paths:
           required: true
           schema:
             type: string
-        - description: The id of the secret to update.
+        - description: ID of the secret to update.
           in: path
           name: id
           required: true
@@ -2301,7 +2392,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Secret'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2331,10 +2422,11 @@ paths:
         - SecretService
   /v1alpha1/topics:
     get:
-      description: List Topics
+      description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
       operationId: TopicService_ListTopics
       parameters:
-        - in: query
+        - description: Substring match on topic name. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
@@ -2378,11 +2470,11 @@ paths:
       tags:
         - TopicService
     post:
-      description: Create a Topic.
+      description: Create a topic.
       operationId: TopicService_CreateTopic
       parameters:
         - description: |-
-            ValidateOnly makes this request a dry-run; everything is validated but
+            If true, makes this request a dry run; everything is validated but
             no topics are actually created.
           in: query
           name: validate_only
@@ -2393,7 +2485,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTopicRequest.Topic'
-        description: Topic is the topic to attempt to create.
+        description: The topic to create.
         required: true
         x-originalParamName: topic
       responses:
@@ -2402,7 +2494,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v1alpha1.Topic'
-          description: Topic Created
+          description: Topic created
         "401":
           content:
             application/json:
@@ -2426,10 +2518,11 @@ paths:
         - TopicService
   /v1alpha1/topics/{name}:
     delete:
-      description: Deletes the Kafka topic with the requested name.
+      description: Delete the Kafka topic with the requested name.
       operationId: TopicService_DeleteTopic
       parameters:
-        - in: path
+        - description: Topic name.
+          in: path
           name: name
           required: true
           schema:
@@ -2439,7 +2532,7 @@ paths:
           content:
             application/json:
               schema: {}
-          description: Topic was deleted successfully
+          description: Topic deleted successfully
         "401":
           content:
             application/json:
@@ -2451,7 +2544,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-          description: The requested topic does not exist
+          description: Requested topic does not exist
         "500":
           content:
             application/json:
@@ -2464,15 +2557,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete a Kafka topic
+      summary: Delete Topic
       tags:
         - TopicService
   /v1alpha1/topics/{topic_name}/configurations:
     get:
-      description: Get Topic Configurations.
+      description: Get key-value configs for a topic.
       operationId: TopicService_GetTopicConfigurations
       parameters:
-        - in: path
+        - description: Topic name
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2483,7 +2577,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2512,10 +2606,11 @@ paths:
       tags:
         - TopicService
     patch:
-      description: Updates a subset of the topic configuration.
+      description: Update a subset of the topic configurations.
       operationId: TopicService_UpdateTopicConfigurations
       parameters:
-        - in: path
+        - description: Topic name
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2535,7 +2630,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2564,10 +2659,11 @@ paths:
       tags:
         - TopicService
     put:
-      description: Set the entire set of configurations for a topic. Config entries that are not provided in the request are removed and will fall-back to their default values.
+      description: Update the entire set of key-value configurations for a topic. Config entries that are not provided in the request are removed and will fall back to their default values.
       operationId: TopicService_SetTopicConfigurations
       parameters:
-        - in: path
+        - description: Name of topic.
+          in: path
           name: topic_name
           required: true
           schema:
@@ -2587,7 +2683,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SetTopicConfigurationsResponse'
-          description: Ok
+          description: OK
         "401":
           content:
             application/json:
@@ -2617,14 +2713,18 @@ paths:
         - TopicService
   /v1alpha1/transforms:
     get:
-      description: Retrieve a list of transforms with optional filtering
+      description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
       operationId: TransformService_ListTransforms
       parameters:
-        - in: query
+        - description: Substring match on transform name. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
-        - in: query
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
           name: page_token
           schema:
             type: string
@@ -2688,13 +2788,13 @@ paths:
       tags:
         - TransformService
     put:
-      description: Initiate deployment of a new WASM transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the WASM transform becomes operational. Monitor the partition statuses to ascertain the activation of the transform. This usually takes around 3s, but no longer than 10s.
+      description: Initiate deployment of a new Wasm transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the Wasm transform becomes operational. Monitor the partition statuses to check whether the transform is active. This usually takes around 3s, but no longer than 10s.
       operationId: TransformService_DeployTransform
       requestBody:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -2717,10 +2817,11 @@ paths:
         - TransformService
   /v1alpha1/transforms/{name}:
     delete:
-      description: Delete a WASM transform with the requested name.
+      description: Delete a Wasm transform with the requested name.
       operationId: TransformService_DeleteTransform
       parameters:
-        - example:
+        - description: Name of transform.
+          example:
             name: transform1
           in: path
           name: name
@@ -2762,10 +2863,11 @@ paths:
       tags:
         - TransformService
     get:
-      description: Get Transform!
+      description: Get a specific Wasm transform.
       operationId: TransformService_GetTransform
       parameters:
-        - example:
+        - description: Name of transform.
+          example:
             name: transform1
           in: path
           name: name
@@ -2821,14 +2923,16 @@ paths:
         - TransformService
   /v1alpha1/users:
     get:
-      description: List Users
+      description: 'List users. Optional: filter based on username.'
       operationId: UserService_ListUsers
       parameters:
-        - in: query
+        - description: Username.
+          in: query
           name: filter.name
           schema:
             type: string
-        - in: query
+        - description: Substring match on username. Case-sensitive.
+          in: query
           name: filter.name_contains
           schema:
             type: string
@@ -2879,7 +2983,7 @@ paths:
       tags:
         - UserService
     post:
-      description: Create a User.
+      description: Create a new user.
       operationId: UserService_CreateUser
       requestBody:
         content:
@@ -2902,7 +3006,7 @@ paths:
                   name: payment-service
               schema:
                 $ref: '#/components/schemas/CreateUserRequest.User'
-          description: Creates a user
+          description: User created
         "400":
           content:
             application/json:
@@ -2922,7 +3026,7 @@ paths:
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Bad Request. Check API documentation and update request.
+          description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:
@@ -2946,10 +3050,11 @@ paths:
         - UserService
   /v1alpha1/users/{name}:
     delete:
-      description: Delete Users
+      description: Delete the specified user
       operationId: UserService_DeleteUser
       parameters:
-        - in: path
+        - description: Username
+          in: path
           name: name
           required: true
           schema:
@@ -2960,7 +3065,7 @@ paths:
             application/json:
               example: {}
               schema: {}
-          description: User was deleted successfully.
+          description: User deleted successfully
         "401":
           content:
             application/json:
@@ -2993,15 +3098,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Status'
           description: An unexpected error response.
-      summary: Delete Users
+      summary: Delete User
       tags:
         - UserService
   /v1alpha1/users/{user.name}:
     put:
-      description: Update a User.
+      description: Update a user's credentials.
       operationId: UserService_UpdateUser
       parameters:
-        - in: path
+        - description: Username.
+          in: path
           name: user.name
           required: true
           schema:
@@ -3018,6 +3124,7 @@ paths:
                 mechanism:
                   $ref: '#/components/schemas/SASLMechanism'
                 password:
+                  description: Password.
                   type: string
               type: object
         required: true
@@ -3032,7 +3139,7 @@ paths:
                   name: payment-service
               schema:
                 $ref: '#/components/schemas/UpdateUserResponse.User'
-          description: Ok
+          description: OK
         "400":
           content:
             application/json:
@@ -3052,7 +3159,7 @@ paths:
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/Status'
-          description: Bad Request. Check API documentation and update request.
+          description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:

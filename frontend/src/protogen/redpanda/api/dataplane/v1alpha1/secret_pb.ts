@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * Secret defienes the secret resource.
+ * Defines the secret resource.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.Secret
  */
@@ -111,7 +111,7 @@ export class ListSecretsResponse extends Message<ListSecretsResponse> {
  */
 export class ListSecretsFilter extends Message<ListSecretsFilter> {
   /**
-   * Filter results based on secret name substring.
+   * Substring match on secret name. Case-sensitive.
    *
    * @generated from field: string name_contains = 1;
    */
@@ -160,14 +160,14 @@ export class ListSecretsFilter extends Message<ListSecretsFilter> {
  */
 export class GetConnectSecretRequest extends Message<GetConnectSecretRequest> {
   /**
-   * The unique name of target connect cluster.
+   * Unique name of the target connect cluster.
    *
    * @generated from field: string cluster_name = 1;
    */
   clusterName = "";
 
   /**
-   * The id of the secret to retrieve.
+   * The ID of the secret to retrieve.
    *
    * @generated from field: string id = 2;
    */
@@ -209,7 +209,7 @@ export class GetConnectSecretRequest extends Message<GetConnectSecretRequest> {
  */
 export class GetConnectSecretResponse extends Message<GetConnectSecretResponse> {
   /**
-   * The created secret.
+   * The retrieved secret.
    *
    * @generated from field: redpanda.api.dataplane.v1alpha1.Secret secret = 1;
    */
@@ -250,14 +250,14 @@ export class GetConnectSecretResponse extends Message<GetConnectSecretResponse> 
  */
 export class CreateConnectSecretRequest extends Message<CreateConnectSecretRequest> {
   /**
-   * The unique name of target connect cluster.
+   * Unique name of the target connect cluster.
    *
    * @generated from field: string cluster_name = 1;
    */
   clusterName = "";
 
   /**
-   * The Connect name.
+   * Name of connector.
    *
    * @generated from field: string name = 2;
    */
@@ -356,7 +356,7 @@ export class CreateConnectSecretResponse extends Message<CreateConnectSecretResp
  */
 export class ListConnectSecretsRequest extends Message<ListConnectSecretsRequest> {
   /**
-   * The unique name of target connect cluster.
+   * Unique name of the target connect cluster.
    *
    * @generated from field: string cluster_name = 1;
    */
@@ -471,14 +471,14 @@ export class ListConnectSecretsResponse extends Message<ListConnectSecretsRespon
  */
 export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretRequest> {
   /**
-   * The unique name of target connect cluster.
+   * Unique name of the target connect cluster.
    *
    * @generated from field: string cluster_name = 1;
    */
   clusterName = "";
 
   /**
-   * The id of the secret to update.
+   * ID of the secret to update.
    *
    * @generated from field: string id = 2;
    */
@@ -577,14 +577,14 @@ export class UpdateConnectSecretResponse extends Message<UpdateConnectSecretResp
  */
 export class DeleteConnectSecretRequest extends Message<DeleteConnectSecretRequest> {
   /**
-   * The unique name of target connect cluster.
+   * Unique name of the target connect cluster.
    *
    * @generated from field: string cluster_name = 1;
    */
   clusterName = "";
 
   /**
-   * The id of the secret to delete.
+   * ID of the secret to delete.
    *
    * @generated from field: string id = 2;
    */

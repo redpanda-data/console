@@ -71,24 +71,22 @@ func (api *Service) ListMessages(
 	// Check if logged in user is allowed to list messages for the given request
 	canViewMessages, restErr := api.authHooks.CanViewTopicMessages(ctx, &lmq)
 	if restErr != nil || !canViewMessages {
-		if restErr != nil {
-			err := errors.New("you don't have permissions to view Kafka topic messages")
-			if restErr.Err != nil {
-				err = restErr.Err
-			}
-			return apierrors.NewConnectError(
-				connect.CodePermissionDenied,
-				err,
-				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
-			)
+		err := errors.New("you don't have permissions to view Kafka topic messages")
+		if restErr != nil && restErr.Err != nil {
+			err = restErr.Err
 		}
+		return apierrors.NewConnectError(
+			connect.CodePermissionDenied,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+		)
 	}
 
 	if lmq.FilterInterpreterCode != "" {
 		canUseMessageSearchFilters, restErr := api.authHooks.CanUseMessageSearchFilters(ctx, &lmq)
 		if restErr != nil || !canUseMessageSearchFilters {
 			err := errors.New("you don't have permissions to use search filters")
-			if restErr.Err != nil {
+			if restErr != nil && restErr.Err != nil {
 				err = restErr.Err
 			}
 			return apierrors.NewConnectError(

@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -186,7 +187,7 @@ func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]
 					PartitionID: p.Partition,
 					Offset:      p.Offset,
 					Timestamp:   p.Timestamp,
-					Err:         nil,
+					Err:         kerr.ErrorForCode(p.ErrorCode),
 				}
 			}
 			partitionsByTopic[topic.Topic] = partitions

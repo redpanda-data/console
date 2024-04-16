@@ -484,14 +484,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "")
 
-		var int64Type int64
-
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
-		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(MatchesOrder("16")).Times(1)
-		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
 			fakeCluster.KeepControl()
@@ -528,7 +522,6 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				loRes.Topics[0].Partitions[0].ErrorCode = kerr.NotLeaderForPartition.Code
 
 				return loRes, nil, true
-
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
 
@@ -547,7 +540,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		defer cancel()
 
 		err = svc.ListMessages(ctx, input, mockProgress)
-		assert.NoError(err)
+		require.Error(err)
+		assert.Contains(err.Error(), "NOT_LEADER_FOR_PARTITION")
 	})
 
 	t.Run("messages with filter", func(t *testing.T) {
