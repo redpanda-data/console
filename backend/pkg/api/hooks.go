@@ -144,6 +144,11 @@ type AuthorizationHooks interface {
 	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
+
+	// Kafka Role Hooks
+	CanListKafkaRoles(ctx context.Context) (bool, *rest.Error)
+	CanCreateKafkaRoles(ctx context.Context) (bool, *rest.Error)
+	CanDeleteKafkaRoles(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
@@ -378,4 +383,16 @@ func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
 
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
 	return nil
+}
+
+func (*defaultHooks) CanListKafkaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanCreateKafkaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanDeleteKafkaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
 }
