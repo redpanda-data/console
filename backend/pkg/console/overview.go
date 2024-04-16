@@ -13,7 +13,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/adminapi"
+	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
