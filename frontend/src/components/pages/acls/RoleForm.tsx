@@ -94,7 +94,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                 void history.push(`/security/roles/${newRole.roleName}/details`);
             }}>
-                <Flex gap={4} flexDirection="column">
+                <Flex gap={10} flexDirection="column">
                     <HStack gap={10} alignItems="center">
                         <Label text="Role name">
                             <>
@@ -130,35 +130,26 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Button>
                     </HStack>
 
-                     Permissions/Host Field
-                    <Label text="Host">
-                        <>
-                            <Input
-                                value={formState.host}
-                                onChange={(v) => (formState.host = v.target.value)}
-                                width={600}
-                            />
-                        </>
-                    </Label>
+                    <Flex flexDirection="column" gap={4}>
+                        Permissions/Host Field
+                        <Label text="Host">
+                            <>
+                                <Input
+                                    value={formState.host}
+                                    onChange={(v) => (formState.host = v.target.value)}
+                                    width={600}
+                                />
+                            </>
+                        </Label>
+                    </Flex>
 
-                    <Heading>Topics</Heading>
-                    <Flex flexDirection="column" gap={2}>
-                        {formState.topicACLs.map((topicACL, index) => {
-                            return (
-                                <HStack key={index}>
-                                    <Box flexGrow={1}>
-                                        <ResourceACLsEditor resourceType="Topic" resource={topicACL} />
-                                    </Box>
-                                    <Box>
-                                        <Button onClick={() => {
-                                            formState.topicACLs.splice(index, 1);
-                                        }}>
-                                            Remove
-                                        </Button>
-                                    </Box>
-                                </HStack>
-                            );
-                        })}
+                    <Flex flexDirection="column" gap={4}>
+                        <Heading>Topics</Heading>
+                        {formState.topicACLs.map((topicACL, index) =>
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={topicACL} onDelete={() => {
+                                formState.topicACLs.splice(index, 1);
+                            }}/>
+                        )}
 
 
                         <Box>
@@ -169,26 +160,13 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     </Flex>
 
 
-                    <Heading>Consumer Groups</Heading>
-                    <Flex flexDirection="column" gap={2}>
-                        {formState.consumerGroupsACLs.map((acl, index) => {
-                            return (
-                                <HStack key={index}>
-                                    <Box flexGrow={1}>
-                                        <ResourceACLsEditor resourceType="Topic" resource={acl} />
-                                    </Box>
-                                    <Box>
-                                        <Button
-                                            onClick={() => {
-                                            formState.consumerGroupsACLs.splice(index, 1);
-                                        }}>
-                                            Remove
-                                        </Button>
-                                    </Box>
-                                </HStack>
-                            );
-                        })}
-
+                    <Flex flexDirection="column" gap={4}>
+                        <Heading>Consumer Groups</Heading>
+                        {formState.consumerGroupsACLs.map((acl, index) =>
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
+                                formState.consumerGroupsACLs.splice(index, 1);
+                            }}/>
+                        )}
 
                         <Box>
                             <Button variant="outline" onClick={() => {
@@ -197,25 +175,13 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Heading>Transactional IDs</Heading>
-                    <Flex flexDirection="column" gap={2}>
-                        {formState.transactionalIDACLs.map((acl, index) => {
-                            return (
-                                <HStack key={index}>
-                                    <Box flexGrow={1}>
-                                        <ResourceACLsEditor resourceType="Topic" resource={acl} />
-                                    </Box>
-                                    <Box>
-                                        <Button onClick={() => {
-                                            formState.transactionalIDACLs.splice(index, 1);
-                                        }}>
-                                            Remove
-                                        </Button>
-                                    </Box>
-                                </HStack>
-                            );
-                        })}
-
+                    <Flex flexDirection="column" gap={4}>
+                        <Heading>Transactional IDs</Heading>
+                        {formState.transactionalIDACLs.map((acl, index) =>
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
+                                formState.transactionalIDACLs.splice(index, 1);
+                            }}/>
+                        )}
 
                         <Box>
                             <Button variant="outline" onClick={() => {
@@ -224,8 +190,8 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Heading>Cluster</Heading>
-                    <Flex flexDirection="column" gap={2}>
+                    <Flex flexDirection="column" gap={4}>
+                        <Heading>Cluster</Heading>
                         <HStack>
                             <Box flexGrow={1}>
                                 <ResourceACLsEditor resourceType="Topic" resource={formState.clusterACLs}/>
@@ -233,10 +199,12 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </HStack>
                     </Flex>
 
-                    <Heading>Principals</Heading>
-                    <Text>Assign this role to principals</Text>
-                    <Text>This can be edited later</Text>
-                    <PrincipalSelector state={formState.principals} />
+                    <Flex flexDirection="column" gap={4}>
+                        <Heading>Principals</Heading>
+                        <Text>Assign this role to principals</Text>
+                        <Text>This can be edited later</Text>
+                        <PrincipalSelector state={formState.principals}/>
+                    </Flex>
                 </Flex>
 
                 <Flex gap={4} mt={8}>
@@ -269,6 +237,7 @@ const PrincipalSelector = observer((p: {state: RolePrincipal[]}) => {
     return <Flex direction="column" gap={4}>
         <Box w={200}>
             <Select<string>
+                placeholder="Find users"
                 inputValue={searchValue}
                 onInputChange={setSearchValue}
                 isMulti={false}

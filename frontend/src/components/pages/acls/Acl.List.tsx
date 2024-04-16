@@ -231,7 +231,10 @@ const RolesTab = observer(() => {
         />
 
         <Section>
-            <Button variant="outline" as="a" href="/security/roles/create">Create role</Button>
+            <Button
+                variant="outline"
+                onClick={() => appGlobal.history.push('/security/roles/create')}
+            >Create role</Button>
 
             <DataTable
                 data={rolesWithMembers}
