@@ -17,12 +17,13 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, DataTable, Flex, Heading, Text, SearchField } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
 import { principalGroupsView } from './Models';
 import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { Box, Link as ChakraLink } from '@chakra-ui/react';
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 
 
 @observer
@@ -86,7 +87,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             console.warn('Invalid expression')
         }
 
-        const numberOfUsers = rolesApi.roleMembers.get(this.props.roleName)?.length ?? 0;
+        const numberOfPrincipals = rolesApi.roleMembers.get(this.props.roleName)?.length ?? 0;
 
         return <>
             <PageContent>
@@ -94,10 +95,15 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                     <Button variant="outline" as="a" href={`/security/roles/${this.props.roleName}/edit`}>
                         Edit
                     </Button>
-                    {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
-                    <Button variant="outline-delete" onClick={this.deleteRole}>
-                        {this.isDeleting ? 'Deleting ...' : 'Delete'}
-                    </Button>
+                    <DeleteRoleConfirmModal
+                        numberOfPrincipals={numberOfPrincipals}
+                        onConfirm={this.deleteRole}
+                        buttonEl={
+                            <Button variant="outline-delete">
+                                Delete
+                            </Button>
+                        }
+                    />
                 </Flex>
                 <Flex flexDirection="column">
                     <Heading as="h3" my="4">Permissions</Heading>
@@ -106,7 +112,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
                 <Flex flexDirection="column">
                     <Heading as="h3" my="4">Principals</Heading>
-                    <Text>This role is assigned to {numberOfUsers} {numberOfUsers === 1 ? 'member' : 'members'}</Text>
+                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'member' : 'members'}</Text>
                     <Box my={2}>
                         <SearchField
                             width="300px"

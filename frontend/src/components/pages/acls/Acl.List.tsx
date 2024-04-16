@@ -30,6 +30,7 @@ import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -265,14 +266,22 @@ const RolesTab = observer(() => {
                         size: 60,
                         id: 'menu',
                         header: '',
-                        cell: (_ctx) => {
-                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }} onClick={async () => {
-                                const entry = _ctx.row.original;
-                                await rolesApi.deleteRole(entry.name, true)
-                                await rolesApi.refreshRoles()
-                            }}>
-                                <Icon as={TrashIcon} />
-                            </Button>;
+                        cell: (ctx) => {
+                            const entry = ctx.row.original;
+                            return (
+                                <DeleteRoleConfirmModal
+                                    numberOfPrincipals={entry.members.length}
+                                    onConfirm={async () => {
+                                        await rolesApi.deleteRole(entry.name, true);
+                                        await rolesApi.refreshRoles();
+                                    }}
+                                    buttonEl={
+                                        <Button variant="ghost" className="deleteButton" style={{height: 'auto'}}>
+                                            <Icon as={TrashIcon} />
+                                        </Button>
+                                    }
+                                />
+                            );
                         }
                     },
                 ]}
