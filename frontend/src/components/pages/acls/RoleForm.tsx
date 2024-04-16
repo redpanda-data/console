@@ -206,9 +206,6 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 </Flex>
 
                 <Flex gap={4} mt={8}>
-                    <Button variant="link" as="a" href={`/security/roles/${initialData?.roleName}/details`}>
-                        Cancel
-                    </Button>
                     {editMode ?
                         <Button colorScheme="brand" type="submit" loadingText="Editing...">
                             Update
@@ -216,6 +213,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         : <Button colorScheme="brand" type="submit" loadingText="Creating...">
                             Create
                         </Button>}
+                    <Button variant="link" as="a" href={`/security/roles/${initialData?.roleName}/details`}>
+                        Cancel
+                    </Button>
                 </Flex>
             </form>
         </Box>
