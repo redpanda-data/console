@@ -37,7 +37,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
         ...initialData,
     }))
 
-    const originalUsernames = useMemo(() => initialData?.principals?.map(({name}) => name) ?? [], [])
+    const originalUsernames = useMemo(() => initialData?.principals?.map(({name}) => name) ?? [], [
+        initialData?.principals
+    ])
     const currentUsernames = formState.principals.map(({name}) => name) ?? []
 
     const editMode: boolean = Boolean(initialData?.roleName)
@@ -78,7 +80,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 const newRole = await rolesApi.updateRoleMembership(
                     formState.roleName,
                     formState.principals.map(x => x.name), usersToRemove, true
-                );
+                )
 
                 unpackPrincipalGroup(aclPrincipalGroup).forEach((async x => {
                     await api.createACL({
@@ -99,6 +101,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         <Label text="Role name">
                             <>
                                 <Input
+                                    pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
                                     isRequired
                                     value={formState.roleName}
@@ -109,6 +112,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Label>
 
                         <Button
+                            mt={5}
                             variant="outline"
                             onClick={() => {
                                 if (formState.topicACLs.length == 0) formState.topicACLs.push(createEmptyTopicAcl());
