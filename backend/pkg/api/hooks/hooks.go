@@ -131,10 +131,10 @@ type AuthorizationHooks interface {
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
 
-	// Kafka Role Hooks
-	CanListKafkaRoles(ctx context.Context) (bool, *rest.Error)
-	CanCreateKafkaRoles(ctx context.Context) (bool, *rest.Error)
-	CanDeleteKafkaRoles(ctx context.Context) (bool, *rest.Error)
+	// Redpanda Role Hooks
+	CanListRedpandaRoles(ctx context.Context) (bool, *rest.Error)
+	CanCreateRedpandaRoles(ctx context.Context) (bool, *rest.Error)
+	CanDeleteRedpandaRoles(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.

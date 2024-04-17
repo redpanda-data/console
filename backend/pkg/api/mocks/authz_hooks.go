@@ -103,21 +103,6 @@ func (mr *MockAuthorizationHooksMockRecorder) CanCreateACL(arg0 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateACL", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateACL), arg0)
 }
 
-// CanCreateKafkaRoles mocks base method.
-func (m *MockAuthorizationHooks) CanCreateKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanCreateKafkaRoles", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanCreateKafkaRoles indicates an expected call of CanCreateKafkaRoles.
-func (mr *MockAuthorizationHooksMockRecorder) CanCreateKafkaRoles(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateKafkaRoles), arg0)
-}
-
 // CanCreateKafkaUsers mocks base method.
 func (m *MockAuthorizationHooks) CanCreateKafkaUsers(arg0 context.Context) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -131,6 +116,21 @@ func (m *MockAuthorizationHooks) CanCreateKafkaUsers(arg0 context.Context) (bool
 func (mr *MockAuthorizationHooksMockRecorder) CanCreateKafkaUsers(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateKafkaUsers", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateKafkaUsers), arg0)
+}
+
+// CanCreateRedpandaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanCreateRedpandaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanCreateRedpandaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanCreateRedpandaRoles indicates an expected call of CanCreateRedpandaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanCreateRedpandaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateRedpandaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanCreateRedpandaRoles), arg0)
 }
 
 // CanCreateSchemas mocks base method.
@@ -208,21 +208,6 @@ func (mr *MockAuthorizationHooksMockRecorder) CanDeleteConsumerGroup(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteConsumerGroup", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteConsumerGroup), arg0, arg1)
 }
 
-// CanDeleteKafkaRoles mocks base method.
-func (m *MockAuthorizationHooks) CanDeleteKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanDeleteKafkaRoles", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanDeleteKafkaRoles indicates an expected call of CanDeleteKafkaRoles.
-func (mr *MockAuthorizationHooksMockRecorder) CanDeleteKafkaRoles(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteKafkaRoles), arg0)
-}
-
 // CanDeleteKafkaUsers mocks base method.
 func (m *MockAuthorizationHooks) CanDeleteKafkaUsers(arg0 context.Context) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -236,6 +221,21 @@ func (m *MockAuthorizationHooks) CanDeleteKafkaUsers(arg0 context.Context) (bool
 func (mr *MockAuthorizationHooksMockRecorder) CanDeleteKafkaUsers(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteKafkaUsers", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteKafkaUsers), arg0)
+}
+
+// CanDeleteRedpandaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanDeleteRedpandaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanDeleteRedpandaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanDeleteRedpandaRoles indicates an expected call of CanDeleteRedpandaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanDeleteRedpandaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanDeleteRedpandaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanDeleteRedpandaRoles), arg0)
 }
 
 // CanDeleteSchemas mocks base method.
@@ -343,21 +343,6 @@ func (mr *MockAuthorizationHooksMockRecorder) CanListACLs(arg0 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListACLs", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListACLs), arg0)
 }
 
-// CanListKafkaRoles mocks base method.
-func (m *MockAuthorizationHooks) CanListKafkaRoles(arg0 context.Context) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanListKafkaRoles", arg0)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanListKafkaRoles indicates an expected call of CanListKafkaRoles.
-func (mr *MockAuthorizationHooksMockRecorder) CanListKafkaRoles(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListKafkaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListKafkaRoles), arg0)
-}
-
 // CanListKafkaUsers mocks base method.
 func (m *MockAuthorizationHooks) CanListKafkaUsers(arg0 context.Context) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -386,6 +371,21 @@ func (m *MockAuthorizationHooks) CanListQuotas(arg0 context.Context) (bool, *res
 func (mr *MockAuthorizationHooksMockRecorder) CanListQuotas(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListQuotas", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListQuotas), arg0)
+}
+
+// CanListRedpandaRoles mocks base method.
+func (m *MockAuthorizationHooks) CanListRedpandaRoles(arg0 context.Context) (bool, *rest.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanListRedpandaRoles", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(*rest.Error)
+	return ret0, ret1
+}
+
+// CanListRedpandaRoles indicates an expected call of CanListRedpandaRoles.
+func (mr *MockAuthorizationHooksMockRecorder) CanListRedpandaRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanListRedpandaRoles", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanListRedpandaRoles), arg0)
 }
 
 // CanManageSchemaRegistry mocks base method.
