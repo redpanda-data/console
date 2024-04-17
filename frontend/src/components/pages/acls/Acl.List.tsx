@@ -19,7 +19,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { QuestionIcon } from '@primer/octicons-react';
-import { TrashIcon } from '@heroicons/react/outline';
+import { TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, principalGroupsView } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
@@ -269,18 +269,23 @@ const RolesTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return (
-                                <DeleteRoleConfirmModal
-                                    numberOfPrincipals={entry.members.length}
-                                    onConfirm={async () => {
-                                        await rolesApi.deleteRole(entry.name, true);
-                                        await rolesApi.refreshRoles();
-                                    }}
-                                    buttonEl={
-                                        <Button variant="ghost" className="deleteButton" style={{height: 'auto'}}>
-                                            <Icon as={TrashIcon} />
-                                        </Button>
-                                    }
-                                />
+                                <Flex flexDirection="row">
+                                    <Button variant="ghost" as={ReactRouterLink} to={`/security/roles/${entry.name}/edit`}>
+                                        <Icon as={PencilIcon} />
+                                    </Button>
+                                    <DeleteRoleConfirmModal
+                                        numberOfPrincipals={entry.members.length}
+                                        onConfirm={async () => {
+                                            await rolesApi.deleteRole(entry.name, true);
+                                            await rolesApi.refreshRoles();
+                                        }}
+                                        buttonEl={
+                                            <Button variant="ghost">
+                                                <Icon as={TrashIcon} />
+                                            </Button>
+                                        }
+                                    />
+                                </Flex>
                             );
                         }
                     },
