@@ -9,38 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
+import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs } from './Models';
 import { RoleForm } from './RoleForm';
+import { Text } from '@redpanda-data/ui';
 
-@observer
 class RoleCreatePage extends PageComponent<{}> {
-
-    // Name of the role
-    @observable roleName: string = '';
-
-    // Members that are part of the role
-    @observable members: RolePrincipal[] = [];
-
-    // Permissions that will be applied to the role
-    @observable topicAcls: TopicACLs = createEmptyTopicAcl();
-    @observable consumerGroupAcls: ConsumerGroupACLs = createEmptyConsumerGroupAcl();
-    @observable transactionalIdAcls: TransactionalIdACLs = createEmptyTransactionalIdAcl();
-    @observable clusterAcls: ClusterACLs = createEmptyClusterAcl();
-
-
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-        this.onCreateRole = this.onCreateRole.bind(this);
-    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Create role';
@@ -68,34 +46,11 @@ class RoleCreatePage extends PageComponent<{}> {
 
         return (
             <PageContent>
+                <Text my={4}>A role is a named collection of ACLs which may have users (security principals) assigned to it. You can assign any number of roles to a given user.</Text>
                 <RoleForm />
             </PageContent>
         );
     }
-
-    async onCreateRole(): Promise<void> {
-        // try {
-        //     this.isCreating = true;
-        //
-        //     // create role with members
-        //
-        //     // create all acls individually
-        //
-        //     // Refresh roles
-        //
-        // } catch (err) {
-        //     toast({
-        //         status: 'error',
-        //         duration: null,
-        //         isClosable: true,
-        //         title: 'todo todo todo todo todo todo todo',
-        //         description: String(err),
-        //     });
-        //     throw err;
-        // } finally {
-        //     this.isCreating = false;
-        // }
-    };
 }
 
 export default RoleCreatePage;

@@ -214,7 +214,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                             Create
                         </Button>}
                     <Button variant="link" as="a" href={`/security/roles/${initialData?.roleName}/details`}>
-                        Cancel
+                        Go back
                     </Button>
                 </Flex>
             </form>
