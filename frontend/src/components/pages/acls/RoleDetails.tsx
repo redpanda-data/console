@@ -92,7 +92,9 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
         return <>
             <PageContent>
                 <Flex gap="4">
-                    <Button variant="outline" href={`/security/roles/${this.props.roleName}/edit`} as={ReactRouterLink}>
+                    <Button variant="outline" onClick={() => {
+                        appGlobal.history.push(`/security/roles/${this.props.roleName}/edit`)
+                    }}>
                         Edit
                     </Button>
                     <DeleteRoleConfirmModal

@@ -5,7 +5,8 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
 import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
 import { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
-import { useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom'
+import { appGlobal } from '../../../state/appGlobal';
 
 type CreateRoleFormState = {
     roleName: string;
@@ -213,9 +214,17 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         : <Button colorScheme="brand" type="submit" loadingText="Creating...">
                             Create
                         </Button>}
-                    <Button variant="link" as="a" href={`/security/roles/${initialData?.roleName}/details`}>
-                        Go back
-                    </Button>
+                    {editMode ? <Button variant="link" onClick={() => {
+                            appGlobal.history.push(`/security/roles/${initialData?.roleName}/details`);
+                        }}>
+                            Go back
+                        </Button> :
+                        <Button variant="link" onClick={() => {
+                            appGlobal.history.push('/security/roles/');
+                        }}>
+                            Go back
+                        </Button>
+                    }
                 </Flex>
             </form>
         </Box>
