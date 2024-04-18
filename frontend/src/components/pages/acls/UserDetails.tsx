@@ -23,6 +23,7 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
 import React from 'react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -77,9 +78,17 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                         Edit
                     </Button>
                     {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
-                    <Button variant="outline-delete">
-                        Delete
-                    </Button>
+                    <DeleteUserConfirmModal
+                        onConfirm={async () => {
+                            await api.deleteServiceAccount(userName);
+                            await api.refreshServiceAccounts(true);
+                        }}
+                        buttonEl={
+                            <Button variant="outline-delete">
+                                Delete
+                            </Button>
+                        }
+                    />
                 </Flex>
 
                 <Heading as="h3" mt="4">Permissions</Heading>
