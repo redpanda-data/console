@@ -105,6 +105,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                                 Delete
                             </Button>
                         }
+                        roleName={this.props.roleName}
                     />
                 </Flex>
                 <Flex flexDirection="column">

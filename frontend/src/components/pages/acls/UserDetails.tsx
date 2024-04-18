@@ -88,6 +88,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                                 Delete
                             </Button>
                         }
+                        userName={userName}
                     />
                 </Flex>
 

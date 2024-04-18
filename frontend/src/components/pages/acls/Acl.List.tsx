@@ -206,6 +206,7 @@ const UsersTab = observer(() => {
                                                 <Icon as={TrashIcon} />
                                             </Button>
                                         }
+                                        userName={name}
                                     />
                                 </Flex>
                             );
@@ -300,6 +301,7 @@ const RolesTab = observer(() => {
                                                 <Icon as={TrashIcon} />
                                             </Button>
                                         }
+                                        roleName={entry.name}
                                     />
                                 </Flex>
                             );
