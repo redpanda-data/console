@@ -59,8 +59,11 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
-            api.refreshServiceAccounts(true)
+            api.refreshServiceAccounts(true),
+            rolesApi.refreshRoles()
         ]);
+
+        await rolesApi.refreshRoleMembers();
     }
 
     render() {
@@ -108,13 +111,22 @@ const UserPermissionAssignments = observer((p: {
         roles.push(roleName);
     }
 
-    return <Flex>
-        {roles.map(r =>
+    const elements: JSX.Element[] = [];
+
+    for (let i = 0; i < roles.length; i++) {
+        const r = roles[i];
+        elements.push(
             <React.Fragment key={r}>
                 <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}>{r}</ChakraLink>
-                <Box whiteSpace="pre" userSelect="none">{', '}</Box>
             </React.Fragment>
-        )}
+        );
+
+        if (i < roles.length - 1)
+            elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
+    }
+
+    return <Flex>
+        {elements}
     </Flex>
 });
 
@@ -123,22 +135,31 @@ const PermissionAssignemntsDetails = observer((p: {
 }) => {
     // Get all roles and ACLs matching this user
     // For each "AclPrincipalGroup" show its name, then a table that shows the details
-    const roles = [];
+    const roles: string[] = [];
     for (const [roleName, members] of rolesApi.roleMembers) {
         if (!members.any(m => m.name == p.userName))
             continue; // this role doesn't contain our user
         roles.push(roleName);
     }
 
-    // DEBUG
-    const placeholderAcl = principalGroupsView.principalGroups[0];
-    roles.push(placeholderAcl.principalType + ': ' + placeholderAcl.principalName);
+    // Get all AclPrincipal groups, find the ones that apply
+    const groups = principalGroupsView.principalGroups.filter(g => {
+        if (g.principalType == 'User' && g.principalName == p.userName) return true;
+        if (g.principalType == 'RedpandaRole' && roles.includes(g.principalName)) return true;
+        return false;
+    });
+
+    console.log('groups: ' + groups.map(g => g.principalName + ' (' + g.principalType + ')').join(', '));
 
     return <>
-        {roles.map(r =>
+        {groups.map(r =>
             <>
-                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}><Heading as="h3" mt="4">{r}</Heading></ChakraLink>
-                <AclPrincipalGroupPermissionsTable group={placeholderAcl} />
+                {
+                    r.principalType == 'RedpandaRole'
+                        ? <ChakraLink as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}><Heading as="h3" mt="4">{r.principalName}</Heading></ChakraLink>
+                        : <Heading as="h3" mt="4">User: {r.principalName}</Heading>
+                }
+                <AclPrincipalGroupPermissionsTable group={r} />
             </>
         )}
     </>
@@ -154,8 +175,6 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
             deny: string[];
         };
     }[] = [];
-
-    console.log('gathering permissions about group', { group: p.group })
 
     // Convert all entries of the group into a table row
     const group = p.group;
@@ -270,6 +289,8 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
             })
     }
 
+    if (entries.length == 0)
+        return <>No permissions assigned</>;
 
     return <>
         <DataTable
