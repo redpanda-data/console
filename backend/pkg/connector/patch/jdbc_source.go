@@ -49,6 +49,14 @@ func (c *ConfigPatchJdbcSource) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
+	case keyConverter:
+		d.ClearRecommendedValuesWithMetadata().
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
+			AddRecommendedValueWithMetadata("io.confluent.connect.protobuf.ProtobufConverter", "PROTOBUF").
+			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").

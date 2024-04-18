@@ -64,6 +64,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("io.confluent.connect.protobuf.ProtobufConverter", "PROTOBUF").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
@@ -74,6 +75,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("io.confluent.connect.protobuf.ProtobufConverter", "PROTOBUF").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
