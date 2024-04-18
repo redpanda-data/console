@@ -19,6 +19,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { Box, Button, Flex, Heading, Input, createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { RoleSelector } from './UserCreate';
+import { UpdateRoleMembershipResponse } from '../../../protogen/redpanda/api/console/v1alpha1/security_pb';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -85,32 +86,34 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
         // Check if there are any roles removed, added, or replaced
         // only then will the save button be enabled
         // First check if they have the same number of roles
-        let hasChanges = false;
         const originalRoles = [...this.originalRoles.values()];
-        const sameLength = originalRoles.length == this.selectedRoles.length;
-        if (!sameLength) {
-            hasChanges = true;
-        } else {
-            // Check if there were some replacements
-            for (const r of this.selectedRoles)
-                if (!originalRoles.includes(r)) {
-                    hasChanges = true;
-                    break;
-                }
 
-            for (const r of originalRoles)
-                if (!this.selectedRoles.includes(r)) {
-                    hasChanges = true;
-                    break;
-                }
-        }
+        const addedRoles = this.selectedRoles.except(originalRoles);
+        const removedRoles = originalRoles.except(this.selectedRoles);
 
+        const hasChanges = addedRoles.length > 0 || removedRoles.length > 0
 
-        const onSave = () => {
+        const onSave = async () => {
+            const promises: Promise<UpdateRoleMembershipResponse>[] = [];
+
+            // Remove user from "removedRoles"
+            for (const r of removedRoles)
+                promises.push(rolesApi.updateRoleMembership(r, [], [userName], false));
+            // Add to newly selected roles
+            for (const r of addedRoles)
+                promises.push(rolesApi.updateRoleMembership(r, [userName], [], false));
+
+            await Promise.allSettled(promises);
+
+            // Update roles and memberships so that the change is reflected in the ui
+            await rolesApi.refreshRoles();
+            await rolesApi.refreshRoleMembers();
 
             toast({
-                description: 'todo'
+                status: 'success',
+                title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`
             });
+            appGlobal.history.push(`/security/users/${userName}/details`);
         };
 
         return <>

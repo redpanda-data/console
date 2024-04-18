@@ -1570,6 +1570,8 @@ export const rolesApi = observable({
 
         await Promise.allSettled(rolePromises);
 
+        this.roleMembers.clear();
+
         for (const r of rolePromises) {
             const res = await r;
             if (res.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
@@ -1592,7 +1594,6 @@ export const rolesApi = observable({
                 return { principalType, name } as RolePrincipal;
             }).filterNull();
 
-            // this.roleMembers.clear();
             this.roleMembers.set(roleName, members);
         }
 

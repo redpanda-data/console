@@ -31,6 +31,7 @@ import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { Link as ReactRouterLink } from 'react-router-dom'
 import { Link as ChakraLink } from '@chakra-ui/react'
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -188,11 +189,26 @@ const UsersTab = observer(() => {
                         size: 60,
                         id: 'menu',
                         header: '',
-                        cell: (_ctx) => {
-                            // todo: implement delete
-                            return <Button variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
-                                <Icon as={TrashIcon} />
-                            </Button>;
+                        cell: (ctx) => {
+                            const name = ctx.row.original;
+                            return (
+                                <Flex flexDirection="row">
+                                    <Button variant="ghost" as={ReactRouterLink} to={`/security/users/${name}/edit`}>
+                                        <Icon as={PencilIcon} />
+                                    </Button>
+                                    <DeleteUserConfirmModal
+                                        onConfirm={async () => {
+                                            await api.deleteServiceAccount(name);
+                                            await api.refreshServiceAccounts(true);
+                                        }}
+                                        buttonEl={
+                                            <Button variant="ghost">
+                                                <Icon as={TrashIcon} />
+                                            </Button>
+                                        }
+                                    />
+                                </Flex>
+                            );
                         }
                     },
                 ]}
