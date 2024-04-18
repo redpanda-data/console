@@ -22,7 +22,6 @@ import { Alert, AlertIcon, Box, Button, Checkbox, CopyButton, createStandaloneTo
 import { useEffect, useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
-import { CheckCircleIcon } from '@chakra-ui/icons';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -96,7 +95,7 @@ class UserCreatePage extends PageComponent<{}> {
             <ToastContainer />
 
             <PageContent>
-                <Box maxWidth="460px">
+                <Box >
                     {this.step === 'CREATE_USER'
                         ? <CreateUserModal state={this} onCancel={onCancel} onCreateUser={this.onCreateUser} />
                         : <CreateUserConfirmationModal state={this} closeModal={onCancel} />
@@ -152,7 +151,7 @@ const CreateUserModal = observer((p: {
     const isValidPassword = state.password && state.password.length >= 4 && state.password.length <= 64;
 
     return (
-        <>
+        <Box maxWidth="460px">
             <Flex gap="2em" direction="column">
                 <FormField
                     description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
@@ -249,7 +248,7 @@ const CreateUserModal = observer((p: {
                     Cancel
                 </Button>
             </Flex>
-        </>
+        </Box>
     );
 }
 );
@@ -257,14 +256,19 @@ const CreateUserModal = observer((p: {
 const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; closeModal: () => void }) => {
     return (
         <>
-            <Heading as="h2" mt={4} mb={8}>
+            <Heading as="h1" mt={4} mb={8}>
                 <Flex alignItems="center">
-                    <CheckCircleIcon color="green.500" mr={2} transform="translateY(-1px)" />
-                    User created
+                    {/* <CheckCircleIcon color="green.500" mr={2} transform="translateY(-1px)" /> */}
+                    User created successfully
                 </Flex>
             </Heading>
 
-            <Grid templateColumns="max-content 1fr" gridRowGap={2} gridColumnGap={6} alignItems="center">
+            <Alert status="info" mt={4} mb={4}>
+                <AlertIcon />
+                You will not be able to view this password again. Make sure that it is copied and saved.
+            </Alert>
+
+            <Grid templateColumns="max-content 1fr" gridRowGap={2} gridColumnGap={6} alignItems="center" maxWidth="460px">
                 <Box fontWeight="bold" data-testid="username">
                     Username
                 </Box>
@@ -308,13 +312,8 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
                 </Box>
             </Grid>
 
-            <Alert status="info" variant="left-accent" mt={4}>
-                <AlertIcon />
-                You will not be able to view this password again, make sure you saved it somewhere
-            </Alert>
-
             <Flex gap={4} mt={8}>
-                <Button onClick={p.closeModal}>Close</Button>
+                <Button onClick={p.closeModal}>Done</Button>
             </Flex>
 
         </>
