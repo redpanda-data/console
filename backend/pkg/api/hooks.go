@@ -42,6 +42,7 @@ type Hooks struct {
 type ConfigConnectRPCRequest struct {
 	BaseInterceptors []connect.Interceptor
 	GRPCGatewayMux   *runtime.ServeMux
+	Services         map[string]any
 }
 
 // ConfigConnectRPCResponse configures connect services.
@@ -49,12 +50,15 @@ type ConfigConnectRPCResponse struct {
 	// Instructs OSS to use these intercptors for all connect services
 	Interceptors []connect.Interceptor
 
-	// Instructs OSS to register these services in addition to the OSS ones
-	AdditionalServices []ConnectService
-
 	// HTTPMiddlewares are middlewares that shall be used for the router
 	// that serves all ConnectRPC requests.
 	HTTPMiddlewares []func(http.Handler) http.Handler
+
+	// Original, possibly mutated, services
+	Services map[string]any
+
+	// Instructs OSS to register these services in addition to the OSS ones
+	AdditionalServices []ConnectService
 }
 
 // ConnectService is a Connect handler along with its metadata
@@ -214,6 +218,7 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 	return ConfigConnectRPCResponse{
 		Interceptors:       req.BaseInterceptors,
 		AdditionalServices: []ConnectService{},
+		Services:           req.Services,
 	}
 }
 
