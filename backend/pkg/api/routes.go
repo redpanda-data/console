@@ -96,7 +96,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
-	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
+	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 
 	// Call Hook
