@@ -18,7 +18,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { appGlobal } from '../../../state/appGlobal';
-import { ClusterConnectors, ConnectorValidationResult } from '../../../state/restInterfaces';
+import { ClusterConnectors, ConnectorValidationResult, DataType } from '../../../state/restInterfaces';
 import { HiddenRadioList } from '../../misc/HiddenRadioList';
 import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
 import { ConfigPage } from './dynamic-ui/components';
@@ -360,6 +360,24 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
                 if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef.getConfigObject())) {
                     connectorRef.updateProperties(parsedUpdatedConfig);
+                }
+
+                const secrets = connectorRef.secrets;
+                if (secrets) {
+                    for (const p of connectorRef.propsByName.values()) {
+                        if (p.entry.definition.type === DataType.Password) {
+                            const secret = secrets.getSecret(p.name);
+                            // secret.extractSecretId(property.value);
+                            secret.extractSecretId(p.value as string);
+
+                            // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
+                            // we need to copy the values from the json into the secrets
+                            const valueFromJson = parsedUpdatedConfig[p.name];
+                            if (!secret.value && Boolean(valueFromJson)) {
+                                secret.value = valueFromJson;
+                            }
+                        }
+                    }
                 }
 
                 const propertiesObject: Record<string, any> = connectorRef.getConfigObject();

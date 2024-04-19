@@ -22,6 +22,7 @@ import {
     ConnectorStep,
     ConnectorGroup,
     ClusterAdditionalInfo,
+    CreateSecretResponse,
 } from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
@@ -163,10 +164,11 @@ export class ConnectClusterStore {
         const secrets = connector.secrets;
         if (secrets) {
             try {
+                const connectorName = connector.propsByName.get('name');
+                if (!connectorName) throw new Error('For some reason your connector doesn\'t have a name');
+
                 for (const [key, secret] of secrets.secrets) {
-                    const connectorName = connector.propsByName.get('name');
-                    if (!connectorName) throw new Error('For some reason your connector doesn\'t have a name');
-                    const createSecretResponse = yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized);
+                    const createSecretResponse = (yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized)) as CreateSecretResponse;
                     const property = connector.propsByName.get(key);
                     if (property) property.value = secret.getSecretString(key, createSecretResponse?.secretId);
                 }
@@ -175,7 +177,15 @@ export class ConnectClusterStore {
             }
         }
         try {
-            const finalProperties: Record<string, any> = { ...updatedConfig, ...connector.getConfigObject() };
+            const configObj = connector.getConfigObject();
+            const finalProperties: Record<string, any> = { ...updatedConfig, ...configObj };
+
+            console.log('createConnector()', {
+                updatedConfig,
+                configObj,
+                secrets: secrets?.secrets
+            })
+
             yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
             this.removePluginState(pluginClass);
         } catch (error) {
@@ -711,6 +721,9 @@ export class ConnectorPropertiesStore {
                 if (p.definition.type === DataType.Password && !!this.secrets) {
                     const secret = this.secrets.getSecret(property.name);
                     secret.extractSecretId(property.value);
+
+                    // Catch assignments to the "value" of this property,
+                    // in order to copy the new value into the secret as well
                     intercept(property, 'value', (change) => {
                         secret.value = change.newValue;
                         return change;
