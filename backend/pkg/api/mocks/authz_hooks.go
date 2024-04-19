@@ -15,9 +15,6 @@ import (
 
 	rest "github.com/cloudhut/common/rest"
 	gomock "go.uber.org/mock/gomock"
-
-	httptypes "github.com/redpanda-data/console/backend/pkg/api/httptypes"
-	console "github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // MockAuthorizationHooks is a mock of AuthorizationHooks interface.
@@ -433,21 +430,6 @@ func (mr *MockAuthorizationHooksMockRecorder) CanPatchPartitionReassignments(arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanPatchPartitionReassignments", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanPatchPartitionReassignments), arg0)
 }
 
-// CanPublishTopicRecords mocks base method.
-func (m *MockAuthorizationHooks) CanPublishTopicRecords(arg0 context.Context, arg1 string) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanPublishTopicRecords", arg0, arg1)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanPublishTopicRecords indicates an expected call of CanPublishTopicRecords.
-func (mr *MockAuthorizationHooksMockRecorder) CanPublishTopicRecords(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanPublishTopicRecords", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanPublishTopicRecords), arg0, arg1)
-}
-
 // CanSeeConsumerGroup mocks base method.
 func (m *MockAuthorizationHooks) CanSeeConsumerGroup(arg0 context.Context, arg1 string) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -476,21 +458,6 @@ func (m *MockAuthorizationHooks) CanSeeTopic(arg0 context.Context, arg1 string) 
 func (mr *MockAuthorizationHooksMockRecorder) CanSeeTopic(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanSeeTopic", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanSeeTopic), arg0, arg1)
-}
-
-// CanUseMessageSearchFilters mocks base method.
-func (m *MockAuthorizationHooks) CanUseMessageSearchFilters(arg0 context.Context, arg1 *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanUseMessageSearchFilters", arg0, arg1)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanUseMessageSearchFilters indicates an expected call of CanUseMessageSearchFilters.
-func (mr *MockAuthorizationHooksMockRecorder) CanUseMessageSearchFilters(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanUseMessageSearchFilters", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanUseMessageSearchFilters), arg0, arg1)
 }
 
 // CanViewConnectCluster mocks base method.
@@ -553,21 +520,6 @@ func (mr *MockAuthorizationHooksMockRecorder) CanViewTopicConsumers(arg0, arg1 a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanViewTopicConsumers", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanViewTopicConsumers), arg0, arg1)
 }
 
-// CanViewTopicMessages mocks base method.
-func (m *MockAuthorizationHooks) CanViewTopicMessages(arg0 context.Context, arg1 *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanViewTopicMessages", arg0, arg1)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*rest.Error)
-	return ret0, ret1
-}
-
-// CanViewTopicMessages indicates an expected call of CanViewTopicMessages.
-func (mr *MockAuthorizationHooksMockRecorder) CanViewTopicMessages(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanViewTopicMessages", reflect.TypeOf((*MockAuthorizationHooks)(nil).CanViewTopicMessages), arg0, arg1)
-}
-
 // CanViewTopicPartitions mocks base method.
 func (m *MockAuthorizationHooks) CanViewTopicPartitions(arg0 context.Context, arg1 string) (bool, *rest.Error) {
 	m.ctrl.T.Helper()
@@ -595,16 +547,4 @@ func (m *MockAuthorizationHooks) IsProtectedKafkaUser(arg0 string) bool {
 func (mr *MockAuthorizationHooksMockRecorder) IsProtectedKafkaUser(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsProtectedKafkaUser", reflect.TypeOf((*MockAuthorizationHooks)(nil).IsProtectedKafkaUser), arg0)
-}
-
-// PrintListMessagesAuditLog mocks base method.
-func (m *MockAuthorizationHooks) PrintListMessagesAuditLog(arg0 context.Context, arg1 any, arg2 *console.ListMessageRequest) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "PrintListMessagesAuditLog", arg0, arg1, arg2)
-}
-
-// PrintListMessagesAuditLog indicates an expected call of PrintListMessagesAuditLog.
-func (mr *MockAuthorizationHooksMockRecorder) PrintListMessagesAuditLog(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrintListMessagesAuditLog", reflect.TypeOf((*MockAuthorizationHooks)(nil).PrintListMessagesAuditLog), arg0, arg1, arg2)
 }

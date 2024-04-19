@@ -42,12 +42,16 @@ type Hooks struct {
 type ConfigConnectRPCRequest struct {
 	BaseInterceptors []connect.Interceptor
 	GRPCGatewayMux   *runtime.ServeMux
+	Services         map[string]any
 }
 
 // ConfigConnectRPCResponse configures connect services.
 type ConfigConnectRPCResponse struct {
 	// Instructs OSS to use these intercptors for all connect services
 	Interceptors []connect.Interceptor
+
+	// Original, possibly mutated, services
+	Services map[string]any
 
 	// Instructs OSS to register these services in addition to the OSS ones
 	AdditionalServices []ConnectService
@@ -99,15 +103,11 @@ type AuthorizationHooks interface {
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
@@ -214,6 +214,7 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 	return ConfigConnectRPCResponse{
 		Interceptors:       req.BaseInterceptors,
 		AdditionalServices: []ConnectService{},
+		Services:           req.Services,
 	}
 }
 
@@ -234,10 +235,6 @@ func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Er
 	return true, nil
 }
 
-func (*defaultHooks) CanPublishTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
 func (*defaultHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
@@ -250,14 +247,6 @@ func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *res
 	return true, nil
 }
 
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
@@ -265,9 +254,6 @@ func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *
 func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
-}
-
-func (*defaultHooks) PrintListMessagesAuditLog(_ context.Context, _ any, _ *console.ListMessageRequest) {
 }
 
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
