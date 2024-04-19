@@ -15,6 +15,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 )
 
 // EndpointCompatibility describes what Console endpoints can be offered to the frontend,
@@ -115,6 +117,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Requests:       []kmsg.Request{&kmsg.AlterUserSCRAMCredentialsRequest{}},
 			HasRedpandaAPI: true,
 		},
+		{
+			URL:            consolev1alpha1connect.SecurityServiceName,
+			Method:         "POST",
+			HasRedpandaAPI: true,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
@@ -132,8 +139,8 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// and the Kafka API. If the Kafka API is not supported, but the same
 		// endpoint is exposed via the Redpanda Admin API, we support
 		// this feature anyways.
-		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
-			endpointSupported = true
+		if endpointReq.HasRedpandaAPI && s.redpandaSvc == nil {
+			endpointSupported = false
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{
