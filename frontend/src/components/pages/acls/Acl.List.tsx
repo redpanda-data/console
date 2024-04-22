@@ -192,19 +192,21 @@ const UsersTab = observer(() => {
                         cell: (ctx) => {
                             const name = ctx.row.original;
                             return (
-                                <Flex flexDirection="row">
-                                    <Button variant="ghost" as={ReactRouterLink} to={`/security/users/${name}/edit`}>
+                                <Flex flexDirection="row" gap={4}>
+                                    <button onClick={() => {
+                                        appGlobal.history.push(`/security/users/${name}/edit`);
+                                    }}>
                                         <Icon as={PencilIcon} />
-                                    </Button>
+                                    </button>
                                     <DeleteUserConfirmModal
                                         onConfirm={async () => {
                                             await api.deleteServiceAccount(name);
                                             await api.refreshServiceAccounts(true);
                                         }}
                                         buttonEl={
-                                            <Button variant="ghost">
+                                            <button>
                                                 <Icon as={TrashIcon} />
-                                            </Button>
+                                            </button>
                                         }
                                         userName={name}
                                     />
@@ -286,10 +288,12 @@ const RolesTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return (
-                                <Flex flexDirection="row">
-                                    <Button variant="ghost" as={ReactRouterLink} to={`/security/roles/${entry.name}/edit`}>
+                                <Flex flexDirection="row" gap={4}>
+                                    <button onClick={() => {
+                                        appGlobal.history.push(`/security/roles/${entry.name}/edit`);
+                                    }}>
                                         <Icon as={PencilIcon} />
-                                    </Button>
+                                    </button>
                                     <DeleteRoleConfirmModal
                                         numberOfPrincipals={entry.members.length}
                                         onConfirm={async () => {
@@ -297,9 +301,9 @@ const RolesTab = observer(() => {
                                             await rolesApi.refreshRoles();
                                         }}
                                         buttonEl={
-                                            <Button variant="ghost">
+                                            <button>
                                                 <Icon as={TrashIcon} />
-                                            </Button>
+                                            </button>
                                         }
                                         roleName={entry.name}
                                     />
