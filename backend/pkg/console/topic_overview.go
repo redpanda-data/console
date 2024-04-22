@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -72,6 +73,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 
 	configs := make(map[string]*TopicConfig)
 	var logDirsByTopic map[string]TopicLogDirSummary
+	var logDirErrorMsg string
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
@@ -83,7 +85,13 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	}()
 	go func() {
 		defer wg.Done()
-		logDirsByTopic = s.logDirsByTopic(childCtx, metadata)
+		logDirs, err := s.logDirsByTopic(childCtx)
+		if err == nil {
+			logDirsByTopic = logDirs
+		} else {
+			s.logger.Warn("failed to retrieve log dirs by topic", zap.Error(err))
+			logDirErrorMsg = err.Error()
+		}
 	}()
 	wg.Wait()
 
@@ -115,13 +123,25 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 			}
 		}
 
+		// Set dummy response in case of an error when describing metadata or log dirs
+		// If we have a topic log dir summary for the given topic we will return that.
+		logDirSummary := TopicLogDirSummary{
+			TotalSizeBytes: -1,
+			Hint:           fmt.Sprintf("Failed to describe log dirs: %v", logDirErrorMsg),
+		}
+		if logDirsByTopic != nil {
+			if sum, exists := logDirsByTopic[topicName]; exists {
+				logDirSummary = sum
+			}
+		}
+
 		res[i] = &TopicSummary{
 			TopicName:         topicName,
 			IsInternal:        topic.IsInternal,
 			PartitionCount:    len(topic.Partitions),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 			CleanupPolicy:     policy,
-			LogDirSummary:     logDirsByTopic[topicName],
+			LogDirSummary:     logDirSummary,
 			Documentation:     docState,
 		}
 	}
