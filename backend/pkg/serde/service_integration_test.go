@@ -4091,7 +4091,6 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
 	})
 
-	/* TODO: This test seems failing, but we don't need serializing Avro at the moment
 	t.Run("schema registry avro references", func(t *testing.T) {
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
@@ -4103,7 +4102,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
-		// register the protobuf schema
+		// register the avro schema
 		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
@@ -4258,7 +4257,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
 
-		protoSvc, err := protoPkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		require.NoError(err)
 
 		err = protoSvc.Start()
@@ -4330,7 +4329,6 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingAvro, serRes.Value.Encoding)
 	})
-	*/
 }
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
