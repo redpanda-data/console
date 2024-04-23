@@ -82,8 +82,10 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     formState.principals.map(x => x.name), usersToRemove, true
                 )
 
-                unpackPrincipalGroup(aclPrincipalGroup).forEach((async x => {
-                    await api.createACL({
+                const allToCreate = unpackPrincipalGroup(aclPrincipalGroup);
+
+                const requests = allToCreate.map(x =>
+                    api.createACL({
                         host: x.host,
                         principal: x.principal,
                         resourceType: x.resourceType,
@@ -91,16 +93,23 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         resourcePatternType: x.resourcePatternType as unknown as 'Literal' | 'Prefixed',
                         operation: x.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
                         permissionType: x.permissionType as unknown as 'Allow' | 'Deny'
-                    })
-                }))
+                    }))
 
-                void history.push(`/security/roles/${newRole.roleName}/details`);
+                const results = await Promise.allSettled(requests);
+                const rejected = results.filter(x => x.status == 'rejected');
+                if (rejected.length) {
+                    console.error('some create acl requests failed', { results, rejected });
+                    throw new Error(rejected.length + ' requests failed');
+                }
+
+                history.push(`/security/roles/${newRole.roleName}/details`);
             }}>
                 <Flex gap={10} flexDirection="column">
                     <Flex flexDirection="row" gap={20}>
                         <Box>
                             <FormField label="Role name">
                                 <Input
+                                    data-testid="create-role__role-name"
                                     pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
                                     isRequired
@@ -113,6 +122,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                         <Button
                             alignSelf="self-end"
+                            data-testid="roles-allow-all-operations"
                             variant="outline"
                             onClick={() => {
                                 if (formState.topicACLs.length == 0) formState.topicACLs.push(createEmptyTopicAcl());
@@ -142,7 +152,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         />
                     </FormField>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-topics-section">
                         <Heading>Topics</Heading>
                         {formState.topicACLs.map((topicACL, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={topicACL} onDelete={() => {
@@ -159,7 +169,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     </Flex>
 
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-consumer-groups-section">
                         <Heading>Consumer Groups</Heading>
                         {formState.consumerGroupsACLs.map((acl, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
@@ -174,7 +184,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-transactional-ids-section">
                         <Heading>Transactional IDs</Heading>
                         {formState.transactionalIDACLs.map((acl, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
@@ -189,7 +199,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-cluster-section">
                         <Heading>Cluster</Heading>
                         <HStack>
                             <Box flexGrow={1}>
