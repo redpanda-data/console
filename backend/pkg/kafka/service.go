@@ -39,7 +39,6 @@ type Service struct {
 	SchemaService    *schema.Service
 	ProtoService     *proto.Service
 	SerdeService     *serde.Service
-	Deserializer     deserializer
 	MetricsNamespace string
 }
 
@@ -132,11 +131,6 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		SchemaService:    schemaSvc,
 		ProtoService:     protoSvc,
 		SerdeService:     serdeSvc,
-		Deserializer: deserializer{
-			SchemaService:  schemaSvc,
-			ProtoService:   protoSvc,
-			MsgPackService: msgPackSvc,
-		},
 		MetricsNamespace: metricsNamespace,
 	}, nil
 }
