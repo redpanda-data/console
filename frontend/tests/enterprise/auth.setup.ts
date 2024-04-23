@@ -11,8 +11,8 @@ setup('authenticate', async ({ page }) => {
         await errorOKButton.click()
     }
 
-    await page.getByTestId('auth-username-input').fill('username');
-    await page.getByTestId('auth-password-input').fill('password');
+    await page.getByTestId('auth-username-input').fill('martin');
+    await page.getByTestId('auth-password-input').fill('very-secret');
     await page.getByTestId('auth-submit').click();
 
     await expect(page.getByTestId('versionTitle')).toBeVisible();

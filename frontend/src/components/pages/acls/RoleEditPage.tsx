@@ -58,8 +58,8 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     }
 
     render() {
-        // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-        // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+        if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+        if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
         if (!this.allDataLoaded) return DefaultSkeleton;
 
         const aclPrincipalGroup = principalGroupsView.principalGroups.find(({

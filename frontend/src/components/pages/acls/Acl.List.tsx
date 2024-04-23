@@ -155,12 +155,13 @@ const UsersTab = observer(() => {
             width="300px"
             searchText={uiSettings.aclList.usersTab.quickSearch}
             setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
-            placeholderText="Filter by name"
+            placeholderText="Enter search term/regex"
         />
 
         <Section>
             <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                 <Button variant="outline"
+                    data-testid="create-user-button"
                     isDisabled={!Features.createUser}
                     onClick={() => appGlobal.history.push('/security/users/create')}>
                     Create user
@@ -247,12 +248,13 @@ const RolesTab = observer(() => {
             width="300px"
             searchText={uiSettings.aclList.rolesTab.quickSearch}
             setSearchText={x => (uiSettings.aclList.rolesTab.quickSearch = x)}
-            placeholderText="Filter by name"
+            placeholderText="Enter search term/regex"
         />
 
         <Section>
             <Button
                 variant="outline"
+                data-testid="create-role-button"
                 onClick={() => appGlobal.history.push('/security/roles/create')}
             >Create role</Button>
 
@@ -345,7 +347,7 @@ const AclsTab = observer((p: {
             width="300px"
             searchText={uiSettings.aclList.configTable.quickSearch}
             setSearchText={x => (uiSettings.aclList.configTable.quickSearch = x)}
-            placeholderText="Filter by name"
+            placeholderText="Enter search term/regex"
         />
 
         <Section>

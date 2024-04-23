@@ -35,14 +35,26 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        // Use prepared auth state.
-        // storageState: 'playwright/.auth/user.json',
+      { name: 'authenticate', testMatch: /auth\.setup\.ts/ },
+
+      {
+          name: 'Console',
+          testMatch: 'tests\\/(?!enterprise\\/).+',
+          use: {
+              ...devices['Desktop Chrome'],
+          },
       },
-    },
+      {
+          name: 'Console Enterprise',
+          testMatch: 'tests/enterprise/**/*',
+          use: {
+              ...devices['Desktop Chrome'],
+              // Use prepared auth state.
+              storageState: 'playwright/.auth/user.json',
+              // baseURL: '// console enterprise URL'
+          },
+          dependencies: ['authenticate']
+      },
   ],
 
 
