@@ -22,6 +22,7 @@ import {
     ConnectorStep,
     ConnectorGroup,
     ClusterAdditionalInfo,
+    CreateSecretResponse,
 } from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
@@ -163,19 +164,34 @@ export class ConnectClusterStore {
         const secrets = connector.secrets;
         if (secrets) {
             try {
+                const connectorName = connector.propsByName.get('name');
+                if (!connectorName) throw new Error('For some reason your connector doesn\'t have a name');
+
                 for (const [key, secret] of secrets.secrets) {
-                    const connectorName = connector.propsByName.get('name');
-                    if (!connectorName) throw new Error('For some reason your connector doesn\'t have a name');
-                    const createSecretResponse = yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized);
+                    const createSecretResponse = (yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized)) as CreateSecretResponse;
                     const property = connector.propsByName.get(key);
-                    if (property) property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+
+                    if (property) {
+                        property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+                        updatedConfig[property.name] = property.value;
+                    }
                 }
             } catch (error) {
                 throw new SecretCreationError(error);
             }
         }
         try {
-            const finalProperties: Record<string, any> = { ...updatedConfig, ...connector.getConfigObject() };
+            const configObj = connector.getConfigObject();
+            const finalProperties: Record<string, any> = { ...updatedConfig, ...configObj };
+
+            // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
+            // We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
+            if (secrets)
+                for (const [key, secret] of secrets.secrets) {
+                    if (secret.value)
+                        finalProperties[key] = secret.value;
+                }
+
             yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
             this.removePluginState(pluginClass);
         } catch (error) {
@@ -204,7 +220,7 @@ export class ConnectClusterStore {
         }
     });
 
-    updateConnnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+    updateConnnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
         const remoteConnector = this.getRemoteConnector(connectorName);
 
         const connectorState = this.getConnectorStore(connectorName);
@@ -711,6 +727,9 @@ export class ConnectorPropertiesStore {
                 if (p.definition.type === DataType.Password && !!this.secrets) {
                     const secret = this.secrets.getSecret(property.name);
                     secret.extractSecretId(property.value);
+
+                    // Catch assignments to the "value" of this property,
+                    // in order to copy the new value into the secret as well
                     intercept(property, 'value', (change) => {
                         secret.value = change.newValue;
                         return change;
