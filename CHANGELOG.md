@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.4.7 / 2024-04-23
+
+- [CHANGE] Update dependencies.
+- [FIX] Allow `ListMessages` and `PublishMessage` calls in non-Cloud deployments.
+
 ## v2.4.6 / 2024-04-09
 
 - [SECURITY] Update Go to v1.22.2 to address [CVE-2023-45288](https://nvd.nist.gov/vuln/detail/CVE-2023-45288)
