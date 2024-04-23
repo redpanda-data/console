@@ -39,19 +39,19 @@ export default defineConfig({
 
       {
           name: 'Console',
-          testMatch: 'tests\\/(?!enterprise\\/).+',
+          testMatch: 'tests/console/**/*',
           use: {
               ...devices['Desktop Chrome'],
           },
       },
       {
           name: 'Console Enterprise',
-          testMatch: 'tests/enterprise/**/*',
+          testMatch: 'tests/console-enterprise/**/*',
           use: {
               ...devices['Desktop Chrome'],
               // Use prepared auth state.
               storageState: 'playwright/.auth/user.json',
-              // baseURL: '// console enterprise URL'
+              // baseURL: '// console console-enterprise URL'
           },
           dependencies: ['authenticate']
       },

@@ -472,7 +472,7 @@ export interface EndpointCompatibilityResponse {
 export interface RedpandaLicense {
     // Source is where the license is used (e.g. Redpanda Cluster, Console)
     source: 'console' | 'cluster' | string;
-    // Type is the type of license (free, trial, enterprise)
+    // Type is the type of license (free, trial, console-enterprise)
     type: 'free_trial' | 'open_source' | 'enterprise' | string;
     // unix seconds
     expiresAt: number;

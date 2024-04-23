@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { createConnector, deleteConnector } from './connector.utils';
+import { createConnector, deleteConnector } from '../connector.utils';
 
 export const ACCESS_KEY = 'accesskey';
 export const SECRET_ACCESS_KEY = 'secretaccesskey';

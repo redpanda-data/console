@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createUser, deleteUser } from './users.utils';
+import { createUser, deleteUser } from '../users.utils';
 
 test.describe('Users', () => {
     test('should create an user, check that user exists, user can be deleted', async ({page}) => {
