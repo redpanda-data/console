@@ -82,6 +82,7 @@ jobs:
         working-directory: frontend
         run: npm ci
       - name: Install Playwright browsers
+        working-directory: frontend
         run: npm run install:browsers
       - name: Install Go dependencies
         working-directory: backend/cmd/api
