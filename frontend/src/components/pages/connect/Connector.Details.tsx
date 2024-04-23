@@ -262,8 +262,8 @@ const KafkaConnectorMain = observer(
                 )}
                 onOk={async (_connectorName) => {
                     await connectClusterStore.deleteConnector(connectorName);
-                    appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                     await refreshData(true);
+                    appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                 }}
             />
         </>

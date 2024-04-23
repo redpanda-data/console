@@ -170,7 +170,11 @@ export class ConnectClusterStore {
                 for (const [key, secret] of secrets.secrets) {
                     const createSecretResponse = (yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized)) as CreateSecretResponse;
                     const property = connector.propsByName.get(key);
-                    if (property) property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+
+                    if (property) {
+                        property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+                        updatedConfig[property.name] = property.value;
+                    }
                 }
             } catch (error) {
                 throw new SecretCreationError(error);
@@ -180,11 +184,13 @@ export class ConnectClusterStore {
             const configObj = connector.getConfigObject();
             const finalProperties: Record<string, any> = { ...updatedConfig, ...configObj };
 
-            console.log('createConnector()', {
-                updatedConfig,
-                configObj,
-                secrets: secrets?.secrets
-            })
+            // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
+            // We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
+            if (secrets)
+                for (const [key, secret] of secrets.secrets) {
+                    if (secret.value)
+                        finalProperties[key] = secret.value;
+                }
 
             yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
             this.removePluginState(pluginClass);
@@ -214,7 +220,7 @@ export class ConnectClusterStore {
         }
     });
 
-    updateConnnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+    updateConnnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
         const remoteConnector = this.getRemoteConnector(connectorName);
 
         const connectorState = this.getConnectorStore(connectorName);
