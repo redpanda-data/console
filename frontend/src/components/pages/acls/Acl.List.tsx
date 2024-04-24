@@ -98,7 +98,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
         const tabs = [
             { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
-            { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab /> },
+            { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab />, isDisabled: Features.rolesApi ? false : 'Not supported in this cluster' },
             { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
         ] as TabsItemProps[];
 

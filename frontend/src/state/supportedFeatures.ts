@@ -37,6 +37,7 @@ export class Feature {
     static readonly GetQuotas: FeatureEntry = { endpoint: '/api/quotas', method: 'GET' };
     static readonly CreateUser: FeatureEntry = { endpoint: '/api/users', method: 'POST' };
     static readonly DeleteUser: FeatureEntry = { endpoint: '/api/users', method: 'DELETE' };
+    static readonly SecurityService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.SecurityService', method: 'POST' };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -47,6 +48,10 @@ export function isSupported(f: FeatureEntry): boolean {
         if (e.method == f.method)
             if (e.endpoint == f.endpoint)
                 return e.isSupported;
+
+    // Special handling, this will be completely absent in the community version
+    if (f.endpoint.includes('.SecurityService'))
+        return false;
 
     featureErrors.push(`Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`);
     return false;
@@ -72,6 +77,7 @@ class SupportedFeatures {
     @computed get getQuotas(): boolean { return isSupported(Feature.GetQuotas); }
     @computed get createUser(): boolean { return isSupported(Feature.CreateUser); }
     @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
+    @computed get rolesApi(): boolean { return isSupported(Feature.SecurityService); }
 }
 
 const features = new SupportedFeatures();
