@@ -128,7 +128,7 @@ const PermissionAssignemntsDetails = observer((p: {
 
     // Get all AclPrincipal groups, find the ones that apply
     const groups = principalGroupsView.principalGroups.filter(g => {
-        if (g.principalType == 'User' && g.principalName == p.userName) return true;
+        if (g.principalType == 'User' && (g.principalName == p.userName || g.principalName.includes('*'))) return true;
         if (g.principalType == 'RedpandaRole' && roles.includes(g.principalName)) return true;
         return false;
     });
