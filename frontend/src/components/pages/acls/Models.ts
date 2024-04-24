@@ -29,6 +29,7 @@ export type AclFlat = {
 
 export type AclPrincipalGroup = {
     principalType: PrincipalType;
+    // This can only ever be a literal, or match anything (star in that case). No prefix or postfix matching
     principalName: string | '*';
 
     host: string;
