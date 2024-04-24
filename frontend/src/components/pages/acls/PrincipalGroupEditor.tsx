@@ -140,6 +140,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <InputGroup>
                                     <Box mr={2} minW={180} zIndex={1}>
                                         <SingleSelect<PrincipalType>
+                                            isDisabled
                                             value={group.principalType}
                                             options={[
                                                 {
