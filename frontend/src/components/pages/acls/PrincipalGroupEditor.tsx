@@ -143,10 +143,6 @@ export const AclPrincipalGroupEditor = observer((p: {
                                                 {
                                                     label: 'User',
                                                     value: 'User',
-                                                },
-                                                {
-                                                    label: 'Redpanda Role',
-                                                    value: 'RedpandaRole'
                                                 }
                                             ]}
                                             onChange={(value) => group.principalType = value}
