@@ -33,6 +33,8 @@ import { Link as ChakraLink } from '@chakra-ui/react'
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
+import { UserPermissionAssignments } from './UserPermissionAssignments';
+
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -183,6 +185,13 @@ const UsersTab = observer(() => {
                                     {entry}
                                 </ChakraLink>
                             </>
+                        }
+                    },
+                    {
+                        id: 'assignedRoles',
+                        header: 'Assigned roles',
+                        cell: (ctx) => {
+                            return <UserPermissionAssignments userName={ctx.row.original} showMaxItems={2} />
                         }
                     },
                     {
