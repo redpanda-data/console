@@ -1,3 +1,14 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 import { Box, Button, Flex, FormField, Heading, HStack, Input, isSingleValue, Select, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AclPrincipalGroup, ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs, unpackPrincipalGroup } from './Models';
@@ -37,14 +48,16 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
         ...initialData,
     }))
 
+    if (!formState.clusterACLs)
+        formState.clusterACLs = createEmptyClusterAcl();
+
     const originalUsernames = useMemo(() => initialData?.principals?.map(({name}) => name) ?? [], [
         initialData?.principals
     ])
-    const currentUsernames = formState.principals.map(({name}) => name) ?? []
-    const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName)
-
-
+    const currentUsernames = formState.principals.map(({ name }) => name) ?? []
     const editMode: boolean = Boolean(initialData?.roleName)
+
+    const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName) && !editMode;
 
     return (
         <Box>
