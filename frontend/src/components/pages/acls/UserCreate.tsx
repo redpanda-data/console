@@ -121,6 +121,13 @@ class UserCreatePage extends PageComponent<{}> {
                 api.refreshServiceAccounts(true)
             ]);
 
+            // Add the user to the selected roles
+            const roleAddPromises = [];
+            for (const r of this.selectedRoles) {
+                roleAddPromises.push(rolesApi.updateRoleMembership(r, [this.username], [], false));
+            }
+            await Promise.allSettled(roleAddPromises);
+
             this.step = 'CREATE_USER_CONFIRMATION';
         } catch (err) {
             toast({
