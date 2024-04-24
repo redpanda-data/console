@@ -246,6 +246,7 @@ const PrincipalsTab = observer(() => {
                                                 }
                                             }
                                             await Promise.allSettled(promises);
+                                            await rolesApi.refreshRoleMembers();
 
                                             await api.refreshServiceAccounts(true);
                                         }}
