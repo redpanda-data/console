@@ -83,7 +83,18 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                     {isServiceAccount &&
                         <DeleteUserConfirmModal
                             onConfirm={async () => {
-                                await api.deleteServiceAccount(userName);
+                            await api.deleteServiceAccount(userName);
+
+                            // Remove user from all its roles
+                            const promises = [];
+                            for (const [roleName, members] of rolesApi.roleMembers) {
+                                if (members.any(m => m.name == userName)) { // is this user part of this role?
+                                    // then remove it
+                                    promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
+                                }
+                            }
+                            await Promise.allSettled(promises);
+
                                 await api.refreshServiceAccounts(true);
                             }}
                             buttonEl={

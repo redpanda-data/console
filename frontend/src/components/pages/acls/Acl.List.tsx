@@ -236,6 +236,17 @@ const PrincipalsTab = observer(() => {
                                         <DeleteUserConfirmModal
                                             onConfirm={async () => {
                                             await api.deleteServiceAccount(entry.name);
+
+                                            // Remove user from all its roles
+                                            const promises = [];
+                                            for (const [roleName, members] of rolesApi.roleMembers) {
+                                                if (members.any(m => m.name == entry.name)) { // is this user part of this role?
+                                                    // then remove it
+                                                    promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
+                                                }
+                                            }
+                                            await Promise.allSettled(promises);
+
                                             await api.refreshServiceAccounts(true);
                                         }}
                                         buttonEl={
