@@ -132,18 +132,33 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 export default AclList;
 
+type UsersEntry = { name: string, type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PrincipalsTab = observer(() => {
 
-    const users = (api.serviceAccounts?.users ?? [])
-        .filter(u => {
-            const filter = uiSettings.aclList.usersTab.quickSearch;
-            if (!filter) return true;
+    const users: UsersEntry[] =
+        (api.serviceAccounts?.users ?? [])
+            .filter(u => {
+                const filter = uiSettings.aclList.usersTab.quickSearch;
+                if (!filter) return true;
 
-            try {
-                const quickSearchRegExp = new RegExp(filter, 'i');
-                return u.match(quickSearchRegExp);
-            } catch { return false; }
-        });
+                try {
+                    const quickSearchRegExp = new RegExp(filter, 'i');
+                    return u.match(quickSearchRegExp);
+                } catch { return false; }
+            })
+            .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+
+    // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
+    for (const g of principalGroupsView.principalGroups)
+        if (g.principalType == 'User' && !g.principalName.includes('*')) // is it a user that is being referenced?
+            if (!users.any(u => u.name == g.principalName)) // is the user already listed as a service account?
+                users.push({ name: g.principalName, type: 'PRINCIPAL' });
+
+    for (const [_, roleMembers] of rolesApi.roleMembers)
+        for (const roleMember of roleMembers)
+            if (!users.any(u => u.name == roleMember.name)) // make sure that user isn't already in the list
+                users.push({ name: roleMember.name, type: 'PRINCIPAL' });
+
 
 
     return <Flex flexDirection="column" gap="4">
@@ -169,7 +184,7 @@ const PrincipalsTab = observer(() => {
                 </Button>
             </Tooltip>
 
-            <DataTable<string>
+            <DataTable<UsersEntry>
                 data={users}
                 pagination
                 sorting
@@ -189,8 +204,8 @@ const PrincipalsTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry}/details`}>
-                                    {entry}
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                    {entry.name}
                                 </ChakraLink>
                             </>
                         }
@@ -199,7 +214,8 @@ const PrincipalsTab = observer(() => {
                         id: 'assignedRoles',
                         header: 'Assigned roles',
                         cell: (ctx) => {
-                            return <UserPermissionAssignments userName={ctx.row.original} showMaxItems={2} />
+                            const entry = ctx.row.original;
+                            return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
                         }
                     },
                     {
@@ -207,17 +223,18 @@ const PrincipalsTab = observer(() => {
                         id: 'menu',
                         header: '',
                         cell: (ctx) => {
-                            const name = ctx.row.original;
+                            const entry = ctx.row.original;
                             return (
                                 <Flex flexDirection="row" gap={4}>
                                     <button onClick={() => {
-                                        appGlobal.history.push(`/security/users/${name}/edit`);
+                                        appGlobal.history.push(`/security/users/${entry.name}/edit`);
                                     }}>
                                         <Icon as={PencilIcon} />
                                     </button>
-                                    <DeleteUserConfirmModal
-                                        onConfirm={async () => {
-                                            await api.deleteServiceAccount(name);
+                                    {entry.type == 'SERVICE_ACCOUNT' &&
+                                        <DeleteUserConfirmModal
+                                            onConfirm={async () => {
+                                            await api.deleteServiceAccount(entry.name);
                                             await api.refreshServiceAccounts(true);
                                         }}
                                         buttonEl={
@@ -225,8 +242,9 @@ const PrincipalsTab = observer(() => {
                                                 <Icon as={TrashIcon} />
                                             </button>
                                         }
-                                        userName={name}
+                                        userName={entry.name}
                                     />
+                                    }
                                 </Flex>
                             );
                         }
