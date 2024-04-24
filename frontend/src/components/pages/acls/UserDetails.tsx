@@ -48,8 +48,8 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
     initPage(p: PageInitHelper): void {
         p.title = 'Create user';
         p.addBreadcrumb('Access control', '/security');
-        p.addBreadcrumb('Users', '/security/users');
-        p.addBreadcrumb(this.props.userName, '/security/users/');
+        p.addBreadcrumb('Users', '/security/principals');
+        p.addBreadcrumb(this.props.userName, '/security/principals/');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -74,7 +74,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         return <>
             <PageContent>
                 <Flex gap="4">
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/users/${userName}/edit`)}>
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/principals/${userName}/edit`)}>
                         Edit
                     </Button>
                     {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}

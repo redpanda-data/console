@@ -97,7 +97,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 
         const tabs = [
-            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
+            { key: 'principals' as AclListTab, name: 'Principals', component: <PrincipalsTab /> },
             { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab /> },
             { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
         ] as TabsItemProps[];
@@ -106,7 +106,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         const activeTab = tabs.findIndex(x => x.key == this.props.tab);
         if (activeTab == -1) {
             // No tab selected, default to users
-            appGlobal.history.push('/security/users');
+            appGlobal.history.push('/security/principals');
         }
 
         return <>
@@ -130,7 +130,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 export default AclList;
 
-const UsersTab = observer(() => {
+const PrincipalsTab = observer(() => {
 
     const users = (api.serviceAccounts?.users ?? [])
         .filter(u => {
@@ -162,8 +162,8 @@ const UsersTab = observer(() => {
             <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
-                    onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create user
+                    onClick={() => appGlobal.history.push('/security/principals/create')}>
+                    Create Principal
                 </Button>
             </Tooltip>
 
@@ -171,15 +171,23 @@ const UsersTab = observer(() => {
                 data={users}
                 pagination
                 sorting
+                emptyText="No principals yet"
+                emptyAction={
+                    <Button variant="outline"
+                            isDisabled={!Features.createUser}
+                            onClick={() => appGlobal.history.push('/security/principals/create')}>
+                        Create Principal
+                    </Button>
+                }
                 columns={[
                     {
                         id: 'name',
                         size: Infinity,
-                        header: 'User',
+                        header: 'Principal',
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/principals/${entry}/details`}>
                                     {entry}
                                 </ChakraLink>
                             </>
@@ -194,7 +202,7 @@ const UsersTab = observer(() => {
                             return (
                                 <Flex flexDirection="row" gap={4}>
                                     <button onClick={() => {
-                                        appGlobal.history.push(`/security/users/${name}/edit`);
+                                        appGlobal.history.push(`/security/principals/${name}/edit`);
                                     }}>
                                         <Icon as={PencilIcon} />
                                     </button>
