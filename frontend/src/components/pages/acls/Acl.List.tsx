@@ -325,7 +325,7 @@ const AclsTab = observer((p: {
     const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
     const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
 
-    let groups = p.principalGroups;
+    let groups = p.principalGroups.filter(g => g.principalType == 'User');
     try {
         const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i')
         groups = groups.filter(
