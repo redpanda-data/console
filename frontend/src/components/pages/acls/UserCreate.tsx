@@ -19,7 +19,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Box, Button, Checkbox, CopyButton, createStandaloneToast, Flex, FormField, Grid, Heading, Input, isSingleValue, PasswordInput, redpandaTheme, redpandaToastOptions, Result, Select, Tag, TagCloseButton, TagLabel, Text, Tooltip } from '@redpanda-data/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
 
@@ -155,7 +155,19 @@ const CreateUserModal = observer((p: {
     const state = p.state;
 
     const isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(state.username);
+    const users = api.serviceAccounts?.users ?? []
+    const userAlreadyExists = users.includes(state.username)
     const isValidPassword = state.password && state.password.length >= 4 && state.password.length <= 64;
+
+    const errorText = useMemo(() => {
+        if(!isValidUsername) {
+            return 'The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.'
+        }
+
+        if(userAlreadyExists) {
+            return 'User already exist'
+        }
+    }, [isValidUsername, userAlreadyExists])
 
     return (
         <Box maxWidth="460px">
@@ -164,8 +176,8 @@ const CreateUserModal = observer((p: {
                     description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
                     label="Username"
                     showRequiredIndicator
-                    isInvalid={!isValidUsername}
-                    errorText="The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens."
+                    isInvalid={!isValidUsername || userAlreadyExists}
+                    errorText={errorText}
                 >
                     <Input
                         value={state.username}
@@ -248,7 +260,7 @@ const CreateUserModal = observer((p: {
             </Flex>
 
             <Flex gap={4} mt={8}>
-                <Button colorScheme="brand" onClick={p.onCreateUser} isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword} isLoading={state.isCreating} loadingText="Creating...">
+                <Button colorScheme="brand" onClick={p.onCreateUser} isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists} isLoading={state.isCreating} loadingText="Creating...">
                     Create
                 </Button>
                 <Button variant="link" isDisabled={state.isCreating} onClick={p.onCancel}>
