@@ -33,6 +33,8 @@ import { Link as ChakraLink } from '@chakra-ui/react'
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
+import { UserPermissionAssignments } from './UserPermissionAssignments';
+
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -97,7 +99,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 
         const tabs = [
-            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
+            { key: 'principals' as AclListTab, name: 'Principals', component: <PrincipalsTab /> },
             { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab />, isDisabled: Features.rolesApi ? false : 'Not supported in this cluster' },
             { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
         ] as TabsItemProps[];
@@ -130,7 +132,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 export default AclList;
 
-const UsersTab = observer(() => {
+const PrincipalsTab = observer(() => {
 
     const users = (api.serviceAccounts?.users ?? [])
         .filter(u => {
@@ -163,7 +165,7 @@ const UsersTab = observer(() => {
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
                     onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create user
+                    Create Principal
                 </Button>
             </Tooltip>
 
@@ -171,11 +173,19 @@ const UsersTab = observer(() => {
                 data={users}
                 pagination
                 sorting
+                emptyText="No principals yet"
+                emptyAction={
+                    <Button variant="outline"
+                        isDisabled={!Features.createUser}
+                        onClick={() => appGlobal.history.push('/security/users/create')}>
+                        Create Principal
+                    </Button>
+                }
                 columns={[
                     {
                         id: 'name',
                         size: Infinity,
-                        header: 'User',
+                        header: 'Principal',
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
@@ -183,6 +193,13 @@ const UsersTab = observer(() => {
                                     {entry}
                                 </ChakraLink>
                             </>
+                        }
+                    },
+                    {
+                        id: 'assignedRoles',
+                        header: 'Assigned roles',
+                        cell: (ctx) => {
+                            return <UserPermissionAssignments userName={ctx.row.original} showMaxItems={2} />
                         }
                     },
                     {
@@ -351,10 +368,10 @@ const AclsTab = observer((p: {
         <Section>
             {edittingPrincipalGroup &&
                 <AclPrincipalGroupEditor
-                // @ts-ignore
-                principalGroup={edittingPrincipalGroup}
-                type={editorType}
-                onClose={() => {
+                    // @ts-ignore
+                    principalGroup={edittingPrincipalGroup}
+                    type={editorType}
+                    onClose={() => {
                         setEdittingPrincipalGroup(null);
                         api.refreshAcls(AclRequestDefault, true);
                         api.refreshServiceAccounts(true);

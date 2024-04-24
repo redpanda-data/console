@@ -41,6 +41,8 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
         initialData?.principals
     ])
     const currentUsernames = formState.principals.map(({name}) => name) ?? []
+    const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName)
+
 
     const editMode: boolean = Boolean(initialData?.roleName)
 
@@ -99,7 +101,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 <Flex gap={10} flexDirection="column">
                     <Flex flexDirection="row" gap={20}>
                         <Box>
-                            <FormField label="Role name">
+                            <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
                                 <Input
                                     pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
@@ -208,10 +210,10 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                 <Flex gap={4} mt={8}>
                     {editMode ?
-                        <Button colorScheme="brand" type="submit" loadingText="Editing...">
+                        <Button colorScheme="brand" type="submit" loadingText="Editing..." isDisabled={roleNameAlreadyExist}>
                             Update
                         </Button>
-                        : <Button colorScheme="brand" type="submit" loadingText="Creating...">
+                        : <Button colorScheme="brand" type="submit" loadingText="Creating..." isDisabled={roleNameAlreadyExist}>
                             Create
                         </Button>}
                     {editMode ? <Button variant="link" onClick={() => {

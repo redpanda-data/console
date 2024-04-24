@@ -19,11 +19,12 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
 
-import { Link as ReactRouterLink } from 'react-router-dom'
-import { Link as ChakraLink } from '@chakra-ui/react'
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ChakraLink } from '@chakra-ui/react';
 import React from 'react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import { UserPermissionAssignments } from './UserPermissionAssignments';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -109,36 +110,6 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 
 export default UserDetailsPage;
 
-
-const UserPermissionAssignments = observer((p: {
-    userName: string;
-}) => {
-    // Get all roles, and ACL sets that apply to this user
-    const roles = [];
-    for (const [roleName, members] of rolesApi.roleMembers) {
-        if (!members.any(m => m.name == p.userName))
-            continue; // this role doesn't contain our user
-        roles.push(roleName);
-    }
-
-    const elements: JSX.Element[] = [];
-
-    for (let i = 0; i < roles.length; i++) {
-        const r = roles[i];
-        elements.push(
-            <React.Fragment key={r}>
-                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}>{r}</ChakraLink>
-            </React.Fragment>
-        );
-
-        if (i < roles.length - 1)
-            elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
-    }
-
-    return <Flex>
-        {elements}
-    </Flex>
-});
 
 const PermissionAssignemntsDetails = observer((p: {
     userName: string;
