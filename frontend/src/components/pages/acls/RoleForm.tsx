@@ -101,7 +101,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                 <Flex gap={10} flexDirection="column">
                     <Flex flexDirection="row" gap={20}>
                         <Box>
-                            <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText='Role name already exist'>
+                            <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
                                 <Input
                                     pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
