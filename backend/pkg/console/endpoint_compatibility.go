@@ -128,6 +128,13 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 	for _, endpointReq := range endpointRequirements {
 		endpointSupported := true
 
+		if len(endpointReq.Requests) == 0 {
+			// not a Kafka API endpoint
+			// it requires Redpanda Admin API only
+			// default it to false
+			endpointSupported = false
+		}
+
 		for _, req := range endpointReq.Requests {
 			_, isSupported := versions.LookupMaxKeyVersion(req.Key())
 			if !isSupported {
@@ -139,8 +146,8 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// and the Kafka API. If the Kafka API is not supported, but the same
 		// endpoint is exposed via the Redpanda Admin API, we support
 		// this feature anyways.
-		if endpointReq.HasRedpandaAPI && s.redpandaSvc == nil {
-			endpointSupported = false
+		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
+			endpointSupported = true
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{
