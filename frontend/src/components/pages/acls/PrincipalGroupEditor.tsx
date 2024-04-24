@@ -16,7 +16,7 @@ import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../stat
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
+import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
 import { Box, Button, Flex, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
@@ -105,6 +105,8 @@ export const AclPrincipalGroupEditor = observer((p: {
         p.onClose();
     }
 
+    if (!group.clusterAcls)
+        group.clusterAcls = createEmptyClusterAcl();
 
     return (
         <Modal isOpen onClose={() => {}}>
@@ -236,7 +238,7 @@ export const AclPrincipalGroupEditor = observer((p: {
 
                             <Box w="full" as="section">
                                 <Text my={4} fontWeight={500}>Cluster</Text>
-                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls}/>
+                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls} />
                             </Box>
                         </VStack>
                     </VStack>
@@ -256,6 +258,10 @@ export const ResourceACLsEditor = observer((p: {
     onDelete?: () => void
 }) => {
     const res = p.resource;
+    if (!res) {
+        // Happens for clusterAcls?
+        return null;
+    }
     const isCluster = !('selector' in res);
     const isAllSet = res.all == 'Allow' || res.all == 'Deny';
 
