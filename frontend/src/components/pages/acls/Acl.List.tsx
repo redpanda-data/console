@@ -99,7 +99,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 
         const tabs = [
-            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
+            { key: 'principals' as AclListTab, name: 'Principals', component: <PrincipalsTab /> },
             { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab /> },
             { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
         ] as TabsItemProps[];
@@ -132,7 +132,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 export default AclList;
 
-const UsersTab = observer(() => {
+const PrincipalsTab = observer(() => {
 
     const users = (api.serviceAccounts?.users ?? [])
         .filter(u => {
@@ -165,7 +165,7 @@ const UsersTab = observer(() => {
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
                     onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create user
+                    Create Principal
                 </Button>
             </Tooltip>
 
@@ -173,11 +173,19 @@ const UsersTab = observer(() => {
                 data={users}
                 pagination
                 sorting
+                emptyText="No principals yet"
+                emptyAction={
+                    <Button variant="outline"
+                            isDisabled={!Features.createUser}
+                            onClick={() => appGlobal.history.push('/security/users/create')}>
+                        Create Principal
+                    </Button>
+                }
                 columns={[
                     {
                         id: 'name',
                         size: Infinity,
-                        header: 'User',
+                        header: 'Principal',
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
