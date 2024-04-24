@@ -29,7 +29,7 @@ export type AclFlat = {
 
 export type AclPrincipalGroup = {
     principalType: PrincipalType;
-    principalName: string;
+    principalName: string | '*';
 
     host: string;
 
