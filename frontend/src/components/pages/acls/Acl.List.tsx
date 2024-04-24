@@ -29,7 +29,7 @@ import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFoo
 import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { Link as ReactRouterLink } from 'react-router-dom'
-import { Link as ChakraLink } from '@chakra-ui/react'
+import { Link as ChakraLink, Tag } from '@chakra-ui/react'
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
@@ -206,6 +206,7 @@ const PrincipalsTab = observer(() => {
                             return <>
                                 <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
                                     {entry.name}
+                                    {entry.type == 'SERVICE_ACCOUNT' && <Tag variant="outline" margin="-2px 0px -2px 8px">Redpanda user</Tag>}
                                 </ChakraLink>
                             </>
                         }
