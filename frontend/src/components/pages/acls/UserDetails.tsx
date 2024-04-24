@@ -21,7 +21,6 @@ import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
 
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { Link as ChakraLink } from '@chakra-ui/react';
-import React from 'react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { UserPermissionAssignments } from './UserPermissionAssignments';
@@ -72,6 +71,8 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
         const userName = this.props.userName;
 
+        const isServiceAccount = api.serviceAccounts.users.includes(userName);
+
         return <>
             <PageContent>
                 <Flex gap="4">
@@ -79,18 +80,20 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                         Edit
                     </Button>
                     {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
-                    <DeleteUserConfirmModal
-                        onConfirm={async () => {
-                            await api.deleteServiceAccount(userName);
-                            await api.refreshServiceAccounts(true);
-                        }}
-                        buttonEl={
-                            <Button variant="outline-delete">
-                                Delete
-                            </Button>
-                        }
-                        userName={userName}
-                    />
+                    {isServiceAccount &&
+                        <DeleteUserConfirmModal
+                            onConfirm={async () => {
+                                await api.deleteServiceAccount(userName);
+                                await api.refreshServiceAccounts(true);
+                            }}
+                            buttonEl={
+                                <Button variant="outline-delete">
+                                    Delete
+                                </Button>
+                            }
+                            userName={userName}
+                        />
+                    }
                 </Flex>
 
                 <Heading as="h3" mt="4">Permissions</Heading>
