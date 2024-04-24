@@ -180,7 +180,7 @@ const PrincipalsTab = observer(() => {
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
                     onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create Principal
+                    Create user
                 </Button>
             </Tooltip>
 
@@ -193,7 +193,7 @@ const PrincipalsTab = observer(() => {
                     <Button variant="outline"
                         isDisabled={!Features.createUser}
                         onClick={() => appGlobal.history.push('/security/users/create')}>
-                        Create Principal
+                        Create user
                     </Button>
                 }
                 columns={[
