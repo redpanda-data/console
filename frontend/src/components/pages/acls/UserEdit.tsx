@@ -45,8 +45,8 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
     initPage(p: PageInitHelper): void {
         p.title = 'Edit user ' + this.props.userName;
         p.addBreadcrumb('Access control', '/security');
-        p.addBreadcrumb('Users', '/security/principals');
-        p.addBreadcrumb(this.props.userName, `/security/principals/${this.props.userName}/edit`);
+        p.addBreadcrumb('Users', '/security/users');
+        p.addBreadcrumb(this.props.userName, `/security/users/${this.props.userName}/edit`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -79,7 +79,7 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
             this.selectedRoles = [...this.originalRoles.values()];
         }
 
-        const onCancel = () => appGlobal.history.push(`/security/principals/${userName}/details`);
+        const onCancel = () => appGlobal.history.push(`/security/users/${userName}/details`);
 
 
         // Check if there are any roles removed, added, or replaced
@@ -112,7 +112,7 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
                 status: 'success',
                 title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`
             });
-            appGlobal.history.push(`/security/principals/${userName}/details`);
+            appGlobal.history.push(`/security/users/${userName}/details`);
         };
 
         return <>

@@ -66,7 +66,7 @@ class UserCreatePage extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Create user';
         p.addBreadcrumb('Access control', '/security');
-        p.addBreadcrumb('Create user', '/security/principals/create');
+        p.addBreadcrumb('Create user', '/security/users/create');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -89,7 +89,7 @@ class UserCreatePage extends PageComponent<{}> {
         this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
         this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;
 
-        const onCancel = () => appGlobal.history.push('/security/principals');
+        const onCancel = () => appGlobal.history.push('/security/users');
 
         return <>
             <ToastContainer />

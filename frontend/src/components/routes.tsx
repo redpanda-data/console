@@ -258,9 +258,9 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
     MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
 
-    MakeRoute<{}>('/security/principals/create', UserCreatePage, 'Security'),
-    MakeRoute<{ userName: string }>('/security/principals/:userName/details', UserDetailsPage, 'Security'),
-    MakeRoute<{ userName: string }>('/security/principals/:userName/edit', UserEditPage, 'Security'),
+    MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
+    MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
+    MakeRoute<{ userName: string }>('/security/users/:userName/edit', UserEditPage, 'Security'),
 
     MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
     MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),

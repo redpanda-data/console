@@ -106,7 +106,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         const activeTab = tabs.findIndex(x => x.key == this.props.tab);
         if (activeTab == -1) {
             // No tab selected, default to users
-            appGlobal.history.push('/security/principals');
+            appGlobal.history.push('/security/users');
         }
 
         return <>
@@ -162,7 +162,7 @@ const PrincipalsTab = observer(() => {
             <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                 <Button variant="outline"
                     isDisabled={!Features.createUser}
-                    onClick={() => appGlobal.history.push('/security/principals/create')}>
+                    onClick={() => appGlobal.history.push('/security/users/create')}>
                     Create Principal
                 </Button>
             </Tooltip>
@@ -175,7 +175,7 @@ const PrincipalsTab = observer(() => {
                 emptyAction={
                     <Button variant="outline"
                             isDisabled={!Features.createUser}
-                            onClick={() => appGlobal.history.push('/security/principals/create')}>
+                            onClick={() => appGlobal.history.push('/security/users/create')}>
                         Create Principal
                     </Button>
                 }
@@ -187,7 +187,7 @@ const PrincipalsTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/principals/${entry}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry}/details`}>
                                     {entry}
                                 </ChakraLink>
                             </>
@@ -202,7 +202,7 @@ const PrincipalsTab = observer(() => {
                             return (
                                 <Flex flexDirection="row" gap={4}>
                                     <button onClick={() => {
-                                        appGlobal.history.push(`/security/principals/${name}/edit`);
+                                        appGlobal.history.push(`/security/users/${name}/edit`);
                                     }}>
                                         <Icon as={PencilIcon} />
                                     </button>
