@@ -227,11 +227,13 @@ const PrincipalsTab = observer(() => {
                             const entry = ctx.row.original;
                             return (
                                 <Flex flexDirection="row" gap={4}>
-                                    <button onClick={() => {
-                                        appGlobal.history.push(`/security/users/${entry.name}/edit`);
-                                    }}>
-                                        <Icon as={PencilIcon} />
-                                    </button>
+                                    {Features.rolesApi &&
+                                        <button onClick={() => {
+                                            appGlobal.history.push(`/security/users/${entry.name}/edit`);
+                                        }}>
+                                            <Icon as={PencilIcon} />
+                                        </button>
+                                    }
                                     {entry.type == 'SERVICE_ACCOUNT' &&
                                         <DeleteUserConfirmModal
                                             onConfirm={async () => {
@@ -245,9 +247,9 @@ const PrincipalsTab = observer(() => {
                                                     promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
                                                 }
                                             }
+                                            
                                             await Promise.allSettled(promises);
                                             await rolesApi.refreshRoleMembers();
-
                                             await api.refreshServiceAccounts(true);
                                         }}
                                         buttonEl={
