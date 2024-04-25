@@ -64,10 +64,8 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
             api.refreshServiceAccounts(true),
         ]);
 
-        if (Features.rolesApi) {
-            await rolesApi.refreshRoles()
-            await rolesApi.refreshRoleMembers();
-        }
+        await rolesApi.refreshRoles()
+        await rolesApi.refreshRoleMembers();
     }
 
     render() {
@@ -114,10 +112,13 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                 <Heading as="h3" mt="4">Permissions</Heading>
                 <Box>Below are all of the permissions assigned to this SCRAM user.</Box>
 
-                <Heading as="h3" mt="4">Assignments</Heading>
-                <UserPermissionAssignments userName={userName} />
-
+                {Features.rolesApi && <>
+                    <Heading as="h3" mt="4">Assignments</Heading>
+                    <UserPermissionAssignments userName={userName} />
+                    </>
+                }
                 <PermissionAssignemntsDetails userName={userName} />
+
 
             </PageContent>
         </>

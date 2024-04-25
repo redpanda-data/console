@@ -255,9 +255,12 @@ const CreateUserModal = observer((p: {
                     />
                 </FormField>
 
-                <FormField isDisabled={Features.rolesApi} label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
-                    <RoleSelector state={state.selectedRoles} />
-                </FormField>
+                {Features.rolesApi && <>
+                    <FormField isDisabled={Features.rolesApi} label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
+                        <RoleSelector state={state.selectedRoles} />
+                    </FormField>
+                    </>
+                }
             
             </Flex>
 
@@ -346,10 +349,8 @@ export const RoleSelector = observer((p: { state: string[] }) => {
 
     // Make sure we have up to date role info
     useEffect(() => {
-        if (Features.rolesApi) {
-            rolesApi.refreshRoles();
-            rolesApi.refreshRoleMembers();
-        }
+        rolesApi.refreshRoles();
+        rolesApi.refreshRoleMembers();
     }, []);
     const [searchValue, setSearchValue] = useState('');
 

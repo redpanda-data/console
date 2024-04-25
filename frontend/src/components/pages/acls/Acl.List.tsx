@@ -74,10 +74,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
             api.refreshServiceAccounts(true),
         ]);
 
-        if (Features.rolesApi) {
-            await rolesApi.refreshRoles();
-            await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
-        }
+        
+        await rolesApi.refreshRoles();
+        await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
     }
 
     render() {
@@ -240,22 +239,16 @@ const PrincipalsTab = observer(() => {
                                             await api.deleteServiceAccount(entry.name);
 
                                             // Remove user from all its roles
-                                            if (Features.rolesApi) {
-                                                const promises = [];
-                                                for (const [roleName, members] of rolesApi.roleMembers) {
-                                                    if (members.any(m => m.name == entry.name)) { // is this user part of this role?
-                                                        // then remove it
-                                                        promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
-                                                    }
+                                            const promises = [];
+                                            for (const [roleName, members] of rolesApi.roleMembers) {
+                                                if (members.any(m => m.name == entry.name)) { // is this user part of this role?
+                                                    // then remove it
+                                                    promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
                                                 }
-                                                
-                                                await Promise.allSettled(promises);
                                             }
-
-                                            if (Features.rolesApi) {
-                                                await rolesApi.refreshRoleMembers();
-                                            }
-
+                                            
+                                            await Promise.allSettled(promises);
+                                            await rolesApi.refreshRoleMembers();
                                             await api.refreshServiceAccounts(true);
                                         }}
                                         buttonEl={
