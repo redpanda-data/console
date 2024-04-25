@@ -90,10 +90,28 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptReserved),
 	)
 
+	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
+	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
+	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
+	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
+	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
+
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
 		BaseInterceptors: baseInterceptors,
 		GRPCGatewayMux:   gwMux,
+		Services: map[string]any{
+			dataplanev1alpha1connect.UserServiceName:         userSvc,
+			dataplanev1alpha1connect.ACLServiceName:          aclSvc,
+			dataplanev1alpha1connect.KafkaConnectServiceName: kafkaConnectSvc,
+			dataplanev1alpha1connect.TopicServiceName:        topicSvc,
+			dataplanev1alpha1connect.TransformServiceName:    transformSvc,
+			consolev1alpha1connect.ConsoleServiceName:        consoleSvc,
+			consolev1alpha1connect.SecurityServiceName:       securitySvc,
+		},
 	})
 
 	// Use HTTP Middlewares that are configured by the Hook
@@ -102,23 +120,30 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	}
 	r.Mount("/v1alpha1", gwMux) // Dataplane API
 
-	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
-	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
-	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
-	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
-	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
-	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
-	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
-
 	// Wasm Transforms
 	r.Put("/v1alpha1/transforms", transformSvc.HandleDeployTransform())
 
-	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(userSvc, connect.WithInterceptors(hookOutput.Interceptors...))
-	aclSvcPath, aclSvcHandler := dataplanev1alpha1connect.NewACLServiceHandler(aclSvc, connect.WithInterceptors(hookOutput.Interceptors...))
-	kafkaConnectPath, kafkaConnectHandler := dataplanev1alpha1connect.NewKafkaConnectServiceHandler(kafkaConnectSvc, connect.WithInterceptors(hookOutput.Interceptors...))
-	consoleServicePath, consoleServiceHandler := consolev1alpha1connect.NewConsoleServiceHandler(consoleSvc, connect.WithInterceptors(hookOutput.Interceptors...))
-	topicSvcPath, topicSvcHandler := dataplanev1alpha1connect.NewTopicServiceHandler(topicSvc, connect.WithInterceptors(hookOutput.Interceptors...))
-	transformSvcPath, transformSvcHandler := dataplanev1alpha1connect.NewTransformServiceHandler(transformSvc, connect.WithInterceptors(hookOutput.Interceptors...))
+	userSvcPath, userSvcHandler := dataplanev1alpha1connect.NewUserServiceHandler(
+		hookOutput.Services[dataplanev1alpha1connect.UserServiceName].(dataplanev1alpha1connect.UserServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	aclSvcPath, aclSvcHandler := dataplanev1alpha1connect.NewACLServiceHandler(
+		hookOutput.Services[dataplanev1alpha1connect.ACLServiceName].(dataplanev1alpha1connect.ACLServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	kafkaConnectPath, kafkaConnectHandler := dataplanev1alpha1connect.NewKafkaConnectServiceHandler(
+		hookOutput.Services[dataplanev1alpha1connect.KafkaConnectServiceName].(dataplanev1alpha1connect.KafkaConnectServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	topicSvcPath, topicSvcHandler := dataplanev1alpha1connect.NewTopicServiceHandler(
+		hookOutput.Services[dataplanev1alpha1connect.TopicServiceName].(dataplanev1alpha1connect.TopicServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	transformSvcPath, transformSvcHandler := dataplanev1alpha1connect.NewTransformServiceHandler(
+		hookOutput.Services[dataplanev1alpha1connect.TransformServiceName].(dataplanev1alpha1connect.TransformServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleServicePath, consoleServiceHandler := consolev1alpha1connect.NewConsoleServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.ConsoleServiceName].(consolev1alpha1connect.ConsoleServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	securityServicePath, securityServiceHandler := consolev1alpha1connect.NewSecurityServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.SecurityServiceName].(consolev1alpha1connect.SecurityServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
 		{
@@ -150,6 +175,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: dataplanev1alpha1connect.TransformServiceName,
 			MountPath:   transformSvcPath,
 			Handler:     transformSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.SecurityServiceName,
+			MountPath:   securityServicePath,
+			Handler:     securityServiceHandler,
 		},
 	}
 

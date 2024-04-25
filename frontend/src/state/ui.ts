@@ -233,6 +233,15 @@ const defaultUiSettings = {
     },
 
     aclList: {
+        usersTab: {
+            quickSearch: '',
+            pageSize: 20,
+        },
+        rolesTab: {
+            quickSearch: '',
+            pageSize: 20,
+        },
+
         configTable: {
             quickSearch: '',
             pageSize: 20,

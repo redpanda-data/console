@@ -9,8 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { comparer, observable } from 'mobx';
+import { api } from '../../../state/backendApi';
 import { AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType } from '../../../state/restInterfaces';
 
+export type PrincipalType = 'User' | 'RedpandaRole';
 export type AclFlat = {
     // AclResource
     resourceType: AclStrResourceType;
@@ -25,8 +28,9 @@ export type AclFlat = {
 }
 
 export type AclPrincipalGroup = {
-    principalType: string;
-    principalName: string;
+    principalType: PrincipalType;
+    // This can only ever be a literal, or match anything (star in that case). No prefix or postfix matching
+    principalName: string | '*';
 
     host: string;
 
@@ -146,7 +150,7 @@ export function createEmptyTransactionalIdAcl(): TransactionalIdACLs {
 }
 
 
-export function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
+function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
     const topics = acls
         .filter(x => x.resourceType == 'Topic')
         .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
@@ -209,7 +213,7 @@ export function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
     return topicAcls;
 };
 
-export function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
+function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
     const consumerGroups = acls
         .filter(x => x.resourceType == 'Group')
         .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
@@ -262,7 +266,7 @@ export function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
     return consumerGroupAcls;
 };
 
-export function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
+function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
     const flatClusterAcls = acls.filter(x => x.resourceType == 'Cluster');
 
     const clusterOperations = [
@@ -306,7 +310,7 @@ export function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
     return clusterAcls;
 };
 
-export function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs[] {
+function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs[] {
     const transactionalIds = acls
         .filter(x => x.resourceType == 'TransactionalID')
         .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
@@ -358,6 +362,106 @@ export function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs
 };
 
 
+export const principalGroupsView = observable({
+
+    get flatAcls() {
+        const acls = api.ACLs;
+        if (!acls || !acls.aclResources || acls.aclResources.length == 0)
+            return [];
+
+        const flattened: AclFlat[] = [];
+        for (const res of acls.aclResources) {
+            for (const rule of res.acls) {
+
+                const flattenedEntry: AclFlat = {
+                    resourceType: res.resourceType,
+                    resourceName: res.resourceName,
+                    resourcePatternType: res.resourcePatternType,
+
+                    principal: rule.principal,
+                    host: rule.host,
+                    operation: rule.operation,
+                    permissionType: rule.permissionType
+                };
+
+                flattened.push(flattenedEntry);
+            }
+        }
+
+        return observable(flattened);
+    },
+
+    get principalGroups(): AclPrincipalGroup[] {
+        const flat = this.flatAcls;
+
+        const g = flat.groupInto(f => {
+            const groupingKey = (f.principal ?? 'Any') + ' ' + (f.host ?? 'Any');
+            return groupingKey;
+        });
+
+        const result: AclPrincipalGroup[] = [];
+
+        for (const { items } of g) {
+            const { principal, host } = items[0];
+
+            let principalType: PrincipalType;
+            let principalName: string;
+            if (principal.includes(':')) {
+                const split = principal.split(':', 2);
+                principalType = split[0] as PrincipalType;
+                principalName = split[1];
+            } else {
+                principalType = 'User';
+                principalName = principal;
+            }
+
+            const principalGroup: AclPrincipalGroup = {
+                principalType,
+                principalName,
+                host,
+
+                topicAcls: collectTopicAcls(items),
+                consumerGroupAcls: collectConsumerGroupAcls(items),
+                clusterAcls: collectClusterAcls(items),
+                transactionalIdAcls: collectTransactionalIdAcls(items),
+
+                sourceEntries: items,
+            };
+            result.push(principalGroup);
+        }
+
+        // Add service accounts that exist but have no associated acl rules
+        const serviceAccounts = api.serviceAccounts?.users;
+        if (serviceAccounts) {
+            for (const acc of serviceAccounts) {
+                if (!result.any(g => g.principalName == acc)) {
+                    // Doesn't have a group yet, create one
+                    result.push({
+                        principalType: 'User',
+                        host: '',
+                        principalName: acc,
+                        topicAcls: [createEmptyTopicAcl()],
+                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
+                        clusterAcls: createEmptyClusterAcl(),
+                        sourceEntries: [],
+                    });
+                }
+            }
+        }
+
+        return observable(result);
+    }
+}, undefined, {
+    equals: comparer.structural
+});
+
+
+/*
+ Sooner or later you want to go back from an 'AclPrincipalGroup' to flat ACLs.
+ Why? Because you'll need to call the remove/create acl apis and those only work with flat acls.
+ Use this method to convert your principal group back to a list of flat acls.
+*/
 export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
