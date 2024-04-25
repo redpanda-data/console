@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
 
@@ -48,10 +49,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 
 	// Required kafka requests per API endpoint
 	type endpoint struct {
-		URL            string
-		Method         string
-		Requests       []kmsg.Request
-		HasRedpandaAPI bool
+		URL                string
+		Method             string
+		Requests           []kmsg.Request
+		HasRedpandaAPI     bool
+		MinRedpandaVersion string
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -118,9 +120,10 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			HasRedpandaAPI: true,
 		},
 		{
-			URL:            consolev1alpha1connect.SecurityServiceName,
-			Method:         "POST",
-			HasRedpandaAPI: true,
+			URL:                consolev1alpha1connect.SecurityServiceName,
+			Method:             "POST",
+			HasRedpandaAPI:     true,
+			MinRedpandaVersion: "24.1.1-rc5", // no v prefix
 		},
 	}
 
@@ -148,6 +151,14 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// this feature anyways.
 		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
 			endpointSupported = true
+
+			if endpointReq.MinRedpandaVersion != "" {
+				minV, _ := semver.NewVersion(endpointReq.MinRedpandaVersion)
+				rpV, _ := semver.NewVersion(s.redpandaSvc.ClusterVersion())
+				if minV != nil && rpV != nil {
+					endpointSupported = rpV.Compare(*minV) >= 0
+				}
+			}
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{
