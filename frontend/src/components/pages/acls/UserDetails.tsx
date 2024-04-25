@@ -62,7 +62,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            await rolesApi.refreshRoles(),
+            rolesApi.refreshRoles()
         ]);
 
         await rolesApi.refreshRoleMembers();
