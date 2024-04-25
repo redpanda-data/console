@@ -62,9 +62,9 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
+            await rolesApi.refreshRoles(),
         ]);
 
-        await rolesApi.refreshRoles()
         await rolesApi.refreshRoleMembers();
     }
 
@@ -115,10 +115,9 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                 {Features.rolesApi && <>
                     <Heading as="h3" mt="4">Assignments</Heading>
                     <UserPermissionAssignments userName={userName} />
+                    <PermissionAssignemntsDetails userName={userName} />
                     </>
                 }
-                <PermissionAssignemntsDetails userName={userName} />
-
 
             </PageContent>
         </>

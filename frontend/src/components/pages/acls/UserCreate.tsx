@@ -256,7 +256,7 @@ const CreateUserModal = observer((p: {
                 </FormField>
 
                 {Features.rolesApi && <>
-                    <FormField isDisabled={Features.rolesApi} label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
+                    <FormField isDisabled={!Features.rolesApi} label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
                         <RoleSelector state={state.selectedRoles} />
                     </FormField>
                     </>

@@ -72,10 +72,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
+            rolesApi.refreshRoles(),
         ]);
 
-        
-        await rolesApi.refreshRoles();
         await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
     }
 
@@ -228,11 +227,13 @@ const PrincipalsTab = observer(() => {
                             const entry = ctx.row.original;
                             return (
                                 <Flex flexDirection="row" gap={4}>
-                                    <button onClick={() => {
-                                        appGlobal.history.push(`/security/users/${entry.name}/edit`);
-                                    }}>
-                                        <Icon as={PencilIcon} />
-                                    </button>
+                                    {Features.rolesApi &&
+                                        <button onClick={() => {
+                                            appGlobal.history.push(`/security/users/${entry.name}/edit`);
+                                        }}>
+                                            <Icon as={PencilIcon} />
+                                        </button>
+                                    }
                                     {entry.type == 'SERVICE_ACCOUNT' &&
                                         <DeleteUserConfirmModal
                                             onConfirm={async () => {
