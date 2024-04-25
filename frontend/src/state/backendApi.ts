@@ -119,6 +119,7 @@ import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/l
 import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
+import { Features } from './supportedFeatures';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1543,17 +1544,20 @@ export const rolesApi = observable({
         if (!client) throw new Error('security client is not initialized');
 
         const roles: string[] = [];
-        let nextPageToken = '';
-        while (true) {
-            const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken });
 
-            const newRoles = res.roles.map(x => x.name);
-            roles.push(...newRoles);
+        if (Features.rolesApi) {
+            let nextPageToken = '';
+            while (true) {
+                const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken });
 
-            if (!res.nextPageToken || res.nextPageToken.length == 0)
-                break;
+                const newRoles = res.roles.map(x => x.name);
+                roles.push(...newRoles);
 
-            nextPageToken = res.nextPageToken;
+                if (!res.nextPageToken || res.nextPageToken.length == 0)
+                    break;
+
+                nextPageToken = res.nextPageToken;
+            }
         }
 
         this.roles = roles;
@@ -1564,8 +1568,11 @@ export const rolesApi = observable({
         if (!client) throw new Error('security client is not initialized');
 
         const rolePromises = [];
-        for (const role of this.roles) {
-            rolePromises.push(client.getRole({ roleName: role }));
+
+        if (Features.rolesApi) {
+            for (const role of this.roles) {
+                rolePromises.push(client.getRole({ roleName: role }));
+            }
         }
 
         await Promise.allSettled(rolePromises);
@@ -1596,21 +1603,24 @@ export const rolesApi = observable({
 
             this.roleMembers.set(roleName, members);
         }
-
     },
 
     async createRole(name: string) {
         const client = appConfig.securityClient;
         if (!client) throw new Error('security client is not initialized');
 
-        await client.createRole({ role: { name } });
+        if (Features.rolesApi) {
+            await client.createRole({ role: { name } });
+        }
     },
 
     async deleteRole(name: string, deleteAcls: boolean) {
         const client = appConfig.securityClient;
         if (!client) throw new Error('security client is not initialized');
 
-        await client.deleteRole({ roleName: name, deleteAcls });
+        if (Features.rolesApi) {
+            await client.deleteRole({ roleName: name, deleteAcls });
+        }
     },
 
     async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], create = false) {

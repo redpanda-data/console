@@ -24,6 +24,7 @@ import { Link as ChakraLink } from '@chakra-ui/react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { UserPermissionAssignments } from './UserPermissionAssignments';
+import { Features } from '../../../state/supportedFeatures';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -111,10 +112,12 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                 <Heading as="h3" mt="4">Permissions</Heading>
                 <Box>Below are all of the permissions assigned to this SCRAM user.</Box>
 
-                <Heading as="h3" mt="4">Assignments</Heading>
-                <UserPermissionAssignments userName={userName} />
-
-                <PermissionAssignemntsDetails userName={userName} />
+                {Features.rolesApi && <>
+                    <Heading as="h3" mt="4">Assignments</Heading>
+                    <UserPermissionAssignments userName={userName} />
+                    <PermissionAssignemntsDetails userName={userName} />
+                    </>
+                }
 
             </PageContent>
         </>
