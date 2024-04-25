@@ -22,6 +22,7 @@ import { Alert, AlertIcon, Box, Button, Checkbox, CopyButton, createStandaloneTo
 import { useEffect, useMemo, useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
+import { Features } from '../../../state/supportedFeatures';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -254,9 +255,10 @@ const CreateUserModal = observer((p: {
                     />
                 </FormField>
 
-                <FormField label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
+                <FormField isDisabled={Features.rolesApi} label="Assign roles" description="Assign roles to this user. This is optional and can be changed later.">
                     <RoleSelector state={state.selectedRoles} />
                 </FormField>
+            
             </Flex>
 
             <Flex gap={4} mt={8}>
@@ -344,8 +346,10 @@ export const RoleSelector = observer((p: { state: string[] }) => {
 
     // Make sure we have up to date role info
     useEffect(() => {
-        rolesApi.refreshRoles();
-        rolesApi.refreshRoleMembers();
+        if (Features.rolesApi) {
+            rolesApi.refreshRoles();
+            rolesApi.refreshRoleMembers();
+        }
     }, []);
     const [searchValue, setSearchValue] = useState('');
 

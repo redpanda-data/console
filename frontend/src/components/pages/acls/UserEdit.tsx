@@ -20,6 +20,7 @@ import PageContent from '../../misc/PageContent';
 import { Box, Button, Flex, Heading, Input, createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { RoleSelector } from './UserCreate';
 import { UpdateRoleMembershipResponse } from '../../../protogen/redpanda/api/console/v1alpha1/security_pb';
+import { Features } from '../../../state/supportedFeatures';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -58,9 +59,12 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles()
         ]);
-        rolesApi.refreshRoleMembers();
+
+        if (Features.rolesApi) {
+            await rolesApi.refreshRoles()
+            await rolesApi.refreshRoleMembers();
+        }
     }
 
     render() {

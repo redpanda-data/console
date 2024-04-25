@@ -24,6 +24,7 @@ import { Link as ChakraLink } from '@chakra-ui/react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { UserPermissionAssignments } from './UserPermissionAssignments';
+import { Features } from '../../../state/supportedFeatures';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string; }> {
@@ -61,10 +62,12 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
         await Promise.allSettled([
             api.refreshAcls(AclRequestDefault, force),
             api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles()
         ]);
 
-        await rolesApi.refreshRoleMembers();
+        if (Features.rolesApi) {
+            await rolesApi.refreshRoles()
+            await rolesApi.refreshRoleMembers();
+        }
     }
 
     render() {
