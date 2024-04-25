@@ -347,6 +347,7 @@ const RolesTab = observer(() => {
                                         onConfirm={async () => {
                                             await rolesApi.deleteRole(entry.name, true);
                                             await rolesApi.refreshRoles();
+                                            await rolesApi.refreshRoleMembers();
                                         }}
                                         buttonEl={
                                             <button>

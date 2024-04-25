@@ -64,9 +64,13 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
     async deleteRole() {
         this.isDeleting = true
-        await rolesApi.deleteRole(this.props.roleName, true)
-        await rolesApi.refreshRoles()
-        this.isDeleting = false
+        try {
+            await rolesApi.deleteRole(this.props.roleName, true)
+            await rolesApi.refreshRoles();
+            await rolesApi.refreshRoleMembers(); // need to refresh assignments as well, otherwise users will still be marked as having that role, even though it doesn't exist anymore
+        } finally {
+            this.isDeleting = false;
+        }
         appGlobal.history.push('/security/roles/');
     }
 
