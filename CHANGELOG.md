@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.5.1 / 2024-04-26
+
+- [SECURITY] Update Go to version 1.22.2.
+
+## v2.5.0 / 2024-04-26
+
+- [FEATURE] Add Redpanda Role management.
+
 ## v2.4.7 / 2024-04-23
 
 - [CHANGE] Update dependencies.
