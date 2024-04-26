@@ -110,9 +110,10 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	}
 	c.logger.Info("cloning git repository", zap.String("url", c.Cfg.Repository.URL))
 	repo, err := git.CloneContext(ctx, memory.NewStorage(), fs, &git.CloneOptions{
-		URL:           c.Cfg.Repository.URL,
-		Auth:          c.auth,
-		ReferenceName: referenceName,
+		RecurseSubmodules: 1,
+		URL:               c.Cfg.Repository.URL,
+		Auth:              c.auth,
+		ReferenceName:     referenceName,
 	})
 	if err != nil {
 		return err

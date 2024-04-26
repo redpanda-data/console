@@ -333,12 +333,12 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 	defer s.registryMutex.RUnlock()
 	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
+		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: %w", protoTypeURL, err)
 	}
 	if messageDescriptor == nil {
 		// If this happens the user should already know that because we check the existence of all mapped types
 		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
-		return nil, fmt.Errorf("failed to find the proto type in the proto registry: message descriptor is nil")
+		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: message descriptor is nil", protoTypeURL)
 	}
 
 	return messageDescriptor, nil
@@ -457,9 +457,23 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 			zap.Int("fetched_proto_files", len(files)))
 	}
 
+	for fn := range files {
+		if !strings.Contains(fn, "google") {
+			fmt.Println(fn)
+		}
+	}
+
 	fileDescriptors, err := s.protoFileToDescriptor(files)
 	if err != nil {
 		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
+	}
+
+	fmt.Println("fileDescriptors:", len(fileDescriptors))
+	for _, fd := range fileDescriptors {
+		fqn := fd.GetFullyQualifiedName()
+		if !strings.Contains(fqn, "google") {
+			fmt.Println(fqn)
+		}
 	}
 
 	// Merge proto descriptors from schema registry into the existing proto descriptors
@@ -581,9 +595,12 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		return nil
 	}
 
+	parserImportPaths := []string{"."}
+	parserImportPaths = append(parserImportPaths, s.cfg.ImportPaths...)
+
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
-		ImportPaths:           []string{"."},
+		ImportPaths:           parserImportPaths,
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
