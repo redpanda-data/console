@@ -2,7 +2,7 @@
 
 ## v2.5.1 / 2024-04-26
 
-- [FEATURE] Update Go to version 1.22.2.
+- [SECURITY] Update Go to version 1.22.2.
 
 ## v2.5.0 / 2024-04-26
 
