@@ -7,8 +7,6 @@ import { CreateConnectSecretRequest, CreateConnectSecretResponse, DeleteConnectS
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
- * Connect Secrets API.
- *
  * @generated from service redpanda.api.dataplane.v1alpha1.SecretService
  */
 export const SecretService = {
