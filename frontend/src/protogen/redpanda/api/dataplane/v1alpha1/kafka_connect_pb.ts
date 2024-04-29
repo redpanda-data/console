@@ -7,12 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * The following states are possible for a connector or one of its tasks
- * implement the state interface described in the Kafka connect API @see
- * https://docs.confluent.io/platform/current/connect/monitoring.html#connector-and-task-status
- * this includes holistic unified connector status that takes into account not
- * just the connector instance state, but also state of all the tasks within the
- * connector
+ * State of a connector or one of its tasks, as described in the [Kafka Connect documentation](https://kafka.apache.org/documentation.html#connect_administration). Takes into account not just the state of the connector instance itself, but also the tasks within the connector.
  *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ConnectorHolisticState
  */
@@ -23,67 +18,66 @@ export enum ConnectorHolisticState {
   UNSPECIFIED = 0,
 
   /**
-   * PAUSED: The connector/task has been administratively paused.
+   * The connector or task has been administratively paused.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_PAUSED = 1;
    */
   PAUSED = 1,
 
   /**
-   * RESTARTING: he connector/task is restarting.
+   * The connector or task is restarting.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_RESTARTING = 2;
    */
   RESTARTING = 2,
 
   /**
-   * DESTROYED: Connector is in destroyed state, regardless of any tasks.
+   * The connector is destroyed, regardless of any tasks.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_DESTROYED = 3;
    */
   DESTROYED = 3,
 
   /**
-   * STOPPED: The connector/task has been stopped.
+   * The connector or task has been stopped.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_STOPPED = 4;
    */
   STOPPED = 4,
 
   /**
-   * The connector/task has not yet been assigned to a worker
-   * UNASSIGNED: Connector is in unassigned state.
-   *    Or Connector is in running state, and there are unassigned tasks.
+   * - The connector or task has not yet been assigned to a worker,
+   * - THe connector is running, but there are unassigned tasks.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_UNASSIGNED = 5;
    */
   UNASSIGNED = 5,
 
   /**
-   * HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
+   * The connector is running, > 0 tasks, all of them in running state.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_HEALTHY = 6;
    */
   HEALTHY = 6,
 
   /**
-   * UNHEALTHY: Connector is failed state.
-   * 			Or Connector is in running state but has 0 tasks.
-   * 			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
+   * - The connector has failed,
+   * - The connector is running, but has no tasks,
+   * - Connector is running and has tasks, but all tasks have failed.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_UNHEALTHY = 7;
    */
   UNHEALTHY = 7,
 
   /**
-   * DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
+   * The connector is running and has tasks, and at least one task, but not all, have failed.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_DEGRADED = 8;
    */
   DEGRADED = 8,
 
   /**
-   * UNKNOWN: The connector/task could no be determined
+   * The connector or task state could not be determined.
    *
    * @generated from enum value: CONNECTOR_HOLISTIC_STATE_UNKNOWN = 9;
    */
@@ -157,6 +151,8 @@ export class ConnectorPlugin extends Message<ConnectorPlugin> {
  */
 export class ConnectCluster extends Message<ConnectCluster> {
   /**
+   * Unique name of connect cluster. For Redpanda Cloud, the value is `redpanda`.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -261,6 +257,8 @@ export class ConnectCluster_Info extends Message<ConnectCluster_Info> {
  */
 export class ConnectorStatus extends Message<ConnectorStatus> {
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
@@ -271,6 +269,8 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
   connector?: ConnectorStatus_Connector;
 
   /**
+   * Status of connector tasks. For more information, see the [https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/monitor-connectors/#connector-tasks](Monitor Connectors) documentation.
+   *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.TaskStatus tasks = 3;
    */
   tasks: TaskStatus[] = [];
@@ -281,15 +281,14 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
   type = "";
 
   /**
-   * holistic_state of all the tasks within the connector this is our internal
-   * holistic state concept
+   * State of the connector including all the tasks within the connector.
    *
    * @generated from field: redpanda.api.dataplane.v1alpha1.ConnectorHolisticState holistic_state = 5;
    */
   holisticState = ConnectorHolisticState.UNSPECIFIED;
 
   /**
-   * Errors is list of parsed connectors' and tasks' errors
+   * List of parsed connectors' and tasks' errors.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ConnectorError errors = 6;
    */
@@ -333,6 +332,8 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
  */
 export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector> {
   /**
+   * State of the connector instance.
+   *
    * @generated from field: string state = 1;
    */
   state = "";
@@ -382,11 +383,15 @@ export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector
  */
 export class TaskStatus extends Message<TaskStatus> {
   /**
+   * ID of connector task.
+   *
    * @generated from field: int32 id = 1;
    */
   id = 0;
 
   /**
+   * State of connector task.
+   *
    * @generated from field: string state = 2;
    */
   state = "";
@@ -437,6 +442,8 @@ export class TaskStatus extends Message<TaskStatus> {
  */
 export class TaskInfo extends Message<TaskInfo> {
   /**
+   * Name of connector.
+   *
    * @generated from field: string connector = 1;
    */
   connector = "";
@@ -528,6 +535,8 @@ export class ConnectorError extends Message<ConnectorError> {
 }
 
 /**
+ * Error level.
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha1.ConnectorError.Type
  */
 export enum ConnectorError_Type {
@@ -554,9 +563,8 @@ proto3.util.setEnumType(ConnectorError_Type, "redpanda.api.dataplane.v1alpha1.Co
 ]);
 
 /**
- * ConectorInfo is the spec of the connector, as defined in the Kafka connect
- * API, it can be used as input of the connector creation or output of the
- * connectors
+ * Connector specifications as defined in the Kafka Connect
+ * API. You may include this in the request body when creating a new connector.
  *
  * @generated from message redpanda.api.dataplane.v1alpha1.ConnectorSpec
  */
@@ -673,6 +681,8 @@ export class RestartConnectorRequest extends Message<RestartConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -717,11 +727,15 @@ export class RestartConnectorRequest extends Message<RestartConnectorRequest> {
  */
 export class RestartConnectorRequest_Options extends Message<RestartConnectorRequest_Options> {
   /**
+   * Restart connector's tasks.
+   *
    * @generated from field: bool include_tasks = 1;
    */
   includeTasks = false;
 
   /**
+   * Restart only connectors that have failed.
+   *
    * @generated from field: bool only_failed = 2;
    */
   onlyFailed = false;
@@ -765,6 +779,8 @@ export class DeleteConnectorRequest extends Message<DeleteConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -808,6 +824,8 @@ export class PauseConnectorRequest extends Message<PauseConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -894,6 +912,8 @@ export class StopConnectorRequest extends Message<StopConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -937,6 +957,8 @@ export class GetConnectorRequest extends Message<GetConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1092,7 +1114,7 @@ export class CreateConnectorResponse extends Message<CreateConnectorResponse> {
  */
 export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
   /**
-   * connectors is the list of connectors the key is the connector name
+   * List of connectors, where the parent key is the connector name.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha1.ListConnectorsResponse.ConnectorInfoStatus connectors = 1;
    */
@@ -1137,7 +1159,7 @@ export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
  */
 export class ListConnectorsResponse_ConnectorInfoStatus extends Message<ListConnectorsResponse_ConnectorInfoStatus> {
   /**
-   * name is the connector name
+   * Name of connector.
    *
    * @generated from field: string name = 1;
    */
@@ -1335,6 +1357,8 @@ export class UpsertConnectorRequest extends Message<UpsertConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector. If a connector with this name does not already exist, a new connector is created.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1421,6 +1445,8 @@ export class GetConnectorConfigRequest extends Message<GetConnectorConfigRequest
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1501,6 +1527,8 @@ export class GetConnectorStatusRequest extends Message<GetConnectorStatusRequest
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1581,6 +1609,8 @@ export class ListConnectorTopicsRequest extends Message<ListConnectorTopicsReque
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1619,6 +1649,8 @@ export class ListConnectorTopicsRequest extends Message<ListConnectorTopicsReque
  */
 export class ListConnectorTopicsResponse extends Message<ListConnectorTopicsResponse> {
   /**
+   * Topic names.
+   *
    * @generated from field: repeated string topics = 1;
    */
   topics: string[] = [];
@@ -1661,6 +1693,8 @@ export class ResetConnectorTopicsRequest extends Message<ResetConnectorTopicsReq
   clusterName = "";
 
   /**
+   * Name of connector using the topics to be reset.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
