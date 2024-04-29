@@ -1,5 +1,5 @@
 import { Page, test, expect } from '@playwright/test';
-import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './connector.spec';
+import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './console/connector.spec';
 
 export const createConnector = async(page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string}) => {
     return await test.step('Create connector', async () => {

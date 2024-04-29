@@ -16,8 +16,10 @@ test.describe('Roles', () => {
     });
 
     test('should create a role with users, check that these users were assigned', async ({page}) => {
-        const roleName = 'role-name';
-        const username = 'user-role-test';
+        const r = (Math.random() + 1).toString(36).substring(7);
+
+        const roleName = `role-name-${r}`;
+        const username = `user-role-test-${r}`;
 
         await createUser(page, {username});
 
@@ -43,9 +45,11 @@ test.describe('Roles', () => {
     });
 
     test('should be able to search for role with regexp', async ({page}) => {
-        const roleName1 = 'role-regexp-1';
-        const roleName2 = 'role-regexp-2';
-        const roleName3 = 'role-regexp-3';
+        const r = (Math.random() + 1).toString(36).substring(7);
+
+        const roleName1 = `role-${r}-regexp-1`;
+        const roleName2 = `role-${r}-regexp-2`;
+        const roleName3 = `role-${r}-regexp-3`;
 
         await createRole(page, {roleName: roleName1});
         await createRole(page, {roleName: roleName2});
@@ -54,7 +58,7 @@ test.describe('Roles', () => {
         await page.goto('/security/roles/', {
             waitUntil: 'domcontentloaded'
         });
-        await page.getByPlaceholder('Enter search term/regex').fill('role-regexp-[1,2]');
+        await page.getByPlaceholder('Filter by name').fill(`role-${r}-regexp-[1,2]`);
 
         expect(await page.getByTestId('data-table-cell').locator(`a[href='/security/roles/${roleName1}/details']`).count()).toEqual(1);
         expect(await page.getByTestId('data-table-cell').locator(`a[href='/security/roles/${roleName2}/details']`).count()).toEqual(1);
