@@ -52,8 +52,10 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: [{
-    cwd: process.env.CI ? './backend/cmd' : '../../console-enterprise/backend/cmd',
-    command: 'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
+    cwd: process.env.CI ? '../../backend/cmd' : '../../console-enterprise/backend/cmd',
+    command: process.env.CI ?
+      'go run . --config.filepath=../../console-oss/frontend/tests/config/console.enterprise.config.yaml' :
+      'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
     url: 'http://localhost:9090/admin/startup',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
