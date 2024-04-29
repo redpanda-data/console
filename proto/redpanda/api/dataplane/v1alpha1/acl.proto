@@ -260,7 +260,7 @@ message DeleteACLsResponse {
     ACL.ResourcePatternType resource_pattern_type = 3;
     // The user for whom this ACL applies.
     string principal = 4;
-    // The host address to for this ACL.
+    // The host address to use for this ACL.
     string host = 5;
     ACL.Operation operation = 6;
     ACL.PermissionType permission_type = 7;

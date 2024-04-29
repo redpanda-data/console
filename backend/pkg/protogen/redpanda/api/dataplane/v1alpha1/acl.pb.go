@@ -1020,7 +1020,7 @@ type DeleteACLsResponse_MatchingACL struct {
 	ResourcePatternType ACL_ResourcePatternType `protobuf:"varint,3,opt,name=resource_pattern_type,json=resourcePatternType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_ResourcePatternType" json:"resource_pattern_type,omitempty"`
 	// The user for whom this ACL applies.
 	Principal string `protobuf:"bytes,4,opt,name=principal,proto3" json:"principal,omitempty"`
-	// The host address to for this ACL.
+	// The host address to use for this ACL.
 	Host           string             `protobuf:"bytes,5,opt,name=host,proto3" json:"host,omitempty"`
 	Operation      ACL_Operation      `protobuf:"varint,6,opt,name=operation,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_Operation" json:"operation,omitempty"`
 	PermissionType ACL_PermissionType `protobuf:"varint,7,opt,name=permission_type,json=permissionType,proto3,enum=redpanda.api.dataplane.v1alpha1.ACL_PermissionType" json:"permission_type,omitempty"`

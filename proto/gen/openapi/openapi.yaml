@@ -819,7 +819,7 @@ components:
         error:
           $ref: '#/components/schemas/Status'
         host:
-          description: The host address to for this ACL.
+          description: The host address to use for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
@@ -2145,7 +2145,7 @@ paths:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListConnectSecrets
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2206,7 +2206,7 @@ paths:
       description: Create a Kafka Connect cluster secret.
       operationId: SecretService_CreateConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2269,7 +2269,7 @@ paths:
       description: Delete a Kafka Connect cluster secret.
       operationId: SecretService_DeleteConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2318,7 +2318,7 @@ paths:
       description: Get a specific Kafka Connect cluster secret.
       operationId: SecretService_GetConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2368,7 +2368,7 @@ paths:
       description: Update a Kafka Connect cluster secret.
       operationId: SecretService_UpdateConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -3215,7 +3215,7 @@ tags:
   - name: TransformService
   - description: Manage [connectors](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/) and interact with the Kafka Connect API.
     name: KafkaConnectService
-  - description: Manage secrets for Redpanda Cloud.
+  - description: Manage [secrets](https://docs.redpanda.com/current/deploy/deployment-option/cloud/security/secrets/) for Redpanda Cloud.
     name: SecretService
   - description: Manage Redpanda Cloud topics.
     name: TopicService

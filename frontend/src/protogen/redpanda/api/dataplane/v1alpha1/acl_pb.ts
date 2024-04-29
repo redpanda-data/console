@@ -860,7 +860,7 @@ export class DeleteACLsResponse_MatchingACL extends Message<DeleteACLsResponse_M
   principal = "";
 
   /**
-   * The host address to for this ACL.
+   * The host address to use for this ACL.
    *
    * @generated from field: string host = 5;
    */
