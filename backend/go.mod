@@ -35,9 +35,9 @@ require (
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.19.0
-	github.com/redpanda-data/common-go/api v0.0.0-20240422151036-b17f32442d10
-	github.com/redpanda-data/common-go/net v0.1.0
-	github.com/redpanda-data/common-go/rpadmin v0.1.0
+	github.com/redpanda-data/common-go/api v0.0.0-20240429123545-4da3d2b371f7
+	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
+	github.com/redpanda-data/common-go/rpadmin v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
