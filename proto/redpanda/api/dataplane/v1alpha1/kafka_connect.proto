@@ -43,11 +43,13 @@ message ConnectorPlugin {
 message ConnectCluster {
   message Info {
     string version = 1;
+    // The git commit ID of the Kafka Connect worker source code.
     string commit = 2;
     string kafka_cluster_id = 3;
   }
   // Unique name of connect cluster. For Redpanda Cloud, the value is `redpanda`.
   string name = 1;
+  // The host address of the Kafka Connect cluster.
   string address = 2;
   Info info = 3;
   repeated ConnectorPlugin plugins = 4;
@@ -84,6 +86,7 @@ message TaskStatus {
 message TaskInfo {
   // Name of connector.
   string connector = 1;
+  // The connector task ID.
   int32 task = 2;
 }
 
