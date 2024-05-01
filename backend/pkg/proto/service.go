@@ -457,23 +457,9 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 			zap.Int("fetched_proto_files", len(files)))
 	}
 
-	for fn := range files {
-		if !strings.Contains(fn, "google") {
-			fmt.Println(fn)
-		}
-	}
-
 	fileDescriptors, err := s.protoFileToDescriptor(files)
 	if err != nil {
 		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
-	}
-
-	fmt.Println("fileDescriptors:", len(fileDescriptors))
-	for _, fd := range fileDescriptors {
-		fqn := fd.GetFullyQualifiedName()
-		if !strings.Contains(fqn, "google") {
-			fmt.Println(fqn)
-		}
 	}
 
 	// Merge proto descriptors from schema registry into the existing proto descriptors
@@ -595,12 +581,9 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		return nil
 	}
 
-	parserImportPaths := []string{"."}
-	parserImportPaths = append(parserImportPaths, s.cfg.ImportPaths...)
-
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
-		ImportPaths:           parserImportPaths,
+		ImportPaths:           []string{"."},
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,

@@ -109,12 +109,18 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 		referenceName = plumbing.NewBranchReferenceName(c.Cfg.Repository.Branch)
 	}
 	c.logger.Info("cloning git repository", zap.String("url", c.Cfg.Repository.URL))
-	repo, err := git.CloneContext(ctx, memory.NewStorage(), fs, &git.CloneOptions{
-		RecurseSubmodules: 1,
-		URL:               c.Cfg.Repository.URL,
-		Auth:              c.auth,
-		ReferenceName:     referenceName,
-	})
+	cloneOptions := &git.CloneOptions{
+		URL:           c.Cfg.Repository.URL,
+		Auth:          c.auth,
+		ReferenceName: referenceName,
+	}
+
+	if c.Cfg.CloneSubmodules {
+		cloneOptions.RecurseSubmodules = 1
+		cloneOptions.ShallowSubmodules = true
+	}
+
+	repo, err := git.CloneContext(ctx, memory.NewStorage(), fs, cloneOptions)
 	if err != nil {
 		return err
 	}
