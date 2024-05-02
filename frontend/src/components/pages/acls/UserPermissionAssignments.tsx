@@ -49,6 +49,12 @@ export const UserPermissionAssignments = observer(({
             elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
     }
 
+    if (elements.length == 0) {
+        return <Flex>
+            No roles
+        </Flex>
+    }
+
     return <Flex>
         {elements}
         {numberOfHiddenElements !== 0 && <Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>}
