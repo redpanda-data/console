@@ -18,7 +18,6 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
-import { QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, principalGroupsView } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
@@ -247,7 +246,7 @@ const PrincipalsTab = observer(() => {
                                                     promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
                                                 }
                                             }
-                                            
+
                                             await Promise.allSettled(promises);
                                             await rolesApi.refreshRoleMembers();
                                             await api.refreshServiceAccounts(true);
@@ -443,9 +442,6 @@ const AclsTab = observer((p: {
                         header: 'Principal',
                         accessorKey: 'principal',
                         cell: ({ row: { original: record } }) => {
-                            const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                            const isComplete = api.serviceAccounts?.isComplete === true;
-                            const showWarning = isComplete && !userExists && !record.principalName.includes('*');
                             const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
                                 ? 'User Group'
                                 : record.principalType;
@@ -457,13 +453,6 @@ const AclsTab = observer((p: {
                                     <Flex>
                                         <Badge variant="subtle" mr="2">{principalType}</Badge>
                                         <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">{record.principalName}</Text>
-                                        {showWarning && (
-                                            <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
-                                                <span style={{ marginLeft: '4px' }}>
-                                                    <QuestionIcon fill="orange" size={16} />
-                                                </span>
-                                            </Tooltip>
-                                        )}
                                     </Flex>
                                 </button>
                             );
