@@ -201,7 +201,7 @@ const PrincipalsTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
                                     {entry.name}
                                     {entry.type == 'SERVICE_ACCOUNT' && <Tag variant="outline" margin="-2px 0px -2px 8px">Redpanda user</Tag>}
                                 </ChakraLink>
@@ -315,7 +315,7 @@ const RolesTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`} textDecoration="none">
                                     {entry.name}
                                 </ChakraLink>
                             </>

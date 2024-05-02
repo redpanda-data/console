@@ -41,7 +41,9 @@ export const UserPermissionAssignments = observer(({
         const r = roles[i];
         elements.push(
             <React.Fragment key={r}>
-                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`}>{r}</ChakraLink>
+                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`} textDecoration="none">
+                    {r}
+                </ChakraLink>
             </React.Fragment>
         );
 
