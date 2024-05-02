@@ -385,9 +385,13 @@ const AclsTab = observer((p: {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Access-control lists (ACLs) are the primary mechanism used by Redpanda to manage user permissions.
-            ACLs are assigned to principals, which then access resources within Redpanda.
+            Use access control lists (ACLs) to manage user permissions. ACLs are assigned principals, which then access resources within Redpanda. Learn more.
         </Box>
+
+        <Alert status="info">
+            <AlertIcon />
+            Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational hierarchies or large numbers of users.
+        </Alert>
 
         <SearchField
             width="300px"
