@@ -119,7 +119,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
                 <Flex flexDirection="column">
                     <Heading as="h3" my="4">Principals</Heading>
-                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'member' : 'members'}</Text>
+                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}</Text>
                     <Box my={2}>
                         <SearchField
                             width="300px"
