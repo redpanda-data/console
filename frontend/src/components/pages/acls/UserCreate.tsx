@@ -367,7 +367,7 @@ export const RoleSelector = observer((p: { state: string[] }) => {
                 options={availableRoles}
                 inputValue={searchValue}
                 onInputChange={setSearchValue}
-                placeholder="Find roles..."
+                placeholder="Select roles..."
 
                 noOptionsMessage={() => 'No roles found'}
 

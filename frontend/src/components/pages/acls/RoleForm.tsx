@@ -266,6 +266,9 @@ const PrincipalSelector = observer((p: {state: RolePrincipal[]}) => {
                 options={api.serviceAccounts?.users.map((u) => ({
                     value: u,
                 })) ?? []}
+
+                creatable={true}
+
                 onChange={(val) => {
                     if(val && isSingleValue(val) && val.value) {
                         state.push({name: val.value, principalType: 'User'});

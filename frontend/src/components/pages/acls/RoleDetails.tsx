@@ -141,7 +141,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                                 cell: (ctx) => {
                                     const entry = ctx.row.original;
                                     return <>
-                                        <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                        <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
                                             {entry.name}
                                         </ChakraLink>
                                     </>
