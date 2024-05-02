@@ -134,18 +134,8 @@ export default AclList;
 type UsersEntry = { name: string, type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PrincipalsTab = observer(() => {
 
-    const users: UsersEntry[] =
-        (api.serviceAccounts?.users ?? [])
-            .filter(u => {
-                const filter = uiSettings.aclList.usersTab.quickSearch;
-                if (!filter) return true;
-
-                try {
-                    const quickSearchRegExp = new RegExp(filter, 'i');
-                    return u.match(quickSearchRegExp);
-                } catch { return false; }
-            })
-            .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+    const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
+        .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
 
     // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
     for (const g of principalGroupsView.principalGroups)
@@ -158,7 +148,15 @@ const PrincipalsTab = observer(() => {
             if (!users.any(u => u.name == roleMember.name)) // make sure that user isn't already in the list
                 users.push({ name: roleMember.name, type: 'PRINCIPAL' });
 
+    const usersFiltered = users.filter(u => {
+        const filter = uiSettings.aclList.usersTab.quickSearch;
+        if (!filter) return true;
 
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return u.name.match(quickSearchRegExp);
+        } catch { return false; }
+    })
 
     return <Flex flexDirection="column" gap="4">
         <Box>
@@ -184,7 +182,7 @@ const PrincipalsTab = observer(() => {
             </Tooltip>
 
             <DataTable<UsersEntry>
-                data={users}
+                data={usersFiltered}
                 pagination
                 sorting
                 emptyText="No principals yet"
