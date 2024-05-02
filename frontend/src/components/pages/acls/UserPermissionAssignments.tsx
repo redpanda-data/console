@@ -12,14 +12,14 @@
 import { observer } from 'mobx-react';
 import { rolesApi } from '../../../state/backendApi';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { Link as ChakraLink } from '@chakra-ui/react';
+import { Link as ChakraLink, Tag } from '@chakra-ui/react';
 import React from 'react';
 import { Box, Flex, Text } from '@redpanda-data/ui';
 
 export const UserPermissionAssignments = observer(({
-                                                       userName,
-                                                       showMaxItems = Infinity
-                                                   }: {
+    userName,
+    showMaxItems = Infinity
+}: {
     userName: string;
     showMaxItems?: number;
 }) => {
@@ -41,8 +41,11 @@ export const UserPermissionAssignments = observer(({
         const r = roles[i];
         elements.push(
             <React.Fragment key={r}>
+
                 <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`} textDecoration="none">
-                    {r}
+                    <Tag>
+                        {r}
+                    </Tag>
                 </ChakraLink>
             </React.Fragment>
         );
