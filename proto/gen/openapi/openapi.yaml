@@ -114,6 +114,7 @@ components:
     ConnectCluster:
       properties:
         address:
+          description: The host address of the Kafka Connect cluster.
           type: string
         info:
           $ref: '#/components/schemas/ConnectCluster.Info'
@@ -128,10 +129,13 @@ components:
     ConnectCluster.Info:
       properties:
         commit:
+          description: The git commit ID of the connect worker source code.
           type: string
         kafka_cluster_id:
+          description: Cluster ID.
           type: string
         version:
+          description: Connect worker version.
           type: string
       type: object
     Connector:
@@ -140,15 +144,19 @@ components:
           description: State of the connector instance.
           type: string
         trace:
+          description: String value of stack trace.
           type: string
         worker_id:
+          description: ID of worker that the connector is assigned to.
           type: string
       type: object
     ConnectorError:
       properties:
         content:
+          description: Detailed description of the error.
           type: string
         title:
+          description: Short description of the error.
           type: string
         type:
           $ref: '#/components/schemas/ConnectorError.Type'
@@ -216,8 +224,10 @@ components:
         config:
           additionalProperties:
             type: string
+          description: Connector configuration properties.
           type: object
         name:
+          description: Name of connector.
           type: string
         tasks:
           items:
@@ -251,6 +261,7 @@ components:
             $ref: '#/components/schemas/TaskStatus'
           type: array
         type:
+          description: Type of connector (sink or source).
           type: string
       type: object
     CreateACLRequest:
@@ -1095,21 +1106,24 @@ components:
           description: Name of connector.
           type: string
         task:
+          description: The connector task ID.
           format: int32
           type: integer
       type: object
     TaskStatus:
       properties:
         id:
-          description: ID of connector task.
+          description: The connector task ID.
           format: int32
           type: integer
         state:
           description: State of connector task.
           type: string
         trace:
+          description: String value of stack trace.
           type: string
         worker_id:
+          description: ID of worker that the task is assigned to.
           type: string
       type: object
     TransformMetadata:
@@ -1501,7 +1515,7 @@ paths:
       description: Get information about an available Kafka Connect cluster.
       operationId: KafkaConnectService_GetConnectCluster
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -1788,6 +1802,7 @@ paths:
               required:
                 - config
               type: object
+        description: Connector configuration property.
         required: true
         x-originalParamName: config
       responses:
@@ -1924,13 +1939,14 @@ paths:
       description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
       operationId: KafkaConnectService_ResumeConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:

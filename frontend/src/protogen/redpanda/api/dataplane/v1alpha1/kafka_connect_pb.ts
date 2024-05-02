@@ -158,6 +158,8 @@ export class ConnectCluster extends Message<ConnectCluster> {
   name = "";
 
   /**
+   * The host address of the Kafka Connect cluster.
+   *
    * @generated from field: string address = 2;
    */
   address = "";
@@ -208,16 +210,22 @@ export class ConnectCluster extends Message<ConnectCluster> {
  */
 export class ConnectCluster_Info extends Message<ConnectCluster_Info> {
   /**
+   * Connect worker version.
+   *
    * @generated from field: string version = 1;
    */
   version = "";
 
   /**
+   * The git commit ID of the connect worker source code.
+   *
    * @generated from field: string commit = 2;
    */
   commit = "";
 
   /**
+   * Cluster ID.
+   *
    * @generated from field: string kafka_cluster_id = 3;
    */
   kafkaClusterId = "";
@@ -276,6 +284,8 @@ export class ConnectorStatus extends Message<ConnectorStatus> {
   tasks: TaskStatus[] = [];
 
   /**
+   * Type of connector (sink or source).
+   *
    * @generated from field: string type = 4;
    */
   type = "";
@@ -339,11 +349,15 @@ export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector
   state = "";
 
   /**
+   * ID of worker that the connector is assigned to.
+   *
    * @generated from field: string worker_id = 2;
    */
   workerId = "";
 
   /**
+   * String value of stack trace.
+   *
    * @generated from field: string trace = 3;
    */
   trace = "";
@@ -383,7 +397,7 @@ export class ConnectorStatus_Connector extends Message<ConnectorStatus_Connector
  */
 export class TaskStatus extends Message<TaskStatus> {
   /**
-   * ID of connector task.
+   * The connector task ID.
    *
    * @generated from field: int32 id = 1;
    */
@@ -397,11 +411,15 @@ export class TaskStatus extends Message<TaskStatus> {
   state = "";
 
   /**
+   * ID of worker that the task is assigned to.
+   *
    * @generated from field: string worker_id = 3;
    */
   workerId = "";
 
   /**
+   * String value of stack trace.
+   *
    * @generated from field: string trace = 4;
    */
   trace = "";
@@ -449,6 +467,8 @@ export class TaskInfo extends Message<TaskInfo> {
   connector = "";
 
   /**
+   * The connector task ID.
+   *
    * @generated from field: int32 task = 2;
    */
   task = 0;
@@ -495,11 +515,15 @@ export class ConnectorError extends Message<ConnectorError> {
   type = ConnectorError_Type.UNSPECIFIED;
 
   /**
+   * Short description of the error.
+   *
    * @generated from field: string title = 2;
    */
   title = "";
 
   /**
+   * Detailed description of the error.
+   *
    * @generated from field: string content = 3;
    */
   content = "";
@@ -570,11 +594,15 @@ proto3.util.setEnumType(ConnectorError_Type, "redpanda.api.dataplane.v1alpha1.Co
  */
 export class ConnectorSpec extends Message<ConnectorSpec> {
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
+   * Connector configuration properties.
+   *
    * @generated from field: map<string, string> config = 2;
    */
   config: { [key: string]: string } = {};
@@ -869,6 +897,8 @@ export class ResumeConnectorRequest extends Message<ResumeConnectorRequest> {
   clusterName = "";
 
   /**
+   * Name of connector.
+   *
    * @generated from field: string name = 2;
    */
   name = "";
@@ -1364,6 +1394,8 @@ export class UpsertConnectorRequest extends Message<UpsertConnectorRequest> {
   name = "";
 
   /**
+   * Connector configuration property.
+   *
    * @generated from field: map<string, string> config = 3;
    */
   config: { [key: string]: string } = {};

@@ -42,9 +42,11 @@ message ConnectorPlugin {
 
 message ConnectCluster {
   message Info {
+    // Connect worker version.
     string version = 1;
-    // The git commit ID of the Kafka Connect worker source code.
+    // The git commit ID of the connect worker source code.
     string commit = 2;
+    // Cluster ID.
     string kafka_cluster_id = 3;
   }
   // Unique name of connect cluster. For Redpanda Cloud, the value is `redpanda`.
@@ -59,7 +61,9 @@ message ConnectorStatus {
   message Connector {
     // State of the connector instance.
     string state = 1;
+    // ID of worker that the connector is assigned to.
     string worker_id = 2;
+    // String value of stack trace.
     string trace = 3;
   }
   // Name of connector.
@@ -67,6 +71,7 @@ message ConnectorStatus {
   Connector connector = 2;
   // Status of connector tasks. For more information, see the [https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/monitor-connectors/#connector-tasks](Monitor Connectors) documentation.
   repeated TaskStatus tasks = 3;
+  // Type of connector (sink or source).
   string type = 4;
   // State of the connector including all the tasks within the connector.
   ConnectorHolisticState holistic_state = 5;
@@ -75,11 +80,13 @@ message ConnectorStatus {
 }
 
 message TaskStatus {
-  // ID of connector task.
+  // The connector task ID.
   int32 id = 1;
   // State of connector task.
   string state = 2;
+  // ID of worker that the task is assigned to.
   string worker_id = 3;
+  // String value of stack trace.
   string trace = 4;
 }
 
@@ -100,18 +107,21 @@ message ConnectorError {
     TYPE_WARNING = 2;
   }
   Type type = 1;
+  // Short description of the error.
   string title = 2;
+  // Detailed description of the error.
   string content = 3;
 }
 
 // Connector specifications as defined in the Kafka Connect
 // API. You may include this in the request body when creating a new connector.
 message ConnectorSpec {
+  // Name of connector.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
-
+  // Connector configuration properties.
   map<string, string> config = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
@@ -235,12 +245,13 @@ message ResumeConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
+      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
   ];
 
+  // Name of connector.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -342,7 +353,7 @@ message GetConnectClusterRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.",
+      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.",
       example: "\"redpanda\"",
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -382,6 +393,7 @@ message UpsertConnectorRequest {
     (buf.validate.field).string.pattern = "^[A-Za-z0-9!@#$%^&*()-_=+;:'\"`~,<.>/?|\\-]+$"
   ];
 
+  // Connector configuration property.
   map<string, string> config = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
