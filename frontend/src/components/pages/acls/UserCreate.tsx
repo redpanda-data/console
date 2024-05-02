@@ -177,7 +177,7 @@ const CreateUserModal = observer((p: {
                     description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
                     label="Username"
                     showRequiredIndicator
-                    isInvalid={!isValidUsername || userAlreadyExists}
+                    isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
                     errorText={errorText}
                 >
                     <Input
