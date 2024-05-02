@@ -261,7 +261,7 @@ const CreateUserModal = observer((p: {
                     </FormField>
                     </>
                 }
-            
+
             </Flex>
 
             <Flex gap={4} mt={8}>
@@ -368,6 +368,9 @@ export const RoleSelector = observer((p: { state: string[] }) => {
                 inputValue={searchValue}
                 onInputChange={setSearchValue}
                 placeholder="Find roles..."
+
+                noOptionsMessage={() => 'No roles found'}
+
 
                 // TODO: Selecting an entry triggers onChange properly.
                 //       But there is no way to prevent the component from showing no value as intended
