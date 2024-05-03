@@ -24,7 +24,7 @@ type Git struct {
 	AllowedFileExtensions []string `yaml:"-"`
 
 	// Max file size which will be considered. Files exceeding this size will be ignored and logged.
-	MaxFileSize int64 `yaml:"-"`
+	MaxFileSize int64 `yaml:"maxFileSize"`
 
 	// Whether or not to use the filename or the full filepath as key in the map
 	IndexByFullFilepath bool `yaml:"-"`
@@ -38,6 +38,9 @@ type Git struct {
 	// Authentication Configs
 	BasicAuth GitAuthBasicAuth `yaml:"basicAuth"`
 	SSH       GitAuthSSH       `yaml:"ssh"`
+
+	// CloneSubmodules enables shallow cloning of submodules at recursion depth of 1.
+	CloneSubmodules bool `yaml:"cloneSubmodules"`
 }
 
 // RegisterFlagsWithPrefix for all (sub)configs
@@ -53,6 +56,9 @@ func (c *Git) Validate() error {
 	}
 	if c.RefreshInterval == 0 {
 		return fmt.Errorf("git config is enabled but refresh interval is set to 0 (disabled)")
+	}
+	if c.MaxFileSize <= 0 {
+		return fmt.Errorf("git config is enabled but file max size is <= 0")
 	}
 
 	return c.Repository.Validate()
