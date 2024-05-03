@@ -16,7 +16,7 @@ import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../stat
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
+import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
 import { Box, Button, Flex, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
@@ -105,6 +105,9 @@ export const AclPrincipalGroupEditor = observer((p: {
         p.onClose();
     }
 
+    if (!group.clusterAcls)
+        group.clusterAcls = createEmptyClusterAcl();
+
     return (
         <Modal isOpen onClose={() => {}}>
             <ModalOverlay />
@@ -135,22 +138,17 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 }
                             >
                                 <InputGroup>
-                                    <Box mr={2} minW={150}>
-                                        <SingleSelect<string>
+                                    <Box mr={2} minW={180} zIndex={1}>
+                                        <SingleSelect<PrincipalType>
+                                            isDisabled
                                             value={group.principalType}
                                             options={[
                                                 {
                                                     label: 'User',
                                                     value: 'User',
-                                                },
-                                                // {
-                                                //     label: 'Group',
-                                                //     value: 'Group'
-                                                // }
+                                                }
                                             ]}
-                                            onChange={(value) => {
-                                                group.principalType = value
-                                            }}
+                                            onChange={(value) => group.principalType = value}
                                         />
                                     </Box>
 
@@ -241,7 +239,7 @@ export const AclPrincipalGroupEditor = observer((p: {
 
                             <Box w="full" as="section">
                                 <Text my={4} fontWeight={500}>Cluster</Text>
-                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls}/>
+                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls} />
                             </Box>
                         </VStack>
                     </VStack>
@@ -255,12 +253,16 @@ export const AclPrincipalGroupEditor = observer((p: {
     )
 });
 
-const ResourceACLsEditor = observer((p: {
+export const ResourceACLsEditor = observer((p: {
     resource: ResourceACLs,
     resourceType: AclStrResourceType,
     onDelete?: () => void
 }) => {
     const res = p.resource;
+    if (!res) {
+        // Happens for clusterAcls?
+        return null;
+    }
     const isCluster = !('selector' in res);
     const isAllSet = res.all == 'Allow' || res.all == 'Deny';
 
@@ -272,59 +274,74 @@ const ResourceACLsEditor = observer((p: {
     return (
         <Flex
             flexDirection="row"
-            gap={10}
-            p={6}
-            bgColor="gray.50"
+            gap={5}
+            border="1px solid"
+            borderColor="gray.300"
+            borderRadius="md"
+            boxShadow="0px 1px 2px 0px #0000000F"
         >
-            {isCluster ? (
-                <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
-            ) : (
-                <Label
-                    text={`Selector (${resourceName} Name)`}
-                    style={{ width: '300px' }}
-                    textSuffix={
-                        <LabelTooltip nowrap left maxW={500}>
-                            Other than just simply typing the name of a resource directly,
-                            <br />
-                            you can also use wildcard and prefix selectors.
-                            <br />
-                            <br />
-                            Input <code>*</code> to match any name (wildcard).
-                            <br />
-                            Or specify a prefix selector by adding a star at the end. <br />
-                            For example <code>abc-*</code> would match any resource that starts with <code>abc-</code>.
-                        </LabelTooltip>
-                    }
-                >
-                    <>
-                        <Input value={res.selector} onChange={e => (res.selector = e.target.value)} spellCheck={false} />
-                        <span style={{ opacity: '0.5', fontSize: '10px', marginLeft: '2px' }}>{res.selector == '*' ? 'Wildcard / Any ' + resourceName : res.selector.endsWith('*') ? 'Prefix Selector' : 'Literal Selector'}</span>
-                    </>
+            <Flex
+                flexDirection="row"
+                flexGrow={1}
+                gap={10}
+                p={6}
+            >
+                {isCluster ? (
+                    <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
+                ) : (
+                    <Label
+                        text={`Selector (${resourceName} Name)`}
+                        style={{width: '300px'}}
+                        textSuffix={
+                            <LabelTooltip nowrap left maxW={500}>
+                                Other than just simply typing the name of a resource directly,
+                                <br/>
+                                you can also use wildcard and prefix selectors.
+                                <br/>
+                                <br/>
+                                Input <code>*</code> to match any name (wildcard).
+                                <br/>
+                                Or specify a prefix selector by adding a star at the end. <br/>
+                                For example <code>abc-*</code> would match any resource that starts with <code>abc-</code>.
+                            </LabelTooltip>
+                        }
+                    >
+                        <>
+                            <Input value={res.selector} onChange={e => (res.selector = e.target.value)} spellCheck={false}/>
+                            <span style={{opacity: '0.5', fontSize: '10px', marginLeft: '2px'}}>{res.selector == '*' ? 'Wildcard / Any ' + resourceName : res.selector.endsWith('*') ? 'Prefix Selector' : 'Literal Selector'}</span>
+                        </>
+                    </Label>
+                )}
+
+                <Label text="Operations" style={{width: '100%'}}>
+                    <Grid templateColumns="repeat(auto-fill, minmax(110px, 1fr))" gap={6} width="full">
+                        <Operation
+                            operation={AclOperation.All}
+                            value={res.all}
+                            onChange={p => (res.all = p)}
+                        />
+
+                        {Object.entries(res.permissions)
+                            .sort(([op1], [op2]) => op1.localeCompare(op2))
+                            .map(([operation, permission]) => (
+                                <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet}/>
+                            ))}
+                    </Grid>
                 </Label>
-            )}
-
-            <Label text="Operations" style={{width: '100%'}}>
-                <Grid templateColumns="repeat(auto-fill, minmax(110px, 1fr))" gap={6} width="full">
-                    <Operation
-                        operation={AclOperation.All}
-                        value={res.all}
-                        onChange={p => (res.all = p)}
-                    />
-
-                    {Object.entries(res.permissions)
-                        .sort(([op1], [op2]) => op1.localeCompare(op2))
-                        .map(([operation, permission]) => (
-                            <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
-                        ))}
-                </Grid>
-            </Label>
+            </Flex>
 
             {p.onDelete && (
-                <AnimatePresence>
-                    <Button variant="ghost" style={{ position: 'absolute', right: '8px', top: '8px', padding: '4px', color: 'rgb(0, 0, 0, 0.35)' }} onClick={p.onDelete}>
-                        <Icon as={HiOutlineTrash} fontSize="22px" />
+                <Flex>
+                    <Box
+                        height="80%"
+                        width="1px"
+                        bg="gray.300"
+                        alignSelf="center"
+                    />
+                    <Button variant="ghost" onClick={p.onDelete} alignSelf="center" mx={2}>
+                        <Icon as={HiOutlineTrash} fontSize="22px"/>
                     </Button>
-                </AnimatePresence>
+                </Flex>
             )}
         </Flex>
     );

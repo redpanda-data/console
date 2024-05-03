@@ -42,6 +42,7 @@ type Hooks struct {
 type ConfigConnectRPCRequest struct {
 	BaseInterceptors []connect.Interceptor
 	GRPCGatewayMux   *runtime.ServeMux
+	Services         map[string]any
 }
 
 // ConfigConnectRPCResponse configures connect services.
@@ -49,12 +50,15 @@ type ConfigConnectRPCResponse struct {
 	// Instructs OSS to use these intercptors for all connect services
 	Interceptors []connect.Interceptor
 
-	// Instructs OSS to register these services in addition to the OSS ones
-	AdditionalServices []ConnectService
-
 	// HTTPMiddlewares are middlewares that shall be used for the router
 	// that serves all ConnectRPC requests.
 	HTTPMiddlewares []func(http.Handler) http.Handler
+
+	// Original, possibly mutated, services
+	Services map[string]any
+
+	// Instructs OSS to register these services in addition to the OSS ones
+	AdditionalServices []ConnectService
 }
 
 // ConnectService is a Connect handler along with its metadata
@@ -144,6 +148,11 @@ type AuthorizationHooks interface {
 	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
 	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
 	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
+
+	// Kafka Role Hooks
+	CanListRedpandaRoles(ctx context.Context) (bool, *rest.Error)
+	CanCreateRedpandaRoles(ctx context.Context) (bool, *rest.Error)
+	CanDeleteRedpandaRoles(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
@@ -209,6 +218,7 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 	return ConfigConnectRPCResponse{
 		Interceptors:       req.BaseInterceptors,
 		AdditionalServices: []ConnectService{},
+		Services:           req.Services,
 	}
 }
 
@@ -378,4 +388,16 @@ func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
 
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
 	return nil
+}
+
+func (*defaultHooks) CanListRedpandaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanCreateRedpandaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+
+func (*defaultHooks) CanDeleteRedpandaRoles(_ context.Context) (bool, *rest.Error) {
+	return true, nil
 }

@@ -25,8 +25,9 @@ import (
 
 // Service is the abstraction for communicating with a Redpanda cluster via the admin api.
 type Service struct {
-	adminClient *adminapi.AdminAPI
-	logger      *zap.Logger
+	adminClient    *adminapi.AdminAPI
+	logger         *zap.Logger
+	clusterVersion string
 }
 
 // NewService creates a new redpanda.Service. It creates a Redpanda admin client based
@@ -81,8 +82,9 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		zap.String("cluster_version", clusterVersion))
 
 	return &Service{
-		adminClient: adminClient,
-		logger:      logger,
+		adminClient:    adminClient,
+		logger:         logger,
+		clusterVersion: clusterVersion,
 	}, nil
 }
 
@@ -248,4 +250,11 @@ func (s *Service) GetRole(ctx context.Context, roleName string) (adminapi.RoleDe
 // UpdateRoleMembership updates the role membership using Redpanda Admin API.
 func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []adminapi.RoleMember, createRole bool) (adminapi.PatchRoleResponse, error) {
 	return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove, createRole)
+}
+
+// ClusterVersion returns the Redpanda cluster version.
+func (s *Service) ClusterVersion() string {
+	trimmed := strings.ReplaceAll(s.clusterVersion, "Redpanda", "")
+	trimmed = strings.ReplaceAll(trimmed, " ", "")
+	return strings.TrimLeft(trimmed, "v")
 }

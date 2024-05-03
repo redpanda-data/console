@@ -333,12 +333,12 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 	defer s.registryMutex.RUnlock()
 	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
+		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: %w", protoTypeURL, err)
 	}
 	if messageDescriptor == nil {
 		// If this happens the user should already know that because we check the existence of all mapped types
 		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
-		return nil, fmt.Errorf("failed to find the proto type in the proto registry: message descriptor is nil")
+		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: message descriptor is nil", protoTypeURL)
 	}
 
 	return messageDescriptor, nil

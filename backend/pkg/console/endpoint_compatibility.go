@@ -13,8 +13,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/coreos/go-semver/semver"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 )
 
 // EndpointCompatibility describes what Console endpoints can be offered to the frontend,
@@ -46,10 +49,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 
 	// Required kafka requests per API endpoint
 	type endpoint struct {
-		URL            string
-		Method         string
-		Requests       []kmsg.Request
-		HasRedpandaAPI bool
+		URL                string
+		Method             string
+		Requests           []kmsg.Request
+		HasRedpandaAPI     bool
+		MinRedpandaVersion string
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -115,11 +119,24 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Requests:       []kmsg.Request{&kmsg.AlterUserSCRAMCredentialsRequest{}},
 			HasRedpandaAPI: true,
 		},
+		{
+			URL:                consolev1alpha1connect.SecurityServiceName,
+			Method:             "POST",
+			HasRedpandaAPI:     true,
+			MinRedpandaVersion: "24.1.1-rc5", // no v prefix
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
 	for _, endpointReq := range endpointRequirements {
 		endpointSupported := true
+
+		if len(endpointReq.Requests) == 0 {
+			// not a Kafka API endpoint
+			// it requires Redpanda Admin API only
+			// default it to false
+			endpointSupported = false
+		}
 
 		for _, req := range endpointReq.Requests {
 			_, isSupported := versions.LookupMaxKeyVersion(req.Key())
@@ -134,6 +151,14 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// this feature anyways.
 		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
 			endpointSupported = true
+
+			if endpointReq.MinRedpandaVersion != "" {
+				minV, _ := semver.NewVersion(endpointReq.MinRedpandaVersion)
+				rpV, _ := semver.NewVersion(s.redpandaSvc.ClusterVersion())
+				if minV != nil && rpV != nil {
+					endpointSupported = rpV.Compare(*minV) >= 0
+				}
+			}
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{

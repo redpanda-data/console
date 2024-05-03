@@ -27,7 +27,7 @@ func readFile(fileName string, fs billy.Filesystem, maxSize int64) ([]byte, erro
 	}
 	fileSize := fileInfo.Size()
 	if fileSize > maxSize {
-		return nil, fmt.Errorf("file size is larger than the expected maxSize of '%d' bytes", maxSize)
+		return nil, fmt.Errorf("file size of '%d' bytes is larger than the expected max size of '%d' bytes", fileSize, maxSize)
 	}
 
 	file, err := fs.Open(fileName)
