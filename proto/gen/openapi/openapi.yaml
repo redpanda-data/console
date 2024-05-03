@@ -114,10 +114,12 @@ components:
     ConnectCluster:
       properties:
         address:
+          description: The host address of the Kafka Connect cluster.
           type: string
         info:
           $ref: '#/components/schemas/ConnectCluster.Info'
         name:
+          description: Unique name of connect cluster. For Redpanda Cloud, the value is `redpanda`.
           type: string
         plugins:
           items:
@@ -127,26 +129,34 @@ components:
     ConnectCluster.Info:
       properties:
         commit:
+          description: The git commit ID of the connect worker source code.
           type: string
         kafka_cluster_id:
+          description: Cluster ID.
           type: string
         version:
+          description: Connect worker version.
           type: string
       type: object
     Connector:
       properties:
         state:
+          description: State of the connector instance.
           type: string
         trace:
+          description: String value of stack trace.
           type: string
         worker_id:
+          description: ID of worker that the connector is assigned to.
           type: string
       type: object
     ConnectorError:
       properties:
         content:
+          description: Detailed description of the error.
           type: string
         title:
+          description: Short description of the error.
           type: string
         type:
           $ref: '#/components/schemas/ConnectorError.Type'
@@ -155,25 +165,27 @@ components:
         abstraction, made parsing the error trace of connector or Task
       type: object
     ConnectorError.Type:
+      description: Error level.
       enum:
         - TYPE_ERROR
         - TYPE_WARNING
       type: string
     ConnectorHolisticState:
       description: |-
-        - CONNECTOR_HOLISTIC_STATE_PAUSED: PAUSED: The connector/task has been administratively paused.
-         - CONNECTOR_HOLISTIC_STATE_RESTARTING: RESTARTING: he connector/task is restarting.
-         - CONNECTOR_HOLISTIC_STATE_DESTROYED: DESTROYED: Connector is in destroyed state, regardless of any tasks.
-         - CONNECTOR_HOLISTIC_STATE_STOPPED: STOPPED: The connector/task has been stopped.
-         - CONNECTOR_HOLISTIC_STATE_UNASSIGNED: The connector/task has not yet been assigned to a worker
-        UNASSIGNED: Connector is in unassigned state.
-           Or Connector is in running state, and there are unassigned tasks.
-         - CONNECTOR_HOLISTIC_STATE_HEALTHY: HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
-         - CONNECTOR_HOLISTIC_STATE_UNHEALTHY: UNHEALTHY: Connector is failed state.
-        			Or Connector is in running state but has 0 tasks.
-        			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
-         - CONNECTOR_HOLISTIC_STATE_DEGRADED: DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
-         - CONNECTOR_HOLISTIC_STATE_UNKNOWN: UNKNOWN: The connector/task could no be determined
+        State of a connector or one of its tasks, as described in the [Kafka Connect documentation](https://kafka.apache.org/documentation.html#connect_administration). Takes into account not just the state of the connector instance itself, but also the tasks within the connector.
+
+         - CONNECTOR_HOLISTIC_STATE_PAUSED: The connector or task has been administratively paused.
+         - CONNECTOR_HOLISTIC_STATE_RESTARTING: The connector or task is restarting.
+         - CONNECTOR_HOLISTIC_STATE_DESTROYED: The connector is destroyed, regardless of any tasks.
+         - CONNECTOR_HOLISTIC_STATE_STOPPED: The connector or task has been stopped.
+         - CONNECTOR_HOLISTIC_STATE_UNASSIGNED: - The connector or task has not yet been assigned to a worker,
+        - THe connector is running, but there are unassigned tasks.
+         - CONNECTOR_HOLISTIC_STATE_HEALTHY: The connector is running, > 0 tasks, all of them in running state.
+         - CONNECTOR_HOLISTIC_STATE_UNHEALTHY: - The connector has failed,
+        - The connector is running, but has no tasks,
+        - Connector is running and has tasks, but all tasks have failed.
+         - CONNECTOR_HOLISTIC_STATE_DEGRADED: The connector is running and has tasks, and at least one task, but not all, have failed.
+         - CONNECTOR_HOLISTIC_STATE_UNKNOWN: The connector or task state could not be determined.
       enum:
         - CONNECTOR_HOLISTIC_STATE_PAUSED
         - CONNECTOR_HOLISTIC_STATE_RESTARTING
@@ -184,20 +196,13 @@ components:
         - CONNECTOR_HOLISTIC_STATE_UNHEALTHY
         - CONNECTOR_HOLISTIC_STATE_DEGRADED
         - CONNECTOR_HOLISTIC_STATE_UNKNOWN
-      title: |-
-        The following states are possible for a connector or one of its tasks
-        implement the state interface described in the Kafka connect API @see
-        https://docs.confluent.io/platform/current/connect/monitoring.html#connector-and-task-status
-        this includes holistic unified connector status that takes into account not
-        just the connector instance state, but also state of all the tasks within the
-        connector
       type: string
     ConnectorInfoStatus:
       properties:
         info:
           $ref: '#/components/schemas/ConnectorSpec'
         name:
-          title: name is the connector name
+          description: Name of connector.
           type: string
         status:
           $ref: '#/components/schemas/ConnectorStatus'
@@ -212,12 +217,17 @@ components:
           type: string
       type: object
     ConnectorSpec:
+      description: |-
+        Connector specifications as defined in the Kafka Connect
+        API. You may include this in the request body when creating a new connector.
       properties:
         config:
           additionalProperties:
             type: string
+          description: Connector configuration properties.
           type: object
         name:
+          description: Name of connector.
           type: string
         tasks:
           items:
@@ -230,29 +240,28 @@ components:
       required:
         - name
         - config
-      title: |-
-        ConectorInfo is the spec of the connector, as defined in the Kafka connect
-        API, it can be used as input of the connector creation or output of the
-        connectors
       type: object
     ConnectorStatus:
       properties:
         connector:
           $ref: '#/components/schemas/Connector'
         errors:
+          description: List of parsed connectors' and tasks' errors.
           items:
             $ref: '#/components/schemas/ConnectorError'
-          title: Errors is list of parsed connectors' and tasks' errors
           type: array
         holistic_state:
           $ref: '#/components/schemas/ConnectorHolisticState'
         name:
+          description: Name of connector.
           type: string
         tasks:
+          description: Status of connector tasks. For more information, see the [https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/monitor-connectors/#connector-tasks](Monitor Connectors) documentation.
           items:
             $ref: '#/components/schemas/TaskStatus'
           type: array
         type:
+          description: Type of connector (sink or source).
           type: string
       type: object
     CreateACLRequest:
@@ -701,6 +710,7 @@ components:
     ListConnectorTopicsResponse:
       properties:
         topics:
+          description: Topic names.
           items:
             type: string
           type: array
@@ -708,9 +718,9 @@ components:
     ListConnectorsResponse:
       properties:
         connectors:
+          description: List of connectors, where the parent key is the connector name.
           items:
             $ref: '#/components/schemas/ConnectorInfoStatus'
-          title: connectors is the list of connectors the key is the connector name
           type: array
         next_page_token:
           description: Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint.
@@ -820,7 +830,7 @@ components:
         error:
           $ref: '#/components/schemas/Status'
         host:
-          description: The host address to for this ACL.
+          description: The host address to use for this ACL.
           type: string
         operation:
           $ref: '#/components/schemas/ACL.Operation'
@@ -840,8 +850,10 @@ components:
     Options:
       properties:
         include_tasks:
+          description: Restart connector's tasks.
           type: boolean
         only_failed:
+          description: Restart only connectors that have failed.
           type: boolean
       type: object
     PartitionStatus:
@@ -1091,21 +1103,27 @@ components:
     TaskInfo:
       properties:
         connector:
+          description: Name of connector.
           type: string
         task:
+          description: The connector task ID.
           format: int32
           type: integer
       type: object
     TaskStatus:
       properties:
         id:
+          description: The connector task ID.
           format: int32
           type: integer
         state:
+          description: State of connector task.
           type: string
         trace:
+          description: String value of stack trace.
           type: string
         worker_id:
+          description: ID of worker that the task is assigned to.
           type: string
       type: object
     TransformMetadata:
@@ -1494,10 +1512,10 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}:
     get:
-      description: Get information about an available Kafka Connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+      description: Get information about an available Kafka Connect cluster.
       operationId: KafkaConnectService_GetConnectCluster
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -1542,7 +1560,7 @@ paths:
       description: List connectors managed by the Kafka Connect service.
       operationId: KafkaConnectService_ListConnectors
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -1591,7 +1609,7 @@ paths:
       description: Create a connector with the specified configuration.
       operationId: KafkaConnectService_CreateConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -1637,13 +1655,14 @@ paths:
       description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
       operationId: KafkaConnectService_DeleteConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1679,13 +1698,14 @@ paths:
       description: Get information about a connector in a specific cluster.
       operationId: KafkaConnectService_GetConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1723,13 +1743,14 @@ paths:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1757,16 +1778,17 @@ paths:
       tags:
         - KafkaConnectService
     put:
-      description: Create a new connector using the given configuration, or update the configuration for an existing connector. Returns information about the connector after the change has been made.
+      description: Update the configuration for an existing connector with the specified name, or create a new connector using the given configuration. Returns information about the connector after the change has been made.
       operationId: KafkaConnectService_UpsertConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector. If a connector with this name does not already exist, a new connector is created.
+          in: path
           name: name
           required: true
           schema:
@@ -1780,6 +1802,7 @@ paths:
               required:
                 - config
               type: object
+        description: Connector configuration property.
         required: true
         x-originalParamName: config
       responses:
@@ -1821,13 +1844,14 @@ paths:
       description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_PauseConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1861,16 +1885,17 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
-      description: Restarts a connector, triggers a connector restart, you can specify the only_failed or/and the include_tasks options.
+      description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
       operationId: KafkaConnectService_RestartConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1914,13 +1939,14 @@ paths:
       description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
       operationId: KafkaConnectService_ResumeConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1957,13 +1983,14 @@ paths:
       description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
       operationId: KafkaConnectService_GetConnectorStatus
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -1998,16 +2025,17 @@ paths:
         - KafkaConnectService
   /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
-      description: Stops a connector, but does not delete the connector. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
+      description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_StopConnector
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -2044,13 +2072,14 @@ paths:
       description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
       operationId: KafkaConnectService_ListConnectorTopics
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector.
+          in: path
           name: name
           required: true
           schema:
@@ -2088,13 +2117,14 @@ paths:
       description: Resets the set of topic names that the connector is using.
       operationId: KafkaConnectService_ResetConnectorTopics
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
           schema:
             type: string
-        - in: path
+        - description: Name of connector using the topics to be reset.
+          in: path
           name: name
           required: true
           schema:
@@ -2131,7 +2161,7 @@ paths:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListConnectSecrets
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2192,7 +2222,7 @@ paths:
       description: Create a Kafka Connect cluster secret.
       operationId: SecretService_CreateConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2255,7 +2285,7 @@ paths:
       description: Delete a Kafka Connect cluster secret.
       operationId: SecretService_DeleteConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2304,7 +2334,7 @@ paths:
       description: Get a specific Kafka Connect cluster secret.
       operationId: SecretService_GetConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2354,7 +2384,7 @@ paths:
       description: Update a Kafka Connect cluster secret.
       operationId: SecretService_UpdateConnectSecret
       parameters:
-        - description: Unique name of target connect cluster. For Redpanda self-hosted deployments, use the cluster name defined in the console's configuration file. For Redpanda Cloud, use `redpanda`.
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
           name: cluster_name
           required: true
@@ -2470,7 +2500,7 @@ paths:
       tags:
         - TopicService
     post:
-      description: Create a topic.
+      description: Create a [topic](https://docs.redpanda.com/current/deploy/deployment-option/cloud/create-topic/).
       operationId: TopicService_CreateTopic
       parameters:
         - description: |-
@@ -3196,9 +3226,14 @@ servers:
           					Example (Dedicated): https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com<br>
           					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
 tags:
-  - name: ACLService
+  - description: Manage Redpanda [access-control lists](https://docs.redpanda.com/beta/manage/security/authorization/acl/) (ACLs).
+    name: ACLService
   - name: TransformService
-  - name: KafkaConnectService
-  - name: SecretService
-  - name: TopicService
-  - name: UserService
+  - description: Manage [connectors](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/) and interact with the Kafka Connect API.
+    name: KafkaConnectService
+  - description: Manage [secrets](https://docs.redpanda.com/current/deploy/deployment-option/cloud/security/secrets/) for Redpanda Cloud.
+    name: SecretService
+  - description: Manage Redpanda Cloud topics.
+    name: TopicService
+  - description: Manage Redpanda Cloud users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#tag--ACLService).
+    name: UserService
