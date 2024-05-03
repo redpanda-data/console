@@ -79,9 +79,6 @@ type RouteHooks interface {
 	// all /api routes after all routes have been registered.
 	ConfigAPIRouterPostRegistration(router chi.Router)
 
-	// ConfigWsRouter allows you to modify the router responsible for all websocket routes
-	ConfigWsRouter(router chi.Router)
-
 	// ConfigInternalRouter allows you to modify the router responsible for all internal /admin/* routes
 	ConfigInternalRouter(router chi.Router)
 
@@ -210,7 +207,6 @@ func newDefaultHooks() *Hooks {
 // Router Hooks
 func (*defaultHooks) ConfigAPIRouter(_ chi.Router)                 {}
 func (*defaultHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
-func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
 func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
