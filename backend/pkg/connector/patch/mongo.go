@@ -61,7 +61,12 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			SetType(model.ConfigDefinitionTypePassword)
 	case keyConverter, valueConverter:
 		converterType, _, _ := strings.Cut(d.Definition.Name, ".")
-		d.SetDefaultValue("org.apache.kafka.connect.storage.StringConverter")
+		d.ClearRecommendedValuesWithMetadata().
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
+			SetDefaultValue("org.apache.kafka.connect.storage.StringConverter")
 		if strings.HasSuffix(connectorClass, "SourceConnector") {
 			d.SetDocumentation("Format of the " + converterType + " in the Redpanda topic. Use AVRO or JSON for schematic output, STRING for plain JSON or BYTES for BSON")
 		}
