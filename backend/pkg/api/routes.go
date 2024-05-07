@@ -67,6 +67,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
 		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
 	}
+
+	api.Hooks.Route.InitConnectRPCRouter(r)
+
 	r.Use(observerInterceptor.WrapHandler)
 
 	// Setup gRPC-Gateway
