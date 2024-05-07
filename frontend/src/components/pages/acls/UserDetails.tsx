@@ -116,7 +116,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                     <Heading as="h3" mt="4">Assignments</Heading>
                     <UserPermissionAssignments userName={userName} />
                     <PermissionAssignemntsDetails userName={userName} />
-                    </>
+                </>
                 }
 
             </PageContent>
@@ -314,24 +314,18 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
                         const deny = record.operations.deny;
 
                         return <Box>
-                            <Box whiteSpace="pre">
-                                {allow.length > 0
-                                    ? <>
-                                        <Text as="span" fontWeight="semibold">Allow: </Text>
-                                        <Text as="span" >{allow.join(', ')}</Text>
-                                    </>
-                                    : <Text>{' '}</Text>
-                                }
-                            </Box>
-                            <Box>
-                                {deny.length > 0
-                                    ? <>
-                                        <Text as="span" fontWeight="semibold">Deny: </Text>
-                                        <Text as="span" >{deny.join(', ')}</Text>
-                                    </>
-                                    : <Text>{' '}</Text>
-                                }
-                            </Box>
+                            {(allow.length > 0) &&
+                                <Box whiteSpace="pre">
+                                    <Text as="span" fontWeight="semibold">Allow: </Text>
+                                    <Text as="span" >{allow.join(', ')}</Text>
+                                </Box>
+                            }
+                            {(deny.length > 0) &&
+                                <Box>
+                                    <Text as="span" fontWeight="semibold">Deny: </Text>
+                                    <Text as="span" >{deny.join(', ')}</Text>
+                                </Box>
+                            }
                         </Box>
                     },
                 }

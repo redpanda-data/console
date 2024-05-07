@@ -18,7 +18,6 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
-import { QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, principalGroupsView } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
@@ -135,18 +134,8 @@ export default AclList;
 type UsersEntry = { name: string, type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PrincipalsTab = observer(() => {
 
-    const users: UsersEntry[] =
-        (api.serviceAccounts?.users ?? [])
-            .filter(u => {
-                const filter = uiSettings.aclList.usersTab.quickSearch;
-                if (!filter) return true;
-
-                try {
-                    const quickSearchRegExp = new RegExp(filter, 'i');
-                    return u.match(quickSearchRegExp);
-                } catch { return false; }
-            })
-            .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+    const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
+        .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
 
     // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
     for (const g of principalGroupsView.principalGroups)
@@ -159,7 +148,15 @@ const PrincipalsTab = observer(() => {
             if (!users.any(u => u.name == roleMember.name)) // make sure that user isn't already in the list
                 users.push({ name: roleMember.name, type: 'PRINCIPAL' });
 
+    const usersFiltered = users.filter(u => {
+        const filter = uiSettings.aclList.usersTab.quickSearch;
+        if (!filter) return true;
 
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return u.name.match(quickSearchRegExp);
+        } catch { return false; }
+    })
 
     return <Flex flexDirection="column" gap="4">
         <Box>
@@ -185,7 +182,7 @@ const PrincipalsTab = observer(() => {
             </Tooltip>
 
             <DataTable<UsersEntry>
-                data={users}
+                data={usersFiltered}
                 pagination
                 sorting
                 emptyText="No principals yet"
@@ -204,7 +201,7 @@ const PrincipalsTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
                                     {entry.name}
                                     {entry.type == 'SERVICE_ACCOUNT' && <Tag variant="outline" margin="-2px 0px -2px 8px">Redpanda user</Tag>}
                                 </ChakraLink>
@@ -247,7 +244,7 @@ const PrincipalsTab = observer(() => {
                                                     promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
                                                 }
                                             }
-                                            
+
                                             await Promise.allSettled(promises);
                                             await rolesApi.refreshRoleMembers();
                                             await api.refreshServiceAccounts(true);
@@ -318,7 +315,7 @@ const RolesTab = observer(() => {
                         cell: (ctx) => {
                             const entry = ctx.row.original;
                             return <>
-                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}>
+                                <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`} textDecoration="none">
                                     {entry.name}
                                 </ChakraLink>
                             </>
@@ -388,9 +385,13 @@ const AclsTab = observer((p: {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Access-control lists (ACLs) are the primary mechanism used by Redpanda to manage user permissions.
-            ACLs are assigned to principals, which then access resources within Redpanda.
+            Use access control lists (ACLs) to manage user permissions. ACLs are assigned principals, which then access resources within Redpanda. Learn more.
         </Box>
+
+        <Alert status="info">
+            <AlertIcon />
+            Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational hierarchies or large numbers of users.
+        </Alert>
 
         <SearchField
             width="300px"
@@ -443,9 +444,6 @@ const AclsTab = observer((p: {
                         header: 'Principal',
                         accessorKey: 'principal',
                         cell: ({ row: { original: record } }) => {
-                            const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                            const isComplete = api.serviceAccounts?.isComplete === true;
-                            const showWarning = isComplete && !userExists && !record.principalName.includes('*');
                             const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
                                 ? 'User Group'
                                 : record.principalType;
@@ -457,13 +455,6 @@ const AclsTab = observer((p: {
                                     <Flex>
                                         <Badge variant="subtle" mr="2">{principalType}</Badge>
                                         <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">{record.principalName}</Text>
-                                        {showWarning && (
-                                            <Tooltip label="User / ServiceAccount does not exist" placement="top" hasArrow>
-                                                <span style={{ marginLeft: '4px' }}>
-                                                    <QuestionIcon fill="orange" size={16} />
-                                                </span>
-                                            </Tooltip>
-                                        )}
                                     </Flex>
                                 </button>
                             );

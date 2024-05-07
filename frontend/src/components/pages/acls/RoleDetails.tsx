@@ -119,7 +119,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
                 <Flex flexDirection="column">
                     <Heading as="h3" my="4">Principals</Heading>
-                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'member' : 'members'}</Text>
+                    <Text>This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}</Text>
                     <Box my={2}>
                         <SearchField
                             width="300px"
@@ -141,7 +141,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                                 cell: (ctx) => {
                                     const entry = ctx.row.original;
                                     return <>
-                                        <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`}>
+                                        <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
                                             {entry.name}
                                         </ChakraLink>
                                     </>

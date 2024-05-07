@@ -177,7 +177,7 @@ const CreateUserModal = observer((p: {
                     description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
                     label="Username"
                     showRequiredIndicator
-                    isInvalid={!isValidUsername || userAlreadyExists}
+                    isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
                     errorText={errorText}
                 >
                     <Input
@@ -261,7 +261,7 @@ const CreateUserModal = observer((p: {
                     </FormField>
                     </>
                 }
-            
+
             </Flex>
 
             <Flex gap={4} mt={8}>
@@ -367,7 +367,10 @@ export const RoleSelector = observer((p: { state: string[] }) => {
                 options={availableRoles}
                 inputValue={searchValue}
                 onInputChange={setSearchValue}
-                placeholder="Find roles..."
+                placeholder="Select roles..."
+
+                noOptionsMessage={() => 'No roles found'}
+
 
                 // TODO: Selecting an entry triggers onChange properly.
                 //       But there is no way to prevent the component from showing no value as intended
