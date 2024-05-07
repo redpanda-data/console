@@ -90,6 +90,9 @@ type RouteHooks interface {
 	// The hook can modify the interceptors slice, i.e. adding new interceptors, removing some, re-ordering, and return it in ConnectConfig.
 	// The hook can return additional connect services that shall be mounted by OSS.
 	ConfigConnectRPC(ConfigConnectRPCRequest) ConfigConnectRPCResponse
+
+	// InitConnectRPCRouter is used to initialize the ConnectRPC router with any top level middleware.
+	InitConnectRPCRouter(router chi.Router)
 }
 
 // AuthorizationHooks include all functions which allow you to intercept the requests at various
@@ -210,6 +213,7 @@ func (*defaultHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
 func (*defaultHooks) ConfigGRPCGateway(_ *runtime.ServeMux)        {}
+func (*defaultHooks) InitConnectRPCRouter(_ chi.Router)            {}
 func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnectRPCResponse {
 	return ConfigConnectRPCResponse{
 		Interceptors:       req.BaseInterceptors,

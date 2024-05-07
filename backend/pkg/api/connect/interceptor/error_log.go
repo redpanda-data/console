@@ -111,21 +111,18 @@ func (*ErrorLogInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFu
 }
 
 func (*ErrorLogInterceptor) statusCode(protocol string, serverErr error) string {
-	grpcProtocol := "grpc"
-	grpcwebProtocol := "grpc_web"
-	connectProtocol := "connect_rpc"
 	httpProtocol := "http"
 
 	// Following the respective specifications, use integers and "status_code" for
 	// gRPC codes in contrast to strings and "error_code" for Connect codes.
 	// TODO: Check protocol case for gRPC gateway
 	switch protocol {
-	case grpcProtocol, grpcwebProtocol, httpProtocol:
+	case connect.ProtocolGRPC, connect.ProtocolGRPCWeb, httpProtocol:
 		if serverErr != nil {
 			return connect.CodeOf(serverErr).String()
 		}
 		return "ok"
-	case connectProtocol:
+	case connect.ProtocolConnect:
 		if connect.IsNotModifiedError(serverErr) {
 			// A "not modified" error is special: it's code is technically "unknown" but
 			// it would be misleading to label it as an unknown error since it's not really
