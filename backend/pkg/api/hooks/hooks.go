@@ -61,9 +61,6 @@ type RouteHooks interface {
 	// all /api routes after all routes have been registered.
 	ConfigAPIRouterPostRegistration(router chi.Router)
 
-	// ConfigWsRouter allows you to modify the router responsible for all websocket routes
-	ConfigWsRouter(router chi.Router)
-
 	// ConfigInternalRouter allows you to modify the router responsible for all internal /admin/* routes
 	ConfigInternalRouter(router chi.Router)
 
