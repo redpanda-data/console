@@ -10,7 +10,7 @@
  */
 
 import { Box, Button, Flex, FormField, Heading, HStack, Input, isSingleValue, Select, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AclPrincipalGroup, ClusterACLs, ConsumerGroupACLs, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, TopicACLs, TransactionalIdACLs, unpackPrincipalGroup } from './Models';
 import { observer, useLocalObservable } from 'mobx-react';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
@@ -34,7 +34,7 @@ type RoleFormProps = {
     initialData?: Partial<CreateRoleFormState>;
 }
 
-export const RoleForm = observer(({initialData}: RoleFormProps) => {
+export const RoleForm = observer(({ initialData }: RoleFormProps) => {
     const history = useHistory()
     const formState = useLocalObservable<CreateRoleFormState>(() => ({
         roleName: '',
@@ -51,7 +51,10 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
     if (!formState.clusterACLs)
         formState.clusterACLs = createEmptyClusterAcl();
 
-    const originalUsernames = useMemo(() => initialData?.principals?.map(({name}) => name) ?? [], [
+
+    const [isFormValid, setIsFormValid] = useState(true);
+
+    const originalUsernames = useMemo(() => initialData?.principals?.map(({ name }) => name) ?? [], [
         initialData?.principals
     ])
     const currentUsernames = formState.principals.map(({ name }) => name) ?? []
@@ -68,7 +71,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                 const principalType: AclStrResourceType = 'RedpandaRole'
 
-                if(editMode) {
+                if (editMode) {
                     await api.deleteACLs({
                         resourceType: 'Any',
                         resourceName: undefined,
@@ -160,9 +163,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     <Flex flexDirection="column" gap={4}>
                         <Heading>Topics</Heading>
                         {formState.topicACLs.map((topicACL, index) =>
-                            <ResourceACLsEditor key={index} resourceType="Topic" resource={topicACL} onDelete={() => {
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={topicACL} setIsFormValid={setIsFormValid} onDelete={() => {
                                 formState.topicACLs.splice(index, 1);
-                            }}/>
+                            }} />
                         )}
 
 
@@ -177,9 +180,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     <Flex flexDirection="column" gap={4}>
                         <Heading>Consumer Groups</Heading>
                         {formState.consumerGroupsACLs.map((acl, index) =>
-                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
                                 formState.consumerGroupsACLs.splice(index, 1);
-                            }}/>
+                            }} />
                         )}
 
                         <Box>
@@ -192,9 +195,9 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                     <Flex flexDirection="column" gap={4}>
                         <Heading>Transactional IDs</Heading>
                         {formState.transactionalIDACLs.map((acl, index) =>
-                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} onDelete={() => {
+                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
                                 formState.transactionalIDACLs.splice(index, 1);
-                            }}/>
+                            }} />
                         )}
 
                         <Box>
@@ -208,7 +211,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
                         <Heading>Cluster</Heading>
                         <HStack>
                             <Box flexGrow={1}>
-                                <ResourceACLsEditor resourceType="Topic" resource={formState.clusterACLs}/>
+                                <ResourceACLsEditor resourceType="Topic" resource={formState.clusterACLs} setIsFormValid={setIsFormValid} />
                             </Box>
                         </HStack>
                     </Flex>
@@ -223,17 +226,17 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
 
                 <Flex gap={4} mt={8}>
                     {editMode ?
-                        <Button colorScheme="brand" type="submit" loadingText="Editing..." isDisabled={roleNameAlreadyExist}>
+                        <Button colorScheme="brand" type="submit" loadingText="Editing..." isDisabled={roleNameAlreadyExist || !isFormValid}>
                             Update
                         </Button>
-                        : <Button colorScheme="brand" type="submit" loadingText="Creating..." isDisabled={roleNameAlreadyExist}>
+                        : <Button colorScheme="brand" type="submit" loadingText="Creating..." isDisabled={roleNameAlreadyExist || !isFormValid}>
                             Create
                         </Button>}
                     {editMode ? <Button variant="link" onClick={() => {
-                            appGlobal.history.push(`/security/roles/${initialData?.roleName}/details`);
-                        }}>
-                            Go back
-                        </Button> :
+                        appGlobal.history.push(`/security/roles/${initialData?.roleName}/details`);
+                    }}>
+                        Go back
+                    </Button> :
                         <Button variant="link" onClick={() => {
                             appGlobal.history.push('/security/roles/');
                         }}>
@@ -246,7 +249,7 @@ export const RoleForm = observer(({initialData}: RoleFormProps) => {
     );
 })
 
-const PrincipalSelector = observer((p: {state: RolePrincipal[]}) => {
+const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
     const [searchValue, setSearchValue] = useState<string>('');
 
     useEffect(() => {
@@ -270,8 +273,8 @@ const PrincipalSelector = observer((p: {state: RolePrincipal[]}) => {
                 creatable={true}
 
                 onChange={(val) => {
-                    if(val && isSingleValue(val) && val.value) {
-                        state.push({name: val.value, principalType: 'User'});
+                    if (val && isSingleValue(val) && val.value) {
+                        state.push({ name: val.value, principalType: 'User' });
                         setSearchValue('')
                     }
                 }}
