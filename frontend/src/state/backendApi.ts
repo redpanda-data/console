@@ -924,7 +924,11 @@ const apiStore = {
                 if (types.schemaTypes) {
                     this.schemaTypes = types.schemaTypes;
                 }
-            }, addError);
+            })
+            .catch((err) => {
+                this.schemaTypes = undefined;
+                console.warn('failed to request schema type', err)
+            });
     },
 
     refreshSchemaDetails(subjectName: string, force?: boolean) {
