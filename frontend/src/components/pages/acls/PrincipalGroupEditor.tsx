@@ -18,7 +18,7 @@ import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
-import { Box, Button, Flex, Grid, HStack, Icon, Input, InputGroup, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Grid, HStack, Icon, Input, InputGroup, InputLeftAddon, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 
@@ -32,6 +32,7 @@ export const AclPrincipalGroupEditor = observer((p: {
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(undefined as string | undefined);
+    const [isFormValid, setIsFormValid] = useState(true);
 
     const onOK = async () => {
         setError(undefined);
@@ -109,7 +110,7 @@ export const AclPrincipalGroupEditor = observer((p: {
         group.clusterAcls = createEmptyClusterAcl();
 
     return (
-        <Modal isOpen onClose={() => {}}>
+        <Modal isOpen onClose={() => { }}>
             <ModalOverlay />
             <ModalContent minW="6xl">
                 <ModalHeader>{p.type == 'create' ? 'Create ACL' : 'Edit ACL'}</ModalHeader>
@@ -205,7 +206,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Topics</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.topicAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="Topic" resource={t} onDelete={() => group.topicAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="Topic" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.topicAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.topicAcls.push(createEmptyTopicAcl())}>
                                         Add Topic ACL
@@ -217,7 +218,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Consumer Groups</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.consumerGroupAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="Group" resource={t} onDelete={() => group.consumerGroupAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="Group" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.consumerGroupAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}>
                                         Add Consumer Group ACL
@@ -229,7 +230,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Transactional ID</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.transactionalIdAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="TransactionalID" resource={t} onDelete={() => group.transactionalIdAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="TransactionalID" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.transactionalIdAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.transactionalIdAcls.push(createEmptyTransactionalIdAcl())}>
                                         Add Transactional ID ACL
@@ -239,14 +240,14 @@ export const AclPrincipalGroupEditor = observer((p: {
 
                             <Box w="full" as="section">
                                 <Text my={4} fontWeight={500}>Cluster</Text>
-                                <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls} />
+                                <ResourceACLsEditor resourceType="Cluster" setIsFormValid={setIsFormValid} resource={group.clusterAcls} />
                             </Box>
                         </VStack>
                     </VStack>
                 </ModalBody>
                 <ModalFooter gap={2}>
                     <Button variant="ghost" onClick={p.onClose}>Cancel</Button>
-                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading}>OK</Button>
+                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid}>OK</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
@@ -256,13 +257,15 @@ export const AclPrincipalGroupEditor = observer((p: {
 export const ResourceACLsEditor = observer((p: {
     resource: ResourceACLs,
     resourceType: AclStrResourceType,
-    onDelete?: () => void
+    setIsFormValid: (isValid: boolean) => void,
+    onDelete?: () => void,
 }) => {
     const res = p.resource;
     if (!res) {
         // Happens for clusterAcls?
         return null;
     }
+
     const isCluster = !('selector' in res);
     const isAllSet = res.all == 'Allow' || res.all == 'Deny';
 
@@ -270,6 +273,13 @@ export const ResourceACLsEditor = observer((p: {
     if (p.resourceType == 'Topic') resourceName = 'Topic';
     if (p.resourceType == 'Group') resourceName = 'Consumer Group';
     if (p.resourceType == 'TransactionalID') resourceName = 'Transactional ID';
+
+    const isInvalid =
+        (!isCluster && res.patternType == 'Literal' && res.selector == '')
+        || (!isCluster && res.patternType == 'Prefixed' && res.selector == '');
+
+    const errorText = 'Selector cannot be empty';
+    p.setIsFormValid(!isInvalid);
 
     return (
         <Flex
@@ -289,32 +299,49 @@ export const ResourceACLsEditor = observer((p: {
                 {isCluster ? (
                     <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
                 ) : (
-                    <Label
-                        text={`Selector (${resourceName} Name)`}
-                        style={{width: '300px'}}
-                        textSuffix={
-                            <LabelTooltip nowrap left maxW={500}>
-                                Other than just simply typing the name of a resource directly,
-                                <br/>
-                                you can also use wildcard and prefix selectors.
-                                <br/>
-                                <br/>
-                                Input <code>*</code> to match any name (wildcard).
-                                <br/>
-                                Or specify a prefix selector by adding a star at the end. <br/>
-                                For example <code>abc-*</code> would match any resource that starts with <code>abc-</code>.
-                            </LabelTooltip>
-                        }
-                    >
-                        <>
-                            <Input value={res.selector} onChange={e => (res.selector = e.target.value)} spellCheck={false}/>
-                            <span style={{opacity: '0.5', fontSize: '10px', marginLeft: '2px'}}>{res.selector == '*' ? 'Wildcard / Any ' + resourceName : res.selector.endsWith('*') ? 'Prefix Selector' : 'Literal Selector'}</span>
-                        </>
-                    </Label>
+                        <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid} width="300px">
+                            <InputGroup zIndex={1}>
+                                <InputLeftAddon padding="0px" width="124px">
+                                    <SingleSelect<'Any' | 'Literal' | 'Prefixed'>
+                                        options={[
+                                            { value: 'Any', label: 'Any' },
+                                            { value: 'Literal', label: 'Literal' },
+                                            { value: 'Prefixed', label: 'Prefixed' },
+                                        ]}
+                                        value={res.patternType as 'Any' | 'Literal' | 'Prefixed'}
+                                        onChange={e => {
+                                            res.patternType = e;
+                                            if (e == 'Any') {
+                                                res.selector = '*';
+                                            } else {
+                                                res.selector = '';
+                                            }
+                                        }}
+                                        isSearchable={false}
+                                        chakraStyles={{
+                                            container: (_p, _s) => {
+                                                return {
+                                                    flexGrow: 1,
+                                                    marginLeft: '-1px',
+                                                    marginRight: '-1px',
+                                                    cursor: 'pointer'
+                                                };
+                                            },
+                                        }}
+                                    />
+                                </InputLeftAddon>
+                                <Input
+                                    value={res.selector}
+                                    onChange={e => (res.selector = e.target.value)}
+                                    isDisabled={res.patternType == 'Any'}
+                                    spellCheck={false}
+                                />
+                            </InputGroup>
+                        </FormField>
                 )}
 
-                <Label text="Operations" style={{width: '100%'}}>
-                    <Grid templateColumns="repeat(auto-fill, minmax(110px, 1fr))" gap={6} width="full">
+                <Label text="Operations" style={{ width: '100%' }}>
+                    <Grid templateColumns="repeat(auto-fill, minmax(125px, 1fr))" gap={6} width="full">
                         <Operation
                             operation={AclOperation.All}
                             value={res.all}
@@ -324,7 +351,7 @@ export const ResourceACLsEditor = observer((p: {
                         {Object.entries(res.permissions)
                             .sort(([op1], [op2]) => op1.localeCompare(op2))
                             .map(([operation, permission]) => (
-                                <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet}/>
+                                <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
                             ))}
                     </Grid>
                 </Label>
@@ -339,7 +366,7 @@ export const ResourceACLsEditor = observer((p: {
                         alignSelf="center"
                     />
                     <Button variant="ghost" onClick={p.onDelete} alignSelf="center" mx={2}>
-                        <Icon as={HiOutlineTrash} fontSize="22px"/>
+                        <Icon as={HiOutlineTrash} fontSize="22px" />
                     </Button>
                 </Flex>
             )}
