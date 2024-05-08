@@ -9,7 +9,7 @@ test.describe('Roles', () => {
         await createRole(page, {roleName});
 
         await page.waitForURL(`/security/roles/${roleName}/details`);
-        const userInfoEl = page.locator('text=\'This role is assigned to 0 members\'');
+        const userInfoEl = page.locator('text=\'This role is assigned to 0 principals\'');
         await expect(userInfoEl).toBeVisible();  // Asserts that the element is visible
 
         await deleteRole(page, {roleName});
@@ -37,7 +37,7 @@ test.describe('Roles', () => {
         await page.getByRole('button').getByText('Create').click();
 
         await page.waitForURL(`/security/roles/${roleName}/details`);
-        const userInfoEl = page.locator('text=\'This role is assigned to 1 member\'');
+        const userInfoEl = page.locator('text=\'This role is assigned to 1 principal\'');
         await expect(userInfoEl).toBeVisible();  // Asserts that the element is visible
 
         await deleteUser(page, {username});
