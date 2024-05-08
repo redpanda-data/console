@@ -4,8 +4,8 @@ buf.build/gen/go/connectrpc/eliza/connectrpc/go v1.15.0-20230913231627-233fca715
 buf.build/gen/go/connectrpc/eliza/connectrpc/go v1.15.0-20230913231627-233fca715f49.1/go.mod h1:OZPBPnAuuFcUf5WHYm5pIXkUhIy7Pp6dzV4W2Zbc2/c=
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1 h1:bHffCjg+jKMaDnUeYjBJXHAlH659fX4N1YExnWl5wFU=
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1/go.mod h1:v0PWlly2hqVEW2IZSPlvPHELTvdHD5hBsA0+KlCfTQk=
-buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240321121335-26480f50072a.1 h1:8YzYWQuWs1a4Lt/O7aJyrw38bkJ6T63/OGCVvZgG8OQ=
-buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240321121335-26480f50072a.1/go.mod h1:NDWpeU3ohHVIKP3DhrDOtnLrmrjz8il/5SH+1/B6TNM=
+buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240508150812-e0d0fbd58f25.1 h1:X8EeeFlNCt0g77OP8kuOcdWKTTafQoW5iHD3D5SP3bY=
+buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240508150812-e0d0fbd58f25.1/go.mod h1:NDWpeU3ohHVIKP3DhrDOtnLrmrjz8il/5SH+1/B6TNM=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 connectrpc.com/connect v1.16.1 h1:rOdrK/RTI/7TVnn3JsVxt3n028MlTRwmK5Q4heSpjis=

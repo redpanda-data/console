@@ -4,7 +4,7 @@ go 1.22.2
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240401165935-b983156c5e99.1
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240321121335-26480f50072a.1
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.33.0-20240508150812-e0d0fbd58f25.1
 	connectrpc.com/connect v1.16.1
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
