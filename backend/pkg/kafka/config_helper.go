@@ -165,17 +165,19 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 					return nil, err
 				}
 
-				creds, err := cfgVal.Credentials.Retrieve(ctx)
-				if err != nil {
-					return nil, err
-				}
+				mechanism = aws.ManagedStreamingIAM(func(ctx context.Context) (aws.Auth, error) {
+					creds, err := cfgVal.Credentials.Retrieve(ctx)
+					if err != nil {
+						return aws.Auth{}, err
+					}
 
-				mechanism = aws.Auth{
-					AccessKey:    creds.AccessKeyID,
-					SecretKey:    creds.SecretAccessKey,
-					SessionToken: creds.SessionToken,
-					UserAgent:    creds.Source,
-				}.AsManagedStreamingIAMMechanism()
+					return aws.Auth{
+						AccessKey:    creds.AccessKeyID,
+						SecretKey:    creds.SecretAccessKey,
+						SessionToken: creds.SessionToken,
+						UserAgent:    creds.Source,
+					}, nil
+				})
 			}
 			opts = append(opts, kgo.SASL(mechanism))
 		}
