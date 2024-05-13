@@ -258,3 +258,29 @@ func (s *Service) ClusterVersion() string {
 	trimmed = strings.ReplaceAll(trimmed, " ", "")
 	return strings.TrimLeft(trimmed, "v")
 }
+
+// CheckFeature checks whether redpanda has the specified feature in the specified state.
+// Multiple states can be passed to check if feature state is any one of the given states.
+// For example if "active" OR "available".
+func (s *Service) CheckFeature(ctx context.Context, feature string, states []adminapi.FeatureState) (bool, error) {
+	fr, err := s.adminClient.GetFeatures(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	match := false
+	for _, f := range fr.Features {
+		if f.Name == feature {
+			for _, s := range states {
+				if s == f.State {
+					match = true
+					break
+				}
+			}
+
+			break
+		}
+	}
+
+	return match, nil
+}
