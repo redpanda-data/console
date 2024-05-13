@@ -95,7 +95,11 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
         const hasChanges = addedRoles.length > 0 || removedRoles.length > 0
 
         const onSave = async () => {
-            if (Features.rolesApi) {
+            if (!Features.rolesApi)
+                return;
+            try {
+                this.isSaving = true;
+
                 const promises: Promise<UpdateRoleMembershipResponse>[] = [];
 
                 // Remove user from "removedRoles"
@@ -110,13 +114,23 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
                 // Update roles and memberships so that the change is reflected in the ui
                 await rolesApi.refreshRoles();
                 await rolesApi.refreshRoleMembers();
-            }
 
-            toast({
-                status: 'success',
-                title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`
-            });
-            appGlobal.history.push(`/security/users/${userName}/details`);
+                this.isSaving = false;
+
+                toast({
+                    status: 'success',
+                    title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`
+                });
+                appGlobal.history.push(`/security/users/${userName}/details`);
+            } catch (err) {
+                toast({
+                    status: 'error', duration: null, isClosable: true,
+                    title: `Failed to update user ${userName}`,
+                    description: String(err),
+                });
+            } finally {
+                this.isSaving = false;
+            }
         };
 
         return <>
@@ -133,7 +147,7 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
                     {Features.rolesApi && <>
                         <Heading as="h3" mt="4">Assignments</Heading>
                         <RoleSelector state={this.selectedRoles} />
-                        </>
+                    </>
                     }
 
                     <Flex gap={4} mt={8}>
