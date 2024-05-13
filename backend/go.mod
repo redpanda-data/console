@@ -13,7 +13,6 @@ require (
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/cloudhut/common v0.10.0
 	github.com/cloudhut/connect-client v0.0.0-20240122153328-02a3103805d8
-	github.com/coreos/go-semver v0.3.1
 	github.com/docker/go-connections v0.5.0
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204
 	github.com/getkin/kin-openapi v0.124.0
