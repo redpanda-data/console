@@ -222,6 +222,10 @@ const defaultUiSettings = {
         sorting: [] as SortingState,
     },
 
+    pipelinesList: {
+        quickSearch: ''
+    },
+
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',

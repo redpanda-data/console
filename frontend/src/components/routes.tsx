@@ -47,6 +47,8 @@ import UserEditPage from './pages/acls/UserEdit';
 import RoleCreatePage from './pages/acls/RoleCreate';
 import RoleDetailsPage from './pages/acls/RoleDetails';
 import RoleEditPage from './pages/acls/RoleEditPage';
+import RpConnectPipelinesList from './pages/rp-connect/Pipelines.List';
+import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 
 //
 //	Route Types
@@ -275,6 +277,9 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
+
+    MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
+    MakeRoute<{ connectorName: string }>('/rp-connect/:connectorName', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,

@@ -120,6 +120,7 @@ import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../pro
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
+import { ConnectPipeline } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1638,6 +1639,42 @@ export const rolesApi = observable({
             create,
         });
     },
+});
+
+export const pipelinesApi = observable({
+    pipelines: undefined as undefined | ConnectPipeline[],
+
+    async refreshPipelines(_force: boolean): Promise<void> {
+
+        // todo: caching by default, if force=true, ignore time limit on cache
+
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        const pipelines = [];
+
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
+
+            pipelines.push(...res.pipelines);
+
+            if (!res.nextPageToken || res.nextPageToken.length == 0)
+                break;
+            nextPageToken = res.nextPageToken;
+        }
+
+        this.pipelines = pipelines;
+    },
+
+    // async refreshPipelineDetails(name: string): Promise<void> {
+    //     const client = appConfig.pipelinesClient;
+    //     if (!client) throw new Error('pipelines client is not initialized');
+    //
+    //     const pipelineDetails = await client.getConnectPipeline({ name });
+    //     pipelineDetails.pipeline?.config
+    // },
+
 });
 
 
