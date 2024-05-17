@@ -193,7 +193,11 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     const config = setConfig(setupArgs);
 
     // Tell monaco editor where to load dependencies from
-    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
+    loader.config({
+        paths: {
+            vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
+        }
+    });
 
     // Configure MobX
     configure({

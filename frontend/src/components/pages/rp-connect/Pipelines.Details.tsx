@@ -14,21 +14,36 @@ import Section from '../../misc/Section';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
-import { pipelinesApi } from '../../../state/backendApi';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
-import { Link } from 'react-router-dom';
-import { Button } from '@redpanda-data/ui';
+import { Box, Button } from '@redpanda-data/ui';
 import { ClusterConnectorInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 
+
+const defaultConfig = `
+input:
+  stdin: {}
+
+pipeline:
+  processors:
+    - mapping: root = content().uppercase()
+
+output:
+  stdout: {}
+
+hereIsAnInvalidProperty:
+    - "that should"
+    - "be highlighted"
+    - "as wrong"
+`;
 
 @observer
 class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }> {
 
     @observable placeholder = 5;
-    @observable filteredResults: ClusterConnectorInfo[] = [];
+    @observable editorContent = defaultConfig;
 
     constructor(p: any) {
         super(p);
@@ -45,8 +60,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
-    refreshData(force: boolean) {
-        pipelinesApi.refreshPipelines(force);
+    refreshData(_force: boolean) {
+        // pipelinesApi.refreshPipelines(force);
     }
 
     isFilterMatch(filter: string, item: ClusterConnectorInfo): boolean {
@@ -60,7 +75,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
     }
 
     render() {
-        if (!pipelinesApi.pipelines) return DefaultSkeleton;
+        // if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
         return (
             <PageContent>
@@ -69,13 +84,25 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
 
                     <div>
                         <div style={{ display: 'flex', marginBottom: '.5em' }}>
-                            <Link to={'/connect-clusters/create-connector'}><Button variant="solid" colorScheme="brand" isDisabled>Create connector</Button></Link>
+                            <Button variant="solid" colorScheme="brand" isDisabled>Deploy</Button>
                         </div>
 
                         {/* deploy button */}
 
                         {/* yaml editor */}
+                        <Box height="400px">
+                            <PipelinesYamlEditor
+                                defaultPath="config.yaml"
+                                path="config.yaml"
+                                value={this.editorContent}
+                                onChange={e => {
+                                    if (e)
+                                        this.editorContent = e;
+                                }}
+                                language="yaml"
+                            />
 
+                        </Box>
 
                     </div>
                 </Section>

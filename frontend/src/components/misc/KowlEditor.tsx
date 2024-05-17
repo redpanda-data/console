@@ -43,7 +43,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
         alwaysConsumeMouseWheel: false,
     },
     fontSize: 12,
-    occurrencesHighlight: false,
+    occurrencesHighlight: 'off',
     foldingHighlight: false,
     selectionHighlight: false,
     renderLineHighlight: 'all',
