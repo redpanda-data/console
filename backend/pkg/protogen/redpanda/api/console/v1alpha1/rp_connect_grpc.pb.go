@@ -20,18 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RedpandaConnectService_ListConnectPipelines_FullMethodName = "/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines"
-	RedpandaConnectService_GetConnectPipeline_FullMethodName   = "/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline"
+	RedpandaConnectService_LintConfig_FullMethodName = "/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig"
 )
 
 // RedpandaConnectServiceClient is the client API for RedpandaConnectService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RedpandaConnectServiceClient interface {
-	// ListConnectPipelines lists all the connect pipelines based on optional filter.
-	ListConnectPipelines(ctx context.Context, in *ListConnectPipelinesRequest, opts ...grpc.CallOption) (*ListConnectPipelinesResponse, error)
-	// GetConnectPipeline retrieves exactly one pipeline by its name.
-	GetConnectPipeline(ctx context.Context, in *GetConnectPipelineRequest, opts ...grpc.CallOption) (*GetConnectPipelineResponse, error)
+	// LintConfig lists the given YAML config and returns all linting issues.
+	LintConfig(ctx context.Context, in *LintConfigRequest, opts ...grpc.CallOption) (*LintConfigResponse, error)
 }
 
 type redpandaConnectServiceClient struct {
@@ -42,18 +39,9 @@ func NewRedpandaConnectServiceClient(cc grpc.ClientConnInterface) RedpandaConnec
 	return &redpandaConnectServiceClient{cc}
 }
 
-func (c *redpandaConnectServiceClient) ListConnectPipelines(ctx context.Context, in *ListConnectPipelinesRequest, opts ...grpc.CallOption) (*ListConnectPipelinesResponse, error) {
-	out := new(ListConnectPipelinesResponse)
-	err := c.cc.Invoke(ctx, RedpandaConnectService_ListConnectPipelines_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *redpandaConnectServiceClient) GetConnectPipeline(ctx context.Context, in *GetConnectPipelineRequest, opts ...grpc.CallOption) (*GetConnectPipelineResponse, error) {
-	out := new(GetConnectPipelineResponse)
-	err := c.cc.Invoke(ctx, RedpandaConnectService_GetConnectPipeline_FullMethodName, in, out, opts...)
+func (c *redpandaConnectServiceClient) LintConfig(ctx context.Context, in *LintConfigRequest, opts ...grpc.CallOption) (*LintConfigResponse, error) {
+	out := new(LintConfigResponse)
+	err := c.cc.Invoke(ctx, RedpandaConnectService_LintConfig_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +52,8 @@ func (c *redpandaConnectServiceClient) GetConnectPipeline(ctx context.Context, i
 // All implementations must embed UnimplementedRedpandaConnectServiceServer
 // for forward compatibility
 type RedpandaConnectServiceServer interface {
-	// ListConnectPipelines lists all the connect pipelines based on optional filter.
-	ListConnectPipelines(context.Context, *ListConnectPipelinesRequest) (*ListConnectPipelinesResponse, error)
-	// GetConnectPipeline retrieves exactly one pipeline by its name.
-	GetConnectPipeline(context.Context, *GetConnectPipelineRequest) (*GetConnectPipelineResponse, error)
+	// LintConfig lists the given YAML config and returns all linting issues.
+	LintConfig(context.Context, *LintConfigRequest) (*LintConfigResponse, error)
 	mustEmbedUnimplementedRedpandaConnectServiceServer()
 }
 
@@ -75,11 +61,8 @@ type RedpandaConnectServiceServer interface {
 type UnimplementedRedpandaConnectServiceServer struct {
 }
 
-func (UnimplementedRedpandaConnectServiceServer) ListConnectPipelines(context.Context, *ListConnectPipelinesRequest) (*ListConnectPipelinesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListConnectPipelines not implemented")
-}
-func (UnimplementedRedpandaConnectServiceServer) GetConnectPipeline(context.Context, *GetConnectPipelineRequest) (*GetConnectPipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConnectPipeline not implemented")
+func (UnimplementedRedpandaConnectServiceServer) LintConfig(context.Context, *LintConfigRequest) (*LintConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LintConfig not implemented")
 }
 func (UnimplementedRedpandaConnectServiceServer) mustEmbedUnimplementedRedpandaConnectServiceServer() {
 }
@@ -95,38 +78,20 @@ func RegisterRedpandaConnectServiceServer(s grpc.ServiceRegistrar, srv RedpandaC
 	s.RegisterService(&RedpandaConnectService_ServiceDesc, srv)
 }
 
-func _RedpandaConnectService_ListConnectPipelines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConnectPipelinesRequest)
+func _RedpandaConnectService_LintConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LintConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RedpandaConnectServiceServer).ListConnectPipelines(ctx, in)
+		return srv.(RedpandaConnectServiceServer).LintConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RedpandaConnectService_ListConnectPipelines_FullMethodName,
+		FullMethod: RedpandaConnectService_LintConfig_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RedpandaConnectServiceServer).ListConnectPipelines(ctx, req.(*ListConnectPipelinesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RedpandaConnectService_GetConnectPipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConnectPipelineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RedpandaConnectServiceServer).GetConnectPipeline(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RedpandaConnectService_GetConnectPipeline_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RedpandaConnectServiceServer).GetConnectPipeline(ctx, req.(*GetConnectPipelineRequest))
+		return srv.(RedpandaConnectServiceServer).LintConfig(ctx, req.(*LintConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -139,12 +104,8 @@ var RedpandaConnectService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RedpandaConnectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListConnectPipelines",
-			Handler:    _RedpandaConnectService_ListConnectPipelines_Handler,
-		},
-		{
-			MethodName: "GetConnectPipeline",
-			Handler:    _RedpandaConnectService_GetConnectPipeline_Handler,
+			MethodName: "LintConfig",
+			Handler:    _RedpandaConnectService_LintConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

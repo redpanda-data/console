@@ -18,25 +18,19 @@ import (
 // service.
 type RedpandaConnectServiceGatewayServer struct {
 	v1alpha1.UnimplementedRedpandaConnectServiceServer
-	listConnectPipelines connect_gateway.UnaryHandler[v1alpha1.ListConnectPipelinesRequest, v1alpha1.ListConnectPipelinesResponse]
-	getConnectPipeline   connect_gateway.UnaryHandler[v1alpha1.GetConnectPipelineRequest, v1alpha1.GetConnectPipelineResponse]
+	lintConfig connect_gateway.UnaryHandler[v1alpha1.LintConfigRequest, v1alpha1.LintConfigResponse]
 }
 
 // NewRedpandaConnectServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // RedpandaConnectService service.
 func NewRedpandaConnectServiceGatewayServer(svc RedpandaConnectServiceHandler, opts ...connect_gateway.HandlerOption) *RedpandaConnectServiceGatewayServer {
 	return &RedpandaConnectServiceGatewayServer{
-		listConnectPipelines: connect_gateway.NewUnaryHandler(RedpandaConnectServiceListConnectPipelinesProcedure, svc.ListConnectPipelines, opts...),
-		getConnectPipeline:   connect_gateway.NewUnaryHandler(RedpandaConnectServiceGetConnectPipelineProcedure, svc.GetConnectPipeline, opts...),
+		lintConfig: connect_gateway.NewUnaryHandler(RedpandaConnectServiceLintConfigProcedure, svc.LintConfig, opts...),
 	}
 }
 
-func (s *RedpandaConnectServiceGatewayServer) ListConnectPipelines(ctx context.Context, req *v1alpha1.ListConnectPipelinesRequest) (*v1alpha1.ListConnectPipelinesResponse, error) {
-	return s.listConnectPipelines(ctx, req)
-}
-
-func (s *RedpandaConnectServiceGatewayServer) GetConnectPipeline(ctx context.Context, req *v1alpha1.GetConnectPipelineRequest) (*v1alpha1.GetConnectPipelineResponse, error) {
-	return s.getConnectPipeline(ctx, req)
+func (s *RedpandaConnectServiceGatewayServer) LintConfig(ctx context.Context, req *v1alpha1.LintConfigRequest) (*v1alpha1.LintConfigResponse, error) {
+	return s.lintConfig(ctx, req)
 }
 
 // RegisterRedpandaConnectServiceHandlerGatewayServer registers the Connect handlers for the

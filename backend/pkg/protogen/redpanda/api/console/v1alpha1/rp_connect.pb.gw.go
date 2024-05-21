@@ -31,8 +31,8 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_RedpandaConnectService_ListConnectPipelines_0(ctx context.Context, marshaler runtime.Marshaler, client RedpandaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectPipelinesRequest
+func request_RedpandaConnectService_LintConfig_0(ctx context.Context, marshaler runtime.Marshaler, client RedpandaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq LintConfigRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -43,13 +43,13 @@ func request_RedpandaConnectService_ListConnectPipelines_0(ctx context.Context, 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListConnectPipelines(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.LintConfig(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RedpandaConnectService_ListConnectPipelines_0(ctx context.Context, marshaler runtime.Marshaler, server RedpandaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListConnectPipelinesRequest
+func local_request_RedpandaConnectService_LintConfig_0(ctx context.Context, marshaler runtime.Marshaler, server RedpandaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq LintConfigRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -60,41 +60,7 @@ func local_request_RedpandaConnectService_ListConnectPipelines_0(ctx context.Con
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListConnectPipelines(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_RedpandaConnectService_GetConnectPipeline_0(ctx context.Context, marshaler runtime.Marshaler, client RedpandaConnectServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectPipelineRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := client.GetConnectPipeline(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_RedpandaConnectService_GetConnectPipeline_0(ctx context.Context, marshaler runtime.Marshaler, server RedpandaConnectServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetConnectPipelineRequest
-	var metadata runtime.ServerMetadata
-
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	msg, err := server.GetConnectPipeline(ctx, &protoReq)
+	msg, err := server.LintConfig(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -105,7 +71,7 @@ func local_request_RedpandaConnectService_GetConnectPipeline_0(ctx context.Conte
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterRedpandaConnectServiceHandlerFromEndpoint instead.
 func RegisterRedpandaConnectServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server RedpandaConnectServiceServer) error {
 
-	mux.Handle("POST", pattern_RedpandaConnectService_ListConnectPipelines_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RedpandaConnectService_LintConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -113,12 +79,12 @@ func RegisterRedpandaConnectServiceHandlerServer(ctx context.Context, mux *runti
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RedpandaConnectService_ListConnectPipelines_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RedpandaConnectService_LintConfig_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -126,32 +92,7 @@ func RegisterRedpandaConnectServiceHandlerServer(ctx context.Context, mux *runti
 			return
 		}
 
-		forward_RedpandaConnectService_ListConnectPipelines_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("POST", pattern_RedpandaConnectService_GetConnectPipeline_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_RedpandaConnectService_GetConnectPipeline_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_RedpandaConnectService_GetConnectPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RedpandaConnectService_LintConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -196,47 +137,25 @@ func RegisterRedpandaConnectServiceHandler(ctx context.Context, mux *runtime.Ser
 // "RedpandaConnectServiceClient" to call the correct interceptors.
 func RegisterRedpandaConnectServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client RedpandaConnectServiceClient) error {
 
-	mux.Handle("POST", pattern_RedpandaConnectService_ListConnectPipelines_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RedpandaConnectService_LintConfig_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RedpandaConnectService_ListConnectPipelines_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RedpandaConnectService_LintConfig_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RedpandaConnectService_ListConnectPipelines_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("POST", pattern_RedpandaConnectService_GetConnectPipeline_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_RedpandaConnectService_GetConnectPipeline_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_RedpandaConnectService_GetConnectPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RedpandaConnectService_LintConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -244,13 +163,9 @@ func RegisterRedpandaConnectServiceHandlerClient(ctx context.Context, mux *runti
 }
 
 var (
-	pattern_RedpandaConnectService_ListConnectPipelines_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.RedpandaConnectService", "ListConnectPipelines"}, ""))
-
-	pattern_RedpandaConnectService_GetConnectPipeline_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.RedpandaConnectService", "GetConnectPipeline"}, ""))
+	pattern_RedpandaConnectService_LintConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.RedpandaConnectService", "LintConfig"}, ""))
 )
 
 var (
-	forward_RedpandaConnectService_ListConnectPipelines_0 = runtime.ForwardResponseMessage
-
-	forward_RedpandaConnectService_GetConnectPipeline_0 = runtime.ForwardResponseMessage
+	forward_RedpandaConnectService_LintConfig_0 = runtime.ForwardResponseMessage
 )

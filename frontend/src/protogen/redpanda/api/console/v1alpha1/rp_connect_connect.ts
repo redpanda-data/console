@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetConnectPipelineRequest, GetConnectPipelineResponse, ListConnectPipelinesRequest, ListConnectPipelinesResponse } from "./rp_connect_pb";
+import { LintConfigRequest, LintConfigResponse } from "./rp_connect_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -13,25 +13,14 @@ export const RedpandaConnectService = {
   typeName: "redpanda.api.console.v1alpha1.RedpandaConnectService",
   methods: {
     /**
-     * ListConnectPipelines lists all the connect pipelines based on optional filter.
+     * LintConfig lists the given YAML config and returns all linting issues.
      *
-     * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.ListConnectPipelines
+     * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.LintConfig
      */
-    listConnectPipelines: {
-      name: "ListConnectPipelines",
-      I: ListConnectPipelinesRequest,
-      O: ListConnectPipelinesResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * GetConnectPipeline retrieves exactly one pipeline by its name.
-     *
-     * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.GetConnectPipeline
-     */
-    getConnectPipeline: {
-      name: "GetConnectPipeline",
-      I: GetConnectPipelineRequest,
-      O: GetConnectPipelineResponse,
+    lintConfig: {
+      name: "LintConfig",
+      I: LintConfigRequest,
+      O: LintConfigResponse,
       kind: MethodKind.Unary,
     },
   }

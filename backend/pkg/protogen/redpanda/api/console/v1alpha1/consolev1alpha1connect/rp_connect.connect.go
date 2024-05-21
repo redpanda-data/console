@@ -35,28 +35,22 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RedpandaConnectServiceListConnectPipelinesProcedure is the fully-qualified name of the
-	// RedpandaConnectService's ListConnectPipelines RPC.
-	RedpandaConnectServiceListConnectPipelinesProcedure = "/redpanda.api.console.v1alpha1.RedpandaConnectService/ListConnectPipelines"
-	// RedpandaConnectServiceGetConnectPipelineProcedure is the fully-qualified name of the
-	// RedpandaConnectService's GetConnectPipeline RPC.
-	RedpandaConnectServiceGetConnectPipelineProcedure = "/redpanda.api.console.v1alpha1.RedpandaConnectService/GetConnectPipeline"
+	// RedpandaConnectServiceLintConfigProcedure is the fully-qualified name of the
+	// RedpandaConnectService's LintConfig RPC.
+	RedpandaConnectServiceLintConfigProcedure = "/redpanda.api.console.v1alpha1.RedpandaConnectService/LintConfig"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	redpandaConnectServiceServiceDescriptor                    = v1alpha1.File_redpanda_api_console_v1alpha1_rp_connect_proto.Services().ByName("RedpandaConnectService")
-	redpandaConnectServiceListConnectPipelinesMethodDescriptor = redpandaConnectServiceServiceDescriptor.Methods().ByName("ListConnectPipelines")
-	redpandaConnectServiceGetConnectPipelineMethodDescriptor   = redpandaConnectServiceServiceDescriptor.Methods().ByName("GetConnectPipeline")
+	redpandaConnectServiceServiceDescriptor          = v1alpha1.File_redpanda_api_console_v1alpha1_rp_connect_proto.Services().ByName("RedpandaConnectService")
+	redpandaConnectServiceLintConfigMethodDescriptor = redpandaConnectServiceServiceDescriptor.Methods().ByName("LintConfig")
 )
 
 // RedpandaConnectServiceClient is a client for the
 // redpanda.api.console.v1alpha1.RedpandaConnectService service.
 type RedpandaConnectServiceClient interface {
-	// ListConnectPipelines lists all the connect pipelines based on optional filter.
-	ListConnectPipelines(context.Context, *connect.Request[v1alpha1.ListConnectPipelinesRequest]) (*connect.Response[v1alpha1.ListConnectPipelinesResponse], error)
-	// GetConnectPipeline retrieves exactly one pipeline by its name.
-	GetConnectPipeline(context.Context, *connect.Request[v1alpha1.GetConnectPipelineRequest]) (*connect.Response[v1alpha1.GetConnectPipelineResponse], error)
+	// LintConfig lists the given YAML config and returns all linting issues.
+	LintConfig(context.Context, *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error)
 }
 
 // NewRedpandaConnectServiceClient constructs a client for the
@@ -70,16 +64,10 @@ type RedpandaConnectServiceClient interface {
 func NewRedpandaConnectServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RedpandaConnectServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &redpandaConnectServiceClient{
-		listConnectPipelines: connect.NewClient[v1alpha1.ListConnectPipelinesRequest, v1alpha1.ListConnectPipelinesResponse](
+		lintConfig: connect.NewClient[v1alpha1.LintConfigRequest, v1alpha1.LintConfigResponse](
 			httpClient,
-			baseURL+RedpandaConnectServiceListConnectPipelinesProcedure,
-			connect.WithSchema(redpandaConnectServiceListConnectPipelinesMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
-		getConnectPipeline: connect.NewClient[v1alpha1.GetConnectPipelineRequest, v1alpha1.GetConnectPipelineResponse](
-			httpClient,
-			baseURL+RedpandaConnectServiceGetConnectPipelineProcedure,
-			connect.WithSchema(redpandaConnectServiceGetConnectPipelineMethodDescriptor),
+			baseURL+RedpandaConnectServiceLintConfigProcedure,
+			connect.WithSchema(redpandaConnectServiceLintConfigMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -87,28 +75,19 @@ func NewRedpandaConnectServiceClient(httpClient connect.HTTPClient, baseURL stri
 
 // redpandaConnectServiceClient implements RedpandaConnectServiceClient.
 type redpandaConnectServiceClient struct {
-	listConnectPipelines *connect.Client[v1alpha1.ListConnectPipelinesRequest, v1alpha1.ListConnectPipelinesResponse]
-	getConnectPipeline   *connect.Client[v1alpha1.GetConnectPipelineRequest, v1alpha1.GetConnectPipelineResponse]
+	lintConfig *connect.Client[v1alpha1.LintConfigRequest, v1alpha1.LintConfigResponse]
 }
 
-// ListConnectPipelines calls
-// redpanda.api.console.v1alpha1.RedpandaConnectService.ListConnectPipelines.
-func (c *redpandaConnectServiceClient) ListConnectPipelines(ctx context.Context, req *connect.Request[v1alpha1.ListConnectPipelinesRequest]) (*connect.Response[v1alpha1.ListConnectPipelinesResponse], error) {
-	return c.listConnectPipelines.CallUnary(ctx, req)
-}
-
-// GetConnectPipeline calls redpanda.api.console.v1alpha1.RedpandaConnectService.GetConnectPipeline.
-func (c *redpandaConnectServiceClient) GetConnectPipeline(ctx context.Context, req *connect.Request[v1alpha1.GetConnectPipelineRequest]) (*connect.Response[v1alpha1.GetConnectPipelineResponse], error) {
-	return c.getConnectPipeline.CallUnary(ctx, req)
+// LintConfig calls redpanda.api.console.v1alpha1.RedpandaConnectService.LintConfig.
+func (c *redpandaConnectServiceClient) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error) {
+	return c.lintConfig.CallUnary(ctx, req)
 }
 
 // RedpandaConnectServiceHandler is an implementation of the
 // redpanda.api.console.v1alpha1.RedpandaConnectService service.
 type RedpandaConnectServiceHandler interface {
-	// ListConnectPipelines lists all the connect pipelines based on optional filter.
-	ListConnectPipelines(context.Context, *connect.Request[v1alpha1.ListConnectPipelinesRequest]) (*connect.Response[v1alpha1.ListConnectPipelinesResponse], error)
-	// GetConnectPipeline retrieves exactly one pipeline by its name.
-	GetConnectPipeline(context.Context, *connect.Request[v1alpha1.GetConnectPipelineRequest]) (*connect.Response[v1alpha1.GetConnectPipelineResponse], error)
+	// LintConfig lists the given YAML config and returns all linting issues.
+	LintConfig(context.Context, *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error)
 }
 
 // NewRedpandaConnectServiceHandler builds an HTTP handler from the service implementation. It
@@ -117,24 +96,16 @@ type RedpandaConnectServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewRedpandaConnectServiceHandler(svc RedpandaConnectServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	redpandaConnectServiceListConnectPipelinesHandler := connect.NewUnaryHandler(
-		RedpandaConnectServiceListConnectPipelinesProcedure,
-		svc.ListConnectPipelines,
-		connect.WithSchema(redpandaConnectServiceListConnectPipelinesMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
-	redpandaConnectServiceGetConnectPipelineHandler := connect.NewUnaryHandler(
-		RedpandaConnectServiceGetConnectPipelineProcedure,
-		svc.GetConnectPipeline,
-		connect.WithSchema(redpandaConnectServiceGetConnectPipelineMethodDescriptor),
+	redpandaConnectServiceLintConfigHandler := connect.NewUnaryHandler(
+		RedpandaConnectServiceLintConfigProcedure,
+		svc.LintConfig,
+		connect.WithSchema(redpandaConnectServiceLintConfigMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.console.v1alpha1.RedpandaConnectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RedpandaConnectServiceListConnectPipelinesProcedure:
-			redpandaConnectServiceListConnectPipelinesHandler.ServeHTTP(w, r)
-		case RedpandaConnectServiceGetConnectPipelineProcedure:
-			redpandaConnectServiceGetConnectPipelineHandler.ServeHTTP(w, r)
+		case RedpandaConnectServiceLintConfigProcedure:
+			redpandaConnectServiceLintConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -144,10 +115,6 @@ func NewRedpandaConnectServiceHandler(svc RedpandaConnectServiceHandler, opts ..
 // UnimplementedRedpandaConnectServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRedpandaConnectServiceHandler struct{}
 
-func (UnimplementedRedpandaConnectServiceHandler) ListConnectPipelines(context.Context, *connect.Request[v1alpha1.ListConnectPipelinesRequest]) (*connect.Response[v1alpha1.ListConnectPipelinesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.RedpandaConnectService.ListConnectPipelines is not implemented"))
-}
-
-func (UnimplementedRedpandaConnectServiceHandler) GetConnectPipeline(context.Context, *connect.Request[v1alpha1.GetConnectPipelineRequest]) (*connect.Response[v1alpha1.GetConnectPipelineResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.RedpandaConnectService.GetConnectPipeline is not implemented"))
+func (UnimplementedRedpandaConnectServiceHandler) LintConfig(context.Context, *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.RedpandaConnectService.LintConfig is not implemented"))
 }

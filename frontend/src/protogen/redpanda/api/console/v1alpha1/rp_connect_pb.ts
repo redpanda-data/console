@@ -7,337 +7,133 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * ListConnectPipelinesRequest is the request for listing all Redpanda connect pipelines.
- *
- * @generated from message redpanda.api.console.v1alpha1.ListConnectPipelinesRequest
- */
-export class ListConnectPipelinesRequest extends Message<ListConnectPipelinesRequest> {
-  /**
-   * Optional filter.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.ListConnectPipelinesRequest.Filter filter = 1;
-   */
-  filter?: ListConnectPipelinesRequest_Filter;
-
-  /**
-   * Page size.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize = 0;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken = "";
-
-  constructor(data?: PartialMessage<ListConnectPipelinesRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListConnectPipelinesRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filter", kind: "message", T: ListConnectPipelinesRequest_Filter, opt: true },
-    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectPipelinesRequest {
-    return new ListConnectPipelinesRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectPipelinesRequest {
-    return new ListConnectPipelinesRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectPipelinesRequest {
-    return new ListConnectPipelinesRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListConnectPipelinesRequest | PlainMessage<ListConnectPipelinesRequest> | undefined, b: ListConnectPipelinesRequest | PlainMessage<ListConnectPipelinesRequest> | undefined): boolean {
-    return proto3.util.equals(ListConnectPipelinesRequest, a, b);
-  }
-}
-
-/**
- * Filter options.
- *
- * @generated from message redpanda.api.console.v1alpha1.ListConnectPipelinesRequest.Filter
- */
-export class ListConnectPipelinesRequest_Filter extends Message<ListConnectPipelinesRequest_Filter> {
-  /**
-   * Filter pipelines that start with the provided string in their name.
-   *
-   * @generated from field: string name_prefix = 1;
-   */
-  namePrefix = "";
-
-  /**
-   * Filter pipelines that contain the provided string in their name.
-   *
-   * @generated from field: string name_contains = 2;
-   */
-  nameContains = "";
-
-  constructor(data?: PartialMessage<ListConnectPipelinesRequest_Filter>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListConnectPipelinesRequest.Filter";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectPipelinesRequest_Filter {
-    return new ListConnectPipelinesRequest_Filter().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectPipelinesRequest_Filter {
-    return new ListConnectPipelinesRequest_Filter().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectPipelinesRequest_Filter {
-    return new ListConnectPipelinesRequest_Filter().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListConnectPipelinesRequest_Filter | PlainMessage<ListConnectPipelinesRequest_Filter> | undefined, b: ListConnectPipelinesRequest_Filter | PlainMessage<ListConnectPipelinesRequest_Filter> | undefined): boolean {
-    return proto3.util.equals(ListConnectPipelinesRequest_Filter, a, b);
-  }
-}
-
-/**
- * @generated from message redpanda.api.console.v1alpha1.ConnectPipeline
- */
-export class ConnectPipeline extends Message<ConnectPipeline> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: string config = 2;
-   */
-  config = "";
-
-  /**
-   * @generated from field: redpanda.api.console.v1alpha1.ConnectPipeline.State state = 3;
-   */
-  state = ConnectPipeline_State.UNSPECIFIED;
-
-  /**
-   * @generated from field: string input = 4;
-   */
-  input = "";
-
-  /**
-   * @generated from field: string output = 5;
-   */
-  output = "";
-
-  constructor(data?: PartialMessage<ConnectPipeline>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ConnectPipeline";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "config", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "state", kind: "enum", T: proto3.getEnumType(ConnectPipeline_State) },
-    { no: 4, name: "input", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectPipeline {
-    return new ConnectPipeline().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectPipeline {
-    return new ConnectPipeline().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectPipeline {
-    return new ConnectPipeline().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ConnectPipeline | PlainMessage<ConnectPipeline> | undefined, b: ConnectPipeline | PlainMessage<ConnectPipeline> | undefined): boolean {
-    return proto3.util.equals(ConnectPipeline, a, b);
-  }
-}
-
-/**
- * @generated from enum redpanda.api.console.v1alpha1.ConnectPipeline.State
- */
-export enum ConnectPipeline_State {
-  /**
-   * @generated from enum value: STATE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * State is healthy if input and output are successfully connect.
-   *
-   * @generated from enum value: STATE_HEALTHY = 1;
-   */
-  HEALTHY = 1,
-
-  /**
-   * State is unhealthy if either input or output cannot reach their target.
-   *
-   * @generated from enum value: STATE_UNHEALTHY = 2;
-   */
-  UNHEALTHY = 2,
-
-  /**
-   * State is unassigned when no RP Connect instance has been reporting any
-   * status on the pipeline for at least 1 minute.
-   *
-   * @generated from enum value: STATE_UNASSIGNED = 3;
-   */
-  UNASSIGNED = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(ConnectPipeline_State)
-proto3.util.setEnumType(ConnectPipeline_State, "redpanda.api.console.v1alpha1.ConnectPipeline.State", [
-  { no: 0, name: "STATE_UNSPECIFIED" },
-  { no: 1, name: "STATE_HEALTHY" },
-  { no: 2, name: "STATE_UNHEALTHY" },
-  { no: 3, name: "STATE_UNASSIGNED" },
-]);
-
-/**
- * ListConnectPipelinesResponse is the response for ListConnectPipelines.
- *
- * @generated from message redpanda.api.console.v1alpha1.ListConnectPipelinesResponse
- */
-export class ListConnectPipelinesResponse extends Message<ListConnectPipelinesResponse> {
-  /**
-   * The pipelines
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.ConnectPipeline pipelines = 1;
-   */
-  pipelines: ConnectPipeline[] = [];
-
-  /**
-   * Token to retrieve the next page.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken = "";
-
-  constructor(data?: PartialMessage<ListConnectPipelinesResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListConnectPipelinesResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "pipelines", kind: "message", T: ConnectPipeline, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectPipelinesResponse {
-    return new ListConnectPipelinesResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectPipelinesResponse {
-    return new ListConnectPipelinesResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectPipelinesResponse {
-    return new ListConnectPipelinesResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListConnectPipelinesResponse | PlainMessage<ListConnectPipelinesResponse> | undefined, b: ListConnectPipelinesResponse | PlainMessage<ListConnectPipelinesResponse> | undefined): boolean {
-    return proto3.util.equals(ListConnectPipelinesResponse, a, b);
-  }
-}
-
-/**
  * GetConnectPipelineRequest is the request to retrieve a pipeline by name.
  *
- * @generated from message redpanda.api.console.v1alpha1.GetConnectPipelineRequest
+ * @generated from message redpanda.api.console.v1alpha1.LintConfigRequest
  */
-export class GetConnectPipelineRequest extends Message<GetConnectPipelineRequest> {
+export class LintConfigRequest extends Message<LintConfigRequest> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: string yaml_config = 1;
    */
-  name = "";
+  yamlConfig = "";
 
-  constructor(data?: PartialMessage<GetConnectPipelineRequest>) {
+  constructor(data?: PartialMessage<LintConfigRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.GetConnectPipelineRequest";
+  static readonly typeName = "redpanda.api.console.v1alpha1.LintConfigRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "yaml_config", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectPipelineRequest {
-    return new GetConnectPipelineRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LintConfigRequest {
+    return new LintConfigRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectPipelineRequest {
-    return new GetConnectPipelineRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LintConfigRequest {
+    return new LintConfigRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectPipelineRequest {
-    return new GetConnectPipelineRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LintConfigRequest {
+    return new LintConfigRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectPipelineRequest | PlainMessage<GetConnectPipelineRequest> | undefined, b: GetConnectPipelineRequest | PlainMessage<GetConnectPipelineRequest> | undefined): boolean {
-    return proto3.util.equals(GetConnectPipelineRequest, a, b);
+  static equals(a: LintConfigRequest | PlainMessage<LintConfigRequest> | undefined, b: LintConfigRequest | PlainMessage<LintConfigRequest> | undefined): boolean {
+    return proto3.util.equals(LintConfigRequest, a, b);
   }
 }
 
 /**
- * GetConnectPipelineResponse returns the configuration and metadata for the
- * requested pipeline.
- *
- * @generated from message redpanda.api.console.v1alpha1.GetConnectPipelineResponse
+ * @generated from message redpanda.api.console.v1alpha1.LintConfigResponse
  */
-export class GetConnectPipelineResponse extends Message<GetConnectPipelineResponse> {
+export class LintConfigResponse extends Message<LintConfigResponse> {
   /**
-   * @generated from field: redpanda.api.console.v1alpha1.ConnectPipeline pipeline = 1;
+   * @generated from field: bool valid = 1;
    */
-  pipeline?: ConnectPipeline;
+  valid = false;
 
-  constructor(data?: PartialMessage<GetConnectPipelineResponse>) {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.LintConfigResponse.Lint lints = 2;
+   */
+  lints: LintConfigResponse_Lint[] = [];
+
+  constructor(data?: PartialMessage<LintConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.GetConnectPipelineResponse";
+  static readonly typeName = "redpanda.api.console.v1alpha1.LintConfigResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "pipeline", kind: "message", T: ConnectPipeline },
+    { no: 1, name: "valid", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "lints", kind: "message", T: LintConfigResponse_Lint, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectPipelineResponse {
-    return new GetConnectPipelineResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LintConfigResponse {
+    return new LintConfigResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectPipelineResponse {
-    return new GetConnectPipelineResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LintConfigResponse {
+    return new LintConfigResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectPipelineResponse {
-    return new GetConnectPipelineResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LintConfigResponse {
+    return new LintConfigResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectPipelineResponse | PlainMessage<GetConnectPipelineResponse> | undefined, b: GetConnectPipelineResponse | PlainMessage<GetConnectPipelineResponse> | undefined): boolean {
-    return proto3.util.equals(GetConnectPipelineResponse, a, b);
+  static equals(a: LintConfigResponse | PlainMessage<LintConfigResponse> | undefined, b: LintConfigResponse | PlainMessage<LintConfigResponse> | undefined): boolean {
+    return proto3.util.equals(LintConfigResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.LintConfigResponse.Lint
+ */
+export class LintConfigResponse_Lint extends Message<LintConfigResponse_Lint> {
+  /**
+   * @generated from field: int32 line = 1;
+   */
+  line = 0;
+
+  /**
+   * @generated from field: int32 column = 2;
+   */
+  column = 0;
+
+  /**
+   * @generated from field: string reason = 3;
+   */
+  reason = "";
+
+  constructor(data?: PartialMessage<LintConfigResponse_Lint>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.LintConfigResponse.Lint";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "line", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "column", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LintConfigResponse_Lint {
+    return new LintConfigResponse_Lint().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LintConfigResponse_Lint {
+    return new LintConfigResponse_Lint().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LintConfigResponse_Lint {
+    return new LintConfigResponse_Lint().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: LintConfigResponse_Lint | PlainMessage<LintConfigResponse_Lint> | undefined, b: LintConfigResponse_Lint | PlainMessage<LintConfigResponse_Lint> | undefined): boolean {
+    return proto3.util.equals(LintConfigResponse_Lint, a, b);
   }
 }
 
