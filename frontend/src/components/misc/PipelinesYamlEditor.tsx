@@ -56,10 +56,15 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
     foldingHighlight: false,
     selectionHighlight: false,
     renderLineHighlight: 'all',
+    quickSuggestions: {
+        other: true,
+        comments: true,
+        strings: true
+    }
 } as const;
 
 const monacoYamlOptions = {
-    enableSchemaRequest: true,
+    enableSchemaRequest: false,
     format: true,
     completion: true,
     validate: true,
@@ -80,27 +85,28 @@ const monacoYamlOptions = {
             //     properties: benthosSchema.config
             // },
 
-            // schema: {
-            //     type: 'object',
-            //     properties: {
-            //         twoToSeven: {
-            //             type: 'number',
-            //             minimum: 2,
-            //             maximum: 7
-            //         },
-            //         oneOfColors: {
-            //             type: 'string',
-            //             oneOf: ['red', 'green', 'blue'],
-            //         },
-            //         someNumArr: {
-            //             type: 'array',
-            //             anyOf: [1, 2, 3, 4, 5, 6]
-            //         }
-            //     }
-            // },
+            schema: {
+                'type': 'object',
+                'properties': {
+                    'name': {
+                        'type': 'string',
+                        'description': 'The person\'s display name'
+                    },
+                    'age': {
+                        'type': 'integer',
+                        'description': 'How old is the person in years?',
+                        minimum: 18,
+                        maximum: 200,
+                    },
+                    'occupation': {
+                        'enum': ['Delivery person', 'Software engineer', 'Astronaut']
+                    }
+                },
+                additionalProperties: false,
+            },
 
             // And the URI will be linked to as the source.
-            uri: '../../benthos-schema.json',
+            uri: 'http://example.com/schema-name.json', // '../../benthos-schema.json',
         }
     ]
 } as MonacoYamlOptions;
