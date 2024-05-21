@@ -1,0 +1,10 @@
+input:
+  generate:
+    interval: 1s
+    count: 10
+    mapping: |
+      root.id = uuid_v4()
+      root.name = fake("name")
+
+output:
+  stdout: {}

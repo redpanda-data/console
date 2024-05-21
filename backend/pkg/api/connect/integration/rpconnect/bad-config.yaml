@@ -1,0 +1,14 @@
+input:
+  generate:
+    interval: 1s
+    counter: 10
+    mapping: |
+      root.id = uuid_v4()
+      root.name = fake("name")
+      root.foo = not_a_real_function("mate")
+
+output:
+  stdout:
+    and: this field doesnt exist
+
+this: isn't real
