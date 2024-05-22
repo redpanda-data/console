@@ -18,11 +18,12 @@ import { pipelinesApi } from '../../../state/backendApi';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Link } from 'react-router-dom';
-import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
+// import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, SearchField } from '@redpanda-data/ui';
 import { uiSettings } from '../../../state/ui';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { ConnectPipeline, ConnectPipeline_State } from '../../../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
-import { proto3 } from '@bufbuild/protobuf';
+// import { DefaultSkeleton } from '../../../utils/tsxUtils';
+// import { proto3 } from '@bufbuild/protobuf';
+// import { ConnectPipeline, ConnectPipeline_State } from '../../../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 
 @observer
 class RpConnectPipelinesList extends PageComponent<{}> {
@@ -46,17 +47,17 @@ class RpConnectPipelinesList extends PageComponent<{}> {
     }
 
     render() {
-        if (!pipelinesApi.pipelines) return DefaultSkeleton;
+        // if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
-        const filteredPipelines = (pipelinesApi.pipelines ?? [])
-            .filter(u => {
-                const filter = uiSettings.pipelinesList.quickSearch;
-                if (!filter) return true;
-                try {
-                    const quickSearchRegExp = new RegExp(filter, 'i');
-                    return u.name.match(quickSearchRegExp);
-                } catch { return false; }
-            });
+        // const filteredPipelines = (pipelinesApi.pipelines ?? [])
+        //     .filter(u => {
+        //         const filter = uiSettings.pipelinesList.quickSearch;
+        //         if (!filter) return true;
+        //         try {
+        //             const quickSearchRegExp = new RegExp(filter, 'i');
+        //             return u.name.match(quickSearchRegExp);
+        //         } catch { return false; }
+        //     });
 
         return (
             <PageContent>
@@ -75,7 +76,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                             />
                         </Box>
 
-                        <DataTable<ConnectPipeline>
+                        {/* <DataTable<ConnectPipeline>
                             data={filteredPipelines}
                             pagination
                             defaultPageSize={10}
@@ -111,7 +112,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                                     size: 100,
                                 }
                             ]}
-                        />
+                        /> */}
                     </div>
 
                 </Section>
