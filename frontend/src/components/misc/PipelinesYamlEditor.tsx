@@ -86,23 +86,121 @@ const monacoYamlOptions = {
             // },
 
             schema: {
+                '$schema': 'http://json-schema.org/draft-07/schema#',
+                'additionalProperties': false,
                 'type': 'object',
                 'properties': {
-                    'name': {
-                        'type': 'string',
-                        'description': 'The person\'s display name'
+                    'input': {
+                        '$comment': 'Test comment',
+                        'description': 'An input is a source of data piped through an array of optional processors. Only one input is configured at the root of a Benthos config. However, the root input can be a broker which combines multiple inputs and merges the streams.',
+                        'oneOf': [
+                            {
+                                'type': 'object',
+                                'properties': {
+                                    'kafka_franz': {
+                                        'type': 'object',
+                                        'description': 'A Kafka input using the Franz Kafka client library.',
+                                        'properties': {
+                                            'seed_brokers': {
+                                                'type': 'array',
+                                                'description': 'A list of broker addresses used for the initial connection.',
+                                                'items': {
+                                                    'type': 'string'
+                                                }
+                                            },
+                                            'group_id': {
+                                                'type': 'string',
+                                                'description': 'Consumer group ID'
+                                            },
+                                            'topics': {
+                                                'type': 'array',
+                                                'description': 'A list of Kafka topics to consume from.',
+                                                'items': {
+                                                    'type': 'string'
+                                                }
+                                            },
+                                            'client_id': {
+                                                'type': 'string',
+                                                'description': 'Kafka client ID, used for self-identifying in the cluster.',
+                                                'default': 'redpanda-connect'
+                                            }
+                                        },
+                                        'required': ['seed_brokers'],
+                                        'additionalProperties': false
+                                    }
+                                },
+                                'required': ['kafka_franz'],
+                                'additionalProperties': false
+                            },
+                            {
+                                'type': 'object',
+                                'properties': {
+                                    'stdin': {
+                                        'type': 'object',
+                                        'default': {},
+                                        'additionalProperties': false
+                                    }
+                                },
+                                'required': ['stdin'],
+                                'additionalProperties': false
+                            }
+                        ]
                     },
-                    'age': {
-                        'type': 'integer',
-                        'description': 'How old is the person in years?',
-                        minimum: 18,
-                        maximum: 200,
-                    },
-                    'occupation': {
-                        'enum': ['Delivery person', 'Software engineer', 'Astronaut']
+                    'pipeline': {
+                        'type': 'object',
+                        'description': 'Pipeline configuration, including processors.',
+                        'properties': {
+                            'processors': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'type': {
+                                            'type': 'string',
+                                            'enum': ['bloblang', 'log', 'filter', 'map', 'unarchive'],
+                                            'description': 'The type of processor'
+                                        },
+                                        'bloblang': {
+                                            'type': 'object',
+                                            'properties': {
+                                                'mapping': {
+                                                    'type': 'string',
+                                                    'description': 'Bloblang mapping'
+                                                }
+                                            },
+                                            'required': ['mapping'],
+                                            'additionalProperties': false
+                                        }
+                                    },
+                                    'required': ['type'],
+                                    'oneOf': [
+                                        {
+                                            'properties': {
+                                                'type': {
+                                                    'enum': ['bloblang']
+                                                },
+                                                'bloblang': {
+                                                    'type': 'object',
+                                                    'properties': {
+                                                        'mapping': {
+                                                            'type': 'string',
+                                                            'description': 'Bloblang mapping'
+                                                        }
+                                                    },
+                                                    'required': ['mapping'],
+                                                    'additionalProperties': false
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        'required': ['processors'],
+                        'additionalProperties': false
                     }
                 },
-                additionalProperties: false,
+                'required': ['input', 'pipeline']
             },
 
             // And the URI will be linked to as the source.

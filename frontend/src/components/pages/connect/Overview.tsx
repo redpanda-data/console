@@ -10,7 +10,7 @@
  */
 
 import { observer, useLocalObservable } from 'mobx-react';
-import { Component } from 'react';
+import { Component, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/restInterfaces';
@@ -21,8 +21,12 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Box, DataTable, Text, Tooltip } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, CodeBlock, DataTable, Grid, Heading, Image, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
+import RedpandaBot from '../../../assets/redpanda/PandaBot.png';
+import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -36,27 +40,36 @@ class KafkaConnectOverview extends PageComponent {
 
     async refreshData(force: boolean) {
         await api.refreshConnectClusters(force);
-        if (api.connectConnectors?.isConfigured) {
-            const clusters = api.connectConnectors.clusters;
-            if (clusters?.length == 1) {
-                const cluster = clusters[0];
-                appGlobal.history.replace(`/connect-clusters/${cluster.clusterName}`);
-            }
-        }
+        // if (api.connectConnectors?.isConfigured) {
+        //     const clusters = api.connectConnectors.clusters;
+        //     if (clusters?.length == 1) {
+        //         const cluster = clusters[0];
+        //         appGlobal.history.replace(`/connect-clusters/${cluster.clusterName}`);
+        //     }
+        // }
     }
 
     render() {
         if (!api.connectConnectors) return DefaultSkeleton;
         if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
-        const settings = uiSettings.kafkaConnect;
 
         return (
             <PageContent>
-                <OverviewStatisticsCard />
+                <Tabs
+                    tabs={[
+                        {
+                            key: 'redpandaConnect',
+                            title: <Box minWidth="180px">Redpanda Connect</Box>,
+                            content: <TabRedpandaConnect />
+                        },
+                        {
+                            key: 'kafkaConnect',
+                            title: <Box minWidth="180px">Kafka Connect</Box>,
+                            content: <TabKafkaConnect />
+                        },
+                    ]}
+                />
 
-                <Section>
-                    <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
-                </Section>
             </PageContent>
         );
     }
@@ -68,7 +81,7 @@ export default KafkaConnectOverview;
 class TabClusters extends Component {
     render() {
         const clusters = api.connectConnectors?.clusters;
-        if (clusters === null || clusters === undefined)  {
+        if (clusters === null || clusters === undefined) {
             return null;
         }
 
@@ -82,7 +95,7 @@ class TabClusters extends Component {
                         header: 'Cluster',
                         accessorKey: 'clusterName',
                         size: Infinity,
-                        cell: ({row: {original: r}}) => {
+                        cell: ({ row: { original: r } }) => {
                             if (r.error) {
                                 return (
                                     <Tooltip label={r.error} placement="top" hasArrow={true}>
@@ -95,28 +108,28 @@ class TabClusters extends Component {
                             }
 
                             return (
-                                <span className="hoverLink" style={{display: 'inline-block', width: '100%'}} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}>
-                                        {r.clusterName}
-                                    </span>
+                                <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}>
+                                    {r.clusterName}
+                                </span>
                             );
                         },
                     },
                     {
                         accessorKey: 'clusterAddress',
                         header: 'Version',
-                        cell: ({row: {original}}) => original.clusterInfo.version,
+                        cell: ({ row: { original } }) => original.clusterInfo.version,
                     },
                     {
                         accessorKey: 'connectors',
                         size: 150,
                         header: 'Connectors',
-                        cell: ({row: {original}}) => <ConnectorsColumn observable={original}/>
+                        cell: ({ row: { original } }) => <ConnectorsColumn observable={original} />
                     },
                     {
                         accessorKey: 'connectors',
                         size: 150,
                         header: 'Tasks',
-                        cell: ({row: {original}}) => <TasksColumn observable={original}/>
+                        cell: ({ row: { original } }) => <TasksColumn observable={original} />
                     }
                 ]}
             />
@@ -132,7 +145,7 @@ interface ConnectorType extends ClusterConnectorInfo {
 
 const TabConnectors = observer(() => {
     const clusters = api.connectConnectors!.clusters;
-    const allConnectors: ConnectorType[] = clusters?.flatMap(cluster => cluster.connectors.map(c => ({cluster, ...c}))) ?? [];
+    const allConnectors: ConnectorType[] = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c }))) ?? [];
 
     const state = useLocalObservable<{
         filteredResults: ConnectorType[]
@@ -175,9 +188,9 @@ const TabConnectors = observer(() => {
                         size: 35, // Assuming '35%' is approximated to '35'
                         cell: ({ row: { original } }) => (
                             <Tooltip placement="top" label={original.name} hasArrow={true}>
-                <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`)}>
-                    {original.name}
-                </span>
+                                <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }} onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`)}>
+                                    {original.name}
+                                </span>
                             </Tooltip>
                         )
                     },
@@ -246,8 +259,8 @@ class TabTasks extends Component {
                         accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
                         cell: ({ row: { original } }) => (
                             <Text wordBreak="break-word" whiteSpace="break-spaces" className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`)}>
-                {original.connectorName}
-            </Text>
+                                {original.connectorName}
+                            </Text>
                         ),
                         size: 300
                     },
@@ -274,6 +287,103 @@ class TabTasks extends Component {
         );
     }
 }
+
+
+const TabKafkaConnect = observer((_p: {}) => {
+    const settings = uiSettings.kafkaConnect;
+
+    return <Stack spacing={3}>
+        <OverviewStatisticsCard />
+
+        <Section>
+            <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
+        </Section>
+    </Stack>
+})
+
+
+const TabRedpandaConnect = observer((_p: {}) => {
+    const exampleCode = `
+input:
+    gcp_pubsub:
+        project: foo
+        subscription: bar
+
+pipeline:
+    processors:
+        - mapping: |
+            root.message = this
+            root.meta.link_count = this.links.length()
+            root.user.age = this.user.age.number()
+
+output:
+    redis_streams:
+        url: tcp://TODO:6379
+        stream: baz
+        max_in_flight: 20
+`;
+    const [editorText, setEditorText] = useState(exampleCode);
+
+    return <Grid templateColumns="1fr 320px" gap={10}>
+        <Stack spacing={3}>
+            <Heading as="h2">Getting started</Heading>
+            <Text>Redpanda Connect text explaining the feature. More information can be found in our docs.</Text>
+
+            <Text mt={3}>1. Install Redpanda with Brew:</Text>
+            <Box ml="4" maxWidth="400px">
+                <CodeBlock language="sh" codeString="brew install redpanda-data/tap/redpanda" />
+            </Box>
+
+            <Text mt={3}>2. Use the editor below to explore. We've pre-filled it with the output of <code>rpk connect create</code>.</Text>
+            <Box height="460px" w="650px">
+                <PipelinesYamlEditor
+                    defaultPath="config.yaml"
+                    path="config.yaml"
+                    value={editorText}
+                    onChange={e => {
+                        if (e)
+                            setEditorText(e);
+                    }}
+                    language="yaml"
+                    options={{
+                        fontSize: 15
+                    }}
+                />
+
+            </Box>
+            <Text>Optional: <span style={{ textDecoration: '1px solid underline', fontWeight: 600 }}><Link to="/security/users/create">Create a SASL user for authentication</Link></span>. This user will be populated in the "logger" component of the code</Text>
+
+            <Text mt={3}>3. Save your configuration in your working directory (as config.yaml, for example)</Text>
+
+            <Text mt={3}>4. Run your config to test it:</Text>
+            <Box ml="4" maxWidth="400px">
+                <CodeBlock language="sh" codeString="rpk connect -c ./config.yaml" />
+            </Box>
+
+            <Box mt={10}>
+                <Link to="/topics/__redpanda.connect_pipeline_logs">
+                    <Button variant="brand">Complete quickstart</Button>
+                </Link>
+            </Box>
+        </Stack>
+
+        <Stack spacing={8} mt={12}>
+            <Image src={RedpandaBot} alt="redpanda bot icon" />
+
+            <Alert status="info" >
+                <AlertIcon />
+                <Box>
+                    <AlertTitle>Hint</AlertTitle>
+                    <AlertDescription>
+                        If you'd like the template tailored to your pipeline, rpk connect list shows the menu of components that build the template using<br />
+                        <code>redpanda connect create stdin/mapping/kafka_franz</code>
+                    </AlertDescription>
+                </Box>
+            </Alert>
+        </Stack>
+
+    </Grid>
+})
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 const connectTabs: Tab[] = [
