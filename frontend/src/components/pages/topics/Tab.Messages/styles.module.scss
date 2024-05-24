@@ -9,11 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-.filterbar {
-    display: flex;
-    flex-wrap: wrap;
-}
-
 .filters {
     width: calc(100% - 200px);
     display: inline-flex;
@@ -26,8 +21,6 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin-left: auto;
-    width: 200px;
 
     font-size: 12px;
     font-weight: 500;
