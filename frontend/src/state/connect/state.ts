@@ -453,6 +453,7 @@ export class ConnectorPropertiesStore {
     getConfigObject(): object {
         const config = {
             'connector.class': this.pluginClassName,
+            ...this.appliedConfig,
         } as any;
 
         if (this.viewMode == 'json') {
