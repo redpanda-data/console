@@ -320,9 +320,14 @@ pipeline:
         root.hash = content().hash("sha256").encode("hex")
 
 output:
-  kafka:
-    addresses: [ TODO ]
+  kafka_franz:
+    seed_brokers: [ TODO ]
     topic: TODO
+
+redpanda:
+  seed_brokers: [ TODO ]
+  logs_topic: __redpanda.connect.logs
+  logs_level: info
 `;
     const [editorText, setEditorText] = useState(exampleCode);
 
