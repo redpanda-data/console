@@ -305,22 +305,23 @@ const TabKafkaConnect = observer((_p: {}) => {
 const TabRedpandaConnect = observer((_p: {}) => {
     const exampleCode = `
 input:
-    gcp_pubsub:
-        project: foo
-        subscription: bar
+  generate:
+    interval: 1s
+    mapping: |
+      root.id = uuid_v4()
+      root.user.name = fake("name")
+      root.user.email = fake("email")
+      root.content = fake("paragraph")
 
 pipeline:
-    processors:
-        - mapping: |
-            root.message = this
-            root.meta.link_count = this.links.length()
-            root.user.age = this.user.age.number()
+  processors:
+    - mutation: |
+        root.hash = content().hash("sha256").encode("hex")
 
 output:
-    redis_streams:
-        url: tcp://TODO:6379
-        stream: baz
-        max_in_flight: 20
+  kafka:
+    addresses: [ TODO ]
+    topic: TODO
 `;
     const [editorText, setEditorText] = useState(exampleCode);
 

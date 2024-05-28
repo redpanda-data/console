@@ -9,20 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import Editor, { EditorProps, Monaco, loader } from '@monaco-editor/react';
 import 'monaco-editor';
-import { editor } from 'monaco-editor';
+import { MarkerSeverity, editor } from 'monaco-editor';
 import { MonacoYamlOptions, configureMonacoYaml } from 'monaco-yaml';
-// import yamlWorker from "worker-loader!monaco-yaml/yaml.worker";
-
-
-// eslint-disable-next-line import/no-webpack-loader-syntax
-// import EditorWorker from 'worker-loader!monaco-editor/esm/vs/editor/editor.worker.js';
-// import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-
-// eslint-disable-next-line import/no-webpack-loader-syntax
-// import YamlWorker from 'worker-loader!monaco-yaml/lib/esm/yaml.worker.js';
+import benthosSchema from '../../assets/benthos-schema.json';
+import { pipelinesApi } from '../../state/backendApi';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -69,138 +61,14 @@ const monacoYamlOptions = {
     completion: true,
     validate: true,
     schemas: [
-        // {
-        //     // If YAML file is opened matching this glob
-        //     fileMatch: ['**/.prettierrc.*'],
-        //     // Then this schema will be downloaded from the internet and used.
-        //     uri: 'https://json.schemastore.org/prettierrc.json'
-        // },
         {
             // If YAML file is opened matching this glob
             fileMatch: ['**/*.yaml'],
             // The following schema will be applied
-
-            // schema: {
-            //     type: 'object',
-            //     properties: benthosSchema.config
-            // },
-
             schema: {
-                '$schema': 'http://json-schema.org/draft-07/schema#',
-                'additionalProperties': false,
-                'type': 'object',
-                'properties': {
-                    'input': {
-                        '$comment': 'Test comment',
-                        'description': 'An input is a source of data piped through an array of optional processors. Only one input is configured at the root of a Benthos config. However, the root input can be a broker which combines multiple inputs and merges the streams.',
-                        'oneOf': [
-                            {
-                                'type': 'object',
-                                'properties': {
-                                    'kafka_franz': {
-                                        'type': 'object',
-                                        'description': 'A Kafka input using the Franz Kafka client library.',
-                                        'properties': {
-                                            'seed_brokers': {
-                                                'type': 'array',
-                                                'description': 'A list of broker addresses used for the initial connection.',
-                                                'items': {
-                                                    'type': 'string'
-                                                }
-                                            },
-                                            'group_id': {
-                                                'type': 'string',
-                                                'description': 'Consumer group ID'
-                                            },
-                                            'topics': {
-                                                'type': 'array',
-                                                'description': 'A list of Kafka topics to consume from.',
-                                                'items': {
-                                                    'type': 'string'
-                                                }
-                                            },
-                                            'client_id': {
-                                                'type': 'string',
-                                                'description': 'Kafka client ID, used for self-identifying in the cluster.',
-                                                'default': 'redpanda-connect'
-                                            }
-                                        },
-                                        'required': ['seed_brokers'],
-                                        'additionalProperties': false
-                                    }
-                                },
-                                'required': ['kafka_franz'],
-                                'additionalProperties': false
-                            },
-                            {
-                                'type': 'object',
-                                'properties': {
-                                    'stdin': {
-                                        'type': 'object',
-                                        'default': {},
-                                        'additionalProperties': false
-                                    }
-                                },
-                                'required': ['stdin'],
-                                'additionalProperties': false
-                            }
-                        ]
-                    },
-                    'pipeline': {
-                        'type': 'object',
-                        'description': 'Pipeline configuration, including processors.',
-                        'properties': {
-                            'processors': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'object',
-                                    'properties': {
-                                        'type': {
-                                            'type': 'string',
-                                            'enum': ['bloblang', 'log', 'filter', 'map', 'unarchive'],
-                                            'description': 'The type of processor'
-                                        },
-                                        'bloblang': {
-                                            'type': 'object',
-                                            'properties': {
-                                                'mapping': {
-                                                    'type': 'string',
-                                                    'description': 'Bloblang mapping'
-                                                }
-                                            },
-                                            'required': ['mapping'],
-                                            'additionalProperties': false
-                                        }
-                                    },
-                                    'required': ['type'],
-                                    'oneOf': [
-                                        {
-                                            'properties': {
-                                                'type': {
-                                                    'enum': ['bloblang']
-                                                },
-                                                'bloblang': {
-                                                    'type': 'object',
-                                                    'properties': {
-                                                        'mapping': {
-                                                            'type': 'string',
-                                                            'description': 'Bloblang mapping'
-                                                        }
-                                                    },
-                                                    'required': ['mapping'],
-                                                    'additionalProperties': false
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        },
-                        'required': ['processors'],
-                        'additionalProperties': false
-                    }
-                },
-                'required': ['input', 'pipeline']
+                type: 'object',
+                definitions: benthosSchema.definitions,
+                properties: benthosSchema.properties,
             },
 
             // And the URI will be linked to as the source.
@@ -241,6 +109,52 @@ loader.init().then(async (monaco) => {
 });
 
 
+const linter = {
+    editor: undefined as undefined | IStandaloneCodeEditor,
+    monaco: undefined as undefined | Monaco,
+
+    isLinting: false,
+    text: '',
+
+    async refreshLint() {
+        if (!this.editor) return;
+        const monaco = this.monaco;
+        if (!monaco) return;
+        if (this.isLinting) return;
+
+        const model = this.editor.getModel();
+        if (!model) return;
+
+        // Save the text into a local variable, so we can compare/know if we need to lint again
+        const lintedText = this.text;
+
+        this.isLinting = true;
+        const r = await pipelinesApi.lintConfig(lintedText).catch(() => null);
+        this.isLinting = false;
+        if (!r) return;  // do nothing, don't care about fetching errors here
+
+        // Update the results
+        const markers = r.lints.map(l => {
+            return {
+                message: l.reason,
+                startLineNumber: l.line,
+                endLineNumber: l.line,
+                startColumn: l.column,
+                endColumn: l.column + 4,
+                severity: MarkerSeverity.Error,
+            } as editor.IMarkerData;
+        });
+
+        monaco.editor.setModelMarkers(model, 'owner', markers);
+
+        // Maybe, while we were linting, the user has modified the text?
+        // If so, this function didn't run (because of the isLinting check at the start)
+        // So we need to lint the new config
+        if (this.text != lintedText)
+            this.refreshLint();
+    }
+};
+
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     const { options: givenOptions, ...rest } = props;
     const options = Object.assign({}, defaultOptions, givenOptions ?? {});
@@ -252,6 +166,18 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         options={options}
         {...rest}
 
+        onChange={(v, ev) => {
+            if (v) {
+                linter.text = v;
+                linter.refreshLint();
+            }
+            rest.onChange?.(v, ev);
+        }}
+
+        onMount={(editor, monaco) => {
+            linter.editor = editor;
+            linter.monaco = monaco;
+        }}
     // onMount={(editor, monaco) => {
     //     configureMonacoYaml(monaco, monacoYamlOptions);
     //     rest.onMount?.(editor, monaco);

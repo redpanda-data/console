@@ -120,6 +120,7 @@ import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../pro
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
+import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1642,6 +1643,14 @@ export const rolesApi = observable({
 
 export const pipelinesApi = observable({
     // pipelines: undefined as undefined | ConnectPipeline[],
+
+    async lintConfig(config: string): Promise<LintConfigResponse> {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
+        return r;
+    },
 
     async refreshPipelines(_force: boolean): Promise<void> {
 
