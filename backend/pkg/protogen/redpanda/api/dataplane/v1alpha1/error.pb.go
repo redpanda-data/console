@@ -24,14 +24,21 @@ const (
 type Reason int32
 
 const (
-	Reason_REASON_UNSPECIFIED              Reason = 0
-	Reason_REASON_FEATURE_NOT_CONFIGURED   Reason = 1
-	Reason_REASON_CONSOLE_ERROR            Reason = 2
+	Reason_REASON_UNSPECIFIED Reason = 0
+	// The feature is not configured.
+	Reason_REASON_FEATURE_NOT_CONFIGURED Reason = 1
+	// Internal Redpanda Console or data plane error.
+	Reason_REASON_CONSOLE_ERROR Reason = 2
+	// Redpanda Admin API returned an error.
 	Reason_REASON_REDPANDA_ADMIN_API_ERROR Reason = 3
-	Reason_REASON_KAFKA_API_ERROR          Reason = 4
-	Reason_REASON_KAFKA_CONNECT_API_ERROR  Reason = 5
-	Reason_REASON_TYPE_MAPPING_ERROR       Reason = 6
-	Reason_REASON_SECRET_STORE_ERROR       Reason = 7
+	// Redpanda or Kafka protocol error.
+	Reason_REASON_KAFKA_API_ERROR Reason = 4
+	// Kafka Connect API error.
+	Reason_REASON_KAFKA_CONNECT_API_ERROR Reason = 5
+	// Type mapping error translating internal or external types to API types.
+	Reason_REASON_TYPE_MAPPING_ERROR Reason = 6
+	// Cloud provider's secret store manager error.
+	Reason_REASON_SECRET_STORE_ERROR Reason = 7
 )
 
 // Enum value maps for Reason.

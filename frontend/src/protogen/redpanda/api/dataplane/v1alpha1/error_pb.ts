@@ -15,36 +15,50 @@ export enum Reason {
   UNSPECIFIED = 0,
 
   /**
+   * The feature is not configured.
+   *
    * @generated from enum value: REASON_FEATURE_NOT_CONFIGURED = 1;
    */
   FEATURE_NOT_CONFIGURED = 1,
 
   /**
+   * Internal Redpanda Console or data plane error.
+   *
    * @generated from enum value: REASON_CONSOLE_ERROR = 2;
    */
   CONSOLE_ERROR = 2,
 
   /**
+   * Redpanda Admin API returned an error.
+   *
    * @generated from enum value: REASON_REDPANDA_ADMIN_API_ERROR = 3;
    */
   REDPANDA_ADMIN_API_ERROR = 3,
 
   /**
+   * Redpanda or Kafka protocol error.
+   *
    * @generated from enum value: REASON_KAFKA_API_ERROR = 4;
    */
   KAFKA_API_ERROR = 4,
 
   /**
+   * Kafka Connect API error.
+   *
    * @generated from enum value: REASON_KAFKA_CONNECT_API_ERROR = 5;
    */
   KAFKA_CONNECT_API_ERROR = 5,
 
   /**
+   * Type mapping error translating internal or external types to API types.
+   *
    * @generated from enum value: REASON_TYPE_MAPPING_ERROR = 6;
    */
   TYPE_MAPPING_ERROR = 6,
 
   /**
+   * Cloud provider's secret store manager error.
+   *
    * @generated from enum value: REASON_SECRET_STORE_ERROR = 7;
    */
   SECRET_STORE_ERROR = 7,
