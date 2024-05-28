@@ -376,7 +376,7 @@ redpanda:
                 </ListItem>
 
                 <ListItem>
-                    <Text mt={3}>Build your first pipeline. Start from the Redpanda data generator example below. Explore the components using autocomplete (CTRL/CMD+Space). For other examples and use cases, see <Link to="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics">our documentation</Link>.</Text>
+                    <Text mt={3}>Build your first pipeline. Start from the Redpanda data generator example below. Explore the components using autocomplete (CTRL/CMD+Space). For other examples and use cases, see <Link to="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics" style={{ textDecoration: 'underline solid 1px' }}>our documentation</Link>.</Text>
                     <Flex ml="-1rem" mt={3} minHeight="550px" minWidth="500px">
                         <PipelinesYamlEditor
                             defaultPath="config.yaml"
