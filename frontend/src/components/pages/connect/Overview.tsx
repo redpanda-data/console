@@ -26,6 +26,7 @@ import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
 import RedpandaBot from '../../../assets/redpanda/PandaBot.png';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+import { isEmbedded } from '../../../config';
 
 
 @observer
@@ -53,23 +54,23 @@ class KafkaConnectOverview extends PageComponent {
         if (!api.connectConnectors) return DefaultSkeleton;
         if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
 
+        const tabs = [
+            {
+                key: 'redpandaConnect',
+                title: <Box minWidth="180px">Redpanda Connect</Box>,
+                content: <TabRedpandaConnect />,
+                disabled: isEmbedded(), // For now, only selfhosted; no cloud/serverless
+            },
+            {
+                key: 'kafkaConnect',
+                title: <Box minWidth="180px">Kafka Connect</Box>,
+                content: <TabKafkaConnect />
+            },
+        ] as Tab[];
+
         return (
             <PageContent>
-                <Tabs
-                    tabs={[
-                        {
-                            key: 'redpandaConnect',
-                            title: <Box minWidth="180px">Redpanda Connect</Box>,
-                            content: <TabRedpandaConnect />
-                        },
-                        {
-                            key: 'kafkaConnect',
-                            title: <Box minWidth="180px">Kafka Connect</Box>,
-                            content: <TabKafkaConnect />
-                        },
-                    ]}
-                />
-
+                <Tabs tabs={tabs} defaultSelectedTabKey={isEmbedded() ? 'kafkaConnect' : 'redpandaConnect'} />
             </PageContent>
         );
     }
