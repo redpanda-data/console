@@ -13,7 +13,7 @@ import Editor, { EditorProps, Monaco, loader } from '@monaco-editor/react';
 import 'monaco-editor';
 import { MarkerSeverity, editor } from 'monaco-editor';
 import { MonacoYamlOptions, configureMonacoYaml } from 'monaco-yaml';
-import benthosSchema from '../../assets/benthos-schema.json';
+import benthosSchema from '../../assets/rp-connect-schema.json';
 import { pipelinesApi } from '../../state/backendApi';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
@@ -161,7 +161,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
 
     return <Editor
         loading={<LoadingPlaceholder />}
-        wrapperProps={{ className: 'kowlEditor' }}
+        wrapperProps={{ className: 'kowlEditor', style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' } }}
         defaultValue={''}
         options={options}
         {...rest}
@@ -178,6 +178,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
             linter.editor = editor;
             linter.monaco = monaco;
         }}
+
     // onMount={(editor, monaco) => {
     //     configureMonacoYaml(monaco, monacoYamlOptions);
     //     rest.onMount?.(editor, monaco);
