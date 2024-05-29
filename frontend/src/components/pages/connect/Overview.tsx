@@ -338,16 +338,18 @@ pipeline:
 
 output:
   kafka_franz:
-    seed_brokers: TODO
+    seed_brokers:
+        - TODO_REDPANDA_BROKER_ADDRESS
     topic: TODO_YOUR_OUTPUT_TOPIC
 
 redpanda:
-  seed_brokers: TODO
+  seed_brokers:
+    - TODO_REDPANDA_BROKER_ADDRESS
   logs_topic: __redpanda.connect.logs
   logs_level: info
-`;
+`.trim();
     const [editorText, setEditorText] = useState(exampleCode);
-    const [selectedInstall, setSelectedInstall] = useState('Linux' as keyof typeof installInstructions);
+    const [selectedInstall, setSelectedInstall] = useState('macOS - Homebrew' as keyof typeof installInstructions);
     const options = Object.keys(installInstructions).map(x => ({ value: (x as typeof selectedInstall) }));
 
     return <Grid templateColumns="1fr 320px" gap={10}>

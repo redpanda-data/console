@@ -166,23 +166,18 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         options={options}
         {...rest}
 
-        onChange={(v, ev) => {
-            if (v) {
-                linter.text = v;
-                linter.refreshLint();
-            }
-            rest.onChange?.(v, ev);
-        }}
+        // onChange={(v, ev) => {
+        //     if (v) {
+        //         linter.text = v;
+        //         linter.refreshLint();
+        //     }
+        //     rest.onChange?.(v, ev);
+        // }}
 
         onMount={(editor, monaco) => {
             linter.editor = editor;
             linter.monaco = monaco;
         }}
-
-    // onMount={(editor, monaco) => {
-    //     configureMonacoYaml(monaco, monacoYamlOptions);
-    //     rest.onMount?.(editor, monaco);
-    // }}
     />
 }
 
