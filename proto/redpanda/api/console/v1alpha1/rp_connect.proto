@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+
+// GetConnectPipelineRequest is the request to retrieve a pipeline by name.
+message LintConfigRequest {
+  string yaml_config = 1 [
+    (buf.validate.field).string.min_len = 0,
+    (buf.validate.field).string.max_len = 1048576
+  ];
+}
+
+message LintConfigResponse {
+  message Lint {
+    int32 line = 1;
+    int32 column = 2;
+    string reason = 3;
+  }
+
+  bool valid = 1;
+  repeated Lint lints = 2;
+}
+
+service RedpandaConnectService {
+  // LintConfig lists the given YAML config and returns all linting issues.
+  rpc LintConfig(LintConfigRequest) returns (LintConfigResponse) {}
+}

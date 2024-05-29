@@ -20,6 +20,7 @@ import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, crea
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
+import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -65,6 +66,7 @@ interface Config {
     restBasePath: string;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
+    pipelinesClient?: PromiseClient<typeof RedpandaConnectService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
     jwt?: string;
@@ -98,6 +100,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
 
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
+    const pipelinesGrpcClient = createPromiseClient(RedpandaConnectService, transport);
     Object.assign(config, {
         jwt,
         isServerless,
@@ -106,6 +109,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         assetsPath: assetsUrl ?? getBasePath(),
         consoleClient: consoleGrpcClient,
         securityClient: securityGrpcClient,
+        pipelinesClient: pipelinesGrpcClient,
         ...args,
     });
     return config;
@@ -189,7 +193,11 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     const config = setConfig(setupArgs);
 
     // Tell monaco editor where to load dependencies from
-    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
+    loader.config({
+        paths: {
+            vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
+        }
+    });
 
     // Configure MobX
     configure({
