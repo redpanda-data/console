@@ -22,13 +22,13 @@ import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, Overvie
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, CodeBlock, DataTable, Flex, Grid, Heading, Image, ListItem, OrderedList, Stack, Text, Tooltip } from '@redpanda-data/ui';
-import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { isEmbedded } from '../../../config';
 import { SingleSelect } from '../../misc/Select';
-
+import { Link as ReactRouterLink } from 'react-router-dom'
+import { Link as ChakraLink } from '@chakra-ui/react';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -353,7 +353,7 @@ redpanda:
     return <Grid templateColumns="1fr 320px" gap={10}>
         <Stack spacing={3}>
             <Heading as="h2">Using Redpanda Connect</Heading>
-            <Text>Redpanda Connect is a declarative data streaming service with wide range of <Link to="https://docs.redpanda.com/redpanda-connect/about#components" style={{ textDecoration: 'underline solid 1px' }}>connectors and processors</Link>.</Text>
+            <Text>Redpanda Connect is a declarative data streaming service with wide range of <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/about#components" style={{ textDecoration: 'underline solid 1px' }}>connectors and processors</ChakraLink>.</Text>
 
             <OrderedList display="flex" flexDirection="column" gap="0.5rem">
                 <ListItem>
@@ -376,7 +376,7 @@ redpanda:
                 </ListItem>
 
                 <ListItem>
-                    <Text mt={3}>Build your first pipeline. Start from the Redpanda data generator example below. Explore the components using autocomplete (CTRL/CMD+Space). For other examples and use cases, see <Link to="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics" style={{ textDecoration: 'underline solid 1px' }}>our documentation</Link>.</Text>
+                    <Text mt={3}>Build your first pipeline. Start from the Redpanda data generator example below. Explore the components using autocomplete (CTRL/CMD+Space). For other examples and use cases, see <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics" style={{ textDecoration: 'underline solid 1px' }}>our documentation</ChakraLink>.</Text>
                     <Flex ml="-1rem" mt={3} minHeight="550px" minWidth="500px">
                         <PipelinesYamlEditor
                             defaultPath="config.yaml"
@@ -398,8 +398,8 @@ redpanda:
                 <ListItem>
                     <Text mt={3}>
                         Set up your connection to Redpanda for data
-                        in the <Link to="https://docs.redpanda.com/redpanda-connect/components/outputs/kafka_franz" style={{ textDecoration: 'underline solid 1px' }}>kafka_franz</Link> component
-                        and <Link to="https://docs.redpanda.com/redpanda-connect/components/logger/about" style={{ textDecoration: 'underline solid 1px' }}>logs</Link> in the redpanda component.
+                        in the <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/components/outputs/kafka_franz" style={{ textDecoration: 'underline solid 1px' }}>kafka_franz</ChakraLink> component
+                        and <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/components/logger/about" style={{ textDecoration: 'underline solid 1px' }}>logs</ChakraLink> in the redpanda component.
                     </Text>
                 </ListItem>
 
@@ -420,7 +420,7 @@ redpanda:
                 </ListItem>
 
                 <ListItem>
-                    <Text mt={3}>Go to the <Link to="/topics" style={{ textDecoration: 'underline solid 1px' }}>Topics</Link> page to read the logs and your output topic. </Text>
+                    <Text mt={3}>Go to the <ChakraLink as={ReactRouterLink} to="/topics" style={{ textDecoration: 'underline solid 1px' }}>Topics</ChakraLink> page to read the logs and your output topic. </Text>
                 </ListItem>
             </OrderedList>
         </Stack>
