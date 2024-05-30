@@ -416,7 +416,7 @@ redpanda:
                 <ListItem>
                     <Text mt={3}>Test the config by executing it:</Text>
                     <Box maxWidth="400px" marginBlock={3}>
-                        <CodeBlock language="sh" codeString="rpk connect -c ./config.yaml" />
+                        <CodeBlock language="sh" codeString="rpk connect run ./config.yaml" />
                         <Text mt={3}>Anything you write to stdin will be written unchanged to stdout.</Text>
                     </Box>
                 </ListItem>
