@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.6.0 / 2024-05-30
+
+- [FEATURE] Add Redpanda Connect management.
+
 ## v2.5.2 / 2024-04-30
 
 - [CHANGE] Update dependencies.
