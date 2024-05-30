@@ -36,7 +36,7 @@ import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -297,7 +297,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     my={4}
                     templateAreas={`
                         "toolbar1 toolbar2 toolbar3"
-                        "addbutton addbutton addbutton"
+                        "toolbar_bottom toolbar_bottom toolbar_bottom"
+                        "addbutton addbutton addbutton2"
                         "filters filters filters"
                     `}
                     gridTemplateColumns="auto 1fr auto"
@@ -305,47 +306,46 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     gap={3}
                     width="full"
                 >
-                    <GridItem area="toolbar1" display="flex" gap={3}>
+                    <GridItem area="toolbar1" display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
                         {/* Search Settings*/}
                         <Label text="Partition">
-                            <SingleSelect<number>
-                                value={searchParams.partitionID}
-                                onChange={c => (searchParams.partitionID = c)}
-                                options={[{value: -1, label: 'All'}].concat(range(0, topic.partitionCount).map(i => ({value: i, label: String(i)})))}
-                            />
+                            <SingleSelect<number> value={searchParams.partitionID} onChange={(c) => (searchParams.partitionID = c)} options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map((i) => ({ value: i, label: String(i) })))} />
                         </Label>
 
                         <Label text="Start Offset">
                             <Flex gap={3}>
-                                <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
-                                    searchParams.offsetOrigin = e;
-                                    if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
-                                        if (searchParams.startOffset < 0)
-                                            searchParams.startOffset = 0;
-                                    } else {
-                                        searchParams.startOffset = searchParams.offsetOrigin;
-                                    }
-                                }} options={startOffsetOptions}/>
-                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
+                                <SingleSelect<PartitionOffsetOrigin>
+                                    value={searchParams.offsetOrigin}
+                                    onChange={(e) => {
+                                        searchParams.offsetOrigin = e;
+                                        if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
+                                            if (searchParams.startOffset < 0) searchParams.startOffset = 0;
+                                        } else {
+                                            searchParams.startOffset = searchParams.offsetOrigin;
+                                        }
+                                    }}
+                                    options={startOffsetOptions}
+                                />
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
                                     <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
-                                        <Input style={{width: '7.5em'}}
-                                               maxLength={20}
-                                               isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
-                                               value={customStartOffsetValue}
-                                               onChange={e => {
-                                                   setCustomStartOffsetValue(e.target.value);
-                                                   if (!isNaN(Number(e.target.value)))
-                                                       searchParams.startOffset = Number(e.target.value);
-                                               }}
+                                        <Input
+                                            style={{ width: '7.5em' }}
+                                            maxLength={20}
+                                            isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
+                                            value={customStartOffsetValue}
+                                            onChange={(e) => {
+                                                setCustomStartOffsetValue(e.target.value);
+                                                if (!isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
+                                            }}
                                         />
                                     </Tooltip>
-                                }
-                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker/>}
+                                )}
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
                             </Flex>
                         </Label>
 
                         <Label text="Max Results">
-                            <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({value: i}))}/>
+                            <SingleSelect<number> value={searchParams.maxResults} onChange={(c) => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))} />
                         </Label>
 
                         <Flex alignItems="flex-end">
@@ -366,14 +366,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 </Tooltip>
                             )}
                         </Flex>
-
                     </GridItem>
-                    <GridItem area="toolbar3" alignItems="flex-end" display="flex" justifyContent="flex-end" gap={3}>
+                    <GridItem area={{ md: 'addbutton2', xl: 'toolbar3' }} alignItems="flex-end" display="flex" justifyContent="flex-end" gap={3}>
                         {/* Quick Search */}
                         <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
                         {/* Topic Actions */}
                         <Menu>
-                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem"/>} variant="outline">
+                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
                                 Actions
                             </MenuButton>
                             <MenuList>
@@ -416,26 +415,28 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     */}
 
                     {/* Filter Tags */}
-                    {!isServerless() && (
-                        <MessageSearchFilterBar messageSearch={this.messageSearch} canUseFilters={canUseFilters} />
-                    )}
+                    {!isServerless() && <MessageSearchFilterBar messageSearch={this.messageSearch} canUseFilters={canUseFilters} />}
 
                     <GridItem>
                         {/* Show warning if a deserializer is forced for key or value */}
                         {isDeserializerOverrideActive && (
                             <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
-                                {isKeyDeserializerActive && <Tag>
-                                    <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                        Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
-                                    </TagLabel>
-                                    <TagCloseButton onClick={() => uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED}/>
-                                </Tag>}
-                                {isValueDeserializerActive && <Tag>
-                                    <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                        Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
-                                    </TagLabel>
-                                    <TagCloseButton onClick={() => uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED}/>
-                                </Tag>}
+                                {isKeyDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
+                                {isValueDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
                             </Flex>
                         )}
                     </GridItem>
@@ -616,20 +617,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
         }]
 
-        const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
-                    <SettingOutlined style={{ fontSize: '1rem' }} />
-                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+        const previewButton = (
+            <Button variant="ghost" size="sm" onClick={() => setShowPreviewSettings(true)}>
+                <Flex gap={2} alignItems="center">
+                    <Text>Preview</Text>
                     {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
-                        if (count > 0)
-                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
-                        return <></>;
+                        const count = uiState.topicSettings.previewTags.sum((t) => (t.isActive ? 1 : 0));
+                        if (count > 0) {
+                            return <Badge lineHeight={1.2}>{count}</Badge>;
+                        }
+                        return null;
                     })()}
-                </Button>
-            </span>
-        </>;
+                </Flex>
+            </Button>
+        );
 
         return <>
             <DataTable<TopicMessage>
@@ -1606,7 +1607,13 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
 
         return <>
             {/* Add Filter Button */}
-            <GridItem display="flex" justifyContent="space-between" alignItems="flex-end" area={{base: 'addbutton', '2xl': 'toolbar2'}}>
+            <GridItem
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-end"
+                area={{base: 'addbutton', '2xl': 'toolbar2'}}
+                gridColumn={{base: '1', xl: '1/-1'}}
+            >
                 <Tooltip
                     label="You don't have permissions to use search filters in this topic"
                     isDisabled={canUseFilters}
