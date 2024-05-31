@@ -52,9 +52,6 @@ class KafkaConnectOverview extends PageComponent {
     }
 
     render() {
-        if (!api.connectConnectors) return DefaultSkeleton;
-        if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
-
         const tabs = [
             {
                 key: 'redpandaConnect',
@@ -293,6 +290,9 @@ class TabTasks extends Component {
 
 const TabKafkaConnect = observer((_p: {}) => {
     const settings = uiSettings.kafkaConnect;
+
+    if (!api.connectConnectors) return DefaultSkeleton;
+    if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
 
     return <Stack spacing={3}>
         <OverviewStatisticsCard />
