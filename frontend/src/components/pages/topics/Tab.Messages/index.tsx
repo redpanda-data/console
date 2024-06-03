@@ -13,7 +13,7 @@ import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined 
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode, useState } from 'react';
+import React, { Component, FC, ReactElement, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
@@ -36,7 +36,7 @@ import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useBreakpoint, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -291,22 +291,33 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
         const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
 
+        const menuEl = (
+            <Menu>
+                <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
+                    Actions
+                </MenuButton>
+                <MenuList>
+                    <MenuItem
+                        onClick={() => {
+                            appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                        }}
+                    >
+                        Produce Record
+                    </MenuItem>
+                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                </MenuList>
+            </Menu>
+        );
+
         return (
             <React.Fragment>
                 <Grid
                     my={4}
-                    templateAreas={`
-                        "toolbar1 toolbar2 toolbar3"
-                        "toolbar_bottom toolbar_bottom toolbar_bottom"
-                        "addbutton addbutton addbutton2"
-                        "filters filters filters"
-                    `}
-                    gridTemplateColumns="auto 1fr auto"
-                    gridTemplateRows="auto 1fr auto"
                     gap={3}
+                    gridTemplateColumns="auto 1fr"
                     width="full"
                 >
-                    <GridItem area="toolbar1" display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
+                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
                         {/* Search Settings*/}
                         <Label text="Partition">
                             <SingleSelect<number> value={searchParams.partitionID} onChange={(c) => (searchParams.partitionID = c)} options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map((i) => ({ value: i, label: String(i) })))} />
@@ -366,29 +377,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 </Tooltip>
                             )}
                         </Flex>
-                    </GridItem>
-                    <GridItem area={{ md: 'addbutton2', xl: 'toolbar3' }} alignItems="flex-end" display="flex" justifyContent="flex-end" gap={3}>
-                        {/* Quick Search */}
-                        <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
-                        {/* Topic Actions */}
-                        <Menu>
-                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
-                                Actions
-                            </MenuButton>
-                            <MenuList>
-                                <MenuItem
-                                    onClick={() => {
-                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
-                                    }}
-                                >
-                                    Produce Record
-                                </MenuItem>
-                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                            </MenuList>
-                        </Menu>
-                    </GridItem>
-
-                    <GridItem>
                         {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                         {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
                             <StatusIndicator
@@ -415,7 +403,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     */}
 
                     {/* Filter Tags */}
-                    {!isServerless() && <MessageSearchFilterBar messageSearch={this.messageSearch} canUseFilters={canUseFilters} />}
+                    {!isServerless() && <MessageSearchFilterBar
+                        messageSearch={this.messageSearch}
+                        canUseFilters={canUseFilters}
+                        menuEl={menuEl}
+                    />}
+
+
 
                     <GridItem>
                         {/* Show warning if a deserializer is forced for key or value */}
@@ -544,6 +538,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
+        const breakpoint = useBreakpoint({ ssr: false })
         const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
@@ -634,6 +629,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return <>
             <DataTable<TopicMessage>
+                size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}
@@ -1579,14 +1575,14 @@ const helpEntries = [
 ].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
-class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean }> {
+class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, fetchError?: string, menuEl: ReactElement }> {
     /*
     todo:
         - does a click outside of the editor mean "ok" or "cancel"?
             - maybe don't allow closing by clicking outside?
             - ok: so we can make quick changes
         - maybe submit the code live, show syntax errors below
-        - maybe havee a button that runs the code against the newest message?
+        - maybe have a button that runs the code against the newest message?
      */
 
     @observable currentFilter: FilterEntry | null = null;
@@ -1607,13 +1603,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
 
         return <>
             {/* Add Filter Button */}
-            <GridItem
-                display="flex"
-                justifyContent="space-between"
-                alignItems="flex-end"
-                area={{base: 'addbutton', '2xl': 'toolbar2'}}
-                gridColumn={{base: '1', xl: '1/-1'}}
-            >
+            <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
                 <Tooltip
                     label="You don't have permissions to use search filters in this topic"
                     isDisabled={canUseFilters}
@@ -1634,25 +1624,23 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                         Add Filter
                     </Button>
                 </Tooltip>
-                    {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
-                        ? (
-                            <div className={styles.metaSection}>
-                                <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
-                                <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
-                            </div>
-                        )
-                        : (
-                            <div className={`${styles.metaSection} ${styles.isLoading}`}>
-                                <span className={`spinner ${styles.spinner}`} />
-                                <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
-                            </div>
-                        )
-                    }
+
+
+                {/* Quick Search */}
+                <SearchField width="230px" searchText={this.props.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
+
+                {this.props.menuEl}
             </GridItem>
 
-            <GridItem area="filters">
+            <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
 
-            <div className={styles.filters}>
+            <Box
+                width="calc(100% - 200px)"
+                display="inline-flex"
+                rowGap="2px"
+                columnGap="8px"
+                flexWrap="wrap"
+            >
                 {/* Existing Tags List  */}
                 {settings.filters?.map(e =>
                     <Tag
@@ -1684,8 +1672,21 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                         <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
-            </div>
-
+            </Box>
+                {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
+                    ? (
+                        <div className={styles.metaSection}>
+                            <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
+                            <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
+                        </div>
+                    )
+                    : (
+                        <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                            <span className={`spinner ${styles.spinner}`} />
+                            <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                        </div>
+                    )
+                }
 
             </GridItem>
 
