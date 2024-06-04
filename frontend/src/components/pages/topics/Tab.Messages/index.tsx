@@ -635,7 +635,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return <>
             <DataTable<TopicMessage>
                 data={this.messageSource.data}
-                isLoading={this.messageSearch.searchPhase === 'Connecting'}
+                isLoading={this.messageSearch.searchPhase !== null}
                 emptyText="No messages"
                 columns={columns}
                 // we need (?? []) to be compatible with searchParams of clients already stored in local storage
