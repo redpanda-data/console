@@ -100,7 +100,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
-	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
+	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
 	if err != nil {
@@ -322,7 +322,6 @@ func (api *API) routes() *chi.Mux {
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
-				r.Post("/topics-records", api.handlePublishTopicsRecords())
 				r.Get("/topics", api.handleGetTopics())
 				r.Post("/topics", api.handleCreateTopic())
 				r.Delete("/topics/{topicName}", api.handleDeleteTopic())

@@ -85,15 +85,11 @@ type AuthorizationHooks interface {
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
