@@ -384,8 +384,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
                                 statusText={this.messageSearch.searchPhase!}
                                 progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                                bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
-                                messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
+                                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
+                                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
                             />
                         }
                     </GridItem>
@@ -403,13 +403,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     */}
 
                     {/* Filter Tags */}
-                    {!isServerless() && <MessageSearchFilterBar
+                    <MessageSearchFilterBar
                         messageSearch={this.messageSearch}
                         canUseFilters={canUseFilters}
                         menuEl={menuEl}
-                    />}
-
-
+                    />
 
                     <GridItem>
                         {/* Show warning if a deserializer is forced for key or value */}
@@ -698,7 +696,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         });
 
         let filterCode: string = '';
-        if (searchParams.filtersEnabled && canUseFilters) {
+        if (canUseFilters) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
@@ -753,7 +751,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     empty = () => {
         const searchParams = uiState.topicSettings.searchParams;
-        const filterCount = searchParams.filtersEnabled ? searchParams.filters.filter(x => x.isActive).length : 0;
+        const filterCount = searchParams.filters.filter(x => x.isActive).length;
 
         const hints: JSX.Element[] = [];
         if (filterCount > 0)
