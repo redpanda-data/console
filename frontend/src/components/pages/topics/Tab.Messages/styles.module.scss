@@ -9,25 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-.filterbar {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.filters {
-    width: calc(100% - 200px);
-    display: inline-flex;
-    row-gap: 2px;
-    column-gap: 8px;
-    flex-wrap: wrap;
-}
-
 .metaSection {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin-left: auto;
-    width: 200px;
 
     font-size: 12px;
     font-weight: 500;

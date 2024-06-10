@@ -10,10 +10,10 @@
  */
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
+import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode, useState } from 'react';
+import React, { Component, FC, ReactElement, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
@@ -36,7 +36,7 @@ import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useBreakpoint, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -291,118 +291,104 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
         const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
 
+        const menuEl = (
+            <Menu>
+                <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
+                    Actions
+                </MenuButton>
+                <MenuList>
+                    <MenuItem
+                        onClick={() => {
+                            appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                        }}
+                    >
+                        Produce Record
+                    </MenuItem>
+                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                </MenuList>
+            </Menu>
+        );
+
         return (
             <React.Fragment>
-                <Flex
+                <Grid
                     my={4}
-                    flexWrap="wrap"
-                    alignItems="flex-end"
                     gap={3}
+                    gridTemplateColumns="auto 1fr"
                     width="full"
                 >
-                    {/* Search Settings*/}
-                    <Label text="Partition">
-                        <SingleSelect<number>
-                            value={searchParams.partitionID}
-                            onChange={c => (searchParams.partitionID = c)}
-                            options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
-                        />
-                    </Label>
-                    <Label text="Start Offset">
-                        <Flex gap={3}>
-                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
-                                searchParams.offsetOrigin = e;
-                                if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
-                                    if (searchParams.startOffset < 0)
-                                        searchParams.startOffset = 0;
-                                }
-                                else {
-                                    searchParams.startOffset = searchParams.offsetOrigin;
-                                }
-                            }} options={startOffsetOptions} />
-                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
-                                <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
-                                    <Input style={{ width: '7.5em' }}
-                                        maxLength={20}
-                                        isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
-                                        value={customStartOffsetValue}
-                                        onChange={e => {
-                                            setCustomStartOffsetValue(e.target.value);
-                                            if (!isNaN(Number(e.target.value)))
-                                                searchParams.startOffset = Number(e.target.value);
-                                        }}
-                                    />
-                                </Tooltip>
-                            }
-                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-                        </Flex>
-                    </Label>
-                    <Label text="Max Results">
-                        <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
-                    </Label>
-
-                    {!isServerless() && (
-                        <Label text="Filter">
-                            <Tooltip label="You don't have permissions to use search filters in this topic"
-                                isDisabled={canUseFilters} placement="top" hasArrow>
-                                <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters}
-                                    onChange={v => (searchParams.filtersEnabled = v.target.checked)}
-                                    isDisabled={!canUseFilters} />
-                            </Tooltip>
+                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
+                        {/* Search Settings*/}
+                        <Label text="Partition">
+                            <SingleSelect<number> value={searchParams.partitionID} onChange={(c) => (searchParams.partitionID = c)} options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map((i) => ({ value: i, label: String(i) })))} />
                         </Label>
-                    )}
 
-                    {/* Refresh Button */}
-                    <Flex>
-                        {this.messageSearch.searchPhase == null && (
-                            <Tooltip label="Repeat current search" placement="top" hasArrow>
-                                <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                    <SyncIcon size={20} />
-                                </Button>
-                            </Tooltip>
-                        )}
-                        {this.messageSearch.searchPhase != null && (
-                            <Tooltip label="Stop searching" placement="top" hasArrow>
-                                <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
-                                    style={{ padding: 0, width: '48px' }}>
-                                    <XCircleIcon size={20} />
-                                </Button>
-                            </Tooltip>
-                        )}
-                    </Flex>
-
-                    {/* Topic Actions */}
-                    <Flex alignSelf="flex-end" ml="auto" gap={3}>
-                        <Menu>
-                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
-                                Actions
-                            </MenuButton>
-                            <MenuList>
-                                <MenuItem
-                                    onClick={() => {
-                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                        <Label text="Start Offset">
+                            <Flex gap={3}>
+                                <SingleSelect<PartitionOffsetOrigin>
+                                    value={searchParams.offsetOrigin}
+                                    onChange={(e) => {
+                                        searchParams.offsetOrigin = e;
+                                        if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
+                                            if (searchParams.startOffset < 0) searchParams.startOffset = 0;
+                                        } else {
+                                            searchParams.startOffset = searchParams.offsetOrigin;
+                                        }
                                     }}
-                                >
-                                    Produce Record
-                                </MenuItem>
-                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                            </MenuList>
-                        </Menu>
-                        {/* Quick Search */}
-                        <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
-                    </Flex>
+                                    options={startOffsetOptions}
+                                />
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
+                                    <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
+                                        <Input
+                                            style={{ width: '7.5em' }}
+                                            maxLength={20}
+                                            isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
+                                            value={customStartOffsetValue}
+                                            onChange={(e) => {
+                                                setCustomStartOffsetValue(e.target.value);
+                                                if (!isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
+                                            }}
+                                        />
+                                    </Tooltip>
+                                )}
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+                            </Flex>
+                        </Label>
 
-                    {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                    {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
-                        <StatusIndicator
-                            identityKey="messageSearch"
-                            fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
-                            statusText={this.messageSearch.searchPhase!}
-                            progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
-                            messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
-                        />
-                    }
+                        <Label text="Max Results">
+                            <SingleSelect<number> value={searchParams.maxResults} onChange={(c) => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))} />
+                        </Label>
+
+                        <Flex alignItems="flex-end">
+                            {/* Refresh Button */}
+                            {this.messageSearch.searchPhase == null && (
+                                <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                    <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                        <SyncIcon size={20}/>
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {this.messageSearch.searchPhase != null && (
+                                <Tooltip label="Stop searching" placement="top" hasArrow>
+                                    <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
+                                            style={{padding: 0, width: '48px'}}>
+                                        <XCircleIcon size={20}/>
+                                    </Button>
+                                </Tooltip>
+                            )}
+                        </Flex>
+                        {/* Search Progress Indicator: "Consuming Messages 30/30" */}
+                        {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
+                            <StatusIndicator
+                                identityKey="messageSearch"
+                                fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                                statusText={this.messageSearch.searchPhase!}
+                                progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
+                                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
+                            />
+                        }
+                    </GridItem>
 
                     {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
@@ -417,30 +403,36 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     */}
 
                     {/* Filter Tags */}
-                    {searchParams.filtersEnabled && (
-                        <div style={{ paddingTop: '1em', width: '100%' }}>
-                            <MessageSearchFilterBar messageSearch={this.messageSearch} />
-                        </div>
-                    )}
+                    <MessageSearchFilterBar
+                        messageSearch={this.messageSearch}
+                        canUseFilters={canUseFilters}
+                        menuEl={menuEl}
+                    />
 
-                    {/* Show warning if a deserializer is forced for key or value */}
-                    {isDeserializerOverrideActive && (
-                        <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
-                            {isKeyDeserializerActive && <Tag>
-                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                    Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
-                                </TagLabel>
-                                <TagCloseButton onClick={() => uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED} />
-                            </Tag>}
-                            {isValueDeserializerActive && <Tag>
-                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                    Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
-                                </TagLabel>
-                                <TagCloseButton onClick={() => uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED} />
-                            </Tag>}
-                        </Flex>
-                    )}
-                </Flex>
+                    <GridItem>
+                        {/* Show warning if a deserializer is forced for key or value */}
+                        {isDeserializerOverrideActive && (
+                            <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
+                                {isKeyDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
+                                {isValueDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
+                            </Flex>
+                        )}
+                    </GridItem>
+                </Grid>
             </React.Fragment>
         );
     });
@@ -544,6 +536,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
+        const breakpoint = useBreakpoint({ ssr: false })
         const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
@@ -617,23 +610,24 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
         }]
 
-        const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
-                    <SettingOutlined style={{ fontSize: '1rem' }} />
-                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+        const previewButton = (
+            <Button variant="ghost" size="sm" onClick={() => setShowPreviewSettings(true)}>
+                <Flex gap={2} alignItems="center">
+                    <Text>Preview</Text>
                     {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
-                        if (count > 0)
-                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
-                        return <></>;
+                        const count = uiState.topicSettings.previewTags.sum((t) => (t.isActive ? 1 : 0));
+                        if (count > 0) {
+                            return <Badge lineHeight={1.2}>{count}</Badge>;
+                        }
+                        return null;
                     })()}
-                </Button>
-            </span>
-        </>;
+                </Flex>
+            </Button>
+        );
 
         return <>
             <DataTable<TopicMessage>
+                size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
                 data={this.messageSource.data}
                 emptyText="No messages"
                 columns={columns}
@@ -702,7 +696,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         });
 
         let filterCode: string = '';
-        if (searchParams.filtersEnabled && canUseFilters) {
+        if (canUseFilters) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
@@ -757,7 +751,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     empty = () => {
         const searchParams = uiState.topicSettings.searchParams;
-        const filterCount = searchParams.filtersEnabled ? searchParams.filters.filter(x => x.isActive).length : 0;
+        const filterCount = searchParams.filters.filter(x => x.isActive).length;
 
         const hints: JSX.Element[] = [];
         if (filterCount > 0)
@@ -1579,14 +1573,14 @@ const helpEntries = [
 ].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
-class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }> {
+class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, fetchError?: string, menuEl: ReactElement }> {
     /*
     todo:
         - does a click outside of the editor mean "ok" or "cancel"?
             - maybe don't allow closing by clicking outside?
             - ok: so we can make quick changes
         - maybe submit the code live, show syntax errors below
-        - maybe havee a button that runs the code against the newest message?
+        - maybe have a button that runs the code against the newest message?
      */
 
     @observable currentFilter: FilterEntry | null = null;
@@ -1603,11 +1597,48 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
     render() {
         const settings = uiState.topicSettings.searchParams;
         const messageSearch = this.props.messageSearch;
+        const canUseFilters = this.props.canUseFilters;
 
-        return <div className={styles.filterbar}>
+        return <>
+            {/* Add Filter Button */}
+            <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
+                <Tooltip
+                    label="You don't have permissions to use search filters in this topic"
+                    isDisabled={canUseFilters}
+                    placement="top"
+                    hasArrow
+                >
+                    <Button
+                        isDisabled={!canUseFilters}
+                        variant="outline"
+                        onClick={() => transaction(() => {
+                            this.currentIsNew = true;
+                            this.currentFilterBackup = null;
+                            this.currentFilter = new FilterEntry();
+                            this.hasChanges = false;
+                            settings.filters.push(this.currentFilter);
+                        })}>
+
+                        Add Filter
+                    </Button>
+                </Tooltip>
 
 
-            <div className={styles.filters}>
+                {/* Quick Search */}
+                <SearchField width="230px" searchText={this.props.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
+
+                {this.props.menuEl}
+            </GridItem>
+
+            <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
+
+            <Box
+                width="calc(100% - 200px)"
+                display="inline-flex"
+                rowGap="2px"
+                columnGap="8px"
+                flexWrap="wrap"
+            >
                 {/* Existing Tags List  */}
                 {settings.filters?.map(e =>
                     <Tag
@@ -1639,36 +1670,23 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
                         <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
+            </Box>
+                {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
+                    ? (
+                        <div className={styles.metaSection}>
+                            <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
+                            <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
+                        </div>
+                    )
+                    : (
+                        <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                            <span className={`spinner ${styles.spinner}`} />
+                            <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                        </div>
+                    )
+                }
 
-                {/* Add Filter Button */}
-                <Tag onClick={() => transaction(() => {
-                    this.currentIsNew = true;
-                    this.currentFilterBackup = null;
-                    this.currentFilter = new FilterEntry();
-                    this.hasChanges = false;
-                    settings.filters.push(this.currentFilter);
-                })}>
-                    <span style={{ cursor: 'pointer' }}>
-                        <PlusIcon size="small" />
-                    </span>
-                    {/* <span>New Filter</span> */}
-                </Tag>
-            </div>
-
-            {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
-                ? (
-                    <div className={styles.metaSection}>
-                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
-                    </div>
-                )
-                : (
-                    <div className={`${styles.metaSection} ${styles.isLoading}`}>
-                        <span className={`spinner ${styles.spinner}`} />
-                        <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
-                    </div>
-                )
-            }
+            </GridItem>
 
 
             <Modal isOpen={this.currentFilter !== null} onClose={() => this.currentFilter = null}>
@@ -1719,7 +1737,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div>;
+        </>;
     }
 
     revertChanges() {
