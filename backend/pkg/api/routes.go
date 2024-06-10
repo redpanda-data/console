@@ -238,6 +238,12 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
 
+	v, err := protovalidate.New()
+	if err != nil {
+		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+	}
+	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
 	checkOriginFn := originsCheckFunc(api.Cfg.REST.AllowedOrigins)
@@ -387,6 +393,9 @@ func (api *API) routes() *chi.Mux {
 				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume", api.handleResumeConnector())
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart", api.handleRestartConnector())
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart", api.handleRestartConnectorTask())
+
+				// Wasm Transforms
+				r.Put("/transforms", transformSvc.HandleDeployTransform())
 
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
