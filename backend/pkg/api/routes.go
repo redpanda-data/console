@@ -103,6 +103,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
+	consoleTransformSvc := transformsvc.ConsoleService{Impl: transformSvc}
 	if err != nil {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
 	}
@@ -120,6 +121,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.ConsoleServiceName:         consoleSvc,
 			consolev1alpha1connect.SecurityServiceName:        securitySvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
+			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
 		},
 	})
 
@@ -155,6 +157,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	rpconnectServicePath, rpconnectServiceHandler := consolev1alpha1connect.NewRedpandaConnectServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.RedpandaConnectServiceName].(consolev1alpha1connect.RedpandaConnectServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleTransformSvcPath, consoleTransformSvcHandler := consolev1alpha1connect.NewTransformServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
@@ -197,6 +202,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.RedpandaConnectServiceName,
 			MountPath:   rpconnectServicePath,
 			Handler:     rpconnectServiceHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.TransformServiceName,
+			MountPath:   consoleTransformSvcPath,
+			Handler:     consoleTransformSvcHandler,
 		},
 	}
 
