@@ -629,6 +629,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <DataTable<TopicMessage>
                 size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
                 data={this.messageSource.data}
+                isLoading={this.messageSearch.searchPhase !== null}
                 emptyText="No messages"
                 columns={columns}
                 // we need (?? []) to be compatible with searchParams of clients already stored in local storage
