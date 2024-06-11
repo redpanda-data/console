@@ -64,7 +64,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
         const subjectName = this.props.subjectName;
         p.title = 'Add schema version';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, {
+        p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
             canBeTruncated: true
         })
         p.addBreadcrumb('Create schema', `/schema-registry/subjects/${subjectName}/add-version`);

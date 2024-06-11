@@ -21,6 +21,7 @@ export interface BreadcrumbOptions {
 
 export interface BreadcrumbEntry {
     title: string;
+    heading?: string;
     linkTo: string;
     options?: BreadcrumbOptions;
 }
