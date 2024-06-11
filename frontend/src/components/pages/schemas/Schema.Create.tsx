@@ -152,7 +152,7 @@ const SchemaPageButtons = observer((p: {
 
     return <Flex gap="4" mt="4">
         <Button colorScheme="brand" variant="solid"
-            isDisabled={isCreating || isMissingName || isValidating}
+            isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isCreating}
             loadingText="Creating..."
             onClick={async () => {
@@ -201,7 +201,7 @@ const SchemaPageButtons = observer((p: {
         </Button>
 
         <Button variant="solid"
-            isDisabled={isValidating || isMissingName || isValidating}
+            isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isValidating}
             loadingText="Validate"
             onClick={async () => {
@@ -339,7 +339,7 @@ const SchemaEditor = observer((p: {
             </Flex>
 
             <Flex gap="8">
-                <FormField label="Key or value" width="auto" isInvalid={state.strategy === 'TOPIC' && state.userInput.length > 0 && !state.keyOrValue} errorText="Required">
+                <FormField label="Key or value" width="auto" isInvalid={state.isInvalidKeyOrValue} errorText="Required">
                     <RadioGroup name="keyOrValue"
                         isDisabled={isAddVersion}
                         value={state.keyOrValue}
@@ -489,6 +489,10 @@ function createSchemaState() {
             subject: string,
             version: number
         }[],
+
+        get isInvalidKeyOrValue() {
+            return this.strategy === 'TOPIC' && this.userInput.length > 0 && !this.keyOrValue
+        },
 
         get computedSubjectName() {
             let subjectName = '';
