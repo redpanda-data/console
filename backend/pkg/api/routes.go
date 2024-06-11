@@ -103,10 +103,10 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
-	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
 	if err != nil {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
 	}
+	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
