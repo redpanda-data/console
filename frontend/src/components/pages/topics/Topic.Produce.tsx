@@ -15,7 +15,8 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
-import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { base64ToUInt8Array, getPayloadAsString, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { TopicMessage } from '../../../state/restInterfaces';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -131,11 +132,13 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors])
 
     useEffect(() => {
-        setValue('key.data', '')
+        const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
+        setValue('key.data', record ? getPayloadAsString(record.key.payload ?? record.key.rawBytes) : '')
     }, [keyPayloadOptions.encoding, setValue]);
 
     useEffect(() => {
-        setValue('value.data', '')
+        const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
+        setValue('value.data', record ? getPayloadAsString(record.value.payload ?? record.value.rawBytes) : '')
     }, [valuePayloadOptions.encoding, setValue]);
 
     const showKeySchemaSelection = keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF
