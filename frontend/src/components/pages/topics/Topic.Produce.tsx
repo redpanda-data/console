@@ -49,6 +49,14 @@ function encodingToLanguage(encoding: PayloadEncoding) {
     return undefined;
 }
 
+function languageToEncoding(language: string | undefined): PayloadEncoding {
+    if (language == 'json') return PayloadEncoding.JSON;
+    if (language == 'avro') return PayloadEncoding.JSON;
+    if (language == 'protobuf') return PayloadEncoding.PROTOBUF;
+    if (language == 'plaintext') return PayloadEncoding.BINARY;
+    return PayloadEncoding.TEXT;
+}
+
 type PayloadOptions = {
     encoding: PayloadEncoding;
     data: string;
@@ -71,6 +79,7 @@ type Inputs = {
 
 const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
     const toast = useToast()
+    const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
 
     const {
         control,
@@ -88,14 +97,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         defaultValues: {
             partition: -1,
             compressionType: CompressionType.SNAPPY,
-            headers: [],
+            headers: record?.headers?.map(h => ({ key: h.key, value: getPayloadAsString(h.value.payload).replaceAll(/^"|"$/g, '') })) ?? [],
             key: {
                 data: '',
-                encoding: PayloadEncoding.TEXT,
+                encoding: record ? languageToEncoding(record.key?.encoding) : PayloadEncoding.TEXT,
             },
             value: {
                 data: '',
-                encoding: PayloadEncoding.TEXT,
+                encoding: record ? languageToEncoding(record.value?.encoding) : PayloadEncoding.TEXT,
             },
         }
     })
@@ -132,14 +141,12 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors])
 
     useEffect(() => {
-        const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
         setValue('key.data', record ? getPayloadAsString(record.key.payload ?? record.key.rawBytes) : '')
-    }, [keyPayloadOptions.encoding, setValue]);
+    }, [keyPayloadOptions.encoding, setValue, record]);
 
     useEffect(() => {
-        const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
         setValue('value.data', record ? getPayloadAsString(record.value.payload ?? record.value.rawBytes) : '')
-    }, [valuePayloadOptions.encoding, setValue]);
+    }, [valuePayloadOptions.encoding, setValue, record]);
 
     const showKeySchemaSelection = keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF
     const showValueSchemaSelection = valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF
