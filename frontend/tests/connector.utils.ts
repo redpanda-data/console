@@ -4,6 +4,9 @@ import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './console/connect
 export const createConnector = async(page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string}) => {
     return await test.step('Create connector', async () => {
         await page.goto(`/connect-clusters/${clusterName}`)
+        await page.waitForURL(`/connect-clusters/${clusterName}`, {
+            timeout: 5000
+        })
         await page
             .getByRole('button', {name: 'Create connector', exact: true})
             .click();
@@ -34,6 +37,10 @@ export const createConnector = async(page: Page, { clusterName, connectorName }:
         await expect(page.getByRole('button', {name: 'Create'})).toBeVisible();
         await expect(page.getByRole('button', {name: 'Create'})).toBeEnabled();
         await page.getByRole('button', {name: 'Create'}).click();
+
+        await page.waitForURL(`/connect-clusters/${clusterName}/${connectorName}`, {
+            timeout: 15000
+        })
     });
 }
 
