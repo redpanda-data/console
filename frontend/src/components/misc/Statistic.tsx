@@ -13,17 +13,19 @@ export function Statistic(p: {
 
     return (
         <Stat key={key} className={className} flexBasis="auto" flexGrow={0} marginRight="2rem" {...rest}>
-            <Flex gap={1}>
-                <StatNumber>{value}</StatNumber>
-                {hint && (
-                    <Tooltip label={hint} hasArrow placement="right">
-                        <Box alignSelf="start">
-                            <MdInfoOutline />
-                        </Box>
-                    </Tooltip>
-                )}
-            </Flex>
-            <StatLabel>{title}</StatLabel>
+            <StatNumber>{value}</StatNumber>
+            <StatLabel>
+                <Flex gap={1}>
+                    {title}
+                    {hint && (
+                            <Tooltip label={hint} hasArrow placement="right">
+                                <Box alignSelf="start">
+                                    <MdInfoOutline size={18} />
+                                </Box>
+                            </Tooltip>
+                    )}
+                </Flex>
+            </StatLabel>
         </Stat>
     );
 
