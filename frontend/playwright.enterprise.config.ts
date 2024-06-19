@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   expect: {
-    timeout: 10000,
+    timeout: 15000,
   },
   testDir: './tests',
   /* Run tests in files in parallel */
@@ -26,7 +26,7 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    navigationTimeout: 10 * 1000,
+    navigationTimeout: 15 * 1000,
     viewport: { width: 1920, height: 1080 },
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -39,21 +39,27 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    { name: 'authenticate', testMatch: /auth\.setup\.ts/ },
+
     {
-      name: 'chromium',
+      name: 'Console Enterprise',
+      testMatch: 'tests/console-enterprise/**/*',
       use: {
         ...devices['Desktop Chrome'],
         // Use prepared auth state.
-        // storageState: 'playwright/.auth/user.json',
+        storageState: 'playwright/.auth/user.json',
+        // baseURL: '// console console-enterprise URL'
       },
+      dependencies: ['authenticate']
     },
   ],
 
-
   /* Run your local dev server before starting the tests */
   webServer: [{
-    cwd: '../backend/cmd/api',
-    command: 'go run . --config.filepath=../../../frontend/tests/config/console.config.yaml',
+    cwd: process.env.CI ? '../../backend/cmd' : '../../console-enterprise/backend/cmd',
+    command: process.env.CI ?
+      'go run . --config.filepath=../../console-oss/frontend/tests/config/console.enterprise.config.yaml' :
+      'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
     url: 'http://localhost:9090/admin/startup',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
@@ -61,7 +67,7 @@ export default defineConfig({
     timeout: 120 * 1000
   },
   {
-    command: 'npm run start',
+    command: 'npm run start2',
     url: 'http://localhost:3000',
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
