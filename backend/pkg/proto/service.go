@@ -114,7 +114,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 
 	mappingsByTopic := make(map[string]config.ProtoTopicMapping)
 	for _, mapping := range cfg.Mappings {
-		mappingsByTopic[mapping.TopicName] = mapping
+		mappingsByTopic[mapping.TopicName.String()] = mapping
 	}
 
 	return &Service{
@@ -129,6 +129,29 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		// registry has to be created afterwards
 		registry: nil,
 	}, nil
+}
+
+func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopicMapping, err error) {
+	mapping, exactExists := s.mappingsByTopic[topicName]
+	if exactExists {
+		return mapping, nil
+	}
+
+	var match bool
+	for _, rMapping := range s.mappingsByTopic {
+		if rMapping.TopicName.Regexp != nil && rMapping.TopicName.Regexp.MatchString(topicName) {
+			mapping = rMapping
+			s.mappingsByTopic[topicName] = mapping
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		return mapping, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
+	}
+
+	return mapping, nil
 }
 
 // Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these
@@ -311,9 +334,9 @@ func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
 // GetMessageDescriptor tries to find the apr
 func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
-	mapping, exists := s.mappingsByTopic[topicName]
-	if !exists {
-		return nil, fmt.Errorf("no prototype found for the given topic '%s'. Check your configured protobuf mappings", topicName)
+	mapping, err := s.getMatchingMapping(topicName)
+	if err != nil {
+		return nil, err
 	}
 
 	var protoTypeURL string
@@ -494,7 +517,7 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 			}
 			if messageDesc == nil {
 				s.logger.Warn("protobuf type from configured topic mapping does not exist",
-					zap.String("topic_name", mapping.TopicName),
+					zap.String("topic_name", mapping.TopicName.String()),
 					zap.String("value_proto_type", mapping.ValueProtoType))
 				missingTypes++
 			} else {
@@ -508,7 +531,7 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 			}
 			if messageDesc == nil {
 				s.logger.Info("protobuf type from configured topic mapping does not exist",
-					zap.String("topic_name", mapping.TopicName),
+					zap.String("topic_name", mapping.TopicName.String()),
 					zap.String("key_proto_type", mapping.KeyProtoType))
 				missingTypes++
 			} else {

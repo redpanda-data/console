@@ -130,7 +130,8 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		FlatPaths: false,
 		DecoderConfig: &mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
-				mapstructure.StringToTimeDurationHookFunc()),
+				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.TextUnmarshallerHookFunc()),
 			Metadata:         nil,
 			Result:           &cfg,
 			WeaklyTypedInput: true,

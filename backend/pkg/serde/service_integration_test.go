@@ -563,11 +563,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
+		topic0 := config.RegexpOrLiteral{}
+		topic0.UnmarshalText([]byte(testTopicName))
+
 		cfg := s.createBaseConfig()
 		cfg.Kafka.Protobuf.Enabled = true
 		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
-				TopicName:      testTopicName,
+				TopicName:      topic0,
 				ValueProtoType: "shop.v1.Order",
 			},
 		}
@@ -726,11 +729,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
+		topic0 := config.RegexpOrLiteral{}
+		topic0.UnmarshalText([]byte(testTopicName))
+
 		cfg := s.createBaseConfig()
 		cfg.Kafka.Protobuf.Enabled = true
 		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
-				TopicName:      testTopicName,
+				TopicName:      topic0,
 				ValueProtoType: "shop.v2.Order",
 			},
 		}
@@ -2972,11 +2978,14 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
+		topic0 := config.RegexpOrLiteral{}
+		topic0.UnmarshalText([]byte(testTopicName))
+
 		cfg := s.createBaseConfig()
 		cfg.Kafka.Protobuf.Enabled = true
 		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
-				TopicName:      testTopicName,
+				TopicName:      topic0,
 				ValueProtoType: "shop.v1.Order",
 			},
 		}
@@ -3043,11 +3052,14 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			assert.NoError(err)
 		}()
 
+		topic0 := config.RegexpOrLiteral{}
+		topic0.UnmarshalText([]byte(testTopicName))
+
 		cfg := s.createBaseConfig()
 		cfg.Kafka.Protobuf.Enabled = true
 		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
-				TopicName:      testTopicName,
+				TopicName:      topic0,
 				ValueProtoType: "shop.v2.Order",
 			},
 		}
