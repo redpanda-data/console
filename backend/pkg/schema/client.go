@@ -781,7 +781,7 @@ func (c *Client) CheckCompatibility(ctx context.Context, subject string, version
 	if res.IsError() {
 		restErr, ok := res.Error().(*RestError)
 		if !ok {
-			return nil, fmt.Errorf("check compatibility failed: Status code %d", res.StatusCode())
+			return nil, fmt.Errorf("check compatibility failed: %+v. Status code %d", string(res.Body()), res.StatusCode())
 		}
 		return nil, restErr
 	}
