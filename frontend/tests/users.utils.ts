@@ -16,5 +16,7 @@ export const deleteUser = async(page: Page, { username }: {username: string}) =>
     await page.goto(`/security/users/${username}/details`)
     await page.getByRole('button').getByText('Delete').click()
     await page.getByPlaceholder(`Type "${username}" to confirm`).fill(username);
-    return await page.getByTestId('test-delete-item').click();
+    return await page.getByTestId('test-delete-item').click({
+        force: true
+    });
 }
