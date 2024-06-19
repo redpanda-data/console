@@ -274,7 +274,7 @@ service ACLService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda [access-control lists](https://docs.redpanda.com/beta/manage/security/authorization/acl/) (ACLs)."};
 
   rpc ListACLs(ListACLsRequest) returns (ListACLsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/acls"};
+    option (google.api.http) = {get: "/v1alpha2/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List ACLs"
       description: "List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
@@ -292,7 +292,7 @@ service ACLService {
 
   rpc CreateACL(CreateACLRequest) returns (CreateACLResponse) {
     option (google.api.http) = {
-      post: "/v1alpha1/acls",
+      post: "/v1alpha2/acls",
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -311,7 +311,7 @@ service ACLService {
   }
 
   rpc DeleteACLs(DeleteACLsRequest) returns (DeleteACLsResponse) {
-    option (google.api.http) = {delete: "/v1alpha1/acls"};
+    option (google.api.http) = {delete: "/v1alpha2/acls"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete ACLs"
       description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions."

@@ -133,7 +133,7 @@ service UserService {
 
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {
-      post: "/v1alpha1/users"
+      post: "/v1alpha2/users"
       body: "user"
     };
 
@@ -162,7 +162,7 @@ service UserService {
   }
   rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
     option (google.api.http) = {
-      put: "/v1alpha1/users/{user.name}"
+      put: "/v1alpha2/users/{user.name}"
       body: "user"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -189,7 +189,7 @@ service UserService {
     };
   }
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
-    option (google.api.http) = {get: "/v1alpha1/users"};
+    option (google.api.http) = {get: "/v1alpha2/users"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Users"
       description: "List users. Optional: filter based on username."
@@ -205,7 +205,7 @@ service UserService {
     };
   }
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
-    option (google.api.http) = {delete: "/v1alpha1/users/{name}"};
+    option (google.api.http) = {delete: "/v1alpha2/users/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete User"
       description: "Delete the specified user"

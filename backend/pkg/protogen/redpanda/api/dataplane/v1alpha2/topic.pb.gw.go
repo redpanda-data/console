@@ -373,7 +373,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/CreateTopic", runtime.WithHTTPPathPattern("/v1alpha1/topics"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/CreateTopic", runtime.WithHTTPPathPattern("/v1alpha2/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -398,7 +398,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/ListTopics", runtime.WithHTTPPathPattern("/v1alpha1/topics"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/ListTopics", runtime.WithHTTPPathPattern("/v1alpha2/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -423,7 +423,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1alpha1/topics/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1alpha2/topics/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -448,7 +448,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/GetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/GetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -473,7 +473,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -498,7 +498,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -562,7 +562,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/CreateTopic", runtime.WithHTTPPathPattern("/v1alpha1/topics"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/CreateTopic", runtime.WithHTTPPathPattern("/v1alpha2/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -584,7 +584,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/ListTopics", runtime.WithHTTPPathPattern("/v1alpha1/topics"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/ListTopics", runtime.WithHTTPPathPattern("/v1alpha2/topics"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -606,7 +606,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1alpha1/topics/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1alpha2/topics/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -628,7 +628,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/GetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/GetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -650,7 +650,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/UpdateTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -672,7 +672,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha1/topics/{topic_name}/configurations"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations", runtime.WithHTTPPathPattern("/v1alpha2/topics/{topic_name}/configurations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -719,17 +719,17 @@ func (m response_TopicService_SetTopicConfigurations_0) XXX_ResponseBody() inter
 }
 
 var (
-	pattern_TopicService_CreateTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "topics"}, ""))
+	pattern_TopicService_CreateTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha2", "topics"}, ""))
 
-	pattern_TopicService_ListTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha1", "topics"}, ""))
+	pattern_TopicService_ListTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha2", "topics"}, ""))
 
-	pattern_TopicService_DeleteTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha1", "topics", "name"}, ""))
+	pattern_TopicService_DeleteTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1alpha2", "topics", "name"}, ""))
 
-	pattern_TopicService_GetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configurations"}, ""))
+	pattern_TopicService_GetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha2", "topics", "topic_name", "configurations"}, ""))
 
-	pattern_TopicService_UpdateTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configurations"}, ""))
+	pattern_TopicService_UpdateTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha2", "topics", "topic_name", "configurations"}, ""))
 
-	pattern_TopicService_SetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha1", "topics", "topic_name", "configurations"}, ""))
+	pattern_TopicService_SetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1alpha2", "topics", "topic_name", "configurations"}, ""))
 )
 
 var (

@@ -232,7 +232,7 @@ service TopicService {
 
   rpc CreateTopic(CreateTopicRequest) returns (CreateTopicResponse) {
     option (google.api.http) = {
-      post: "/v1alpha1/topics"
+      post: "/v1alpha2/topics"
       body: "topic"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -250,7 +250,7 @@ service TopicService {
     };
   }
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/topics"};
+    option (google.api.http) = {get: "/v1alpha2/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Topics"
       description: "List topics, with partition count and replication factor. Optional: filter based on topic name."
@@ -266,7 +266,7 @@ service TopicService {
     };
   }
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
-    option (google.api.http) = {delete: "/v1alpha1/topics/{name}"};
+    option (google.api.http) = {delete: "/v1alpha2/topics/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete Topic"
       description: "Delete the Kafka topic with the requested name."
@@ -290,7 +290,7 @@ service TopicService {
   }
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
     option (google.api.http) = {
-      get: "/v1alpha1/topics/{topic_name}/configurations"
+      get: "/v1alpha2/topics/{topic_name}/configurations"
       response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -318,7 +318,7 @@ service TopicService {
   }
   rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
     option (google.api.http) = {
-      patch: "/v1alpha1/topics/{topic_name}/configurations"
+      patch: "/v1alpha2/topics/{topic_name}/configurations"
       body: "configurations"
       response_body: "configurations"
     };
@@ -347,7 +347,7 @@ service TopicService {
   }
   rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
     option (google.api.http) = {
-      put: "/v1alpha1/topics/{topic_name}/configurations"
+      put: "/v1alpha2/topics/{topic_name}/configurations"
       body: "configurations"
       response_body: "configurations"
     };

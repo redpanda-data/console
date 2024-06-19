@@ -179,7 +179,7 @@ message DeleteTransformResponse {}
 
 service TransformService {
   rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
-    option (google.api.http) = {get: "/v1alpha1/transforms"};
+    option (google.api.http) = {get: "/v1alpha2/transforms"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Transforms"
       description: "Retrieve a list of Wasm transforms. Optional: filter based on transform name."
@@ -197,7 +197,7 @@ service TransformService {
 
   rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
     option (google.api.http) = {
-      get: "/v1alpha1/transforms/{name}"
+      get: "/v1alpha2/transforms/{name}"
       response_body: "transform"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -225,7 +225,7 @@ service TransformService {
   }
 
   rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
-    option (google.api.http) = {delete: "/v1alpha1/transforms/{name}"};
+    option (google.api.http) = {delete: "/v1alpha2/transforms/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete Transform"
       description: "Delete a Wasm transform with the requested name."
