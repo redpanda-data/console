@@ -21,6 +21,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/backoff"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
@@ -61,7 +62,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 	// Ensure Kafka connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
 	// Retries with backoff is very helpful in environments where Console concurrently starts with the Kafka target,
 	// such as a docker-compose demo.
-	eb := ExponentialBackoff{
+	eb := backoff.ExponentialBackoff{
 		BaseInterval: cfg.Kafka.Startup.RetryInterval,
 		MaxInterval:  cfg.Kafka.Startup.MaxRetryInterval,
 		Multiplier:   cfg.Kafka.Startup.BackoffMultiplier,
