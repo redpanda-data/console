@@ -4427,684 +4427,6 @@ paths:
       summary: Create ACL
       tags:
         - ACLService
-  /v1alpha2/connect/clusters:
-    get:
-      description: List connect clusters available for being consumed by the console's kafka-connect service.
-      operationId: KafkaConnectService_ListConnectClusters
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ListConnectClustersResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: List connect clusters
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}:
-    get:
-      description: Get information about an available Kafka Connect cluster.
-      operationId: KafkaConnectService_GetConnectCluster
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectCluster'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Connect cluster not found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get connect cluster
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors:
-    get:
-      description: List connectors managed by the Kafka Connect service.
-      operationId: KafkaConnectService_ListConnectors
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
-          in: query
-          name: page_token
-          schema:
-            type: string
-        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
-          in: query
-          name: page_size
-          schema:
-            format: int32
-            type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ListConnectorsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: List connectors
-      tags:
-        - KafkaConnectService
-    post:
-      description: Create a connector with the specified configuration.
-      operationId: KafkaConnectService_CreateConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/v1alpha2.ConnectorSpec'
-        required: true
-        x-originalParamName: connector
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
-          description: Created
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Create connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}:
-    delete:
-      description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
-      operationId: KafkaConnectService_DeleteConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          content:
-            application/json:
-              schema: {}
-          description: Deleted
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Delete connector
-      tags:
-        - KafkaConnectService
-    get:
-      description: Get information about a connector in a specific cluster.
-      operationId: KafkaConnectService_GetConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/config:
-    get:
-      description: Get the configuration for the connector.
-      operationId: KafkaConnectService_GetConnectorConfig
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get connector configuration
-      tags:
-        - KafkaConnectService
-    put:
-      description: Update the configuration for an existing connector with the specified name, or create a new connector using the given configuration. Returns information about the connector after the change has been made.
-      operationId: KafkaConnectService_UpsertConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector. If a connector with this name does not already exist, a new connector is created.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              additionalProperties:
-                type: string
-              required:
-                - config
-              type: object
-        description: Connector configuration property.
-        required: true
-        x-originalParamName: config
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
-          description: Updated
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
-          description: Created
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Upsert connector configuration
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/pause:
-    put:
-      description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
-      operationId: KafkaConnectService_PauseConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "202":
-          content:
-            application/json:
-              schema: {}
-          description: Pause request accepted
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Pause connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/restart:
-    post:
-      description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
-      operationId: KafkaConnectService_RestartConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/v1alpha2.RestartConnectorRequest.Options'
-        required: true
-        x-originalParamName: options
-      responses:
-        "204":
-          content:
-            application/json:
-              schema: {}
-          description: Restart connector request success
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Restart connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/resume:
-    put:
-      description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
-      operationId: KafkaConnectService_ResumeConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "202":
-          content:
-            application/json:
-              schema: {}
-          description: Resume request accepted
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Resume connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/status:
-    get:
-      description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
-      operationId: KafkaConnectService_GetConnectorStatus
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ConnectorStatus'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Get connector status
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/stop:
-    put:
-      description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
-      operationId: KafkaConnectService_StopConnector
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "202":
-          content:
-            application/json:
-              schema: {}
-          description: Request accepted
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Stop connector
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/topics:
-    get:
-      description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
-      operationId: KafkaConnectService_ListConnectorTopics
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/v1alpha1.ListConnectorTopicsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: List connector topics
-      tags:
-        - KafkaConnectService
-  /v1alpha2/connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
-    put:
-      description: Resets the set of topic names that the connector is using.
-      operationId: KafkaConnectService_ResetConnectorTopics
-      parameters:
-        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
-          in: path
-          name: cluster_name
-          required: true
-          schema:
-            type: string
-        - description: Name of connector using the topics to be reset.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema: {}
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Status'
-          description: An unexpected error response.
-      summary: Reset connector topics
-      tags:
-        - KafkaConnectService
   /v1alpha2/connect/clusters/{cluster_name}/secrets:
     get:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
@@ -5399,6 +4721,684 @@ paths:
       summary: Update Connect Cluster Secret
       tags:
         - SecretService
+  /v1alpha2/kafka-connect/clusters:
+    get:
+      description: List connect clusters available for being consumed by the console's kafka-connect service.
+      operationId: KafkaConnectService_ListConnectClusters
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ListConnectClustersResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List connect clusters
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}:
+    get:
+      description: Get information about an available Kafka Connect cluster.
+      operationId: KafkaConnectService_GetConnectCluster
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectCluster'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Connect cluster not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get connect cluster
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors:
+    get:
+      description: List connectors managed by the Kafka Connect service.
+      operationId: KafkaConnectService_ListConnectors
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ListConnectorsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List connectors
+      tags:
+        - KafkaConnectService
+    post:
+      description: Create a connector with the specified configuration.
+      operationId: KafkaConnectService_CreateConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1alpha2.ConnectorSpec'
+        required: true
+        x-originalParamName: connector
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Create connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}:
+    delete:
+      description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
+      operationId: KafkaConnectService_DeleteConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Delete connector
+      tags:
+        - KafkaConnectService
+    get:
+      description: Get information about a connector in a specific cluster.
+      operationId: KafkaConnectService_GetConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
+    get:
+      description: Get the configuration for the connector.
+      operationId: KafkaConnectService_GetConnectorConfig
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get connector configuration
+      tags:
+        - KafkaConnectService
+    put:
+      description: Update the configuration for an existing connector with the specified name, or create a new connector using the given configuration. Returns information about the connector after the change has been made.
+      operationId: KafkaConnectService_UpsertConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector. If a connector with this name does not already exist, a new connector is created.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties:
+                type: string
+              required:
+                - config
+              type: object
+        description: Connector configuration property.
+        required: true
+        x-originalParamName: config
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
+          description: Updated
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectorSpec'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Upsert connector configuration
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
+    put:
+      description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
+      operationId: KafkaConnectService_PauseConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Pause request accepted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Pause connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
+    post:
+      description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
+      operationId: KafkaConnectService_RestartConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1alpha2.RestartConnectorRequest.Options'
+        required: true
+        x-originalParamName: options
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Restart connector request success
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Restart connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
+    put:
+      description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
+      operationId: KafkaConnectService_ResumeConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Resume request accepted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Resume connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/status:
+    get:
+      description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
+      operationId: KafkaConnectService_GetConnectorStatus
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ConnectorStatus'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Get connector status
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
+    put:
+      description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
+      operationId: KafkaConnectService_StopConnector
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          content:
+            application/json:
+              schema: {}
+          description: Request accepted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Stop connector
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
+    get:
+      description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
+      operationId: KafkaConnectService_ListConnectorTopics
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alpha1.ListConnectorTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: List connector topics
+      tags:
+        - KafkaConnectService
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
+    put:
+      description: Resets the set of topic names that the connector is using.
+      operationId: KafkaConnectService_ResetConnectorTopics
+      parameters:
+        - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
+          in: path
+          name: cluster_name
+          required: true
+          schema:
+            type: string
+        - description: Name of connector using the topics to be reset.
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: {}
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: An unexpected error response.
+      summary: Reset connector topics
+      tags:
+        - KafkaConnectService
   /v1alpha2/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
