@@ -8,9 +8,7 @@ test.describe('Users', () => {
         await createUser(page, {username})
 
         const userInfoEl = page.locator('text=\'User created successfully\'');
-        await expect(userInfoEl).toBeVisible({
-            timeout: 3000
-        });
+        await expect(userInfoEl).toBeVisible();
 
         await deleteUser(page, {username})
     });

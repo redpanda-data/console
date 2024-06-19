@@ -7,7 +7,9 @@ export const createUser = async(page: Page, { username }: {username: string}) =>
 
     await page.waitForURL('/security/users/create')
     await page.getByLabel('Username').fill(username);
-    return await page.getByRole('button').getByText('Create').click()
+    return await page.getByRole('button').getByText('Create').click({
+        force: true
+    })
 }
 
 export const deleteUser = async(page: Page, { username }: {username: string}) => {

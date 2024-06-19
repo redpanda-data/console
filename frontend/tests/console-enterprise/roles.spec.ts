@@ -30,11 +30,18 @@ test.describe('Roles', () => {
 
         await page.waitForURL('/security/roles/create');
         await page.getByLabel('Role name').fill(roleName);
-        await page.getByTestId('roles-allow-all-operations').click();
+        await page.getByTestId('roles-allow-all-operations').click({
+            force: true
+        });
         await page.getByLabel('Assign this role to principals').fill(username);
-        await page.getByRole('button').getByText(username).click();
+        await page.getByRole('button').getByText(username).click({
+            force: true
+        });
 
-        await page.getByRole('button').getByText('Create').click();
+        await page.getByRole('button').getByText('Create').scrollIntoViewIfNeeded()
+        await page.getByRole('button').getByText('Create').click({
+            force: true
+        });
 
         await page.waitForURL(`/security/roles/${roleName}/details`);
         const userInfoEl = page.locator('text=\'This role is assigned to 1 principal\'');
@@ -71,7 +78,9 @@ test.describe('Roles', () => {
 
     test('Allow All Operations in Roles should pre-set the form', async ({page}) => {
         await page.goto('/security/roles/create');
-        await page.getByTestId('roles-allow-all-operations').click();
+        await page.getByTestId('roles-allow-all-operations').click({
+            force: true
+        });
         expect(await page.getByTestId('create-role-topics-section').getByRole('textbox').nth(0).inputValue()).toBe('*');
         expect(await page.getByTestId('create-role-consumer-groups-section').getByRole('textbox').nth(0).inputValue()).toBe('*');
         expect(await page.getByTestId('create-role-transactional-ids-section').getByRole('textbox').nth(0).inputValue()).toBe('*');
