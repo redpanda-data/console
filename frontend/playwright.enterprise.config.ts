@@ -26,7 +26,7 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    navigationTimeout: 15 * 1000,
+    // navigationTimeout: 15 * 1000,
     viewport: { width: 1920, height: 1080 },
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
