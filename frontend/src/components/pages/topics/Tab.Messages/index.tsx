@@ -35,7 +35,6 @@ import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
-import { CollapsedFieldProps } from '@textea/json-viewer';
 import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useBreakpoint, useToast, VStack } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
@@ -1071,7 +1070,7 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
 }
 
 
-export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>) {
     return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
         <RpTabs
@@ -1087,7 +1086,6 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
                         <PayloadComponent
                             payload={msg.key}
                             loadLargeMessage={loadLargeMessage}
-                            shouldExpand={shouldExpand}
                         />
                     </>
                 },
@@ -1099,7 +1097,6 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
                         <PayloadComponent
                             payload={msg.value}
                             loadLargeMessage={loadLargeMessage}
-                            shouldExpand={shouldExpand}
                         />
                     </>
                 },
@@ -1116,10 +1113,9 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
 
 const PayloadComponent = observer((p: {
     payload: Payload,
-    loadLargeMessage: () => Promise<void>,
-    shouldExpand?: ((x: CollapsedFieldProps) => boolean)
+    loadLargeMessage: () => Promise<void>
 }) => {
-    const { payload, loadLargeMessage, shouldExpand } = p;
+    const { payload, loadLargeMessage } = p;
     const toast = useToast();
     const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
 
@@ -1157,8 +1153,6 @@ const PayloadComponent = observer((p: {
             typeof val === 'string' ||
             typeof val === 'number' ||
             typeof val === 'boolean';
-
-        const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         if (payload.encoding == 'binary') {
             const mode = 'hex' as ('ascii' | 'raw' | 'hex');
@@ -1204,7 +1198,7 @@ const PayloadComponent = observer((p: {
             return <div className="codeBox" data-testid="payload-content">{String(val)}</div>;
         }
 
-        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;
+        return <KowlJsonView srcObj={val} />;
     }
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {((e as Error).message ?? String(e))}</span>;
@@ -1402,7 +1396,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                 subComponent={({ row: { original: header } }) => {
                     return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
-                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />
+                        : <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
                 }}
             />
         </div>
