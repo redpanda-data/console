@@ -12,7 +12,7 @@
 
 /*eslint block-scoped-var: "error"*/
 
-import { comparer, computed, observable, transaction } from 'mobx';
+import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
@@ -121,6 +121,7 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
+import { PartitionTransformStatus_PartitionStatus, TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1656,23 +1657,23 @@ export const pipelinesApi = observable({
 
         // todo: caching by default, if force=true, ignore time limit on cache
 
-/*         const client = appConfig.pipelinesClient;
-        if (!client) throw new Error('pipelines client is not initialized');
+        /*         const client = appConfig.pipelinesClient;
+                if (!client) throw new Error('pipelines client is not initialized');
 
-        const pipelines = [];
+                const pipelines = [];
 
-        let nextPageToken = '';
-        while (true) {
-            const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
+                let nextPageToken = '';
+                while (true) {
+                    const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
 
-            pipelines.push(...res.pipelines);
+                    pipelines.push(...res.pipelines);
 
-            if (!res.nextPageToken || res.nextPageToken.length == 0)
-                break;
-            nextPageToken = res.nextPageToken;
-        }
+                    if (!res.nextPageToken || res.nextPageToken.length == 0)
+                        break;
+                    nextPageToken = res.nextPageToken;
+                }
 
-        this.pipelines = pipelines; */
+                this.pipelines = pipelines; */
     },
 
     // async refreshPipelineDetails(name: string): Promise<void> {
@@ -1685,6 +1686,79 @@ export const pipelinesApi = observable({
 
 });
 
+
+export const transformsApi = observable({
+    transforms: undefined as undefined | TransformMetadata[],
+    transformDetails: new Map<string, TransformMetadata>(),
+
+    async refreshTransforms(_force: boolean): Promise<void> {
+
+        this.transforms = [
+            new TransformMetadata({
+                name: 'firstEntry', outputTopicNames: ['topicA', 'topicB'], inputTopicName: 'inputTopicA',
+                environmentVariables: [
+                    { key: 'env1', value: 'value1' },
+                    { key: 'env2', value: 'value2' },
+                    { key: 'env3', value: 'value3' },
+                ],
+                statuses: [
+                    { brokerId: 0, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
+                    { brokerId: 1, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
+                    { brokerId: 2, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.INACTIVE },
+                ]
+            }),
+            new TransformMetadata({
+                name: 'secondEntry', outputTopicNames: ['topicX', 'topicY', 'topicZ', 'topicASDASD'], inputTopicName: 'inputTopicB',
+                environmentVariables: [
+                    { key: 'env1', value: 'value1' },
+                    { key: 'env2', value: 'value2' },
+                    { key: 'env3', value: 'value3' },
+                ],
+                statuses: [
+                    { brokerId: 0, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
+                    { brokerId: 1, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
+                    { brokerId: 2, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
+                ]
+            })
+        ];
+
+        // DEBUG, random to disable linting check for unused code
+        if (Math.random() < 9) return;
+
+
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+        const transforms: TransformMetadata[] = [];
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listTransforms({ pageSize: 500, pageToken: nextPageToken });
+
+            transforms.push(...res.transforms);
+
+            if (!res.nextPageToken || res.nextPageToken.length == 0)
+                break;
+            nextPageToken = res.nextPageToken;
+        }
+
+        runInAction(() => {
+            this.transforms = transforms;
+            for (const t of transforms)
+                this.transformDetails.set(t.name, t);
+        });
+    },
+
+    async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+
+        const r = await client.getTransform({ name });
+        if (!r.transform) return;
+
+        this.transformDetails.set(r.transform.name, r.transform);
+    }
+
+
+});
 
 export function createMessageSearch() {
     const messageSearch = {
