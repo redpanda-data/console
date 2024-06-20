@@ -29,7 +29,7 @@ type RedpandaAdminAPI struct {
 	TLS RedpandaAdminAPITLS `yaml:"tls"`
 
 	// Startup contains relevant configurations such as connection max retries
-	// for the initial Kafka service creation.
+	// for the initial Redpanda service creation.
 	Startup ServiceStartupAttemptsOptions `yaml:"startup"`
 }
 
