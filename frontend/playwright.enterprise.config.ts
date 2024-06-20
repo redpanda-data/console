@@ -64,12 +64,12 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',
-    timeout: 120 * 1000
+    timeout: 240 * 1000
   },
   {
     command: 'npm run start2',
     url: 'http://localhost:3000',
-    timeout: 120 * 1000,
+    timeout: 240 * 1000,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',
