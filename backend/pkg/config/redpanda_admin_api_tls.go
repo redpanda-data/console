@@ -55,17 +55,17 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	if c.CertFilepath != "" && c.KeyFilepath != "" {
 		cert, err := os.ReadFile(c.CertFilepath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
+			return nil, fmt.Errorf("failed to read cert file for redpanda admin api client: %w", err)
 		}
 
 		privateKey, err := os.ReadFile(c.KeyFilepath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
+			return nil, fmt.Errorf("failed to read key file for redpanda admin api client: %w", err)
 		}
 
 		tlsCert, err := tls.X509KeyPair(cert, privateKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load certificate pair for schema registry client: %w", err)
+			return nil, fmt.Errorf("failed to load certificate pair for redpanda admin api client: %w", err)
 		}
 		certificates = []tls.Certificate{tlsCert}
 	}
