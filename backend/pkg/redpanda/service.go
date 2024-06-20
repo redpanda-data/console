@@ -67,7 +67,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
 
-	// Ensure Kafka connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
+	// Ensure Redpanda connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
 	// Retries with backoff is very helpful in environments where Console concurrently starts with the Kafka target,
 	// such as a docker-compose demo.
 	eb := backoff.ExponentialBackoff{
