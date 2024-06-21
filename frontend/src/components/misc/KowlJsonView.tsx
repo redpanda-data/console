@@ -24,9 +24,11 @@ export const KowlJsonView = observer((props: {
         : JSON.stringify(props.srcObj, undefined, 4);
 
     return <>
-        <Box minHeight="150px" maxHeight="600px"
+        <Box
             display="block"
-            height="400px"
+            minHeight="40"
+            maxHeight="45rem" // no chakra space equivalent exists
+            height="96"
             style={props.style}
         >
             <KowlEditor
