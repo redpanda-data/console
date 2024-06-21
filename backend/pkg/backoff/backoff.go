@@ -7,7 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+// Package backoff is a small utility package for providing backoff functionality.
+package backoff
 
 import (
 	"math"

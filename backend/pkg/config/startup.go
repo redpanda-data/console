@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// KafkaStartup is a configuration block to specify how often and with what delays
-// we should try to connect to the Kafka service. If all attempts have failed the
+// ServiceStartupAttemptsOptions is a configuration block to specify how often and with what delays
+// we should try to connect to a service. If all attempts have failed the
 // application will exit with code 1.
-type KafkaStartup struct {
+type ServiceStartupAttemptsOptions struct {
 	// EstablishConnectionEagerly determines whether the Kafka connection should
 	// be tested when it is created. This is handy to ensure the Kafka connection
 	// is working before issuing any further requests, but it requires some extra
@@ -30,8 +30,8 @@ type KafkaStartup struct {
 	BackoffMultiplier          float64       `yaml:"backoffMultiplier"`
 }
 
-// SetDefaults for Kafka startup configuration.
-func (k *KafkaStartup) SetDefaults() {
+// SetDefaults for service startup configuration.
+func (k *ServiceStartupAttemptsOptions) SetDefaults() {
 	k.EstablishConnectionEagerly = true
 	k.MaxRetries = 5
 	k.RetryInterval = time.Second
@@ -40,7 +40,7 @@ func (k *KafkaStartup) SetDefaults() {
 }
 
 // Validate startup config.
-func (k *KafkaStartup) Validate() error {
+func (k *ServiceStartupAttemptsOptions) Validate() error {
 	if k.MaxRetries < 0 {
 		return fmt.Errorf("max retries must be 0 for unlimited retries or a positive integer")
 	}
