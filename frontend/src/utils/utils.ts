@@ -384,6 +384,21 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
 }
 
 
+export function getPayloadAsString(value: string | Uint8Array | object): string {
+
+    if (value == null)
+        return '';
+
+    if (typeof value === 'string')
+        return value;
+
+    if (value instanceof Uint8Array)
+        return JSON.stringify(Array.from(value), null, 4);
+
+    return JSON.stringify(value, null, 4);
+}
+
+
 interface Property {
     /** property name */
     propertyName: string;

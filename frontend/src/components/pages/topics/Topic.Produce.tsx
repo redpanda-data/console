@@ -15,7 +15,8 @@ import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
-import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { base64ToUInt8Array, getPayloadAsString, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { TopicMessage } from '../../../state/restInterfaces';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -48,6 +49,14 @@ function encodingToLanguage(encoding: PayloadEncoding) {
     return undefined;
 }
 
+function languageToEncoding(language: string | undefined): PayloadEncoding {
+    if (language == 'json') return PayloadEncoding.JSON;
+    if (language == 'avro') return PayloadEncoding.JSON;
+    if (language == 'protobuf') return PayloadEncoding.PROTOBUF;
+    if (language == 'plaintext') return PayloadEncoding.BINARY;
+    return PayloadEncoding.TEXT;
+}
+
 type PayloadOptions = {
     encoding: PayloadEncoding;
     data: string;
@@ -70,6 +79,7 @@ type Inputs = {
 
 const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
     const toast = useToast()
+    const record = appGlobal.history.location?.state?.record as TopicMessage | undefined;
 
     const {
         control,
@@ -87,14 +97,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         defaultValues: {
             partition: -1,
             compressionType: CompressionType.SNAPPY,
-            headers: [],
+            headers: record?.headers?.map(h => ({ key: h.key, value: getPayloadAsString(h.value.payload).replaceAll(/^"|"$/g, '') })) ?? [],
             key: {
                 data: '',
-                encoding: PayloadEncoding.TEXT,
+                encoding: record ? languageToEncoding(record.key?.encoding) : PayloadEncoding.TEXT,
             },
             value: {
                 data: '',
-                encoding: PayloadEncoding.TEXT,
+                encoding: record ? languageToEncoding(record.value?.encoding) : PayloadEncoding.TEXT,
             },
         }
     })
@@ -131,12 +141,12 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors])
 
     useEffect(() => {
-        setValue('key.data', '')
-    }, [keyPayloadOptions.encoding, setValue]);
+        setValue('key.data', record ? getPayloadAsString(record.key.payload ?? record.key.rawBytes) : '')
+    }, [keyPayloadOptions.encoding, setValue, record]);
 
     useEffect(() => {
-        setValue('value.data', '')
-    }, [valuePayloadOptions.encoding, setValue]);
+        setValue('value.data', record ? getPayloadAsString(record.value.payload ?? record.value.rawBytes) : '')
+    }, [valuePayloadOptions.encoding, setValue, record]);
 
     const showKeySchemaSelection = keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF
     const showValueSchemaSelection = valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF

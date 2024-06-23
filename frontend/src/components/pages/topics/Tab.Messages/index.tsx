@@ -29,7 +29,7 @@ import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelp
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import { base64FromUInt8Array, cullText, encodeBase64, getPayloadAsString, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
@@ -85,22 +85,7 @@ function getMessageAsString(value: string | TopicMessage): string {
     return JSON.stringify(obj, null, 4);
 }
 
-function getPayloadAsString(value: string | Uint8Array | object): string {
-
-    if (value == null)
-        return '';
-
-    if (typeof value === 'string')
-        return value;
-
-    if (value instanceof Uint8Array)
-        return JSON.stringify(Array.from(value), null, 4);
-
-    return JSON.stringify(value, null, 4);
-}
-
-
-const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
+const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function, topicName: string }> = ({ record, onSaveToFile, topicName }) => {
     const toast = useToast()
     return (
         <Menu computePositionOnMount>
@@ -150,6 +135,11 @@ const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ re
                 </MenuItem>
                 <MenuItem onClick={() => onSaveToFile()}>
                     Save to File
+                </MenuItem>
+                <MenuItem onClick={() => {
+                    appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}/produce-record`, { record });
+                }}>
+                    Copy Message to Publish
                 </MenuItem>
             </MenuList>
         </Menu>
@@ -606,7 +596,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             </button>,
             id: 'action',
             size: 0,
-            cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
+            cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} topicName={this.props.topic.topicName} />,
         }]
 
         const previewButton = (
