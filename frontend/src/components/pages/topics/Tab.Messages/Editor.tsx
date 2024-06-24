@@ -20,7 +20,7 @@ interface FilterEditorProps {
 }
 
 const options: editor.IStandaloneEditorConstructionOptions = {
-    lineNumbers: 'off',
+    lineNumbers: 'on',
 };
 
 const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
