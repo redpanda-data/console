@@ -1726,9 +1726,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                         >
                             <GridItem>
                                 {this.currentFilter && <FormField
-                                        errorText=""
-                                        helpText=""
-                                        label="Filter display name"
+                                    label="Filter display name"
                                 >
                                     <Input
                                             value={this.currentFilter!.name}
@@ -1744,7 +1742,6 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                             <GridItem display="flex" gap={4} flexDirection="column">
                                 {this.currentFilter &&
                                     <FormField
-                                        errorText=""
                                         label="Filter code"
                                     >
                                         <Box borderRadius={20}>
