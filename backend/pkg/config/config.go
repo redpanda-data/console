@@ -90,6 +90,7 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
+	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
 	c.Connect.SetDefaults()
 }

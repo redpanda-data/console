@@ -10,143 +10,35 @@
  */
 
 import { observer } from 'mobx-react';
-import React, { useEffect } from 'react';
-import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
-import { uiSettings } from '../../state/ui';
-import { Code, Text, Tooltip, useDisclosure, useToast } from '@redpanda-data/ui';
-import { navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
-const { setTimeout } = window;
+import { CSSProperties } from 'react';
+import { Box } from '@redpanda-data/ui';
+import KowlEditor from './KowlEditor';
 
-let ctrlDown = false;
-const clickPos = { x: 0, y: 0 };
+export const KowlJsonView = observer((props: {
+    srcObj: object | string | null | undefined,
+    style?: CSSProperties,
+}) => {
 
-let timerId = undefined as number | undefined;
-const setOrRefreshTimeout = (duration: number, action: () => void) => {
-    if (timerId != undefined) clearTimeout(timerId);
+    const str = typeof props.srcObj == 'string'
+        ? props.srcObj
+        : JSON.stringify(props.srcObj, undefined, 4);
 
-    timerId = setTimeout(() => {
-        timerId = undefined;
-        action();
-    }, duration);
-};
-
-// Used for  Tooltip modifiers
-type TooltipPopperRect = { x: number; y: number; width: number; height: number };
-
-export const KowlJsonView = observer((props: ReactJsonViewProps) => {
-    const { style, ...restProps } = props;
-    const toast = useToast()
-
-    const { isOpen, onOpen, onClose } = useDisclosure();
-
-    const settings = uiSettings.jsonViewer;
-    const mergedStyles = Object.assign({ fontSize: settings.fontSize, lineHeight: settings.lineHeight, whiteSpace: 'normal' }, style);
-
-    const containerRef = React.useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        // set keyup/keydown event listeners
-        const handleKeyboard = (e: KeyboardEvent) => (ctrlDown = e.ctrlKey);
-        document.addEventListener('keydown', handleKeyboard);
-        document.addEventListener('keyup', handleKeyboard);
-
-        return () => {
-            // clean up keyup/keydown event listeners
-            document.removeEventListener('keydown', handleKeyboard);
-            document.removeEventListener('keyup', handleKeyboard);
-        };
-    }, []);
-
-    return (
-        <div
-            className="copyHintContainer"
-            ref={containerRef}
-            onMouseDownCapture={e => {
-                if (e.ctrlKey) {
-                    // copy
-                    return;
-                }
-
-                // Show hint
-
-                // Find parent "div.variable-value"
-                // can be either the actual target (numbers), or a parent (strings, but only sometimes)
-                let target = e.target as Element;
-                if (target instanceof Element) {
-                    while (!target.classList.contains('variable-value')) {
-                        if (target.parentElement != null) target = target.parentElement; // try parent
-                        else return; // no more parents, give up
-                    }
-                }
-
-                const parentPos = containerRef.current ? containerRef.current.getClientRects()[0] : { x: 0, y: 0 };
-                clickPos.x = e.clientX - parentPos.x;
-                clickPos.y = e.clientY - parentPos.y;
-
-                onClose();
-                setOrRefreshTimeout(1000, () => {
-                    onClose();
-                });
-                onOpen();
-            }}
+    return <>
+        <Box
+            display="block"
+            minHeight="40"
+            maxHeight="45rem" // no chakra space equivalent exists
+            height="96"
+            style={props.style}
         >
-            <Tooltip
-                label="CTRL+Click to copy"
-                placement="top-start"
-                // isDisabled={!isOpen}
-                isOpen={isOpen}
-                closeOnClick={false}
-                hasArrow
-                modifiers={[
-                    {
-                        name: 'offset',
-                        options: {
-                            offset: ({ popper }: { popper: TooltipPopperRect }) => {
-                                // position popper where mouse click occurs
-                                const POPPER_OFFSET_TO_CLICK = 16;
-                                return [popper.width / 2 + (clickPos.x - popper.width), -(clickPos.y - POPPER_OFFSET_TO_CLICK)];
-                            }
-                        }
-                    },
-                    {
-                        name: 'arrow',
-                        options: {
-                            padding: ({ popper }: { popper: TooltipPopperRect }) => {
-                                const ARROW_SIZE = 5;
-                                // position arrow in center of popper
-                                return popper.width / 2 - ARROW_SIZE;
-                            }
-                        }
-                    }
-                ]}
-            >
-                <div>
-                    <JsonView
-                        style={mergedStyles}
-                        displayDataTypes={false}
-                        displayObjectSize={true}
-                        enableClipboard={false}
-                        name={null}
-                        collapseStringsAfterLength={settings.maxStringLength}
-                        groupArraysAfterLength={100}
-                        indentWidth={5}
-                        iconStyle="triangle"
-                        collapsed={settings.collapsed}
-                        onSelect={e => {
-                            if (ctrlDown) {
-                                navigator.clipboard.writeText(String(e.value)).then(() => {
-                                    toast({
-                                        status: 'success',
-                                        description: <Text as="span">Copied value of <Code>{e.name}</Code></Text>,
-                                        duration: 800
-                                    })
-                                }).catch(navigatorClipboardErrorHandler)
-                            }
-                        }}
-                        {...restProps}
-                    />
-                </div>
-            </Tooltip>
-        </div>
-    );
+            <KowlEditor
+                value={str}
+                language="json"
+                options={{
+                    readOnly: true,
+                    // automaticLayout: false // too much lag on chrome
+                }}
+            />
+        </Box>
+    </>
 });

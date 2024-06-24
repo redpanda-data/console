@@ -20,14 +20,14 @@ import (
 	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/backoff"
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // Service is the abstraction for communicating with a Redpanda cluster via the admin api.
 type Service struct {
-	adminClient    *adminapi.AdminAPI
-	logger         *zap.Logger
-	clusterVersion string
+	adminClient *adminapi.AdminAPI
+	logger      *zap.Logger
 }
 
 // NewService creates a new redpanda.Service. It creates a Redpanda admin client based
@@ -66,14 +66,55 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
 
+	// Ensure Redpanda connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
+	// Retries with backoff is very helpful in environments where Console concurrently starts with the Kafka target,
+	// such as a docker-compose demo.
+	eb := backoff.ExponentialBackoff{
+		BaseInterval: cfg.AdminAPI.Startup.RetryInterval,
+		MaxInterval:  cfg.AdminAPI.Startup.MaxRetryInterval,
+		Multiplier:   cfg.AdminAPI.Startup.BackoffMultiplier,
+	}
+
+	attempt := 0
+
+	for attempt < cfg.AdminAPI.Startup.MaxRetries && cfg.AdminAPI.Startup.EstablishConnectionEagerly {
+		_, err = getClusterVersion(logger, adminClient, cfg.AdminAPI.URLs, time.Second*5)
+		if err == nil {
+			break
+		}
+
+		backoffDuration := eb.Backoff(attempt)
+
+		logger.Warn(
+			fmt.Sprintf("Failed to test Redpanda Admin connection, going to retry in %vs", backoffDuration.Seconds()),
+			zap.Int("remaining_retries", cfg.AdminAPI.Startup.MaxRetries-attempt),
+		)
+
+		attempt++
+		time.Sleep(backoffDuration)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
+	}
+
+	return &Service{
+		adminClient: adminClient,
+		logger:      logger,
+	}, nil
+}
+
+func getClusterVersion(logger *zap.Logger, adminClient *adminapi.AdminAPI, adminURLs []string, timeout time.Duration) (string, error) {
 	// Test admin client connectivity so that we can give an early user feedback
 	// about the connection.
-	logger.Info("testing admin client connectivity", zap.Strings("urls", cfg.AdminAPI.URLs))
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	logger.Info("testing admin client connectivity", zap.Strings("urls", adminURLs))
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
 	brokers, err := adminClient.Brokers(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to test admin client connectivity: %w", err)
+		return "", fmt.Errorf("failed to test admin client connectivity: %w", err)
 	}
 
 	clusterVersion := ClusterVersionFromBrokerList(brokers)
@@ -81,11 +122,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 		zap.Int("broker_count", len(brokers)),
 		zap.String("cluster_version", clusterVersion))
 
-	return &Service{
-		adminClient:    adminClient,
-		logger:         logger,
-		clusterVersion: clusterVersion,
-	}, nil
+	return clusterVersion, nil
 }
 
 // CreateUser creates a new user (also known as principal) in the Redpanda cluster.
@@ -250,13 +287,6 @@ func (s *Service) GetRole(ctx context.Context, roleName string) (adminapi.RoleDe
 // UpdateRoleMembership updates the role membership using Redpanda Admin API.
 func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []adminapi.RoleMember, createRole bool) (adminapi.PatchRoleResponse, error) {
 	return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove, createRole)
-}
-
-// ClusterVersion returns the Redpanda cluster version.
-func (s *Service) ClusterVersion() string {
-	trimmed := strings.ReplaceAll(s.clusterVersion, "Redpanda", "")
-	trimmed = strings.ReplaceAll(trimmed, " ", "")
-	return strings.TrimLeft(trimmed, "v")
 }
 
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
