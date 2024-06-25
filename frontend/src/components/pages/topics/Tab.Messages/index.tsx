@@ -15,12 +15,17 @@ import { action, autorun, computed, IReactionDisposer, makeObservable, observabl
 import { observer } from 'mobx-react';
 import React, { Component, FC, ReactElement, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
-import filterExample1 from '../../../../assets/filter-example-1.png';
-import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, DataColumnKey, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat, } from '../../../../state/ui';
+import {
+    ColumnList,
+    DataColumnKey,
+    FilterEntry,
+    PartitionOffsetOrigin,
+    PreviewTagV2,
+    TimestampDisplayFormat,
+} from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
@@ -28,14 +33,75 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import {
+    Ellipsis,
+    Label,
+    navigatorClipboardErrorHandler,
+    numberToThousandsString,
+    OptionGroup,
+    StatusIndicator,
+    TimestampDisplay,
+    toSafeString
+} from '../../../../utils/tsxUtils';
+import {
+    base64FromUInt8Array,
+    cullText,
+    encodeBase64,
+    prettyBytes,
+    prettyMilliseconds,
+    titleCase
+} from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useBreakpoint, useToast, VStack } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertDescription,
+    AlertIcon,
+    AlertTitle,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Code,
+    DataTable,
+    DateTimeInput,
+    Empty,
+    Flex,
+    FormField,
+    Grid,
+    GridItem,
+    Heading,
+    Input,
+    Link,
+    ListItem,
+    Menu,
+    MenuButton,
+    MenuItem,
+    MenuList,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    RadioGroup,
+    SearchField,
+    Select,
+    Tabs as RpTabs,
+    Tag,
+    TagCloseButton,
+    TagLabel,
+    Text,
+    Tooltip,
+    UnorderedList,
+    useBreakpoint,
+    useToast,
+    VStack
+} from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -1529,44 +1595,6 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
     />
 }
 
-const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger="click" hideCloseButton title={popTitle} content={<Box maxW="600px">{content}</Box>} size="auto">
-        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>
-            {title}
-        </Button>
-    </Popover>
-);
-
-// TODO Explain:
-// - multiple filters are combined with &&
-// - 'return' is optional if you only have an expression! as is ';'
-// - more examples for 'value', along with 'find(...)'
-const helpEntries = [
-    makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li>The filter code is a javascript function body (click 'parameters' to see what arguments are available)</li>
-        <li>Return true to allow a message, return false to discard the message.</li>
-        <li>You can omit the 'return' keyword if your filter is just an 'expression'</li>
-        <li>If you have multiple active filters, they're combined with 'and'. Meaning that ALL filters a message is tested on must return true for it to be passed to the frontend.</li>
-        <li>The context is re-used between messages, but every partition has its own context</li>
-    </ul>),
-    makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className="codeBox">offset</span> (number)</li>
-        <li><span className="codeBox">partitionID</span> (number)</li>
-        <li><span className="codeBox">key</span> (string)</li>
-        <li><span className="codeBox">value</span> (object)</li>
-        <li><span className="codeBox">headers</span> (object)</li>
-    </ul>),
-    makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">offset &gt; 10000</span></li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">value != null</span> Skips tombstone messages</li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">if (key == 'example') return true</span></li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">return (partitionID == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading="lazy" /></div></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading="lazy" /></div></li>
-    </ul>),
-].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
-
 @observer
 class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, fetchError?: string, menuEl: ReactElement }> {
     /*
@@ -1635,7 +1663,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                 flexWrap="wrap"
             >
                 {/* Existing Tags List  */}
-                {settings.filters?.map(e =>
+                {settings.filters?.map((e) =>
                     <Tag
                         style={{ userSelect: 'none' }}
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
@@ -1688,38 +1716,64 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                 <ModalOverlay />
                 <ModalContent minW="4xl">
                     <ModalHeader>
-                        Edit Filter
+                        Javascript filtering
                     </ModalHeader>
                     <ModalBody>
-                        {this.currentFilter && <Flex gap={4} flexDirection="column">
-                            <Label text="Display Name">
-                                <Input
-                                    style={{ padding: '2px 8px' }}
-                                    value={this.currentFilter!.name}
-                                    onChange={e => {
-                                        this.currentFilter!.name = e.target.value;
-                                        this.hasChanges = true;
-                                    }}
-                                    placeholder="will be shown instead of the code"
-                                    size="small" />
-                            </Label>
+                        <Text mb={4}>Write Javascript code to filter your records.</Text>
+                        <Grid
+                            templateColumns={{base: '1fr', md: '3fr 2fr'}}
+                            gap={6}
+                        >
+                            <GridItem>
+                                {this.currentFilter && <FormField
+                                    label="Filter display name"
+                                >
+                                    <Input
+                                            value={this.currentFilter!.name}
+                                            onChange={e => {
+                                                this.currentFilter!.name = e.target.value;
+                                                this.hasChanges = true;
+                                            }}
+                                            placeholder="This name will appear in the filter bar"
+                                    />
+                                </FormField>}
+                            </GridItem>
+                            <GridItem />
+                            <GridItem display="flex" gap={4} flexDirection="column">
+                                {this.currentFilter &&
+                                    <FormField
+                                        label="Filter code"
+                                    >
+                                        <Box borderRadius={20}>
+                                        <FilterEditor
+                                            value={this.currentFilter!.code}
+                                            onValueChange={(code, transpiled) => {
+                                                this.currentFilter!.code = code;
+                                                this.currentFilter!.transpiledCode = transpiled;
+                                                this.hasChanges = true;
+                                            }}
+                                        />
+                                        </Box>
+                                    </FormField>
+                                }
 
-                            {/* Code Box */}
-                            <Label text="Filter Code">
-                                <FilterEditor
-                                    value={this.currentFilter!.code}
-                                    onValueChange={(code, transpiled) => {
-                                        this.currentFilter!.code = code;
-                                        this.currentFilter!.transpiledCode = transpiled;
-                                        this.hasChanges = true;
-                                    }}
-                                />
-                            </Label>
+                                <UnorderedList>
+                                    <ListItem>return true allows messages, return false discards them.</ListItem>
+                                    <ListItem>Available params are <Code>offset</Code>, <Code>partitionID</Code> (number), <Code>key</Code> (any), <Code>value</Code> (any), and <Code>headers</Code> (object), <Code>keySchemaID</Code> (number) and <Code>valueSchemaID</Code> (number)</ListItem>
+                                    <ListItem>Multiple active filters are combined with 'and'.</ListItem>
+                                </UnorderedList>
 
-                            {/* Help Bar */}
-                            <Text fontSize="sm" color="gray.700" fontWeight={300}>Help: {helpEntries}</Text>
 
-                        </Flex>}
+                            </GridItem>
+                            <GridItem>
+                                <Heading mb={6}>Examples</Heading>
+                                <UnorderedList styleType="none" margin={0} spacing={4}>
+                                    <ListItem><Code>value != null</Code> skips records without value</ListItem>
+                                    <ListItem><Code>if (key == 'example') return true</Code>
+                                        only returns messages where keys equal <Code>'example'</Code> in their string presentation (after decoding)</ListItem>
+                                </UnorderedList>
+                            </GridItem>
+                        </Grid>
                     </ModalBody>
                     <ModalFooter>
                         <Box display="flex" gap={4} alignItems="center" justifyContent="flex-end">
