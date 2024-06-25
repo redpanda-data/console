@@ -1759,7 +1759,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
 
                                 <UnorderedList>
                                     <ListItem>return true allows messages, return false discards them.</ListItem>
-                                    <ListItem>Available params are offset and partitionID (number), key (string), value, and headers (objects)</ListItem>
+                                    <ListItem>Available params are <Code>offset</Code>, <Code>partitionID</Code> (number), <Code>key</Code> (any), <Code>value</Code> (any), and <Code>headers</Code> (object), <Code>keySchemaID</Code> (number) and <Code>valueSchemaID</Code> (number)</ListItem>
                                     <ListItem>Multiple active filters are combined with 'and'.</ListItem>
                                     <ListItem>The context is re-used between messages, but every partition has its own context</ListItem>
                                 </UnorderedList>
