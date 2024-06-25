@@ -9,80 +9,88 @@
  * by the Apache License, Version 2.0
  */
 
-import { ChevronRightIcon } from '@primer/octicons-react';
 import { observer } from 'mobx-react';
-import { Link, useRouteMatch } from 'react-router-dom';
+import { useRouteMatch } from 'react-router-dom';
 import { isEmbedded } from '../../config';
-import { uiState } from '../../state/uiState';
+import { BreadcrumbEntry, uiState } from '../../state/uiState';
 import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 import { IsDev } from '../../utils/env';
-import { Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbLinkProps, CopyButton, ColorModeSwitch, Flex } from '@redpanda-data/ui';
+import { Box, Text, ColorModeSwitch, Flex, Breadcrumbs, CopyButton } from '@redpanda-data/ui';
+import { computed } from 'mobx';
 
 const AppPageHeader = observer(() => {
     const showRefresh = useShouldShowRefresh();
 
-    return <Box> {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-        <Flex mb={5} alignItems="center" justifyContent="space-between">
-            <Breadcrumb spacing="8px" separator={<ChevronRightIcon/>}>
-                {!isEmbedded() && uiState.selectedClusterName &&
-                    <BreadcrumbItem>
-                        <BreadcrumbLink as={Link} to="/">
-                            Cluster
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
-                }
-                {uiState.pageBreadcrumbs.filter((_, i, arr) => {
-                    const isCurrentPage = arr.length - 1 === i;
-                    return !isEmbedded() || isCurrentPage;
-                }).map((entry, i, arr) => {
-                        const isCurrentPage = arr.length - 1 === i;
-                        const currentBreadcrumbProps: BreadcrumbLinkProps = isCurrentPage ? {
-                            as: 'span',
-                            fontWeight: 700,
-                            fontSize: 'xl',
-                        } : {
-                        };
+    const breadcrumbItems = computed(() => {
+        const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs]
 
-                        return (
-                            <BreadcrumbItem key={entry.linkTo} isCurrentPage={isCurrentPage}>
-                                <BreadcrumbLink
-                                    to={entry.linkTo}
-                                    as={isCurrentPage ? 'span' : Link}
-                                    noOfLines={1}
-                                    {...currentBreadcrumbProps}
-                                    {...(entry.options?.canBeTruncated ? {
-                                        wordBreak: 'break-all',
-                                        whiteSpace: 'break-spaces',
-                                    } : {
-                                        whiteSpace: 'nowrap'
-                                    })}
-                                >
-                                    {entry.title}
-                                </BreadcrumbLink>
+        if (!isEmbedded() && uiState.selectedClusterName) {
+            items.unshift({
+                heading: '',
+                title: 'Cluster',
+                linkTo: '/'
+            });
+        }
 
-                                <Flex ml={2}>
-                                    {isCurrentPage && entry.options?.canBeCopied && <CopyButton content={entry.title} variant="ghost"/>}
+        return items
+    }).get()
 
-                                    {isCurrentPage && showRefresh && (
-                                        <Box minW={250}>
-                                            <DataRefreshButton/>
-                                        </Box>
-                                    )}
-                                </Flex>
+    const lastBreadcrumb = breadcrumbItems.pop()
 
-                            </BreadcrumbItem>
-                        );
-                    }
+    return (
+        <Box>
+            {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
+            <Flex mb={5} alignItems="center" justifyContent="space-between">
+                {!isEmbedded() && (
+                    <Breadcrumbs
+                        showHomeIcon={false}
+                        items={breadcrumbItems.map((x) => ({
+                            name: x.title,
+                            heading: x.heading,
+                            to: x.linkTo,
+                        }))}
+                    />
                 )}
-            </Breadcrumb>
-
-            <Flex alignItems="center" gap={1}>
-                <UserPreferencesButton/>
-                {(IsDev && !isEmbedded()) && <ColorModeSwitch/>}
             </Flex>
-        </Flex>
-    </Box>;
+
+            <Flex pb={2} alignItems="center" justifyContent="space-between">
+                <Flex alignItems="center">
+                    {lastBreadcrumb && (
+                        <Flex gap={2} alignItems="center">
+                            <Text
+                                fontWeight={700}
+                                as="span"
+                                fontSize="xl"
+                                {...(lastBreadcrumb.options?.canBeTruncated
+                                    ? {
+                                          wordBreak: 'break-all',
+                                          whiteSpace: 'break-spaces',
+                                      }
+                                    : {
+                                          whiteSpace: 'nowrap',
+                                      })}
+                            >
+                                {lastBreadcrumb.title}
+                            </Text>
+                            <Box>{lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}</Box>
+                        </Flex>
+                    )}
+                    <Flex ml={2}>
+                        {showRefresh && (
+                            <Box minW={250}>
+                                <DataRefreshButton />
+                            </Box>
+                        )}
+                    </Flex>
+                </Flex>
+                <Flex alignItems="center" gap={1}>
+                    <UserPreferencesButton />
+                    {IsDev && !isEmbedded() && <ColorModeSwitch />}
+                </Flex>
+            </Flex>
+        </Box>
+    );
 });
 
 export default AppPageHeader;

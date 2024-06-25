@@ -158,7 +158,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         p.title = topicName;
         p.addBreadcrumb('Topics', '/topics');
-        p.addBreadcrumb(topicName, '/topics/' + topicName, {
+        p.addBreadcrumb(topicName, '/topics/' + topicName, undefined, {
             canBeCopied: true,
             canBeTruncated: true,
         });
