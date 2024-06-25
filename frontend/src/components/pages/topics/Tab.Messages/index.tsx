@@ -1769,7 +1769,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                             <GridItem>
                                 <Heading mb={6}>Examples</Heading>
                                 <UnorderedList styleType="none" margin={0} spacing={4}>
-                                    <ListItem><Code>value != null</Code> skips tombstone messages</ListItem>
+                                    <ListItem><Code>value != null</Code> skips records without value</ListItem>
                                     <ListItem><Code>if (key == 'example') return true</Code>
                                         only returns messages where keys equal <Code>'example'</Code></ListItem>
                                     <ListItem><Code>{'headers.myVersionHeader && (headers.myVersionHeader >= 2)'}</Code> only returns messages that have a header entry like <Code>{'{key: "myVersionHeader", "value:" 12345}'}</Code></ListItem>
