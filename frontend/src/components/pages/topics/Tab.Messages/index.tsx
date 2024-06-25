@@ -1771,7 +1771,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                                 <UnorderedList styleType="none" margin={0} spacing={4}>
                                     <ListItem><Code>value != null</Code> skips records without value</ListItem>
                                     <ListItem><Code>if (key == 'example') return true</Code>
-                                        only returns messages where keys equal <Code>'example'</Code></ListItem>
+                                        only returns messages where keys equal <Code>'example'</Code> in their string presentation (after decoding)</ListItem>
                                 </UnorderedList>
                             </GridItem>
                         </Grid>
