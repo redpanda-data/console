@@ -35,7 +35,7 @@
         "@monaco-editor/react": "^4.6",
         "@playwright/test": "^1.44.1",
         "@primer/octicons-react": "^17",
-        "@redpanda-data/ui": "^3.48.0",
+        "@redpanda-data/ui": "^3.52.0",
         "array-move": "^4",
         "framer-motion": "^7",
         "js-base64": "^3.7.5",
