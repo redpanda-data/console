@@ -23,7 +23,7 @@ import { ElementOf } from '../../../utils/utils';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import { SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 @observer
@@ -152,7 +152,7 @@ const SchemaPageButtons = observer((p: {
 
     return <Flex gap="4" mt="4">
         <Button colorScheme="brand" variant="solid"
-            isDisabled={isCreating || isMissingName || isValidating}
+            isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isCreating}
             loadingText="Creating..."
             onClick={async () => {
@@ -201,7 +201,7 @@ const SchemaPageButtons = observer((p: {
         </Button>
 
         <Button variant="solid"
-            isDisabled={isValidating || isMissingName || isValidating}
+            isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
             isLoading={isValidating}
             loadingText="Validate"
             onClick={async () => {
@@ -275,6 +275,10 @@ const SchemaEditor = observer((p: {
     state: SchemaEditorStateHelper,
     mode: 'CREATE' | 'ADD_VERSION'
 }) => {
+    useEffect(() => {
+        api.refreshSchemaTypes(true)
+    }, []);
+
     const { state, mode } = p;
     const isAddVersion = mode == 'ADD_VERSION';
 
@@ -285,8 +289,10 @@ const SchemaEditor = observer((p: {
         { value: 'AVRO', label: 'Avro' },
         { value: 'PROTOBUF', label: 'Protobuf' },
     ];
-    if (api.schemaTypes?.includes('JSON'))
+
+    if (api.schemaTypes?.includes('JSON')) {
         formatOptions.push({ value: 'JSON', label: 'JSON' });
+    }
 
     return <>
 
@@ -333,7 +339,7 @@ const SchemaEditor = observer((p: {
             </Flex>
 
             <Flex gap="8">
-                <FormField label="Key or value" width="auto" isInvalid={state.strategy === 'TOPIC' && state.userInput.length > 0 && !state.keyOrValue} errorText="Required">
+                <FormField label="Key or value" width="auto" isInvalid={state.isInvalidKeyOrValue} errorText="Required">
                     <RadioGroup name="keyOrValue"
                         isDisabled={isAddVersion}
                         value={state.keyOrValue}
@@ -371,16 +377,14 @@ const SchemaEditor = observer((p: {
                 <RadioGroup name="format"
                     value={state.format}
                     onChange={e => {
-                        if (state.format == e)
+                        if (state.format == e) {
                             return;
+                        }
 
                         // Let user confirm
                         openSwitchSchemaFormatModal(() => {
                             state.format = e;
-                            if (e == 'AVRO')
-                                state.schemaText = exampleSchema.avro;
-                            else
-                                state.schemaText = exampleSchema.protobuf;
+                            state.schemaText = exampleSchema[state.format]
                         })
                     }}
                     options={formatOptions}
@@ -392,8 +396,7 @@ const SchemaEditor = observer((p: {
                 value={state.schemaText}
                 onChange={e => state.schemaText = e ?? ''}
                 height="400px"
-
-                language={state.format == 'PROTOBUF' ? 'proto' : 'json'}
+                language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
             />
 
             <Heading variant="lg" mt="8">
@@ -478,7 +481,7 @@ function createSchemaState() {
         keyOrValue: undefined as 'KEY' | 'VALUE' | undefined,
 
         format: 'AVRO' as 'AVRO' | 'PROTOBUF' | 'JSON',
-        schemaText: exampleSchema.avro,
+        schemaText: exampleSchema.AVRO,
         references: [
             { name: '', subject: '', version: 1 }
         ] as {
@@ -486,6 +489,10 @@ function createSchemaState() {
             subject: string,
             version: number
         }[],
+
+        get isInvalidKeyOrValue() {
+            return this.strategy === 'TOPIC' && this.userInput.length > 0 && !this.keyOrValue
+        },
 
         get computedSubjectName() {
             let subjectName = '';
@@ -535,9 +542,8 @@ function createSchemaState() {
     });
 }
 
-
-const exampleSchema = {
-    avro: `
+const exampleSchema: Record<SchemaType, string> = {
+    AVRO: `
 {
    "type": "record",
    "name": "car",
@@ -558,7 +564,7 @@ const exampleSchema = {
 }
 `.trim(),
 
-    protobuf: `
+    PROTOBUF: `
 syntax = "proto3";
 
 message Car {
@@ -567,4 +573,18 @@ message Car {
    int32 year = 3;
 }
 `.trim(),
+
+    JSON: `
+    {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}
+    `.trim(),
 } as const;

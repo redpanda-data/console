@@ -10,6 +10,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -47,4 +48,20 @@ func CompileRegexes(expr []string) ([]*regexp.Regexp, error) {
 	}
 
 	return compiledExpressions, nil
+}
+
+// CompileRegexStrict compiles a regex string to a regexp.Regexp.
+// It is a stricter version of CompileRegex and requires that expr has / as prefix and suffix
+func CompileRegexStrict(expr string) (*regexp.Regexp, error) {
+	if strings.HasPrefix(expr, "/") && strings.HasSuffix(expr, "/") {
+		substr := expr[1 : len(expr)-1]
+		regex, err := regexp.Compile(substr)
+		if err != nil {
+			return nil, err
+		}
+
+		return regex, nil
+	}
+
+	return nil, errors.New("not a strict regex")
 }

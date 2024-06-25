@@ -27,6 +27,10 @@ type RedpandaAdminAPI struct {
 
 	// TLS Config
 	TLS RedpandaAdminAPITLS `yaml:"tls"`
+
+	// Startup contains relevant configurations such as connection max retries
+	// for the initial Redpanda service creation.
+	Startup ServiceStartupAttemptsOptions `yaml:"startup"`
 }
 
 // RegisterFlags for sensitive Admin API configurations.
@@ -37,6 +41,8 @@ func (c *RedpandaAdminAPI) RegisterFlags(flags *flag.FlagSet) {
 // SetDefaults for Admin API configuration.
 func (c *RedpandaAdminAPI) SetDefaults() {
 	c.Enabled = false
+
+	c.Startup.SetDefaults()
 }
 
 // Validate Admin API configuration.
@@ -70,6 +76,11 @@ func (c *RedpandaAdminAPI) Validate() error {
 
 	if err := c.TLS.Validate(); err != nil {
 		return fmt.Errorf("invalid TLS config: %w", err)
+	}
+
+	err := c.Startup.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate startup config: %w", err)
 	}
 
 	return nil

@@ -43,7 +43,6 @@ test.describe('Topic', () => {
         await page.getByTestId('load-anyway-button').click()
         await page.getByTestId('payload-content').getByText(content).waitFor({
             state: 'visible',
-            timeout: 10000,
         })
 
         // cleanup, let's delete the topic now

@@ -31,7 +31,7 @@ type Kafka struct {
 
 	// Startup contains relevant configurations such as connection max retries
 	// for the initial Kafka service creation.
-	Startup KafkaStartup `yaml:"startup"`
+	Startup ServiceStartupAttemptsOptions `yaml:"startup"`
 }
 
 // RegisterFlags registers all nested config flags.

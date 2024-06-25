@@ -140,6 +140,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         <Box>
                             <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
                                 <Input
+                                    data-testid="create-role__role-name"
                                     pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
                                     isRequired
@@ -152,6 +153,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
                         <Button
                             alignSelf="self-end"
+                            data-testid="roles-allow-all-operations"
                             variant="outline"
                             onClick={() => {
                                 if (formState.topicACLs.length == 0) formState.topicACLs.push(createEmptyTopicAcl());
@@ -181,7 +183,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         />
                     </FormField>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-topics-section">
                         <Heading>Topics</Heading>
                         {formState.topicACLs.map((topicACL, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={topicACL} setIsFormValid={setIsFormValid} onDelete={() => {
@@ -198,7 +200,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                     </Flex>
 
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-consumer-groups-section">
                         <Heading>Consumer Groups</Heading>
                         {formState.consumerGroupsACLs.map((acl, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
@@ -213,7 +215,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-transactional-ids-section">
                         <Heading>Transactional IDs</Heading>
                         {formState.transactionalIDACLs.map((acl, index) =>
                             <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
@@ -228,7 +230,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         </Box>
                     </Flex>
 
-                    <Flex flexDirection="column" gap={4}>
+                    <Flex flexDirection="column" gap={4} data-testid="create-role-cluster-section">
                         <Heading>Cluster</Heading>
                         <HStack>
                             <Box flexGrow={1}>

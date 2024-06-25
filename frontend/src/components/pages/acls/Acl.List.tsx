@@ -175,6 +175,7 @@ const PrincipalsTab = observer(() => {
         <Section>
             <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
                 <Button variant="outline"
+                    data-testid="create-user-button"
                     isDisabled={!Features.createUser}
                     onClick={() => appGlobal.history.push('/security/users/create')}>
                     Create user
@@ -299,6 +300,7 @@ const RolesTab = observer(() => {
 
         <Section>
             <Button
+                data-testid="create-role-button"
                 variant="outline"
                 onClick={() => appGlobal.history.push('/security/roles/create')}
             >Create role</Button>
