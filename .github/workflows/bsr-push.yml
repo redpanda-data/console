@@ -1,5 +1,5 @@
+---
 name: Push to Buf Schema Registry
-
 on:
   push:
     branches:
@@ -7,10 +7,8 @@ on:
     paths:
       - proto/**.proto
   workflow_dispatch:
-  
 permissions:
   contents: read
-
 jobs:
   push-module:
     runs-on: ubuntu-latest
