@@ -162,11 +162,4 @@ type ConsoleHooks interface {
 	// The response of this hook will be merged into the response that was originally
 	// composed by Console.
 	EndpointCompatibility() []console.EndpointCompatibilityEndpoint
-
-	// CheckWebsocketConnection extracts metadata from the websocket request.
-	// Because some metadata is part of the HTTP request and other metadata is part
-	// of the first websocket message sent, a middleware can not be used here.
-	// The returned context must be used for subsequent requests. The Websocket
-	// connection must be closed if an error is returned.
-	CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error)
 }

@@ -16,7 +16,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,17 +28,12 @@ var _ connect.Interceptor = &ErrorLogInterceptor{}
 // - JSON Unmarshalling errors of request body (happens prior calling interceptors)
 type ErrorLogInterceptor struct {
 	logger *zap.Logger
-
-	// loggingFieldsHook is a func that can be used to get context about the
-	// authenticated user that issued the request.
-	loggingFieldsHook func(ctx context.Context) []zapcore.Field
 }
 
 // NewErrorLogInterceptor creates a new ErrorLogInterceptor.
-func NewErrorLogInterceptor(logger *zap.Logger, loggingFieldsHook func(ctx context.Context) []zapcore.Field) *ErrorLogInterceptor {
+func NewErrorLogInterceptor(logger *zap.Logger) *ErrorLogInterceptor {
 	return &ErrorLogInterceptor{
-		logger:            logger,
-		loggingFieldsHook: loggingFieldsHook,
+		logger: logger,
 	}
 }
 
@@ -83,7 +77,7 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 		statusCodeStr := in.statusCode(protocol, err)
 
 		if err != nil {
-			in.logger.With(in.loggingFieldsHook(ctx)...).Warn("",
+			in.logger.Warn("",
 				zap.String("timestamp", start.Format(time.RFC3339)),
 				zap.String("procedure", procedure),
 				zap.String("request_duration", requestDuration.String()),

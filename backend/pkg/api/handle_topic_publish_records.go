@@ -122,25 +122,6 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged-in user is allowed to publish records to all the specified topics
-		for _, topicName := range req.TopicNames {
-			canPublish, restErr := api.Hooks.Authorization.CanPublishTopicRecords(r.Context(), topicName)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-			if !canPublish {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf("requester has no permissions to publish records in topic '%v'", topicName),
-					Status:   http.StatusForbidden,
-					Message:  fmt.Sprintf("You don't have permissions to publish records in topic '%v'", topicName),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-		}
-
 		// 3. Submit publish topic records request
 		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, compressionTypeToKgoCodec(req.CompressionType))
 

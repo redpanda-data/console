@@ -21,7 +21,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -41,8 +40,6 @@ type Service struct {
 	consoleSvc  console.Servicer
 	redpandaSvc *redpanda.Service
 	defaulter   defaulter
-
-	isProtectedUserFn func(userName string) bool
 }
 
 // NewService creates a new user service handler.
@@ -50,15 +47,13 @@ func NewService(cfg *config.Config,
 	logger *zap.Logger,
 	redpandaSvc *redpanda.Service,
 	consoleSvc console.Servicer,
-	isProtectedUserFn func(userName string) bool,
 ) *Service {
 	return &Service{
-		cfg:               cfg,
-		logger:            logger,
-		consoleSvc:        consoleSvc,
-		redpandaSvc:       redpandaSvc,
-		defaulter:         defaulter{},
-		isProtectedUserFn: isProtectedUserFn,
+		cfg:         cfg,
+		logger:      logger,
+		consoleSvc:  consoleSvc,
+		redpandaSvc: redpandaSvc,
+		defaulter:   defaulter{},
 	}
 }
 
@@ -101,10 +96,6 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.L
 
 	filteredUsers := make([]*v1alpha1.ListUsersResponse_User, 0)
 	for _, user := range users {
-		if s.isProtectedUserFn(user) {
-			continue
-		}
-
 		// Remove users that do not pass the filter criteria
 		if !doesUserPassFilter(user) {
 			continue
@@ -153,19 +144,6 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		)
 	}
 
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.User.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
-		)
-	}
-
 	// 3. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
@@ -203,19 +181,6 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.
 		)
 	}
 
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.User.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
-		)
-	}
-
 	// 3. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
@@ -249,19 +214,6 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.
 			errors.New("the redpanda admin api must be configured to delete users"),
 			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
 			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
-
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
 		)
 	}
 

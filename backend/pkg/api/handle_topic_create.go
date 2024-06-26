@@ -99,23 +99,6 @@ func (api *API) handleCreateTopic() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to view partitions for the given topic
-		canCreate, restErr := api.Hooks.Authorization.CanCreateTopic(r.Context(), req.TopicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canCreate {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to create this topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to create this topic.",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
 		// 3. Try to create topic
 		createTopicResponse, restErr := api.ConsoleSvc.CreateTopic(r.Context(), req.ToKmsg())
 		if restErr != nil {

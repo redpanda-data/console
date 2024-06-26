@@ -63,7 +63,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	observerInterceptor := commoninterceptor.NewObserver(apiProm.ObserverAdapter())
 	baseInterceptors := []connect.Interceptor{
 		observerInterceptor,
-		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log"), api.Hooks.Console.AdditionalLogFields),
+		interceptor.NewErrorLogInterceptor(api.Logger.Named("error_log")),
 		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
 		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
 	}
@@ -95,14 +95,14 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	)
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
-	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
-	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
+	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
-	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
+	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"))
 	if err != nil {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
 	}

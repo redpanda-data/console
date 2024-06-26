@@ -41,29 +41,8 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
-		visibleTopics := make([]*console.TopicSummary, 0, len(topics))
-		for _, topic := range topics {
-			// Check if logged in user is allowed to see this topic. If not remove the topic from the list.
-			canSee, restErr := api.Hooks.Authorization.CanSeeTopic(r.Context(), topic.TopicName)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			if canSee {
-				visibleTopics = append(visibleTopics, topic)
-			}
-
-			// Attach allowed actions for each topic
-			topic.AllowedActions, restErr = api.Hooks.Authorization.AllowedTopicActions(r.Context(), topic.TopicName)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-		}
-
 		response := response{
-			Topics: visibleTopics,
+			Topics: topics,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
@@ -79,23 +58,6 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
-
-		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Authorization.CanViewTopicPartitions(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
-		if !canView {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view partitions for the requested topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view partitions for that topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
 
 		topicDetails, restErr := api.ConsoleSvc.GetTopicDetails(r.Context(), []string{topicName})
 		if restErr != nil {
@@ -132,23 +94,6 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
-		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Authorization.CanViewTopicConfig(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
-		if !canView {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view config for the requested topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view the config for that topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
-
 		description, restErr := api.ConsoleSvc.GetTopicConfigs(r.Context(), topicName, nil)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
@@ -170,24 +115,7 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
 
-		// Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Authorization.CanDeleteTopic(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canDelete {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete this topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to delete this topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		restErr = api.ConsoleSvc.DeleteTopic(r.Context(), topicName)
+		restErr := api.ConsoleSvc.DeleteTopic(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -235,23 +163,6 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 		var req deleteTopicRecordsRequest
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 2. Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Authorization.CanDeleteTopicRecords(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canDelete {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete records in this topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to delete this topic",
-				IsSilent: false,
-			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
@@ -337,23 +248,6 @@ func (api *API) handleEditTopicConfig() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged-in user is allowed to edit topic configs.
-		canEdit, restErr := api.Hooks.Authorization.CanEditTopicConfig(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canEdit {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to edit this topic's config"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to edit this topic's configuration",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
 		// 3. Submit edit topic config request
 		configRequests := make([]kmsg.IncrementalAlterConfigsRequestResourceConfig, 0, len(req.Configs))
 		for _, cfg := range req.Configs {
@@ -418,25 +312,6 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 			}
 		}
 
-		// 3. Check if user is allowed to view the config for these topics
-		for _, topicName := range topicNames {
-			canView, restErr := api.Hooks.Authorization.CanViewTopicConfig(r.Context(), topicName)
-			if restErr != nil {
-				rest.SendRESTError(w, r, logger, restErr)
-				return
-			}
-			if !canView {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf("requester has no permissions to view config for one of the requested topics"),
-					Status:   http.StatusForbidden,
-					Message:  fmt.Sprintf("You don't have permissions to view the config for topic '%v'", topicName),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, logger, restErr)
-				return
-			}
-		}
-
 		// 4. Request topics configs and return them
 		descriptions, err := api.ConsoleSvc.GetTopicsConfigs(r.Context(), topicNames, configKeys)
 		if err != nil {
@@ -471,23 +346,6 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
-
-		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Authorization.CanViewTopicConsumers(r.Context(), topicName)
-		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
-		if !canView {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view topic consumers for the requested topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view the config for that topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
 
 		consumers, err := api.ConsoleSvc.ListTopicConsumers(r.Context(), topicName)
 		if err != nil {
@@ -550,27 +408,6 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
-		}
-
-		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
-		for _, topic := range topicNames {
-			canView, restErr := api.Hooks.Authorization.CanViewTopicPartitions(r.Context(), topic)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			if !canView {
-				restErr := &rest.Error{
-					Err:          fmt.Errorf("requester has no permissions to view partitions for the requested topic"),
-					Status:       http.StatusForbidden,
-					Message:      "You don't have permissions to view partitions for that topic",
-					IsSilent:     false,
-					InternalLogs: []zapcore.Field{zap.String("topic_name", topic)},
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
 		}
 
 		// 3. Request topic

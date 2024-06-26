@@ -34,28 +34,8 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			return
 		}
 
-		visibleGroups := make([]console.ConsumerGroupOverview, 0, len(describedGroups))
-		for _, group := range describedGroups {
-			canSee, restErr := api.Hooks.Authorization.CanSeeConsumerGroup(r.Context(), group.GroupID)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-			if !canSee {
-				continue
-			}
-
-			// Attach allowed actions for each topic
-			group.AllowedActions, restErr = api.Hooks.Authorization.AllowedConsumerGroupActions(r.Context(), group.GroupID)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-			visibleGroups = append(visibleGroups, group)
-		}
-
 		response := GetConsumerGroupsResponse{
-			ConsumerGroups: visibleGroups,
+			ConsumerGroups: describedGroups,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
@@ -67,22 +47,6 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupID := rest.GetURLParam(r, "groupId")
-
-		canSee, restErr := api.Hooks.Authorization.CanSeeConsumerGroup(r.Context(), groupID)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canSee {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to view consumer group"),
-				Status:       http.StatusForbidden,
-				Message:      "You don't have permissions to view this consumer group",
-				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
-				IsSilent:     false,
-			})
-			return
-		}
 
 		describedGroups, restErr := api.ConsoleSvc.GetConsumerGroupsOverview(r.Context(), []string{groupID})
 		if restErr != nil {
@@ -142,24 +106,6 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 2. Check if logged-in user is allowed to edit
-		// Consumer Group (always true for Console OSS, but not for Console Business)
-		canEdit, restErr := api.Hooks.Authorization.CanEditConsumerGroup(r.Context(), req.GroupID)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canEdit {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
-				Status:       http.StatusForbidden,
-				Message:      "You don't have permissions to edit this consumer group",
-				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
-				IsSilent:     false,
-			})
 			return
 		}
 
@@ -229,24 +175,6 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
-		// Console Business)
-		canDelete, restErr := api.Hooks.Authorization.CanDeleteConsumerGroup(r.Context(), req.GroupID)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canDelete {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
-				Status:       http.StatusForbidden,
-				Message:      "You don't have permissions to edit this consumer group",
-				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
-				IsSilent:     false,
-			})
-			return
-		}
-
 		// 3. Submit delete offset request
 		kmsgReq := make([]kmsg.OffsetDeleteRequestTopic, len(req.Topics))
 		for i, topic := range req.Topics {
@@ -283,24 +211,6 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupID := rest.GetURLParam(r, "groupId")
-
-		// 1. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
-		// Console Business)
-		canDelete, restErr := api.Hooks.Authorization.CanDeleteConsumerGroup(r.Context(), groupID)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canDelete {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to delete consumer group"),
-				Status:       http.StatusForbidden,
-				Message:      "You don't have permissions to delete this consumer group",
-				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
-				IsSilent:     false,
-			})
-			return
-		}
 
 		// 3. Submit delete offset request
 		err := api.ConsoleSvc.DeleteConsumerGroup(r.Context(), groupID)

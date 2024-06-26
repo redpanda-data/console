@@ -18,7 +18,6 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
@@ -30,9 +29,8 @@ import (
 // additional functionality. In order to run your own Hooks you must construct a Hooks instance and
 // run attach them to your own instance of Api.
 type Hooks struct {
-	Route         RouteHooks
-	Authorization AuthorizationHooks
-	Console       ConsoleHooks
+	Route   RouteHooks
+	Console ConsoleHooks
 }
 
 // ConfigConnectRPCRequest is the config object that is passed into the
@@ -95,66 +93,6 @@ type RouteHooks interface {
 	InitConnectRPCRouter(router chi.Router)
 }
 
-// AuthorizationHooks include all functions which allow you to intercept the requests at various
-// endpoints where RBAC rules may be applied.
-type AuthorizationHooks interface {
-	// Topic Hooks
-	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
-	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
-
-	// ACL Hooks
-	CanListACLs(ctx context.Context) (bool, *rest.Error)
-	CanCreateACL(ctx context.Context) (bool, *rest.Error)
-	CanDeleteACL(ctx context.Context) (bool, *rest.Error)
-
-	// Quotas Hookas
-	CanListQuotas(ctx context.Context) (bool, *rest.Error)
-
-	// ConsumerGroup Hooks
-	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanEditConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanDeleteConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
-
-	// Operations Hooks
-	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
-	CanPatchConfigs(ctx context.Context) (bool, *rest.Error)
-
-	// Kafka Connect Hooks
-	CanViewConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
-
-	// Kafka User Hooks
-	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	IsProtectedKafkaUser(userName string) bool
-
-	// Schema Registry Hooks
-	CanViewSchemas(ctx context.Context) (bool, *rest.Error)
-	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
-	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
-	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
-
-	// Kafka Role Hooks
-	CanListRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanCreateRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanDeleteRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-}
-
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
 // This could be information about what license is used, what enterprise features are
 // enabled etc.
@@ -180,19 +118,6 @@ type ConsoleHooks interface {
 	// The response of this hook will be merged into the response that was originally
 	// composed by Console.
 	EndpointCompatibility() []console.EndpointCompatibilityEndpoint
-
-	// CheckWebsocketConnection extracts metadata from the websocket request.
-	// Because some metadata is part of the HTTP request and other metadata is part
-	// of the first websocket message sent, a middleware can not be used here.
-	// The returned context must be used for subsequent requests. The Websocket
-	// connection must be closed if an error is returned.
-	CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error)
-
-	// AdditionalLogFields is a func that returns key/value pairs that
-	// will be attached to log messages inside route handlers. This
-	// can be used to get context about the authenticated user that issued
-	// the request.
-	AdditionalLogFields(ctx context.Context) []zapcore.Field
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -201,9 +126,8 @@ type defaultHooks struct{}
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
 	return &Hooks{
-		Authorization: d,
-		Route:         d,
-		Console:       d,
+		Route:   d,
+		Console: d,
 	}
 }
 
@@ -222,149 +146,6 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 	}
 }
 
-// Authorization Hooks
-func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanPublishTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) PrintListMessagesAuditLog(_ context.Context, _ any, _ *console.ListMessageRequest) {
-}
-
-func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
-	return false
-}
-
-func (*defaultHooks) CanViewSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
 // Console hooks
 func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
 	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
@@ -380,10 +161,6 @@ func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndp
 
 func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.ListMessagesRequest) (context.Context, error) {
 	return r.Context(), nil
-}
-
-func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
-	return []zapcore.Field{}
 }
 
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
