@@ -1148,7 +1148,7 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
             items={[
                 {
                     key: 'key',
-                    name: <Box minWidth="6rem">Key</Box>,
+                    name: <Box minWidth="6rem">{msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}</Box>,
                     isDisabled: msg.key == null || msg.key.size == 0,
                     component: <>
                         <TroubleshootReportViewer payload={msg.key} />
@@ -1160,7 +1160,7 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
                 },
                 {
                     key: 'value',
-                    name: <Box minWidth="6rem">Value</Box>,
+                    name: <Box minWidth="6rem">{msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}</Box>,
                     component: <>
                         <TroubleshootReportViewer payload={msg.value} />
                         <PayloadComponent
@@ -1171,8 +1171,8 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
                 },
                 {
                     key: 'headers',
-                    name: <Box minWidth="6rem">Headers</Box>,
-                    isDisabled: msg.headers.length == 0,
+                    name: <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>,
+                    isDisabled: msg.headers.length === 0,
                     component: <MessageHeaders msg={msg} />
                 },
             ]}
