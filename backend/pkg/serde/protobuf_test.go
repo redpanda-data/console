@@ -48,6 +48,11 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
+	topic0 := config.RegexpOrLiteral{}
+	topic0.UnmarshalText([]byte("protobuf_serde_test_orders"))
+	topic1 := config.RegexpOrLiteral{}
+	topic1.UnmarshalText([]byte("protobuf_serde_test_orders_2"))
+
 	protoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
@@ -61,11 +66,11 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 		},
 		Mappings: []config.ProtoTopicMapping{
 			{
-				TopicName:      "protobuf_serde_test_orders",
+				TopicName:      topic0,
 				ValueProtoType: "shop.v1.Order",
 			},
 			{
-				TopicName:      "protobuf_serde_test_orders_2",
+				TopicName:      topic1,
 				KeyProtoType:   "shop.v1.Order",
 				ValueProtoType: "shop.v1.Order",
 			},
@@ -174,6 +179,11 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 	logger, err := zap.NewProduction()
 	require.NoError(t, err)
 
+	topic0 := config.RegexpOrLiteral{}
+	topic0.UnmarshalText([]byte("protobuf_serde_test_orders"))
+	topic1 := config.RegexpOrLiteral{}
+	topic1.UnmarshalText([]byte("protobuf_serde_test_orders_2"))
+
 	testProtoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		SchemaRegistry: config.ProtoSchemaRegistry{
@@ -187,11 +197,11 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		},
 		Mappings: []config.ProtoTopicMapping{
 			{
-				TopicName:      "protobuf_serde_test_orders",
+				TopicName:      topic0,
 				ValueProtoType: "shop.v1.Order",
 			},
 			{
-				TopicName:      "protobuf_serde_test_orders_2",
+				TopicName:      topic1,
 				KeyProtoType:   "shop.v1.Order",
 				ValueProtoType: "shop.v1.Order",
 			},

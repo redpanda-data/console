@@ -10,17 +10,22 @@
  */
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, KebabHorizontalIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
+import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode, useState } from 'react';
+import React, { Component, FC, ReactElement, ReactNode, useState } from 'react';
 import FilterEditor from './Editor';
-import filterExample1 from '../../../../assets/filter-example-1.png';
-import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, DataColumnKey, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat, } from '../../../../state/ui';
+import {
+    ColumnList,
+    DataColumnKey,
+    FilterEntry,
+    PartitionOffsetOrigin,
+    PreviewTagV2,
+    TimestampDisplayFormat,
+} from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
@@ -28,15 +33,75 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
-import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import {
+    Ellipsis,
+    Label,
+    navigatorClipboardErrorHandler,
+    numberToThousandsString,
+    OptionGroup,
+    StatusIndicator,
+    TimestampDisplay,
+    toSafeString
+} from '../../../../utils/tsxUtils';
+import {
+    base64FromUInt8Array,
+    cullText,
+    encodeBase64,
+    prettyBytes,
+    prettyMilliseconds,
+    titleCase
+} from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
-import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Button, Checkbox, DataTable, DateTimeInput, Empty, Flex, Grid, GridItem, Heading, Input, Link, Menu, MenuButton, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, RadioGroup, SearchField, Select, Switch, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useToast, VStack } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertDescription,
+    AlertIcon,
+    AlertTitle,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Code,
+    DataTable,
+    DateTimeInput,
+    Empty,
+    Flex,
+    FormField,
+    Grid,
+    GridItem,
+    Heading,
+    Input,
+    Link,
+    ListItem,
+    Menu,
+    MenuButton,
+    MenuItem,
+    MenuList,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    RadioGroup,
+    SearchField,
+    Select,
+    Tabs as RpTabs,
+    Tag,
+    TagCloseButton,
+    TagLabel,
+    Text,
+    Tooltip,
+    UnorderedList,
+    useBreakpoint,
+    useToast,
+    VStack
+} from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -99,64 +164,6 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
 
     return JSON.stringify(value, null, 4);
 }
-
-
-const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
-    const toast = useToast()
-    return (
-        <Menu computePositionOnMount>
-            <MenuButton as={Button} variant="link" className="iconButton">
-                <KebabHorizontalIcon />
-            </MenuButton>
-            <MenuList>
-                <MenuItem onClick={() => {
-                    navigator.clipboard.writeText(getMessageAsString(record)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Message copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Message
-                </MenuItem>
-                <MenuItem disabled={record.key.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getPayloadAsString(record.key.payload ?? record.key.rawBytes)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Key copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Key
-                </MenuItem>
-                <MenuItem disabled={record.value.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getPayloadAsString(record.value.payload ?? record.value.rawBytes)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Value copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Value
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Epoch Timestamp copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Epoch Timestamp
-                </MenuItem>
-                <MenuItem onClick={() => onSaveToFile()}>
-                    Save to File
-                </MenuItem>
-            </MenuList>
-        </Menu>
-    );
-};
-
 
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
@@ -291,118 +298,104 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
         const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
 
+        const menuEl = (
+            <Menu>
+                <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
+                    Actions
+                </MenuButton>
+                <MenuList>
+                    <MenuItem
+                        onClick={() => {
+                            appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                        }}
+                    >
+                        Produce Record
+                    </MenuItem>
+                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                </MenuList>
+            </Menu>
+        );
+
         return (
             <React.Fragment>
-                <Flex
+                <Grid
                     my={4}
-                    flexWrap="wrap"
-                    alignItems="flex-end"
                     gap={3}
+                    gridTemplateColumns="auto 1fr"
                     width="full"
                 >
-                    {/* Search Settings*/}
-                    <Label text="Partition">
-                        <SingleSelect<number>
-                            value={searchParams.partitionID}
-                            onChange={c => (searchParams.partitionID = c)}
-                            options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map(i => ({ value: i, label: String(i) })))}
-                        />
-                    </Label>
-                    <Label text="Start Offset">
-                        <Flex gap={3}>
-                            <SingleSelect<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => {
-                                searchParams.offsetOrigin = e;
-                                if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
-                                    if (searchParams.startOffset < 0)
-                                        searchParams.startOffset = 0;
-                                }
-                                else {
-                                    searchParams.startOffset = searchParams.offsetOrigin;
-                                }
-                            }} options={startOffsetOptions} />
-                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
-                                <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
-                                    <Input style={{ width: '7.5em' }}
-                                        maxLength={20}
-                                        isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
-                                        value={customStartOffsetValue}
-                                        onChange={e => {
-                                            setCustomStartOffsetValue(e.target.value);
-                                            if (!isNaN(Number(e.target.value)))
-                                                searchParams.startOffset = Number(e.target.value);
-                                        }}
-                                    />
-                                </Tooltip>
-                            }
-                            {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
-                        </Flex>
-                    </Label>
-                    <Label text="Max Results">
-                        <SingleSelect<number> value={searchParams.maxResults} onChange={c => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))} />
-                    </Label>
-
-                    {!isServerless() && (
-                        <Label text="Filter">
-                            <Tooltip label="You don't have permissions to use search filters in this topic"
-                                isDisabled={canUseFilters} placement="top" hasArrow>
-                                <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters}
-                                    onChange={v => (searchParams.filtersEnabled = v.target.checked)}
-                                    isDisabled={!canUseFilters} />
-                            </Tooltip>
+                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
+                        {/* Search Settings*/}
+                        <Label text="Partition">
+                            <SingleSelect<number> value={searchParams.partitionID} onChange={(c) => (searchParams.partitionID = c)} options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map((i) => ({ value: i, label: String(i) })))} />
                         </Label>
-                    )}
 
-                    {/* Refresh Button */}
-                    <Flex>
-                        {this.messageSearch.searchPhase == null && (
-                            <Tooltip label="Repeat current search" placement="top" hasArrow>
-                                <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                    <SyncIcon size={20} />
-                                </Button>
-                            </Tooltip>
-                        )}
-                        {this.messageSearch.searchPhase != null && (
-                            <Tooltip label="Stop searching" placement="top" hasArrow>
-                                <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
-                                    style={{ padding: 0, width: '48px' }}>
-                                    <XCircleIcon size={20} />
-                                </Button>
-                            </Tooltip>
-                        )}
-                    </Flex>
-
-                    {/* Topic Actions */}
-                    <Flex alignSelf="flex-end" ml="auto" gap={3}>
-                        <Menu>
-                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
-                                Actions
-                            </MenuButton>
-                            <MenuList>
-                                <MenuItem
-                                    onClick={() => {
-                                        appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                        <Label text="Start Offset">
+                            <Flex gap={3}>
+                                <SingleSelect<PartitionOffsetOrigin>
+                                    value={searchParams.offsetOrigin}
+                                    onChange={(e) => {
+                                        searchParams.offsetOrigin = e;
+                                        if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
+                                            if (searchParams.startOffset < 0) searchParams.startOffset = 0;
+                                        } else {
+                                            searchParams.startOffset = searchParams.offsetOrigin;
+                                        }
                                     }}
-                                >
-                                    Produce Record
-                                </MenuItem>
-                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                            </MenuList>
-                        </Menu>
-                        {/* Quick Search */}
-                        <SearchField width="230px" searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)} />
-                    </Flex>
+                                    options={startOffsetOptions}
+                                />
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
+                                    <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
+                                        <Input
+                                            style={{ width: '7.5em' }}
+                                            maxLength={20}
+                                            isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
+                                            value={customStartOffsetValue}
+                                            onChange={(e) => {
+                                                setCustomStartOffsetValue(e.target.value);
+                                                if (!isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
+                                            }}
+                                        />
+                                    </Tooltip>
+                                )}
+                                {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+                            </Flex>
+                        </Label>
 
-                    {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                    {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
-                        <StatusIndicator
-                            identityKey="messageSearch"
-                            fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
-                            statusText={this.messageSearch.searchPhase!}
-                            progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
-                            bytesConsumed={searchParams.filtersEnabled ? prettyBytes(this.messageSearch.bytesConsumed) : undefined}
-                            messagesConsumed={searchParams.filtersEnabled ? String(this.messageSearch.totalMessagesConsumed) : undefined}
-                        />
-                    }
+                        <Label text="Max Results">
+                            <SingleSelect<number> value={searchParams.maxResults} onChange={(c) => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))} />
+                        </Label>
+
+                        <Flex alignItems="flex-end">
+                            {/* Refresh Button */}
+                            {this.messageSearch.searchPhase == null && (
+                                <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                    <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                        <SyncIcon size={20}/>
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {this.messageSearch.searchPhase != null && (
+                                <Tooltip label="Stop searching" placement="top" hasArrow>
+                                    <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
+                                            style={{padding: 0, width: '48px'}}>
+                                        <XCircleIcon size={20}/>
+                                    </Button>
+                                </Tooltip>
+                            )}
+                        </Flex>
+                        {/* Search Progress Indicator: "Consuming Messages 30/30" */}
+                        {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
+                            <StatusIndicator
+                                identityKey="messageSearch"
+                                fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                                statusText={this.messageSearch.searchPhase!}
+                                progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
+                                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
+                            />
+                        }
+                    </GridItem>
 
                     {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
@@ -417,30 +410,36 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     */}
 
                     {/* Filter Tags */}
-                    {searchParams.filtersEnabled && (
-                        <div style={{ paddingTop: '1em', width: '100%' }}>
-                            <MessageSearchFilterBar messageSearch={this.messageSearch} />
-                        </div>
-                    )}
+                    <MessageSearchFilterBar
+                        messageSearch={this.messageSearch}
+                        canUseFilters={canUseFilters}
+                        menuEl={menuEl}
+                    />
 
-                    {/* Show warning if a deserializer is forced for key or value */}
-                    {isDeserializerOverrideActive && (
-                        <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
-                            {isKeyDeserializerActive && <Tag>
-                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                    Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
-                                </TagLabel>
-                                <TagCloseButton onClick={() => uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED} />
-                            </Tag>}
-                            {isValueDeserializerActive && <Tag>
-                                <TagLabel cursor="pointer" onClick={() => this.showColumnSettings = true}>
-                                    Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
-                                </TagLabel>
-                                <TagCloseButton onClick={() => uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED} />
-                            </Tag>}
-                        </Flex>
-                    )}
-                </Flex>
+                    <GridItem>
+                        {/* Show warning if a deserializer is forced for key or value */}
+                        {isDeserializerOverrideActive && (
+                            <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
+                                {isKeyDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
+                                {isValueDeserializerActive && (
+                                    <Tag>
+                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
+                                            Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
+                                        </TagLabel>
+                                        <TagCloseButton onClick={() => (uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED)} />
+                                    </Tag>
+                                )}
+                            </Flex>
+                        )}
+                    </GridItem>
+                </Grid>
             </React.Fragment>
         );
     });
@@ -544,11 +543,31 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
+        const toast = useToast();
+        const breakpoint = useBreakpoint({ ssr: false })
         const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
+
+        function onCopyValue(original: TopicMessage) {
+            navigator.clipboard.writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes)).then(() => {
+                toast({
+                    status: 'success',
+                    description: 'Value copied to clipboard'
+                });
+            }).catch(navigatorClipboardErrorHandler);
+        }
+
+        function onCopyKey(original: TopicMessage) {
+            navigator.clipboard.writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes)).then(() => {
+                toast({
+                    status: 'success',
+                    description: 'Key copied to clipboard'
+                });
+            }).catch(navigatorClipboardErrorHandler);
+        }
 
         const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
             offset: {
@@ -614,27 +633,68 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             </button>,
             id: 'action',
             size: 0,
-            cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
+            cell: ({ row: { original } }) => {
+                return (
+                  <Menu computePositionOnMount>
+                      <MenuButton as={Button} variant="link" className="iconButton">
+                          <KebabHorizontalIcon/>
+                      </MenuButton>
+                      <MenuList>
+                          <MenuItem onClick={() => {
+                              navigator.clipboard.writeText(getMessageAsString(original)).then(() => {
+                                  toast({
+                                      status: 'success',
+                                      description: 'Message copied to clipboard'
+                                  });
+                              }).catch(navigatorClipboardErrorHandler);
+                          }}>
+                              Copy Message
+                          </MenuItem>
+                          <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+                              Copy Key
+                          </MenuItem>
+                          <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+                              Copy Value
+                          </MenuItem>
+                          <MenuItem onClick={() => {
+                              navigator.clipboard.writeText(original.timestamp.toString()).then(() => {
+                                  toast({
+                                      status: 'success',
+                                      description: 'Epoch Timestamp copied to clipboard'
+                                  });
+                              }).catch(navigatorClipboardErrorHandler);
+                          }}>
+                              Copy Epoch Timestamp
+                          </MenuItem>
+                          <MenuItem onClick={() => this.downloadMessages = [original]}>
+                              Save to File
+                          </MenuItem>
+                      </MenuList>
+                  </Menu>
+                );
+            },
         }]
 
-        const previewButton = <>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button variant="outline" size="sm" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} bg="transparent" px="2" ml="2" lineHeight="0" minHeight="26px">
-                    <SettingOutlined style={{ fontSize: '1rem' }} />
-                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+        const previewButton = (
+            <Button variant="ghost" size="sm" onClick={() => setShowPreviewSettings(true)}>
+                <Flex gap={2} alignItems="center">
+                    <Text>Preview</Text>
                     {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
-                        if (count > 0)
-                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
-                        return <></>;
+                        const count = uiState.topicSettings.previewTags.sum((t) => (t.isActive ? 1 : 0));
+                        if (count > 0) {
+                            return <Badge lineHeight={1.2}>{count}</Badge>;
+                        }
+                        return null;
                     })()}
-                </Button>
-            </span>
-        </>;
+                </Flex>
+            </Button>
+        );
 
         return <>
             <DataTable<TopicMessage>
+                size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
                 data={this.messageSource.data}
+                isLoading={this.messageSearch.searchPhase !== null}
                 emptyText="No messages"
                 columns={columns}
                 // we need (?? []) to be compatible with searchParams of clients already stored in local storage
@@ -653,7 +713,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 })}
                 subComponent={({ row: { original } }) => renderExpandedMessage(
                     original,
-                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
+                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset),
+                    () => this.downloadMessages = [original],
+                    onCopyKey
                 )}
             />
             <Button variant="outline"
@@ -702,7 +764,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         });
 
         let filterCode: string = '';
-        if (searchParams.filtersEnabled && canUseFilters) {
+        if (canUseFilters) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
@@ -757,7 +819,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     empty = () => {
         const searchParams = uiState.topicSettings.searchParams;
-        const filterCount = searchParams.filtersEnabled ? searchParams.filters.filter(x => x.isActive).length : 0;
+        const filterCount = searchParams.filters.filter(x => x.isActive).length;
 
         const hints: JSX.Element[] = [];
         if (filterCount > 0)
@@ -1076,55 +1138,57 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
 }
 
 
-export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
-    return <div className="expandedMessage">
+export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, onDownloadRecord?: () => void, onCopyKey?: (original: TopicMessage) => void) {
+    return <Box>
         <MessageMetaData msg={msg} />
         <RpTabs
-            size="lg"
+            variant="fitted"
+            isFitted
             defaultIndex={1}
             items={[
                 {
                     key: 'key',
-                    name: <Box minWidth="6rem">Key</Box>,
+                    name: <Box minWidth="6rem">{msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}</Box>,
                     isDisabled: msg.key == null || msg.key.size == 0,
                     component: <>
                         <TroubleshootReportViewer payload={msg.key} />
                         <PayloadComponent
                             payload={msg.key}
                             loadLargeMessage={loadLargeMessage}
-                            shouldExpand={shouldExpand}
                         />
                     </>
                 },
                 {
                     key: 'value',
-                    name: <Box minWidth="6rem">Value</Box>,
+                    name: <Box minWidth="6rem">{msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}</Box>,
                     component: <>
                         <TroubleshootReportViewer payload={msg.value} />
                         <PayloadComponent
                             payload={msg.value}
                             loadLargeMessage={loadLargeMessage}
-                            shouldExpand={shouldExpand}
                         />
                     </>
                 },
                 {
                     key: 'headers',
-                    name: <Box minWidth="6rem">Headers</Box>,
-                    isDisabled: msg.headers.length == 0,
+                    name: <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>,
+                    isDisabled: msg.headers.length === 0,
                     component: <MessageHeaders msg={msg} />
                 },
             ]}
         />
-    </div>;
+        <Flex gap={2} justifyContent="flex-end">
+            {onCopyKey && <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy Key</Button>}
+            {onDownloadRecord && <Button variant="outline" onClick={onDownloadRecord}>Download Record</Button>}
+        </Flex>
+    </Box>;
 }
 
 const PayloadComponent = observer((p: {
     payload: Payload,
-    loadLargeMessage: () => Promise<void>,
-    shouldExpand?: ((x: CollapsedFieldProps) => boolean)
+    loadLargeMessage: () => Promise<void>
 }) => {
-    const { payload, loadLargeMessage, shouldExpand } = p;
+    const { payload, loadLargeMessage } = p;
     const toast = useToast();
     const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
 
@@ -1162,8 +1226,6 @@ const PayloadComponent = observer((p: {
             typeof val === 'string' ||
             typeof val === 'number' ||
             typeof val === 'boolean';
-
-        const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         if (payload.encoding == 'binary') {
             const mode = 'hex' as ('ascii' | 'raw' | 'hex');
@@ -1209,7 +1271,7 @@ const PayloadComponent = observer((p: {
             return <div className="codeBox" data-testid="payload-content">{String(val)}</div>;
         }
 
-        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;
+        return <KowlJsonView srcObj={val} />;
     }
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {((e as Error).message ?? String(e))}</span>;
@@ -1340,14 +1402,18 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
         data['Schema'] = <MessageSchema schemaId={msg.value.schemaId} />
     }
 
-    return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
-        {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
-            <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
-                <div style={{ fontWeight: 600 }}>{k}</div>
-                <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
-            </div>
-        </React.Fragment>)}
-    </div>;
+    return <Flex gap={10} my={6}>
+        {Object.entries(data).map(([k, v]) => (
+                <Flex
+                        key={k}
+                        direction="column"
+                        rowGap=".4em"
+                >
+                    <Text fontWeight="600" fontSize="md">{k}</Text>
+                    <Text color="" fontSize="sm">{v}</Text>
+                </Flex>
+        ))}
+    </Flex>
 });
 
 const MessageSchema = observer((p: { schemaId: number }) => {
@@ -1407,7 +1473,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                 subComponent={({ row: { original: header } }) => {
                     return typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
-                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />
+                        : <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
                 }}
             />
         </div>
@@ -1540,53 +1606,15 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
     />
 }
 
-const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger="click" hideCloseButton title={popTitle} content={<Box maxW="600px">{content}</Box>} size="auto">
-        <Button variant="link" size="small" style={{ fontSize: '1.2em' }}>
-            {title}
-        </Button>
-    </Popover>
-);
-
-// TODO Explain:
-// - multiple filters are combined with &&
-// - 'return' is optional if you only have an expression! as is ';'
-// - more examples for 'value', along with 'find(...)'
-const helpEntries = [
-    makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li>The filter code is a javascript function body (click 'parameters' to see what arguments are available)</li>
-        <li>Return true to allow a message, return false to discard the message.</li>
-        <li>You can omit the 'return' keyword if your filter is just an 'expression'</li>
-        <li>If you have multiple active filters, they're combined with 'and'. Meaning that ALL filters a message is tested on must return true for it to be passed to the frontend.</li>
-        <li>The context is re-used between messages, but every partition has its own context</li>
-    </ul>),
-    makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className="codeBox">offset</span> (number)</li>
-        <li><span className="codeBox">partitionID</span> (number)</li>
-        <li><span className="codeBox">key</span> (string)</li>
-        <li><span className="codeBox">value</span> (object)</li>
-        <li><span className="codeBox">headers</span> (object)</li>
-    </ul>),
-    makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">offset &gt; 10000</span></li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">value != null</span> Skips tombstone messages</li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">if (key == 'example') return true</span></li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">return (partitionID == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading="lazy" /></div></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading="lazy" /></div></li>
-    </ul>),
-].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
-
 @observer
-class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }> {
+class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, fetchError?: string, menuEl: ReactElement }> {
     /*
     todo:
         - does a click outside of the editor mean "ok" or "cancel"?
             - maybe don't allow closing by clicking outside?
             - ok: so we can make quick changes
         - maybe submit the code live, show syntax errors below
-        - maybe havee a button that runs the code against the newest message?
+        - maybe have a button that runs the code against the newest message?
      */
 
     @observable currentFilter: FilterEntry | null = null;
@@ -1603,13 +1631,50 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
     render() {
         const settings = uiState.topicSettings.searchParams;
         const messageSearch = this.props.messageSearch;
+        const canUseFilters = this.props.canUseFilters;
 
-        return <div className={styles.filterbar}>
+        return <>
+            {/* Add Filter Button */}
+            <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
+                <Tooltip
+                    label="You don't have permissions to use search filters in this topic"
+                    isDisabled={canUseFilters}
+                    placement="top"
+                    hasArrow
+                >
+                    <Button
+                        isDisabled={!canUseFilters}
+                        variant="outline"
+                        onClick={() => transaction(() => {
+                            this.currentIsNew = true;
+                            this.currentFilterBackup = null;
+                            this.currentFilter = new FilterEntry();
+                            this.hasChanges = false;
+                            settings.filters.push(this.currentFilter);
+                        })}>
+
+                        Add Filter
+                    </Button>
+                </Tooltip>
 
 
-            <div className={styles.filters}>
+                {/* Quick Search */}
+                <SearchField width="230px" searchText={this.props.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
+
+                {this.props.menuEl}
+            </GridItem>
+
+            <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
+
+            <Box
+                width="calc(100% - 200px)"
+                display="inline-flex"
+                rowGap="2px"
+                columnGap="8px"
+                flexWrap="wrap"
+            >
                 {/* Existing Tags List  */}
-                {settings.filters?.map(e =>
+                {settings.filters?.map((e) =>
                     <Tag
                         style={{ userSelect: 'none' }}
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
@@ -1639,74 +1704,87 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
                         <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
                     </Tag>
                 )}
+            </Box>
+                {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
+                    ? (
+                        <div className={styles.metaSection}>
+                            <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
+                            <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
+                        </div>
+                    )
+                    : (
+                        <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                            <span className={`spinner ${styles.spinner}`} />
+                            <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                        </div>
+                    )
+                }
 
-                {/* Add Filter Button */}
-                <Tag onClick={() => transaction(() => {
-                    this.currentIsNew = true;
-                    this.currentFilterBackup = null;
-                    this.currentFilter = new FilterEntry();
-                    this.hasChanges = false;
-                    settings.filters.push(this.currentFilter);
-                })}>
-                    <span style={{ cursor: 'pointer' }}>
-                        <PlusIcon size="small" />
-                    </span>
-                    {/* <span>New Filter</span> */}
-                </Tag>
-            </div>
-
-            {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
-                ? (
-                    <div className={styles.metaSection}>
-                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
-                    </div>
-                )
-                : (
-                    <div className={`${styles.metaSection} ${styles.isLoading}`}>
-                        <span className={`spinner ${styles.spinner}`} />
-                        <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
-                    </div>
-                )
-            }
+            </GridItem>
 
 
             <Modal isOpen={this.currentFilter !== null} onClose={() => this.currentFilter = null}>
                 <ModalOverlay />
                 <ModalContent minW="4xl">
                     <ModalHeader>
-                        Edit Filter
+                        Javascript filtering
                     </ModalHeader>
                     <ModalBody>
-                        {this.currentFilter && <Flex gap={4} flexDirection="column">
-                            <Label text="Display Name">
-                                <Input
-                                    style={{ padding: '2px 8px' }}
-                                    value={this.currentFilter!.name}
-                                    onChange={e => {
-                                        this.currentFilter!.name = e.target.value;
-                                        this.hasChanges = true;
-                                    }}
-                                    placeholder="will be shown instead of the code"
-                                    size="small" />
-                            </Label>
+                        <Text mb={4}>Write Javascript code to filter your records.</Text>
+                        <Grid
+                            templateColumns={{base: '1fr', md: '3fr 2fr'}}
+                            gap={6}
+                        >
+                            <GridItem>
+                                {this.currentFilter && <FormField
+                                    label="Filter display name"
+                                >
+                                    <Input
+                                            value={this.currentFilter!.name}
+                                            onChange={e => {
+                                                this.currentFilter!.name = e.target.value;
+                                                this.hasChanges = true;
+                                            }}
+                                            placeholder="This name will appear in the filter bar"
+                                    />
+                                </FormField>}
+                            </GridItem>
+                            <GridItem />
+                            <GridItem display="flex" gap={4} flexDirection="column">
+                                {this.currentFilter &&
+                                    <FormField
+                                        label="Filter code"
+                                    >
+                                        <Box borderRadius={20}>
+                                        <FilterEditor
+                                            value={this.currentFilter!.code}
+                                            onValueChange={(code, transpiled) => {
+                                                this.currentFilter!.code = code;
+                                                this.currentFilter!.transpiledCode = transpiled;
+                                                this.hasChanges = true;
+                                            }}
+                                        />
+                                        </Box>
+                                    </FormField>
+                                }
 
-                            {/* Code Box */}
-                            <Label text="Filter Code">
-                                <FilterEditor
-                                    value={this.currentFilter!.code}
-                                    onValueChange={(code, transpiled) => {
-                                        this.currentFilter!.code = code;
-                                        this.currentFilter!.transpiledCode = transpiled;
-                                        this.hasChanges = true;
-                                    }}
-                                />
-                            </Label>
+                                <UnorderedList>
+                                    <ListItem>return true allows messages, return false discards them.</ListItem>
+                                    <ListItem>Available params are <Code>offset</Code>, <Code>partitionID</Code> (number), <Code>key</Code> (any), <Code>value</Code> (any), and <Code>headers</Code> (object), <Code>keySchemaID</Code> (number) and <Code>valueSchemaID</Code> (number)</ListItem>
+                                    <ListItem>Multiple active filters are combined with 'and'.</ListItem>
+                                </UnorderedList>
 
-                            {/* Help Bar */}
-                            <Text fontSize="sm" color="gray.700" fontWeight={300}>Help: {helpEntries}</Text>
 
-                        </Flex>}
+                            </GridItem>
+                            <GridItem>
+                                <Heading mb={6}>Examples</Heading>
+                                <UnorderedList styleType="none" margin={0} spacing={4}>
+                                    <ListItem><Code>value != null</Code> skips records without value</ListItem>
+                                    <ListItem><Code>if (key == 'example') return true</Code>
+                                        only returns messages where keys equal <Code>'example'</Code> in their string presentation (after decoding)</ListItem>
+                                </UnorderedList>
+                            </GridItem>
+                        </Grid>
                     </ModalBody>
                     <ModalFooter>
                         <Box display="flex" gap={4} alignItems="center" justifyContent="flex-end">
@@ -1719,7 +1797,7 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch }>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div>;
+        </>;
     }
 
     revertChanges() {

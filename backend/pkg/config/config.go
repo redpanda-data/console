@@ -90,6 +90,7 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
+	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
 	c.Connect.SetDefaults()
 }
@@ -130,7 +131,8 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		FlatPaths: false,
 		DecoderConfig: &mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
-				mapstructure.StringToTimeDurationHookFunc()),
+				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.TextUnmarshallerHookFunc()),
 			Metadata:         nil,
 			Result:           &cfg,
 			WeaklyTypedInput: true,

@@ -103,9 +103,11 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	absProtoPath, err := filepath.Abs("../testutil/testdata/proto")
 	require.NoError(err)
 	s.cfg.Kafka.Protobuf.Enabled = true
+	topic0 := config.RegexpOrLiteral{}
+	topic0.UnmarshalText([]byte(testutil.TopicNameForTest("publish_messages_proto_plain")))
 	s.cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 		{
-			TopicName:      testutil.TopicNameForTest("publish_messages_proto_plain"),
+			TopicName:      topic0,
 			ValueProtoType: "testutil.things.v1.Item",
 		},
 	}

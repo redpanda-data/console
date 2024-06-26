@@ -38,7 +38,16 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     if (partitions === undefined) messageSum = '...'; // no response yet
     else if (partitions === null) messageSum = 'N/A'; // explicit null -> not allowed
     else messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
-    statsAr.push(<Statistic key="msgs" title="Messages" value={messageSum} />);
+    statsAr.push(
+        <Statistic
+            key="msgs"
+            title="Estimated messages"
+            value={messageSum}
+            hint={
+                'The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages.'
+            }
+        />
+    );
 
     // Config Entries / Seperator
     const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;

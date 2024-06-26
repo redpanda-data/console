@@ -14,7 +14,14 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { comparer, observable, transaction } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { MessageSearch, MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorError, DataType, PropertyImportance, TopicMessage } from '../../../state/restInterfaces';
+import {
+    ClusterConnectorInfo,
+    ClusterConnectorTaskInfo,
+    ConnectorError,
+    DataType,
+    PropertyImportance,
+    TopicMessage
+} from '../../../state/restInterfaces';
 import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
@@ -34,6 +41,8 @@ import usePaginationParams from '../../../hooks/usePaginationParams';
 import { uiState } from '../../../state/uiState';
 import { sanitizeString } from '../../../utils/filterHelper';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+
+const LOGS_TOPIC_NAME = '__redpanda.connectors_logs'
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -55,6 +64,8 @@ const KafkaConnectorMain = observer(
         refreshData: (force: boolean) => Promise<void>;
     }) => {
         const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
+
+        const logsTopic = api.topics?.first(x => x.topicName == LOGS_TOPIC_NAME);
 
         useEffect(() => {
             const init = async () => {
@@ -151,6 +162,7 @@ const KafkaConnectorMain = observer(
                     {
                         key: 'logs',
                         name: 'Logs',
+                        isDisabled: logsTopic ? false : `Logs topic '${LOGS_TOPIC_NAME}' does not exist.`,
                         component: <Box mt="8">
                             <LogsTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
                         </Box>
@@ -357,7 +369,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
         ? 'error'
         : 'warning';
 
-    const hasConnectorLogs = api.topics?.any(x => x.topicName == '__redpanda.connectors_logs');
+    const hasConnectorLogs = api.topics?.any(x => x.topicName == LOGS_TOPIC_NAME);
 
     return <>
         <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
@@ -376,7 +388,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                 </ModalBody>
                 <ModalFooter gap={2}>
                     {hasConnectorLogs &&
-                        <Button onClick={() => appGlobal.history.push('/topics/__redpanda.connectors_logs')} mr="auto">
+                        <Button onClick={() => appGlobal.history.push(`/topics/${LOGS_TOPIC_NAME}`)} mr="auto">
                             Show Logs
                         </Button>}
                     <Button onClick={onClose}>Close</Button>
@@ -393,8 +405,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         const connector = decodeURIComponent(this.props.connector);
         p.title = connector;
         p.addBreadcrumb('Connectors', '/connect-clusters');
-        p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
-        p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`, {
+        p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`, 'Cluster Name');
+        p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`, undefined, {
             canBeTruncated: true,
             canBeCopied: true
         });
@@ -501,7 +513,7 @@ const LogsTab = observer((p: {
 }) => {
     const { connector } = p;
     const connectorName = connector.name;
-    const topicName = '__redpanda.connectors_logs';
+    const topicName = LOGS_TOPIC_NAME;
     const topic = api.topics?.first(x => x.topicName == topicName);
 
     const createLogsTabState = () => {

@@ -50,7 +50,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         p.title = this.props.groupId;
         p.addBreadcrumb('Consumer Groups', '/groups');
-        if (group) p.addBreadcrumb(group, '/' + group, {
+        if (group) p.addBreadcrumb(group, '/' + group, undefined, {
             canBeCopied: true,
             canBeTruncated: true,
         });

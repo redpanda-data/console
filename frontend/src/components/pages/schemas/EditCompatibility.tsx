@@ -55,7 +55,7 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
         p.title = 'Edit Schema Compatibility';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
         if(subjectName) {
-            p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, {
+            p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
                 canBeTruncated: true
             })
             p.addBreadcrumb('Edit Compatibility', `/schema-registry/subjects/${subjectName}/edit-compatibility`)

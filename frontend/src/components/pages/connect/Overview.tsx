@@ -401,7 +401,7 @@ redpanda:
                     <Text mt={3}>
                         Set up your connection to Redpanda for data
                         in the <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/components/outputs/kafka_franz" style={{ textDecoration: 'underline solid 1px' }}>kafka_franz</ChakraLink> component
-                        and <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/components/logger/about" style={{ textDecoration: 'underline solid 1px' }}>logs</ChakraLink> in the redpanda component.
+                        and <ChakraLink isExternal href="https://docs.redpanda.com/redpanda-connect/components/redpanda/about" style={{ textDecoration: 'underline solid 1px' }}>logs</ChakraLink> in the redpanda component.
                     </Text>
                 </ListItem>
 

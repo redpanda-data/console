@@ -24,7 +24,7 @@ export class PageInitHelper {
         makeAutoObservable(this);
     }
     set title(title: string) { uiState.pageTitle = title; }
-    addBreadcrumb(title: string, to: string, options?: BreadcrumbOptions) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to, options }) }
+    addBreadcrumb(title: string, to: string, heading?: string, options?: BreadcrumbOptions) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to, heading, options }) }
 }
 export abstract class PageComponent<TRouteParams = Record<string, unknown>> extends React.Component<PageProps<TRouteParams>> {
 
