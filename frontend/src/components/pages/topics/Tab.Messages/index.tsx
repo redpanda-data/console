@@ -165,64 +165,6 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
     return JSON.stringify(value, null, 4);
 }
 
-
-const CopyDropdown: FC<{ record: TopicMessage, onSaveToFile: Function }> = ({ record, onSaveToFile }) => {
-    const toast = useToast()
-    return (
-        <Menu computePositionOnMount>
-            <MenuButton as={Button} variant="link" className="iconButton">
-                <KebabHorizontalIcon />
-            </MenuButton>
-            <MenuList>
-                <MenuItem onClick={() => {
-                    navigator.clipboard.writeText(getMessageAsString(record)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Message copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Message
-                </MenuItem>
-                <MenuItem disabled={record.key.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getPayloadAsString(record.key.payload ?? record.key.rawBytes)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Key copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Key
-                </MenuItem>
-                <MenuItem disabled={record.value.isPayloadNull} onClick={() => {
-                    navigator.clipboard.writeText(getPayloadAsString(record.value.payload ?? record.value.rawBytes)).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Value copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Value
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    navigator.clipboard.writeText(record.timestamp.toString()).then(() => {
-                        toast({
-                            status: 'success',
-                            description: 'Epoch Timestamp copied to clipboard'
-                        })
-                    }).catch(navigatorClipboardErrorHandler)
-                }}>
-                    Copy Epoch Timestamp
-                </MenuItem>
-                <MenuItem onClick={() => onSaveToFile()}>
-                    Save to File
-                </MenuItem>
-            </MenuList>
-        </Menu>
-    );
-};
-
-
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable previewDisplay: string[] = [];
@@ -601,12 +543,31 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     MessageTable = observer(() => {
+        const toast = useToast();
         const breakpoint = useBreakpoint({ ssr: false })
         const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
         const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
+
+        function onCopyValue(original: TopicMessage) {
+            navigator.clipboard.writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes)).then(() => {
+                toast({
+                    status: 'success',
+                    description: 'Value copied to clipboard'
+                });
+            }).catch(navigatorClipboardErrorHandler);
+        }
+
+        function onCopyKey(original: TopicMessage) {
+            navigator.clipboard.writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes)).then(() => {
+                toast({
+                    status: 'success',
+                    description: 'Key copied to clipboard'
+                });
+            }).catch(navigatorClipboardErrorHandler);
+        }
 
         const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
             offset: {
@@ -672,7 +633,46 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             </button>,
             id: 'action',
             size: 0,
-            cell: ({ row: { original } }) => <CopyDropdown record={original} onSaveToFile={() => this.downloadMessages = [original]} />,
+            cell: ({ row: { original } }) => {
+                return (
+                  <Menu computePositionOnMount>
+                      <MenuButton as={Button} variant="link" className="iconButton">
+                          <KebabHorizontalIcon/>
+                      </MenuButton>
+                      <MenuList>
+                          <MenuItem onClick={() => {
+                              navigator.clipboard.writeText(getMessageAsString(original)).then(() => {
+                                  toast({
+                                      status: 'success',
+                                      description: 'Message copied to clipboard'
+                                  });
+                              }).catch(navigatorClipboardErrorHandler);
+                          }}>
+                              Copy Message
+                          </MenuItem>
+                          <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+                              Copy Key
+                          </MenuItem>
+                          <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+                              Copy Value
+                          </MenuItem>
+                          <MenuItem onClick={() => {
+                              navigator.clipboard.writeText(original.timestamp.toString()).then(() => {
+                                  toast({
+                                      status: 'success',
+                                      description: 'Epoch Timestamp copied to clipboard'
+                                  });
+                              }).catch(navigatorClipboardErrorHandler);
+                          }}>
+                              Copy Epoch Timestamp
+                          </MenuItem>
+                          <MenuItem onClick={() => this.downloadMessages = [original]}>
+                              Save to File
+                          </MenuItem>
+                      </MenuList>
+                  </Menu>
+                );
+            },
         }]
 
         const previewButton = (
@@ -713,7 +713,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 })}
                 subComponent={({ row: { original } }) => renderExpandedMessage(
                     original,
-                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
+                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset),
+                    () => this.downloadMessages = [original],
+                    onCopyKey
                 )}
             />
             <Button variant="outline"
@@ -1136,11 +1138,12 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
 }
 
 
-export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>) {
-    return <div className="expandedMessage">
+export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, onDownloadRecord?: () => void, onCopyKey?: (original: TopicMessage) => void) {
+    return <Box>
         <MessageMetaData msg={msg} />
         <RpTabs
-            size="lg"
+            variant="fitted"
+            isFitted
             defaultIndex={1}
             items={[
                 {
@@ -1174,7 +1177,11 @@ export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () =>
                 },
             ]}
         />
-    </div>;
+        <Flex gap={2} justifyContent="flex-end">
+            {onCopyKey && <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy Key</Button>}
+            {onDownloadRecord && <Button variant="outline" onClick={onDownloadRecord}>Download Record</Button>}
+        </Flex>
+    </Box>;
 }
 
 const PayloadComponent = observer((p: {
@@ -1395,14 +1402,18 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
         data['Schema'] = <MessageSchema schemaId={msg.value.schemaId} />
     }
 
-    return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
-        {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
-            <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
-                <div style={{ fontWeight: 600 }}>{k}</div>
-                <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
-            </div>
-        </React.Fragment>)}
-    </div>;
+    return <Flex gap={10} my={6}>
+        {Object.entries(data).map(([k, v]) => (
+                <Flex
+                        key={k}
+                        direction="column"
+                        rowGap=".4em"
+                >
+                    <Text fontWeight="600" fontSize="md">{k}</Text>
+                    <Text color="" fontSize="sm">{v}</Text>
+                </Flex>
+        ))}
+    </Flex>
 });
 
 const MessageSchema = observer((p: { schemaId: number }) => {
