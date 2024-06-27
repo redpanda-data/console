@@ -1,5 +1,5 @@
+---
 name: Repository dispatch on push or release
-
 on:
   push:
     paths:
@@ -9,25 +9,35 @@ on:
       - '*'
     branches:
       - '**'
-
 jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_SM_READONLY_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SM_READONLY_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      - name: get secrets from aws sm
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/actions_bot_token
+          parse-json-secrets: true
       - name: Repository Dispatch on Release
         uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         with:
-          token: ${{ secrets.VBOT_GITHUB_API_TOKEN }}
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: release
           client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}", "tag_name": "${{ github.event.release.tag_name }}"}'
-
       - name: Repository Dispatch on push
         uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         with:
-          token: ${{ secrets.VBOT_GITHUB_API_TOKEN }}
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: push
           client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
