@@ -169,9 +169,7 @@ func (api *Service) PublishMessage(
 	canPublish, restErr := api.authHooks.CanPublishTopicRecords(ctx, msg.GetTopic())
 	if restErr != nil || !canPublish {
 		err := errors.New("you don't have permissions to publish topic records")
-		if restErr.Message != "" {
-			err = fmt.Errorf("%w: "+restErr.Message, err)
-		} else if restErr.Err != nil {
+		if restErr != nil && restErr.Err != nil {
 			err = restErr.Err
 		}
 		return nil, apierrors.NewConnectError(
