@@ -13,6 +13,18 @@ jobs:
   push-module:
     runs-on: ubuntu-latest
     steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_SM_READONLY_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SM_READONLY_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      - name: get secrets from aws sm
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/buf_token
+          parse-json-secrets: true
       # Run `git checkout`
       - uses: actions/checkout@v4
       # Install the `buf` CLI
@@ -31,6 +43,6 @@ jobs:
       - uses: bufbuild/buf-push-action@v1
         with:
           input: proto
-          buf_token: ${{ secrets.BUF_TOKEN }}
+          buf_token: ${{ env.BUF_TOKEN }}
           create_visibility: private
           draft: ${{ github.ref_name != 'master'}}
