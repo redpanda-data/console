@@ -12,11 +12,12 @@ package config
 import "fmt"
 
 // GitRepository is the configuration options that determine what Git repository, branch and
-// directory shall be used.
+// directory shall be used, as well as the max depth for fetching markdown and proto files.
 type GitRepository struct {
 	URL           string `yaml:"url"`
 	Branch        string `yaml:"branch"`
 	BaseDirectory string `yaml:"baseDirectory"`
+	MaxDepth      int    `yaml:"maxDepth"`
 }
 
 // Validate given input for config properties
@@ -31,4 +32,5 @@ func (c *GitRepository) Validate() error {
 // SetDefaults for Git repository configurations.
 func (c *GitRepository) SetDefaults() {
 	c.BaseDirectory = "."
+	c.MaxDepth = 15
 }
