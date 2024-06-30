@@ -22,7 +22,7 @@ import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUti
 import { CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
 import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
-import { Box, Button, Checkbox, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Flex, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useDisclosure } from '@redpanda-data/ui';
+import { Box, Button, Checkbox, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerFooter, DrawerHeader, DrawerOverlay, Flex, Input, Popover, useDisclosure } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 
 const PatternHelpDrawer = () => {
@@ -143,8 +143,6 @@ const globHelp = <div>
 @observer
 export class PreviewSettings extends Component<{
     messageSearch: MessageSearch,
-    getShowDialog: () => boolean,
-    setShowDialog: (show: boolean) => void
 }> {
     @computed.struct get allCurrentKeys() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -159,7 +157,8 @@ export class PreviewSettings extends Component<{
 
 
     render() {
-        const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];
+        // const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];
+        const currentKeys = this.allCurrentKeys;
 
         const tags = uiState.topicSettings.previewTags;
         // add ids to elements that don't have any
@@ -254,24 +253,9 @@ export class PreviewSettings extends Component<{
         </>;
 
         return (
-            <Modal
-                isCentered
-                isOpen={this.props.getShowDialog()}
-                onClose={() => this.props.setShowDialog(false)}
-            >
-                <ModalOverlay />
-                <ModalContent minW="5xl">
-                    <ModalHeader>Preview Fields</ModalHeader>
-                    <ModalBody>
-                        {content}
-                    </ModalBody>
-                    <ModalFooter gap={2}>
-                        <Button onClick={() => {
-                            this.props.setShowDialog(false)
-                        }}>Close</Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
+          <Box>
+              {content}
+          </Box>
         )
     }
 }

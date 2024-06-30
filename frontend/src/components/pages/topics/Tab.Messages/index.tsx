@@ -61,7 +61,6 @@ import {
     AlertDescription,
     AlertIcon,
     AlertTitle,
-    Badge,
     Box,
     Button,
     Checkbox,
@@ -546,7 +545,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const toast = useToast();
         const breakpoint = useBreakpoint({ ssr: false })
         const paginationParams = usePaginationParams(uiState.topicSettings.searchParams.pageSize, this.messageSource.data.length)
-        const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
@@ -591,7 +589,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags} />,
             },
             value: {
-                header: () => <span>Value {previewButton}</span>,
+                header: () => 'Value',
                 accessorKey: 'value',
                 cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
             },
@@ -675,21 +673,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             },
         }]
 
-        const previewButton = (
-            <Button variant="ghost" size="sm" onClick={() => setShowPreviewSettings(true)}>
-                <Flex gap={2} alignItems="center">
-                    <Text>Preview</Text>
-                    {(() => {
-                        const count = uiState.topicSettings.previewTags.sum((t) => (t.isActive ? 1 : 0));
-                        if (count > 0) {
-                            return <Badge lineHeight={1.2}>{count}</Badge>;
-                        }
-                        return null;
-                    })()}
-                </Flex>
-            </Button>
-        );
-
         return <>
             <DataTable<TopicMessage>
                 size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
@@ -730,16 +713,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
             <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} onRequireRawPayload={() => this.executeMessageSearch()} />
 
-            {
-                (this.messageSource?.data?.length > 0) &&
-                <PreviewSettings
-                    messageSearch={this.messageSearch}
-                    getShowDialog={() => showPreviewSettings}
-                    setShowDialog={s => setShowPreviewSettings(s)}
-                />
-            }
-
-            <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
+            <ColumnSettings
+              getShowDialog={() => this.showColumnSettings}
+              setShowDialog={s => this.showColumnSettings = s}
+              messageSearch={this.messageSearch}
+              showPreviewSettings={this.messageSource?.data?.length > 0}
+            />
         </>;
     });
 
@@ -1481,7 +1460,12 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
-const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: boolean) => void }> = observer(({ getShowDialog, setShowDialog }) => {
+const ColumnSettings: FC<{
+    getShowDialog: () => boolean;
+    setShowDialog: (val: boolean) => void;
+    messageSearch: MessageSearch;
+    showPreviewSettings: boolean;
+}> = observer(({ getShowDialog, setShowDialog, messageSearch, showPreviewSettings }) => {
 
     const payloadEncodingPairs = [
         { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -1557,6 +1541,14 @@ const ColumnSettings: FC<{ getShowDialog: () => boolean; setShowDialog: (val: bo
                         />
                     </Box>
                 </Box>
+
+
+                {
+                    showPreviewSettings &&
+                  <PreviewSettings
+                    messageSearch={messageSearch}
+                  />
+                }
             </ModalBody>
             <ModalFooter gap={2}>
                 <Button onClick={() => {
