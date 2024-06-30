@@ -112,6 +112,9 @@ export class TopicDetailsSettings {
 
         filtersEnabled: false,
         filters: [] as FilterEntry[],
+
+        keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+        valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
     };
 
     @observable messagesPageSize = 20;
@@ -131,9 +134,6 @@ export class TopicDetailsSettings {
     @observable searchParametersLocalTimeMode = true;
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
-
-    @observable keyDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
-    @observable valueDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
 
     @observable consumerPageSize = 20;
     @observable partitionPageSize = 20;

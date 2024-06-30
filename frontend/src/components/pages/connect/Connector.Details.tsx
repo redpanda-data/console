@@ -545,8 +545,8 @@ const LogsTab = observer((p: {
             topicName: topicName,
             includeRawPayload: true,
             ignoreSizeLimit: true,
-            keyDeserializer: uiState.topicSettings.keyDeserializer,
-            valueDeserializer: uiState.topicSettings.valueDeserializer,
+            keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
         };
         const messages = await search.startSearch(searchReq);
 

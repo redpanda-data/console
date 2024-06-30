@@ -108,12 +108,31 @@ import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
-import { proto3 } from '@bufbuild/protobuf';
 import { ColumnDef } from '@tanstack/react-table';
 import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../../utils/pagination';
+
+
+const payloadEncodingPairs = [
+    { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
+    { value: PayloadEncoding.NULL, label: 'None (Null)' },
+    { value: PayloadEncoding.AVRO, label: 'AVRO' },
+    { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
+    { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
+    { value: PayloadEncoding.JSON, label: 'JSON' },
+    { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
+    { value: PayloadEncoding.XML, label: 'XML' },
+    { value: PayloadEncoding.TEXT, label: 'Plain Text' },
+    { value: PayloadEncoding.UTF8, label: 'UTF-8' },
+    { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
+    { value: PayloadEncoding.SMILE, label: 'Smile' },
+    { value: PayloadEncoding.BINARY, label: 'Binary' },
+    { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
+    { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
+];
+
 
 
 interface TopicMessageViewProps {
@@ -293,10 +312,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
 
-        const isKeyDeserializerActive = uiState.topicSettings.keyDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.keyDeserializer != null;
-        const isValueDeserializerActive = uiState.topicSettings.valueDeserializer != PayloadEncoding.UNSPECIFIED && uiState.topicSettings.valueDeserializer != null;
-        const isDeserializerOverrideActive = isKeyDeserializerActive || isValueDeserializerActive;
-
         const menuEl = (
             <Menu>
                 <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
@@ -365,6 +380,22 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <SingleSelect<number> value={searchParams.maxResults} onChange={(c) => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))} />
                         </Label>
 
+                        <Label text="Key Deserializer">
+                            <SingleSelect<PayloadEncoding>
+                              options={payloadEncodingPairs}
+                              value={searchParams.keyDeserializer}
+                              onChange={e => searchParams.keyDeserializer = e}
+                            />
+                        </Label>
+
+                        <Label text="Value Deserializer">
+                            <SingleSelect<PayloadEncoding>
+                              options={payloadEncodingPairs}
+                              value={searchParams.valueDeserializer}
+                              onChange={e => searchParams.valueDeserializer = e}
+                            />
+                        </Label>
+
                         <Flex alignItems="flex-end">
                             {/* Refresh Button */}
                             {this.messageSearch.searchPhase == null && (
@@ -414,30 +445,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         canUseFilters={canUseFilters}
                         menuEl={menuEl}
                     />
-
-                    <GridItem>
-                        {/* Show warning if a deserializer is forced for key or value */}
-                        {isDeserializerOverrideActive && (
-                            <Flex alignItems="flex-end" height="32px" width="100%" gap="4">
-                                {isKeyDeserializerActive && (
-                                    <Tag>
-                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
-                                            Key Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.keyDeserializer)?.localName}
-                                        </TagLabel>
-                                        <TagCloseButton onClick={() => (uiState.topicSettings.keyDeserializer = PayloadEncoding.UNSPECIFIED)} />
-                                    </Tag>
-                                )}
-                                {isValueDeserializerActive && (
-                                    <Tag>
-                                        <TagLabel cursor="pointer" onClick={() => (this.showColumnSettings = true)}>
-                                            Value Deserializer = {proto3.getEnumType(PayloadEncoding).findNumber(uiState.topicSettings.valueDeserializer)?.localName}
-                                        </TagLabel>
-                                        <TagCloseButton onClick={() => (uiState.topicSettings.valueDeserializer = PayloadEncoding.UNSPECIFIED)} />
-                                    </Tag>
-                                )}
-                            </Flex>
-                        )}
-                    </GridItem>
                 </Grid>
             </React.Fragment>
         );
@@ -446,7 +453,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     searchFunc = (source: 'auto' | 'manual') => {
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp}`;
+        const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp} ${params.keyDeserializer} ${params.valueDeserializer}`;
 
         untracked(() => {
             const phase = this.messageSearch.searchPhase;
@@ -512,8 +519,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             topicName: topicName,
             includeRawPayload: true,
             ignoreSizeLimit: true,
-            keyDeserializer: uiState.topicSettings.keyDeserializer,
-            valueDeserializer: uiState.topicSettings.valueDeserializer,
+            keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+            valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
         };
         const messages = await search.startSearch(searchReq);
 
@@ -771,8 +778,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
             includeRawPayload: true,
 
-            keyDeserializer: uiState.topicSettings.keyDeserializer,
-            valueDeserializer: uiState.topicSettings.valueDeserializer,
+            keyDeserializer: searchParams.keyDeserializer,
+            valueDeserializer: searchParams.valueDeserializer,
         } as MessageSearchRequest;
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
@@ -1467,25 +1474,6 @@ const ColumnSettings: FC<{
     showPreviewSettings: boolean;
 }> = observer(({ getShowDialog, setShowDialog, messageSearch, showPreviewSettings }) => {
 
-    const payloadEncodingPairs = [
-        { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
-        { value: PayloadEncoding.NULL, label: 'None (Null)' },
-        { value: PayloadEncoding.AVRO, label: 'AVRO' },
-        { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
-        { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
-        { value: PayloadEncoding.JSON, label: 'JSON' },
-        { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
-        { value: PayloadEncoding.XML, label: 'XML' },
-        { value: PayloadEncoding.TEXT, label: 'Plain Text' },
-        { value: PayloadEncoding.UTF8, label: 'UTF-8' },
-        { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
-        { value: PayloadEncoding.SMILE, label: 'Smile' },
-        { value: PayloadEncoding.BINARY, label: 'Binary' },
-        { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
-        { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
-    ];
-
-
     return <Modal isOpen={getShowDialog()} onClose={() => {
         setShowDialog(false);
     }}>
@@ -1496,25 +1484,6 @@ const ColumnSettings: FC<{
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Box mb="1em">
-                    <Text mb={2}>Key Deserializer</Text>
-                    <Box>
-                        <SingleSelect
-                            options={payloadEncodingPairs}
-                            value={uiState.topicSettings.keyDeserializer}
-                            onChange={e => uiState.topicSettings.keyDeserializer = e}
-                        />
-                    </Box>
-
-                    <Text mb={2}>Value Deserializer</Text>
-                    <Box>
-                        <SingleSelect
-                            options={payloadEncodingPairs}
-                            value={uiState.topicSettings.valueDeserializer}
-                            onChange={e => uiState.topicSettings.valueDeserializer = e}
-                        />
-                    </Box>
-                </Box>
                 <Box>
                     <Text>
                         Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
