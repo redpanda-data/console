@@ -117,6 +117,8 @@ export class TopicDetailsSettings {
         valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
     };
 
+    @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = []
+
     @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
 
@@ -331,6 +333,10 @@ if (storedSettingsJson) {
         // which is ok for 'number', but not for any other type.
         ts.previewColumnFields = ts.previewColumnFields ?? [];
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
+
+        if(!ts.dynamicFilters) {
+            ts.dynamicFilters = []
+        }
     }
 
     // Upgrade: PreviewTag to PreviewTagV2

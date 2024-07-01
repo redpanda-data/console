@@ -33,6 +33,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
+import { MdExpandMore, MdAdd, MdOutlineLayers, MdOutlineRoundedCorner, MdOutlineSearch } from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -88,7 +89,6 @@ import {
     ModalHeader,
     ModalOverlay,
     RadioGroup,
-    SearchField,
     Select,
     Tabs as RpTabs,
     Tag,
@@ -101,7 +101,6 @@ import {
     useToast,
     VStack
 } from '@redpanda-data/ui';
-import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
@@ -113,6 +112,7 @@ import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../../utils/pagination';
+import RemovableFilter from '../../../misc/RemovableFilter';
 
 
 const payloadEncodingPairs = [
@@ -339,10 +339,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     width="full"
                 >
                     <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
-                        {/* Search Settings*/}
-                        <Label text="Partition">
-                            <SingleSelect<number> value={searchParams.partitionID} onChange={(c) => (searchParams.partitionID = c)} options={[{ value: -1, label: 'All' }].concat(range(0, topic.partitionCount).map((i) => ({ value: i, label: String(i) })))} />
-                        </Label>
 
                         <Label text="Start Offset">
                             <Flex gap={3}>
@@ -380,40 +376,102 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             <SingleSelect<number> value={searchParams.maxResults} onChange={(c) => (searchParams.maxResults = c)} options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))} />
                         </Label>
 
-                        <Label text="Key Deserializer">
-                            <SingleSelect<PayloadEncoding>
-                              options={payloadEncodingPairs}
-                              value={searchParams.keyDeserializer}
-                              onChange={e => searchParams.keyDeserializer = e}
-                            />
-                        </Label>
-
-                        <Label text="Value Deserializer">
-                            <SingleSelect<PayloadEncoding>
-                              options={payloadEncodingPairs}
-                              value={searchParams.valueDeserializer}
-                              onChange={e => searchParams.valueDeserializer = e}
-                            />
-                        </Label>
+                        {uiState.topicSettings.dynamicFilters.map(filter => ({
+                            partition: <Label text="Partition">
+                                <RemovableFilter onRemove={() => {
+                                    uiState.topicSettings.dynamicFilters.remove('partition');
+                                }}>
+                                    <SingleSelect<number>
+                                      variant="unstyled"
+                                      value={searchParams.partitionID}
+                                      onChange={(c) => (searchParams.partitionID = c)}
+                                      options={[{
+                                          value: -1,
+                                          label: 'All'
+                                      }].concat(range(0, topic.partitionCount).map((i) => ({
+                                          value: i,
+                                          label: String(i)
+                                      })))}
+                                    />
+                                </RemovableFilter>
+                            </Label>,
+                            keyDeserializer: <Label text="Key Deserializer">
+                                <RemovableFilter onRemove={() => {
+                                    uiState.topicSettings.dynamicFilters.remove('keyDeserializer');
+                                }}>
+                                    <SingleSelect<PayloadEncoding>
+                                      options={payloadEncodingPairs}
+                                      value={searchParams.keyDeserializer}
+                                      variant="unstyled"
+                                      onChange={e => searchParams.keyDeserializer = e}
+                                    />
+                                </RemovableFilter>
+                            </Label>,
+                            valueDeserializer: <Label text="Value Deserializer">
+                                <RemovableFilter onRemove={() => {
+                                    uiState.topicSettings.dynamicFilters.remove('valueDeserializer');
+                                }}>
+                                    <SingleSelect<PayloadEncoding>
+                                      options={payloadEncodingPairs}
+                                      value={searchParams.valueDeserializer}
+                                      variant="unstyled"
+                                      onChange={e => searchParams.valueDeserializer = e}
+                                    />
+                                </RemovableFilter>
+                            </Label>,
+                            search: <Label text="Search">
+                                <RemovableFilter onRemove={() => {
+                                    uiState.topicSettings.dynamicFilters.remove('search');
+                                }}>
+                                    {/* Quick Search */}
+                                    <Input
+                                      variant="unstyled"
+                                      placeholder="Search..."
+                                      value={uiState.topicSettings.quickSearch}
+                                      onChange={x => (uiState.topicSettings.quickSearch = x.target.value)}
+                                    />
+                                </RemovableFilter>
+                            </Label>
+                        })[filter])}
 
                         <Flex alignItems="flex-end">
-                            {/* Refresh Button */}
-                            {this.messageSearch.searchPhase == null && (
-                                <Tooltip label="Repeat current search" placement="top" hasArrow>
-                                    <Button variant="outline" onClick={() => this.searchFunc('manual')}>
-                                        <SyncIcon size={20}/>
-                                    </Button>
-                                </Tooltip>
-                            )}
-                            {this.messageSearch.searchPhase != null && (
-                                <Tooltip label="Stop searching" placement="top" hasArrow>
-                                    <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
-                                            style={{padding: 0, width: '48px'}}>
-                                        <XCircleIcon size={20}/>
-                                    </Button>
-                                </Tooltip>
-                            )}
+                            <Menu>
+                                <MenuButton as={Button} leftIcon={<MdAdd size="1.5rem"/>} variant="outline">
+                                    Add
+                                </MenuButton>
+                                <MenuList>
+                                    <MenuItem
+                                      icon={<MdOutlineLayers size="1.5rem" />}
+                                      isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
+                                      onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
+                                    >
+                                        Partition
+                                    </MenuItem>
+                                    <MenuItem
+                                      icon={<MdOutlineRoundedCorner size="1.5rem" />}
+                                      isDisabled={uiState.topicSettings.dynamicFilters.includes('keyDeserializer')}
+                                      onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('keyDeserializer')}
+                                    >
+                                        Key Deserializer
+                                    </MenuItem>
+                                    <MenuItem
+                                      icon={<MdOutlineRoundedCorner size="1.5rem" />}
+                                      isDisabled={uiState.topicSettings.dynamicFilters.includes('valueDeserializer')}
+                                      onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('valueDeserializer')}
+                                    >
+                                        Value Deserializer
+                                    </MenuItem>
+                                    <MenuItem
+                                      icon={<MdOutlineSearch size="1.5rem" />}
+                                      isDisabled={uiState.topicSettings.dynamicFilters.includes('search')}
+                                      onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('search')}
+                                    >
+                                        Search
+                                    </MenuItem>
+                                </MenuList>
+                            </Menu>
                         </Flex>
+
                         {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                         {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) &&
                             <StatusIndicator
@@ -442,6 +500,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     {/* Filter Tags */}
                     <MessageSearchFilterBar
                         messageSearch={this.messageSearch}
+                        onSearch={() => this.searchFunc('manual')}
                         canUseFilters={canUseFilters}
                         menuEl={menuEl}
                     />
@@ -1568,7 +1627,7 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
 }
 
 @observer
-class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, fetchError?: string, menuEl: ReactElement }> {
+class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, onSearch: () => void, fetchError?: string, menuEl: ReactElement }> {
     /*
     todo:
         - does a click outside of the editor mean "ok" or "cancel"?
@@ -1593,10 +1652,30 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
         const settings = uiState.topicSettings.searchParams;
         const messageSearch = this.props.messageSearch;
         const canUseFilters = this.props.canUseFilters;
+        const onSearch = this.props.onSearch;
 
         return <>
             {/* Add Filter Button */}
             <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
+                <Flex alignItems="flex-end">
+                    {/* Refresh Button */}
+                    {messageSearch.searchPhase == null && (
+                      <Tooltip label="Repeat current search" placement="top" hasArrow>
+                          <Button variant="outline" onClick={() => onSearch()}>
+                              <SyncIcon size={20}/>
+                          </Button>
+                      </Tooltip>
+                    )}
+                    {messageSearch.searchPhase != null && (
+                      <Tooltip label="Stop searching" placement="top" hasArrow>
+                          <Button variant="solid" colorScheme="red" onClick={() => messageSearch.stopSearch()}
+                                  style={{padding: 0, width: '48px'}}>
+                              <XCircleIcon size={20}/>
+                          </Button>
+                      </Tooltip>
+                    )}
+                </Flex>
+
                 <Tooltip
                     label="You don't have permissions to use search filters in this topic"
                     isDisabled={canUseFilters}
@@ -1617,10 +1696,6 @@ class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, c
                         Add Filter
                     </Button>
                 </Tooltip>
-
-
-                {/* Quick Search */}
-                <SearchField width="230px" searchText={this.props.fetchError == null ? uiState.topicSettings.quickSearch : ''} setSearchText={x => (uiState.topicSettings.quickSearch = x)}/>
 
                 {this.props.menuEl}
             </GridItem>
