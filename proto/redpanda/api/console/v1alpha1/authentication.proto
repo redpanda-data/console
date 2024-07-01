@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+enum SASLMechanism {
+  // The SASL mechanism is unspecified.
+  SASL_MECHANISM_UNSPECIFIED = 0;
+  // The SASL mechanism using SCRAM-SHA-256.
+  SASL_MECHANISM_SCRAM_SHA_256 = 1;
+  // The SASL mechanism using SCRAM-SHA-512.
+  SASL_MECHANISM_SCRAM_SHA_512 = 2;
+}
+
+message LoginSaslScramRequest {
+  // The username for the login request.
+  string username = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
+    (google.api.field_behavior) = REQUIRED
+  ];
+  // The password for the login request.
+  string password = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
+    (google.api.field_behavior) = REQUIRED
+  ];
+  // The SASL mechanism to be used for authentication.
+  SASLMechanism mechanism = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [0]
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message LoginSaslScramResponse {}
+
+enum AuthenticationMethod {
+  // The authentication method is unspecified.
+  AUTHENTICATION_METHOD_UNSPECIFIED = 0;
+  // The authentication method using OpenID Connect.
+  AUTHENTICATION_METHOD_OIDC = 1;
+  // The authentication method using SASL-SCRAM.
+  AUTHENTICATION_METHOD_SASL_SCRAM = 2;
+  // The authentication method for Redpanda Cloud.
+  AUTHENTICATION_METHOD_REDPANDA_CLOUD = 3;
+}
+
+message ListAuthenticationMethodsRequest {}
+
+message ListAuthenticationMethodsResponse {
+  // The list of available authentication methods.
+  repeated AuthenticationMethod methods = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+service AuthenticationService {
+  // RPC to login using SASL-SCRAM.
+  rpc LoginSaslScram(LoginSaslScramRequest) returns (LoginSaslScramResponse) {}
+  // RPC to list available authentication methods.
+  rpc ListAuthenticationMethods(ListAuthenticationMethodsRequest) returns (ListAuthenticationMethodsResponse) {}
+}
