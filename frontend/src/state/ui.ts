@@ -90,7 +90,28 @@ export enum PartitionOffsetOrigin {
     Timestamp = -4,
     Custom = 0,
 }
+
+export const DEFAULT_SEARCH_PARAMS = {
+    offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
+    startOffset: -1, // used when offsetOrigin is custom
+    startTimestamp: -1, // used when offsetOrigin is timestamp
+    startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
+    partitionID: -1,
+    maxResults: 50,
+    page: 0,
+    pageSize: 10,
+    sorting: [] as SortingState,
+
+    filtersEnabled: false,
+    filters: [] as FilterEntry[],
+
+    keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+    valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+}
+
+
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
+
 // Settings for an individual topic
 export class TopicDetailsSettings {
     constructor() {
@@ -99,23 +120,7 @@ export class TopicDetailsSettings {
 
     topicName: string;
 
-    @observable searchParams = {
-        offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
-        startOffset: -1, // used when offsetOrigin is custom
-        startTimestamp: -1, // used when offsetOrigin is timestamp
-        startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
-        partitionID: -1,
-        maxResults: 50,
-        page: 0,
-        pageSize: 10,
-        sorting: [] as SortingState,
-
-        filtersEnabled: false,
-        filters: [] as FilterEntry[],
-
-        keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
-        valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
-    };
+    @observable searchParams = DEFAULT_SEARCH_PARAMS;
 
     @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = []
 

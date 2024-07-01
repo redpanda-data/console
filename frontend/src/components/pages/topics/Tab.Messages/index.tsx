@@ -20,7 +20,7 @@ import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/res
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
     ColumnList,
-    DataColumnKey,
+    DataColumnKey, DEFAULT_SEARCH_PARAMS,
     FilterEntry,
     PartitionOffsetOrigin,
     PreviewTagV2,
@@ -33,7 +33,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { MdExpandMore, MdAdd, MdOutlineLayers, MdOutlineRoundedCorner, MdOutlineSearch } from 'react-icons/md';
+import { MdAdd, MdExpandMore, MdOutlineLayers, MdOutlineRoundedCorner, MdOutlineSearch } from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -380,6 +380,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             partition: <Label text="Partition">
                                 <RemovableFilter onRemove={() => {
                                     uiState.topicSettings.dynamicFilters.remove('partition');
+                                    searchParams.partitionID = DEFAULT_SEARCH_PARAMS['partitionID'];
                                 }}>
                                     <SingleSelect<number>
                                       variant="unstyled"
@@ -398,6 +399,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             keyDeserializer: <Label text="Key Deserializer">
                                 <RemovableFilter onRemove={() => {
                                     uiState.topicSettings.dynamicFilters.remove('keyDeserializer');
+                                    searchParams.keyDeserializer = DEFAULT_SEARCH_PARAMS['keyDeserializer'];
                                 }}>
                                     <SingleSelect<PayloadEncoding>
                                       options={payloadEncodingPairs}
@@ -410,6 +412,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             valueDeserializer: <Label text="Value Deserializer">
                                 <RemovableFilter onRemove={() => {
                                     uiState.topicSettings.dynamicFilters.remove('valueDeserializer');
+                                    searchParams.valueDeserializer = DEFAULT_SEARCH_PARAMS['valueDeserializer'];
                                 }}>
                                     <SingleSelect<PayloadEncoding>
                                       options={payloadEncodingPairs}
@@ -422,6 +425,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             search: <Label text="Search">
                                 <RemovableFilter onRemove={() => {
                                     uiState.topicSettings.dynamicFilters.remove('search');
+                                    uiState.topicSettings.quickSearch = '';
                                 }}>
                                     {/* Quick Search */}
                                     <Input
