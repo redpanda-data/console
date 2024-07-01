@@ -465,13 +465,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     >
                                         Value Deserializer
                                     </MenuItem>
-                                    <MenuItem
+                                    {isServerless() && <MenuItem
                                       icon={<MdOutlineSearch size="1.5rem" />}
                                       isDisabled={uiState.topicSettings.dynamicFilters.includes('search')}
                                       onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('search')}
                                     >
                                         Search
-                                    </MenuItem>
+                                    </MenuItem>}
                                 </MenuList>
                             </Menu>
                         </Flex>
