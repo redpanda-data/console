@@ -41,7 +41,9 @@ import (
 // If TLS certificates can't be read an error will be returned.
 //
 //nolint:gocognit,cyclop // This function is lengthy, but it's only plumbing configurations. Seems okay to me.
-func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, error) {
+func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, metricsNamespace string) ([]kgo.Opt, error) {
+	metricHooks := newClientHooks(logger.Named("kafka_client_hooks"), metricsNamespace)
+
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
 		kgo.MaxVersions(kversion.V2_6_0()),
@@ -54,7 +56,7 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		// Refresh metadata more often than the default, when the client notices that it's stale.
 		kgo.MetadataMinAge(time.Second),
 		kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
-		kgo.WithHooks(hooks),
+		kgo.WithHooks(metricHooks),
 	}
 
 	// Add Rack Awareness if configured
