@@ -13,14 +13,14 @@ import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined 
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactElement, ReactNode, useState } from 'react';
-import FilterEditor from './Editor';
+import React, { Component, FC, ReactNode, useState } from 'react';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
     ColumnList,
-    DataColumnKey, DEFAULT_SEARCH_PARAMS,
+    DataColumnKey,
+    DEFAULT_SEARCH_PARAMS,
     FilterEntry,
     PartitionOffsetOrigin,
     PreviewTagV2,
@@ -33,7 +33,14 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { MdAdd, MdExpandMore, MdOutlineLayers, MdOutlineRoundedCorner, MdOutlineSearch } from 'react-icons/md';
+import {
+    MdAdd,
+    MdExpandMore,
+    MdJavascript,
+    MdOutlineLayers,
+    MdOutlineRoundedCorner,
+    MdOutlineSearch
+} from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -65,20 +72,18 @@ import {
     Box,
     Button,
     Checkbox,
-    Code,
     DataTable,
     DateTimeInput,
     Empty,
     Flex,
-    FormField,
     Grid,
     GridItem,
     Heading,
     Input,
     Link,
-    ListItem,
     Menu,
     MenuButton,
+    MenuDivider,
     MenuItem,
     MenuList,
     Modal,
@@ -96,7 +101,6 @@ import {
     TagLabel,
     Text,
     Tooltip,
-    UnorderedList,
     useBreakpoint,
     useToast,
     VStack
@@ -113,6 +117,7 @@ import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alp
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../../utils/pagination';
 import RemovableFilter from '../../../misc/RemovableFilter';
+import JavascriptFilterModal from './JavascriptFilterModal';
 
 
 const payloadEncodingPairs = [
@@ -302,6 +307,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
         const customStartOffsetValid = !isNaN(Number(customStartOffsetValue));
 
+        const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
+
         const isCompacted = this.props.topic.cleanupPolicy === 'compact';
 
         const startOffsetOptions = [
@@ -311,24 +318,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             { value: PartitionOffsetOrigin.Custom, label: 'Custom' },
             { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
         ];
-
-        const menuEl = (
-            <Menu>
-                <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
-                    Actions
-                </MenuButton>
-                <MenuList>
-                    <MenuItem
-                        onClick={() => {
-                            appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
-                        }}
-                    >
-                        Produce Record
-                    </MenuItem>
-                    {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
-                </MenuList>
-            </Menu>
-        );
 
         return (
             <React.Fragment>
@@ -472,6 +461,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     >
                                         Search
                                     </MenuItem>}
+                                    <MenuDivider />
+                                    <MenuItem
+                                      isDisabled={!canUseFilters}
+                                      // TODO: "You don't have permissions to use search filters in this topic",
+                                      // we need support for disabledReason in @redpanda-data/ui
+                                      icon={<MdJavascript size="1.5rem" />}
+                                      onClick={() => {
+                                          const filter = new FilterEntry();
+                                          filter.isNew = true;
+                                          setCurrentJSFilter(filter);
+                                      }}
+                                    >
+                                        Javascript Filter
+                                    </MenuItem>
                                 </MenuList>
                             </Menu>
                         </Flex>
@@ -501,14 +504,68 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     />
                     */}
 
+                    <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
+                        <Flex alignItems="flex-end">
+                            {/* Refresh Button */}
+                            {this.messageSearch.searchPhase == null && (
+                              <Tooltip label="Repeat current search" placement="top" hasArrow>
+                                  <Button variant="outline" onClick={() => this.searchFunc('manual')}>
+                                      <SyncIcon size={20}/>
+                                  </Button>
+                              </Tooltip>
+                            )}
+                            {this.messageSearch.searchPhase != null && (
+                              <Tooltip label="Stop searching" placement="top" hasArrow>
+                                  <Button variant="solid" colorScheme="red" onClick={() => this.messageSearch.stopSearch()}
+                                          style={{padding: 0, width: '48px'}}>
+                                      <XCircleIcon size={20}/>
+                                  </Button>
+                              </Tooltip>
+                            )}
+                        </Flex>
+
+                        <Menu>
+                            <MenuButton as={Button} rightIcon={<MdExpandMore size="1.5rem" />} variant="outline">
+                                Actions
+                            </MenuButton>
+                            <MenuList>
+                                <MenuItem
+                                  onClick={() => {
+                                      appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                                  }}
+                                >
+                                    Produce Record
+                                </MenuItem>
+                                {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => (this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true))}
+                            </MenuList>
+                        </Menu>
+
+                    </GridItem>
+
                     {/* Filter Tags */}
-                    <MessageSearchFilterBar
-                        messageSearch={this.messageSearch}
-                        onSearch={() => this.searchFunc('manual')}
-                        canUseFilters={canUseFilters}
-                        menuEl={menuEl}
-                    />
+                    <MessageSearchFilterBar messageSearch={this.messageSearch} onEdit={(filter) => {
+                        setCurrentJSFilter(filter);
+                    }}/>
+
                 </Grid>
+
+                {currentJSFilter && <JavascriptFilterModal
+                  currentFilter={currentJSFilter}
+                  onClose={() => setCurrentJSFilter(null)}
+                  onSave={(filter) => {
+                      if(filter.isNew) {
+                          uiState.topicSettings.searchParams.filters.push(filter);
+                          filter.isNew = false
+                      } else {
+                          const idx = uiState.topicSettings.searchParams.filters.findIndex(x => x.id === filter.id)
+                          if(idx !== -1) {
+                              uiState.topicSettings.searchParams.filters.splice(idx, 1, filter)
+                          }
+                      }
+                      this.searchFunc('manual')
+                  }}
+                />}
+
             </React.Fragment>
         );
     });
@@ -1630,225 +1687,63 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
     />
 }
 
-@observer
-class MessageSearchFilterBar extends Component<{ messageSearch: MessageSearch, canUseFilters: boolean, onSearch: () => void, fetchError?: string, menuEl: ReactElement }> {
-    /*
-    todo:
-        - does a click outside of the editor mean "ok" or "cancel"?
-            - maybe don't allow closing by clicking outside?
-            - ok: so we can make quick changes
-        - maybe submit the code live, show syntax errors below
-        - maybe have a button that runs the code against the newest message?
-     */
+const MessageSearchFilterBar: FC<{ messageSearch: MessageSearch, onEdit: (filter: FilterEntry) => void }> = observer(({ messageSearch, onEdit }) => {
+  const settings = uiState.topicSettings.searchParams;
 
-    @observable currentFilter: FilterEntry | null = null;
-    currentFilterBackup: string | null = null; // json of 'currentFilter'
-    currentIsNew = false; // true: 'onCancel' must remove the filter again
+  return <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
+    <Box
+      width="calc(100% - 200px)"
+      display="inline-flex"
+      rowGap="2px"
+      columnGap="8px"
+      flexWrap="wrap"
+    >
+      {/* Existing Tags List  */}
+      {settings.filters?.map((e) =>
+        <Tag
+          style={{userSelect: 'none'}}
+          className={e.isActive ? 'filterTag':'filterTag filterTagDisabled'}
+          key={e.id}
+        >
+          <SettingOutlined
+            className="settingIconFilter"
+            onClick={() => {
+                onEdit(e)
+            }}
+          />
+          <TagLabel onClick={() => e.isActive = !e.isActive}
+                    mx="2"
+                    height="100%"
+                    display="inline-flex"
+                    alignItems="center"
+                    border="0px solid hsl(0 0% 85% / 1)"
+                    borderWidth="0px 1px"
+                    px="6px"
+                    textDecoration={e.isActive ? '':'line-through'}
+          >
+            {e.name ? e.name:(e.code ? e.code:'New Filter')}
+          </TagLabel>
+          <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1}/>
+        </Tag>
+      )}
+    </Box>
 
-    @observable hasChanges = false; // used by editor; shows "revert changes" when true
-
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
-    render() {
-        const settings = uiState.topicSettings.searchParams;
-        const messageSearch = this.props.messageSearch;
-        const canUseFilters = this.props.canUseFilters;
-        const onSearch = this.props.onSearch;
-
-        return <>
-            {/* Add Filter Button */}
-            <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
-                <Flex alignItems="flex-end">
-                    {/* Refresh Button */}
-                    {messageSearch.searchPhase == null && (
-                      <Tooltip label="Repeat current search" placement="top" hasArrow>
-                          <Button variant="outline" onClick={() => onSearch()}>
-                              <SyncIcon size={20}/>
-                          </Button>
-                      </Tooltip>
-                    )}
-                    {messageSearch.searchPhase != null && (
-                      <Tooltip label="Stop searching" placement="top" hasArrow>
-                          <Button variant="solid" colorScheme="red" onClick={() => messageSearch.stopSearch()}
-                                  style={{padding: 0, width: '48px'}}>
-                              <XCircleIcon size={20}/>
-                          </Button>
-                      </Tooltip>
-                    )}
-                </Flex>
-
-                <Tooltip
-                    label="You don't have permissions to use search filters in this topic"
-                    isDisabled={canUseFilters}
-                    placement="top"
-                    hasArrow
-                >
-                    <Button
-                        isDisabled={!canUseFilters}
-                        variant="outline"
-                        onClick={() => transaction(() => {
-                            this.currentIsNew = true;
-                            this.currentFilterBackup = null;
-                            this.currentFilter = new FilterEntry();
-                            this.hasChanges = false;
-                            settings.filters.push(this.currentFilter);
-                        })}>
-
-                        Add Filter
-                    </Button>
-                </Tooltip>
-
-                {this.props.menuEl}
-            </GridItem>
-
-            <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
-
-            <Box
-                width="calc(100% - 200px)"
-                display="inline-flex"
-                rowGap="2px"
-                columnGap="8px"
-                flexWrap="wrap"
-            >
-                {/* Existing Tags List  */}
-                {settings.filters?.map((e) =>
-                    <Tag
-                        style={{ userSelect: 'none' }}
-                        className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
-                        key={e.id}
-                    >
-                        <SettingOutlined
-                            className="settingIconFilter"
-                            onClick={() => {
-                                this.currentIsNew = false;
-                                this.currentFilterBackup = toJson(e);
-                                this.currentFilter = e;
-                                this.hasChanges = false;
-                            }}
-                        />
-                        <TagLabel onClick={() => e.isActive = !e.isActive}
-                            mx="2"
-                            height="100%"
-                            display="inline-flex"
-                            alignItems="center"
-                            border="0px solid hsl(0 0% 85% / 1)"
-                            borderWidth="0px 1px"
-                            px="6px"
-                            textDecoration={e.isActive ? '' : 'line-through'}
-                        >
-                            {e.name ? e.name : (e.code ? e.code : 'New Filter')}
-                        </TagLabel>
-                        <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
-                    </Tag>
-                )}
-            </Box>
-                {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
-                    ? (
-                        <div className={styles.metaSection}>
-                            <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
-                            <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
-                        </div>
-                    )
-                    : (
-                        <div className={`${styles.metaSection} ${styles.isLoading}`}>
-                            <span className={`spinner ${styles.spinner}`} />
-                            <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
-                        </div>
-                    )
-                }
-
-            </GridItem>
-
-
-            <Modal isOpen={this.currentFilter !== null} onClose={() => this.currentFilter = null}>
-                <ModalOverlay />
-                <ModalContent minW="4xl">
-                    <ModalHeader>
-                        Javascript filtering
-                    </ModalHeader>
-                    <ModalBody>
-                        <Text mb={4}>Write Javascript code to filter your records.</Text>
-                        <Grid
-                            templateColumns={{base: '1fr', md: '3fr 2fr'}}
-                            gap={6}
-                        >
-                            <GridItem>
-                                {this.currentFilter && <FormField
-                                    label="Filter display name"
-                                >
-                                    <Input
-                                            value={this.currentFilter!.name}
-                                            onChange={e => {
-                                                this.currentFilter!.name = e.target.value;
-                                                this.hasChanges = true;
-                                            }}
-                                            placeholder="This name will appear in the filter bar"
-                                    />
-                                </FormField>}
-                            </GridItem>
-                            <GridItem />
-                            <GridItem display="flex" gap={4} flexDirection="column">
-                                {this.currentFilter &&
-                                    <FormField
-                                        label="Filter code"
-                                    >
-                                        <Box borderRadius={20}>
-                                        <FilterEditor
-                                            value={this.currentFilter!.code}
-                                            onValueChange={(code, transpiled) => {
-                                                this.currentFilter!.code = code;
-                                                this.currentFilter!.transpiledCode = transpiled;
-                                                this.hasChanges = true;
-                                            }}
-                                        />
-                                        </Box>
-                                    </FormField>
-                                }
-
-                                <UnorderedList>
-                                    <ListItem>return true allows messages, return false discards them.</ListItem>
-                                    <ListItem>Available params are <Code>offset</Code>, <Code>partitionID</Code> (number), <Code>key</Code> (any), <Code>value</Code> (any), and <Code>headers</Code> (object), <Code>keySchemaID</Code> (number) and <Code>valueSchemaID</Code> (number)</ListItem>
-                                    <ListItem>Multiple active filters are combined with 'and'.</ListItem>
-                                </UnorderedList>
-
-
-                            </GridItem>
-                            <GridItem>
-                                <Heading mb={6}>Examples</Heading>
-                                <UnorderedList styleType="none" margin={0} spacing={4}>
-                                    <ListItem><Code>value != null</Code> skips records without value</ListItem>
-                                    <ListItem><Code>if (key == 'example') return true</Code>
-                                        only returns messages where keys equal <Code>'example'</Code> in their string presentation (after decoding)</ListItem>
-                                </UnorderedList>
-                            </GridItem>
-                        </Grid>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Box display="flex" gap={4} alignItems="center" justifyContent="flex-end">
-                            <Text fontSize="xs" color="gray.500">
-                                Changes are saved automatically
-                            </Text>
-                            {this.hasChanges && <Button variant="outline" colorScheme="red" onClick={() => this.revertChanges()}>Revert Changes</Button>}
-                            <Button onClick={() => this.currentFilter = null}>Close</Button>
-                        </Box>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </>;
-    }
-
-    revertChanges() {
-        if (this.currentFilter && this.currentFilterBackup) {
-            const restored = JSON.parse(this.currentFilterBackup);
-            if (restored)
-                Object.assign(this.currentFilter, restored);
-            this.hasChanges = false;
-        }
-    }
-}
+      {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
+        ? (
+          <div className={styles.metaSection}>
+              <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
+              <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
+          </div>
+        )
+        : (
+          <div className={`${styles.metaSection} ${styles.isLoading}`}>
+              <span className={`spinner ${styles.spinner}`} />
+              <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+          </div>
+        )
+      }
+  </GridItem>;
+});
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = 'Empty';

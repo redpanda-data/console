@@ -57,6 +57,7 @@ export class FilterEntry {
         makeObservable(this);
     }
 
+    @observable isNew = false;
     id = randomId() + randomId(); // used as react key
     @observable filterType: FilterType = 'code';
 
