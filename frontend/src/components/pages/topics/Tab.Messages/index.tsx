@@ -830,7 +830,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                   />
                 }
             />
-            <Button variant="outline"
+            <Button
+              mt={4}
+              variant="outline"
                 onClick={() => {
                     this.downloadMessages = this.messageSearch.messages;
                 }}
@@ -1264,18 +1266,17 @@ export const ExpandedMessage: FC<{
                   name: <Box
                     minWidth="6rem">{msg.key===null || msg.key.size===0 ? 'Key':`Key (${prettyBytes(msg.key.size)})`}</Box>,
                   isDisabled: msg.key==null || msg.key.size==0,
-                  component: <>
+                  component: <Box>
                       <TroubleshootReportViewer payload={msg.key}/>
                       <PayloadComponent
                         payload={msg.key}
                         loadLargeMessage={loadLargeMessage}
                       />
-                  </>
+                  </Box>
               },
               {
                   key: 'value',
-                  name: <Box
-                    minWidth="6rem">{msg.value===null || msg.value.size===0 ? 'Value':`Value (${prettyBytes(msg.value.size)})`}</Box>,
+                  name: <Box minWidth="6rem">{msg.value===null || msg.value.size===0 ? 'Value':`Value (${prettyBytes(msg.value.size)})`}</Box>,
                   component: <>
                       <TroubleshootReportViewer payload={msg.value}/>
                       <PayloadComponent
