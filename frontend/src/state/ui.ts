@@ -121,7 +121,7 @@ export class TopicDetailsSettings {
 
     topicName: string;
 
-    @observable searchParams = DEFAULT_SEARCH_PARAMS;
+    @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
 
     @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = []
 
