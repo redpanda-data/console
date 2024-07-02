@@ -1642,13 +1642,14 @@ const ColumnSettings: FC<{
                     </Box>
                 </Box>
 
-
-                {
-                    showPreviewSettings &&
-                  <PreviewSettings
-                    messageSearch={messageSearch}
-                  />
-                }
+                <Box mt={10}>
+                    {
+                      showPreviewSettings &&
+                      <PreviewSettings
+                        messageSearch={messageSearch}
+                      />
+                    }
+                </Box>
             </ModalBody>
             <ModalFooter gap={2}>
                 <Button onClick={() => {
