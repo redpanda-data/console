@@ -102,6 +102,7 @@ import {
     Text,
     Tooltip,
     useBreakpoint,
+    useColorModeValue,
     useToast,
     VStack
 } from '@redpanda-data/ui';
@@ -821,12 +822,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         query['pageSize'] = String(pageSize)
                     })
                 })}
-                subComponent={({ row: { original } }) => renderExpandedMessage(
-                    original,
-                    () => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset),
-                    () => this.downloadMessages = [original],
-                    onCopyKey
-                )}
+                subComponent={({ row: { original } }) => <ExpandedMessage
+                    msg={original}
+                    loadLargeMessage={() => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)}
+                    onDownloadRecord={() => this.downloadMessages = [original]}
+                    onCopyKey={onCopyKey}
+                  />
+                }
             />
             <Button variant="outline"
                 onClick={() => {
@@ -1243,52 +1245,60 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
     }
 }
 
-
-export function renderExpandedMessage(msg: TopicMessage, loadLargeMessage: () => Promise<void>, onDownloadRecord?: () => void, onCopyKey?: (original: TopicMessage) => void) {
-    return <Box>
-        <MessageMetaData msg={msg} />
+export const ExpandedMessage: FC<{
+    msg: TopicMessage;
+    loadLargeMessage: () => Promise<void>;
+    onDownloadRecord?: () => void;
+    onCopyKey?: (original: TopicMessage) => void;
+}> = ({msg, loadLargeMessage, onDownloadRecord, onCopyKey}) => {
+    const bg = useColorModeValue('gray.50', 'gray.600');
+    return <Box bg={bg} py={6} px={10}>
+        <MessageMetaData msg={msg}/>
         <RpTabs
-            variant="fitted"
-            isFitted
-            defaultIndex={1}
-            items={[
-                {
-                    key: 'key',
-                    name: <Box minWidth="6rem">{msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}</Box>,
-                    isDisabled: msg.key == null || msg.key.size == 0,
-                    component: <>
-                        <TroubleshootReportViewer payload={msg.key} />
-                        <PayloadComponent
-                            payload={msg.key}
-                            loadLargeMessage={loadLargeMessage}
-                        />
-                    </>
-                },
-                {
-                    key: 'value',
-                    name: <Box minWidth="6rem">{msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}</Box>,
-                    component: <>
-                        <TroubleshootReportViewer payload={msg.value} />
-                        <PayloadComponent
-                            payload={msg.value}
-                            loadLargeMessage={loadLargeMessage}
-                        />
-                    </>
-                },
-                {
-                    key: 'headers',
-                    name: <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>,
-                    isDisabled: msg.headers.length === 0,
-                    component: <MessageHeaders msg={msg} />
-                },
-            ]}
+          variant="fitted"
+          isFitted
+          defaultIndex={1}
+          items={[
+              {
+                  key: 'key',
+                  name: <Box
+                    minWidth="6rem">{msg.key===null || msg.key.size===0 ? 'Key':`Key (${prettyBytes(msg.key.size)})`}</Box>,
+                  isDisabled: msg.key==null || msg.key.size==0,
+                  component: <>
+                      <TroubleshootReportViewer payload={msg.key}/>
+                      <PayloadComponent
+                        payload={msg.key}
+                        loadLargeMessage={loadLargeMessage}
+                      />
+                  </>
+              },
+              {
+                  key: 'value',
+                  name: <Box
+                    minWidth="6rem">{msg.value===null || msg.value.size===0 ? 'Value':`Value (${prettyBytes(msg.value.size)})`}</Box>,
+                  component: <>
+                      <TroubleshootReportViewer payload={msg.value}/>
+                      <PayloadComponent
+                        payload={msg.value}
+                        loadLargeMessage={loadLargeMessage}
+                      />
+                  </>
+              },
+              {
+                  key: 'headers',
+                  name: <Box minWidth="6rem">{msg.headers.length===0 ? 'Headers':`Headers (${msg.headers.length})`}</Box>,
+                  isDisabled: msg.headers.length===0,
+                  component: <MessageHeaders msg={msg}/>
+              },
+          ]}
         />
         <Flex gap={2} justifyContent="flex-end">
-            {onCopyKey && <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy Key</Button>}
+            {onCopyKey &&
+              <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy Key</Button>}
             {onDownloadRecord && <Button variant="outline" onClick={onDownloadRecord}>Download Record</Button>}
         </Flex>
     </Box>;
-}
+};
 
 const PayloadComponent = observer((p: {
     payload: Payload,

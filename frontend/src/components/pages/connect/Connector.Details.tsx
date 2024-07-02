@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer, observable, transaction } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { MessageSearch, MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
+import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../state/backendApi';
 import {
     ClusterConnectorInfo,
     ClusterConnectorTaskInfo,
@@ -30,17 +30,40 @@ import './helper';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay, encodeBase64, titleCase } from '../../../utils/utils';
-import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Tooltip, Skeleton, DataTable, SearchField } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertIcon,
+    Box,
+    Button,
+    CodeBlock,
+    DataTable,
+    Flex,
+    Grid,
+    Heading,
+    Modal as RPModal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
+    SearchField,
+    Skeleton,
+    Tabs,
+    Text,
+    Tooltip,
+    useDisclosure
+} from '@redpanda-data/ui';
 import Section from '../../misc/Section';
-import React from 'react';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
 import { ColumnDef } from '@tanstack/react-table';
-import { MessagePreview, renderExpandedMessage } from '../topics/Tab.Messages';
+import { MessagePreview } from '../topics/Tab.Messages';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { uiState } from '../../../state/uiState';
 import { sanitizeString } from '../../../utils/filterHelper';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { ExpandedMessage } from '../topics/Tab.Messages';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs'
 
@@ -611,12 +634,10 @@ const LogsTab = observer((p: {
                     uiSettings.connectorsDetails.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
                 }}
                 pagination={paginationParams}
-                // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-                //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-                subComponent={({ row: { original } }) => renderExpandedMessage(
-                    original,
-                    () => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
-                )}
+                subComponent={({ row: { original } }) => <ExpandedMessage
+                    msg={original}
+                    loadLargeMessage={() => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)}
+                />}
             />
 
         </Section>
