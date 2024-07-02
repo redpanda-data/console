@@ -17,7 +17,7 @@ import { prettyBytesOrNA } from '../../../utils/utils';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { Box, Flex, Text, Divider, Tooltip } from '@redpanda-data/ui';
 import { MdInfoOutline } from 'react-icons/md';
-import { Fragment } from 'react';
+import { CleanupPolicyType } from './types';
 
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
@@ -40,22 +40,15 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;
     const filteredConfigEntries = filterTopicConfig(configEntries);
     const cleanupPolicy = configEntries?.find(x => x.name == 'cleanup.policy')?.value;
-    let configStats: Array<ConfigEntry | undefined> = []
-    if (configEntries && filteredConfigEntries && cleanupPolicy) {
-        const dynamicEntries = ['cleanup.policy'];
 
-        if (cleanupPolicy.includes('delete')) {
-            dynamicEntries.push('retention.ms');
-            dynamicEntries.push('retention.bytes');
-        }
-        if (cleanupPolicy.includes('compact')) {
-            dynamicEntries.push('segment.ms');
-            dynamicEntries.push('segment.bytes');
-        }
+    const retentionMs = filteredConfigEntries?.find(e => e.name === 'retention.ms')
+    const retentionBytes = filteredConfigEntries?.find(e => e.name === 'retention.bytes')
 
-        configStats = dynamicEntries
-          .map(favName => filteredConfigEntries!.find(e => e.name===favName))
-          .filter(e => e!=null);
+    const segmentMs = filteredConfigEntries?.find(e => e.name === 'segment.ms')
+    const segmentBytes = filteredConfigEntries?.find(e => e.name === 'segment.bytes')
+
+    if(!configEntries || !filteredConfigEntries || !cleanupPolicy) {
+        return null
     }
 
     return (
@@ -85,25 +78,39 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                   Estimated messages:
               </Text>
               <Text as="dd">
-                  {messageSum}
+                {messageSum}
               </Text>
           </Flex>
-          {configStats?.map((configEntry, idx) => {
-                return <Fragment key={idx}>
-                    <Box>
-                        <Divider orientation="vertical"/>
-                    </Box>
-                    <Flex gap={2}>
-                        <Text as="dt" fontWeight="bold">
-                            {configEntry?.name}:
-                        </Text>
-                        <Text as="dd">
-                            {formatConfigValue(configEntry!.name, configEntry?.value, 'friendly')}
-                        </Text>
-                    </Flex>
-                </Fragment>;
-            }
-          )}
+        <Box>
+          <Divider orientation="vertical"/>
+        </Box>
+        {cleanupPolicy && <Flex gap={2}>
+          <Text as="dt" fontWeight="bold">Cleanup Policy:</Text>
+          <Text as="dd">
+            {({
+              'compact': 'Compact',
+              'compact,delete': 'Compact & Delete',
+              'delete': 'Delete',
+            } as Record<CleanupPolicyType, string>)[cleanupPolicy as CleanupPolicyType] ?? ''}
+          </Text>
+        </Flex>}
+        <Box>
+          <Divider orientation="vertical"/>
+        </Box>
+        <Flex gap={2}>
+          {cleanupPolicy==='compact' && <><Text as="dt" fontWeight="bold">Segment:</Text>
+              {segmentMs && segmentBytes && <Text as="dd">~
+                  <>{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}</>
+              </Text>}
+          </>}
+
+          {cleanupPolicy==='delete' && <><Text as="dt" fontWeight="bold">Retention:</Text>
+            {retentionMs && retentionBytes && <Text as="dd">~
+                {retentionMs.value === '-1' && retentionBytes.value === '-1' ? 'Unlimited':
+                  <>{formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')} or {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}</>}
+            </Text>}
+          </>}
+        </Flex>
       </Flex>
     );
 })
