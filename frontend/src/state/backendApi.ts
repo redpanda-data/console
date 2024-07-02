@@ -1721,6 +1721,9 @@ export const transformsApi = observable({
                 ]
             })
         ];
+        this.transformDetails.clear();
+        for (const t of this.transforms)
+            this.transformDetails.set(t.name, t);
 
         // DEBUG, random to disable linting check for unused code
         if (Math.random() < 9) return;
@@ -1742,6 +1745,7 @@ export const transformsApi = observable({
 
         runInAction(() => {
             this.transforms = transforms;
+            this.transformDetails.clear();
             for (const t of transforms)
                 this.transformDetails.set(t.name, t);
         });
@@ -1755,8 +1759,14 @@ export const transformsApi = observable({
         if (!r.transform) return;
 
         this.transformDetails.set(r.transform.name, r.transform);
-    }
+    },
 
+    async deleteTransform(name: string) {
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+
+        await client.deleteTransform({ name });
+    },
 
 });
 

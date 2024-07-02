@@ -22,20 +22,25 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Box, Button, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom'
-import { Link as ChakraLink } from '@chakra-ui/react';
+import { Link as ChakraLink, createStandaloneToast } from '@chakra-ui/react';
 import { PartitionTransformStatus_PartitionStatus, TransformMetadata } from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { CheckIcon } from '@chakra-ui/icons';
 import { XIcon } from '@heroicons/react/solid';
+import { Link } from 'react-router-dom';
+import { encodeURIComponentPercents } from '../../../utils/utils';
+import { openDeleteModal } from './modals';
+import { TrashIcon } from '@heroicons/react/outline';
+const { ToastContainer, toast } = createStandaloneToast();
 
-function renderPartitionStatus(status: PartitionTransformStatus_PartitionStatus) {
+export function renderPartitionStatus(status: PartitionTransformStatus_PartitionStatus) {
     switch (status) {
-        case PartitionTransformStatus_PartitionStatus.UNSPECIFIED: return <><XIcon color="orange" height="14px" /> Unspecified</>;
-        case PartitionTransformStatus_PartitionStatus.RUNNING: return <><CheckIcon color="green" height="14px" /> Running</>;
-        case PartitionTransformStatus_PartitionStatus.INACTIVE: return <><XIcon color="red" height="14px" /> Inactive</>;
-        case PartitionTransformStatus_PartitionStatus.ERRORED: return <><XIcon color="red" height="14px" /> Errored</>;
-        case PartitionTransformStatus_PartitionStatus.UNKNOWN: return <> Unknown</>;
+        case PartitionTransformStatus_PartitionStatus.UNSPECIFIED: return <Flex alignItems="center"><XIcon color="orange" height="14px" /> Unspecified</Flex>;
+        case PartitionTransformStatus_PartitionStatus.RUNNING: return <Flex alignItems="center"><CheckIcon color="green" height="14px" /> Running</Flex>;
+        case PartitionTransformStatus_PartitionStatus.INACTIVE: return <Flex alignItems="center"><XIcon color="red" height="14px" /> Inactive</Flex>;
+        case PartitionTransformStatus_PartitionStatus.ERRORED: return <Flex alignItems="center"><XIcon color="red" height="14px" /> Errored</Flex>;
         default:
-            return 'Unknown';
+        case PartitionTransformStatus_PartitionStatus.UNKNOWN:
+            return <> Unknown</>;
     }
 }
 
@@ -79,6 +84,7 @@ class TransformsList extends PageComponent<{}> {
 
         return (
             <PageContent>
+                <ToastContainer />
                 <Text maxWidth="600px">
                     Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within Redpanda.
                     <ChakraLink isExternal href="https://docs.redpanda.com/" style={{ textDecoration: 'underline solid 1px' }}>Learn more</ChakraLink>
@@ -107,7 +113,14 @@ class TransformsList extends PageComponent<{}> {
                         pagination
                         sorting
                         columns={[
-                            { header: 'Name', accessorKey: 'name', size: 300 },
+                            {
+                                header: 'Name', accessorKey: 'name', size: 300,
+                                cell: ({ row: { original: r } }) => {
+                                    return <Box wordBreak="break-word" whiteSpace="break-spaces">
+                                        <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
+                                    </Box>
+                                },
+                            },
                             {
                                 header: 'Name', cell: ({ row: { original: r } }) => {
                                     if (r.statuses.all(x => x.status == PartitionTransformStatus_PartitionStatus.RUNNING))
@@ -129,43 +142,40 @@ class TransformsList extends PageComponent<{}> {
                                     </Stack>
                                 }
                             },
-                            /*
-                                                        {
-                                                            header: '',
-                                                            id: 'actions',
-                                                            cell: ({ row: { original: r } }) =>
-                                                                <Button variant="icon"
-                                                                    height="16px" color="gray.500"
-                                                                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                                                                    onClick={e => {
-                                                                        e.stopPropagation();
-                                                                        e.preventDefault();
+                            {
+                                header: '',
+                                id: 'actions',
+                                cell: ({ row: { original: r } }) =>
+                                    <Button variant="icon"
+                                        height="16px" color="gray.500"
+                                        // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
 
-                                                                        openDeleteModal(r.name, () => {
-                                                                            api.deleteTransform(r.name, false)
-                                                                                .then(async () => {
-                                                                                    toast({
-                                                                                        status: 'success', duration: 4000, isClosable: false,
-                                                                                        title: 'Transform deleted'
-                                                                                    });
-                                                                                    api.refreshTransforms(true);
-                                                                                })
-                                                                                .catch(err => {
-                                                                                    toast({
-                                                                                        status: 'error', duration: null, isClosable: true,
-                                                                                        title: 'Failed to delete transform',
-                                                                                        description: String(err),
-                                                                                    })
-                                                                                });
-                                                                        })
+                                            openDeleteModal(r.name, () => {
+                                                transformsApi.deleteTransform(r.name)
+                                                    .then(async () => {
+                                                        toast({
+                                                            status: 'success', duration: 4000, isClosable: false,
+                                                            title: 'Transform deleted'
+                                                        });
+                                                        transformsApi.refreshTransforms(true);
+                                                    })
+                                                    .catch(err => {
+                                                        toast({
+                                                            status: 'error', duration: null, isClosable: true,
+                                                            title: 'Failed to delete transform',
+                                                            description: String(err),
+                                                        })
+                                                    });
+                                            })
 
-                                                                    }}>
-                                                                    <TrashIcon />
-                                                                </Button>,
-                                                            size: 1
-                                                        },
-                            */
-
+                                        }}>
+                                        <TrashIcon />
+                                    </Button>,
+                                size: 1
+                            },
                         ]}
                     />
 

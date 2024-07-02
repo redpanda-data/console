@@ -50,6 +50,7 @@ import RoleEditPage from './pages/acls/RoleEditPage';
 import { MdOutlineSmartToy } from 'react-icons/md';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import TransformDetails from './pages/transforms/Transform.Details';
 
 //
 //	Route Types
@@ -281,6 +282,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/transforms-setup', TransformsSetup, 'Transforms', undefined, true),
     MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true),
+    MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
     // MakeRoute<{ connectorName: string }>('/rp-connect/:connectorName', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),
