@@ -341,7 +341,7 @@ if (storedSettingsJson) {
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
 
         if(!ts.dynamicFilters) {
-            ts.dynamicFilters = []
+            ts.dynamicFilters = [];
         }
     }
 
