@@ -1601,9 +1601,9 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                 ]}
 
                 subComponent={({ row: { original: header } }) => {
-                    return typeof header.value?.payload !== 'object'
+                    return <Box py={6} px={10}>{typeof header.value?.payload !== 'object'
                         ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
-                        : <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
+                      : <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />}</Box>
                 }}
             />
         </div>

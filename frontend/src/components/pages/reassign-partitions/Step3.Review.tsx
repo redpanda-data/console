@@ -98,12 +98,12 @@ export class StepReview extends Component<{
                         cell: ({row: {original: topic}}) => prettyBytesOrNA(topic.selectedPartitions.sum(p => p.numAddedBrokers * p.replicaSize)),
                     },
                 ]}
-                subComponent={({row: {original: topic}}) => topic.selectedPartitions
+                subComponent={({row: {original: topic}}) => <Box py={6} px={10}>{topic.selectedPartitions
                     ? <ReviewPartitionTable
                         topic={topic.topic}
                         topicPartitions={topic.selectedPartitions}
                         assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!} />
-                    : <>Error loading partitions</>}
+                  : <>Error loading partitions</>}</Box>}
             />
 
             {this.reassignmentOptions()}

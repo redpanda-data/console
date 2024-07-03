@@ -18,7 +18,7 @@ import { equalsIgnoreCase } from '../../utils/utils';
 
 import styles from './ConfigList.module.scss';
 
-import { DataTable, Flex, Tooltip, Text } from '@redpanda-data/ui';
+import { DataTable, Flex, Tooltip, Text, Box } from '@redpanda-data/ui';
 import { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
@@ -106,11 +106,11 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                 if(!row.original.synonyms?.length) {
                     return null
                 }
-                return <DataTable<ConfigEntry>
+                return <Box py={6} px={10}><DataTable<ConfigEntry>
                     // @ts-ignore TODO - we need to fix types here and find a shared interface
                     data={row.original.synonyms}
                     columns={tableColumns}
-                />
+                /></Box>
             }}
             rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
             columns={tableColumns}

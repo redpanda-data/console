@@ -18,7 +18,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { RoleBindingComponent } from './Admin.RoleBindings';
-import { DataTable } from '@redpanda-data/ui';
+import { Box, DataTable } from '@redpanda-data/ui';
 
 
 @observer
@@ -33,7 +33,7 @@ export class AdminRoles extends Component<{}> {
             pagination
             data={roles}
             expandRowByClick
-            subComponent={({row: {original: role}}) => <RoleComponent role={role}/>}
+            subComponent={({row: {original: role}}) => <Box py={6} px={10}><RoleComponent role={role}/></Box>}
             columns={[
                 {
                     accessorKey: 'name',
