@@ -106,7 +106,7 @@ import {
     useToast,
     VStack
 } from '@redpanda-data/ui';
-import { SingleSelect } from '../../../misc/Select';
+import { SingleSelect, SingleSelectProps } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
@@ -187,6 +187,19 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
         return JSON.stringify(Array.from(value), null, 4);
 
     return JSON.stringify(value, null, 4);
+}
+
+const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+    control: (provided) => ({
+        ...provided,
+        _hover: {
+            borderColor: 'transparent'
+        },
+    }),
+      container: (provided) => ({
+    ...provided,
+    borderColor: 'transparent',
+}),
 }
 
 @observer
@@ -373,8 +386,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     searchParams.partitionID = DEFAULT_SEARCH_PARAMS['partitionID'];
                                 }}>
                                     <SingleSelect<number>
-                                      variant="unstyled"
                                       value={searchParams.partitionID}
+                                      chakraStyles={inlineSelectChakraStyles}
                                       onChange={(c) => (searchParams.partitionID = c)}
                                       options={[{
                                           value: -1,
@@ -392,9 +405,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     searchParams.keyDeserializer = DEFAULT_SEARCH_PARAMS['keyDeserializer'];
                                 }}>
                                     <SingleSelect<PayloadEncoding>
+                                      chakraStyles={inlineSelectChakraStyles}
                                       options={payloadEncodingPairs}
                                       value={searchParams.keyDeserializer}
-                                      variant="unstyled"
                                       onChange={e => searchParams.keyDeserializer = e}
                                     />
                                 </RemovableFilter>
@@ -405,9 +418,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     searchParams.valueDeserializer = DEFAULT_SEARCH_PARAMS['valueDeserializer'];
                                 }}>
                                     <SingleSelect<PayloadEncoding>
+                                      chakraStyles={inlineSelectChakraStyles}
                                       options={payloadEncodingPairs}
                                       value={searchParams.valueDeserializer}
-                                      variant="unstyled"
                                       onChange={e => searchParams.valueDeserializer = e}
                                     />
                                 </RemovableFilter>

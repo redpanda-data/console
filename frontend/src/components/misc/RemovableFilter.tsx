@@ -4,7 +4,7 @@ import { MdClose } from 'react-icons/md';
 
 const RemovableFilter: FC<{children: ReactElement; onRemove: () => void}> = ({children, onRemove}) => {
   return (
-    <Flex border="1px solid" borderColor="gray.200" borderRadius="md" alignItems="center" px={2}>
+    <Flex border="1px solid" borderColor="gray.200" borderRadius="md" alignItems="center">
       {children}
       <IconButton
         icon={<MdClose size={18} />}
