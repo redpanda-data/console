@@ -29,21 +29,9 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { KowlDiffEditor } from '../../misc/KowlEditor';
 import { uiState } from '../../../state/uiState';
 import { createStandaloneToast } from '@chakra-ui/react';
+import { decodeURIComponentPercents } from '../../../utils/utils';
 const { ToastContainer, toast } = createStandaloneToast()
 
-// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
-// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
-// https://github.com/remix-run/react-router/issues/10213
-// https://github.com/remix-run/history/issues/874
-export function encodeURIComponentPercents(rawStr: string): string {
-    const encoded = encodeURIComponent(rawStr);
-    return encoded.replace(/%/g, '﹪');
-}
-
-function decodeURIComponentPercents(encodedStr: string): string {
-    const encoded = encodedStr.replace(/﹪/g, '%');
-    return decodeURIComponent(encoded);
-}
 
 @observer
 class SchemaDetailsView extends PageComponent<{ subjectName: string }> {

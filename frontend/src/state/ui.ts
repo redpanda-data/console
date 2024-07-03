@@ -308,6 +308,10 @@ const defaultUiSettings = {
         },
     },
 
+    transformsList: {
+        quickSearch: ''
+    },
+
     userDefaults: {
         paginationPosition: 'bottomRight' as 'bottomRight' | 'topRight',
     },

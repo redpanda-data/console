@@ -826,3 +826,17 @@ export function substringWithEllipsis(input: string, maxLength: number): string 
         return input;
     }
 }
+
+// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
+// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
+// https://github.com/remix-run/react-router/issues/10213
+// https://github.com/remix-run/history/issues/874
+export function encodeURIComponentPercents(rawStr: string): string {
+    const encoded = encodeURIComponent(rawStr);
+    return encoded.replace(/%/g, '﹪');
+}
+
+export function decodeURIComponentPercents(encodedStr: string): string {
+    const encoded = encodedStr.replace(/﹪/g, '%');
+    return decodeURIComponent(encoded);
+}
