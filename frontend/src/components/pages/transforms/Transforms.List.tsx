@@ -32,8 +32,8 @@ import { openDeleteModal } from './modals';
 import { TrashIcon } from '@heroicons/react/outline';
 const { ToastContainer, toast } = createStandaloneToast();
 
-export function renderPartitionStatus(status: PartitionTransformStatus_PartitionStatus) {
-    switch (status) {
+export const PartitionStatus = observer((p: { status: PartitionTransformStatus_PartitionStatus }) => {
+    switch (p.status) {
         case PartitionTransformStatus_PartitionStatus.UNSPECIFIED: return <Flex alignItems="center"><XIcon color="orange" height="14px" /> Unspecified</Flex>;
         case PartitionTransformStatus_PartitionStatus.RUNNING: return <Flex alignItems="center"><CheckIcon color="green" height="14px" /> Running</Flex>;
         case PartitionTransformStatus_PartitionStatus.INACTIVE: return <Flex alignItems="center"><XIcon color="red" height="14px" /> Inactive</Flex>;
@@ -42,7 +42,7 @@ export function renderPartitionStatus(status: PartitionTransformStatus_Partition
         case PartitionTransformStatus_PartitionStatus.UNKNOWN:
             return <> Unknown</>;
     }
-}
+});
 
 @observer
 class TransformsList extends PageComponent<{}> {
@@ -124,12 +124,12 @@ class TransformsList extends PageComponent<{}> {
                             {
                                 header: 'Name', cell: ({ row: { original: r } }) => {
                                     if (r.statuses.all(x => x.status == PartitionTransformStatus_PartitionStatus.RUNNING))
-                                        return <Flex alignItems="center">{renderPartitionStatus(PartitionTransformStatus_PartitionStatus.RUNNING)}</Flex>;
+                                        return <Flex alignItems="center"><PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} /></Flex>;
                                     const s = r.statuses.first(x => x.status != PartitionTransformStatus_PartitionStatus.RUNNING)!;
                                     // const enumType = proto3.getEnumType(PartitionTransformStatus_PartitionStatus);
                                     // const entry = enumType.findNumber(s.status);
 
-                                    return <Flex alignItems="center">{renderPartitionStatus(s.status)}</Flex>
+                                    return <Flex alignItems="center"><PartitionStatus status={s.status} /></Flex>
                                 }
                             },
                             {

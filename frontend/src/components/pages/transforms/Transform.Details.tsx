@@ -34,7 +34,7 @@ import { uiState } from '../../../state/uiState';
 import { ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import usePaginationParams from '../../../hooks/usePaginationParams';
-import { renderPartitionStatus } from './Transforms.List';
+import { PartitionStatus } from './Transforms.List';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -121,10 +121,10 @@ const OverviewTab = observer((p: {
 }) => {
     let overallStatus = <></>
     if (p.transform.statuses.all(x => x.status == PartitionTransformStatus_PartitionStatus.RUNNING))
-        overallStatus = renderPartitionStatus(PartitionTransformStatus_PartitionStatus.RUNNING);
+        overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
     else {
         const s = p.transform.statuses.first(x => x.status != PartitionTransformStatus_PartitionStatus.RUNNING)!;
-        overallStatus = renderPartitionStatus(s.status);
+        overallStatus = <PartitionStatus status={s.status} />;
     }
 
     return <>
@@ -138,6 +138,7 @@ const OverviewTab = observer((p: {
                         {p.transform.outputTopicNames.map(x => <>{x}</>).genericJoin(() => <br />)}
                     </>
                 },
+                // { key: '', value: p.transform.environmentVariables }
             ], {
                 keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
                 keyAlign: 'left',
@@ -153,7 +154,7 @@ const OverviewTab = observer((p: {
                     { header: 'Node', accessorKey: 'brokerId' },
                     {
                         header: 'Status', cell: ({ row: { original: r } }) => {
-                            return <>{renderPartitionStatus(r.status)}</>
+                            return <><PartitionStatus status={r.status} /></>
                         }
                     },
                     { header: 'Lag', accessorKey: 'lag' },
