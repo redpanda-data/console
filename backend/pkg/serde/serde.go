@@ -14,11 +14,11 @@ package serde
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"strings"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 )
 
 type serdeCfg struct {
@@ -101,30 +101,9 @@ type Serde interface {
 
 // AppendEncode appends an encoded header to b according to the Confluent wire
 // format and returns it. Error is always nil.
-//
-//nolint:unparam // we always pass nil
-func appendEncode(b []byte, id int, index []int) ([]byte, error) {
-	b = append(
-		b,
-		0,
-		byte(id>>24),
-		byte(id>>16),
-		byte(id>>8),
-		byte(id>>0),
-	)
-
-	if len(index) > 0 {
-		if len(index) == 1 && index[0] == 0 {
-			b = append(b, 0) // first-index shortcut (one type in the protobuf)
-		} else {
-			b = binary.AppendVarint(b, int64(len(index)))
-			for _, idx := range index {
-				b = binary.AppendVarint(b, int64(idx))
-			}
-		}
-	}
-
-	return b, nil
+func appendEncode(_ []byte, id int, index []int) ([]byte, error) {
+	var serdeHeader sr.ConfluentHeader
+	return serdeHeader.AppendEncode(nil, id, index)
 }
 
 // trimJSONInputString trims the input string of whitespace characters and returns the trimmed value

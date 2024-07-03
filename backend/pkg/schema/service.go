@@ -540,7 +540,7 @@ func (s *Service) GetJSONSchemaByID(ctx context.Context, schemaID uint32) (*json
 		}
 
 		c := jsonschema.NewCompiler()
-		schemaName := "redpanda_json_schema_main.json"
+		schemaName := "redpanda_jsonschema.json"
 
 		err = s.buildJSONSchemaWithReferences(ctx, c, schemaName, schemaRes)
 		if err != nil {
