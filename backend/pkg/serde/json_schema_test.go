@@ -67,7 +67,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
-				assert.Equal(t, PayloadEncodingJSONSchema, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 
 				assert.Equal(t, `{"foo":"bar"}`, string(payload.NormalizedPayload))
 
@@ -86,7 +86,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
-				assert.Equal(t, PayloadEncodingJSONSchema, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		"price": {
 			"description": "The price of the product",
 			"type": "number",
-			"exclusiveMinimum": 0
+			"minimum": 1
 		},
 		"tags": {
 			"description": "Tags for the product",
@@ -311,7 +311,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		actualData, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Nil(t, actualData)
-		assert.Equal(t, "error validating json schema: jsonschema: '/price' does not validate with https://example.com/product.schema.json#/properties/price/exclusiveMinimum: must be > 0 but found 0", err.Error())
+		assert.Equal(t, "error validating json schema: jsonschema: '/price' does not validate with https://example.com/product.schema.json#/properties/price/minimum: must be >= 1 but found 0", err.Error())
 	})
 
 	t.Run("dynamic", func(t *testing.T) {

@@ -3943,7 +3943,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			  "price": {
 				"description": "The price of the product",
 				"type": "number",
-				"exclusiveMinimum": 0
+				"minimum": 0
 			  }
 			},
 			"required": [ "productId", "productName" ]
@@ -3982,7 +3982,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		var srSerde sr.Serde
 		srSerde.Register(
-			1000,
+			ssFull.ID,
 			&ProductRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
 				return json.Marshal(v.(*ProductRecord))
@@ -4020,11 +4020,11 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		// value
 		assert.Equal(expectData, out.Value.Payload)
-		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
+		assert.Equal(PayloadEncodingJSONSchema, out.Value.Encoding)
 	})
 
 	t.Run("json schema with reference", func(t *testing.T) {
-		// t.Skip("JSON Schemas not supported in Redpanda Schema Registry")
+		t.Skip("JSON Schemas with references not supported in Redpanda Schema Registry")
 
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -4057,7 +4057,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			"title": "price",
 			"description": "The price of the product",
 			"type": "number",
-			"exclusiveMinimum": 0
+			"minimum": 0
 		  }`
 
 		schemaStr := `{
@@ -4090,7 +4090,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			  "price": {
 				"description": "The price of the product",
 				"type": "number",
-				"exclusiveMinimum": 0
+				"minimum": 0
 			  }
 			},
 			"required": [ "productId", "productName" ]
@@ -4211,7 +4211,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		// value
 		assert.Equal(expectData, out.Value.Payload)
-		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
+		assert.Equal(PayloadEncodingJSONSchema, out.Value.Encoding)
 	})
 
 	t.Run("schema registry avro references", func(t *testing.T) {

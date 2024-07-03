@@ -56,7 +56,7 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 	return &RecordPayload{
 		NormalizedPayload:   jsonPayload,
 		DeserializedPayload: obj,
-		Encoding:            PayloadEncodingJSONSchema,
+		Encoding:            PayloadEncodingJSON,
 		SchemaID:            &schemaID,
 	}, nil
 }
