@@ -121,7 +121,7 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
-import { PartitionTransformStatus_PartitionStatus, TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1692,43 +1692,6 @@ export const transformsApi = observable({
     transformDetails: new Map<string, TransformMetadata>(),
 
     async refreshTransforms(_force: boolean): Promise<void> {
-
-        this.transforms = [
-            new TransformMetadata({
-                name: 'firstEntry', outputTopicNames: ['topicA', 'topicB'], inputTopicName: 'inputTopicA',
-                environmentVariables: [
-                    { key: 'env1', value: 'value1' },
-                    { key: 'env2', value: 'value2' },
-                    { key: 'env3', value: 'value3' },
-                ],
-                statuses: [
-                    { brokerId: 0, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
-                    { brokerId: 1, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
-                    { brokerId: 2, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.INACTIVE },
-                ]
-            }),
-            new TransformMetadata({
-                name: 'secondEntry', outputTopicNames: ['topicX', 'topicY', 'topicZ', 'topicASDASD'], inputTopicName: 'inputTopicB',
-                environmentVariables: [
-                    { key: 'env1', value: 'value1' },
-                    { key: 'env2', value: 'value2' },
-                    { key: 'env3', value: 'value3' },
-                ],
-                statuses: [
-                    { brokerId: 0, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
-                    { brokerId: 1, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
-                    { brokerId: 2, partitionId: 0, lag: 123, status: PartitionTransformStatus_PartitionStatus.RUNNING },
-                ]
-            })
-        ];
-        this.transformDetails.clear();
-        for (const t of this.transforms)
-            this.transformDetails.set(t.name, t);
-
-        // DEBUG, random to disable linting check for unused code
-        if (Math.random() < 9) return;
-
-
         const client = appConfig.transformsClient;
         if (!client) throw new Error('transforms client is not initialized');
         const transforms: TransformMetadata[] = [];
