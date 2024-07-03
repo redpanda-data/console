@@ -138,7 +138,6 @@ const OverviewTab = observer((p: {
                         {p.transform.outputTopicNames.map(x => <>{x}</>).genericJoin(() => <br />)}
                     </>
                 },
-                // { key: '', value: p.transform.environmentVariables }
             ], {
                 keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
                 keyAlign: 'left',
