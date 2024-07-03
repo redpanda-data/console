@@ -15,10 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -59,13 +56,13 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 	return &RecordPayload{
 		NormalizedPayload:   jsonPayload,
 		DeserializedPayload: obj,
-		Encoding:            PayloadEncodingJSONSchema,
+		Encoding:            PayloadEncodingJSON,
 		SchemaID:            &schemaID,
 	}, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-func (JSONSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -98,9 +95,19 @@ func (JSONSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType
 		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}
 
-	// Here we would get the schema by ID and validate against schema, but
-	// Redpanda currently does not support JSON Schema in the schema registry so we cannot do it.
-	// Just add the header to the payload.
+	schema, err := d.SchemaSvc.GetJSONSchemaByID(ctx, so.schemaID)
+	if err != nil {
+		return nil, fmt.Errorf("getting JSON schema from registry: %w", err)
+	}
+
+	var vObj any
+	if err := json.Unmarshal(trimmed, &vObj); err != nil {
+		return nil, fmt.Errorf("error unmarshaling json object: %w", err)
+	}
+
+	if err = schema.Validate(vObj); err != nil {
+		return nil, fmt.Errorf("error validating json schema: %w", err)
+	}
 
 	var index []int
 	if so.indexSet {
@@ -118,61 +125,4 @@ func (JSONSchemaSerde) SerializeObject(_ context.Context, obj any, _ PayloadType
 	binData = append(binData, trimmed...)
 
 	return binData, nil
-}
-
-//nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) validate(ctx context.Context, data []byte, schemaRes *schema.SchemaResponse) error {
-	sch, err := s.compileJSONSchema(ctx, schemaRes)
-	if err != nil {
-		return fmt.Errorf("error compiling json schema: %w", err)
-	}
-
-	var vObj any
-	if err := json.Unmarshal(data, &vObj); err != nil {
-		return fmt.Errorf("error validating json schema: %w", err)
-	}
-
-	if err = sch.Validate(vObj); err != nil {
-		return fmt.Errorf("error validating json schema: %w", err)
-	}
-
-	return nil
-}
-
-//nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) compileJSONSchema(ctx context.Context, schemaRes *schema.SchemaResponse) (*jsonschema.Schema, error) {
-	c := jsonschema.NewCompiler()
-	schemaName := "redpanda_json_schema_main.json"
-
-	err := s.buildJSONSchemaWithReferences(ctx, c, schemaName, schemaRes)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Compile(schemaName)
-}
-
-//nolint:unused // could be useful when we support JSON schemas
-func (s *JSONSchemaSerde) buildJSONSchemaWithReferences(ctx context.Context, compiler *jsonschema.Compiler, name string, schemaRes *schema.SchemaResponse) error {
-	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema)); err != nil {
-		return err
-	}
-
-	for _, reference := range schemaRes.References {
-		schemaRef, err := s.SchemaSvc.GetSchemaBySubjectAndVersion(ctx, reference.Subject, strconv.Itoa(reference.Version))
-		if err != nil {
-			return err
-		}
-		if err := compiler.AddResource(reference.Name, strings.NewReader(schemaRef.Schema)); err != nil {
-			return err
-		}
-		if err := s.buildJSONSchemaWithReferences(ctx, compiler, reference.Name, &schema.SchemaResponse{
-			Schema:     schemaRef.Schema,
-			References: schemaRef.References,
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
