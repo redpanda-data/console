@@ -57,6 +57,7 @@ export class FilterEntry {
         makeObservable(this);
     }
 
+    @observable isNew = false;
     id = randomId() + randomId(); // used as react key
     @observable filterType: FilterType = 'code';
 
@@ -90,7 +91,28 @@ export enum PartitionOffsetOrigin {
     Timestamp = -4,
     Custom = 0,
 }
+
+export const DEFAULT_SEARCH_PARAMS = {
+    offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
+    startOffset: -1, // used when offsetOrigin is custom
+    startTimestamp: -1, // used when offsetOrigin is timestamp
+    startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
+    partitionID: -1,
+    maxResults: 50,
+    page: 0,
+    pageSize: 10,
+    sorting: [] as SortingState,
+
+    filtersEnabled: false,
+    filters: [] as FilterEntry[],
+
+    keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+    valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+};
+
+
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
+
 // Settings for an individual topic
 export class TopicDetailsSettings {
     constructor() {
@@ -99,20 +121,9 @@ export class TopicDetailsSettings {
 
     topicName: string;
 
-    @observable searchParams = {
-        offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
-        startOffset: -1, // used when offsetOrigin is custom
-        startTimestamp: -1, // used when offsetOrigin is timestamp
-        startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
-        partitionID: -1,
-        maxResults: 50,
-        page: 0,
-        pageSize: 10,
-        sorting: [] as SortingState,
+    @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
 
-        filtersEnabled: false,
-        filters: [] as FilterEntry[],
-    };
+    @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = [];
 
     @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
@@ -131,9 +142,6 @@ export class TopicDetailsSettings {
     @observable searchParametersLocalTimeMode = true;
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
-
-    @observable keyDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
-    @observable valueDeserializer = PayloadEncoding.UNSPECIFIED as PayloadEncoding;
 
     @observable consumerPageSize = 20;
     @observable partitionPageSize = 20;
@@ -331,6 +339,10 @@ if (storedSettingsJson) {
         // which is ok for 'number', but not for any other type.
         ts.previewColumnFields = ts.previewColumnFields ?? [];
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
+
+        if(!ts.dynamicFilters) {
+            ts.dynamicFilters = [];
+        }
     }
 
     // Upgrade: PreviewTag to PreviewTagV2

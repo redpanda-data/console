@@ -3570,20 +3570,6 @@ body {
     border-radius: 8px !important;
 }
 
-// Make table headers more rounded?
-thead>tr>th {
-    &:nth-child(1) {
-        border-top-left-radius: 8px !important;
-        border-bottom-left-radius: 8px !important;
-    }
-
-    &:nth-last-child(1) {
-        border-top-right-radius: 8px !important;
-        border-bottom-right-radius: 8px !important;
-    }
-}
-
-
 // Fix that "line" that appears in input groups
 .ant-input-group.ant-input-group-compact>:last-child {
     border-right-width: 0px !important;
