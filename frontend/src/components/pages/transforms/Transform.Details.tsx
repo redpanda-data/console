@@ -29,7 +29,7 @@ import Tabs from '../../misc/tabs/Tabs';
 import { TopicMessage } from '../../../state/restInterfaces';
 import { sanitizeString } from '../../../utils/filterHelper';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { MessagePreview, renderExpandedMessage } from '../topics/Tab.Messages';
+import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { uiState } from '../../../state/uiState';
 import { ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
@@ -53,7 +53,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
         const transformName = decodeURIComponentPercents(this.props.transformName);
         p.title = transformName;
         p.addBreadcrumb('Data Transforms', '/transforms');
-        p.addBreadcrumb(transformName, '/transforms/' + transformName, {
+        p.addBreadcrumb(transformName, '/transforms/' + transformName, undefined, {
             canBeCopied: true,
             canBeTruncated: true,
         });
@@ -200,8 +200,8 @@ const LogsTab = observer((p: {
             topicName: topicName,
             includeRawPayload: true,
             ignoreSizeLimit: true,
-            keyDeserializer: uiState.topicSettings.keyDeserializer,
-            valueDeserializer: uiState.topicSettings.valueDeserializer,
+            keyDeserializer: PayloadEncoding.UNSPECIFIED,
+            valueDeserializer: PayloadEncoding.UNSPECIFIED,
         };
         const messages = await search.startSearch(searchReq);
 
@@ -268,10 +268,10 @@ const LogsTab = observer((p: {
                 pagination={paginationParams}
                 // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
                 //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-                subComponent={({ row: { original } }) => renderExpandedMessage(
-                    original,
-                    () => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
-                )}
+                subComponent={({ row: { original } }) => <ExpandedMessage
+                    msg={original}
+                    loadLargeMessage={() => loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)}
+                />}
             />
 
         </Section>
