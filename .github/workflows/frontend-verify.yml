@@ -1,5 +1,5 @@
+---
 name: "Frontend Lint & Compile check"
-
 on:
   push:
     paths:
@@ -7,7 +7,6 @@ on:
   pull_request:
     paths:
       - "frontend/**"
-
 jobs:
   lint-and-compile:
     runs-on: ubuntu-latest
@@ -31,7 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18.10.0'
-      - name: Install dependencies 
+      - name: Install dependencies
         working-directory: frontend
         run: npm ci
       - name: Run lint
@@ -41,11 +40,10 @@ jobs:
         working-directory: frontend
         run: |
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
-          REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME 
-          REACT_APP_BUILD_TIMESTAMP=$(date +%s) 
+          REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME
+          REACT_APP_BUILD_TIMESTAMP=$(date +%s)
           REACT_APP_DEV_HINT=true
-          npm run build 
- 
+          npm run build
   e2e-test:
     needs: "lint-and-compile"
     timeout-minutes: 60
@@ -78,7 +76,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Install frontend dependencies 
+      - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
       - name: Install Playwright browsers
@@ -91,23 +89,23 @@ jobs:
         working-directory: backend/cmd/api
         run: go build -v ./...
       - name: Log networks
-        if:  runner.debug == '1'
+        if: runner.debug == '1'
         continue-on-error: true
         run: docker network ls
       - name: Network inspect
-        if:  runner.debug == '1'
+        if: runner.debug == '1'
         continue-on-error: true
         run: docker network inspect redpanda-e2e_redpanda_network
       - name: Log redpanda
-        if:  runner.debug == '1'
+        if: runner.debug == '1'
         continue-on-error: true
         run: docker logs redpanda
       - name: Log owlshop
-        if:  runner.debug == '1'
+        if: runner.debug == '1'
         continue-on-error: true
         run: docker logs owlshop
       - name: Log connect
-        if:  runner.debug == '1'
+        if: runner.debug == '1'
         continue-on-error: true
         run: docker logs connect
       - name: Run Playwright tests

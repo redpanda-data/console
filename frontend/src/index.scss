@@ -970,19 +970,6 @@ tr.tombstone {
     text-align: center;
 }
 
-.expandedMessage {
-    .ant-tabs-nav {
-        .ant-tabs-tab {
-            flex: none;
-            padding: 0.6em 3.5em;
-        }
-
-        .ant-tabs-tab-active {
-            background: none;
-        }
-    }
-}
-
 /* tr td:nth-child(1) {
 padding-left: 30px !important;
 }
@@ -1656,11 +1643,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     padding-left: 2px;
     color: hsla(0, 0%, 40%, 1);
     cursor: default;
-}
-
-.statisticsBar {
-    position: relative;
-    overflow: hidden;
 }
 
 .filterTagDisabled {
@@ -3582,20 +3564,6 @@ body {
 .ant-picker {
     border-radius: 8px !important;
 }
-
-// Make table headers more rounded?
-thead>tr>th {
-    &:nth-child(1) {
-        border-top-left-radius: 8px !important;
-        border-bottom-left-radius: 8px !important;
-    }
-
-    &:nth-last-child(1) {
-        border-top-right-radius: 8px !important;
-        border-bottom-right-radius: 8px !important;
-    }
-}
-
 
 // Fix that "line" that appears in input groups
 .ant-input-group.ant-input-group-compact>:last-child {

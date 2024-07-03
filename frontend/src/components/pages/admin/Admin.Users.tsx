@@ -19,7 +19,7 @@ import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Accordion, DataTable, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Accordion, Box, DataTable, SearchField, Tooltip } from '@redpanda-data/ui';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -71,7 +71,7 @@ export class AdminUsers extends Component<{}> {
                     { size: 1, header: 'Roles', accessorKey: 'roles', cell: ({row: {original: user}}) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
                     { size: Infinity, header: 'Login', accessorKey: 'loginProvider' },
                 ]}
-                subComponent={({row: {original: user}}) =>   <Accordion
+                subComponent={({row: {original: user}}) => <Box py={6} px={10}><Accordion
                     defaultIndex={0}
                     items={
                         user.grantedRoles.map(r => ({
@@ -79,7 +79,7 @@ export class AdminUsers extends Component<{}> {
                             description: <RoleComponent role={r.role} grantedBy={r.grantedBy}/>
                         }))
                     }
-                />}
+                /></Box>}
             />
         )
 

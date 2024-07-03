@@ -11,7 +11,6 @@ package config
 
 import (
 	"regexp"
-	"strings"
 )
 
 // Regexp adds unmarshalling from json for regexp.Regexp
@@ -21,7 +20,7 @@ type Regexp struct {
 
 // UnmarshalText unmarshals json into a regexp.Regexp
 func (r *Regexp) UnmarshalText(b []byte) error {
-	regex, err := compileRegex(string(b))
+	regex, err := CompileRegex(string(b))
 	if err != nil {
 		return err
 	}
@@ -40,24 +39,37 @@ func (r *Regexp) MarshalText() ([]byte, error) {
 	return nil, nil
 }
 
-// compileRegex converts all strings into a regex. Strings that are wrapped into "/"
-// will be treated as regex expression and parsed accordingly. All other strings will
-// be treated as literal.
-func compileRegex(expr string) (*regexp.Regexp, error) {
-	if strings.HasPrefix(expr, "/") && strings.HasSuffix(expr, "/") {
-		substr := expr[1 : len(expr)-1]
-		regex, err := regexp.Compile(substr)
-		if err != nil {
-			return nil, err
-		}
+// RegexpOrLiteral adds unmarshalling from json for regexp.Regexp or Literal type.
+type RegexpOrLiteral struct {
+	literal string
+	*regexp.Regexp
+}
 
-		return regex, nil
+func (r *RegexpOrLiteral) String() string {
+	if r.literal != "" {
+		return r.literal
+	}
+	if r.Regexp != nil {
+		return r.Regexp.String()
+	}
+	return ""
+}
+
+// UnmarshalText unmarshals json into a regexp.Regexp
+func (r *RegexpOrLiteral) UnmarshalText(b []byte) error {
+	regex, err := CompileRegexStrict(string(b))
+	if err == nil {
+		r.Regexp = regex
+	}
+	r.literal = string(b)
+	return nil
+}
+
+// MarshalText marshals regexp.Regexp as string
+func (r *RegexpOrLiteral) MarshalText() ([]byte, error) {
+	if r.Regexp != nil {
+		return []byte(r.Regexp.String()), nil
 	}
 
-	// If this is no regex input (which is marked by the slashes around it) then we escape it so that it's a literal
-	regex, err := regexp.Compile("^" + expr + "$")
-	if err != nil {
-		return nil, err
-	}
-	return regex, nil
+	return []byte(r.literal), nil
 }

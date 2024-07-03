@@ -14,7 +14,8 @@ package config
 // if the topics have been serialized without the schema registry being involved in the
 // serialization.
 type ProtoTopicMapping struct {
-	TopicName string `yaml:"topicName"`
+	// TopicName is the name of the topic to apply these proto files. This supports regex.
+	TopicName RegexpOrLiteral `yaml:"topicName"`
 
 	// KeyProtoType is the proto's fully qualified name that shall be used for a Kafka record's key
 	KeyProtoType string `yaml:"keyProtoType"`

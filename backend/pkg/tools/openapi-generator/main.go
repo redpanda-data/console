@@ -229,6 +229,7 @@ func updateAny(doc3 *openapi3.T) {
 
 	// Status (error response)
 	{
+		// HERE!!!
 		schema := doc3.Components.Schemas["Status"].Value
 		schema.Properties["code"].Value.Description = "RPC status code, as described [here](https://github.com/googleapis/googleapis/blob/b4c238feaa1097c53798ed77035bbfeb7fc72e96/google/rpc/code.proto#L32)."
 		schema.Properties["code"].Value.Type = &openapi3.Types{openapi3.TypeString}
