@@ -9,6 +9,7 @@ import './CreateTopicModal.scss';
 import {
     Box,
     Button,
+    Flex,
     Input,
     InputGroup,
     InputLeftAddon,
@@ -18,15 +19,13 @@ import {
     Select,
     Slider,
     SliderFilledTrack,
-    SliderTrack,
     SliderThumb,
-    Flex
+    SliderTrack
 } from '@redpanda-data/ui';
 import { SingleSelect } from '../../../misc/Select';
 import { api } from '../../../../state/backendApi';
 import { isServerless } from '../../../../config';
-
-type CleanupPolicyType = 'compact' | 'delete' | 'compact,delete';
+import { CleanupPolicyType } from '../types';
 
 
 type CreateTopicModalState = {

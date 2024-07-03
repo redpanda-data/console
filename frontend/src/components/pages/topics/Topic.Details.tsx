@@ -248,11 +248,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             <>
                 <PageContent key={'b'}>
                     {uiSettings.topicDetailsShowStatisticsBar && (
-                        <Section py={4}>
-                            <div className="statisticsBar">
-                                <TopicQuickInfoStatistic topic={topic} />
-                            </div>
-                        </Section>
+                        <TopicQuickInfoStatistic topic={topic} />
                     )}
 
                     {/* Tabs:  Messages, Configuration */}
