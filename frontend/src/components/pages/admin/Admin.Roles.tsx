@@ -28,7 +28,8 @@ export class AdminRoles extends Component<{}> {
         if (!api.adminInfo) return DefaultSkeleton;
         const roles = api.adminInfo.roles;
 
-        return <DataTable<Role>
+        return (
+          <DataTable<Role>
             sorting
             pagination
             data={roles}
@@ -41,7 +42,8 @@ export class AdminRoles extends Component<{}> {
                     size: Infinity,
                 },
             ]}
-        />
+          />
+        )
     }
 }
 
