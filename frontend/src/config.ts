@@ -21,7 +21,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
-import { TransformService } from './protogen/redpanda/api/dataplane/v1alpha1/transform_connect';
+import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 
 declare const __webpack_public_path__: string;
 
