@@ -28,7 +28,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
-func (s *APISuite) TestListConnectors() {
+func (s *APISuite) TestListConnectors_V1Alpha1() {
 	t := s.T()
 
 	t.Run("list Connectors with invalid Request (connect-go)", func(t *testing.T) {
@@ -64,7 +64,7 @@ func (s *APISuite) TestListConnectors() {
 	})
 }
 
-func (s *APISuite) TestListConnectClusters() {
+func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 	t := s.T()
 
 	t.Run("list connect clusters request (connect-go)", func(t *testing.T) {
@@ -123,7 +123,7 @@ func (s *APISuite) TestListConnectClusters() {
 	})
 }
 
-func (s *APISuite) TestGetConnectorAndStatus() {
+func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 	t := s.T()
 	requireT := require.New(t)
 

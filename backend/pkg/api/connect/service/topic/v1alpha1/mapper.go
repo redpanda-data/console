@@ -14,7 +14,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	"github.com/redpanda-data/console/backend/pkg/api/connect/service/common"
+	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1alpha1"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 

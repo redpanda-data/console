@@ -27,7 +27,7 @@ import (
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
 
-func (s *APISuite) TestListUsers() {
+func (s *APISuite) TestListUsers_V1Alpha1() {
 	t := s.T()
 
 	t.Run("list users with valid request (connect-go)", func(t *testing.T) {

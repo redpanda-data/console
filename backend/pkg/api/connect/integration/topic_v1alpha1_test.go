@@ -30,7 +30,7 @@ import (
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
 
-func (s *APISuite) TestListTopics() {
+func (s *APISuite) TestListTopics_V1Alpha1() {
 	t := s.T()
 
 	// Seed some topics that can be listed
@@ -197,7 +197,7 @@ func (s *APISuite) TestListTopics() {
 	})
 }
 
-func (s *APISuite) TestCreateTopic() {
+func (s *APISuite) TestCreateTopic_V1Alpha1() {
 	t := s.T()
 
 	t.Run("create topic with valid request (connect-go)", func(t *testing.T) {
@@ -485,7 +485,7 @@ func (s *APISuite) TestCreateTopic() {
 	})
 }
 
-func (s *APISuite) TestDeleteTopic() {
+func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 	t := s.T()
 
 	t.Run("delete topic with valid request (connect-go)", func(t *testing.T) {
@@ -643,7 +643,7 @@ func (s *APISuite) TestDeleteTopic() {
 	})
 }
 
-func (s *APISuite) TestGetTopicConfiguration() {
+func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 	t := s.T()
 
 	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
@@ -788,7 +788,7 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	})
 }
 
-func (s *APISuite) TestUpdateTopicConfiguration() {
+func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 	t := s.T()
 
 	t.Run("update topic configuration of a valid topic (connect-go)", func(t *testing.T) {
@@ -1086,7 +1086,7 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 	})
 }
 
-func (s *APISuite) TestSetTopicConfiguration() {
+func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 	t := s.T()
 
 	t.Run("set topic configuration of a valid topic (connect-go)", func(t *testing.T) {
