@@ -291,7 +291,7 @@ export const ResourceACLsEditor = observer((p: {
             boxShadow="0px 1px 2px 0px #0000000F"
         >
             <Flex
-                flexDirection="row"
+                flexDirection="column"
                 flexGrow={1}
                 gap={10}
                 p={6}
@@ -299,7 +299,7 @@ export const ResourceACLsEditor = observer((p: {
                 {isCluster ? (
                     <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
                 ) : (
-                        <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid} width="300px">
+                        <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid}>
                             <InputGroup zIndex={1}>
                                 <InputLeftAddon padding="0px" width="124px">
                                     <SingleSelect<'Any' | 'Literal' | 'Prefixed'>
