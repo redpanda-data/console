@@ -30,7 +30,7 @@ import (
 	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 )
 
-func (s *APISuite) DeleteAllACLs(ctx context.Context) error {
+func (s *APISuite) DeleteAllACLs_V1Alpha1(ctx context.Context) error {
 	acls := kadm.NewACLs().
 		Allow().
 		ResourcePatternType(kadm.ACLPatternAny).
@@ -48,7 +48,7 @@ func (s *APISuite) DeleteAllACLs(ctx context.Context) error {
 }
 
 //nolint:unparam // Principal always receives "User:test" as of now, but good to keep for clarity
-func (*APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, resourceName string, principal string) *v1alpha1.ListACLsResponse_Resource {
+func (*APISuite) newStdACLResource_V1Alpha1(resourceType v1alpha1.ACL_ResourceType, resourceName string, principal string) *v1alpha1.ListACLsResponse_Resource {
 	return &v1alpha1.ListACLsResponse_Resource{
 		ResourceType:        resourceType,
 		ResourceName:        resourceName,
@@ -64,7 +64,7 @@ func (*APISuite) newStdACLResource(resourceType v1alpha1.ACL_ResourceType, resou
 	}
 }
 
-func (s *APISuite) TestCreateACL() {
+func (s *APISuite) TestCreateACL_V1Alpha1() {
 	t := s.T()
 
 	t.Run("create ACL with default request (connect-go)", func(t *testing.T) {
@@ -91,7 +91,7 @@ func (s *APISuite) TestCreateACL() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 
@@ -159,7 +159,7 @@ func (s *APISuite) TestCreateACL() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 
@@ -235,13 +235,13 @@ func (s *APISuite) TestCreateACL() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 	})
 }
 
-func (s *APISuite) TestListACLs() {
+func (s *APISuite) TestListACLs_V1Alpha1() {
 	t := s.T()
 
 	t.Run("list ACLs with default request (connect-go)", func(t *testing.T) {
@@ -280,7 +280,7 @@ func (s *APISuite) TestListACLs() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 
@@ -314,10 +314,10 @@ func (s *APISuite) TestListACLs() {
 
 		// 4. Compare all filtered resources against expected ACLs
 		expectedResources := map[v1alpha1.ACL_ResourceType]*v1alpha1.ListACLsResponse_Resource{
-			v1alpha1.ACL_RESOURCE_TYPE_TOPIC:            s.newStdACLResource(v1alpha1.ACL_RESOURCE_TYPE_TOPIC, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TOPIC], principal),
-			v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID: s.newStdACLResource(v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID], principal),
-			v1alpha1.ACL_RESOURCE_TYPE_GROUP:            s.newStdACLResource(v1alpha1.ACL_RESOURCE_TYPE_GROUP, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_GROUP], principal),
-			v1alpha1.ACL_RESOURCE_TYPE_CLUSTER:          s.newStdACLResource(v1alpha1.ACL_RESOURCE_TYPE_CLUSTER, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_CLUSTER], principal),
+			v1alpha1.ACL_RESOURCE_TYPE_TOPIC:            s.newStdACLResource_V1Alpha1(v1alpha1.ACL_RESOURCE_TYPE_TOPIC, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TOPIC], principal),
+			v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID: s.newStdACLResource_V1Alpha1(v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID], principal),
+			v1alpha1.ACL_RESOURCE_TYPE_GROUP:            s.newStdACLResource_V1Alpha1(v1alpha1.ACL_RESOURCE_TYPE_GROUP, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_GROUP], principal),
+			v1alpha1.ACL_RESOURCE_TYPE_CLUSTER:          s.newStdACLResource_V1Alpha1(v1alpha1.ACL_RESOURCE_TYPE_CLUSTER, resourceNames[v1alpha1.ACL_RESOURCE_TYPE_CLUSTER], principal),
 		}
 		assert.Len(filteredResources, len(expectedResources))
 
@@ -383,7 +383,7 @@ func (s *APISuite) TestListACLs() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 
@@ -418,7 +418,7 @@ func (s *APISuite) TestListACLs() {
 	})
 }
 
-func (s *APISuite) TestDeleteACLs() {
+func (s *APISuite) TestDeleteACLs_V1Alpha1() {
 	t := s.T()
 
 	t.Run("delete ACLs with a filter that matches all three created ACLs (connect-go)", func(t *testing.T) {
@@ -455,7 +455,7 @@ func (s *APISuite) TestDeleteACLs() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 
@@ -531,7 +531,7 @@ func (s *APISuite) TestDeleteACLs() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			err := s.DeleteAllACLs(ctx)
+			err := s.DeleteAllACLs_V1Alpha1(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
 		}()
 

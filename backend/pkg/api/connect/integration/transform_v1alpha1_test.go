@@ -41,7 +41,7 @@ import (
 var identityTransform []byte
 
 // DirectDeployAndTestTransform encapsulates the logic for creating a transform and asserting its successful creation.
-func (s *APISuite) TestDeployTransform() {
+func (s *APISuite) TestDeployTransform_V1Alpha1() {
 	t := s.T()
 
 	type KeyVal struct {
@@ -356,7 +356,7 @@ func (s *APISuite) TestDeployTransform() {
 	})
 }
 
-func (s *APISuite) TestGetTransform() {
+func (s *APISuite) TestGetTransform_V1Alpha1() {
 	t := s.T()
 
 	assert := assertpkg.New(t)
@@ -555,7 +555,7 @@ func (s *APISuite) TestGetTransform() {
 	})
 }
 
-func (s *APISuite) TestListTransforms() {
+func (s *APISuite) TestListTransforms_V1Alpha1() {
 	t := s.T()
 
 	require := requirepkg.New(t)
@@ -682,7 +682,7 @@ func (s *APISuite) TestListTransforms() {
 	})
 }
 
-func (s *APISuite) TestDeleteTransforms() {
+func (s *APISuite) TestDeleteTransforms_V1Alpha1() {
 	t := s.T()
 
 	require := requirepkg.New(t)
