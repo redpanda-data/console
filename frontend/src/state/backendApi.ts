@@ -366,6 +366,9 @@ const apiStore = {
                     canDeleteSchemas: true,
                     canManageSchemaRegistry: true,
                     canViewSchemas: true,
+                    canListTransforms: true,
+                    canCreateTransforms: true,
+                    canDeleteTransforms: true,
                     seat: null as any,
                     user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                 };
@@ -1697,13 +1700,16 @@ export const transformsApi = observable({
         const transforms: TransformMetadata[] = [];
         let nextPageToken = '';
         while (true) {
-            const res = await client.listTransforms({ pageSize: 500, pageToken: nextPageToken });
-
-            transforms.push(...res.transforms);
-
-            if (!res.nextPageToken || res.nextPageToken.length == 0)
+            const res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+            const r = res.response;
+            if (!r)
                 break;
-            nextPageToken = res.nextPageToken;
+
+            transforms.push(...r.transforms);
+
+            if (!r.nextPageToken || r.nextPageToken.length == 0)
+                break;
+            nextPageToken = r.nextPageToken;
         }
 
         runInAction(() => {
@@ -1718,7 +1724,11 @@ export const transformsApi = observable({
         const client = appConfig.transformsClient;
         if (!client) throw new Error('transforms client is not initialized');
 
-        const r = await client.getTransform({ name });
+        const res = await client.getTransform({ request: { name } });
+        const r = res.response;
+        if (!r)
+            throw new Error('got empty response from getTransform');
+
         if (!r.transform) return;
 
         this.transformDetails.set(r.transform.name, r.transform);
@@ -1728,7 +1738,7 @@ export const transformsApi = observable({
         const client = appConfig.transformsClient;
         if (!client) throw new Error('transforms client is not initialized');
 
-        await client.deleteTransform({ name });
+        await client.deleteTransform({ request: { name } });
     },
 
 });

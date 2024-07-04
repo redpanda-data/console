@@ -526,6 +526,10 @@ export interface UserData {
     canCreateSchemas: boolean;
     canDeleteSchemas: boolean;
     canManageSchemaRegistry: boolean;
+
+    canListTransforms: boolean;
+    canCreateTransforms: boolean;
+    canDeleteTransforms: boolean;
 }
 export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 

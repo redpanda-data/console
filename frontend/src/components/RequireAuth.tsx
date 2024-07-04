@@ -72,6 +72,9 @@ export default class RequireAuth extends Component<{children: ReactNode}> {
                         canDeleteSchemas: true,
                         canManageSchemaRegistry: true,
                         canViewSchemas: true,
+                        canListTransforms: true,
+                        canCreateTransforms: true,
+                        canDeleteTransforms: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
