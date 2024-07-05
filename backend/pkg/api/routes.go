@@ -96,11 +96,15 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptReserved),
 	)
 
+	// v1alpha2
+
+	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
+
 	// v1alpha1
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
-	aclSvcV1alpha1 := apiaclsvcv1alpha1.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
+	aclSvcV1alpha1 := apiaclsvcv1alpha1.NewService(aclSvc)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
@@ -111,10 +115,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
 	}
 	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
-
-	// v1alpha2
-
-	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
