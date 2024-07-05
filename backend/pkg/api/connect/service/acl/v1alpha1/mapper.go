@@ -10,225 +10,277 @@
 package acl
 
 import (
-	"fmt"
-
-	"github.com/twmb/franz-go/pkg/kmsg"
-	"google.golang.org/genproto/googleapis/rpc/status"
-
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 type kafkaClientMapper struct{}
 
-// aclCreateRequestToKafka maps the proto request to create a single ACL into a kmsg.CreateACLsRequest.
-func (k *kafkaClientMapper) aclCreateRequestToKafka(req *v1alpha1.CreateACLRequest) (*kmsg.CreateACLsRequest, error) {
-	resourceType, err := k.aclResourceTypeToKafka(req.ResourceType)
-	if err != nil {
-		return nil, err
+func (*kafkaClientMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest) *v1alpha2.ListACLsRequest {
+	resourceName := r.GetFilter().ResourceName
+	principal := r.GetFilter().Principal
+	host := r.GetFilter().Host
+
+	return &v1alpha2.ListACLsRequest{
+		Filter: &v1alpha2.ListACLsRequest_Filter{
+			ResourceType:        ResourceTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourceType()),
+			ResourceName:        resourceName,
+			ResourcePatternType: ResourcePatternTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourcePatternType()),
+			Principal:           principal,
+			Host:                host,
+			Operation:           OperationV1Alpha1ToV1Alpha2(r.GetFilter().GetOperation()),
+			PermissionType:      PermissionTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetPermissionType()),
+		},
 	}
-
-	operation, err := k.aclOperationToKafka(req.Operation)
-	if err != nil {
-		return nil, err
-	}
-
-	permissionType, err := k.aclPermissionTypeToKafka(req.PermissionType)
-	if err != nil {
-		return nil, err
-	}
-
-	resourcePatternType, err := k.aclResourcePatternTypeToKafka(req.ResourcePatternType)
-	if err != nil {
-		return nil, err
-	}
-
-	creation := kmsg.NewCreateACLsRequestCreation()
-	creation.Host = req.Host
-	creation.Principal = req.Principal
-	creation.Operation = operation
-	creation.ResourceType = resourceType
-	creation.PermissionType = permissionType
-	creation.ResourcePatternType = resourcePatternType
-	creation.ResourceName = req.ResourceName
-
-	kafkaReq := kmsg.NewCreateACLsRequest()
-	kafkaReq.Creations = []kmsg.CreateACLsRequestCreation{creation}
-
-	return &kafkaReq, nil
 }
 
-// listACLFilterToDescribeACLKafka translates a proto ACL input into the kmsg.DescribeACLsRequest that is
-// needed by the Kafka client to retrieve the list of applied ACLs.
-// The parameter defaultToAny determines whether unspecified enum values for
-// the operation, permission type, resource pattern type or resource type
-// should be converted to ALL/ANY if not otherwise specified.
-func (k *kafkaClientMapper) listACLFilterToDescribeACLKafka(filter *v1alpha1.ListACLsRequest_Filter) (*kmsg.DescribeACLsRequest, error) {
-	aclOperation, err := k.aclOperationToKafka(filter.Operation)
-	if err != nil {
-		return nil, err
-	}
-	aclPermissionType, err := k.aclPermissionTypeToKafka(filter.PermissionType)
-	if err != nil {
-		return nil, err
-	}
+func (*kafkaClientMapper) v1alpha2ListACLsResponseResourcesTov1alpha1(resources []*v1alpha2.ListACLsResponse_Resource) []*v1alpha1.ListACLsResponse_Resource {
+	out := make([]*v1alpha1.ListACLsResponse_Resource, 0, len(resources))
 
-	aclResourcePatternType, err := k.aclResourcePatternTypeToKafka(filter.ResourcePatternType)
-	if err != nil {
-		return nil, err
-	}
-
-	aclResourceType, err := k.aclResourceTypeToKafka(filter.ResourceType)
-	if err != nil {
-		return nil, err
-	}
-
-	req := kmsg.NewDescribeACLsRequest()
-	req.Host = filter.Host
-	req.Principal = filter.Principal
-	req.ResourceName = filter.ResourceName
-	req.Operation = aclOperation
-	req.PermissionType = aclPermissionType
-	req.ResourcePatternType = aclResourcePatternType
-	req.ResourceType = aclResourceType
-
-	return &req, nil
-}
-
-func (k *kafkaClientMapper) describeACLsResourceToProto(res kmsg.DescribeACLsResponseResource) (*v1alpha1.ListACLsResponse_Resource, error) {
-	resourceType, err := k.aclResourceTypeToProto(res.ResourceType)
-	if err != nil {
-		return nil, err
-	}
-
-	resourcePatternType, err := k.aclResourcePatternTypeToProto(res.ResourcePatternType)
-	if err != nil {
-		return nil, err
-	}
-
-	aclsProto := make([]*v1alpha1.ListACLsResponse_Policy, len(res.ACLs))
-	for i, aclRes := range res.ACLs {
-		aclProto, err := k.describeACLsResponseResourceACLToProto(aclRes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to map acl resource to proto: %w", err)
+	for _, r := range resources {
+		acls := r.GetAcls()
+		policies := make([]*v1alpha1.ListACLsResponse_Policy, 0, len(acls))
+		for _, acl := range acls {
+			policies = append(policies, &v1alpha1.ListACLsResponse_Policy{
+				Principal:      acl.GetPrincipal(),
+				Host:           acl.GetHost(),
+				Operation:      OperationV1Alpha2ToV1Alpha1(acl.GetOperation()),
+				PermissionType: PermissionTypeV1Alpha2ToV1Alpha1(acl.GetPermissionType()),
+			})
 		}
-		aclsProto[i] = aclProto
+		or := &v1alpha1.ListACLsResponse_Resource{
+			ResourceType:        ResourceTypeV1Alpha2ToV1Alpha1(r.GetResourceType()),
+			ResourceName:        r.GetResourceName(),
+			ResourcePatternType: ResourcePatternTypeV1Alpha2ToV1Alpha1(r.GetResourcePatternType()),
+			Acls:                policies,
+		}
+		out = append(out, or)
 	}
 
-	return &v1alpha1.ListACLsResponse_Resource{
-		ResourceType:        resourceType,
-		ResourceName:        res.ResourceName,
-		ResourcePatternType: resourcePatternType,
-		Acls:                aclsProto,
-	}, nil
+	return out
 }
 
-func (k *kafkaClientMapper) describeACLsResponseResourceACLToProto(resource kmsg.DescribeACLsResponseResourceACL) (*v1alpha1.ListACLsResponse_Policy, error) {
-	operation, err := k.aclOperationToProto(resource.Operation)
-	if err != nil {
-		return nil, err
+func (*kafkaClientMapper) v1alpha1ToCreateACLv1alpha2(r *v1alpha1.CreateACLRequest) *v1alpha2.CreateACLRequest {
+	return &v1alpha2.CreateACLRequest{
+		ResourcePatternType: ResourcePatternTypeV1Alpha1ToV1Alpha2(r.GetResourcePatternType()),
+		ResourceType:        ResourceTypeV1Alpha1ToV1Alpha2(r.GetResourceType()),
+		ResourceName:        r.GetResourceName(),
+		Principal:           r.GetPrincipal(),
+		Host:                r.GetHost(),
+		Operation:           OperationV1Alpha1ToV1Alpha2(r.GetOperation()),
+		PermissionType:      PermissionTypeV1Alpha1ToV1Alpha2(r.GetPermissionType()),
 	}
-
-	permissionType, err := k.aclPermissionTypeToProto(resource.PermissionType)
-	if err != nil {
-		return nil, err
-	}
-
-	return &v1alpha1.ListACLsResponse_Policy{
-		Principal:      resource.Principal,
-		Host:           resource.Host,
-		Operation:      operation,
-		PermissionType: permissionType,
-	}, nil
 }
 
-// deleteACLFilterToDeleteACLKafka translates a proto ACL input into the kmsg.DeleteACLsRequest that is
-// needed by the Kafka client to delete the list of ACLs that match the filter.
-func (k *kafkaClientMapper) deleteACLFilterToDeleteACLKafka(filter *v1alpha1.DeleteACLsRequest_Filter) (*kmsg.DeleteACLsRequest, error) {
-	resourceType, err := k.aclResourceTypeToKafka(filter.ResourceType)
-	if err != nil {
-		return nil, err
+func (*kafkaClientMapper) v1alpha1ToDeleteACLv1alpha2(r *v1alpha1.DeleteACLsRequest) *v1alpha2.DeleteACLsRequest {
+	resourceName := r.GetFilter().ResourceName
+	principal := r.GetFilter().Principal
+	host := r.GetFilter().Host
+
+	return &v1alpha2.DeleteACLsRequest{
+		Filter: &v1alpha2.DeleteACLsRequest_Filter{
+			ResourceType:        ResourceTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourceType()),
+			ResourceName:        resourceName,
+			ResourcePatternType: ResourcePatternTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourcePatternType()),
+			Principal:           principal,
+			Host:                host,
+			Operation:           OperationV1Alpha1ToV1Alpha2(r.GetFilter().GetOperation()),
+			PermissionType:      PermissionTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetPermissionType()),
+		},
 	}
-
-	operation, err := k.aclOperationToKafka(filter.Operation)
-	if err != nil {
-		return nil, err
-	}
-
-	permissionType, err := k.aclPermissionTypeToKafka(filter.PermissionType)
-	if err != nil {
-		return nil, err
-	}
-
-	resourcePatternType, err := k.aclResourcePatternTypeToKafka(filter.ResourcePatternType)
-	if err != nil {
-		return nil, err
-	}
-
-	deletionFilter := kmsg.NewDeleteACLsRequestFilter()
-	deletionFilter.Host = filter.Host
-	deletionFilter.Principal = filter.Principal
-	deletionFilter.Operation = operation
-	deletionFilter.ResourceType = resourceType
-	deletionFilter.PermissionType = permissionType
-	deletionFilter.ResourcePatternType = resourcePatternType
-	deletionFilter.ResourceName = filter.ResourceName
-
-	kafkaReq := kmsg.NewDeleteACLsRequest()
-	kafkaReq.Filters = []kmsg.DeleteACLsRequestFilter{deletionFilter}
-
-	return &kafkaReq, nil
 }
 
-func (k *kafkaClientMapper) deleteACLMatchingResultsToProtos(acls []kmsg.DeleteACLsResponseResultMatchingACL) ([]*v1alpha1.DeleteACLsResponse_MatchingACL, error) {
-	matchingACLs := make([]*v1alpha1.DeleteACLsResponse_MatchingACL, 0, len(acls))
+func (*kafkaClientMapper) v1alpha2ToDeleteACLsResponseMatchingACLv1alpha1(acls []*v1alpha2.DeleteACLsResponse_MatchingACL) []*v1alpha1.DeleteACLsResponse_MatchingACL {
+	out := make([]*v1alpha1.DeleteACLsResponse_MatchingACL, 0, len(acls))
+
 	for _, acl := range acls {
-		protoACL, err := k.deleteACLMatchingResultToProto(acl)
-		if err != nil {
-			// This would lead to
-			return nil, fmt.Errorf("failed to map matching acl to proto: %w", err)
-		}
-		matchingACLs = append(matchingACLs, protoACL)
+		out = append(out, &v1alpha1.DeleteACLsResponse_MatchingACL{
+			ResourceType:        ResourceTypeV1Alpha2ToV1Alpha1(acl.GetResourceType()),
+			ResourceName:        acl.GetResourceName(),
+			ResourcePatternType: ResourcePatternTypeV1Alpha2ToV1Alpha1(acl.GetResourcePatternType()),
+			Principal:           acl.GetPrincipal(),
+			Host:                acl.GetHost(),
+			Operation:           OperationV1Alpha2ToV1Alpha1(acl.GetOperation()),
+			PermissionType:      PermissionTypeV1Alpha2ToV1Alpha1(acl.GetPermissionType()),
+			Error:               acl.GetError(),
+		})
 	}
 
-	return matchingACLs, nil
+	return out
 }
 
-func (k *kafkaClientMapper) deleteACLMatchingResultToProto(acl kmsg.DeleteACLsResponseResultMatchingACL) (*v1alpha1.DeleteACLsResponse_MatchingACL, error) {
-	resourceType, err := k.aclResourceTypeToProto(acl.ResourceType)
-	if err != nil {
-		return nil, err
+// ResourceTypeV1Alpha1ToV1Alpha2 converts ACL Resource Type enum from v1alpha1 to v1alpha2.
+func ResourceTypeV1Alpha1ToV1Alpha2(t v1alpha1.ACL_ResourceType) v1alpha2.ACL_ResourceType {
+	switch t {
+	case v1alpha1.ACL_RESOURCE_TYPE_ANY:
+		return v1alpha2.ACL_RESOURCE_TYPE_ANY
+	case v1alpha1.ACL_RESOURCE_TYPE_TOPIC:
+		return v1alpha2.ACL_RESOURCE_TYPE_TOPIC
+	case v1alpha1.ACL_RESOURCE_TYPE_GROUP:
+		return v1alpha2.ACL_RESOURCE_TYPE_GROUP
+	case v1alpha1.ACL_RESOURCE_TYPE_CLUSTER:
+		return v1alpha2.ACL_RESOURCE_TYPE_CLUSTER
+	case v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID:
+		return v1alpha2.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID
+	case v1alpha1.ACL_RESOURCE_TYPE_DELEGATION_TOKEN:
+		return v1alpha2.ACL_RESOURCE_TYPE_DELEGATION_TOKEN
+	case v1alpha1.ACL_RESOURCE_TYPE_USER:
+		return v1alpha2.ACL_RESOURCE_TYPE_USER
+	default:
+		return v1alpha2.ACL_RESOURCE_TYPE_UNSPECIFIED
 	}
+}
 
-	operation, err := k.aclOperationToProto(acl.Operation)
-	if err != nil {
-		return nil, err
+// OperationV1Alpha1ToV1Alpha2 converts ACL Operation enum from v1alpha1 to v1alpha2.
+func OperationV1Alpha1ToV1Alpha2(t v1alpha1.ACL_Operation) v1alpha2.ACL_Operation {
+	switch t {
+	case v1alpha1.ACL_OPERATION_ANY:
+		return v1alpha2.ACL_OPERATION_ANY
+	case v1alpha1.ACL_OPERATION_ALL:
+		return v1alpha2.ACL_OPERATION_ALL
+	case v1alpha1.ACL_OPERATION_READ:
+		return v1alpha2.ACL_OPERATION_READ
+	case v1alpha1.ACL_OPERATION_WRITE:
+		return v1alpha2.ACL_OPERATION_WRITE
+	case v1alpha1.ACL_OPERATION_CREATE:
+		return v1alpha2.ACL_OPERATION_CREATE
+	case v1alpha1.ACL_OPERATION_DELETE:
+		return v1alpha2.ACL_OPERATION_DELETE
+	case v1alpha1.ACL_OPERATION_ALTER:
+		return v1alpha2.ACL_OPERATION_ALTER
+	case v1alpha1.ACL_OPERATION_DESCRIBE:
+		return v1alpha2.ACL_OPERATION_DESCRIBE
+	case v1alpha1.ACL_OPERATION_CLUSTER_ACTION:
+		return v1alpha2.ACL_OPERATION_CLUSTER_ACTION
+	case v1alpha1.ACL_OPERATION_DESCRIBE_CONFIGS:
+		return v1alpha2.ACL_OPERATION_DESCRIBE_CONFIGS
+	case v1alpha1.ACL_OPERATION_ALTER_CONFIGS:
+		return v1alpha2.ACL_OPERATION_ALTER_CONFIGS
+	case v1alpha1.ACL_OPERATION_IDEMPOTENT_WRITE:
+		return v1alpha2.ACL_OPERATION_IDEMPOTENT_WRITE
+	case v1alpha1.ACL_OPERATION_CREATE_TOKENS:
+		return v1alpha2.ACL_OPERATION_CREATE_TOKENS
+	case v1alpha1.ACL_OPERATION_DESCRIBE_TOKENS:
+		return v1alpha2.ACL_OPERATION_DESCRIBE_TOKENS
+	default:
+		return v1alpha2.ACL_OPERATION_UNSPECIFIED
 	}
+}
 
-	permissionType, err := k.aclPermissionTypeToProto(acl.PermissionType)
-	if err != nil {
-		return nil, err
+// PermissionTypeV1Alpha1ToV1Alpha2 converts ACL Permission Type enum from v1alpha1 to v1alpha2.
+func PermissionTypeV1Alpha1ToV1Alpha2(t v1alpha1.ACL_PermissionType) v1alpha2.ACL_PermissionType {
+	switch t {
+	case v1alpha1.ACL_PERMISSION_TYPE_ANY:
+		return v1alpha2.ACL_PERMISSION_TYPE_ANY
+	case v1alpha1.ACL_PERMISSION_TYPE_DENY:
+		return v1alpha2.ACL_PERMISSION_TYPE_DENY
+	case v1alpha1.ACL_PERMISSION_TYPE_ALLOW:
+		return v1alpha2.ACL_PERMISSION_TYPE_ALLOW
+	default:
+		return v1alpha2.ACL_PERMISSION_TYPE_UNSPECIFIED
 	}
+}
 
-	resourcePatternType, err := k.aclResourcePatternTypeToProto(acl.ResourcePatternType)
-	if err != nil {
-		return nil, err
+// ResourcePatternTypeV1Alpha1ToV1Alpha2 converts ACL Permission Pattern Type enum from v1alpha1 to v1alpha2.
+func ResourcePatternTypeV1Alpha1ToV1Alpha2(t v1alpha1.ACL_ResourcePatternType) v1alpha2.ACL_ResourcePatternType {
+	switch t {
+	case v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY:
+		return v1alpha2.ACL_RESOURCE_PATTERN_TYPE_ANY
+	case v1alpha1.ACL_RESOURCE_PATTERN_TYPE_MATCH:
+		return v1alpha2.ACL_RESOURCE_PATTERN_TYPE_MATCH
+	case v1alpha1.ACL_RESOURCE_PATTERN_TYPE_LITERAL:
+		return v1alpha2.ACL_RESOURCE_PATTERN_TYPE_LITERAL
+	case v1alpha1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED:
+		return v1alpha2.ACL_RESOURCE_PATTERN_TYPE_PREFIXED
+	default:
+		return v1alpha2.ACL_RESOURCE_PATTERN_TYPE_UNSPECIFIED
 	}
+}
 
-	var statusErr *status.Status
-	if acl.ErrorCode != 0 {
-		connectErr := apierrors.NewConnectErrorFromKafkaErrorCode(acl.ErrorCode, acl.ErrorMessage)
-		statusErr = apierrors.ConnectErrorToGrpcStatus(connectErr)
+// ResourceTypeV1Alpha2ToV1Alpha1 converts ACL Resource Type enum from v1alpha2 to v1alpha1.
+func ResourceTypeV1Alpha2ToV1Alpha1(t v1alpha2.ACL_ResourceType) v1alpha1.ACL_ResourceType {
+	switch t {
+	case v1alpha2.ACL_RESOURCE_TYPE_ANY:
+		return v1alpha1.ACL_RESOURCE_TYPE_ANY
+	case v1alpha2.ACL_RESOURCE_TYPE_TOPIC:
+		return v1alpha1.ACL_RESOURCE_TYPE_TOPIC
+	case v1alpha2.ACL_RESOURCE_TYPE_GROUP:
+		return v1alpha1.ACL_RESOURCE_TYPE_GROUP
+	case v1alpha2.ACL_RESOURCE_TYPE_CLUSTER:
+		return v1alpha1.ACL_RESOURCE_TYPE_CLUSTER
+	case v1alpha2.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID:
+		return v1alpha1.ACL_RESOURCE_TYPE_TRANSACTIONAL_ID
+	case v1alpha2.ACL_RESOURCE_TYPE_DELEGATION_TOKEN:
+		return v1alpha1.ACL_RESOURCE_TYPE_DELEGATION_TOKEN
+	case v1alpha2.ACL_RESOURCE_TYPE_USER:
+		return v1alpha1.ACL_RESOURCE_TYPE_USER
+	default:
+		return v1alpha1.ACL_RESOURCE_TYPE_UNSPECIFIED
 	}
+}
 
-	return &v1alpha1.DeleteACLsResponse_MatchingACL{
-		ResourceType:        resourceType,
-		ResourceName:        acl.ResourceName,
-		ResourcePatternType: resourcePatternType,
-		Principal:           acl.Principal,
-		Host:                acl.Host,
-		Operation:           operation,
-		PermissionType:      permissionType,
-		Error:               statusErr,
-	}, nil
+// OperationV1Alpha2ToV1Alpha1 converts ACL Operation enum from v1alpha2 to v1alpha1.
+func OperationV1Alpha2ToV1Alpha1(t v1alpha2.ACL_Operation) v1alpha1.ACL_Operation {
+	switch t {
+	case v1alpha2.ACL_OPERATION_ANY:
+		return v1alpha1.ACL_OPERATION_ANY
+	case v1alpha2.ACL_OPERATION_ALL:
+		return v1alpha1.ACL_OPERATION_ALL
+	case v1alpha2.ACL_OPERATION_READ:
+		return v1alpha1.ACL_OPERATION_READ
+	case v1alpha2.ACL_OPERATION_WRITE:
+		return v1alpha1.ACL_OPERATION_WRITE
+	case v1alpha2.ACL_OPERATION_CREATE:
+		return v1alpha1.ACL_OPERATION_CREATE
+	case v1alpha2.ACL_OPERATION_DELETE:
+		return v1alpha1.ACL_OPERATION_DELETE
+	case v1alpha2.ACL_OPERATION_ALTER:
+		return v1alpha1.ACL_OPERATION_ALTER
+	case v1alpha2.ACL_OPERATION_DESCRIBE:
+		return v1alpha1.ACL_OPERATION_DESCRIBE
+	case v1alpha2.ACL_OPERATION_CLUSTER_ACTION:
+		return v1alpha1.ACL_OPERATION_CLUSTER_ACTION
+	case v1alpha2.ACL_OPERATION_DESCRIBE_CONFIGS:
+		return v1alpha1.ACL_OPERATION_DESCRIBE_CONFIGS
+	case v1alpha2.ACL_OPERATION_ALTER_CONFIGS:
+		return v1alpha1.ACL_OPERATION_ALTER_CONFIGS
+	case v1alpha2.ACL_OPERATION_IDEMPOTENT_WRITE:
+		return v1alpha1.ACL_OPERATION_IDEMPOTENT_WRITE
+	case v1alpha2.ACL_OPERATION_CREATE_TOKENS:
+		return v1alpha1.ACL_OPERATION_CREATE_TOKENS
+	case v1alpha2.ACL_OPERATION_DESCRIBE_TOKENS:
+		return v1alpha1.ACL_OPERATION_DESCRIBE_TOKENS
+	default:
+		return v1alpha1.ACL_OPERATION_UNSPECIFIED
+	}
+}
+
+// PermissionTypeV1Alpha2ToV1Alpha1 converts ACL Permission Type enum from v1alpha2 to v1alpha1.
+func PermissionTypeV1Alpha2ToV1Alpha1(t v1alpha2.ACL_PermissionType) v1alpha1.ACL_PermissionType {
+	switch t {
+	case v1alpha2.ACL_PERMISSION_TYPE_ANY:
+		return v1alpha1.ACL_PERMISSION_TYPE_ANY
+	case v1alpha2.ACL_PERMISSION_TYPE_DENY:
+		return v1alpha1.ACL_PERMISSION_TYPE_DENY
+	case v1alpha2.ACL_PERMISSION_TYPE_ALLOW:
+		return v1alpha1.ACL_PERMISSION_TYPE_ALLOW
+	default:
+		return v1alpha1.ACL_PERMISSION_TYPE_UNSPECIFIED
+	}
+}
+
+// ResourcePatternTypeV1Alpha2ToV1Alpha1 converts ACL Permission Pattern Type enum from v1alpha2 to v1alpha1.
+func ResourcePatternTypeV1Alpha2ToV1Alpha1(t v1alpha2.ACL_ResourcePatternType) v1alpha1.ACL_ResourcePatternType {
+	switch t {
+	case v1alpha2.ACL_RESOURCE_PATTERN_TYPE_ANY:
+		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_ANY
+	case v1alpha2.ACL_RESOURCE_PATTERN_TYPE_MATCH:
+		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_MATCH
+	case v1alpha2.ACL_RESOURCE_PATTERN_TYPE_LITERAL:
+		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_LITERAL
+	case v1alpha2.ACL_RESOURCE_PATTERN_TYPE_PREFIXED:
+		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED
+	default:
+		return v1alpha1.ACL_RESOURCE_PATTERN_TYPE_UNSPECIFIED
+	}
 }
