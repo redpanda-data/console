@@ -26,18 +26,18 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
-	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
+	v1alpha2connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 )
 
-func (s *APISuite) TestListTopics_V1Alpha1() {
+func (s *APISuite) TestListTopics_v1alpha2() {
 	t := s.T()
 
 	// Seed some topics that can be listed
 	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Second)
 	t.Cleanup(cancel)
 
-	topicPrefix := "v1alpha1-console-integration-test-list-topics-"
+	topicPrefix := "console-integration-test-list-topics-"
 	topicsToCreate := 5
 
 	createdTopics := make(map[string]struct{})
@@ -54,7 +54,7 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 		}
 	})
 
-	connectClient := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+	connectClient := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
 
 	t.Run("list all topics with a valid request (connect-go)", func(t *testing.T) {
 		require := require.New(t)
@@ -63,7 +63,7 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 		t.Cleanup(cancel)
 
 		// 1. List topics
-		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(&v1alpha1.ListTopicsRequest{}))
+		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(&v1alpha2.ListTopicsRequest{}))
 		require.NoError(err)
 		assert.GreaterOrEqual(len(listTopicsRes.Msg.GetTopics()), len(createdTopics))
 
@@ -88,7 +88,7 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 		t.Cleanup(cancel)
 
 		// 1. List topics
-		listReq := &v1alpha1.ListTopicsRequest{Filter: &v1alpha1.ListTopicsRequest_Filter{
+		listReq := &v1alpha2.ListTopicsRequest{Filter: &v1alpha2.ListTopicsRequest_Filter{
 			NameContains: topicPrefix,
 		}}
 		listTopicsRes, err := connectClient.ListTopics(ctx, connect.NewRequest(listReq))
@@ -118,8 +118,8 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 		toFind := maps.Clone(createdTopics)
 
 		// 1. List topics (on page 1)
-		listReq := &v1alpha1.ListTopicsRequest{
-			Filter: &v1alpha1.ListTopicsRequest_Filter{
+		listReq := &v1alpha2.ListTopicsRequest{
+			Filter: &v1alpha2.ListTopicsRequest_Filter{
 				NameContains: topicPrefix,
 			},
 			PageSize: 3,
@@ -176,7 +176,7 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 		var httpRes listTopicsResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/topics").
+			URL(s.httpAddress() + "/v1alpha2/topics").
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
@@ -203,7 +203,7 @@ func (s *APISuite) TestListTopics_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestCreateTopic_V1Alpha1() {
+func (s *APISuite) TestCreateTopic_v1alpha2() {
 	t := s.T()
 
 	t.Run("create topic with valid request (connect-go)", func(t *testing.T) {
@@ -216,13 +216,13 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 		// 1. Create Topic via Connect API call
 		topicName := "console-integration-test-valid-request-connect-go"
 		partitionCount := int32(2)
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		createReq := &v1alpha1.CreateTopicRequest{
-			Topic: &v1alpha1.CreateTopicRequest_Topic{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		createReq := &v1alpha2.CreateTopicRequest{
+			Topic: &v1alpha2.CreateTopicRequest_Topic{
 				Name:              topicName,
 				PartitionCount:    &partitionCount,
 				ReplicationFactor: nil, // Default
-				Configs: []*v1alpha1.CreateTopicRequest_Topic_Config{
+				Configs: []*v1alpha2.CreateTopicRequest_Topic_Config{
 					{
 						Name:  "cleanup.policy",
 						Value: kadm.StringPtr("compact"),
@@ -281,9 +281,9 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 
 		// Try tp create Topic via Connect API call
 		topicName := "console-integration-test-bad-topic-name!"
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		createReq := &v1alpha1.CreateTopicRequest{
-			Topic: &v1alpha1.CreateTopicRequest_Topic{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		createReq := &v1alpha2.CreateTopicRequest{
+			Topic: &v1alpha2.CreateTopicRequest_Topic{
 				Name: topicName,
 			},
 		}
@@ -301,13 +301,13 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 		// 1. Start dry-run of create topic via Connect API call
 		topicName := "console-integration-test-dry-run-request-connect-go"
 		partitionCount := int32(2)
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		createReq := &v1alpha1.CreateTopicRequest{
-			Topic: &v1alpha1.CreateTopicRequest_Topic{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		createReq := &v1alpha2.CreateTopicRequest{
+			Topic: &v1alpha2.CreateTopicRequest_Topic{
 				Name:              topicName,
 				PartitionCount:    &partitionCount,
 				ReplicationFactor: nil, // Default
-				Configs: []*v1alpha1.CreateTopicRequest_Topic_Config{
+				Configs: []*v1alpha2.CreateTopicRequest_Topic_Config{
 					{
 						Name:  "cleanup.policy",
 						Value: kadm.StringPtr("compact"),
@@ -372,7 +372,7 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 		var httpRes createTopicsResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/topics").
+			URL(s.httpAddress() + "/v1alpha2/topics").
 			BodyJSON(&httpReq).
 			ToJSON(&httpRes).
 			Post().
@@ -442,7 +442,7 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 		}
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/topics").
+			URL(s.httpAddress() + "/v1alpha2/topics").
 			BodyJSON(&httpReq).
 			Post().
 			AddValidator(requests.ValidatorHandler(
@@ -471,7 +471,7 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 		// 1. Try sending a request with no payload via HTTP API
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/topics").
+			URL(s.httpAddress() + "/v1alpha2/topics").
 			Post().
 			AddValidator(requests.ValidatorHandler(
 				func(res *http.Response) error {
@@ -491,7 +491,7 @@ func (s *APISuite) TestCreateTopic_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestDeleteTopic_V1Alpha1() {
+func (s *APISuite) TestDeleteTopic_v1alpha2() {
 	t := s.T()
 
 	t.Run("delete topic with valid request (connect-go)", func(t *testing.T) {
@@ -520,8 +520,8 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		require.Truef(topicDetails.Has(topicName), "Topic should exist in response, but it doesn't")
 
 		// 3. Delete topic via Connect API
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1alpha1.DeleteTopicRequest{Name: topicName}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha2.DeleteTopicRequest{Name: topicName}
 		_, err = client.DeleteTopic(ctx, connect.NewRequest(&req))
 		require.NoError(err)
 
@@ -557,7 +557,7 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		require.Truef(topicDetails.Has(topicName), "Topic should exist in response, but it doesn't")
 
 		// 3. Delete topic via HTTP API
-		urlPath := fmt.Sprintf("/v1alpha1/topics/%v", topicName)
+		urlPath := fmt.Sprintf("/v1alpha2/topics/%v", topicName)
 		var errResponse string
 		err = requests.
 			URL(s.httpAddress() + urlPath).
@@ -582,8 +582,8 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1alpha1.DeleteTopicRequest{Name: "some-random-topic-name-that-does-not-exist"}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha2.DeleteTopicRequest{Name: "some-random-topic-name-that-does-not-exist"}
 		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
@@ -595,7 +595,7 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		urlPath := "/v1alpha1/topics/some-random-topic-name-that-does-not-exist"
+		urlPath := "/v1alpha2/topics/some-random-topic-name-that-does-not-exist"
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + urlPath).
@@ -618,8 +618,8 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1alpha1.DeleteTopicRequest{Name: "some-chars-are-not!$-allowed"}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := v1alpha2.DeleteTopicRequest{Name: "some-chars-are-not!$-allowed"}
 		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
 		assert.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
@@ -632,7 +632,7 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		urlPath := "/v1alpha1/topics/some-chars-are-not!$-allowed"
+		urlPath := "/v1alpha2/topics/some-chars-are-not!$-allowed"
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + urlPath).
@@ -649,7 +649,7 @@ func (s *APISuite) TestDeleteTopic_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
+func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 	t := s.T()
 
 	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
@@ -676,13 +676,13 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 		}()
 
 		// 2. Get Topic configuration
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: topicName}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha2.GetTopicConfigurationsRequest{TopicName: topicName}
 		response, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
 		require.NoError(err)
 
-		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
-		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		var cleanupPolicyConfig *v1alpha2.Topic_Configuration
+		var retentionBytesConfig *v1alpha2.Topic_Configuration
 		for _, config := range response.Msg.Configurations {
 			if config.Name == "cleanup.policy" {
 				cleanupPolicyConfig = config
@@ -693,12 +693,12 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 		}
 		require.NotNilf(cleanupPolicyConfig, "Could not find cleanup.policy config in response")
 		require.NotNilf(retentionBytesConfig, "Could not find retention.bytes config in response")
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, cleanupPolicyConfig.Source)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, retentionBytesConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG, retentionBytesConfig.Source)
 		assert.Equal(kmsg.StringPtr("delete"), cleanupPolicyConfig.Value)
 		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
-		assert.Equal(v1alpha1.ConfigType_CONFIG_TYPE_STRING.String(), cleanupPolicyConfig.Type.String())
-		assert.Equal(v1alpha1.ConfigType_CONFIG_TYPE_LONG.String(), retentionBytesConfig.Type.String())
+		assert.Equal(v1alpha2.ConfigType_CONFIG_TYPE_STRING.String(), cleanupPolicyConfig.Type.String())
+		assert.Equal(v1alpha2.ConfigType_CONFIG_TYPE_LONG.String(), retentionBytesConfig.Type.String())
 		assert.GreaterOrEqual(len(cleanupPolicyConfig.ConfigSynonyms), 1)
 		assert.GreaterOrEqual(len(retentionBytesConfig.ConfigSynonyms), 1)
 	})
@@ -709,8 +709,8 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: "does-not-exist"}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha2.GetTopicConfigurationsRequest{TopicName: "does-not-exist"}
 		_, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
@@ -722,8 +722,8 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := &v1alpha1.GetTopicConfigurationsRequest{TopicName: "invalid-topic$-characters!"}
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		req := &v1alpha2.GetTopicConfigurationsRequest{TopicName: "invalid-topic$-characters!"}
 		_, err := client.GetTopicConfigurations(ctx, connect.NewRequest(req))
 		assert.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
@@ -760,7 +760,7 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 		var httpRes []topicConfig
 
 		var errResponse string
-		urlPath := fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)
+		urlPath := fmt.Sprintf("/v1alpha2/topics/%v/configurations", topicName)
 		err = requests.
 			URL(s.httpAddress() + urlPath).
 			AddValidator(requests.ValidatorHandler(
@@ -782,7 +782,7 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/topics/does-not-exist/configurations").
+			URL(s.httpAddress() + "/v1alpha2/topics/does-not-exist/configurations").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -794,7 +794,7 @@ func (s *APISuite) TestGetTopicConfiguration_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
+func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 	t := s.T()
 
 	t.Run("update topic configuration of a valid topic (connect-go)", func(t *testing.T) {
@@ -822,19 +822,19 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		}()
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		updateConfigReq := &v1alpha1.UpdateTopicConfigurationsRequest{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		updateConfigReq := &v1alpha2.UpdateTopicConfigurationsRequest{
 			TopicName: topicName,
-			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
+			Configurations: []*v1alpha2.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
 					Name:      "cleanup.policy",
 					Value:     nil,
-					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
 				},
 				{
 					Name:      "compression.type",
 					Value:     kmsg.StringPtr("producer"),
-					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
+					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
 			},
 		}
@@ -844,9 +844,9 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		assert.GreaterOrEqual(len(response.Msg.Configurations), 10) // We expect at least 10 config props to be returned
 
 		// 3. Compare the returned config values against our expectations
-		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
-		var compressionTypeConfig *v1alpha1.Topic_Configuration
-		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		var cleanupPolicyConfig *v1alpha2.Topic_Configuration
+		var compressionTypeConfig *v1alpha2.Topic_Configuration
+		var retentionBytesConfig *v1alpha2.Topic_Configuration
 		for _, config := range response.Msg.Configurations {
 			switch config.Name {
 			case "cleanup.policy":
@@ -862,13 +862,13 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source.String())
 
 		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
 
 		assert.Equal(kmsg.StringPtr("1000"), retentionBytesConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source.String())
 	})
 
 	t.Run("update topic configuration of a valid topic (http)", func(t *testing.T) {
@@ -927,7 +927,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		}
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha2/topics/%v/configurations", topicName)).
 			BodyJSON(&httpReq).
 			ToJSON(&httpRes).
 			Patch().
@@ -961,13 +961,13 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), cleanupPolicyConfig.Source)
 
 		assert.Equal("producer", *compressionTypeConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)
 
 		assert.Equal("1000", *retentionBytesConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), retentionBytesConfig.Source)
 	})
 
 	t.Run("update topic configuration with invalid payload (connect-go)", func(t *testing.T) {
@@ -995,19 +995,19 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		}()
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		updateConfigReq := &v1alpha1.UpdateTopicConfigurationsRequest{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		updateConfigReq := &v1alpha2.UpdateTopicConfigurationsRequest{
 			TopicName: topicName,
-			Configurations: []*v1alpha1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
+			Configurations: []*v1alpha2.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
 					Name:      "cleanup.policy",
 					Value:     kmsg.StringPtr("compact"), // Value must be empty for delete operation
-					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
 				},
 				{
 					Name:      "compression.type",
 					Value:     kmsg.StringPtr("producer"),
-					Operation: v1alpha1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
+					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
 			},
 		}
@@ -1039,7 +1039,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", "does-not-exist")).
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha2/topics/%v/configurations", "does-not-exist")).
 			Patch().
 			BodyJSON(&httpReq).
 			AddValidator(requests.ValidatorHandler(
@@ -1079,7 +1079,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 		// 2. Send patch config request without any payload for an existing topic
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha2/topics/%v/configurations", topicName)).
 			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
@@ -1092,7 +1092,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
+func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 	t := s.T()
 
 	t.Run("set topic configuration of a valid topic (connect-go)", func(t *testing.T) {
@@ -1120,10 +1120,10 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		}()
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		setConfigReq := &v1alpha1.SetTopicConfigurationsRequest{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		setConfigReq := &v1alpha2.SetTopicConfigurationsRequest{
 			TopicName: topicName,
-			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
+			Configurations: []*v1alpha2.SetTopicConfigurationsRequest_SetConfiguration{
 				{
 					Name:  "cleanup.policy",
 					Value: kmsg.StringPtr("delete"),
@@ -1140,9 +1140,9 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		assert.GreaterOrEqual(len(response.Msg.Configurations), 10) // We expect at least 10 config props to be returned
 
 		// 3. Compare the returned config values against our expectations
-		var cleanupPolicyConfig *v1alpha1.Topic_Configuration
-		var compressionTypeConfig *v1alpha1.Topic_Configuration
-		var retentionBytesConfig *v1alpha1.Topic_Configuration
+		var cleanupPolicyConfig *v1alpha2.Topic_Configuration
+		var compressionTypeConfig *v1alpha2.Topic_Configuration
+		var retentionBytesConfig *v1alpha2.Topic_Configuration
 		for _, config := range response.Msg.Configurations {
 			switch config.Name {
 			case "cleanup.policy":
@@ -1158,12 +1158,12 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source.String())
 
 		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
 
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source.String())
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source.String())
 	})
 
 	t.Run("set topic configuration of a valid topic (http)", func(t *testing.T) {
@@ -1220,7 +1220,7 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", topicName)).
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha2/topics/%v/configurations", topicName)).
 			BodyJSON(&httpReq).
 			ToJSON(&httpRes).
 			Put().
@@ -1254,12 +1254,12 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source)
 
 		assert.Equal("producer", *compressionTypeConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source)
 
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source)
+		assert.Equal(v1alpha2.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source)
 	})
 
 	t.Run("set topic configuration with an invalid request (connect-go)", func(t *testing.T) {
@@ -1287,10 +1287,10 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		}()
 
 		// 2. Send alter config request with invalid config key
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		setConfigReq := &v1alpha1.SetTopicConfigurationsRequest{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		setConfigReq := &v1alpha2.SetTopicConfigurationsRequest{
 			TopicName: topicName,
-			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
+			Configurations: []*v1alpha2.SetTopicConfigurationsRequest_SetConfiguration{
 				{
 					Name:  "key-doesnt-exist",
 					Value: kmsg.StringPtr("delete"),
@@ -1310,10 +1310,10 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 		defer cancel()
 
 		// 2. Send alter config request with invalid config key
-		client := v1alpha1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		setConfigReq := &v1alpha1.SetTopicConfigurationsRequest{
+		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		setConfigReq := &v1alpha2.SetTopicConfigurationsRequest{
 			TopicName: "topic-does-not-exist",
-			Configurations: []*v1alpha1.SetTopicConfigurationsRequest_SetConfiguration{
+			Configurations: []*v1alpha2.SetTopicConfigurationsRequest_SetConfiguration{
 				{
 					Name:  "cleanup.policy",
 					Value: kmsg.StringPtr("delete"),
@@ -1347,7 +1347,7 @@ func (s *APISuite) TestSetTopicConfiguration_V1Alpha1() {
 
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + fmt.Sprintf("/v1alpha1/topics/%v/configurations", "topic-does-not-exist")).
+			URL(s.httpAddress() + fmt.Sprintf("/v1alpha2/topics/%v/configurations", "topic-does-not-exist")).
 			BodyJSON(&httpReq).
 			Put().
 			AddValidator(requests.ValidatorHandler(
