@@ -12,23 +12,14 @@ package topic
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
-	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/redpanda-data/common-go/api/pagination"
-	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 )
 
 var _ dataplanev1alpha1connect.TopicServiceHandler = (*Service)(nil)
@@ -36,89 +27,43 @@ var _ dataplanev1alpha1connect.TopicServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg        *config.Config
-	logger     *zap.Logger
-	consoleSvc console.Servicer
-	mapper     kafkaClientMapper
-	defaulter  defaulter
+	targetService dataplanev1alpha2connect.TopicServiceHandler
+	mapper        kafkaClientMapper
+	defaulter     defaulter
+}
+
+// NewService creates a new user service handler.
+func NewService(targetService dataplanev1alpha2connect.TopicServiceHandler) *Service {
+	return &Service{
+		targetService: targetService,
+		mapper:        kafkaClientMapper{},
+		defaulter:     defaulter{},
+	}
 }
 
 // ListTopics lists all Kafka topics with their most important metadata.
 func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
 	s.defaulter.applyListTopicsRequest(req.Msg)
-	kafkaReq := kmsg.NewMetadataRequest()
-	kafkaRes, err := s.consoleSvc.GetMetadata(ctx, &kafkaReq)
+
+	pr := s.mapper.v1alpha1ToListTopicsv1alpha2(req.Msg)
+
+	resp, err := s.targetService.ListTopics(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
+		return nil, err
 	}
 
-	// Filter topics if a filter is set
-	if req.Msg.Filter != nil && req.Msg.Filter.NameContains != "" {
-		filteredTopics := make([]kmsg.MetadataResponseTopic, 0, len(kafkaRes.Topics))
-		for _, topic := range kafkaRes.Topics {
-			if strings.Contains(*topic.Topic, req.Msg.Filter.NameContains) {
-				filteredTopics = append(filteredTopics, topic)
-			}
-		}
-		kafkaRes.Topics = filteredTopics
-	}
+	topics := s.mapper.v1alpha2ListTopicsResponseTov1alpha1(resp.Msg.GetTopics())
 
-	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
-
-	// Add pagination
-	var nextPageToken string
-	if req.Msg.GetPageSize() > 0 {
-		sort.SliceStable(topics, func(i, j int) bool {
-			return topics[i].Name < topics[j].Name
-		})
-		page, token, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListTopicsResponse_Topic) string {
-			return x.GetName()
-		})
-		if err != nil {
-			return nil, apierrors.NewConnectError(
-				connect.CodeInternal,
-				fmt.Errorf("failed to apply pagination: %w", err),
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-			)
-		}
-		topics = page
-		nextPageToken = token
-	}
-
-	return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: topics, NextPageToken: nextPageToken}), nil
+	return connect.NewResponse(&v1alpha1.ListTopicsResponse{Topics: topics, NextPageToken: resp.Msg.NextPageToken}), nil
 }
 
 // DeleteTopic deletes a Kafka topic.
 func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
-	kafkaReq := s.mapper.deleteTopicToKmsg(req.Msg)
-	kafkaRes, err := s.consoleSvc.DeleteTopics(ctx, &kafkaReq)
+	pr := s.mapper.v1alpha1ToDeleteTopicv1alpha2(req.Msg)
+
+	_, err := s.targetService.DeleteTopic(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
-	}
-
-	if len(kafkaRes.Topics) != 1 {
-		// Should never happen since we only delete one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unexpected number of results in create topics response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_results",
-				Value: strconv.Itoa(len(kafkaRes.Topics)),
-			}),
-		)
-	}
-
-	result := kafkaRes.Topics[0]
-	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
-		return nil, connectErr
+		return nil, err
 	}
 
 	connectResponse := connect.NewResponse(&v1alpha1.DeleteTopicResponse{})
@@ -129,42 +74,14 @@ func (s *Service) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1
 
 // GetTopicConfigurations retrieves a topic's configuration.
 func (s *Service) GetTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error) {
-	kafkaReq := s.mapper.describeTopicConfigsToKafka(req.Msg)
-	configsRes, err := s.consoleSvc.DescribeConfigs(ctx, &kafkaReq)
+	pr := s.mapper.v1alpha1GetTopicConfigurationv1alpha2(req.Msg)
+
+	resp, err := s.targetService.GetTopicConfigurations(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
+		return nil, err
 	}
 
-	if len(configsRes.Resources) != 1 {
-		// Should never happen since we only describe one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unexpected number of resources in describe configs response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_resources",
-				Value: strconv.Itoa(len(configsRes.Resources)),
-			}),
-		)
-	}
-
-	// Check for inner Kafka error
-	result := configsRes.Resources[0]
-	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	configs, err := s.mapper.describeTopicConfigsToProto(result.Configs)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
-	}
+	configs := s.mapper.v1alpha2TopicConfigsv1alpha1(resp.Msg.GetConfigurations())
 
 	return connect.NewResponse(&v1alpha1.GetTopicConfigurationsResponse{Configurations: configs}), nil
 }
@@ -172,218 +89,46 @@ func (s *Service) GetTopicConfigurations(ctx context.Context, req *connect.Reque
 // UpdateTopicConfigurations patches a topic's configuration. In contrast to SetTopicConfiguration
 // this will only change the configurations that have been passed into this request.
 func (s *Service) UpdateTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error) {
-	// 1. Map proto request to a Kafka request that can be processed by the Kafka client.
-	kafkaReq, err := s.mapper.updateTopicConfigsToKafka(req.Msg)
+	pr := s.mapper.v1alpha1UpdateTopicConfigurationv1alpha2(req.Msg)
+
+	resp, err := s.targetService.UpdateTopicConfigurations(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal, // Internal because all input should already be validated, and thus no err possible
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
+		return nil, err
 	}
 
-	// 2. Send incremental alter request and handle errors
-	kafkaRes, err := s.consoleSvc.IncrementalAlterConfigsKafka(ctx, kafkaReq)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
-	}
+	configs := s.mapper.v1alpha2TopicConfigsv1alpha1(resp.Msg.GetConfigurations())
 
-	if len(kafkaRes.Resources) != 1 {
-		// Should never happen since we only edit configs for one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unexpected number of resources in incremental alter configs response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_results",
-				Value: strconv.Itoa(len(kafkaRes.Resources)),
-			}),
-		)
-	}
-
-	// Check for inner Kafka error
-	result := kafkaRes.Resources[0]
-	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	// 3. Now let's describe the topic config and return the entire topic configuration.
-	// This is very similar to GetTopicConfigurations, but we handle errors differently
-	describeKafkaReq := s.mapper.describeTopicConfigsToKafka(&v1alpha1.GetTopicConfigurationsRequest{TopicName: req.Msg.TopicName})
-	configsRes, err := s.consoleSvc.DescribeConfigs(ctx, &describeKafkaReq)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to describe topic configs after successfully applying config change: %w", err),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
-	}
-
-	if len(configsRes.Resources) != 1 {
-		// Should never happen since we only describe one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("failed to describe topic configs after successfully applying config change: unexpected number of resources in describe configs response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_resources",
-				Value: strconv.Itoa(len(configsRes.Resources)),
-			}),
-		)
-	}
-
-	// Check for inner Kafka error
-	describeConfigsResult := configsRes.Resources[0]
-	if connectErr := s.handleKafkaTopicError(describeConfigsResult.ErrorCode, describeConfigsResult.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	// 4. Convert describe topic config response into the proto response
-	protoTopicConfigs, err := s.mapper.describeTopicConfigsToProto(describeConfigsResult.Configs)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
-	}
-
-	return connect.NewResponse(&v1alpha1.UpdateTopicConfigurationsResponse{Configurations: protoTopicConfigs}), nil
+	return connect.NewResponse(&v1alpha1.UpdateTopicConfigurationsResponse{Configurations: configs}), nil
 }
 
 // SetTopicConfigurations applies the given configuration to a topic, which may reset
 // or overwrite existing configurations that are not provided as part of the request.
 // If you want to patch certain configurations use UpdateTopicConfiguration instead.
 func (s *Service) SetTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationsResponse], error) {
-	// 1. Map proto request to a Kafka request that can be processed by the Kafka client.
-	kafkaReq := s.mapper.setTopicConfigurationsToKafka(req.Msg)
+	pr := s.mapper.v1alpha1SetTopicConfigurationv1alpha2(req.Msg)
 
-	// 2. Send incremental alter request and handle errors
-	alterConfigsRes, err := s.consoleSvc.AlterConfigs(ctx, kafkaReq)
+	resp, err := s.targetService.SetTopicConfigurations(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
+		return nil, err
 	}
 
-	if len(alterConfigsRes.Resources) != 1 {
-		// Should never happen since we only edit configs for one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unexpected number of resources in alter configs response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_results",
-				Value: strconv.Itoa(len(alterConfigsRes.Resources)),
-			}),
-		)
-	}
+	configs := s.mapper.v1alpha2TopicConfigsv1alpha1(resp.Msg.GetConfigurations())
 
-	// Check for inner Kafka error
-	result := alterConfigsRes.Resources[0]
-	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	// 3. Now let's describe the topic config and return the entire topic configuration.
-	// This is very similar to GetTopicConfigurations, but we handle errors differently
-	describeKafkaReq := s.mapper.describeTopicConfigsToKafka(&v1alpha1.GetTopicConfigurationsRequest{TopicName: req.Msg.TopicName})
-	configsRes, err := s.consoleSvc.DescribeConfigs(ctx, &describeKafkaReq)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("failed to describe topic configs after successfully applying config change: %w", err),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
-	}
-
-	if len(configsRes.Resources) != 1 {
-		// Should never happen since we only describe one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("failed to describe topic configs after successfully applying config change: unexpected number of resources in describe configs response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_resources",
-				Value: strconv.Itoa(len(configsRes.Resources)),
-			}),
-		)
-	}
-
-	// Check for inner Kafka error
-	describeConfigsResult := configsRes.Resources[0]
-	if connectErr := s.handleKafkaTopicError(describeConfigsResult.ErrorCode, describeConfigsResult.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	// 4. Convert describe topic config response into the proto response
-	protoTopicConfigs, err := s.mapper.describeTopicConfigsToProto(describeConfigsResult.Configs)
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-		)
-	}
-
-	return connect.NewResponse(&v1alpha1.SetTopicConfigurationsResponse{Configurations: protoTopicConfigs}), nil
-}
-
-// NewService creates a new user service handler.
-func NewService(cfg *config.Config,
-	logger *zap.Logger,
-	consoleSvc console.Servicer,
-) *Service {
-	return &Service{
-		cfg:        cfg,
-		logger:     logger,
-		consoleSvc: consoleSvc,
-		mapper:     kafkaClientMapper{},
-		defaulter:  defaulter{},
-	}
+	return connect.NewResponse(&v1alpha1.SetTopicConfigurationsResponse{Configurations: configs}), nil
 }
 
 // CreateTopic creates a new Kafka topic.
 func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1.CreateTopicRequest]) (*connect.Response[v1alpha1.CreateTopicResponse], error) {
-	kafkaReq := s.mapper.createTopicRequestToKafka(req.Msg)
+	pr := s.mapper.v1alpha1CreateTopicv1alpha2(req.Msg)
 
-	kafkaRes, err := s.consoleSvc.CreateTopics(ctx, kafkaReq)
+	resp, err := s.targetService.CreateTopic(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
-		)
+		return nil, err
 	}
 
-	if len(kafkaRes.Topics) != 1 {
-		// Should never happen since we only create one topic, but if it happens we want to err early.
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unexpected number of results in create topics response"),
-			apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String(), apierrors.KeyVal{
-				Key:   "retrieved_results",
-				Value: strconv.Itoa(len(kafkaRes.Topics)),
-			}),
-		)
-	}
+	msg := s.mapper.v1alpha2CreateTopicResponsev1alpha1(resp.Msg)
 
-	// Check for inner Kafka error
-	result := kafkaRes.Topics[0]
-	if connectErr := s.handleKafkaTopicError(result.ErrorCode, result.ErrorMessage); connectErr != nil {
-		return nil, connectErr
-	}
-
-	// Map Kafka response to proto
-	response := s.mapper.createTopicResponseTopicToProto(result)
-
-	connectResponse := connect.NewResponse(&v1alpha1.CreateTopicResponse{
-		Name:              response.Name,
-		PartitionCount:    response.PartitionCount,
-		ReplicationFactor: response.ReplicationFactor,
-	})
+	connectResponse := connect.NewResponse(msg)
 	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusCreated))
 	return connectResponse, nil
 }
