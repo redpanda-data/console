@@ -196,10 +196,19 @@ const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['cha
             borderColor: 'transparent'
         },
     }),
-      container: (provided) => ({
-    ...provided,
-    borderColor: 'transparent',
-}),
+    option: (provided) => ({
+       ...provided,
+        wordBreak: 'keep-all',
+        whiteSpace: 'nowrap'
+    }),
+    menuList: (provided) => ({
+        ...provided,
+        minWidth: 'min-content',
+    }),
+    container: (provided) => ({
+        ...provided,
+        borderColor: 'transparent',
+    }),
 }
 
 @observer
