@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -35,6 +35,7 @@ import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
 import {
     MdAdd,
+    MdDoNotDisturb,
     MdExpandMore,
     MdJavascript,
     MdOutlineLayers,
@@ -70,6 +71,7 @@ import {
     AlertDescription,
     AlertIcon,
     AlertTitle,
+    Badge,
     Box,
     Button,
     Checkbox,
@@ -1125,10 +1127,12 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
             typeof key.payload === 'number' ||
             typeof key.payload === 'boolean';
         try {
-            if (key.isPayloadNull)
-                return renderEmptyIcon('Key is null');
-            if (key.payload == null || key.payload.length == 0)
-                return null;
+            if (key.isPayloadNull) {
+                return <EmptyBadge mode="null" />;
+            }
+            if (key.payload == null || key.payload.length == 0) {
+                return <EmptyBadge mode="empty" />;
+            }
 
             let text: ReactNode = <></>;
 
@@ -1228,13 +1232,11 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
             let text: ReactNode = <></>;
 
             if (value.isPayloadNull) {
-                if (!this.props.isCompactTopic) {
-                    return renderEmptyIcon('Value is null');
-                }
-                text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>;
+                return <EmptyBadge mode="null" />;
             }
             else if (value.encoding == 'null' || value.payload == null || value.payload.length == 0)
-                return null;
+                return <EmptyBadge mode="empty" />;
+
             else if (msg.value.encoding == 'binary') {
                 // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
@@ -1796,6 +1798,17 @@ const MessageSearchFilterBar: FC<{ messageSearch: MessageSearch, onEdit: (filter
       }
   </GridItem>;
 });
+
+const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({mode}) =>
+  <Badge variant="inverted">
+      <Flex verticalAlign="center" gap={2}>
+          <MdDoNotDisturb size={16}/>
+          <Text>{{
+              'empty': 'Empty',
+              'null': 'Null'
+          }[mode]}</Text>
+      </Flex>
+  </Badge>;
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = 'Empty';
