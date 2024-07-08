@@ -113,7 +113,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	aclSvcV1alpha1 := apiaclsvcv1alpha1.NewService(aclSvc)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvcV1alpha1 := topicsvcv1alpha1.NewService(topicSvc)
-	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvc)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
