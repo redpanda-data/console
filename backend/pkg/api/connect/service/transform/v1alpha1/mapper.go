@@ -10,89 +10,82 @@
 package transform
 
 import (
-	"fmt"
-
-	adminapi "github.com/redpanda-data/common-go/rpadmin"
-
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 type mapper struct{}
 
-func (*mapper) partitionTransformStatusToProto(s string) (v1alpha1.PartitionTransformStatus_PartitionStatus, error) {
-	switch s {
-	case "running":
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING, nil
-	case "inactive":
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_INACTIVE, nil
-	case "errored":
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_ERRORED, nil
-	case "unknown":
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN, nil
-	default:
-		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNSPECIFIED, fmt.Errorf("unable to convert %q to a known string that can be handled by the Redpanda Admin API", s)
+func (*mapper) v1alpha1ToListTransformsv1alpha2(m *v1alpha1.ListTransformsRequest) *v1alpha2.ListTransformsRequest {
+	return &v1alpha2.ListTransformsRequest{
+		Filter: &v1alpha2.ListTransformsRequest_Filter{
+			NameContains: m.GetFilter().GetNameContains(),
+		},
+		PageToken: m.GetPageToken(),
+		PageSize:  m.GetPageSize(),
 	}
 }
 
-func (m *mapper) transformMetadataToProto(transforms []adminapi.TransformMetadata) ([]*v1alpha1.TransformMetadata, error) {
-	apiTransforms := make([]*v1alpha1.TransformMetadata, 0, len(transforms))
-	for _, transform := range transforms {
-		statuses := make([]*v1alpha1.PartitionTransformStatus, len(transform.Status))
-		for i, transformStatusWithMetadata := range transform.Status {
-			p, err := m.transformStatusWithMetadataToProto(transformStatusWithMetadata)
-			if err != nil {
-				return nil, fmt.Errorf("unable to convert transform status: %w", err)
-			}
-			statuses[i] = p
-		}
+func v1alpha2TransformStatusToV1alpha1(t v1alpha2.PartitionTransformStatus_PartitionStatus) v1alpha1.PartitionTransformStatus_PartitionStatus {
+	switch t {
+	case v1alpha2.PartitionTransformStatus_PARTITION_STATUS_RUNNING:
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING
+	case v1alpha2.PartitionTransformStatus_PARTITION_STATUS_INACTIVE:
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_INACTIVE
+	case v1alpha2.PartitionTransformStatus_PARTITION_STATUS_ERRORED:
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_ERRORED
+	case v1alpha2.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN:
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN
+	default:
+		return v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNSPECIFIED
+	}
+}
 
-		envVars := make([]*v1alpha1.TransformMetadata_EnvironmentVariable, len(transform.Environment))
-		for i, keyVal := range transform.Environment {
-			envVars[i] = &v1alpha1.TransformMetadata_EnvironmentVariable{
-				Key:   keyVal.Key,
-				Value: keyVal.Value,
-			}
-		}
+func (m *mapper) v1alpha2TransformsToV1alpha1(transforms []*v1alpha2.TransformMetadata) []*v1alpha1.TransformMetadata {
+	out := make([]*v1alpha1.TransformMetadata, 0, len(transforms))
 
-		apiTransforms = append(apiTransforms, &v1alpha1.TransformMetadata{
-			Name:                 transform.Name,
-			InputTopicName:       transform.InputTopic,
-			OutputTopicNames:     transform.OutputTopics,
-			Statuses:             statuses,
-			EnvironmentVariables: envVars,
+	for _, t := range transforms {
+		out = append(out, m.v1alpha2TransformMetadataToV1alpha1(t))
+	}
+	return out
+}
+
+func (*mapper) v1alpha1ToGetTransformv1alpha2(m *v1alpha1.GetTransformRequest) *v1alpha2.GetTransformRequest {
+	return &v1alpha2.GetTransformRequest{
+		Name: m.GetName(),
+	}
+}
+
+func (*mapper) v1alpha2TransformMetadataToV1alpha1(t *v1alpha2.TransformMetadata) *v1alpha1.TransformMetadata {
+	sts := make([]*v1alpha1.PartitionTransformStatus, 0, len(t.GetStatuses()))
+	for _, s := range t.GetStatuses() {
+		sts = append(sts, &v1alpha1.PartitionTransformStatus{
+			BrokerId:    s.GetBrokerId(),
+			PartitionId: s.GetPartitionId(),
+			Status:      v1alpha2TransformStatusToV1alpha1(s.GetStatus()),
+			Lag:         s.GetLag(),
 		})
 	}
-	return apiTransforms, nil
-}
 
-func (m *mapper) transformStatusWithMetadataToProto(transformStatusWithMetadata adminapi.PartitionTransformStatus) (*v1alpha1.PartitionTransformStatus, error) {
-	status, err := m.partitionTransformStatusToProto(transformStatusWithMetadata.Status)
-	if err != nil {
-		return nil, err
+	evs := make([]*v1alpha1.TransformMetadata_EnvironmentVariable, 0, len(t.GetEnvironmentVariables()))
+	for _, ev := range t.GetEnvironmentVariables() {
+		evs = append(evs, &v1alpha1.TransformMetadata_EnvironmentVariable{
+			Key:   ev.GetKey(),
+			Value: ev.GetValue(),
+		})
 	}
 
-	return &v1alpha1.PartitionTransformStatus{
-		BrokerId:    int32(transformStatusWithMetadata.NodeID),
-		Status:      status,
-		Lag:         int32(transformStatusWithMetadata.Lag),
-		PartitionId: int32(transformStatusWithMetadata.Partition),
-	}, nil
+	return &v1alpha1.TransformMetadata{
+		Name:                 t.GetName(),
+		InputTopicName:       t.GetInputTopicName(),
+		OutputTopicNames:     t.GetOutputTopicNames(),
+		Statuses:             sts,
+		EnvironmentVariables: evs,
+	}
 }
 
-func (*mapper) deployTransformReqToAdminAPI(req *v1alpha1.DeployTransformRequest) adminapi.TransformMetadata {
-	envVars := make([]adminapi.EnvironmentVariable, len(req.EnvironmentVariables))
-	for i, keyVal := range req.EnvironmentVariables {
-		envVars[i] = adminapi.EnvironmentVariable{
-			Key:   keyVal.Key,
-			Value: keyVal.Value,
-		}
-	}
-
-	return adminapi.TransformMetadata{
-		Name:         req.Name,
-		InputTopic:   req.InputTopicName,
-		OutputTopics: req.OutputTopicNames,
-		Status:       nil, // Output only
-		Environment:  envVars,
+func (*mapper) v1alpha1ToDeleteTransformv1alpha2(m *v1alpha1.DeleteTransformRequest) *v1alpha2.DeleteTransformRequest {
+	return &v1alpha2.DeleteTransformRequest{
+		Name: m.GetName(),
 	}
 }
