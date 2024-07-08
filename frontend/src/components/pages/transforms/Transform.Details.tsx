@@ -20,7 +20,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 // import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
-import { Box, Button, DataTable, Flex, Heading, SearchField } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { createStandaloneToast } from '@chakra-ui/react';
 import { PartitionTransformStatus, PartitionTransformStatus_PartitionStatus, TransformMetadata } from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
@@ -52,7 +52,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
     initPage(p: PageInitHelper): void {
         const transformName = decodeURIComponentPercents(this.props.transformName);
         p.title = transformName;
-        p.addBreadcrumb('Data Transforms', '/transforms');
+        p.addBreadcrumb('Transforms', '/transforms');
         p.addBreadcrumb(transformName, '/transforms/' + transformName, undefined, {
             canBeCopied: true,
             canBeTruncated: true,
@@ -84,7 +84,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
             <PageContent>
                 <ToastContainer />
                 <Box>
-                    <Heading as="h2">{transformName}</Heading>
+                    {/* <Heading as="h2">{transformName}</Heading> */}
                     <Button variant="outline-delete" mt="2" onClick={() => openDeleteModal(transformName, () => {
                         transformsApi.deleteTransform(transformName)
                             .then(async () => {

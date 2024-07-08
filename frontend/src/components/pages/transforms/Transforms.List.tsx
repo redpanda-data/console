@@ -34,10 +34,10 @@ const { ToastContainer, toast } = createStandaloneToast();
 
 export const PartitionStatus = observer((p: { status: PartitionTransformStatus_PartitionStatus }) => {
     switch (p.status) {
-        case PartitionTransformStatus_PartitionStatus.UNSPECIFIED: return <Flex alignItems="center"><XIcon color="orange" height="14px" /> Unspecified</Flex>;
-        case PartitionTransformStatus_PartitionStatus.RUNNING: return <Flex alignItems="center"><CheckIcon color="green" height="14px" /> Running</Flex>;
-        case PartitionTransformStatus_PartitionStatus.INACTIVE: return <Flex alignItems="center"><XIcon color="red" height="14px" /> Inactive</Flex>;
-        case PartitionTransformStatus_PartitionStatus.ERRORED: return <Flex alignItems="center"><XIcon color="red" height="14px" /> Errored</Flex>;
+        case PartitionTransformStatus_PartitionStatus.UNSPECIFIED: return <Flex alignItems="center" gap="2"><XIcon color="orange" height="14px" /> Unspecified</Flex>;
+        case PartitionTransformStatus_PartitionStatus.RUNNING: return <Flex alignItems="center" gap="2"><CheckIcon color="green" height="14px" /> Running</Flex>;
+        case PartitionTransformStatus_PartitionStatus.INACTIVE: return <Flex alignItems="center" gap="2"><XIcon color="red" height="14px" /> Inactive</Flex>;
+        case PartitionTransformStatus_PartitionStatus.ERRORED: return <Flex alignItems="center" gap="2"><XIcon color="red" height="14px" /> Errored</Flex>;
         default:
         case PartitionTransformStatus_PartitionStatus.UNKNOWN:
             return <> Unknown</>;
@@ -87,7 +87,7 @@ class TransformsList extends PageComponent<{}> {
                 <ToastContainer />
                 <Text maxWidth="600px">
                     Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within Redpanda.
-                    <ChakraLink isExternal href="https://docs.redpanda.com/" style={{ textDecoration: 'underline solid 1px' }}>Learn more</ChakraLink>
+                    {' '}<ChakraLink isExternal href="https://docs.redpanda.com/beta/develop/data-transforms/" style={{ textDecoration: 'underline solid 1px' }}>Learn more</ChakraLink>
                 </Text>
 
                 <Stack direction="row" mb="6">
@@ -122,7 +122,7 @@ class TransformsList extends PageComponent<{}> {
                                 },
                             },
                             {
-                                header: 'Name', cell: ({ row: { original: r } }) => {
+                                header: 'Status', cell: ({ row: { original: r } }) => {
                                     if (r.statuses.all(x => x.status == PartitionTransformStatus_PartitionStatus.RUNNING))
                                         return <Flex alignItems="center"><PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} /></Flex>;
                                     const s = r.statuses.first(x => x.status != PartitionTransformStatus_PartitionStatus.RUNNING)!;
