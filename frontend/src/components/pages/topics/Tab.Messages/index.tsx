@@ -39,7 +39,8 @@ import {
     MdJavascript,
     MdOutlineLayers,
     MdOutlineRoundedCorner,
-    MdOutlineSearch
+    MdOutlineSearch,
+    MdSettings
 } from 'react-icons/md';
 import {
     Ellipsis,
@@ -79,6 +80,7 @@ import {
     Grid,
     GridItem,
     Heading,
+    IconButton,
     Input,
     Link,
     Menu,
@@ -113,7 +115,6 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../../state/appGlobal';
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import { ColumnDef } from '@tanstack/react-table';
-import { CogIcon } from '@heroicons/react/solid';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../../utils/pagination';
@@ -776,10 +777,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         }
 
         const columns: ColumnDef<TopicMessage>[] = [...newColumns, {
-            header: () => <button onClick={() => {
-                this.showColumnSettings = true
-            }}><CogIcon style={{ width: 20 }} />
-            </button>,
+            header: () => <IconButton aria-label="Table settings" height={5} width={5} variant="unstyled" icon={<MdSettings size={16} />} onClick={() => {
+                this.showColumnSettings = true;
+            }}>Settings</IconButton>,
             id: 'action',
             size: 0,
             cell: ({ row: { original } }) => {
@@ -1716,7 +1716,6 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         { title: 'Partition', dataIndex: 'partitionID' },
         { title: 'Timestamp', dataIndex: 'timestamp' },
         { title: 'Key', dataIndex: 'key' },
-        // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
         { title: 'Key Size', dataIndex: 'keySize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
         { title: 'Value Size', dataIndex: 'valueSize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
