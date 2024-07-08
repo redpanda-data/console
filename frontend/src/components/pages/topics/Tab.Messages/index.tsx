@@ -432,6 +432,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 }}>
                                     {/* Quick Search */}
                                     <Input
+                                      px={4}
                                       variant="unstyled"
                                       placeholder="Search..."
                                       value={uiState.topicSettings.quickSearch}
