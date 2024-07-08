@@ -850,6 +850,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     loadLargeMessage={() => this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)}
                     onDownloadRecord={() => this.downloadMessages = [original]}
                     onCopyKey={onCopyKey}
+                    onCopyValue={onCopyValue}
                   />
                 }
             />
@@ -1270,13 +1271,21 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
     }
 }
 
+const ExpandedMessageFooter: FC<{children?: ReactNode; onDownloadRecord?: () => void;}> = ({ children, onDownloadRecord }) => <Flex my={4} gap={2} justifyContent="flex-end">
+    {children}
+    {onDownloadRecord &&
+      <Button variant="outline" onClick={onDownloadRecord}>Download Record</Button>}
+</Flex>
+
 export const ExpandedMessage: FC<{
     msg: TopicMessage;
     loadLargeMessage: () => Promise<void>;
     onDownloadRecord?: () => void;
     onCopyKey?: (original: TopicMessage) => void;
-}> = ({msg, loadLargeMessage, onDownloadRecord, onCopyKey}) => {
+    onCopyValue?: (original: TopicMessage) => void;
+}> = ({msg, loadLargeMessage, onDownloadRecord, onCopyKey, onCopyValue}) => {
     const bg = useColorModeValue('gray.50', 'gray.600');
+
     return <Box bg={bg} py={6} px={10}>
         <MessageMetaData msg={msg}/>
         <RpTabs
@@ -1295,32 +1304,41 @@ export const ExpandedMessage: FC<{
                         payload={msg.key}
                         loadLargeMessage={loadLargeMessage}
                       />
+                      <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
+                          {onCopyKey &&
+                            <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy
+                                Key</Button>}
+                      </ExpandedMessageFooter>
                   </Box>
               },
               {
                   key: 'value',
                   name: <Box minWidth="6rem">{msg.value===null || msg.value.size===0 ? 'Value':`Value (${prettyBytes(msg.value.size)})`}</Box>,
-                  component: <>
+                  component: <Box>
                       <TroubleshootReportViewer payload={msg.value}/>
                       <PayloadComponent
                         payload={msg.value}
                         loadLargeMessage={loadLargeMessage}
                       />
-                  </>
+                      <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
+                          {onCopyValue &&
+                            <Button variant="outline" onClick={() => onCopyValue(msg)}
+                                    isDisabled={msg.value.isPayloadNull}>Copy
+                                Value</Button>}
+                      </ExpandedMessageFooter>
+                  </Box>
               },
               {
                   key: 'headers',
                   name: <Box minWidth="6rem">{msg.headers.length===0 ? 'Headers':`Headers (${msg.headers.length})`}</Box>,
                   isDisabled: msg.headers.length===0,
-                  component: <MessageHeaders msg={msg}/>
+                  component: <Box>
+                      <MessageHeaders msg={msg}/>
+                      {onDownloadRecord && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}/>}
+                  </Box>
               },
           ]}
         />
-        <Flex gap={2} justifyContent="flex-end">
-            {onCopyKey &&
-              <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>Copy Key</Button>}
-            {onDownloadRecord && <Button variant="outline" onClick={onDownloadRecord}>Download Record</Button>}
-        </Flex>
     </Box>;
 };
 
