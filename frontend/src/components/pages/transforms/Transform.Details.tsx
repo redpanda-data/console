@@ -78,8 +78,6 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
         if (!transform)
             return DefaultSkeleton;
 
-
-
         return (
             <PageContent>
                 <ToastContainer />
