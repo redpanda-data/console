@@ -69,6 +69,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                             allToCreate.splice(foundIdx, 1)
                             return Promise.resolve()
                         } else {
+                            // acl should no longer exist, delete it
                             return api.deleteACLs(acl)
                         }
                     })
