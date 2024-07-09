@@ -29,7 +29,7 @@ import {
 import { Operation } from './Operation';
 import { Box, Button, Flex, FormField, Grid, HStack, Icon, Input, InputGroup, InputLeftAddon, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
-import isEqual from 'lodash-es/isEqual';
+import { comparer } from 'mobx';
 
 export const AclPrincipalGroupEditor = observer((p: {
     principalGroup: AclPrincipalGroup,
@@ -64,7 +64,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 if (group.sourceEntries.length > 0) {
                     const requests = group.sourceEntries.map(acl => {
                         // try to find this in allToCreate
-                        const foundIdx = allToCreate.findIndex(x => isEqual(acl, x))
+                        const foundIdx = allToCreate.findIndex(x => comparer.structural(acl, x))
                         if(foundIdx !== -1) {
                             allToCreate.splice(foundIdx, 1)
                             return Promise.resolve()
