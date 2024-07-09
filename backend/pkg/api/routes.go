@@ -109,7 +109,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// v1alpha1
 
 	// Create OSS Connect handlers only after calling hook. We need the hook output's final list of interceptors.
-	userSvcV1alpha1 := apiusersvcv1alpha1.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+	userSvcV1alpha1 := apiusersvcv1alpha1.NewService(userSvc)
 	aclSvcV1alpha1 := apiaclsvcv1alpha1.NewService(aclSvc)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	topicSvcV1alpha1 := topicsvcv1alpha1.NewService(topicSvc)

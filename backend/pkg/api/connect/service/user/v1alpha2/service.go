@@ -14,7 +14,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
@@ -292,5 +294,8 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
 	}
 
-	return connect.NewResponse(&v1alpha2.DeleteUserResponse{}), nil
+	connectResponse := connect.NewResponse(&v1alpha2.DeleteUserResponse{})
+	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusNoContent))
+
+	return connectResponse, nil
 }
