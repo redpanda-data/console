@@ -66,6 +66,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         // try to find this in allToCreate
                         const foundIdx = allToCreate.findIndex(x => comparer.structural(acl, x))
                         if(foundIdx !== -1) {
+                            // acl already exists, remove it from the list
                             allToCreate.splice(foundIdx, 1)
                             return Promise.resolve()
                         } else {
