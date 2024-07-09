@@ -9,8 +9,9 @@ const rpkInitTransform = 'rpk transform init --language=tinygo';
 export class TransformsSetup extends PageComponent<{}> {
 
     initPage(p: PageInitHelper) {
-        p.title = 'Transforms';
+        p.title = 'Transforms Setup';
         p.addBreadcrumb('Transforms', '/transforms');
+        p.addBreadcrumb('Transforms Setup', '/transforms-setup');
     }
 
     render() {
@@ -20,7 +21,7 @@ export class TransformsSetup extends PageComponent<{}> {
                     <Heading as="h2">Data transforms</Heading>
                     <Text>
                         Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within Redpanda.
-                        <ChakraLink isExternal href="https://docs.redpanda.com/" style={{ textDecoration: 'underline solid 1px' }}>Learn more</ChakraLink>
+                        {' '}<ChakraLink isExternal href="https://docs.redpanda.com/beta/develop/data-transforms/" style={{ textDecoration: 'underline solid 1px' }}>Learn more</ChakraLink>
                     </Text>
 
 
