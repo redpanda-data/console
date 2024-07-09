@@ -67,6 +67,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         const foundIdx = allToCreate.findIndex(x => isEqual(acl, x))
                         if(foundIdx !== -1) {
                             allToCreate.splice(foundIdx, 1)
+                            return Promise.resolve()
                         } else {
                             return api.deleteACLs(acl)
                         }
