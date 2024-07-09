@@ -35,8 +35,7 @@ type Service struct {
 }
 
 // NewService creates a new transform service handler.
-func NewService(targetService dataplanev1alpha2connect.TransformServiceHandler,
-) *Service {
+func NewService(targetService dataplanev1alpha2connect.TransformServiceHandler) *Service {
 	return &Service{
 		targetService: targetService,
 		targetImpl:    targetService.(*v1alpha2.Service),

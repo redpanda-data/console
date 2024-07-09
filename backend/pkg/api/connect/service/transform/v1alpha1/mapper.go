@@ -17,10 +17,15 @@ import (
 type mapper struct{}
 
 func (*mapper) v1alpha1ToListTransformsv1alpha2(m *v1alpha1.ListTransformsRequest) *v1alpha2.ListTransformsRequest {
-	return &v1alpha2.ListTransformsRequest{
-		Filter: &v1alpha2.ListTransformsRequest_Filter{
+	var filter *v1alpha2.ListTransformsRequest_Filter
+	if m.Filter != nil {
+		filter = &v1alpha2.ListTransformsRequest_Filter{
 			NameContains: m.GetFilter().GetNameContains(),
-		},
+		}
+	}
+
+	return &v1alpha2.ListTransformsRequest{
+		Filter:    filter,
 		PageToken: m.GetPageToken(),
 		PageSize:  m.GetPageSize(),
 	}

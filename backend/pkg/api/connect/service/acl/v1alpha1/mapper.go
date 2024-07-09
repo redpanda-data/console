@@ -21,8 +21,10 @@ func (*kafkaClientMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest
 	principal := r.GetFilter().Principal
 	host := r.GetFilter().Host
 
-	return &v1alpha2.ListACLsRequest{
-		Filter: &v1alpha2.ListACLsRequest_Filter{
+	var filter *v1alpha2.ListACLsRequest_Filter
+
+	if r.Filter != nil {
+		filter = &v1alpha2.ListACLsRequest_Filter{
 			ResourceType:        ResourceTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourceType()),
 			ResourceName:        resourceName,
 			ResourcePatternType: ResourcePatternTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetResourcePatternType()),
@@ -30,7 +32,11 @@ func (*kafkaClientMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest
 			Host:                host,
 			Operation:           OperationV1Alpha1ToV1Alpha2(r.GetFilter().GetOperation()),
 			PermissionType:      PermissionTypeV1Alpha1ToV1Alpha2(r.GetFilter().GetPermissionType()),
-		},
+		}
+	}
+
+	return &v1alpha2.ListACLsRequest{
+		Filter: filter,
 	}
 }
 

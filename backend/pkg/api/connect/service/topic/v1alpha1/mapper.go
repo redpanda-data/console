@@ -17,10 +17,15 @@ import (
 type kafkaClientMapper struct{}
 
 func (*kafkaClientMapper) v1alpha1ToListTopicsv1alpha2(r *v1alpha1.ListTopicsRequest) *v1alpha2.ListTopicsRequest {
-	return &v1alpha2.ListTopicsRequest{
-		Filter: &v1alpha2.ListTopicsRequest_Filter{
+	var filter *v1alpha2.ListTopicsRequest_Filter
+	if r.Filter != nil {
+		filter = &v1alpha2.ListTopicsRequest_Filter{
 			NameContains: r.GetFilter().GetNameContains(),
-		},
+		}
+	}
+
+	return &v1alpha2.ListTopicsRequest{
+		Filter:    filter,
 		PageSize:  r.GetPageSize(),
 		PageToken: r.GetPageToken(),
 	}
