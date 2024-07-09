@@ -59,7 +59,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 }
             }
 
-            // Delete all ACLs in group
+            // Ignore creation of ACLs that already exist, and delete ACLs that are no longer needed
             if (p.type == 'edit') {
                 if (group.sourceEntries.length > 0) {
                     const requests = group.sourceEntries.map(acl => {
