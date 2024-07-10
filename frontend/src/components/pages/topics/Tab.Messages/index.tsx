@@ -481,13 +481,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     >
                                         Value Deserializer
                                     </MenuItem>
-                                    {isServerless() && <MenuItem
+                                    <MenuItem
                                       icon={<MdOutlineSearch size="1.5rem" />}
                                       isDisabled={uiState.topicSettings.dynamicFilters.includes('search')}
                                       onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('search')}
                                     >
                                         Search
-                                    </MenuItem>}
+                                    </MenuItem>
                                     <MenuDivider />
                                     <MenuItem
                                       isDisabled={!canUseFilters}
@@ -759,7 +759,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }
         }
 
-        const columnsVisibleByDefault: DataColumnKey[] = ['offset', 'partitionID', 'timestamp', 'key', 'value']
+        const columnsVisibleByDefault: DataColumnKey[] = ['timestamp', 'key', 'value']
 
         const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map(key => dataTableColumns[key])
 
@@ -1641,6 +1641,35 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 });
 
 
+const TableSettingsTab = observer(() => <>
+    <Box>
+        <Text>
+            Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
+        </Text>
+    </Box>
+    <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
+        <ColumnOptions tags={uiState.topicSettings.previewColumnFields}/>
+    </Box>
+    <Box mt="1em">
+        <Text mb={2}>More Settings</Text>
+        <Box>
+            <OptionGroup<TimestampDisplayFormat>
+              label="Timestamp"
+              options={{
+                  'Local DateTime': 'default',
+                  'Unix DateTime': 'unixTimestamp',
+                  'Relative': 'relative',
+                  'Local Date': 'onlyDate',
+                  'Local Time': 'onlyTime',
+                  'Unix Millis': 'unixMillis',
+              }}
+              value={uiState.topicSettings.previewTimestamps}
+              onChange={e => uiState.topicSettings.previewTimestamps = e}
+            />
+        </Box>
+    </Box>
+</>);
+
 const ColumnSettings: FC<{
     getShowDialog: () => boolean;
     setShowDialog: (val: boolean) => void;
@@ -1658,41 +1687,27 @@ const ColumnSettings: FC<{
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <Box>
-                    <Text>
-                        Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
-                    </Text>
-                </Box>
-                <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
-                    <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
-                </Box>
-                <Box mt="1em">
-                    <Text mb={2}>More Settings</Text>
-                    <Box>
-                        <OptionGroup<TimestampDisplayFormat>
-                            label="Timestamp"
-                            options={{
-                                'Local DateTime': 'default',
-                                'Unix DateTime': 'unixTimestamp',
-                                'Relative': 'relative',
-                                'Local Date': 'onlyDate',
-                                'Local Time': 'onlyTime',
-                                'Unix Millis': 'unixMillis',
-                            }}
-                            value={uiState.topicSettings.previewTimestamps}
-                            onChange={e => uiState.topicSettings.previewTimestamps = e}
-                        />
-                    </Box>
-                </Box>
-
-                <Box mt={10}>
-                    {
-                      showPreviewSettings &&
-                      <PreviewSettings
-                        messageSearch={messageSearch}
-                      />
-                    }
-                </Box>
+                <RpTabs
+                  items={[
+                      {
+                          component: <TableSettingsTab />,
+                          key: 'tableSettings',
+                          name: 'Table Settings'
+                      },
+                      {
+                          component: <Box mt={10}>
+                              {
+                                showPreviewSettings &&
+                                <PreviewSettings
+                                  messageSearch={messageSearch}
+                                />
+                              }
+                          </Box>,
+                          key: 'refineFields',
+                          name: 'Refine Fields'
+                      },
+                  ]}
+                />
             </ModalBody>
             <ModalFooter gap={2}>
                 <Button onClick={() => {
@@ -1728,17 +1743,19 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
         value: column.dataIndex
     }));
 
-    return <Select
-        isMulti
-        name=""
-        options={defaultColumnList.map((column: ColumnList) => ({
-            label: column.title,
-            value: column.dataIndex,
-        }))}
-        value={value}
-        // @ts-ignore - we need to add support for isMulti generic in @redpanda-data/ui
-        onChange={handleColumnListChange}
-    />
+    return <Box>
+        <Select
+          isMulti
+          name=""
+          options={defaultColumnList.map((column: ColumnList) => ({
+              label: column.title,
+              value: column.dataIndex,
+          }))}
+          value={value}
+          // @ts-ignore - we need to add support for isMulti generic in @redpanda-data/ui
+          onChange={handleColumnListChange}
+        />
+    </Box>;
 }
 
 const MessageSearchFilterBar: FC<{ messageSearch: MessageSearch, onEdit: (filter: FilterEntry) => void }> = observer(({ messageSearch, onEdit }) => {
