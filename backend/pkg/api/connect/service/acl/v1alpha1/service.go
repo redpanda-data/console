@@ -27,7 +27,7 @@ var _ dataplanev1alpha1connect.ACLServiceHandler = (*Service)(nil)
 // Service implements the handlers for ACL endpoints.
 type Service struct {
 	targetService dataplanev1alpha2connect.ACLServiceHandler
-	mapper        *kafkaClientMapper
+	mapper        *apiVersionMapper
 	defaulter     *defaulter
 }
 
@@ -35,7 +35,7 @@ type Service struct {
 func NewService(targetService dataplanev1alpha2connect.ACLServiceHandler) *Service {
 	return &Service{
 		targetService: targetService,
-		mapper:        &kafkaClientMapper{},
+		mapper:        &apiVersionMapper{},
 		defaulter:     &defaulter{},
 	}
 }

@@ -14,9 +14,9 @@ import (
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
-type kafkaClientMapper struct{}
+type apiVersionMapper struct{}
 
-func (*kafkaClientMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest) *v1alpha2.ListACLsRequest {
+func (*apiVersionMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest) *v1alpha2.ListACLsRequest {
 	resourceName := r.GetFilter().ResourceName
 	principal := r.GetFilter().Principal
 	host := r.GetFilter().Host
@@ -40,7 +40,7 @@ func (*kafkaClientMapper) v1alpha1ToListACLsv1alpha2(r *v1alpha1.ListACLsRequest
 	}
 }
 
-func (*kafkaClientMapper) v1alpha2ListACLsResponseResourcesTov1alpha1(resources []*v1alpha2.ListACLsResponse_Resource) []*v1alpha1.ListACLsResponse_Resource {
+func (*apiVersionMapper) v1alpha2ListACLsResponseResourcesTov1alpha1(resources []*v1alpha2.ListACLsResponse_Resource) []*v1alpha1.ListACLsResponse_Resource {
 	out := make([]*v1alpha1.ListACLsResponse_Resource, 0, len(resources))
 
 	for _, r := range resources {
@@ -66,7 +66,7 @@ func (*kafkaClientMapper) v1alpha2ListACLsResponseResourcesTov1alpha1(resources 
 	return out
 }
 
-func (*kafkaClientMapper) v1alpha1ToCreateACLv1alpha2(r *v1alpha1.CreateACLRequest) *v1alpha2.CreateACLRequest {
+func (*apiVersionMapper) v1alpha1ToCreateACLv1alpha2(r *v1alpha1.CreateACLRequest) *v1alpha2.CreateACLRequest {
 	return &v1alpha2.CreateACLRequest{
 		ResourcePatternType: ResourcePatternTypeV1Alpha1ToV1Alpha2(r.GetResourcePatternType()),
 		ResourceType:        ResourceTypeV1Alpha1ToV1Alpha2(r.GetResourceType()),
@@ -78,7 +78,7 @@ func (*kafkaClientMapper) v1alpha1ToCreateACLv1alpha2(r *v1alpha1.CreateACLReque
 	}
 }
 
-func (*kafkaClientMapper) v1alpha1ToDeleteACLv1alpha2(r *v1alpha1.DeleteACLsRequest) *v1alpha2.DeleteACLsRequest {
+func (*apiVersionMapper) v1alpha1ToDeleteACLv1alpha2(r *v1alpha1.DeleteACLsRequest) *v1alpha2.DeleteACLsRequest {
 	resourceName := r.GetFilter().ResourceName
 	principal := r.GetFilter().Principal
 	host := r.GetFilter().Host
@@ -96,7 +96,7 @@ func (*kafkaClientMapper) v1alpha1ToDeleteACLv1alpha2(r *v1alpha1.DeleteACLsRequ
 	}
 }
 
-func (*kafkaClientMapper) v1alpha2ToDeleteACLsResponseMatchingACLv1alpha1(acls []*v1alpha2.DeleteACLsResponse_MatchingACL) []*v1alpha1.DeleteACLsResponse_MatchingACL {
+func (*apiVersionMapper) v1alpha2ToDeleteACLsResponseMatchingACLv1alpha1(acls []*v1alpha2.DeleteACLsResponse_MatchingACL) []*v1alpha1.DeleteACLsResponse_MatchingACL {
 	out := make([]*v1alpha1.DeleteACLsResponse_MatchingACL, 0, len(acls))
 
 	for _, acl := range acls {

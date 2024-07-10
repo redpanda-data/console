@@ -28,7 +28,7 @@ var _ dataplanev1alpha1connect.TopicServiceHandler = (*Service)(nil)
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
 	targetService dataplanev1alpha2connect.TopicServiceHandler
-	mapper        kafkaClientMapper
+	mapper        apiVersionMapper
 	defaulter     defaulter
 }
 
@@ -36,7 +36,7 @@ type Service struct {
 func NewService(targetService dataplanev1alpha2connect.TopicServiceHandler) *Service {
 	return &Service{
 		targetService: targetService,
-		mapper:        kafkaClientMapper{},
+		mapper:        apiVersionMapper{},
 		defaulter:     defaulter{},
 	}
 }

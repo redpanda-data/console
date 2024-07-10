@@ -14,9 +14,9 @@ import (
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
-type kafkaClientMapper struct{}
+type apiVersionMapper struct{}
 
-func (*kafkaClientMapper) v1alpha1ToListTopicsv1alpha2(r *v1alpha1.ListTopicsRequest) *v1alpha2.ListTopicsRequest {
+func (*apiVersionMapper) v1alpha1ToListTopicsv1alpha2(r *v1alpha1.ListTopicsRequest) *v1alpha2.ListTopicsRequest {
 	var filter *v1alpha2.ListTopicsRequest_Filter
 	if r.Filter != nil {
 		filter = &v1alpha2.ListTopicsRequest_Filter{
@@ -31,7 +31,7 @@ func (*kafkaClientMapper) v1alpha1ToListTopicsv1alpha2(r *v1alpha1.ListTopicsReq
 	}
 }
 
-func (*kafkaClientMapper) v1alpha2ListTopicsResponseTov1alpha1(topics []*v1alpha2.ListTopicsResponse_Topic) []*v1alpha1.ListTopicsResponse_Topic {
+func (*apiVersionMapper) v1alpha2ListTopicsResponseTov1alpha1(topics []*v1alpha2.ListTopicsResponse_Topic) []*v1alpha1.ListTopicsResponse_Topic {
 	out := make([]*v1alpha1.ListTopicsResponse_Topic, 0, len(topics))
 
 	for _, topic := range topics {
@@ -42,22 +42,23 @@ func (*kafkaClientMapper) v1alpha2ListTopicsResponseTov1alpha1(topics []*v1alpha
 			ReplicationFactor: topic.GetReplicationFactor(),
 		})
 	}
+
 	return out
 }
 
-func (*kafkaClientMapper) v1alpha1ToDeleteTopicv1alpha2(r *v1alpha1.DeleteTopicRequest) *v1alpha2.DeleteTopicRequest {
+func (*apiVersionMapper) v1alpha1ToDeleteTopicv1alpha2(r *v1alpha1.DeleteTopicRequest) *v1alpha2.DeleteTopicRequest {
 	return &v1alpha2.DeleteTopicRequest{
 		Name: r.GetName(),
 	}
 }
 
-func (*kafkaClientMapper) v1alpha1GetTopicConfigurationv1alpha2(r *v1alpha1.GetTopicConfigurationsRequest) *v1alpha2.GetTopicConfigurationsRequest {
+func (*apiVersionMapper) v1alpha1GetTopicConfigurationv1alpha2(r *v1alpha1.GetTopicConfigurationsRequest) *v1alpha2.GetTopicConfigurationsRequest {
 	return &v1alpha2.GetTopicConfigurationsRequest{
 		TopicName: r.GetTopicName(),
 	}
 }
 
-func (*kafkaClientMapper) v1alpha2TopicConfigsv1alpha1(configs []*v1alpha2.Topic_Configuration) []*v1alpha1.Topic_Configuration {
+func (*apiVersionMapper) v1alpha2TopicConfigsv1alpha1(configs []*v1alpha2.Topic_Configuration) []*v1alpha1.Topic_Configuration {
 	out := make([]*v1alpha1.Topic_Configuration, 0, len(configs))
 
 	for _, c := range configs {
@@ -87,7 +88,7 @@ func (*kafkaClientMapper) v1alpha2TopicConfigsv1alpha1(configs []*v1alpha2.Topic
 	return out
 }
 
-func (*kafkaClientMapper) v1alpha1UpdateTopicConfigurationv1alpha2(r *v1alpha1.UpdateTopicConfigurationsRequest) *v1alpha2.UpdateTopicConfigurationsRequest {
+func (*apiVersionMapper) v1alpha1UpdateTopicConfigurationv1alpha2(r *v1alpha1.UpdateTopicConfigurationsRequest) *v1alpha2.UpdateTopicConfigurationsRequest {
 	configs := make([]*v1alpha2.UpdateTopicConfigurationsRequest_UpdateConfiguration, 0, len(r.GetConfigurations()))
 	for _, c := range r.GetConfigurations() {
 		configs = append(configs, &v1alpha2.UpdateTopicConfigurationsRequest_UpdateConfiguration{
@@ -102,7 +103,7 @@ func (*kafkaClientMapper) v1alpha1UpdateTopicConfigurationv1alpha2(r *v1alpha1.U
 	}
 }
 
-func (*kafkaClientMapper) v1alpha1SetTopicConfigurationv1alpha2(r *v1alpha1.SetTopicConfigurationsRequest) *v1alpha2.SetTopicConfigurationsRequest {
+func (*apiVersionMapper) v1alpha1SetTopicConfigurationv1alpha2(r *v1alpha1.SetTopicConfigurationsRequest) *v1alpha2.SetTopicConfigurationsRequest {
 	configs := make([]*v1alpha2.SetTopicConfigurationsRequest_SetConfiguration, 0, len(r.GetConfigurations()))
 
 	for _, c := range r.GetConfigurations() {
@@ -118,9 +119,8 @@ func (*kafkaClientMapper) v1alpha1SetTopicConfigurationv1alpha2(r *v1alpha1.SetT
 	}
 }
 
-func (*kafkaClientMapper) v1alpha1CreateTopicv1alpha2(r *v1alpha1.CreateTopicRequest) *v1alpha2.CreateTopicRequest {
+func (*apiVersionMapper) v1alpha1CreateTopicv1alpha2(r *v1alpha1.CreateTopicRequest) *v1alpha2.CreateTopicRequest {
 	ras := make([]*v1alpha2.CreateTopicRequest_Topic_ReplicaAssignment, 0, len(r.GetTopic().GetReplicaAssignments()))
-
 	for _, ra := range r.GetTopic().GetReplicaAssignments() {
 		ras = append(ras, &v1alpha2.CreateTopicRequest_Topic_ReplicaAssignment{
 			PartitionId: ra.GetPartitionId(),
@@ -148,7 +148,7 @@ func (*kafkaClientMapper) v1alpha1CreateTopicv1alpha2(r *v1alpha1.CreateTopicReq
 	}
 }
 
-func (*kafkaClientMapper) v1alpha2CreateTopicResponsev1alpha1(msg *v1alpha2.CreateTopicResponse) *v1alpha1.CreateTopicResponse {
+func (*apiVersionMapper) v1alpha2CreateTopicResponsev1alpha1(msg *v1alpha2.CreateTopicResponse) *v1alpha1.CreateTopicResponse {
 	return &v1alpha1.CreateTopicResponse{
 		Name:              msg.GetName(),
 		PartitionCount:    msg.GetPartitionCount(),
