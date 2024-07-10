@@ -191,7 +191,7 @@ func (s *Service) StopConnector(ctx context.Context, req *connect.Request[v1alph
 
 // ListConnectClusters implements the handler for the restart connector operation
 func (s *Service) ListConnectClusters(ctx context.Context, req *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error) {
-	pr := mapv1alpha1ToListKafkaConnectorv1alpha2(req.Msg)
+	pr := mapv1alpha1ToListKafkaConnectClustersv1alpha2(req.Msg)
 
 	resp, err := s.targetService.ListConnectClusters(ctx, connect.NewRequest(pr))
 	if err != nil {

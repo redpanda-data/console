@@ -27,19 +27,10 @@ func mapv1alpha2ConnectorsTov1alpha1(connectors []*v1alpha2.ListConnectorsRespon
 	out := make([]*v1alpha1.ListConnectorsResponse_ConnectorInfoStatus, 0, len(connectors))
 
 	for _, c := range connectors {
-		var spec *v1alpha1.ConnectorSpec
-		var status *v1alpha1.ConnectorStatus
-
-		spec = mapv1alpha2ConnectorSpecTov1alpha1(c.Info)
-
-		if c.Status != nil {
-			status = mapv1alpha2ConnectorStatusTov1alpha1(c.Status)
-		}
-
 		out = append(out, &v1alpha1.ListConnectorsResponse_ConnectorInfoStatus{
 			Name:   c.GetName(),
-			Info:   spec,
-			Status: status,
+			Info:   mapv1alpha2ConnectorSpecTov1alpha1(c.Info),
+			Status: mapv1alpha2ConnectorStatusTov1alpha1(c.Status),
 		})
 	}
 
@@ -47,23 +38,9 @@ func mapv1alpha2ConnectorsTov1alpha1(connectors []*v1alpha2.ListConnectorsRespon
 }
 
 func mapv1alpha1ToCreateKafkaConnectorv1alpha2(m *v1alpha1.CreateConnectorRequest) *v1alpha2.CreateConnectorRequest {
-	var spec *v1alpha2.ConnectorSpec
-	if m.Connector != nil {
-		tasks := make([]*v1alpha2.TaskInfo, 0, len(m.Connector.GetTasks()))
-		for _, ti := range m.Connector.GetTasks() {
-			tasks = append(tasks, &v1alpha2.TaskInfo{Connector: ti.GetConnector(), Task: ti.GetTask()})
-		}
-
-		spec = &v1alpha2.ConnectorSpec{
-			Name:   m.Connector.Name,
-			Config: m.Connector.Config,
-			Type:   m.Connector.Type,
-			Tasks:  tasks,
-		}
-	}
 	return &v1alpha2.CreateConnectorRequest{
 		ClusterName: m.GetClusterName(),
-		Connector:   spec,
+		Connector:   mapv1alpha1ConnectorSpecTov1alpha2(m.Connector),
 	}
 }
 
@@ -74,10 +51,34 @@ func mapv1alpha2ConnectorSpecTov1alpha1(spec *v1alpha2.ConnectorSpec) *v1alpha1.
 
 	tasks := make([]*v1alpha1.TaskInfo, 0, len(spec.GetTasks()))
 	for _, ti := range spec.GetTasks() {
-		tasks = append(tasks, &v1alpha1.TaskInfo{Connector: ti.GetConnector(), Task: ti.GetTask()})
+		tasks = append(tasks, &v1alpha1.TaskInfo{
+			Connector: ti.GetConnector(),
+			Task:      ti.GetTask(),
+		})
 	}
 
 	return &v1alpha1.ConnectorSpec{
+		Name:   spec.GetName(),
+		Config: spec.GetConfig(),
+		Type:   spec.GetType(),
+		Tasks:  tasks,
+	}
+}
+
+func mapv1alpha1ConnectorSpecTov1alpha2(spec *v1alpha1.ConnectorSpec) *v1alpha2.ConnectorSpec {
+	if spec == nil {
+		return nil
+	}
+
+	tasks := make([]*v1alpha2.TaskInfo, 0, len(spec.GetTasks()))
+	for _, ti := range spec.GetTasks() {
+		tasks = append(tasks, &v1alpha2.TaskInfo{
+			Connector: ti.GetConnector(),
+			Task:      ti.GetTask(),
+		})
+	}
+
+	return &v1alpha2.ConnectorSpec{
 		Name:   spec.GetName(),
 		Config: spec.GetConfig(),
 		Type:   spec.GetType(),
@@ -105,24 +106,22 @@ func mapv1alpha1ToGetKafkaConnectorStatusv1alpha2(m *v1alpha1.GetConnectorStatus
 	}
 }
 
-func mapv1alpha2ConnectorStatusTov1alpha1(spec *v1alpha2.ConnectorStatus) *v1alpha1.ConnectorStatus {
-	if spec == nil {
+func mapv1alpha2ConnectorStatusTov1alpha1(status *v1alpha2.ConnectorStatus) *v1alpha1.ConnectorStatus {
+	if status == nil {
 		return nil
 	}
 
 	var stc *v1alpha1.ConnectorStatus_Connector
-
-	if spec.Connector != nil {
+	if status.Connector != nil {
 		stc = &v1alpha1.ConnectorStatus_Connector{
-			State:    spec.Connector.GetState(),
-			WorkerId: spec.Connector.GetWorkerId(),
-			Trace:    spec.Connector.GetTrace(),
+			State:    status.Connector.GetState(),
+			WorkerId: status.Connector.GetWorkerId(),
+			Trace:    status.Connector.GetTrace(),
 		}
 	}
 
-	tasks := make([]*v1alpha1.TaskStatus, 0, len(spec.GetTasks()))
-
-	for _, ts := range spec.GetTasks() {
+	tasks := make([]*v1alpha1.TaskStatus, 0, len(status.GetTasks()))
+	for _, ts := range status.GetTasks() {
 		tasks = append(tasks, &v1alpha1.TaskStatus{
 			Id:       ts.GetId(),
 			State:    ts.GetState(),
@@ -131,8 +130,8 @@ func mapv1alpha2ConnectorStatusTov1alpha1(spec *v1alpha2.ConnectorStatus) *v1alp
 		})
 	}
 
-	errors := make([]*v1alpha1.ConnectorError, 0, len(spec.GetErrors()))
-	for _, e := range spec.GetErrors() {
+	errors := make([]*v1alpha1.ConnectorError, 0, len(status.GetErrors()))
+	for _, e := range status.GetErrors() {
 		errors = append(errors, &v1alpha1.ConnectorError{
 			Title:   e.GetTitle(),
 			Content: e.GetContent(),
@@ -142,10 +141,10 @@ func mapv1alpha2ConnectorStatusTov1alpha1(spec *v1alpha2.ConnectorStatus) *v1alp
 
 	return &v1alpha1.ConnectorStatus{
 		Connector:     stc,
-		Name:          spec.GetName(),
+		Name:          status.GetName(),
 		Tasks:         tasks,
-		Type:          spec.GetType(),
-		HolisticState: v1alpha1.ConnectorHolisticState(spec.GetHolisticState()),
+		Type:          status.GetType(),
+		HolisticState: v1alpha1.ConnectorHolisticState(status.GetHolisticState()),
 		Errors:        errors,
 	}
 }
@@ -194,7 +193,7 @@ func mapv1alpha1ToStopKafkaConnectorv1alpha2(m *v1alpha1.StopConnectorRequest) *
 	}
 }
 
-func mapv1alpha1ToListKafkaConnectorv1alpha2(_ *v1alpha1.ListConnectClustersRequest) *v1alpha2.ListConnectClustersRequest {
+func mapv1alpha1ToListKafkaConnectClustersv1alpha2(_ *v1alpha1.ListConnectClustersRequest) *v1alpha2.ListConnectClustersRequest {
 	return &v1alpha2.ListConnectClustersRequest{}
 }
 
