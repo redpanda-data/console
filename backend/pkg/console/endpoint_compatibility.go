@@ -125,6 +125,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			HasRedpandaAPI:  true,
 			RedpandaFeature: "role_based_access_control",
 		},
+		{
+			URL:             consolev1alpha1connect.TransformServiceName,
+			Method:          "POST",
+			HasRedpandaAPI:  true,
+			RedpandaFeature: "wasm_transforms",
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
