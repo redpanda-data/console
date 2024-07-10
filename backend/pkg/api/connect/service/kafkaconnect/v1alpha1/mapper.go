@@ -11,249 +11,258 @@
 package kafkaconnect
 
 import (
-	"errors"
-	"fmt"
-
-	con "github.com/cloudhut/connect-client"
-
-	kafkaconnect "github.com/redpanda-data/console/backend/pkg/connect"
-	dataplanev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
-type mapper struct{}
+func mapv1alpha1ToListKafkaConnectorsv1alpha2(m *v1alpha1.ListConnectorsRequest) *v1alpha2.ListConnectorsRequest {
+	return &v1alpha2.ListConnectorsRequest{
+		ClusterName: m.GetClusterName(),
+		PageToken:   m.GetPageToken(),
+		PageSize:    m.GetPageSize(),
+	}
+}
 
-func (m mapper) connectorsHTTPResponseToProto(httpResponse kafkaconnect.ClusterConnectors) (*dataplanev1alpha1.ListConnectorsResponse, error) {
-	connectors := make([]*dataplanev1alpha1.ListConnectorsResponse_ConnectorInfoStatus, len(httpResponse.Connectors))
+func mapv1alpha2ConnectorsTov1alpha1(connectors []*v1alpha2.ListConnectorsResponse_ConnectorInfoStatus) []*v1alpha1.ListConnectorsResponse_ConnectorInfoStatus {
+	out := make([]*v1alpha1.ListConnectorsResponse_ConnectorInfoStatus, 0, len(connectors))
 
-	for i, connector := range httpResponse.Connectors {
-		errors, err := m.connectorErrorsToProto(connector.Errors)
-		if err != nil {
-			return nil, fmt.Errorf("failed to map connector error to proto for connector %q: %w", connector.Name, err)
+	for _, c := range connectors {
+		var spec *v1alpha1.ConnectorSpec
+		var status *v1alpha1.ConnectorStatus
+
+		spec = mapv1alpha2ConnectorSpecTov1alpha1(c.Info)
+
+		if c.Status != nil {
+			status = mapv1alpha2ConnectorStatusTov1alpha1(c.Status)
 		}
 
-		connectors[i] = &dataplanev1alpha1.ListConnectorsResponse_ConnectorInfoStatus{
-			Name: connector.Name,
+		out = append(out, &v1alpha1.ListConnectorsResponse_ConnectorInfoStatus{
+			Name:   c.GetName(),
+			Info:   spec,
+			Status: status,
+		})
+	}
+
+	return out
+}
+
+func mapv1alpha1ToCreateKafkaConnectorv1alpha2(m *v1alpha1.CreateConnectorRequest) *v1alpha2.CreateConnectorRequest {
+	var spec *v1alpha2.ConnectorSpec
+	if m.Connector != nil {
+		tasks := make([]*v1alpha2.TaskInfo, 0, len(m.Connector.GetTasks()))
+		for _, ti := range m.Connector.GetTasks() {
+			tasks = append(tasks, &v1alpha2.TaskInfo{Connector: ti.GetConnector(), Task: ti.GetTask()})
 		}
 
-		connectors[i].Info = &dataplanev1alpha1.ConnectorSpec{
-			Name:   connector.Name,
-			Type:   connector.Type,
-			Config: connector.Config,
-			Tasks:  m.taskInfoListToProtoInfo(connector.Name, connector.Tasks),
-		}
-
-		connectors[i].Status = &dataplanev1alpha1.ConnectorStatus{
-			Name: connector.Name,
-			Connector: &dataplanev1alpha1.ConnectorStatus_Connector{
-				State:    connector.State,
-				WorkerId: connector.WorkerID,
-				Trace:    connector.Trace,
-			},
-			Tasks:         m.taskInfoListToProtoStatus(connector.Tasks),
-			Type:          connector.Type,
-			Errors:        errors,
-			HolisticState: m.holisticStateToProto(connector.Status),
+		spec = &v1alpha2.ConnectorSpec{
+			Name:   m.Connector.Name,
+			Config: m.Connector.Config,
+			Type:   m.Connector.Type,
+			Tasks:  tasks,
 		}
 	}
-
-	return &dataplanev1alpha1.ListConnectorsResponse{
-		Connectors: connectors,
-	}, nil
-}
-
-func (m mapper) taskInfoListToProtoInfo(connectorName string, taskInfoList []kafkaconnect.ClusterConnectorTaskInfo) []*dataplanev1alpha1.TaskInfo {
-	tasks := make([]*dataplanev1alpha1.TaskInfo, len(taskInfoList))
-	for i, task := range taskInfoList {
-		tasks[i] = m.taskToProto(connectorName, task.TaskID)
-	}
-	return tasks
-}
-
-func (m mapper) connectorTaskIDToProto(connectorName string, taskInfoList []con.ConnectorTaskID) []*dataplanev1alpha1.TaskInfo {
-	tasks := make([]*dataplanev1alpha1.TaskInfo, len(taskInfoList))
-	for i, task := range taskInfoList {
-		tasks[i] = m.taskToProto(connectorName, task.Task)
-	}
-	return tasks
-}
-
-func (mapper) taskToProto(name string, taskID int) *dataplanev1alpha1.TaskInfo {
-	return &dataplanev1alpha1.TaskInfo{
-		Connector: name,
-		Task:      int32(taskID),
+	return &v1alpha2.CreateConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Connector:   spec,
 	}
 }
 
-func (mapper) taskInfoListToProtoStatus(taskInfoList []kafkaconnect.ClusterConnectorTaskInfo) []*dataplanev1alpha1.TaskStatus {
-	tasks := make([]*dataplanev1alpha1.TaskStatus, len(taskInfoList))
-	for i, task := range taskInfoList {
-		tasks[i] = &dataplanev1alpha1.TaskStatus{
-			Id:       int32(task.TaskID),
-			State:    task.State,
-			WorkerId: task.WorkerID,
-			Trace:    task.Trace,
-		}
-	}
-	return tasks
-}
-
-func (mapper) holisticStateToProto(state string) dataplanev1alpha1.ConnectorHolisticState {
-	switch state {
-	case kafkaconnect.ConnectorStatusPaused:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_PAUSED
-	case kafkaconnect.ConnectorStatusStopped:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_STOPPED
-	case kafkaconnect.ConnectorStatusRestarting:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_RESTARTING
-	case kafkaconnect.ConnectorStatusDestroyed:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_DESTROYED
-	case kafkaconnect.ConnectorStatusUnassigned:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_UNASSIGNED
-	case kafkaconnect.ConnectorStatusHealthy:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_HEALTHY
-	case kafkaconnect.ConnectorStatusUnhealthy:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_UNHEALTHY
-	case kafkaconnect.ConnectorStatusDegraded:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_DEGRADED
-	default:
-		return dataplanev1alpha1.ConnectorHolisticState_CONNECTOR_HOLISTIC_STATE_UNKNOWN
-	}
-}
-
-func (m mapper) connectorErrorsToProto(errorInfoList []kafkaconnect.ClusterConnectorInfoError) ([]*dataplanev1alpha1.ConnectorError, error) {
-	connectErrors := make([]*dataplanev1alpha1.ConnectorError, len(errorInfoList))
-	for i, errorInfoItem := range errorInfoList {
-		errorType, err := m.connectorErrorTypeToProto(errorInfoItem.Type)
-		if err != nil {
-			return nil, err
-		}
-		connectErrors[i] = &dataplanev1alpha1.ConnectorError{
-			Title:   errorInfoItem.Title,
-			Content: errorInfoItem.Content,
-			Type:    errorType,
-		}
-	}
-	return connectErrors, nil
-}
-
-func (mapper) connectorErrorTypeToProto(errorType string) (dataplanev1alpha1.ConnectorError_Type, error) {
-	switch errorType {
-	case "ERROR":
-		return dataplanev1alpha1.ConnectorError_TYPE_ERROR, nil
-	case "WARNING":
-		return dataplanev1alpha1.ConnectorError_TYPE_WARNING, nil
-	default:
-		return dataplanev1alpha1.ConnectorError_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given error type %q to proto", errorType)
-	}
-}
-
-func (mapper) createConnectorProtoToClientRequest(createConnector *dataplanev1alpha1.CreateConnectorRequest) (*con.CreateConnectorRequest, error) {
-	if createConnector == nil || createConnector.Connector == nil {
-		return nil, fmt.Errorf("create connector request is nil")
+func mapv1alpha2ConnectorSpecTov1alpha1(spec *v1alpha2.ConnectorSpec) *v1alpha1.ConnectorSpec {
+	if spec == nil {
+		return nil
 	}
 
-	if len(createConnector.Connector.Config) == 0 {
-		return nil, fmt.Errorf("create connector request config is empty")
+	tasks := make([]*v1alpha1.TaskInfo, 0, len(spec.GetTasks()))
+	for _, ti := range spec.GetTasks() {
+		tasks = append(tasks, &v1alpha1.TaskInfo{Connector: ti.GetConnector(), Task: ti.GetTask()})
 	}
 
-	return &con.CreateConnectorRequest{
-		Name:   createConnector.Connector.Name,
-		Config: convertStringMapToInterfaceMap(createConnector.Connector.Config),
-	}, nil
-}
-
-func (m mapper) clusterInfoToProto(clusterInfo kafkaconnect.ClusterInfo) *dataplanev1alpha1.ConnectCluster {
-	return &dataplanev1alpha1.ConnectCluster{
-		Name:    clusterInfo.Name,
-		Address: clusterInfo.Host,
-		Info: &dataplanev1alpha1.ConnectCluster_Info{
-			Version:        clusterInfo.Version,
-			Commit:         clusterInfo.Commit,
-			KafkaClusterId: clusterInfo.KafkaClusterID,
-		},
-		Plugins: m.connectPluginsToProto(clusterInfo.Plugins),
-	}
-}
-
-func (mapper) connectPluginsToProto(plugins []con.ConnectorPluginInfo) []*dataplanev1alpha1.ConnectorPlugin {
-	pluginsProtoList := make([]*dataplanev1alpha1.ConnectorPlugin, len(plugins))
-
-	for i, plugin := range plugins {
-		pluginsProtoList[i] = &dataplanev1alpha1.ConnectorPlugin{
-			Type:    plugin.Type,
-			Version: plugin.Version,
-			Class:   plugin.Class,
-		}
-	}
-
-	return pluginsProtoList
-}
-
-func (m mapper) connectorInfoListToProto(connectorInfoList []kafkaconnect.ClusterInfoWithError) ([]*dataplanev1alpha1.ConnectCluster, error) {
-	clusters := make([]*dataplanev1alpha1.ConnectCluster, len(connectorInfoList))
-	var errs error
-	for i, connectorInfo := range connectorInfoList {
-		if connectorInfo.RequestError != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to get connector info for connector %q: %w", connectorInfo.Name, connectorInfo.RequestError))
-			// continue so we don't pannic in case of an error
-			continue
-		}
-		clusters[i] = &dataplanev1alpha1.ConnectCluster{
-			Name:    connectorInfo.Name,
-			Address: connectorInfo.Host,
-			Info: &dataplanev1alpha1.ConnectCluster_Info{
-				Version:        connectorInfo.Version,
-				Commit:         connectorInfo.Commit,
-				KafkaClusterId: connectorInfo.KafkaClusterID,
-			},
-			Plugins: m.connectPluginsToProto(connectorInfo.Plugins),
-		}
-	}
-	return clusters, errs
-}
-
-// connectorSpecToProto converts the http response to proto message
-func (mapper) connectorSpecToProto(connector con.ConnectorInfo) *dataplanev1alpha1.ConnectorSpec {
-	tasks := make([]*dataplanev1alpha1.TaskInfo, len(connector.Tasks))
-
-	for i, task := range connector.Tasks {
-		tasks[i] = &dataplanev1alpha1.TaskInfo{
-			Connector: task.Connector,
-			Task:      int32(task.Task),
-		}
-	}
-	return &dataplanev1alpha1.ConnectorSpec{
-		Name:   connector.Name,
-		Config: connector.Config,
+	return &v1alpha1.ConnectorSpec{
+		Name:   spec.GetName(),
+		Config: spec.GetConfig(),
+		Type:   spec.GetType(),
 		Tasks:  tasks,
-		Type:   connector.Type,
 	}
 }
 
-func (m mapper) connectorStatusToProto(status kafkaconnect.ConnectorStatus) (*dataplanev1alpha1.ConnectorStatus, error) {
-	errors, err := m.connectorErrorsToProto(status.Errors)
-	if err != nil {
-		return nil, fmt.Errorf("failed to map connector error to proto for connector %q: %w", status.Name, err)
+func mapv1alpha1ToGetKafkaConnectorv1alpha2(m *v1alpha1.GetConnectorRequest) *v1alpha2.GetConnectorRequest {
+	return &v1alpha2.GetConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
 	}
-	return &dataplanev1alpha1.ConnectorStatus{
-		Name: status.Name,
-		Connector: &dataplanev1alpha1.ConnectorStatus_Connector{
-			State:    status.Connector.State,
-			WorkerId: status.Connector.WorkerID,
-			Trace:    status.Connector.Trace,
-		},
-		Type:          status.Type,
+}
+
+func mapv1alpha1ToGetKafkaConnectClusterv1alpha2(m *v1alpha1.GetConnectClusterRequest) *v1alpha2.GetConnectClusterRequest {
+	return &v1alpha2.GetConnectClusterRequest{
+		ClusterName: m.GetClusterName(),
+	}
+}
+
+func mapv1alpha1ToGetKafkaConnectorStatusv1alpha2(m *v1alpha1.GetConnectorStatusRequest) *v1alpha2.GetConnectorStatusRequest {
+	return &v1alpha2.GetConnectorStatusRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
+	}
+}
+
+func mapv1alpha2ConnectorStatusTov1alpha1(spec *v1alpha2.ConnectorStatus) *v1alpha1.ConnectorStatus {
+	if spec == nil {
+		return nil
+	}
+
+	var stc *v1alpha1.ConnectorStatus_Connector
+
+	if spec.Connector != nil {
+		stc = &v1alpha1.ConnectorStatus_Connector{
+			State:    spec.Connector.GetState(),
+			WorkerId: spec.Connector.GetWorkerId(),
+			Trace:    spec.Connector.GetTrace(),
+		}
+	}
+
+	tasks := make([]*v1alpha1.TaskStatus, 0, len(spec.GetTasks()))
+
+	for _, ts := range spec.GetTasks() {
+		tasks = append(tasks, &v1alpha1.TaskStatus{
+			Id:       ts.GetId(),
+			State:    ts.GetState(),
+			WorkerId: ts.GetWorkerId(),
+			Trace:    ts.GetTrace(),
+		})
+	}
+
+	errors := make([]*v1alpha1.ConnectorError, 0, len(spec.GetErrors()))
+	for _, e := range spec.GetErrors() {
+		errors = append(errors, &v1alpha1.ConnectorError{
+			Title:   e.GetTitle(),
+			Content: e.GetContent(),
+			Type:    v1alpha1.ConnectorError_Type(e.GetType()),
+		})
+	}
+
+	return &v1alpha1.ConnectorStatus{
+		Connector:     stc,
+		Name:          spec.GetName(),
+		Tasks:         tasks,
+		Type:          spec.GetType(),
+		HolisticState: v1alpha1.ConnectorHolisticState(spec.GetHolisticState()),
 		Errors:        errors,
-		Tasks:         m.taskInfoListToProtoStatus(status.Tasks),
-		HolisticState: m.holisticStateToProto(status.State),
-	}, nil
+	}
 }
 
-// convertStringMapToInterfaceMap converts interface map to string map
-func convertStringMapToInterfaceMap(stringMap map[string]string) map[string]any {
-	interfaceMap := make(map[string]any, len(stringMap))
-	for key, value := range stringMap {
-		interfaceMap[key] = value
+func mapv1alpha1ToResumeKafkaConnectorv1alpha2(m *v1alpha1.ResumeConnectorRequest) *v1alpha2.ResumeConnectorRequest {
+	return &v1alpha2.ResumeConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
 	}
-	return interfaceMap
+}
+
+func mapv1alpha1ToPauseKafkaConnectorv1alpha2(m *v1alpha1.PauseConnectorRequest) *v1alpha2.PauseConnectorRequest {
+	return &v1alpha2.PauseConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
+	}
+}
+
+func mapv1alpha1ToDeleteKafkaConnectorv1alpha2(m *v1alpha1.DeleteConnectorRequest) *v1alpha2.DeleteConnectorRequest {
+	return &v1alpha2.DeleteConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
+	}
+}
+
+func mapv1alpha1ToRestartKafkaConnectorv1alpha2(m *v1alpha1.RestartConnectorRequest) *v1alpha2.RestartConnectorRequest {
+	var opts *v1alpha2.RestartConnectorRequest_Options
+	if m.Options != nil {
+		opts = &v1alpha2.RestartConnectorRequest_Options{
+			IncludeTasks: m.Options.IncludeTasks,
+			OnlyFailed:   m.Options.OnlyFailed,
+		}
+	}
+
+	return &v1alpha2.RestartConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
+		Options:     opts,
+	}
+}
+
+func mapv1alpha1ToStopKafkaConnectorv1alpha2(m *v1alpha1.StopConnectorRequest) *v1alpha2.StopConnectorRequest {
+	return &v1alpha2.StopConnectorRequest{
+		ClusterName: m.GetClusterName(),
+		Name:        m.GetName(),
+	}
+}
+
+func mapv1alpha1ToListKafkaConnectorv1alpha2(_ *v1alpha1.ListConnectClustersRequest) *v1alpha2.ListConnectClustersRequest {
+	return &v1alpha2.ListConnectClustersRequest{}
+}
+
+func mapv1alpha2KafkaConnectClustersTov1alpha1(clusters []*v1alpha2.ConnectCluster) []*v1alpha1.ConnectCluster {
+	out := make([]*v1alpha1.ConnectCluster, 0, len(clusters))
+
+	for _, c := range clusters {
+		out = append(out, mapv1alpha2KafkaConnectClusterTov1alpha1(c))
+	}
+	return out
+}
+
+func mapv1alpha2KafkaConnectClusterTov1alpha1(cluster *v1alpha2.ConnectCluster) *v1alpha1.ConnectCluster {
+	if cluster == nil {
+		return nil
+	}
+
+	var info *v1alpha1.ConnectCluster_Info
+	if cluster.Info != nil {
+		info = &v1alpha1.ConnectCluster_Info{
+			Version:        cluster.Info.GetVersion(),
+			Commit:         cluster.Info.GetCommit(),
+			KafkaClusterId: cluster.Info.GetKafkaClusterId(),
+		}
+	}
+
+	plugins := make([]*v1alpha1.ConnectorPlugin, 0, len(cluster.GetPlugins()))
+	for _, p := range cluster.GetPlugins() {
+		plugins = append(plugins, &v1alpha1.ConnectorPlugin{
+			Type:    p.GetType(),
+			Version: p.GetVersion(),
+			Class:   p.GetClass(),
+		})
+	}
+
+	return &v1alpha1.ConnectCluster{
+		Name:    cluster.Name,
+		Address: cluster.Address,
+		Info:    info,
+		Plugins: plugins,
+	}
+}
+
+func mapv1alpha1ToUpsertKafkaConnectorv1alpha2(m *v1alpha1.UpsertConnectorRequest) *v1alpha2.UpsertConnectorRequest {
+	return &v1alpha2.UpsertConnectorRequest{
+		Name:        m.GetName(),
+		ClusterName: m.GetClusterName(),
+		Config:      m.GetConfig(),
+	}
+}
+
+func mapv1alpha1ToGetConnectorConfigv1alpha2(m *v1alpha1.GetConnectorConfigRequest) *v1alpha2.GetConnectorConfigRequest {
+	return &v1alpha2.GetConnectorConfigRequest{
+		Name:        m.GetName(),
+		ClusterName: m.GetClusterName(),
+	}
+}
+
+func mapv1alpha1ToListConnectorTopicsv1alpha2(m *v1alpha1.ListConnectorTopicsRequest) *v1alpha2.ListConnectorTopicsRequest {
+	return &v1alpha2.ListConnectorTopicsRequest{
+		Name:        m.GetName(),
+		ClusterName: m.GetClusterName(),
+	}
+}
+
+func mapv1alpha1ToResetConnectorTopicsv1alpha2(m *v1alpha1.ResetConnectorTopicsRequest) *v1alpha2.ResetConnectorTopicsRequest {
+	return &v1alpha2.ResetConnectorTopicsRequest{
+		Name:        m.GetName(),
+		ClusterName: m.GetClusterName(),
+	}
 }
