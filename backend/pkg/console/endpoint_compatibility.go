@@ -13,11 +13,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redpanda-data/common-go/rpadmin"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // EndpointCompatibility describes what Console endpoints can be offered to the frontend,
@@ -53,7 +53,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		Method          string
 		Requests        []kmsg.Request
 		HasRedpandaAPI  bool
-		RedpandaFeature string
+		RedpandaFeature redpanda.RedpandaFeature
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -123,7 +123,13 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			URL:             consolev1alpha1connect.SecurityServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: "role_based_access_control",
+			RedpandaFeature: redpanda.RedpandaFeatureRBAC,
+		},
+		{
+			URL:             consolev1alpha1connect.TransformServiceName,
+			Method:          "POST",
+			HasRedpandaAPI:  true,
+			RedpandaFeature: redpanda.RedpandaFeatureWASMDataTransforms,
 		},
 	}
 
@@ -152,14 +158,10 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
 			endpointSupported = true
 
+			// If we have an actual feature defined that we can check explicitly
+			// lets check that specific feature.
 			if endpointReq.RedpandaFeature != "" {
-				enabled, err := s.redpandaSvc.CheckFeature(ctx,
-					endpointReq.RedpandaFeature,
-					[]rpadmin.FeatureState{rpadmin.FeatureStateActive})
-				// only use result if no error
-				if err == nil {
-					endpointSupported = enabled
-				}
+				endpointSupported = s.redpandaSvc.CheckFeature(ctx, endpointReq.RedpandaFeature)
 			}
 		}
 
