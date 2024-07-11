@@ -98,16 +98,20 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
           <Divider orientation="vertical"/>
         </Box>
         <Flex gap={2}>
-          {cleanupPolicy==='compact' && <><Text as="dt" fontWeight="bold">Segment:</Text>
+          {cleanupPolicy === 'compact' && <><Text as="dt" fontWeight="bold">Segment:</Text>
               {segmentMs && segmentBytes && <Text as="dd">~
-                  <>{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}</>
+                  <>{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly', 2)} or {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
+                      {isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
+                  </>
               </Text>}
           </>}
 
-          {cleanupPolicy==='delete' && <><Text as="dt" fontWeight="bold">Retention:</Text>
+          {cleanupPolicy === 'delete' && <><Text as="dt" fontWeight="bold">Retention:</Text>
             {retentionMs && retentionBytes && <Text as="dd">~
                 {retentionMs.value === '-1' && retentionBytes.value === '-1' ? 'Unlimited':
-                  <>{formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')} or {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}</>}
+                  <>{formatConfigValue(retentionMs.name, retentionMs.value, 'friendly', 2)} or {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
+                      {isFinite(Number(retentionBytes.value)) && Number(retentionBytes.value) !== -1 && ' / partition'}
+                  </>}
             </Text>}
           </>}
         </Flex>
