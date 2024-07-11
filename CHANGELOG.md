@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.6.1 / 2024-07-10
+
+- [SECURITY] update gorilla/schema to address CVE-2024-37298.
+- [SECURITY] update grpc to v1.65.0 to avoid OSV:GHSA-XR7Q-JX4M-X55M.
+- [SECURITY] new build to address CVE-2024-6387.
+
 ## v2.6.0 / 2024-05-30
 
 - [FEATURE] Add Redpanda Connect management.
