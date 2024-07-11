@@ -105,6 +105,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
 
 	// v1alpha1
 
@@ -120,7 +121,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	if err != nil {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
 	}
-	consoleTransformSvc := &transformsvcv1alpha1.ConsoleService{Impl: transformSvcV1alpha1}
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
