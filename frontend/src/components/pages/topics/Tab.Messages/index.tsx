@@ -40,7 +40,6 @@ import {
     MdJavascript,
     MdOutlineLayers,
     MdOutlineRoundedCorner,
-    MdOutlineSearch,
     MdSettings
 } from 'react-icons/md';
 import {
@@ -65,7 +64,6 @@ import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
-import styles from './styles.module.scss';
 import {
     Alert,
     AlertDescription,
@@ -77,7 +75,6 @@ import {
     Checkbox,
     DataTable,
     DateTimeInput,
-    Empty,
     Flex,
     Grid,
     GridItem,
@@ -107,8 +104,7 @@ import {
     Tooltip,
     useBreakpoint,
     useColorModeValue,
-    useToast,
-    VStack
+    useToast
 } from '@redpanda-data/ui';
 import { SingleSelect, SingleSelectProps } from '../../../misc/Select';
 import { MultiValue } from 'chakra-react-select';
@@ -437,21 +433,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                     />
                                 </RemovableFilter>
                             </Label>,
-                            search: <Label text="Search">
-                                <RemovableFilter onRemove={() => {
-                                    uiState.topicSettings.dynamicFilters.remove('search');
-                                    uiState.topicSettings.quickSearch = '';
-                                }}>
-                                    {/* Quick Search */}
-                                    <Input
-                                      px={4}
-                                      variant="unstyled"
-                                      placeholder="Search..."
-                                      value={uiState.topicSettings.quickSearch}
-                                      onChange={x => (uiState.topicSettings.quickSearch = x.target.value)}
-                                    />
-                                </RemovableFilter>
-                            </Label>
                         })[filter])}
 
                         <Flex alignItems="flex-end">
@@ -480,13 +461,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                       onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('valueDeserializer')}
                                     >
                                         Value Deserializer
-                                    </MenuItem>
-                                    <MenuItem
-                                      icon={<MdOutlineSearch size="1.5rem" />}
-                                      isDisabled={uiState.topicSettings.dynamicFilters.includes('search')}
-                                      onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('search')}
-                                    >
-                                        Search
                                     </MenuItem>
                                     <MenuDivider />
                                     <MenuItem
@@ -570,9 +544,37 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </GridItem>
 
                     {/* Filter Tags */}
-                    <MessageSearchFilterBar messageSearch={this.messageSearch} onEdit={(filter) => {
+                    <MessageSearchFilterBar onEdit={(filter) => {
                         setCurrentJSFilter(filter);
                     }}/>
+
+                    <GridItem gridColumn="1/-1" mt={4} display="flex" gap={4}>
+                        {/* Quick Search */}
+                        <Input
+                          px={4}
+                          placeholder="Filter table content ..."
+                          value={uiState.topicSettings.quickSearch}
+                          onChange={x => (uiState.topicSettings.quickSearch = x.target.value)}
+                        />
+                        <Flex gap={2} fontSize="sm" whiteSpace="nowrap" alignItems="center">
+                            {this.messageSearch.searchPhase === null || this.messageSearch.searchPhase === 'Done'
+                              ? (
+                                <>
+                                    <Flex alignItems="center" gap={2}><DownloadOutlined /> {prettyBytes(this.messageSearch.bytesConsumed)}</Flex>
+                                    <Flex alignItems="center" gap={2}><ClockCircleOutlined /> {this.messageSearch.elapsedMs ? prettyMilliseconds(this.messageSearch.elapsedMs):''}</Flex>
+                                </>
+                              )
+                              :(
+                                <>
+                                    <span className="spinner"/>
+                                    <span className="pulsating">Fetching data...</span>
+                                </>
+                              )
+                            }
+                        </Flex>
+                    </GridItem>
+
+
 
                 </Grid>
 
@@ -952,28 +954,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }
         });
     }
-
-    empty = () => {
-        const searchParams = uiState.topicSettings.searchParams;
-        const filterCount = searchParams.filters.filter(x => x.isActive).length;
-
-        const hints: JSX.Element[] = [];
-        if (filterCount > 0)
-            hints.push(<>There are <b>{filterCount} filters</b> in use by the current search. Keep in mind that messages must pass <b>every</b> filter when using more than one filter at the same time.</>);
-        if (searchParams.startOffset == PartitionOffsetOrigin.End)
-            hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
-
-        const hintBox = hints.length ? <ul className={styles.noMessagesHint}>
-            {hints.map((x, i) => <li key={i}>{x}</li>)}
-        </ul> : null;
-
-        return (
-            <VStack gap={4}>
-                <Empty description="No messages" />
-                {hintBox}
-            </VStack>
-        );
-    };
 }
 
 @observer
@@ -1758,7 +1738,7 @@ const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
     </Box>;
 }
 
-const MessageSearchFilterBar: FC<{ messageSearch: MessageSearch, onEdit: (filter: FilterEntry) => void }> = observer(({ messageSearch, onEdit }) => {
+const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = observer(({ onEdit }) => {
   const settings = uiState.topicSettings.searchParams;
 
   return <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
@@ -1798,21 +1778,6 @@ const MessageSearchFilterBar: FC<{ messageSearch: MessageSearch, onEdit: (filter
         </Tag>
       )}
     </Box>
-
-      {messageSearch.searchPhase === null || messageSearch.searchPhase === 'Done'
-        ? (
-          <div className={styles.metaSection}>
-              <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(messageSearch.bytesConsumed)}</span>
-              <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {messageSearch.elapsedMs ? prettyMilliseconds(messageSearch.elapsedMs) : ''}</span>
-          </div>
-        )
-        : (
-          <div className={`${styles.metaSection} ${styles.isLoading}`}>
-              <span className={`spinner ${styles.spinner}`} />
-              <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
-          </div>
-        )
-      }
   </GridItem>;
 });
 
