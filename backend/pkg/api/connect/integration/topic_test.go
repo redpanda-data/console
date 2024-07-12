@@ -647,6 +647,9 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	t := s.T()
 
 	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		// Skip until https://github.com/redpanda-data/redpanda/issues/21360 is resolved.
+		t.Skip()
+
 		require := require.New(t)
 		assert := assert.New(t)
 
