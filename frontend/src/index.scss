@@ -639,60 +639,6 @@ td.ant-table-column-sort {
     z-index: -1;
 }
 
-.loginLogo {
-    color: #f5f5f5;
-    font-size: 2rem;
-    font-weight: 600;
-    display: flex;
-    place-items: center;
-}
-
-.loginButtonList {
-    display: flex;
-    place-content: center;
-    place-items: center;
-    margin-top: 1rem;
-}
-
-.loginSeperator {
-    margin: 0rem 2rem;
-    width: 1px;
-    min-height: 100px;
-    background: rgba(255, 255, 255, 0.287);
-}
-
-.loginButton2 {
-    cursor: pointer;
-    width: 130px;
-    height: 85px;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: rgb(255, 255, 255);
-    background: $color-brand-secondary;
-    border-radius: 2px;
-    display: flex;
-    place-content: center;
-    place-items: center;
-    flex-direction: column;
-}
-
-.loginButton2 i {
-    font-size: 28px;
-    transition: all 0.3s ease;
-}
-
-.loginButton2:hover {
-    color: #fff;
-    background: $color-brand-secondary-hover;
-    transition: all 0.3s ease;
-}
-
-.loginButton2:hover i {
-    font-size: 45px;
-    color: #fff;
-    transition: all 0.3s ease;
-}
-
 ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
     font-family: 'Poppins', sans-serif;
     color: #828080;
