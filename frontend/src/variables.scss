@@ -25,11 +25,11 @@
     In our own components we want to use the same colors that ant-design uses.
     So we define our own css variables and copy the antd values.
 */
-$color-brand-secondary: var(--ant-primary-color);
-$color-brand-secondary-hover: var(--ant-primary-color-hover);
+$color-brand-secondary: rgb(225, 66, 38);
+$color-brand-secondary-hover: #ed6b4e;
 
-$color-reload-spinner: var(--ant-primary-6);
-$color-reload-spinner-bg: var(--ant-primary-1);
+$color-reload-spinner: #e14226;
+$color-reload-spinner-bg: #fff5f0;
 
 $color-light-background: #F6F6F6;
 
