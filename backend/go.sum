@@ -628,6 +628,8 @@ github.com/testcontainers/testcontainers-go v0.32.0 h1:ug1aK08L3gCHdhknlTTwWjPHP
 github.com/testcontainers/testcontainers-go v0.32.0/go.mod h1:CRHrzHLQhlXUsa5gXjTOfqIEJcrK5+xMDmBr/WMI88E=
 github.com/testcontainers/testcontainers-go/modules/redpanda v0.29.1 h1:wqmZd30jKS1L87Va/zl7QLgjVaE/PUwjZ8XfVAAie/I=
 github.com/testcontainers/testcontainers-go/modules/redpanda v0.29.1/go.mod h1:URq0cHQv6JId/oO+ErrrTFhN6QV+TDr6D32sz7xwV5Y=
+github.com/testcontainers/testcontainers-go/modules/redpanda v0.32.0 h1:YicRA+Up3fiI1Vwtaw6MbUPoZfUUySoma6cxmjOgkMo=
+github.com/testcontainers/testcontainers-go/modules/redpanda v0.32.0/go.mod h1:4DNyEf4H091/q4qdXpVdxOne1EvvcFgNf7atLv3FqkU=
 github.com/tilinna/z85 v1.0.0 h1:uqFnJBlD01dosSeo5sK1G1YGbPuwqVHqR+12OJDRjUw=
 github.com/tilinna/z85 v1.0.0/go.mod h1:EfpFU/DUY4ddEy6CRvk2l+UQNEzHbh+bqBQS+04Nkxs=
 github.com/tklauser/go-sysconf v0.3.14 h1:g5vzr9iPFFz24v2KZXs/pvpvh8/V9Fw6vQK5ZZb78yU=

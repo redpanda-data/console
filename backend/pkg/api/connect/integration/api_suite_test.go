@@ -69,8 +69,8 @@ func (s *APISuite) SetupSuite() {
 	s.network = ntw
 
 	// 2. Start Redpanda Docker container
-	container, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.3.5"),
+	container, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.3.18",
 		redpanda.WithEnableWasmTransform(),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
@@ -95,7 +95,6 @@ func (s *APISuite) SetupSuite() {
 		ctx,
 		[]string{"redpanda:29092"},
 		network.WithNetwork([]string{"kconnect"}, s.network),
-		testcontainers.WithImage("docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest"),
 	)
 	require.NoError(err)
 
