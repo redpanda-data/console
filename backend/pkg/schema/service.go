@@ -43,6 +43,7 @@ type Service struct {
 	// by subjects is needed to lookup references in avro schemas.
 	schemaBySubjectVersion *cache.Cache[string, *SchemaVersionedResponse]
 	avroSchemaByID         *cache.Cache[uint32, avro.Schema]
+	jsonSchemaByID         *cache.Cache[uint32, *jsonschema.Schema]
 
 	// for protobuf schema refreshing and compiling
 	srRefreshMutex   sync.RWMutex
@@ -64,6 +65,7 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		registryClient:         client,
 		avroSchemaByID:         cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 		schemaBySubjectVersion: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
+		jsonSchemaByID:         cache.New[uint32, *jsonschema.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
 }
 
@@ -525,4 +527,52 @@ func (s *Service) CreateSchema(ctx context.Context, subject string, schema Schem
 // can be reused in multiple subject versions.
 func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SubjectVersion, error) {
 	return s.registryClient.GetSchemaUsagesByID(ctx, schemaID)
+}
+
+// GetJSONSchemaByID loads the schema by the given schemaID and tries to parse the schema
+// contents to an jsonschema.Schema, so that it can be used for decoding JSON Schema encoded messages.
+func (s *Service) GetJSONSchemaByID(ctx context.Context, schemaID uint32) (*jsonschema.Schema, error) {
+	cached, err, _ := s.jsonSchemaByID.Get(schemaID, func() (*jsonschema.Schema, error) {
+		schemaRes, err := s.registryClient.GetSchemaByID(ctx, schemaID)
+		if err != nil {
+			s.logger.Warn("failed to fetch JSON schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
+			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
+		}
+
+		c := jsonschema.NewCompiler()
+		schemaName := "redpanda_jsonschema.json"
+
+		err = s.buildJSONSchemaWithReferences(ctx, c, schemaName, schemaRes)
+		if err != nil {
+			return nil, err
+		}
+
+		return c.Compile(schemaName)
+	})
+
+	return cached, err
+}
+
+func (s *Service) buildJSONSchemaWithReferences(ctx context.Context, compiler *jsonschema.Compiler, name string, schemaRes *SchemaResponse) error {
+	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema)); err != nil {
+		return err
+	}
+
+	for _, reference := range schemaRes.References {
+		schemaRef, err := s.GetSchemaBySubjectAndVersion(ctx, reference.Subject, strconv.Itoa(reference.Version))
+		if err != nil {
+			return err
+		}
+		if err := compiler.AddResource(reference.Name, strings.NewReader(schemaRef.Schema)); err != nil {
+			return err
+		}
+		if err := s.buildJSONSchemaWithReferences(ctx, compiler, reference.Name, &SchemaResponse{
+			Schema:     schemaRef.Schema,
+			References: schemaRef.References,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

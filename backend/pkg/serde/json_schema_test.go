@@ -14,9 +14,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -67,7 +67,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
-				assert.Equal(t, PayloadEncodingJSONSchema, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 
 				assert.Equal(t, `{"foo":"bar"}`, string(payload.NormalizedPayload))
 
@@ -86,7 +86,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, payload.Troubleshooting)
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
-				assert.Equal(t, PayloadEncodingJSONSchema, payload.Encoding)
+				assert.Equal(t, PayloadEncodingJSON, payload.Encoding)
 			},
 		},
 		{
@@ -123,31 +123,61 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 
 func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	schemaStr := `{
-		"$id": "https://example.com/product.schema.json",
-		"title": "Product",
-		"description": "A product from Acme's catalog",
-		"type": "object",
-		"properties": {
-		  "productId": {
+	"$id": "https://example.com/product.schema.json",
+	"title": "Product",
+	"description": "A product from Acme's catalog",
+	"type": "object",
+	"properties": {
+		"productId": {
 			"description": "The unique identifier for a product",
 			"type": "integer"
-		  },
-		  "productName": {
+		},
+		"productName": {
 			"description": "Name of the product",
 			"type": "string"
-		  },
-		  "price": {
+		},
+		"price": {
 			"description": "The price of the product",
 			"type": "number",
-			"exclusiveMinimum": 0
-		  }
+			"minimum": 1
 		},
-		"required": [ "productId", "productName" ]
-	}`
+		"tags": {
+			"description": "Tags for the product",
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"minItems": 1,
+			"uniqueItems": true
+		},
+		"dimensions": {
+			"type": "object",
+			"properties": {
+				"length": {
+					"type": "number"
+				},
+				"width": {
+					"type": "number"
+				},
+				"height": {
+					"type": "number"
+				}
+			},
+			"required": [
+				"length",
+				"width",
+				"height"
+			]
+		}
+	},
+	"required": [
+		"productId",
+		"productName"
+	],
+	"additionalProperties": false
+}`
 
-	sch, err := jsonschema.CompileString("schema.json", schemaStr)
-	require.NoError(t, err)
-	require.NotNil(t, sch)
+	schemaStr2 := strings.ReplaceAll(schemaStr, `"additionalProperties": false`, `"additionalProperties": true`)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -161,6 +191,19 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 
 			resp := map[string]any{
 				"schema": schemaStr,
+			}
+
+			enc := json.NewEncoder(w)
+			if enc.Encode(resp) != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			return
+		case "/schemas/ids/1001":
+			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+
+			resp := map[string]any{
+				"schema": schemaStr2,
 			}
 
 			enc := json.NewEncoder(w)
@@ -230,10 +273,18 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
+	type Dimensions struct {
+		Length int `json:"length"`
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	}
+
 	type ProductRecord struct {
-		ProductID   int     `json:"productId"`
-		ProductName string  `json:"productName"`
-		Price       float32 `json:"price"`
+		ProductID   int         `json:"productId"`
+		ProductName string      `json:"productName,omitempty"`
+		Price       float32     `json:"price"`
+		Tags        []string    `json:"tags,omitempty"`
+		Dimensions  *Dimensions `json:"dimensions,omitempty"`
 	}
 
 	t.Run("no schema id", func(t *testing.T) {
@@ -246,25 +297,21 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("invalid schema id", func(t *testing.T) {
-		t.Skip("Redpanda schema registry doesn't support JSON schema")
-
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(5567))
 		require.Error(t, err)
-		assert.Equal(t, "getting json schema from registry '5567': get schema by id request failed: Status code 404", err.Error())
+		assert.Equal(t, "getting JSON schema from registry: failed to get schema from registry: get schema by id request failed: Status code 404", err.Error())
 		assert.Nil(t, b)
 	})
 
 	t.Run("dynamic validation error", func(t *testing.T) {
-		t.Skip("Redpanda schema registry doesn't support JSON schema")
-
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		actualData, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
 		assert.Nil(t, actualData)
-		assert.Equal(t, "error validating json schema: jsonschema: '/price' does not validate with https://example.com/product.schema.json#/properties/price/exclusiveMinimum: must be > 0 but found 0", err.Error())
+		assert.Equal(t, "error validating json schema: jsonschema: '/price' does not validate with https://example.com/product.schema.json#/properties/price/minimum: must be >= 1 but found 0", err.Error())
 	})
 
 	t.Run("dynamic", func(t *testing.T) {
@@ -315,9 +362,58 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 		assert.Equal(t, expectData, actualData)
 	})
 
-	t.Run("string invalid json", func(t *testing.T) {
-		t.Skip("Redpanda schema registry doesn't support JSON schema")
+	t.Run("string json extra properties invalid", func(t *testing.T) {
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
+		actualData, err := serde.SerializeObject(context.Background(), `{"productId":11,"productName":"foo","price":10.25,"another":{"objectId":1234}}`, PayloadTypeValue, WithSchemaID(1000))
+		assert.Error(t, err)
+		assert.Empty(t, actualData)
+		assert.Contains(t, err.Error(), "error validating json schema: jsonschema")
+		assert.Contains(t, err.Error(), "additionalProperties 'another' not allowed")
+	})
+
+	t.Run("string json extra properties valid", func(t *testing.T) {
+		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+
+		type ProductRecordAdd struct {
+			ProductRecord
+
+			Extra   string         `json:"extra,omitempty"`
+			Another map[string]any `json:"another,omitempty"`
+		}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			1001,
+			&ProductRecordAdd{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return json.Marshal(v.(*ProductRecordAdd))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return json.Unmarshal(b, v.(*ProductRecordAdd))
+			}),
+		)
+		another := map[string]any{"objectId": 1234}
+
+		expectData, err := srSerde.Encode(&ProductRecordAdd{
+			ProductRecord: ProductRecord{
+				ProductID:   11,
+				ProductName: "foo",
+				Price:       10.25,
+				Tags:        []string{"tag0", "tag1"},
+				Dimensions:  &Dimensions{Length: 10, Width: 11, Height: 12},
+			},
+			Extra:   "prop",
+			Another: another,
+		})
+		require.NoError(t, err)
+
+		actualData, err := serde.SerializeObject(context.Background(), `{"productId":11,"productName":"foo","price":10.25,"tags":["tag0","tag1"],"dimensions":{"length":10,"width":11,"height":12},"extra":"prop","another":{"objectId":1234}}`, PayloadTypeValue, WithSchemaID(1001))
+		assert.NoError(t, err)
+		assert.Equal(t, expectData, actualData)
+	})
+
+	t.Run("string invalid json", func(t *testing.T) {
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(context.Background(), `{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
@@ -378,8 +474,6 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte invalid json", func(t *testing.T) {
-		t.Skip("Redpanda schema registry doesn't support JSON schema")
-
 		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
 
 		b, err := serde.SerializeObject(context.Background(), []byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))

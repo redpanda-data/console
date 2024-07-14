@@ -22,7 +22,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
 	"go.uber.org/zap"
@@ -42,14 +41,14 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	ctx := context.Background()
 
 	// create one common network that all containers will share
-	testNetwork, err := network.New(ctx, network.WithCheckDuplicate(), network.WithAttachable())
+	testNetwork, err := network.New(ctx, network.WithAttachable())
 	require.NoError(err)
 	t.Cleanup(func() {
 		assert.NoError(testNetwork.Remove(ctx))
 	})
 
-	redpandaContainer, err := redpanda.RunContainer(ctx,
-		testcontainers.WithImage("redpandadata/redpanda:v23.3.2"),
+	redpandaContainer, err := redpanda.Run(ctx,
+		"redpandadata/redpanda:v23.3.18",
 		network.WithNetwork([]string{"redpanda"}, testNetwork),
 		redpanda.WithListener("redpanda:29092"),
 	)
@@ -67,7 +66,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		ctx,
 		[]string{"redpanda:29092"},
 		network.WithNetwork([]string{"kafka-connect"}, testNetwork),
-		testcontainers.WithImage("docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest"),
 	)
 	require.NoError(err)
 

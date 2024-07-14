@@ -24,6 +24,19 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+// RedpandaFeature is an enum for various Redpanda capabilities we care about.
+//
+//nolint:revive // Yes it stutters.
+type RedpandaFeature string
+
+const (
+	// RedpandaFeatureRBAC represents RBAC feature.
+	RedpandaFeatureRBAC RedpandaFeature = "redpanda_feature_rbac"
+
+	// RedpandaFeatureWASMDataTransforms represents WASM data transforms feature.
+	RedpandaFeatureWASMDataTransforms RedpandaFeature = "redpanda_feature_wasm_data_transforms"
+)
+
 // Service is the abstraction for communicating with a Redpanda cluster via the admin api.
 type Service struct {
 	adminClient *adminapi.AdminAPI
@@ -292,25 +305,21 @@ func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
-func (s *Service) CheckFeature(ctx context.Context, feature string, states []adminapi.FeatureState) (bool, error) {
-	fr, err := s.adminClient.GetFeatures(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	match := false
-	for _, f := range fr.Features {
-		if f.Name == feature {
-			for _, s := range states {
-				if s == f.State {
-					match = true
-					break
-				}
-			}
-
-			break
+func (s *Service) CheckFeature(ctx context.Context, feature RedpandaFeature) bool {
+	switch feature {
+	case RedpandaFeatureRBAC:
+		_, err := s.ListRoles(ctx, "", "", "")
+		if err != nil {
+			return false
 		}
+		return true
+	case RedpandaFeatureWASMDataTransforms:
+		_, err := s.ListWasmTransforms(ctx)
+		if err != nil {
+			return false
+		}
+		return true
+	default:
+		return false
 	}
-
-	return match, nil
 }

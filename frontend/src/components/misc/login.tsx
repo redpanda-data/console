@@ -16,7 +16,8 @@ import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
 import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
-import { Box, Button, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Stack, Text } from '@redpanda-data/ui';
+import { Box, Button,
+  Flex, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Stack, Text } from '@redpanda-data/ui';
 import { appGlobal } from '../../state/appGlobal';
 import { toJson } from '../../utils/jsonUtils';
 import AzureADLogo from '../../utils/svg/AzureADLogo';
@@ -120,20 +121,19 @@ class Login extends Component {
 
             <div className="loginContainer">
               <div className="loginLeft">
-                <div
+                <Flex
                   className="loginLogo"
-                  style={{
-                    height: '60px',
-                    marginTop: '2rem',
-                    marginBottom: '4rem',
-                  }}
+                  placeItems="center"
+                  height={15}
+                  mt={8}
+                  mb={16}
                 >
                   <img
                     src={SvgLogo}
                     style={{ height: '36px' }}
                     alt="Redpanda Console Logo"
                   />
-                </div>
+                </Flex>
 
                 <Stack spacing="2">
                   <Text fontSize="18px" fontWeight="600" >{this.providersResponse?.loginTitle ?? 'Howdy!'}</Text>
@@ -147,7 +147,7 @@ class Login extends Component {
                     <div style={{ fontSize: '18px', fontWeight: 600 }}>
                       <span>Sign in to Redpanda Console</span>
                     </div>
-                    <div className="loginButtonList">
+                    <Flex placeContent="center" placeItems="center" mt={4} gap={2}>
                       {providerButtons?.map((p) => (
                         <LoginProviderButton key={p.displayName} provider={p} />
                       )) ||
@@ -166,7 +166,7 @@ class Login extends Component {
                             Retreiving login method from backend...
                           </div>
                         )}
-                    </div>
+                    </Flex>
                   </div>
 
                   <PlainLoginBox provider={plainLoginProvider} />
@@ -187,10 +187,22 @@ export default Login;
 function LoginProviderButton(props: { provider: Provider }): JSX.Element {
     const p = props.provider;
 
-    return <div key={p.displayName} className="loginButton2" onClick={() => window.location.replace(p.url)}>
-        {iconMap.get(p.displayName.toLowerCase())}
-        <span>{p.displayName}</span>
-    </div>
+  return (
+    <Button
+      colorScheme="brand"
+      key={p.displayName}
+      width={130}
+      height={85}
+      display="flex"
+      placeContent="center"
+      placeItems="center"
+      flexDirection="column"
+      onClick={() => window.location.replace(p.url)}
+    >
+      {iconMap.get(p.displayName.toLowerCase())}
+      <span>{p.displayName}</span>
+    </Button>
+  );
 }
 
 function ProvidersError(p: { error: string }) {

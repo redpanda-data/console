@@ -30,7 +30,7 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { Box, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerHeader, DrawerOverlay, Heading, Spinner, createStandaloneToast } from '@chakra-ui/react';
 import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
-import { encodeURIComponentPercents } from './Schema.Details';
+import { encodeURIComponentPercents } from '../../../utils/utils';
 
 const { ToastContainer, toast } = createStandaloneToast()
 

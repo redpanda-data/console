@@ -16,11 +16,20 @@ import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../stat
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, PrincipalType, ResourceACLs, unpackPrincipalGroup } from './Models';
+import {
+    AclPrincipalGroup,
+    createEmptyClusterAcl,
+    createEmptyConsumerGroupAcl,
+    createEmptyTopicAcl,
+    createEmptyTransactionalIdAcl,
+    PrincipalType,
+    ResourceACLs,
+    unpackPrincipalGroup
+} from './Models';
 import { Operation } from './Operation';
 import { Box, Button, Flex, FormField, Grid, HStack, Icon, Input, InputGroup, InputLeftAddon, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Text, useToast, VStack } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
-
+import { comparer } from 'mobx';
 
 export const AclPrincipalGroupEditor = observer((p: {
     principalGroup: AclPrincipalGroup,
@@ -42,22 +51,31 @@ export const AclPrincipalGroupEditor = observer((p: {
 
             const allToCreate = unpackPrincipalGroup(group);
 
-            if (allToCreate.length == 0)
-                if (p.type == 'create') throw new Error('Creating an ACL group requires at least one resource to be targetted. Topic/Group targets with an empty selector are not valid.');
-                else throw new Error('No targeted resources. You can delete this ACL group from the list view.');
+            if (allToCreate.length == 0) {
+                if (p.type == 'create') {
+                    throw new Error('Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.');
+                } else {
+                    throw new Error('No targeted resources. You can delete this ACL group from the list view.');
+                }
+            }
 
-            // Delete all ACLs in group
+            // Ignore creation of ACLs that already exist, and delete ACLs that are no longer needed
             if (p.type == 'edit') {
-                if (group.sourceEntries.length > 0)
-                    await api.deleteACLs({
-                        resourceType: 'Any',
-                        resourceName: undefined,
-                        resourcePatternType: 'Any',
-                        principal: group.principalType + ':' + group.principalName,
-                        host: group.host,
-                        operation: 'Any',
-                        permissionType: 'Any'
-                    });
+                if (group.sourceEntries.length > 0) {
+                    const requests = group.sourceEntries.map(acl => {
+                        // try to find this in allToCreate
+                        const foundIdx = allToCreate.findIndex(x => comparer.structural(acl, x))
+                        if(foundIdx !== -1) {
+                            // acl already exists, remove it from the list
+                            allToCreate.splice(foundIdx, 1)
+                            return Promise.resolve()
+                        } else {
+                            // acl should no longer exist, delete it
+                            return api.deleteACLs(acl)
+                        }
+                    })
+                    await Promise.allSettled(requests);
+                }
             }
 
             // Create all ACLs in group
@@ -291,7 +309,7 @@ export const ResourceACLsEditor = observer((p: {
             boxShadow="0px 1px 2px 0px #0000000F"
         >
             <Flex
-                flexDirection="row"
+                flexDirection="column"
                 flexGrow={1}
                 gap={10}
                 p={6}
@@ -299,7 +317,7 @@ export const ResourceACLsEditor = observer((p: {
                 {isCluster ? (
                     <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
                 ) : (
-                        <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid} width="300px">
+                        <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid}>
                             <InputGroup zIndex={1}>
                                 <InputLeftAddon padding="0px" width="124px">
                                     <SingleSelect<'Any' | 'Literal' | 'Prefixed'>

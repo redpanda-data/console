@@ -115,7 +115,8 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 
-	redpandaContainer, err := redpanda.RunContainer(ctx, testcontainers.WithImage("redpandadata/redpanda:v23.3.2"))
+	// redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda:v23.3.18")
+	redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda-nightly:latest")
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
@@ -3912,8 +3913,118 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(expectedData, serRes.Value.Payload)
 	})
 
+	t.Run("json schema no reference", func(t *testing.T) {
+		testTopicName := testutil.TopicNameForTest("serde_schema_json")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
+		require.NoError(err)
+
+		fullSchema := `{
+			"$id": "https://example.com/product.schema.json",
+			"title": "Product",
+			"description": "A product from Acme's catalog",
+			"type": "object",
+			"properties": {
+			  "productId": {
+				"description": "The unique identifier for a product",
+				"type": "integer"
+			  },
+			  "productName": {
+				"description": "Name of the product",
+				"type": "string"
+			  },
+			  "price": {
+				"description": "The price of the product",
+				"type": "number",
+				"minimum": 0
+			  }
+			},
+			"required": [ "productId", "productName" ]
+		}`
+
+		ssFull, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+			Schema: fullSchema,
+			Type:   sr.TypeJSON,
+		})
+		require.NoError(err)
+		require.NotNil(ssFull)
+
+		// test
+		cfg := s.createBaseConfig()
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		require.NoError(err)
+
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		type ProductRecord struct {
+			ProductID   int     `json:"productId"`
+			ProductName string  `json:"productName"`
+			Price       float32 `json:"price"`
+		}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			ssFull.ID,
+			&ProductRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return json.Marshal(v.(*ProductRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return json.Unmarshal(b, v.(*ProductRecord))
+			}),
+		)
+
+		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
+		require.NoError(err)
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+
+		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+			Topic: testTopicName,
+			Key: RecordPayloadInput{
+				Payload:  "11",
+				Encoding: PayloadEncodingText,
+			},
+			Value: RecordPayloadInput{
+				Payload:  `{"productId":11,"productName":"foo","price":10.25}`,
+				Encoding: PayloadEncodingJSONSchema,
+				Options:  []SerdeOpt{WithSchemaID(uint32(ssFull.ID))},
+			},
+		})
+
+		require.NoError(err)
+
+		assert.NotNil(out)
+
+		// key
+		assert.Equal([]byte("11"), out.Key.Payload)
+		assert.Equal(PayloadEncodingText, out.Key.Encoding)
+
+		// value
+		assert.Equal(expectData, out.Value.Payload)
+		assert.Equal(PayloadEncodingJSONSchema, out.Value.Encoding)
+	})
+
 	t.Run("json schema with reference", func(t *testing.T) {
-		t.Skip("JSON Schemas not supported in Redpanda Schema Registry")
+		t.Skip("JSON Schemas with references not supported in Redpanda Schema Registry")
 
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3946,7 +4057,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			"title": "price",
 			"description": "The price of the product",
 			"type": "number",
-			"exclusiveMinimum": 0
+			"minimum": 0
 		  }`
 
 		schemaStr := `{
@@ -3979,7 +4090,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			  "price": {
 				"description": "The price of the product",
 				"type": "number",
-				"exclusiveMinimum": 0
+				"minimum": 0
 			  }
 			},
 			"required": [ "productId", "productName" ]
@@ -4100,7 +4211,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		// value
 		assert.Equal(expectData, out.Value.Payload)
-		assert.Equal(PayloadEncodingJSON, out.Key.Encoding)
+		assert.Equal(PayloadEncodingJSONSchema, out.Value.Encoding)
 	})
 
 	t.Run("schema registry avro references", func(t *testing.T) {

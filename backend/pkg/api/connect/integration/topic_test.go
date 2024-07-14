@@ -647,6 +647,9 @@ func (s *APISuite) TestGetTopicConfiguration() {
 	t := s.T()
 
 	t.Run("get topic configuration of a valid topic (connect-go)", func(t *testing.T) {
+		// Skip until https://github.com/redpanda-data/redpanda/issues/21360 is resolved.
+		t.Skip()
+
 		require := require.New(t)
 		assert := assert.New(t)
 
@@ -1089,6 +1092,9 @@ func (s *APISuite) TestUpdateTopicConfiguration() {
 func (s *APISuite) TestSetTopicConfiguration() {
 	t := s.T()
 
+	// Skip until https://github.com/redpanda-data/redpanda/issues/21360 is resolved.
+	t.Skip()
+
 	t.Run("set topic configuration of a valid topic (connect-go)", func(t *testing.T) {
 		require := require.New(t)
 		assert := assert.New(t)
@@ -1152,12 +1158,12 @@ func (s *APISuite) TestSetTopicConfiguration() {
 		require.NotNil(retentionBytesConfig)
 
 		assert.Equal("delete", *cleanupPolicyConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source.String())
+		assert.Equalf(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), cleanupPolicyConfig.Source.String(), "Cleanup Policy")
 
 		assert.Equal(kmsg.StringPtr("producer"), compressionTypeConfig.Value)
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String())
+		assert.Equalf(v1alpha1.ConfigSource_CONFIG_SOURCE_DYNAMIC_TOPIC_CONFIG.String(), compressionTypeConfig.Source.String(), "Compression Type")
 
-		assert.Equal(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source.String())
+		assert.Equalf(v1alpha1.ConfigSource_CONFIG_SOURCE_DEFAULT_CONFIG.String(), retentionBytesConfig.Source.String(), "Retention Bytes")
 	})
 
 	t.Run("set topic configuration of a valid topic (http)", func(t *testing.T) {

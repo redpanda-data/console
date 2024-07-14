@@ -47,6 +47,10 @@ import UserEditPage from './pages/acls/UserEdit';
 import RoleCreatePage from './pages/acls/RoleCreate';
 import RoleDetailsPage from './pages/acls/RoleDetails';
 import RoleEditPage from './pages/acls/RoleEditPage';
+import { MdOutlineSmartToy } from 'react-icons/md';
+import TransformsList from './pages/transforms/Transforms.List';
+import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import TransformDetails from './pages/transforms/Transform.Details';
 
 //
 //	Route Types
@@ -275,6 +279,10 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
+
+    MakeRoute<{}>('/transforms-setup', TransformsSetup, 'Transforms', undefined, true),
+    MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true),
+    MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
     // MakeRoute<{ connectorName: string }>('/rp-connect/:connectorName', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),

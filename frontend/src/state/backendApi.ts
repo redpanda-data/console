@@ -12,7 +12,7 @@
 
 /*eslint block-scoped-var: "error"*/
 
-import { comparer, computed, observable, transaction } from 'mobx';
+import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
@@ -121,6 +121,7 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
+import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -365,6 +366,9 @@ const apiStore = {
                     canDeleteSchemas: true,
                     canManageSchemaRegistry: true,
                     canViewSchemas: true,
+                    canListTransforms: true,
+                    canCreateTransforms: true,
+                    canDeleteTransforms: true,
                     seat: null as any,
                     user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                 };
@@ -1656,23 +1660,23 @@ export const pipelinesApi = observable({
 
         // todo: caching by default, if force=true, ignore time limit on cache
 
-/*         const client = appConfig.pipelinesClient;
-        if (!client) throw new Error('pipelines client is not initialized');
+        /*         const client = appConfig.pipelinesClient;
+                if (!client) throw new Error('pipelines client is not initialized');
 
-        const pipelines = [];
+                const pipelines = [];
 
-        let nextPageToken = '';
-        while (true) {
-            const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
+                let nextPageToken = '';
+                while (true) {
+                    const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
 
-            pipelines.push(...res.pipelines);
+                    pipelines.push(...res.pipelines);
 
-            if (!res.nextPageToken || res.nextPageToken.length == 0)
-                break;
-            nextPageToken = res.nextPageToken;
-        }
+                    if (!res.nextPageToken || res.nextPageToken.length == 0)
+                        break;
+                    nextPageToken = res.nextPageToken;
+                }
 
-        this.pipelines = pipelines; */
+                this.pipelines = pipelines; */
     },
 
     // async refreshPipelineDetails(name: string): Promise<void> {
@@ -1685,6 +1689,59 @@ export const pipelinesApi = observable({
 
 });
 
+
+export const transformsApi = observable({
+    transforms: undefined as undefined | TransformMetadata[],
+    transformDetails: new Map<string, TransformMetadata>(),
+
+    async refreshTransforms(_force: boolean): Promise<void> {
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+        const transforms: TransformMetadata[] = [];
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+            const r = res.response;
+            if (!r)
+                break;
+
+            transforms.push(...r.transforms);
+
+            if (!r.nextPageToken || r.nextPageToken.length == 0)
+                break;
+            nextPageToken = r.nextPageToken;
+        }
+
+        runInAction(() => {
+            this.transforms = transforms;
+            this.transformDetails.clear();
+            for (const t of transforms)
+                this.transformDetails.set(t.name, t);
+        });
+    },
+
+    async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+
+        const res = await client.getTransform({ request: { name } });
+        const r = res.response;
+        if (!r)
+            throw new Error('got empty response from getTransform');
+
+        if (!r.transform) return;
+
+        this.transformDetails.set(r.transform.name, r.transform);
+    },
+
+    async deleteTransform(name: string) {
+        const client = appConfig.transformsClient;
+        if (!client) throw new Error('transforms client is not initialized');
+
+        await client.deleteTransform({ request: { name } });
+    },
+
+});
 
 export function createMessageSearch() {
     const messageSearch = {
