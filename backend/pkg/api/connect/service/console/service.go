@@ -70,30 +70,20 @@ func (api *Service) ListMessages(
 
 	// Check if logged in user is allowed to list messages for the given request
 	canViewMessages, restErr := api.authHooks.CanViewTopicMessages(ctx, &lmq)
-	if restErr != nil || !canViewMessages {
-		err := errors.New("you don't have permissions to view Kafka topic messages")
-		if restErr != nil && restErr.Err != nil {
-			err = restErr.Err
-		}
-		return apierrors.NewConnectError(
-			connect.CodePermissionDenied,
-			err,
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
-		)
+	err := apierrors.NewPermissionDeniedConnectError(canViewMessages, restErr,
+		"you don't have permissions to view Kafka topic messages",
+	)
+	if err != nil {
+		return err
 	}
 
 	if lmq.FilterInterpreterCode != "" {
 		canUseMessageSearchFilters, restErr := api.authHooks.CanUseMessageSearchFilters(ctx, &lmq)
-		if restErr != nil || !canUseMessageSearchFilters {
-			err := errors.New("you don't have permissions to use search filters")
-			if restErr != nil && restErr.Err != nil {
-				err = restErr.Err
-			}
-			return apierrors.NewConnectError(
-				connect.CodePermissionDenied,
-				err,
-				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
-			)
+		err := apierrors.NewPermissionDeniedConnectError(canUseMessageSearchFilters, restErr,
+			"you don't have permissions to use search filters",
+		)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -159,7 +149,7 @@ func (api *Service) ListMessages(
 
 // PublishMessage serialized and produces the records.
 //
-//nolint:gocognit,cyclop // complicated response logic
+//nolint:gocognit // complicated response logic
 func (api *Service) PublishMessage(
 	ctx context.Context,
 	req *connect.Request[v1alpha.PublishMessageRequest],
@@ -167,16 +157,11 @@ func (api *Service) PublishMessage(
 	msg := req.Msg
 
 	canPublish, restErr := api.authHooks.CanPublishTopicRecords(ctx, msg.GetTopic())
-	if restErr != nil || !canPublish {
-		err := errors.New("you don't have permissions to publish topic records")
-		if restErr != nil && restErr.Err != nil {
-			err = restErr.Err
-		}
-		return nil, apierrors.NewConnectError(
-			connect.CodePermissionDenied,
-			err,
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
-		)
+	err := apierrors.NewPermissionDeniedConnectError(canPublish, restErr,
+		"you don't have permissions to publish topic records",
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	recordHeaders := make([]kgo.RecordHeader, 0, len(req.Msg.GetHeaders()))
