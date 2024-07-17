@@ -39,7 +39,6 @@ import {
     Label,
     navigatorClipboardErrorHandler,
     numberToThousandsString,
-    OptionGroup,
     StatusIndicator,
     TimestampDisplay,
     toSafeString
@@ -86,7 +85,7 @@ import {
     ModalHeader,
     ModalOverlay,
     RadioGroup,
-    Select,
+    Stack,
     Tabs as RpTabs,
     Tag,
     TagCloseButton,
@@ -98,7 +97,6 @@ import {
     useToast
 } from '@redpanda-data/ui';
 import { SingleSelect, SingleSelectProps } from '../../../misc/Select';
-import { MultiValue } from 'chakra-react-select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
@@ -129,6 +127,10 @@ const payloadEncodingPairs = [
     { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
 ];
 
+const PAYLOAD_ENCODING_VALUES = payloadEncodingPairs.reduce((acc, pair) => {
+    acc[pair.value] = pair.label;
+    return acc;
+}, {} as Record<PayloadEncoding, string>);
 
 
 interface TopicMessageViewProps {
@@ -666,6 +668,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }).catch(navigatorClipboardErrorHandler);
         }
 
+        const isValueDeserializerActive = uiState.topicSettings.searchParams.valueDeserializer !== PayloadEncoding.UNSPECIFIED && uiState.topicSettings.searchParams.valueDeserializer !== null;
+        const isKeyDeserializerActive = uiState.topicSettings.searchParams.keyDeserializer !== PayloadEncoding.UNSPECIFIED && uiState.topicSettings.searchParams.keyDeserializer !== null;
+
         const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
             offset: {
                 header: 'Offset',
@@ -682,13 +687,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 cell: ({ row: { original: { timestamp } } }) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat} />,
             },
             key: {
-                header: 'Key',
+                header: () => isKeyDeserializerActive ? <Flex display="inline-flex" gap={2} alignItems="center">Key <button onClick={(e) => {
+                    this.showDeserializersModal = true;
+                    e.stopPropagation(); // don't sort
+                }}><Badge>Deserializer: {PAYLOAD_ENCODING_VALUES[uiState.topicSettings.searchParams.keyDeserializer]}</Badge></button></Flex> : 'Key',
                 size: hasKeyTags ? 300 : 1,
                 accessorKey: 'key',
                 cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags} />,
             },
             value: {
-                header: () => 'Value',
+                header: () => isValueDeserializerActive ? <Flex display="inline-flex" gap={2} alignItems="center">Value <button onClick={(e) => {
+                    this.showDeserializersModal = true;
+                    e.stopPropagation(); // don't sort
+                }}><Badge>Deserializer: {PAYLOAD_ENCODING_VALUES[uiState.topicSettings.searchParams.valueDeserializer]}</Badge></button></Flex> : 'Value',
                 accessorKey: 'value',
                 cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
             },
@@ -711,12 +722,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         if (uiState.topicSettings.previewColumnFields.length > 0) {
             newColumns.splice(0, newColumns.length);
 
+            const columnOrder: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize']
+
             // let's be defensive and remove any duplicates before showing in the table
-            new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex)).forEach(dataIndex => {
-                if (dataTableColumns[dataIndex]) {
-                    newColumns.push(dataTableColumns[dataIndex])
+            const selectedColumns = new Set(uiState.topicSettings.previewColumnFields.map(field => field.dataIndex))
+
+            for(const column of columnOrder) {
+                if(selectedColumns.has(column)) {
+                    newColumns.push(dataTableColumns[column])
                 }
-            })
+            }
         }
 
         if (newColumns.length > 0) {
@@ -1470,8 +1485,6 @@ const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
             </AlertDescription>
 
         </Alert>
-
-
     </Box>
 
 });
@@ -1569,40 +1582,20 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
     </div>;
 });
 
-
-const TableSettingsTab = observer(() => <>
-    <Box>
-        <Text>
-            Click on the column field on the text field and/or <b>x</b> on to remove it.<br/>
-        </Text>
-    </Box>
-    <Box py={6} px={4} bg="rgba(200, 205, 210, 0.16)" borderRadius="4px">
-        <ColumnOptions tags={uiState.topicSettings.previewColumnFields}/>
-    </Box>
-    <Box mt="1em">
-        <Text mb={2}>More Settings</Text>
-        <Box>
-            <OptionGroup<TimestampDisplayFormat>
-              label="Timestamp"
-              options={{
-                  'Local DateTime': 'default',
-                  'Unix DateTime': 'unixTimestamp',
-                  'Relative': 'relative',
-                  'Local Date': 'onlyDate',
-                  'Local Time': 'onlyTime',
-                  'Unix Millis': 'unixMillis',
-              }}
-              value={uiState.topicSettings.previewTimestamps}
-              onChange={e => uiState.topicSettings.previewTimestamps = e}
-            />
-        </Box>
-    </Box>
-</>);
-
 const ColumnSettings: FC<{
     getShowDialog: () => boolean;
     setShowDialog: (val: boolean) => void;
 }> = observer(({ getShowDialog, setShowDialog }) => {
+
+    const columnSettings: ColumnList[] = [
+        { title: 'Offset', dataIndex: 'offset' },
+        { title: 'Partition', dataIndex: 'partitionID' },
+        { title: 'Timestamp', dataIndex: 'timestamp' },
+        { title: 'Key', dataIndex: 'key' },
+        { title: 'Value', dataIndex: 'value' },
+        { title: 'Key Size', dataIndex: 'keySize' },
+        { title: 'Value Size', dataIndex: 'valueSize' },
+    ];
 
     return <Modal isOpen={getShowDialog()} onClose={() => {
         setShowDialog(false);
@@ -1614,7 +1607,72 @@ const ColumnSettings: FC<{
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-                <TableSettingsTab />
+                <Text>
+                    Choose which columns will be shown in the messages table, as well as the format of the timestamp.
+                </Text>
+                <Box my={6}>
+                    <Label text="Columns shown">
+                        <Stack spacing={5} direction="row">
+                            {columnSettings.map(({title, dataIndex}) =>
+                              <Checkbox
+                                key={dataIndex}
+                                size="lg"
+                                isChecked={!!uiState.topicSettings.previewColumnFields.find((x) => x.dataIndex===dataIndex)}
+                                onChange={({target: {checked}}) => {
+                                    if (checked) {
+                                        uiState.topicSettings.previewColumnFields.pushDistinct({
+                                            title,
+                                            dataIndex,
+                                        });
+                                    } else {
+                                        const idxToRemove = uiState.topicSettings.previewColumnFields.findIndex(x => x.dataIndex===dataIndex);
+                                        uiState.topicSettings.previewColumnFields.splice(idxToRemove, 1);
+                                    }
+                                }}
+                              >
+                                  {title}
+                              </Checkbox>
+                            )}
+                        </Stack>
+                    </Label>
+                    <Button
+                      mt={2}
+                      variant="link"
+                      // we need to pass this using sx to increase specificity, using p={0} won't work
+                      sx={{padding: 0}}
+                      onClick={() => {
+                          uiState.topicSettings.previewColumnFields = [];
+                      }}
+                    >
+                        Clear
+                    </Button>
+                </Box>
+                <Grid my={6} templateColumns="1fr 2fr" gap={4}>
+                    <GridItem>
+                        <Label text="Timestamp format">
+                            <SingleSelect<TimestampDisplayFormat>
+                              value={uiState.topicSettings.previewTimestamps}
+                              onChange={e => uiState.topicSettings.previewTimestamps = e}
+                              options={[
+                                  {label: 'Local DateTime', value: 'default'},
+                                  {label: 'Unix DateTime', value: 'unixTimestamp'},
+                                  {label: 'Relative', value: 'relative'},
+                                  {label: 'Local Date', value: 'onlyDate'},
+                                  {label: 'Local Time', value: 'onlyTime'},
+                                  {label: 'Unix Millis', value: 'unixMillis'},
+                              ]}
+                            />
+                        </Label>
+                    </GridItem>
+                    <GridItem>
+                        <Label text="Preview">
+                            <TimestampDisplay
+                              unixEpochMillisecond={+new Date()}
+                              format={uiState.topicSettings.previewTimestamps}
+                            />
+                        </Label>
+                    </GridItem>
+                </Grid>
             </ModalBody>
             <ModalFooter gap={2}>
                 <Button onClick={() => {
@@ -1665,19 +1723,22 @@ const DeserializersModal: FC<{
         setShowDialog(false);
     }}>
         <ModalOverlay />
-        <ModalContent minW="4xl">
+        <ModalContent minW="xl">
             <ModalHeader>
-                Deserializers
+                Deserialize
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody display="flex" flexDirection="column" gap={4}>
-                <Label text="Key Deserializer">
-                    <SingleSelect<PayloadEncoding>
-                      options={payloadEncodingPairs}
-                      value={searchParams.keyDeserializer}
-                      onChange={e => searchParams.keyDeserializer = e}
-                    />
-                </Label>
+                <Text>Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.</Text>
+                <Box>
+                    <Label text="Key Deserializer">
+                        <SingleSelect<PayloadEncoding>
+                          options={payloadEncodingPairs}
+                          value={searchParams.keyDeserializer}
+                          onChange={e => searchParams.keyDeserializer = e}
+                        />
+                    </Label>
+                </Box>
                 <Label text="Value Deserializer">
                     <SingleSelect<PayloadEncoding>
                       options={payloadEncodingPairs}
@@ -1695,46 +1756,6 @@ const DeserializersModal: FC<{
     </Modal>
 });
 
-
-
-const handleColumnListChange = action((newValue: MultiValue<{ value: DataColumnKey, label: string }>) => {
-    uiState.topicSettings.previewColumnFields = newValue.map(({ label, value }) => ({
-        title: label,
-        dataIndex: value
-    }))
-})
-
-
-const ColumnOptions: FC<{ tags: ColumnList[] }> = ({ tags }) => {
-    const defaultColumnList: ColumnList[] = [
-        { title: 'Offset', dataIndex: 'offset' },
-        { title: 'Partition', dataIndex: 'partitionID' },
-        { title: 'Timestamp', dataIndex: 'timestamp' },
-        { title: 'Key', dataIndex: 'key' },
-        { title: 'Value', dataIndex: 'value' },
-        { title: 'Key Size', dataIndex: 'keySize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
-        { title: 'Value Size', dataIndex: 'valueSize' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
-    ];
-
-    const value = tags.map(column => ({
-        label: column.title,
-        value: column.dataIndex
-    }));
-
-    return <Box>
-        <Select
-          isMulti
-          name=""
-          options={defaultColumnList.map((column: ColumnList) => ({
-              label: column.title,
-              value: column.dataIndex,
-          }))}
-          value={value}
-          // @ts-ignore - we need to add support for isMulti generic in @redpanda-data/ui
-          onChange={handleColumnListChange}
-        />
-    </Box>;
-}
 
 const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = observer(({ onEdit }) => {
   const settings = uiState.topicSettings.searchParams;
