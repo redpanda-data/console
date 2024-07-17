@@ -127,7 +127,7 @@ const payloadEncodingPairs = [
     { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
 ];
 
-const PAYLOAD_ENCODING_VALUES = payloadEncodingPairs.reduce((acc, pair) => {
+const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce((acc, pair) => {
     acc[pair.value] = pair.label;
     return acc;
 }, {} as Record<PayloadEncoding, string>);
@@ -690,7 +690,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 header: () => isKeyDeserializerActive ? <Flex display="inline-flex" gap={2} alignItems="center">Key <button onClick={(e) => {
                     this.showDeserializersModal = true;
                     e.stopPropagation(); // don't sort
-                }}><Badge>Deserializer: {PAYLOAD_ENCODING_VALUES[uiState.topicSettings.searchParams.keyDeserializer]}</Badge></button></Flex> : 'Key',
+                }}><Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.keyDeserializer]}</Badge></button></Flex> : 'Key',
                 size: hasKeyTags ? 300 : 1,
                 accessorKey: 'key',
                 cell: ({ row: { original } }) => <MessageKeyPreview msg={original} previewFields={() => this.activePreviewTags} />,
@@ -699,7 +699,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 header: () => isValueDeserializerActive ? <Flex display="inline-flex" gap={2} alignItems="center">Value <button onClick={(e) => {
                     this.showDeserializersModal = true;
                     e.stopPropagation(); // don't sort
-                }}><Badge>Deserializer: {PAYLOAD_ENCODING_VALUES[uiState.topicSettings.searchParams.valueDeserializer]}</Badge></button></Flex> : 'Value',
+                }}><Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.valueDeserializer]}</Badge></button></Flex> : 'Value',
                 accessorKey: 'value',
                 cell: ({ row: { original } }) => <MessagePreview msg={original} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />
             },
@@ -1106,9 +1106,12 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
                 text = cullText(JSON.stringify(key.payload), 44);
             }
 
-            return <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
+            return <Flex flexDirection="column">
+                <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
                 <code style={{ fontSize: '95%' }}>{text}</code>
-            </span>;
+            </span>
+                <Text color="gray.500">{key.encoding.toUpperCase()} - {prettyBytes(key.size)}</Text>
+            </Flex>;
         }
         catch (e) {
             return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
@@ -1209,7 +1212,10 @@ export class MessagePreview extends Component<{ msg: TopicMessage, previewFields
                 }
             }
 
-            return <code><span className="cellDiv" style={{ fontSize: '95%' }}>{text}</span></code>;
+            return <Flex flexDirection="column">
+                <code><span className="cellDiv" style={{ fontSize: '95%' }}>{text}</span></code>
+                <Text color="gray.500">{value.encoding.toUpperCase()} - {prettyBytes(value.size)}</Text>
+            </Flex>
         }
         catch (e) {
             return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
