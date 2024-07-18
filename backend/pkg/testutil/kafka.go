@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -37,7 +38,7 @@ import (
 )
 
 // CreateClients creates kafka clients
-func CreateClients(t *testing.T, brokers []string) (*kgo.Client, *kadm.Client) {
+func CreateClients(t *testing.T, brokers []string, additionalOpts ...kgo.Opt) (*kgo.Client, *kadm.Client) {
 	t.Helper()
 
 	opts := []kgo.Opt{
@@ -55,7 +56,7 @@ func CreateClients(t *testing.T, brokers []string) (*kgo.Client, *kadm.Client) {
 		kgo.MetadataMinAge(250 * time.Millisecond),
 	}
 
-	kClient, err := kgo.NewClient(opts...)
+	kClient, err := kgo.NewClient(slices.Concat(opts, additionalOpts)...)
 	require.NoError(t, err)
 
 	kafkaAdmCl := kadm.NewClient(kClient)
