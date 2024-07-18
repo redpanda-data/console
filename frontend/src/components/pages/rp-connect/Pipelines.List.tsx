@@ -19,11 +19,42 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Link } from 'react-router-dom';
 // import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
-import { Box, Button, SearchField } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField, Text } from '@redpanda-data/ui';
 import { uiSettings } from '../../../state/ui';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { encodeURIComponentPercents } from '../../../utils/utils';
 // import { DefaultSkeleton } from '../../../utils/tsxUtils';
 // import { proto3 } from '@bufbuild/protobuf';
 // import { ConnectPipeline, ConnectPipeline_State } from '../../../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
+import { CheckIcon } from '@chakra-ui/icons';
+import { XIcon } from '@heroicons/react/solid';
+import { openDeleteModal } from './modals';
+import { TrashIcon } from '@heroicons/react/outline';
+const { ToastContainer, toast } = createStandaloneToast();
+
+
+export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
+    switch (p.status) {
+        case Pipeline_State.UNSPECIFIED: return <Flex alignItems="center" gap="2"><XIcon color="orange" height="14px" /> Unspecified</Flex>;
+        case Pipeline_State.STARTING: return <Flex alignItems="center" gap="2"><CheckIcon color="green" height="14px" /> Starting</Flex>;
+        case Pipeline_State.RUNNING: return <Flex alignItems="center" gap="2"><CheckIcon color="green" height="14px" /> Running</Flex>;
+        case Pipeline_State.STOPPING: return <Flex alignItems="center" gap="2"><XIcon color="red" height="14px" /> Stopping</Flex>;
+        case Pipeline_State.STOPPED: return <Flex alignItems="center" gap="2"><XIcon color="red" height="14px" /> Stopped</Flex>;
+        case Pipeline_State.ERROR: return <Flex alignItems="center" gap="2"><XIcon color="red" height="14px" /> Error</Flex>;
+        default:
+            return <> Unknown</>;
+    }
+});
+
+export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
+    const { limit } = p.pipeline;
+    if (!limit) return <></>
+
+    return <>
+        {limit.cpuShares}{' '}{limit.memoryShares}
+    </>;
+});
 
 @observer
 class RpConnectPipelinesList extends PageComponent<{}> {
@@ -47,73 +78,122 @@ class RpConnectPipelinesList extends PageComponent<{}> {
     }
 
     render() {
-        // if (!pipelinesApi.pipelines) return DefaultSkeleton;
+        if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
-        // const filteredPipelines = (pipelinesApi.pipelines ?? [])
-        //     .filter(u => {
-        //         const filter = uiSettings.pipelinesList.quickSearch;
-        //         if (!filter) return true;
-        //         try {
-        //             const quickSearchRegExp = new RegExp(filter, 'i');
-        //             return u.name.match(quickSearchRegExp);
-        //         } catch { return false; }
-        //     });
+        const filteredPipelines = (pipelinesApi.pipelines ?? [])
+            .filter(u => {
+                const filter = uiSettings.pipelinesList.quickSearch;
+                if (!filter) return true;
+                try {
+                    const quickSearchRegExp = new RegExp(filter, 'i');
+                    if (u.id.match(quickSearchRegExp))
+                        return true;
+                    if (u.displayName.match(quickSearchRegExp))
+                        return true;
+                    return false;
+                } catch { return false; }
+            });
 
         return (
             <PageContent>
                 <Section>
-                    {/* Connectors List */}
-                    <div>
-                        <div style={{ display: 'flex', marginBottom: '.5em' }}>
-                            <Link to={'/rp-connect/create-connector'}><Button variant="solid" colorScheme="brand" isDisabled>Create connector</Button></Link>
-                        </div>
+                    <ToastContainer />
+                    {/* Pipeline List */}
 
-                        <Box my={5}>
-                            <SearchField width="350px"
-                                searchText={uiSettings.pipelinesList.quickSearch}
-                                setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
-                                placeholderText="Enter search term / regex..."
-                            />
-                        </Box>
-
-                        {/* <DataTable<ConnectPipeline>
-                            data={filteredPipelines}
-                            pagination
-                            defaultPageSize={10}
-                            sorting
-                            columns={[
-                                {
-                                    header: 'Pipeline Name',
-                                    cell: ({ row: { original } }) => (
-                                        <Link to={`/rp-connect/${encodeURIComponent(original.name)}`}>
-                                            <Text wordBreak="break-word" whiteSpace="break-spaces">{original.name}</Text>
-                                        </Link>
-                                    ),
-                                    size: Infinity
-                                },
-                                {
-                                    header: 'State',
-                                    cell: ({ row: { original } }) => {
-                                        const enumType = proto3.getEnumType(ConnectPipeline_State);
-                                        const entry = enumType.findNumber(original.state);
-                                        return <>
-                                            {entry?.name ?? original.state}
-                                        </>
-                                    }
-                                },
-                                {
-                                    header: 'Input',
-                                    accessorKey: 'input',
-                                    size: 100,
-                                },
-                                {
-                                    header: 'Output',
-                                    accessorKey: 'output',
-                                    size: 100,
-                                }
-                            ]}
-                        /> */}
+                    <div style={{ display: 'flex', marginBottom: '.5em' }}>
+                        <Link to={'/rp-connect/create'}><Button variant="solid" colorScheme="brand">Create pipeline</Button></Link>
                     </div>
+
+                    <Box my={5}>
+                        <SearchField width="350px"
+                            searchText={uiSettings.pipelinesList.quickSearch}
+                            setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
+                            placeholderText="Enter search term / regex..."
+                        />
+                    </Box>
+
+                    <DataTable<Pipeline>
+                        data={filteredPipelines}
+                        pagination
+                        defaultPageSize={10}
+                        sorting
+                        columns={[
+                            {
+                                header: 'ID',
+                                cell: ({ row: { original } }) => (
+                                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                                        <Text>{original.id}</Text>
+                                    </Link>
+                                ),
+                                size: 100,
+                            },
+                            {
+                                header: 'Pipeline Name',
+                                cell: ({ row: { original } }) => (
+                                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                                        <Text wordBreak="break-word" whiteSpace="break-spaces">{original.displayName}</Text>
+                                    </Link>
+                                ),
+                                size: Infinity
+                            },
+                            {
+                                header: 'Description',
+                                accessorKey: 'description',
+                                size: 100,
+                            },
+                            {
+                                header: 'Status',
+                                cell: ({ row: { original } }) => {
+                                    return <>
+                                        <PipelineStatus status={original.state} />
+                                    </>
+                                }
+                            },
+                            {
+                                header: 'Throughput',
+                                cell: ({ row: { original } }) => {
+                                    return <>
+                                        <PipelineThroughput pipeline={original} />
+                                    </>
+                                },
+                                size: 100,
+                            },
+                            {
+                                header: '',
+                                id: 'actions',
+                                cell: ({ row: { original: r } }) =>
+                                    <Button variant="icon"
+                                        height="16px" color="gray.500"
+                                        // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+
+                                            openDeleteModal(r.id, () => {
+                                                pipelinesApi.deletePipeline(r.id)
+                                                    .then(async () => {
+                                                        toast({
+                                                            status: 'success', duration: 4000, isClosable: false,
+                                                            title: 'Pipeline deleted'
+                                                        });
+                                                        pipelinesApi.refreshPipelines(true);
+                                                    })
+                                                    .catch(err => {
+                                                        toast({
+                                                            status: 'error', duration: null, isClosable: true,
+                                                            title: 'Failed to delete pipeline',
+                                                            description: String(err),
+                                                        })
+                                                    });
+                                            })
+
+                                        }}>
+                                        <TrashIcon />
+                                    </Button>,
+                                size: 1
+                            },
+                        ]}
+                    />
 
                 </Section>
             </PageContent>

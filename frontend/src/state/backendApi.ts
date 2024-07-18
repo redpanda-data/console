@@ -120,8 +120,8 @@ import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../pro
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
-import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+import { Pipeline, Pipeline_State, PipelineCreate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1646,47 +1646,92 @@ export const rolesApi = observable({
 });
 
 export const pipelinesApi = observable({
-    // pipelines: undefined as undefined | ConnectPipeline[],
+    pipelines: undefined as undefined | Pipeline[],
 
-    async lintConfig(config: string): Promise<LintConfigResponse> {
-        const client = appConfig.pipelinesClient;
-        if (!client) throw new Error('pipelines client is not initialized');
-
-        const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
-        return r;
-    },
-
-    async refreshPipelines(_force: boolean): Promise<void> {
-
-        // todo: caching by default, if force=true, ignore time limit on cache
-
-        /*         const client = appConfig.pipelinesClient;
-                if (!client) throw new Error('pipelines client is not initialized');
-
-                const pipelines = [];
-
-                let nextPageToken = '';
-                while (true) {
-                    const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
-
-                    pipelines.push(...res.pipelines);
-
-                    if (!res.nextPageToken || res.nextPageToken.length == 0)
-                        break;
-                    nextPageToken = res.nextPageToken;
-                }
-
-                this.pipelines = pipelines; */
-    },
-
-    // async refreshPipelineDetails(name: string): Promise<void> {
+    // async lintConfig(config: string): Promise<LintConfigResponse> {
     //     const client = appConfig.pipelinesClient;
     //     if (!client) throw new Error('pipelines client is not initialized');
     //
-    //     const pipelineDetails = await client.getConnectPipeline({ name });
-    //     pipelineDetails.pipeline?.config
+    //     const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
+    //     return r;
     // },
 
+    async refreshPipelines(_force: boolean): Promise<void> {
+        // todo: caching by default, if force=true, ignore time limit on cache
+        if (Math.random() < 10) {
+            this.pipelines = [
+                new Pipeline({
+                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'this is the description', displayName: 'Name of the pipeline',
+                    id: 'abc123', state: Pipeline_State.RUNNING,
+                    status: { error: undefined },
+                }),
+                new Pipeline({
+                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'second pipeline',
+                    id: 'dewedfsf23423', state: Pipeline_State.RUNNING,
+                    status: { error: undefined },
+                }),
+                new Pipeline({
+                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'pipeline with an error',
+                    id: 'fzjh5463', state: Pipeline_State.ERROR,
+                    status: { error: 'this is an error message' },
+                }),
+            ];
+
+            return;
+        }
+
+
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        const pipelines = [];
+
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } });
+            const response = res.response;
+            if (!response) break;
+
+            pipelines.push(...response.pipelines);
+
+            if (!response.nextPageToken || response.nextPageToken.length == 0)
+                break;
+            nextPageToken = response.nextPageToken;
+        }
+
+        this.pipelines = pipelines;
+    },
+
+    async deletePipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.deletePipeline({ request: { id: id } });
+    },
+    async createPipeline(pipeline: PipelineCreate) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.createPipeline({ request: { pipeline } });
+    },
+    // async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
+    //     const client = appConfig.pipelinesClient;
+    //     if (!client) throw new Error('pipelines client is not initialized');
+    //
+    //     await client.updatePipeline({ request: { id, pipeline: pipelineUpdate, updateMask } });
+    // },
+    async startPipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.startPipeline({ request: { id } });
+    },
+    async stopPipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.stopPipeline({ request: { id } });
+    },
 });
 
 

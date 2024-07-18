@@ -51,6 +51,8 @@ import { MdOutlineSmartToy } from 'react-icons/md';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 import TransformDetails from './pages/transforms/Transform.Details';
+import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
+import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 
 //
 //	Route Types
@@ -285,7 +287,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
-    // MakeRoute<{ connectorName: string }>('/rp-connect/:connectorName', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),
+    MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Redpanda Connect Pipelines'),
+    MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,
