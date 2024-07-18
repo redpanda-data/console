@@ -38,9 +38,15 @@ message LoginSaslScramRequest {
     },
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // Whether or not the session token should be returned in the body.
+  bool return_token = 4;
 }
 
-message LoginSaslScramResponse {}
+message LoginSaslScramResponse {
+  // SessionToken is only set if return_token is set to true in the request.
+  string session_token = 1;
+}
 
 enum AuthenticationMethod {
   // The authentication method is unspecified.
