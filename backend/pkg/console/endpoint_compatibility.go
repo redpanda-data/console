@@ -120,12 +120,6 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			HasRedpandaAPI: true,
 		},
 		{
-			URL:             consolev1alpha1connect.SecurityServiceName,
-			Method:          "POST",
-			HasRedpandaAPI:  true,
-			RedpandaFeature: redpanda.RedpandaFeatureRBAC,
-		},
-		{
 			URL:             consolev1alpha1connect.TransformServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
