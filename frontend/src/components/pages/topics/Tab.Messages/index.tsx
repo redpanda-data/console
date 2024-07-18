@@ -668,8 +668,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }).catch(navigatorClipboardErrorHandler);
         }
 
-        const isValueDeserializerActive = uiState.topicSettings.searchParams.valueDeserializer !== PayloadEncoding.UNSPECIFIED && uiState.topicSettings.searchParams.valueDeserializer !== null;
-        const isKeyDeserializerActive = uiState.topicSettings.searchParams.keyDeserializer !== PayloadEncoding.UNSPECIFIED && uiState.topicSettings.searchParams.keyDeserializer !== null;
+        const isValueDeserializerActive = uiState.topicSettings.searchParams.valueDeserializer !== null && uiState.topicSettings.searchParams.valueDeserializer !== undefined && uiState.topicSettings.searchParams.valueDeserializer !== PayloadEncoding.UNSPECIFIED;
+        const isKeyDeserializerActive = uiState.topicSettings.searchParams.keyDeserializer !== null && uiState.topicSettings.searchParams.keyDeserializer !== undefined && uiState.topicSettings.searchParams.keyDeserializer !== PayloadEncoding.UNSPECIFIED;
 
         const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
             offset: {
