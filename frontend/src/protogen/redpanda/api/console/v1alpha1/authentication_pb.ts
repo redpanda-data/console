@@ -103,6 +103,13 @@ export class LoginSaslScramRequest extends Message<LoginSaslScramRequest> {
    */
   mechanism = SASLMechanism.SASL_MECHANISM_UNSPECIFIED;
 
+  /**
+   * Whether or not the session token should be returned in the body.
+   *
+   * @generated from field: bool return_token = 4;
+   */
+  returnToken = false;
+
   constructor(data?: PartialMessage<LoginSaslScramRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -114,6 +121,7 @@ export class LoginSaslScramRequest extends Message<LoginSaslScramRequest> {
     { no: 1, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "mechanism", kind: "enum", T: proto3.getEnumType(SASLMechanism) },
+    { no: 4, name: "return_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LoginSaslScramRequest {
@@ -137,6 +145,13 @@ export class LoginSaslScramRequest extends Message<LoginSaslScramRequest> {
  * @generated from message redpanda.api.console.v1alpha1.LoginSaslScramResponse
  */
 export class LoginSaslScramResponse extends Message<LoginSaslScramResponse> {
+  /**
+   * SessionToken is only set if return_token is set to true in the request.
+   *
+   * @generated from field: string session_token = 1;
+   */
+  sessionToken = "";
+
   constructor(data?: PartialMessage<LoginSaslScramResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -145,6 +160,7 @@ export class LoginSaslScramResponse extends Message<LoginSaslScramResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.LoginSaslScramResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LoginSaslScramResponse {
