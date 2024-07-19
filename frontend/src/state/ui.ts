@@ -123,7 +123,7 @@ export class TopicDetailsSettings {
 
     @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
 
-    @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = [];
+    @observable dynamicFilters: Array<'partition'> = [];
 
     @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
