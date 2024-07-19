@@ -53,7 +53,7 @@ class KafkaConnectOverview extends PageComponent {
                 key: 'redpandaConnect',
                 title: <Box minWidth="180px">Redpanda Connect</Box>,
                 content: <TabRedpandaConnect />,
-                disabled: isEmbedded(), // For now, only selfhosted; no cloud/serverless
+                disabled: false,
             },
             {
                 key: 'kafkaConnect',
