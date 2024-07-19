@@ -8,17 +8,14 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { SyncIcon } from '@primer/octicons-react';
-import { MdPause, MdPlayCircleOutline } from 'react-icons/md';
-import { Button, Icon, Popover } from '@redpanda-data/ui';
+import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
+import { IconButton, Popover, Text, Flex, Box, Spinner } from '@redpanda-data/ui';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { ReactNode } from 'react';
 import { appGlobal } from '../../../../state/appGlobal';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
-import styles from '../buttons.module.scss';
 
 
 const autoRefresh = observable({
@@ -83,63 +80,63 @@ autorun(() => {
 
 export const DataRefreshButton = observer(() => {
 
-    const spinnerSize = '16px';
-    const refreshTextFunc = (): ReactNode => {
-        return <div>
-            Click to force a refresh of the data shown in the current page.
-            When switching pages, any data older than <span className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
-        </div>;
-        // TODO: small table that shows what cached data we have and how old it is
-    };
-
-    const autoRefreshTextFunc = (): ReactNode => {
-        return <div>
-            Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
-        </div>;
-    };
-
     // Track how many requests we've sent in total
     const countStr = autoRefresh.maxRequestCount > 1
         ? `${autoRefresh.maxRequestCount - api.activeRequests.length} / ${autoRefresh.maxRequestCount}`
         : '';
 
     // maybe we need to use the same 'no vertical expansion' trick:
-    return <div className={styles.dataRefreshButton}>
-        <Popover isInPortal title="Auto Refresh" content={autoRefreshTextFunc} placement="right" hideCloseButton={true}>
-            <Button
-                display="inline-flex" justifyContent="center" alignItems="center"
-                width="35px" borderRadius="100px"
-                colorScheme="whiteAlpha"
-                className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`}
-                onClick={autoRefresh.toggleAutorefresh} >
-                {autoRefresh.active
-                    ? <Icon as={MdPause} fontSize="16px" />
-                    : <Icon as={MdPlayCircleOutline} fontSize="19px" />}
-            </Button>
-        </Popover>
-        {
-            (api.activeRequests.length == 0)
-                ? <>
-                    <Popover isInPortal title="Force Refresh" content={refreshTextFunc} placement="right" hideCloseButton={true}>
-                        <Button
-                            className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`}
-                            borderRadius="100px" width="35px"
-                            colorScheme="whiteAlpha"
-                            onClick={() => appGlobal.onRefresh()} >
-                            <SyncIcon size={16} className="flipX" />
-                        </Button>
-                    </Popover>
-                    {autoRefresh.active && <>
-                        <span style={{ paddingRight: '10px', fontSize: '80%', userSelect: 'none' }}>Refreshing in {autoRefresh.remainingSeconds} secs</span>
-                    </>
-                    }
-                    {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
-                </>
-                : <>
-                    <span className={styles.spinner} style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
-                    <span className={styles.pulsating} style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
-                </>
-        }
+    return <div>
+        <Flex flexDirection="row" alignItems="center" gap={2}>
+            <Box>
+                <Popover
+                  isInPortal
+                  title="Auto Refresh"
+                  content={<div>
+                      Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
+                  </div>}
+                  placement="bottom"
+                  hideCloseButton={true}
+                >
+                    <IconButton
+                      variant="ghost"
+                      onClick={autoRefresh.toggleAutorefresh} aria-label="Auth Refresh"
+                      icon={autoRefresh.active ? <MdPause size={18}/>:<MdPlayCircleOutline size={18}/>}
+                    />
+                </Popover>
+            </Box>
+            <Flex flexDirection="column" alignItems="center">
+                {autoRefresh.active || api.activeRequests.length > 0 ?
+                  <Spinner color="red.500" size="sm" speed="0.3s" ml={2} />
+                  :
+                  <Popover
+                    isInPortal
+                    title="Force Refresh"
+                    content={<div>
+                        Click to force a refresh of the data shown in the current page.
+                        When switching pages, any data older than <span
+                      className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed
+                        automatically.
+                    </div>}
+                    placement="bottom"
+                    hideCloseButton={true}
+                  >
+                      <IconButton
+                        variant="ghost"
+                        onClick={() => appGlobal.onRefresh()}
+                        aria-label="Force Refresh"
+                        icon={<MdOutlineCached size={18}/>
+                        }
+                      />
+                  </Popover>
+                }
+            </Flex>
+            <Text userSelect="none" fontSize="sm">
+                {autoRefresh.active && api.activeRequests.length===0 &&
+                  <>Refreshing in {autoRefresh.remainingSeconds} secs</>}
+                {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}
+            </Text>
+        </Flex>
     </div>;
 });
 
