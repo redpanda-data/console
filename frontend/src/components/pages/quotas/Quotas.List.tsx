@@ -14,7 +14,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { computed, makeObservable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { SkipIcon } from '@primer/octicons-react';
 import { toJson } from '../../../utils/jsonUtils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
@@ -57,7 +57,6 @@ class QuotasList extends PageComponent {
         const resources = this.quotasList;
         const formatBytes = (x: undefined | number) => x ? prettyBytes(x) : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
         const formatRate = (x: undefined | number) => x ? prettyNumber(x) : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
-        const formatPercentage = (x: undefined | number) => x ? `${x}%` : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
 
         return <>
             <PageContent>
@@ -79,24 +78,22 @@ class QuotasList extends PageComponent {
                             },
                             {
                                 size: 100,
-                                header: 'Producer Rate',
-                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key == QuotaType.PRODUCER_BYTE_RATE)?.value)
+                                header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Byte Rate</InfoText>,
+                                accessorKey: 'producerByteRate',
+                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key === QuotaType.PRODUCER_BYTE_RATE)?.value)
                             },
                             {
                                 size: 100,
-                                header: 'Consumer Rate',
-                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key == QuotaType.CONSUMER_BYTE_RATE)?.value)
+                                header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Byte Rate</InfoText>,
+                                accessorKey: 'consumerByteRate',
+                                cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key === QuotaType.CONSUMER_BYTE_RATE)?.value)
                             },
                             {
                                 size: 100,
-                                header: 'Connection Creation Rate',
-                                cell: ({row: {original}}) => formatRate(original.settings.first(k => k.key == QuotaType.CONNECTION_CREATION_RATE)?.value)
+                                header: () => <InfoText tooltip="Limit rate of topic mutation requests, including create, add, and delete partition, in number of partitions per second">Controller Mutation Rate</InfoText>,
+                                accessorKey: 'controllerMutationRate',
+                                cell: ({row: {original}}) => formatRate(original.settings.first(k => k.key === QuotaType.CONTROLLER_MUTATION_RATE)?.value)
                             },
-                            {
-                                size: 100,
-                                header: 'Request Handler',
-                                cell: ({row: {original}}) => formatPercentage(original.settings.first(k => k.key == QuotaType.REQUEST_PERCENTAGE)?.value)
-                            }
                         ]}
                     />
                 </Section>
