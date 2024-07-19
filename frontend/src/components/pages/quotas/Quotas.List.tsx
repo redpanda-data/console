@@ -78,14 +78,14 @@ class QuotasList extends PageComponent {
                             },
                             {
                                 size: 100,
-                                header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Byte Rate</InfoText>,
-                                accessorKey: 'producerByteRate',
+                                header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Rate</InfoText>,
+                                accessorKey: 'producerRate',
                                 cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key === QuotaType.PRODUCER_BYTE_RATE)?.value)
                             },
                             {
                                 size: 100,
-                                header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Byte Rate</InfoText>,
-                                accessorKey: 'consumerByteRate',
+                                header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Rate</InfoText>,
+                                accessorKey: 'consumerRate',
                                 cell: ({row: {original}}) => formatBytes(original.settings.first(k => k.key === QuotaType.CONSUMER_BYTE_RATE)?.value)
                             },
                             {
