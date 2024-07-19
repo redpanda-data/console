@@ -17,33 +17,17 @@ import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Box, Button } from '@redpanda-data/ui';
-import { ClusterConnectorInfo } from '../../../state/restInterfaces';
-import { uiSettings } from '../../../state/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+import { pipelinesApi } from '../../../state/backendApi';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { decodeURIComponentPercents } from '../../../utils/utils';
 
 
-const defaultConfig = `
-input:
-  stdin: {}
-
-pipeline:
-  processors:
-    - mapping: root = content().uppercase()
-
-output:
-  stdout: {}
-
-hereIsAnInvalidProperty:
-    - "that should"
-    - "be highlighted"
-    - "as wrong"
-`;
 
 @observer
-class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }> {
+class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
     @observable placeholder = 5;
-    @observable editorContent = defaultConfig;
 
     constructor(p: any) {
         super(p);
@@ -51,31 +35,26 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
     }
 
     initPage(p: PageInitHelper): void {
-        const connectorName = decodeURIComponent(this.props.connectorName);
-        p.title = connectorName;
-        p.addBreadcrumb('Redpanda Connect', '/rp-connect');
-        p.addBreadcrumb(connectorName, `/rp-connect/${connectorName}`);
+        const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
+        p.title = pipelineId;
+        p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
+        p.addBreadcrumb(pipelineId, `/rp-connect/${pipelineId}`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
     refreshData(_force: boolean) {
-        // pipelinesApi.refreshPipelines(force);
+        pipelinesApi.refreshPipelines(_force);
     }
 
-    isFilterMatch(filter: string, item: ClusterConnectorInfo): boolean {
-        try {
-            const quickSearchRegExp = new RegExp(uiSettings.pipelinesList.quickSearch, 'i')
-            return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp))
-        } catch (e) {
-            console.warn('Invalid expression');
-            return item.name.toLowerCase().includes(filter.toLowerCase());
-        }
-    }
 
     render() {
-        // if (!pipelinesApi.pipelines) return DefaultSkeleton;
+        if (!pipelinesApi.pipelines) return DefaultSkeleton;
+        const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
+        const pipeline = pipelinesApi.pipelines.first(x => x.id == pipelineId);
+
+        if (!pipeline) return DefaultSkeleton;
 
         return (
             <PageContent>
@@ -94,10 +73,10 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
                             <PipelinesYamlEditor
                                 defaultPath="config.yaml"
                                 path="config.yaml"
-                                value={this.editorContent}
+                                value={pipeline.configYaml}
                                 onChange={e => {
                                     if (e)
-                                        this.editorContent = e;
+                                        pipeline.configYaml = e;
                                 }}
                                 language="yaml"
                             />
@@ -114,3 +93,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ connectorName: string }>
 export default RpConnectPipelinesDetails;
 
 
+export const PipelineEditor = observer((_p: {}) => {
+
+    return <></>
+
+});

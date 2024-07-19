@@ -173,31 +173,33 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                     />
                 </FormField>
 
-                <Tabs tabs={[
-                    {
-                        key: 'config', title: 'Configuration',
-                        content: () => <Box>
-                            {/* yaml editor */}
-                            <Flex height="400px" maxWidth="800px">
-                                <PipelinesYamlEditor
-                                    defaultPath="config.yaml"
-                                    path="config.yaml"
-                                    value={this.editorContent}
-                                    onChange={e => {
-                                        if (e)
-                                            this.editorContent = e;
-                                    }}
-                                    language="yaml"
-                                />
-                            </Flex>
-                        </Box>
-                    },
-                    {
-                        key: 'preview', title: 'Pipeline preview',
-                        content: <></>,
-                        disabled: true
-                    },
-                ]} />
+                <Box mt="4">
+                    <Tabs tabs={[
+                        {
+                            key: 'config', title: 'Configuration',
+                            content: () => <Box>
+                                {/* yaml editor */}
+                                <Flex height="400px" maxWidth="800px">
+                                    <PipelinesYamlEditor
+                                        defaultPath="config.yaml"
+                                        path="config.yaml"
+                                        value={this.editorContent}
+                                        onChange={e => {
+                                            if (e)
+                                                this.editorContent = e;
+                                        }}
+                                        language="yaml"
+                                    />
+                                </Flex>
+                            </Box>
+                        },
+                        {
+                            key: 'preview', title: 'Pipeline preview',
+                            content: <></>,
+                            disabled: true
+                        },
+                    ]} />
+                </Box>
 
                 <Flex alignItems="center" gap="4">
                     <Button variant="solid"
