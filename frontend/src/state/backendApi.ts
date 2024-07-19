@@ -121,7 +121,7 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
-import { Pipeline, Pipeline_State, PipelineCreate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { Pipeline, PipelineCreate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
