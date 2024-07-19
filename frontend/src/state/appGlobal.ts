@@ -34,5 +34,7 @@ class AppGlobal {
     onRefresh: (() => void) = () => {
         // intended for pages to set
     }
+
+    searchMessagesFunc?:  (source: 'auto' | 'manual') => void = undefined;
 }
 export const appGlobal = new AppGlobal();
