@@ -92,9 +92,3 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
 export default RpConnectPipelinesDetails;
 
-
-export const PipelineEditor = observer((_p: {}) => {
-
-    return <></>
-
-});

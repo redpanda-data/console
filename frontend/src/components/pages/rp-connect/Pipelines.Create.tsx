@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { makeObservable, observable } from 'mobx';
+import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
@@ -124,7 +124,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     constructor(p: any) {
         super(p);
-        makeObservable(this);
+        makeObservable(this, undefined, { autoBind: true });
     }
 
     initPage(p: PageInitHelper): void {
@@ -174,31 +174,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                 </FormField>
 
                 <Box mt="4">
-                    <Tabs tabs={[
-                        {
-                            key: 'config', title: 'Configuration',
-                            content: () => <Box>
-                                {/* yaml editor */}
-                                <Flex height="400px" maxWidth="800px">
-                                    <PipelinesYamlEditor
-                                        defaultPath="config.yaml"
-                                        path="config.yaml"
-                                        value={this.editorContent}
-                                        onChange={e => {
-                                            if (e)
-                                                this.editorContent = e;
-                                        }}
-                                        language="yaml"
-                                    />
-                                </Flex>
-                            </Box>
-                        },
-                        {
-                            key: 'preview', title: 'Pipeline preview',
-                            content: <></>,
-                            disabled: true
-                        },
-                    ]} />
+                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
                 </Box>
 
                 <Flex alignItems="center" gap="4">
@@ -206,7 +182,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                         isDisabled={alreadyExists || isNameEmpty || this.isCreating}
                         loadingText="Creating..."
                         isLoading={this.isCreating}
-                        onClick={this.createPipeline}
+                        onClick={action(() => this.createPipeline())}
                     >
                         Create
                     </Button>
@@ -253,3 +229,35 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 export default RpConnectPipelinesCreate;
 
 
+
+const PipelineEditor = observer((p: {
+    yaml: string,
+    onChange: (newYaml: string) => void
+}) => {
+
+    return <Tabs tabs={[
+        {
+            key: 'config', title: 'Configuration',
+            content: () => <Box>
+                {/* yaml editor */}
+                <Flex height="400px" maxWidth="800px">
+                    <PipelinesYamlEditor
+                        defaultPath="config.yaml"
+                        path="config.yaml"
+                        value={p.yaml}
+                        onChange={e => {
+                            if (e)
+                                p.onChange(e);
+                        }}
+                        language="yaml"
+                    />
+                </Flex>
+            </Box>
+        },
+        {
+            key: 'preview', title: 'Pipeline preview',
+            content: <></>,
+            disabled: true
+        },
+    ]} />
+});
