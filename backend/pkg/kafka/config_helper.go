@@ -12,11 +12,8 @@ package kafka
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"net"
-	"os"
 	"time"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -183,57 +180,15 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		}
 	}
 
-	// Configure TLS
-	var caCertPool *x509.CertPool
 	if cfg.TLS.Enabled {
-		// Root CA
-		if cfg.TLS.CaFilepath != "" {
-			ca, err := os.ReadFile(cfg.TLS.CaFilepath)
-			if err != nil {
-				return nil, err
-			}
-			caCertPool = x509.NewCertPool()
-			isSuccessful := caCertPool.AppendCertsFromPEM(ca)
-			if !isSuccessful {
-				logger.Warn("failed to append ca file to cert pool, is this a valid PEM format?")
-			}
-		}
-
-		// If configured load TLS cert & key - Mutual TLS
-		var certificates []tls.Certificate
-		if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
-			// 1. Read certificates
-			cert, err := os.ReadFile(cfg.TLS.CertFilepath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to TLS certificate: %w", err)
-			}
-
-			privateKey, err := os.ReadFile(cfg.TLS.KeyFilepath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read TLS key: %w", err)
-			}
-
-			// 2. Check if private key needs to be decrypted. Decrypt it if passphrase is given, otherwise return error
-			pemBlock, _ := pem.Decode(privateKey)
-			if pemBlock == nil {
-				return nil, fmt.Errorf("no valid private key found")
-			}
-
-			tlsCert, err := tls.X509KeyPair(cert, privateKey)
-			if err != nil {
-				return nil, fmt.Errorf("cannot parse pem: %s", err)
-			}
-			certificates = []tls.Certificate{tlsCert}
+		tlsConfig, err := cfg.TLS.TLSConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to build tls config: %w", err)
 		}
 
 		tlsDialer := &tls.Dialer{
 			NetDialer: &net.Dialer{Timeout: 10 * time.Second},
-			Config: &tls.Config{
-				//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
-				InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify,
-				Certificates:       certificates,
-				RootCAs:            caCertPool,
-			},
+			Config:    tlsConfig,
 		}
 		opts = append(opts, kgo.Dialer(tlsDialer.DialContext))
 	}
