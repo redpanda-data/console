@@ -27,22 +27,32 @@ func (*TLS) Validate() error {
 }
 
 // TLSConfig returns the TLS Config from the configured parameters
-func (c *TLS) TLSConfig() (*tls.Config, error) {
+func (c *TLS) TLSConfig(overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
 	if !c.Enabled {
 		return &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		}, nil
 	}
 
-	tlsconfig, err := tlscfg.New(
+	opts := []tlscfg.Opt{
 		tlscfg.MaybeWithDiskCA(c.CaFilepath, tlscfg.ForClient),
 		tlscfg.MaybeWithDiskKeyPair(c.CertFilepath, c.KeyFilepath),
-	)
+		tlscfg.WithOverride(func(cfg *tls.Config) error {
+			cfg.InsecureSkipVerify = c.InsecureSkipTLSVerify
+			return nil
+		}),
+	}
+
+	if len(overrides) > 0 {
+		for _, o := range overrides {
+			opts = append(opts, tlscfg.WithOverride(o))
+		}
+	}
+
+	tlsconfig, err := tlscfg.New(opts...)
 	if err != nil {
 		return nil, err
 	}
-
-	tlsconfig.InsecureSkipVerify = c.InsecureSkipTLSVerify
 
 	return tlsconfig, nil
 }
