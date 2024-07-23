@@ -138,8 +138,9 @@ class SchemaList extends PageComponent<{}> {
     }
 
     triggerSearchBySchemaId() {
-        const searchAsNum = Number(uiSettings.schemaList.quickSearch.trim());
-        if (!isNaN(searchAsNum)) {
+        const trimmedValue = uiSettings.schemaList.quickSearch.trim();
+        const searchAsNum = Number(trimmedValue);
+        if (trimmedValue.length && !isNaN(searchAsNum)) {
             // Keep calling it to keep the list updated
             // Extra calls (even when we already have data) will be automatically caught by caching
             this.isLoadingSchemaVersionMatches = true;
