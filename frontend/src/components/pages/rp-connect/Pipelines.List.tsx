@@ -145,7 +145,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                                     size: 100,
                                 },
                                 {
-                                    header: 'Status',
+                                    header: 'State',
                                     cell: ({ row: { original } }) => {
                                         return <>
                                             <PipelineStatus status={original.state} />
