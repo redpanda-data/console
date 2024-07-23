@@ -152,15 +152,15 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                                         </>
                                     }
                                 },
-                                {
-                                    header: 'Throughput',
-                                    cell: ({ row: { original } }) => {
-                                        return <>
-                                            <PipelineThroughput pipeline={original} />
-                                        </>
-                                    },
-                                    size: 100,
-                                },
+                                // {
+                                //     header: 'Throughput',
+                                //     cell: ({ row: { original } }) => {
+                                //         return <>
+                                //             <PipelineThroughput pipeline={original} />
+                                //         </>
+                                //     },
+                                //     size: 100,
+                                // },
                                 {
                                     header: '',
                                     id: 'actions',
@@ -172,7 +172,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                                                 e.stopPropagation();
                                                 e.preventDefault();
 
-                                                openDeleteModal(r.id, () => {
+                                                openDeleteModal(r.displayName, () => {
                                                     pipelinesApi.deletePipeline(r.id)
                                                         .then(async () => {
                                                             toast({

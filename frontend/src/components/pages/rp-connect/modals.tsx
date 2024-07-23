@@ -60,7 +60,7 @@ export function openDeleteModal(
         primaryButtonContent: <>Delete</>,
         secondaryButtonContent: <>Cancel</>,
 
-        requiredText: pipelineId,
+        requiredText: pipelineId.trim(),
 
         onPrimaryButton: (closeModal) => {
             onConfirm();
