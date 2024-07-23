@@ -234,6 +234,11 @@ const defaultUiSettings = {
         quickSearch: ''
     },
 
+    pipelinesDetails: {
+        logsQuickSearch: '',
+        sorting: [] as SortingState,
+    },
+
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',
@@ -344,7 +349,7 @@ if (storedSettingsJson) {
         ts.previewColumnFields = ts.previewColumnFields ?? [];
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
 
-        if(!ts.dynamicFilters) {
+        if (!ts.dynamicFilters) {
             ts.dynamicFilters = [];
         }
     }

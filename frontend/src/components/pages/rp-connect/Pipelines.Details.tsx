@@ -87,7 +87,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                         {isStopped ? 'Resume' : 'Resume'}
                     </Button>
                     <Button variant="outline-delete" onClick={() => {
-                        openDeleteModal(pipeline.id, () => {
+                        openDeleteModal(pipeline.displayName, () => {
                             pipelinesApi.deletePipeline(pipeline.id)
                                 .then(async () => {
                                     toast({
@@ -198,7 +198,7 @@ const PipelineEditor = observer((p: {
 const LogsTab = observer((p: {
     pipeline: Pipeline
 }) => {
-    const topicName = '_redpanda.pipeline_logs';
+    const topicName = '__redpanda.connect.logs';
     const topic = api.topics?.first(x => x.topicName == topicName);
 
     const createLogsTabState = () => {
@@ -272,8 +272,8 @@ const LogsTab = observer((p: {
     ];
 
     const filteredMessages = state.messages.filter(x => {
-        if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
-        return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
+        if (!uiSettings.pipelinesDetails.logsQuickSearch) return true;
+        return isFilterMatch(uiSettings.pipelinesDetails.logsQuickSearch, x);
     })
 
 
@@ -282,7 +282,7 @@ const LogsTab = observer((p: {
 
         <Section minWidth="800px">
             <Flex mb="6">
-                <SearchField width="230px" searchText={uiSettings.connectorsDetails.logsQuickSearch} setSearchText={x => (uiSettings.connectorsDetails.logsQuickSearch = x)} />
+                <SearchField width="230px" searchText={uiSettings.pipelinesDetails.logsQuickSearch} setSearchText={x => (uiSettings.pipelinesDetails.logsQuickSearch = x)} />
                 <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>Refresh logs</Button>
             </Flex>
 
@@ -291,9 +291,9 @@ const LogsTab = observer((p: {
                 emptyText="No messages"
                 columns={messageTableColumns}
 
-                sorting={uiSettings.connectorsDetails.sorting ?? []}
+                sorting={uiSettings.pipelinesDetails.sorting ?? []}
                 onSortingChange={sorting => {
-                    uiSettings.connectorsDetails.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+                    uiSettings.pipelinesDetails.sorting = typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
                 }}
                 pagination={paginationParams}
                 // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
@@ -317,8 +317,8 @@ function isFilterMatch(str: string, m: TopicMessage) {
 }
 
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, transformName: string) {
-    const filterCode: string = `return key == "${transformName}";`;
+async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
+    const filterCode: string = `return value.pipeline_id == "${pipelineId}";`;
 
     const lastXHours = 5;
     const startTime = new Date();
