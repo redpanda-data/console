@@ -29,9 +29,15 @@ type TopicPartitionsProps = {
 };
 
 export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
-    let partitions = api.topicPartitions.get(topic.topicName);
+    const partitions = api.topicPartitions.get(topic.topicName);
+    const paginationParams = usePaginationParams(uiState.topicSettings.partitionPageSize, partitions?.length ?? 0);
+
+
     if (partitions === undefined) return DefaultSkeleton;
-    if (partitions === null) partitions = []; // todo: show the error (if one was reported);
+    if (partitions === null) {
+      return <div />; // todo: show the error (if one was reported);
+    }
+
     let warning: JSX.Element = <></>;
     if (topic.cleanupPolicy.toLowerCase() === 'compact')
         warning = (
@@ -40,8 +46,6 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                 Topic cleanupPolicy is 'compact'. Message Count is an estimate!
             </Alert>
         );
-
-    const paginationParams = usePaginationParams(uiState.topicSettings.partitionPageSize, partitions.length);
 
     return (
         <>
