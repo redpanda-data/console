@@ -253,6 +253,10 @@ const defaultUiSettings = {
             quickSearch: '',
             pageSize: 20,
         },
+        permissionsTab: {
+            quickSearch: '' ,
+            pageSize: 20,
+        },
 
         configTable: {
             quickSearch: '',
