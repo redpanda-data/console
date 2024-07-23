@@ -25,6 +25,8 @@ import { Box, DataTable, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import SearchBar from '../../misc/SearchBar';
 import { isEmbedded } from '../../../config';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
+import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
+import { IsDev } from '../../../utils/env';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -53,7 +55,6 @@ class KafkaConnectOverview extends PageComponent {
                 key: 'redpandaConnect',
                 title: <Box minWidth="180px">Redpanda Connect</Box>,
                 content: <TabRedpandaConnect />,
-                disabled: isEmbedded(), // For now, only selfhosted; no cloud/serverless
             },
             {
                 key: 'kafkaConnect',
@@ -64,7 +65,7 @@ class KafkaConnectOverview extends PageComponent {
 
         return (
             <PageContent>
-                <Tabs tabs={tabs} defaultSelectedTabKey={isEmbedded() ? 'kafkaConnect' : 'redpandaConnect'} />
+                <Tabs tabs={tabs} defaultSelectedTabKey="redpandaConnect" />
             </PageContent>
         );
     }
@@ -301,8 +302,10 @@ const TabKafkaConnect = observer((_p: {}) => {
 
 
 const TabRedpandaConnect = observer((_p: {}) => {
-    // return <RedpandaConnectIntro />
-    return <RpConnectPipelinesList matchedPath="/rp-connect" />
+    if (isEmbedded() || IsDev)
+        return <RpConnectPipelinesList matchedPath="/rp-connect" />
+    else
+        return <RedpandaConnectIntro />
 })
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';

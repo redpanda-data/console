@@ -121,7 +121,7 @@ import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpa
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
-import { Pipeline, Pipeline_State, PipelineCreate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1658,27 +1658,27 @@ export const pipelinesApi = observable({
 
     async refreshPipelines(_force: boolean): Promise<void> {
         // todo: caching by default, if force=true, ignore time limit on cache
-        if (Math.random() < 10) {
-            this.pipelines = [
-                new Pipeline({
-                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'this is the description', displayName: 'Name of the pipeline',
-                    id: 'abc123', state: Pipeline_State.RUNNING,
-                    status: { error: undefined },
-                }),
-                new Pipeline({
-                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'second pipeline',
-                    id: 'dewedfsf23423', state: Pipeline_State.RUNNING,
-                    status: { error: undefined },
-                }),
-                new Pipeline({
-                    configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'pipeline with an error',
-                    id: 'fzjh5463', state: Pipeline_State.ERROR,
-                    status: { error: 'this is an error message' },
-                }),
-            ];
-
-            return;
-        }
+        // if (Math.random() < 10) {
+        //     this.pipelines = [
+        //         new Pipeline({
+        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'this is the description', displayName: 'Name of the pipeline',
+        //             id: 'abc123', state: Pipeline_State.RUNNING,
+        //             status: { error: undefined },
+        //         }),
+        //         new Pipeline({
+        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'second pipeline',
+        //             id: 'dewedfsf23423', state: Pipeline_State.RUNNING,
+        //             status: { error: undefined },
+        //         }),
+        //         new Pipeline({
+        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'pipeline with an error',
+        //             id: 'fzjh5463', state: Pipeline_State.ERROR,
+        //             status: { error: 'this is an error message' },
+        //         }),
+        //     ];
+        //
+        //     return;
+        // }
 
 
         const client = appConfig.pipelinesClient;
@@ -1714,12 +1714,26 @@ export const pipelinesApi = observable({
 
         await client.createPipeline({ request: { pipeline } });
     },
-    // async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
-    //     const client = appConfig.pipelinesClient;
-    //     if (!client) throw new Error('pipelines client is not initialized');
-    //
-    //     await client.updatePipeline({ request: { id, pipeline: pipelineUpdate, updateMask } });
-    // },
+    async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        // https://google.aip.dev/161
+        // update mask is an array of strings containing "field names" of what gets updated
+        // known field names are the "generated from" of PipelineUpdate, for example "display_name", "config_yaml", ...
+        const updates = [];
+        if (pipelineUpdate.configYaml) updates.push('config_yaml');
+        if (pipelineUpdate.description) updates.push('description');
+        if (pipelineUpdate.displayName) updates.push('display_name');
+
+        await client.updatePipeline({
+            request: {
+                id, pipeline: pipelineUpdate, updateMask: {
+                    paths: updates
+                }
+            }
+        });
+    },
     async startPipeline(id: string) {
         const client = appConfig.pipelinesClient;
         if (!client) throw new Error('pipelines client is not initialized');

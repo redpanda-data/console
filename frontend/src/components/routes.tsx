@@ -277,7 +277,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Redpanda Connect', LinkIcon, true),
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true),
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
@@ -286,9 +286,9 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true),
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
-    // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
-    MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Redpanda Connect Pipelines'),
-    MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Redpanda Connect Pipelines'),
+    // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
+    MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
+    MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,

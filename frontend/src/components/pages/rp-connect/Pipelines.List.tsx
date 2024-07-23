@@ -19,7 +19,7 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Link } from 'react-router-dom';
 // import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
-import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
@@ -31,6 +31,7 @@ import { CheckIcon } from '@chakra-ui/icons';
 import { XIcon } from '@heroicons/react/solid';
 import { openDeleteModal } from './modals';
 import { TrashIcon } from '@heroicons/react/outline';
+import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -112,89 +113,92 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                         />
                     </Box>
 
-                    <DataTable<Pipeline>
-                        data={filteredPipelines}
-                        pagination
-                        defaultPageSize={10}
-                        sorting
-                        columns={[
-                            {
-                                header: 'ID',
-                                cell: ({ row: { original } }) => (
-                                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                                        <Text>{original.id}</Text>
-                                    </Link>
-                                ),
-                                size: 100,
-                            },
-                            {
-                                header: 'Pipeline Name',
-                                cell: ({ row: { original } }) => (
-                                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                                        <Text wordBreak="break-word" whiteSpace="break-spaces">{original.displayName}</Text>
-                                    </Link>
-                                ),
-                                size: Infinity
-                            },
-                            {
-                                header: 'Description',
-                                accessorKey: 'description',
-                                size: 100,
-                            },
-                            {
-                                header: 'Status',
-                                cell: ({ row: { original } }) => {
-                                    return <>
-                                        <PipelineStatus status={original.state} />
-                                    </>
-                                }
-                            },
-                            {
-                                header: 'Throughput',
-                                cell: ({ row: { original } }) => {
-                                    return <>
-                                        <PipelineThroughput pipeline={original} />
-                                    </>
+                    {(pipelinesApi.pipelines ?? []).length == 0
+                        ? <EmptyPlaceholder />
+                        : <DataTable<Pipeline>
+                            data={filteredPipelines}
+                            pagination
+                            defaultPageSize={10}
+                            sorting
+                            columns={[
+                                {
+                                    header: 'ID',
+                                    cell: ({ row: { original } }) => (
+                                        <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                                            <Text>{original.id}</Text>
+                                        </Link>
+                                    ),
+                                    size: 100,
                                 },
-                                size: 100,
-                            },
-                            {
-                                header: '',
-                                id: 'actions',
-                                cell: ({ row: { original: r } }) =>
-                                    <Button variant="icon"
-                                        height="16px" color="gray.500"
-                                        // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
+                                {
+                                    header: 'Pipeline Name',
+                                    cell: ({ row: { original } }) => (
+                                        <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                                            <Text wordBreak="break-word" whiteSpace="break-spaces">{original.displayName}</Text>
+                                        </Link>
+                                    ),
+                                    size: Infinity
+                                },
+                                {
+                                    header: 'Description',
+                                    accessorKey: 'description',
+                                    size: 100,
+                                },
+                                {
+                                    header: 'Status',
+                                    cell: ({ row: { original } }) => {
+                                        return <>
+                                            <PipelineStatus status={original.state} />
+                                        </>
+                                    }
+                                },
+                                {
+                                    header: 'Throughput',
+                                    cell: ({ row: { original } }) => {
+                                        return <>
+                                            <PipelineThroughput pipeline={original} />
+                                        </>
+                                    },
+                                    size: 100,
+                                },
+                                {
+                                    header: '',
+                                    id: 'actions',
+                                    cell: ({ row: { original: r } }) =>
+                                        <Button variant="icon"
+                                            height="16px" color="gray.500"
+                                            // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
 
-                                            openDeleteModal(r.id, () => {
-                                                pipelinesApi.deletePipeline(r.id)
-                                                    .then(async () => {
-                                                        toast({
-                                                            status: 'success', duration: 4000, isClosable: false,
-                                                            title: 'Pipeline deleted'
-                                                        });
-                                                        pipelinesApi.refreshPipelines(true);
-                                                    })
-                                                    .catch(err => {
-                                                        toast({
-                                                            status: 'error', duration: null, isClosable: true,
-                                                            title: 'Failed to delete pipeline',
-                                                            description: String(err),
+                                                openDeleteModal(r.id, () => {
+                                                    pipelinesApi.deletePipeline(r.id)
+                                                        .then(async () => {
+                                                            toast({
+                                                                status: 'success', duration: 4000, isClosable: false,
+                                                                title: 'Pipeline deleted'
+                                                            });
+                                                            pipelinesApi.refreshPipelines(true);
                                                         })
-                                                    });
-                                            })
+                                                        .catch(err => {
+                                                            toast({
+                                                                status: 'error', duration: null, isClosable: true,
+                                                                title: 'Failed to delete pipeline',
+                                                                description: String(err),
+                                                            })
+                                                        });
+                                                })
 
-                                        }}>
-                                        <TrashIcon />
-                                    </Button>,
-                                size: 1
-                            },
-                        ]}
-                    />
-
+                                            }}>
+                                            <TrashIcon />
+                                        </Button>,
+                                    size: 1
+                                },
+                            ]}
+                            emptyText=""
+                        />
+                    }
                 </Section>
             </PageContent>
         );
@@ -203,4 +207,12 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 
 export default RpConnectPipelinesList;
 
-
+const EmptyPlaceholder = () => {
+    return <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+        <Image src={EmptyConnectors} />
+        <Box>You have no Redpanda Connect pipelines.</Box>
+        <Link to="/rp-connect/create">
+            <Button variant="solid">Create pipeline</Button>
+        </Link>
+    </Flex>
+};
