@@ -18,20 +18,17 @@ import { pipelinesApi } from '../../../state/backendApi';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Link } from 'react-router-dom';
-// import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { encodeURIComponentPercents } from '../../../utils/utils';
-// import { DefaultSkeleton } from '../../../utils/tsxUtils';
-// import { proto3 } from '@bufbuild/protobuf';
-// import { ConnectPipeline, ConnectPipeline_State } from '../../../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 import { CheckIcon } from '@chakra-ui/icons';
 import { XIcon } from '@heroicons/react/solid';
 import { openDeleteModal } from './modals';
 import { TrashIcon } from '@heroicons/react/outline';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
+import { Features } from '../../../state/supportedFeatures';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -75,6 +72,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
     }
 
     refreshData(force: boolean) {
+        if (!Features.pipelinesApi) return;
+
         pipelinesApi.refreshPipelines(force);
     }
 

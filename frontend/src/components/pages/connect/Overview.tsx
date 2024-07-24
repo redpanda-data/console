@@ -27,6 +27,7 @@ import { isEmbedded } from '../../../config';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 import { IsDev } from '../../../utils/env';
+import { Features } from '../../../state/supportedFeatures';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -50,11 +51,14 @@ class KafkaConnectOverview extends PageComponent {
     }
 
     render() {
+        const showPipelines = Features.pipelinesApi
+
         const tabs = [
             {
                 key: 'redpandaConnect',
                 title: <Box minWidth="180px">Redpanda Connect</Box>,
                 content: <TabRedpandaConnect />,
+                disabled: !showPipelines,
             },
             {
                 key: 'kafkaConnect',
@@ -65,7 +69,7 @@ class KafkaConnectOverview extends PageComponent {
 
         return (
             <PageContent>
-                <Tabs tabs={tabs} defaultSelectedTabKey="redpandaConnect" />
+                <Tabs tabs={tabs} defaultSelectedTabKey={showPipelines ? 'redpandaConnect' : 'kafkaConnect'} />
             </PageContent>
         );
     }

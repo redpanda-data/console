@@ -38,6 +38,7 @@ export class Feature {
     static readonly CreateUser: FeatureEntry = { endpoint: '/api/users', method: 'POST' };
     static readonly DeleteUser: FeatureEntry = { endpoint: '/api/users', method: 'DELETE' };
     static readonly SecurityService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.SecurityService', method: 'POST' };
+    static readonly PipelineService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.PipelineService', method: 'POST' };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -78,6 +79,7 @@ class SupportedFeatures {
     @computed get createUser(): boolean { return isSupported(Feature.CreateUser); }
     @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
     @computed get rolesApi(): boolean { return isSupported(Feature.SecurityService); }
+    @computed get pipelinesApi(): boolean { return isSupported(Feature.SecurityService); }
 }
 
 const features = new SupportedFeatures();

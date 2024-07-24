@@ -16,10 +16,10 @@ import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
-import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField, useToast } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest, pipelinesApi } from '../../../state/backendApi';
-import { DefaultSkeleton, TimestampDisplay } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
 import { Pipeline, Pipeline_State, PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import Tabs from '../../misc/tabs/Tabs';
@@ -32,9 +32,9 @@ import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { ColumnDef } from '@tanstack/react-table';
 import { uiState } from '../../../state/uiState';
-import { Text } from '@redpanda-data/ui';
 import { Link } from 'react-router-dom';
 import { openDeleteModal } from './modals';
+import { PipelineStatus } from './Pipelines.List';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -42,7 +42,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 @observer
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
-    @observable placeholder = 5;
+    @observable isChangingPauseState = false;
 
     constructor(p: any) {
         super(p);
@@ -71,44 +71,79 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
         if (!pipeline) return DefaultSkeleton;
         const isStopped = pipeline.state == Pipeline_State.STOPPED;
-        const isTransitioning = pipeline.state == Pipeline_State.STOPPED;
 
+        const error = pipeline.status?.error;
 
         return (
             <PageContent>
                 <ToastContainer />
 
-                {pipeline.description &&
-                    <Text>{pipeline.description}</Text>
-                }
+                <Box my="4">
+                    {QuickTable([
+                        { key: 'Description', value: pipeline.description ?? '' },
+                        { key: 'Status', value: <PipelineStatus status={pipeline.state} /> }
+                    ], { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } })}
+                </Box>
 
                 <Flex mb="4" gap="4">
-                    <Button variant="outline" isDisabled={isTransitioning}>
-                        {isStopped ? 'Resume' : 'Resume'}
-                    </Button>
-                    <Button variant="outline-delete" onClick={() => {
-                        openDeleteModal(pipeline.displayName, () => {
-                            pipelinesApi.deletePipeline(pipeline.id)
-                                .then(async () => {
+                    <Button variant="outline" isDisabled={this.isChangingPauseState} isLoading={this.isChangingPauseState}
+                        onClick={() => {
+                            this.isChangingPauseState = true;
+
+                            const changePromise = isStopped
+                                ? pipelinesApi.startPipeline(pipeline.id)
+                                : pipelinesApi.stopPipeline(pipeline.id);
+
+                            changePromise
+                                .then(() => {
                                     toast({
                                         status: 'success', duration: 4000, isClosable: false,
-                                        title: 'Pipeline deleted'
+                                        title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`
                                     });
-                                    pipelinesApi.refreshPipelines(true);
-                                    appGlobal.history.push('/connect-clusters');
                                 })
                                 .catch(err => {
                                     toast({
                                         status: 'error', duration: null, isClosable: true,
-                                        title: 'Failed to delete pipeline',
+                                        title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
                                         description: String(err),
                                     })
-                                });
-                        })
-                    }}>
+                                })
+                                .finally(() => this.isChangingPauseState = false);
+                        }}>
+                        {isStopped ? 'Start' : 'Stop'}
+                    </Button>
+                    <Button variant="outline-delete"
+                        onClick={() => {
+                            openDeleteModal(pipeline.displayName, () => {
+                                pipelinesApi.deletePipeline(pipeline.id)
+                                    .then(async () => {
+                                        toast({
+                                            status: 'success', duration: 4000, isClosable: false,
+                                            title: 'Pipeline deleted'
+                                        });
+                                        pipelinesApi.refreshPipelines(true);
+                                        appGlobal.history.push('/connect-clusters');
+                                    })
+                                    .catch(err => {
+                                        toast({
+                                            status: 'error', duration: null, isClosable: true,
+                                            title: 'Failed to delete pipeline',
+                                            description: String(err),
+                                        })
+                                    });
+                            })
+                        }}>
                         Delete
                     </Button>
                 </Flex>
+
+                {error &&
+                    <Alert status="error" variant="left-accent">
+                        <AlertIcon />
+                        {error}
+                    </Alert>
+                }
+
                 <Tabs tabs={[
                     {
                         key: 'config',
@@ -122,7 +157,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     }
                 ]} />
 
-            </PageContent>
+            </PageContent >
         );
     }
 }

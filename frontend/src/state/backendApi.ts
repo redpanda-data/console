@@ -1657,29 +1657,6 @@ export const pipelinesApi = observable({
     // },
 
     async refreshPipelines(_force: boolean): Promise<void> {
-        // todo: caching by default, if force=true, ignore time limit on cache
-        // if (Math.random() < 10) {
-        //     this.pipelines = [
-        //         new Pipeline({
-        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'this is the description', displayName: 'Name of the pipeline',
-        //             id: 'abc123', state: Pipeline_State.RUNNING,
-        //             status: { error: undefined },
-        //         }),
-        //         new Pipeline({
-        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'second pipeline',
-        //             id: 'dewedfsf23423', state: Pipeline_State.RUNNING,
-        //             status: { error: undefined },
-        //         }),
-        //         new Pipeline({
-        //             configYaml: 'yamlConfig: 1\nexample: abc', description: 'an example description of the second pipeline', displayName: 'pipeline with an error',
-        //             id: 'fzjh5463', state: Pipeline_State.ERROR,
-        //             status: { error: 'this is an error message' },
-        //         }),
-        //     ];
-        //
-        //     return;
-        // }
-
 
         const client = appConfig.pipelinesClient;
         if (!client) throw new Error('pipelines client is not initialized');
