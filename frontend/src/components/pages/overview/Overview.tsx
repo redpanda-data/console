@@ -339,11 +339,11 @@ function ClusterDetails() {
 
         <DetailsBlock title="Security">
             <Details title="Service Accounts" content={[
-                [<Link key={0} as={ReactRouterLink} to="/acls/">{serviceAccounts}</Link>]
+                [<Link key={0} as={ReactRouterLink} to="/security/acls/">{serviceAccounts}</Link>]
             ]}/>
 
             <Details title="ACLs" content={[
-                [<Link key={0} as={ReactRouterLink} to="/acls/">{aclCount}</Link>]
+                [<Link key={0} as={ReactRouterLink} to="/security/acls/">{aclCount}</Link>]
             ]}/>
         </DetailsBlock>
 
