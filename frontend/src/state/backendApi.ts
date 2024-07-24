@@ -69,7 +69,6 @@ import {
     GroupDescription,
     isApiError,
     KafkaConnectors,
-    OverviewNewsEntry,
     PartialTopicConfigsResponse,
     Partition,
     PartitionReassignmentRequest,
@@ -294,7 +293,6 @@ const apiStore = {
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
     licenses: null as (RedpandaLicense[] | null),
-    news: null as OverviewNewsEntry[] | null,
 
     clusterOverview: null as ClusterOverview | null,
     brokers: null as BrokerWithConfigAndStorage[] | null,
@@ -701,21 +699,6 @@ const apiStore = {
                 this.brokers = v;
             }, addError);
     },
-
-    refreshNews(force?: boolean) {
-        cachedApiRequest<OverviewNewsEntry[]>('https://resources.redpanda.com/rp-console.json', force)
-            .then(v => this.news = v, err => {
-                this.news = [
-                    {
-                        title: 'Unable to fetch news, please try again later',
-                        intendedAudience: 'all',
-                    }
-                ];
-
-                console.error('Unable to fetch news entries, please try again later', { error: err })
-            });
-    },
-
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force)
