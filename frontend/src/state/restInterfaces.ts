@@ -1495,16 +1495,6 @@ export interface BrokerWithConfigAndStorage {
 }
 
 
-// GET https://redpanda.com/rp-console.json
-// GET https://resources.redpanda.com/rp-console.json
-export type OverviewNewsEntry = {
-    title: string;
-    url?: string;
-    intendedAudience: 'all' | 'apache' | 'redpanda';
-    badge?: 'new';
-};
-
-
 // GET /schema-registry/mode
 export type SchemaRegistryModeResponse = {
     isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)

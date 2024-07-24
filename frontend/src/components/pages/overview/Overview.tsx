@@ -51,7 +51,6 @@ class Overview extends PageComponent {
         api.refreshCluster(force);
         api.refreshClusterOverview(force);
         api.refreshBrokers(force);
-        api.refreshNews(force);
     }
 
     render() {
@@ -77,13 +76,6 @@ class Overview extends PageComponent {
         };
 
         const version = overview.redpanda.version ?? overview.kafka.version;
-        const news = api.news?.filter(e => {
-            const distribution = overview.kafka.distribution;
-            if (e.intendedAudience == 'all' || !distribution) return true;
-            if (e.intendedAudience == 'apache' && distribution == 'APACHE_KAFKA') return true;
-            if (e.intendedAudience == 'redpanda' && distribution == 'REDPANDA') return true;
-            return false;
-        });
 
         return <>
             <PageContent>
@@ -199,26 +191,7 @@ class Overview extends PageComponent {
                                     CLI Tools
                                 </a></li>
                             </ul>
-
-                            <ul className="resource-list">
-                                <Skeleton
-                                    isLoaded={Boolean(news)}
-                                    noOfLines={4}
-                                >
-                                    {news?.map((x, i) => <li key={i}>
-                                        <a href={x.url} rel="noopener noreferrer" target="_blank"
-                                           className="resource-link">
-                                            <span className="dot">&bull;</span>
-                                            <span>
-                                                {x.title}
-                                                <ResourcesBadge type={x.badge}/>
-                                            </span>
-                                        </a>
-                                    </li>)}
-                                </Skeleton>
-                            </ul>
                         </div>
-
                     </Section>
 
                     <Section py={4} gridArea="details">
@@ -233,19 +206,6 @@ class Overview extends PageComponent {
 }
 
 export default Overview;
-
-const ResourcesBadge = (p: { type?: string | undefined }) => {
-    switch (p.type) {
-        case 'new':
-            return <span className="badge-wrapper">
-                <div className="badge-new">New</div>
-            </span>
-
-        default:
-            return null;
-    }
-};
-
 
 type DetailsBlockProps = { title: string, children?: React.ReactNode }
 
@@ -379,11 +339,11 @@ function ClusterDetails() {
 
         <DetailsBlock title="Security">
             <Details title="Service Accounts" content={[
-                [<Link key={0} as={ReactRouterLink} to="/acls/">{serviceAccounts}</Link>]
+                [<Link key={0} as={ReactRouterLink} to="/security/acls/">{serviceAccounts}</Link>]
             ]}/>
 
             <Details title="ACLs" content={[
-                [<Link key={0} as={ReactRouterLink} to="/acls/">{aclCount}</Link>]
+                [<Link key={0} as={ReactRouterLink} to="/security/acls/">{aclCount}</Link>]
             ]}/>
         </DetailsBlock>
 
