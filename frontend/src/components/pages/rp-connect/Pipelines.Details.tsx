@@ -20,7 +20,7 @@ import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, 
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest, pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
-import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
+import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import { Pipeline, Pipeline_State, PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import Tabs from '../../misc/tabs/Tabs';
 import { useState } from 'react';
@@ -71,6 +71,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
         if (!pipeline) return DefaultSkeleton;
         const isStopped = pipeline.state == Pipeline_State.STOPPED;
+        const isTransitioningState = pipeline.state == Pipeline_State.STARTING || pipeline.state == Pipeline_State.STOPPING;
 
         const error = pipeline.status?.error;
 
@@ -86,11 +87,30 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                 </Box>
 
                 <Flex mb="4" gap="4">
-                    <Button variant="outline" isDisabled={this.isChangingPauseState} isLoading={this.isChangingPauseState}
+                    <Button variant="outline" isDisabled={this.isChangingPauseState || isTransitioningState} isLoading={this.isChangingPauseState}
                         onClick={() => {
                             this.isChangingPauseState = true;
 
                             pipelinesApi.configToGraph(pipeline)
+
+                            const watchPipelineUpdates = async () => {
+                                const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
+                                let waitIteration = 0;
+
+                                while (true) {
+                                    const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration++)];
+                                    await delay(waitTime);
+
+                                    await pipelinesApi.refreshPipelines(true);
+                                    // if we can't find the pipeline we're checking anymore it got deleted
+                                    const p = pipelinesApi.pipelines?.first(x => x.id == pipeline.id);
+                                    if (!p) return;
+
+                                    // if its no longer in a transition state, we're done
+                                    if (p.state != Pipeline_State.STARTING && p.state != Pipeline_State.STOPPING)
+                                        return;
+                                }
+                            };
 
                             const changePromise = isStopped
                                 ? pipelinesApi.startPipeline(pipeline.id)
@@ -102,6 +122,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                                         status: 'success', duration: 4000, isClosable: false,
                                         title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`
                                     });
+
+                                    watchPipelineUpdates();
                                 })
                                 .catch(err => {
                                     toast({
