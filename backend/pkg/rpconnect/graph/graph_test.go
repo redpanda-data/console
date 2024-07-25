@@ -56,6 +56,7 @@ func TestConfigToTree(t *testing.T) {
 	lints := linter.LintYAML([]byte(pipelineYAML))
 	assert.NoError(t, err)
 
+	fmt.Println("lints:")
 	lj, _ := json.Marshal(lints)
 	fmt.Println(string(lj))
 
