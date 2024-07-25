@@ -44,13 +44,6 @@ type TreeNode struct {
 	LintErrors []string `json:"lint_errors,omitempty"`
 }
 
-func complementWithAddFrom(n *TreeNode) {
-	childrenOfKind := map[string]struct{}{}
-	for _, c := range n.Children {
-		childrenOfKind[c.Kind] = struct{}{}
-	}
-}
-
 type FullSchema struct {
 	Version    string               `json:"version"`
 	Date       string               `json:"date"`
@@ -195,6 +188,41 @@ func addLintsToNodes(streamTree, resourceTree []*TreeNode, lints []service.Lint)
 			return
 		}
 	}
+}
+
+// Path is relative to the component path
+var componentActionsMap = map[string][]NodeAction{
+	"input": {
+		{Operation: PatchAddOp, Path: "processors", Kind: "processor"},
+	},
+	"output": {
+		{Operation: PatchAddOp, Path: "processors", Kind: "processor"},
+	},
+}
+
+func componentActions(t docs.Type) []NodeAction {
+	// return append([]NodeAction{{Operation: PatchDeleteOp}}, componentActionsMap[string(t)]...)
+	return componentActionsMap[string(t)]
+}
+
+func complementWithAddFrom(n *TreeNode) {
+	childrenOfKind := map[string]struct{}{}
+	for _, c := range n.Children {
+		childrenOfKind[c.Kind] = struct{}{}
+	}
+
+	var appendActions []NodeAction
+	for _, a := range n.Actions {
+		if a.Operation == PatchAddOp {
+			if _, exists := childrenOfKind[a.Kind]; !exists {
+				addFrom := a
+				addFrom.Operation = PatchAddFromOp
+				appendActions = append(appendActions, addFrom)
+			}
+		}
+	}
+
+	n.Actions = append(n.Actions, appendActions...)
 }
 
 type GraphGenerator struct {

@@ -21,6 +21,14 @@ input:
     batch_size: 1
     auto_replay_nacks: true
 
+pipeline:
+  processors:
+    - bloblang: |
+        root = this
+        if root.message.type() == "string" {
+          root.reversed = root.message.reverse()
+        }
+        
 output:
   label: "rpconnect_gen_out"
   kafka_franz:
@@ -58,4 +66,6 @@ func TestConfigToTree(t *testing.T) {
 	rj, _ := json.Marshal(resources)
 	fmt.Println("resources:")
 	fmt.Println(string(rj))
+
+	// assert.Fail(t, "asdf")
 }

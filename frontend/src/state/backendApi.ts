@@ -1636,8 +1636,8 @@ export const pipelinesApi = observable({
             pipeline: pipeline,
         })
 
-        console.dir(r?.streamNodes)
-        console.dir(r?.resourceNodes)
+        console.dir(r?.stream)
+        console.dir(r?.resources)
     },
 
     async refreshPipelines(_force: boolean): Promise<void> {
