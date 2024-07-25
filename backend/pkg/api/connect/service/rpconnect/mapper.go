@@ -13,7 +13,7 @@ import (
 	"github.com/benthosdev/benthos/v4/public/service"
 
 	consolev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
-	"github.com/redpanda-data/console/backend/pkg/rpconnect"
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/graph"
 )
 
 type mapper struct{}
@@ -35,7 +35,7 @@ func (m *mapper) lintsToProto(lints []service.Lint) []*consolev1alpha1.LintConfi
 	return result
 }
 
-func (m *mapper) treeNodeToProto(nodes []*rpconnect.TreeNode) []*consolev1alpha1.TreeNode {
+func (m *mapper) treeNodeToProto(nodes []*graph.TreeNode) []*consolev1alpha1.TreeNode {
 	protoNodes := make([]*consolev1alpha1.TreeNode, 0, len(nodes))
 	for _, n := range nodes {
 		children := m.treeNodeToProto(n.Children)
@@ -47,6 +47,16 @@ func (m *mapper) treeNodeToProto(nodes []*rpconnect.TreeNode) []*consolev1alpha1
 			})
 		}
 
+		actions := make([]*consolev1alpha1.NodeAction, 0, len(n.Actions))
+
+		for _, a := range n.Actions {
+			actions = append(actions, &consolev1alpha1.NodeAction{
+				Operation: patchOperationToProto(a.Operation),
+				Path:      a.Path,
+				Kind:      a.Kind,
+			})
+		}
+
 		protoNodes = append(protoNodes, &consolev1alpha1.TreeNode{
 			Label:          n.Label,
 			Kind:           n.Kind,
@@ -54,8 +64,36 @@ func (m *mapper) treeNodeToProto(nodes []*rpconnect.TreeNode) []*consolev1alpha1
 			Type:           n.Type,
 			Children:       children,
 			GoupedChildren: grouped,
+			RootAction:     n.RootAction,
+			Actions:        actions,
+			LineStart:      int32(n.LineStart),
+			LineEnd:        int32(n.LineEnd),
+			LintErrors:     n.LintErrors,
 		})
 	}
 
 	return protoNodes
+}
+
+func patchOperationToProto(op graph.PatchOperation) consolev1alpha1.PatchOperation {
+	switch op {
+	case graph.PatchAddOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_ADD
+	case graph.PatchAddFromOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_ADD_FROM
+	case graph.PatchDeleteOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_DELETE
+	case graph.PatchSetOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_SET
+	case graph.PatchReplaceOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_REPLACE
+	case graph.PatchCopyOp:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_COPY
+	case graph.PatchMoveAbove:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_MOVE_ABOVE
+	case graph.PatchMoveBelow:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_MOVE_BELOW
+	default:
+		return consolev1alpha1.PatchOperation_PATCH_OPERATION_UNSPECIFIED
+	}
 }

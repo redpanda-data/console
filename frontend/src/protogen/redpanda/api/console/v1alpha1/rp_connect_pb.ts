@@ -8,6 +8,68 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Pipeline } from "../../dataplane/v1alpha2/pipeline_pb";
 
 /**
+ * @generated from enum redpanda.api.console.v1alpha1.PatchOperation
+ */
+export enum PatchOperation {
+  /**
+   * @generated from enum value: PATCH_OPERATION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_ADD = 1;
+   */
+  ADD = 1,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_ADD_FROM = 2;
+   */
+  ADD_FROM = 2,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_DELETE = 3;
+   */
+  DELETE = 3,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_SET = 4;
+   */
+  SET = 4,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_REPLACE = 5;
+   */
+  REPLACE = 5,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_COPY = 6;
+   */
+  COPY = 6,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_MOVE_ABOVE = 7;
+   */
+  MOVE_ABOVE = 7,
+
+  /**
+   * @generated from enum value: PATCH_OPERATION_MOVE_BELOW = 8;
+   */
+  MOVE_BELOW = 8,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PatchOperation)
+proto3.util.setEnumType(PatchOperation, "redpanda.api.console.v1alpha1.PatchOperation", [
+  { no: 0, name: "PATCH_OPERATION_UNSPECIFIED" },
+  { no: 1, name: "PATCH_OPERATION_ADD" },
+  { no: 2, name: "PATCH_OPERATION_ADD_FROM" },
+  { no: 3, name: "PATCH_OPERATION_DELETE" },
+  { no: 4, name: "PATCH_OPERATION_SET" },
+  { no: 5, name: "PATCH_OPERATION_REPLACE" },
+  { no: 6, name: "PATCH_OPERATION_COPY" },
+  { no: 7, name: "PATCH_OPERATION_MOVE_ABOVE" },
+  { no: 8, name: "PATCH_OPERATION_MOVE_BELOW" },
+]);
+
+/**
  * GetConnectPipelineRequest is the request to retrieve a pipeline by name.
  *
  * @generated from message redpanda.api.console.v1alpha1.LintConfigRequest
@@ -178,6 +240,55 @@ export class TreeNodeGroup extends Message<TreeNodeGroup> {
 }
 
 /**
+ * @generated from message redpanda.api.console.v1alpha1.NodeAction
+ */
+export class NodeAction extends Message<NodeAction> {
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.PatchOperation operation = 1;
+   */
+  operation = PatchOperation.UNSPECIFIED;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string kind = 3;
+   */
+  kind = "";
+
+  constructor(data?: PartialMessage<NodeAction>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.NodeAction";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "operation", kind: "enum", T: proto3.getEnumType(PatchOperation) },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): NodeAction {
+    return new NodeAction().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): NodeAction {
+    return new NodeAction().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): NodeAction {
+    return new NodeAction().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: NodeAction | PlainMessage<NodeAction> | undefined, b: NodeAction | PlainMessage<NodeAction> | undefined): boolean {
+    return proto3.util.equals(NodeAction, a, b);
+  }
+}
+
+/**
  * TreeNode represents a tree node.
  *
  * @generated from message redpanda.api.console.v1alpha1.TreeNode
@@ -218,6 +329,26 @@ export class TreeNode extends Message<TreeNode> {
    */
   rootAction = false;
 
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.NodeAction actions = 8;
+   */
+  actions: NodeAction[] = [];
+
+  /**
+   * @generated from field: int32 line_start = 9;
+   */
+  lineStart = 0;
+
+  /**
+   * @generated from field: int32 line_end = 10;
+   */
+  lineEnd = 0;
+
+  /**
+   * @generated from field: repeated string lint_errors = 11;
+   */
+  lintErrors: string[] = [];
+
   constructor(data?: PartialMessage<TreeNode>) {
     super();
     proto3.util.initPartial(data, this);
@@ -233,6 +364,10 @@ export class TreeNode extends Message<TreeNode> {
     { no: 5, name: "children", kind: "message", T: TreeNode, repeated: true },
     { no: 6, name: "gouped_children", kind: "message", T: TreeNodeGroup, repeated: true },
     { no: 7, name: "root_action", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "actions", kind: "message", T: NodeAction, repeated: true },
+    { no: 9, name: "line_start", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "line_end", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "lint_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TreeNode {
@@ -298,14 +433,14 @@ export class GeneratePipelineFlowRequest extends Message<GeneratePipelineFlowReq
  */
 export class GeneratePipelineFlowResponse extends Message<GeneratePipelineFlowResponse> {
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode stream_nodes = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode stream = 1;
    */
-  streamNodes: TreeNode[] = [];
+  stream: TreeNode[] = [];
 
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode resource_nodes = 2;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode resources = 2;
    */
-  resourceNodes: TreeNode[] = [];
+  resources: TreeNode[] = [];
 
   constructor(data?: PartialMessage<GeneratePipelineFlowResponse>) {
     super();
@@ -315,8 +450,8 @@ export class GeneratePipelineFlowResponse extends Message<GeneratePipelineFlowRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GeneratePipelineFlowResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "stream_nodes", kind: "message", T: TreeNode, repeated: true },
-    { no: 2, name: "resource_nodes", kind: "message", T: TreeNode, repeated: true },
+    { no: 1, name: "stream", kind: "message", T: TreeNode, repeated: true },
+    { no: 2, name: "resources", kind: "message", T: TreeNode, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GeneratePipelineFlowResponse {

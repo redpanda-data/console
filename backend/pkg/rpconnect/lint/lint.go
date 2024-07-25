@@ -8,20 +8,16 @@
 // by the Apache License, Version 2.0
 
 // Package rpconnect provides functionality used in endpoints for Redpanda Connect.
-package rpconnect
+package lint
 
 import (
 	_ "embed"
 	"fmt"
 
 	"github.com/benthosdev/benthos/v4/public/service"
-)
 
-// This schema is generated with the command:
-// benthos list --format json-full-scrubbed > ./data/schema.json
-//
-//go:embed data/schema.json
-var schemaBytes []byte
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/schema"
+)
 
 // Linter lints Redpanda connect configs.
 type Linter struct {
@@ -30,7 +26,7 @@ type Linter struct {
 
 // NewLinter creates a new Linter instance.
 func NewLinter() (*Linter, error) {
-	schema, err := service.ConfigSchemaFromJSONV0(schemaBytes)
+	schema, err := service.ConfigSchemaFromJSONV0(schema.SchemaBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
 	}

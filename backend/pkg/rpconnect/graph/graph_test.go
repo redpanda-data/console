@@ -1,4 +1,4 @@
-package rpconnect
+package graph
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
+
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/lint"
 )
 
 const pipelineYAML = `
@@ -40,7 +42,13 @@ func TestConfigToTree(t *testing.T) {
 	err = yaml.Unmarshal([]byte(pipelineYAML), &confNode)
 	assert.NoError(t, err)
 
-	stream, resources, err := graph.ConfigToTree(confNode)
+	linter, err := lint.NewLinter()
+	assert.NoError(t, err)
+
+	lints, err := linter.LintYAMLConfig([]byte(pipelineYAML))
+	assert.NoError(t, err)
+
+	stream, resources, err := graph.ConfigToTree(confNode, lints)
 	assert.NoError(t, err)
 
 	sj, _ := json.Marshal(stream)

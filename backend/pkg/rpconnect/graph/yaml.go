@@ -1,4 +1,4 @@
-package rpconnect
+package graph
 
 import (
 	"bytes"

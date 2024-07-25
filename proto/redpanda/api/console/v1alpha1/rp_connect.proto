@@ -29,7 +29,23 @@ message TreeNodeGroup {
   repeated TreeNode children = 1;
 }
 
-// message NodeAction {}
+enum PatchOperation {
+  PATCH_OPERATION_UNSPECIFIED = 0;
+  PATCH_OPERATION_ADD = 1;
+  PATCH_OPERATION_ADD_FROM = 2;
+  PATCH_OPERATION_DELETE = 3;
+  PATCH_OPERATION_SET = 4;
+  PATCH_OPERATION_REPLACE = 5;
+  PATCH_OPERATION_COPY = 6;
+  PATCH_OPERATION_MOVE_ABOVE = 7;
+  PATCH_OPERATION_MOVE_BELOW = 8;
+}
+
+message NodeAction {
+  PatchOperation operation = 1;
+  string path = 2;
+  string kind = 3;
+}
 
 // TreeNode represents a tree node.
 message TreeNode {
@@ -40,6 +56,10 @@ message TreeNode {
   repeated TreeNode children = 5;
   repeated TreeNodeGroup gouped_children = 6;
   bool root_action = 7;
+  repeated NodeAction actions = 8;
+  int32 line_start = 9;
+  int32 line_end = 10;
+  repeated string lint_errors = 11;
 }
 
 // GeneratePipelineFlowRequest is the request to retrieve a pipeline flow information.
@@ -49,8 +69,8 @@ message GeneratePipelineFlowRequest {
 
 // GeneratePipelineFlowResponse is the response.
 message GeneratePipelineFlowResponse {
-  repeated TreeNode stream_nodes = 1;
-  repeated TreeNode resource_nodes = 2;
+  repeated TreeNode stream = 1;
+  repeated TreeNode resources = 2;
 }
 
 service RedpandaConnectService {

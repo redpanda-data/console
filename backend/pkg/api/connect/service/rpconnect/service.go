@@ -23,7 +23,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
-	"github.com/redpanda-data/console/backend/pkg/rpconnect"
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/graph"
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/lint"
 )
 
 var _ consolev1alpha1connect.RedpandaConnectServiceHandler = (*Service)(nil)
@@ -31,20 +32,20 @@ var _ consolev1alpha1connect.RedpandaConnectServiceHandler = (*Service)(nil)
 // Service that implements the RedpandaConnect interface.
 type Service struct {
 	logger *zap.Logger
-	linter *rpconnect.Linter
-	graph  *rpconnect.GraphGenerator
+	linter *lint.Linter
+	graph  *graph.GraphGenerator
 	hooks  hooks.AuthorizationHooks
 	mapper *mapper
 }
 
 // NewService initializes a new RedpandaConnect service.
 func NewService(logger *zap.Logger, authHooks hooks.AuthorizationHooks) (*Service, error) {
-	linter, err := rpconnect.NewLinter()
+	linter, err := lint.NewLinter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create linter: %w", err)
 	}
 
-	graph, err := rpconnect.NewGraphGenerator()
+	graph, err := graph.NewGraphGenerator()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create linter: %w", err)
 	}
@@ -90,7 +91,8 @@ func (s *Service) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.
 // GeneratePipelineFlow generates flow based on a pipeline.
 func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v1alpha1.GeneratePipelineFlowRequest]) (*connect.Response[v1alpha1.GeneratePipelineFlowResponse], error) {
 	var confNode yaml.Node
-	if err := yaml.Unmarshal([]byte(req.Msg.GetPipeline().GetConfigYaml()), &confNode); err != nil {
+	pipelineYAML := req.Msg.GetPipeline().GetConfigYaml()
+	if err := yaml.Unmarshal([]byte(pipelineYAML), &confNode); err != nil {
 		if err != nil {
 			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,
@@ -100,7 +102,16 @@ func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v
 		}
 	}
 
-	stream, resources, err := s.graph.ConfigToTree(confNode)
+	lints, err := s.linter.LintYAMLConfig([]byte(pipelineYAML))
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
+
+	stream, resources, err := s.graph.ConfigToTree(confNode, lints)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
@@ -110,8 +121,8 @@ func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v
 	}
 
 	res := &v1alpha1.GeneratePipelineFlowResponse{
-		StreamNodes:   s.mapper.treeNodeToProto(stream),
-		ResourceNodes: s.mapper.treeNodeToProto(resources),
+		Stream:    s.mapper.treeNodeToProto(stream),
+		Resources: s.mapper.treeNodeToProto(resources),
 	}
 
 	return connect.NewResponse(res), nil
