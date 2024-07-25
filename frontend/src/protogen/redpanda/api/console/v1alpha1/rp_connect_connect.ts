@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { LintConfigRequest, LintConfigResponse } from "./rp_connect_pb";
+import { GeneratePipelineFlowRequest, GeneratePipelineFlowResponse, LintConfigRequest, LintConfigResponse } from "./rp_connect_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -12,6 +12,17 @@ import { MethodKind } from "@bufbuild/protobuf";
 export const RedpandaConnectService = {
   typeName: "redpanda.api.console.v1alpha1.RedpandaConnectService",
   methods: {
+    /**
+     * GeneratePipelineFlow generates flow based on a pipeline.
+     *
+     * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.GeneratePipelineFlow
+     */
+    generatePipelineFlow: {
+      name: "GeneratePipelineFlow",
+      I: GeneratePipelineFlowRequest,
+      O: GeneratePipelineFlowResponse,
+      kind: MethodKind.Unary,
+    },
     /**
      * LintConfig lists the given YAML config and returns all linting issues.
      *

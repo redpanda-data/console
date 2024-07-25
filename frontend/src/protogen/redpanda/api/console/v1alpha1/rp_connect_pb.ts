@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
+import { Pipeline } from "../../dataplane/v1alpha2/pipeline_pb";
 
 /**
  * GetConnectPipelineRequest is the request to retrieve a pipeline by name.
@@ -134,6 +135,204 @@ export class LintConfigResponse_Lint extends Message<LintConfigResponse_Lint> {
 
   static equals(a: LintConfigResponse_Lint | PlainMessage<LintConfigResponse_Lint> | undefined, b: LintConfigResponse_Lint | PlainMessage<LintConfigResponse_Lint> | undefined): boolean {
     return proto3.util.equals(LintConfigResponse_Lint, a, b);
+  }
+}
+
+/**
+ * TreeNodeGroup represents a group of tree nodes.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.TreeNodeGroup
+ */
+export class TreeNodeGroup extends Message<TreeNodeGroup> {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode children = 1;
+   */
+  children: TreeNode[] = [];
+
+  constructor(data?: PartialMessage<TreeNodeGroup>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.TreeNodeGroup";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "children", kind: "message", T: TreeNode, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TreeNodeGroup {
+    return new TreeNodeGroup().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TreeNodeGroup {
+    return new TreeNodeGroup().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TreeNodeGroup {
+    return new TreeNodeGroup().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TreeNodeGroup | PlainMessage<TreeNodeGroup> | undefined, b: TreeNodeGroup | PlainMessage<TreeNodeGroup> | undefined): boolean {
+    return proto3.util.equals(TreeNodeGroup, a, b);
+  }
+}
+
+/**
+ * TreeNode represents a tree node.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.TreeNode
+ */
+export class TreeNode extends Message<TreeNode> {
+  /**
+   * @generated from field: string label = 1;
+   */
+  label = "";
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string kind = 3;
+   */
+  kind = "";
+
+  /**
+   * @generated from field: string type = 4;
+   */
+  type = "";
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode children = 5;
+   */
+  children: TreeNode[] = [];
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNodeGroup gouped_children = 6;
+   */
+  goupedChildren: TreeNodeGroup[] = [];
+
+  /**
+   * @generated from field: bool root_action = 7;
+   */
+  rootAction = false;
+
+  constructor(data?: PartialMessage<TreeNode>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.TreeNode";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "children", kind: "message", T: TreeNode, repeated: true },
+    { no: 6, name: "gouped_children", kind: "message", T: TreeNodeGroup, repeated: true },
+    { no: 7, name: "root_action", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TreeNode {
+    return new TreeNode().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TreeNode {
+    return new TreeNode().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TreeNode {
+    return new TreeNode().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TreeNode | PlainMessage<TreeNode> | undefined, b: TreeNode | PlainMessage<TreeNode> | undefined): boolean {
+    return proto3.util.equals(TreeNode, a, b);
+  }
+}
+
+/**
+ * GeneratePipelineFlowRequest is the request to retrieve a pipeline flow information.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GeneratePipelineFlowRequest
+ */
+export class GeneratePipelineFlowRequest extends Message<GeneratePipelineFlowRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline pipeline = 1;
+   */
+  pipeline?: Pipeline;
+
+  constructor(data?: PartialMessage<GeneratePipelineFlowRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GeneratePipelineFlowRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GeneratePipelineFlowRequest {
+    return new GeneratePipelineFlowRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GeneratePipelineFlowRequest {
+    return new GeneratePipelineFlowRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GeneratePipelineFlowRequest {
+    return new GeneratePipelineFlowRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GeneratePipelineFlowRequest | PlainMessage<GeneratePipelineFlowRequest> | undefined, b: GeneratePipelineFlowRequest | PlainMessage<GeneratePipelineFlowRequest> | undefined): boolean {
+    return proto3.util.equals(GeneratePipelineFlowRequest, a, b);
+  }
+}
+
+/**
+ * GeneratePipelineFlowResponse is the response.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GeneratePipelineFlowResponse
+ */
+export class GeneratePipelineFlowResponse extends Message<GeneratePipelineFlowResponse> {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode stream_nodes = 1;
+   */
+  streamNodes: TreeNode[] = [];
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TreeNode resource_nodes = 2;
+   */
+  resourceNodes: TreeNode[] = [];
+
+  constructor(data?: PartialMessage<GeneratePipelineFlowResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GeneratePipelineFlowResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "stream_nodes", kind: "message", T: TreeNode, repeated: true },
+    { no: 2, name: "resource_nodes", kind: "message", T: TreeNode, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GeneratePipelineFlowResponse {
+    return new GeneratePipelineFlowResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GeneratePipelineFlowResponse {
+    return new GeneratePipelineFlowResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GeneratePipelineFlowResponse {
+    return new GeneratePipelineFlowResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GeneratePipelineFlowResponse | PlainMessage<GeneratePipelineFlowResponse> | undefined, b: GeneratePipelineFlowResponse | PlainMessage<GeneratePipelineFlowResponse> | undefined): boolean {
+    return proto3.util.equals(GeneratePipelineFlowResponse, a, b);
   }
 }
 

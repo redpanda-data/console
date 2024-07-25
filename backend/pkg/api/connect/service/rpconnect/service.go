@@ -17,6 +17,7 @@ import (
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/hooks"
@@ -31,6 +32,7 @@ var _ consolev1alpha1connect.RedpandaConnectServiceHandler = (*Service)(nil)
 type Service struct {
 	logger *zap.Logger
 	linter *rpconnect.Linter
+	graph  *rpconnect.GraphGenerator
 	hooks  hooks.AuthorizationHooks
 	mapper *mapper
 }
@@ -42,9 +44,15 @@ func NewService(logger *zap.Logger, authHooks hooks.AuthorizationHooks) (*Servic
 		return nil, fmt.Errorf("failed to create linter: %w", err)
 	}
 
+	graph, err := rpconnect.NewGraphGenerator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create linter: %w", err)
+	}
+
 	return &Service{
 		logger: logger,
 		linter: linter,
+		graph:  graph,
 		hooks:  authHooks,
 		mapper: &mapper{},
 	}, nil
@@ -74,6 +82,36 @@ func (s *Service) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.
 	res := &v1alpha1.LintConfigResponse{
 		Valid: len(lints) == 0,
 		Lints: s.mapper.lintsToProto(lints),
+	}
+
+	return connect.NewResponse(res), nil
+}
+
+// GeneratePipelineFlow generates flow based on a pipeline.
+func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v1alpha1.GeneratePipelineFlowRequest]) (*connect.Response[v1alpha1.GeneratePipelineFlowResponse], error) {
+	var confNode yaml.Node
+	if err := yaml.Unmarshal([]byte(req.Msg.GetPipeline().GetConfigYaml()), &confNode); err != nil {
+		if err != nil {
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+			)
+		}
+	}
+
+	stream, resources, err := s.graph.ConfigToTree(confNode)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
+
+	res := &v1alpha1.GeneratePipelineFlowResponse{
+		StreamNodes:   s.mapper.treeNodeToProto(stream),
+		ResourceNodes: s.mapper.treeNodeToProto(resources),
 	}
 
 	return connect.NewResponse(res), nil
