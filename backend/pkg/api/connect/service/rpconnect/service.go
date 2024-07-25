@@ -91,7 +91,7 @@ func (s *Service) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.
 // GeneratePipelineFlow generates flow based on a pipeline.
 func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v1alpha1.GeneratePipelineFlowRequest]) (*connect.Response[v1alpha1.GeneratePipelineFlowResponse], error) {
 	var confNode yaml.Node
-	pipelineYAML := req.Msg.GetPipeline().GetConfigYaml()
+	pipelineYAML := req.Msg.GetConfigYaml()
 	if err := yaml.Unmarshal([]byte(pipelineYAML), &confNode); err != nil {
 		if err != nil {
 			return nil, apierrors.NewConnectError(
