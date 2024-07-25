@@ -3,7 +3,6 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
-import "redpanda/api/dataplane/v1alpha2/pipeline.proto";
 
 // GetConnectPipelineRequest is the request to retrieve a pipeline by name.
 message LintConfigRequest {
@@ -64,7 +63,7 @@ message TreeNode {
 
 // GeneratePipelineFlowRequest is the request to retrieve a pipeline flow information.
 message GeneratePipelineFlowRequest {
-  redpanda.api.dataplane.v1alpha2.Pipeline pipeline = 1;
+  string config_yaml = 1 [(buf.validate.field).required = true];
 }
 
 // GeneratePipelineFlowResponse is the response.

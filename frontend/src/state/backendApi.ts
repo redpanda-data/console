@@ -1633,7 +1633,7 @@ export const pipelinesApi = observable({
 
     async configToGraph(pipeline: Pipeline) {
         const r = await appConfig.rpConnectClient?.generatePipelineFlow({
-            pipeline: pipeline,
+            configYaml: pipeline.configYaml,
         })
 
         console.dir(r?.stream)

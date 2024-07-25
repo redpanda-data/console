@@ -5,7 +5,6 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { Pipeline } from "../../dataplane/v1alpha2/pipeline_pb";
 
 /**
  * @generated from enum redpanda.api.console.v1alpha1.PatchOperation
@@ -394,9 +393,9 @@ export class TreeNode extends Message<TreeNode> {
  */
 export class GeneratePipelineFlowRequest extends Message<GeneratePipelineFlowRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline pipeline = 1;
+   * @generated from field: string config_yaml = 1;
    */
-  pipeline?: Pipeline;
+  configYaml = "";
 
   constructor(data?: PartialMessage<GeneratePipelineFlowRequest>) {
     super();
@@ -406,7 +405,7 @@ export class GeneratePipelineFlowRequest extends Message<GeneratePipelineFlowReq
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GeneratePipelineFlowRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
+    { no: 1, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GeneratePipelineFlowRequest {
