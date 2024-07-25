@@ -90,6 +90,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                         onClick={() => {
                             this.isChangingPauseState = true;
 
+                            pipelinesApi.configToGraph(pipeline)
+
                             const changePromise = isStopped
                                 ? pipelinesApi.startPipeline(pipeline.id)
                                 : pipelinesApi.stopPipeline(pipeline.id);

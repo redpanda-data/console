@@ -1631,13 +1631,14 @@ export const rolesApi = observable({
 export const pipelinesApi = observable({
     pipelines: undefined as undefined | Pipeline[],
 
-    // async lintConfig(config: string): Promise<LintConfigResponse> {
-    //     const client = appConfig.pipelinesClient;
-    //     if (!client) throw new Error('pipelines client is not initialized');
-    //
-    //     const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
-    //     return r;
-    // },
+    async configToGraph(pipeline: Pipeline) {
+        const r = await appConfig.rpConnectClient?.generatePipelineFlow({
+            pipeline: pipeline,
+        })
+
+        console.dir(r?.streamNodes)
+        console.dir(r?.resourceNodes)
+    },
 
     async refreshPipelines(_force: boolean): Promise<void> {
 

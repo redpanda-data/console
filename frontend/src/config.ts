@@ -23,6 +23,7 @@ import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/securi
 // import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
+import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -70,6 +71,7 @@ interface Config {
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
     transformsClient?: PromiseClient<typeof TransformService>;
+    rpConnectClient?: PromiseClient<typeof RedpandaConnectService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
     jwt?: string;
@@ -105,6 +107,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
     const transformClient = createPromiseClient(TransformService, transport);
+    const rpConnectClient = createPromiseClient(RedpandaConnectService, transport);
+
     Object.assign(config, {
         jwt,
         isServerless,
@@ -115,6 +119,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
         transformsClient: transformClient,
+        rpConnectClient: rpConnectClient,
         ...args,
     });
     return config;
