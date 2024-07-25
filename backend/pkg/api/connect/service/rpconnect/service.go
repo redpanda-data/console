@@ -102,7 +102,14 @@ func (s *Service) GeneratePipelineFlow(_ context.Context, req *connect.Request[v
 		}
 	}
 
-	lints := s.linter.LintYAML([]byte(pipelineYAML))
+	lints, err := s.linter.LintYAMLConfig([]byte(pipelineYAML))
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
 
 	stream, resources, err := s.graph.ConfigToTree(confNode, lints)
 	if err != nil {

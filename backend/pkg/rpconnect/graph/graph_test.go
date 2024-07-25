@@ -25,7 +25,7 @@ pipeline:
   processors:
     - bloblang: |
         root = this
-        if root.message.type() == "string" {
+        if root.message.types() == "string" {
           root.reversed = root.message.reverse()
         }
         
@@ -53,7 +53,7 @@ func TestConfigToTree(t *testing.T) {
 	linter, err := lint.NewLinter()
 	assert.NoError(t, err)
 
-	lints := linter.LintYAML([]byte(pipelineYAML))
+	lints, err := linter.LintYAMLConfig([]byte(pipelineYAML))
 	assert.NoError(t, err)
 
 	fmt.Println("lints:")
@@ -71,5 +71,5 @@ func TestConfigToTree(t *testing.T) {
 	fmt.Println("resources:")
 	fmt.Println(string(rj))
 
-	// assert.Fail(t, "asdf")
+	assert.Fail(t, "asdf")
 }
