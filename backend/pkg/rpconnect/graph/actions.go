@@ -6,9 +6,10 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/rpconnect/docs"
 )
 
-func fieldToActions(spec docs.FieldSpec) (actions []NodeAction) {
+func fieldToActions(spec docs.FieldSpec) []NodeAction {
+	var actions []NodeAction
 	if spec.IsDeprecated {
-		return
+		return actions
 	}
 	if coreType, isCore := spec.Type.IsCoreComponent(); isCore {
 		switch spec.Kind {
@@ -25,7 +26,7 @@ func fieldToActions(spec docs.FieldSpec) (actions []NodeAction) {
 				Path:      spec.Name,
 			})
 		}
-		return
+		return actions
 	}
 	if spec.Kind == docs.KindScalar {
 		for _, a := range fieldsToActions(spec.Children) {
@@ -33,7 +34,7 @@ func fieldToActions(spec docs.FieldSpec) (actions []NodeAction) {
 			actions = append(actions, a)
 		}
 	}
-	return
+	return actions
 }
 
 func fieldsToActions(specs docs.FieldSpecs) []NodeAction {

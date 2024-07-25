@@ -33,7 +33,7 @@ var _ consolev1alpha1connect.RedpandaConnectServiceHandler = (*Service)(nil)
 type Service struct {
 	logger *zap.Logger
 	linter *lint.Linter
-	graph  *graph.GraphGenerator
+	graph  *graph.Generator
 	hooks  hooks.AuthorizationHooks
 	mapper *mapper
 }
@@ -45,7 +45,7 @@ func NewService(logger *zap.Logger, authHooks hooks.AuthorizationHooks) (*Servic
 		return nil, fmt.Errorf("failed to create linter: %w", err)
 	}
 
-	graph, err := graph.NewGraphGenerator()
+	graph, err := graph.NewGenerator()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create linter: %w", err)
 	}

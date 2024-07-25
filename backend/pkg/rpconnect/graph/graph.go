@@ -1,3 +1,4 @@
+// Package graph provides utility to for converting YAML spec to graph
 package graph
 
 import (
@@ -44,7 +45,7 @@ type TreeNode struct {
 	LintErrors []string `json:"lint_errors,omitempty"`
 }
 
-type FullSchema struct {
+type fullSchema struct {
 	Version    string               `json:"version"`
 	Date       string               `json:"date"`
 	Config     docs.FieldSpecs      `json:"config,omitempty"`
@@ -61,7 +62,7 @@ type FullSchema struct {
 	// BloblangMethods   []query.MethodSpec   `json:"bloblang-methods,omitempty"`
 }
 
-func providerFromSchema(s *FullSchema) *docs.MappedDocsProvider {
+func providerFromSchema(s *fullSchema) *docs.MappedDocsProvider {
 	prov := docs.NewMappedDocsProvider()
 	for _, spec := range s.Buffers {
 		prov.RegisterDocs(spec)
@@ -130,10 +131,12 @@ var sectionActions = map[string][]NodeAction{
 	},
 }
 
-func allocLintsToNode(lints []service.Lint, node *TreeNode) (remaining []service.Lint) {
+func allocLintsToNode(lints []service.Lint, node *TreeNode) []service.Lint {
 	if len(lints) == 0 || lints[0].Line > node.LineEnd {
 		return lints
 	}
+
+	var remaining []service.Lint
 
 	tmpChildren := node.Children
 	if len(node.GroupedChildren) > 0 {
@@ -156,11 +159,12 @@ func allocLintsToNode(lints []service.Lint, node *TreeNode) (remaining []service
 		}
 		if lint.Line > node.LineEnd {
 			remaining = append(remaining, lints[i:]...)
-			return
+			return remaining
 		}
 		node.LintErrors = append(node.LintErrors, lint.What)
 	}
-	return
+
+	return remaining
 }
 
 func addLintsToNodes(streamTree, resourceTree []*TreeNode, lints []service.Lint) {
@@ -201,7 +205,6 @@ var componentActionsMap = map[string][]NodeAction{
 }
 
 func componentActions(t docs.Type) []NodeAction {
-	// return append([]NodeAction{{Operation: PatchDeleteOp}}, componentActionsMap[string(t)]...)
 	return componentActionsMap[string(t)]
 }
 
@@ -225,41 +228,45 @@ func complementWithAddFrom(n *TreeNode) {
 	n.Actions = append(n.Actions, appendActions...)
 }
 
-type GraphGenerator struct {
+// Generator is used to generate graph
+type Generator struct {
 	// We should use the public apis to walk the config schema and views for different fields and stuff
 	// for now lets cheat
 	// schema *service.ConfigSchema
 
-	schema *FullSchema
+	schema *fullSchema
 	prov   *docs.MappedDocsProvider
 }
 
-// NewLinter creates a new Linter instance.
-func NewGraphGenerator() (*GraphGenerator, error) {
-	// schema, err := service.ConfigSchemaFromJSONV0(schemaBytes)
-	var tmpSchema FullSchema
+// NewGenerator creates a new graph generator instance.
+func NewGenerator() (*Generator, error) {
+	var tmpSchema fullSchema
 	if err := json.Unmarshal(schema.SchemaBytes, &tmpSchema); err != nil {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
 	}
 
-	return &GraphGenerator{
+	return &Generator{
 		schema: &tmpSchema,
 		prov:   providerFromSchema(&tmpSchema),
 	}, nil
 }
 
-func (g *GraphGenerator) ConfigToTree(confNode yaml.Node, lints []service.Lint) (streamNodes, resourceNodes []*TreeNode, err error) {
+// ConfigToTree converts config to a graph tree.
+//
+//nolint:gocognit,cyclop // complicated logic
+func (g *Generator) ConfigToTree(confNode yaml.Node, lints []service.Lint) ([]*TreeNode, []*TreeNode, error) {
+	var streamNodes, resourceNodes []*TreeNode
 	nodeMap := map[string]yaml.Node{}
-	if err = confNode.Decode(&nodeMap); err != nil {
-		return
+	if err := confNode.Decode(&nodeMap); err != nil {
+		return streamNodes, resourceNodes, err
 	}
 
 	fieldsMap := map[string]docs.FieldSpec{}
 	for _, field := range g.schema.Config {
 		fieldsMap[field.Name] = field
 	}
-
 	createSection := func(section string) (*TreeNode, bool) {
+		var err error
 		tmpTree := &TreeNode{Label: cases.Title(language.English).String(strings.ReplaceAll(section, "_", " "))}
 		if section == "pipeline" {
 			tmpTree.Label = "Processors"
@@ -356,5 +363,6 @@ func (g *GraphGenerator) ConfigToTree(confNode yaml.Node, lints []service.Lint) 
 	resourceNodes = append(resourceNodes, generalResourceNode)
 
 	addLintsToNodes(streamNodes, resourceNodes, lints)
-	return
+
+	return streamNodes, resourceNodes, nil
 }

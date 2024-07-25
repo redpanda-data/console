@@ -7,11 +7,10 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-// Package rpconnect provides functionality used in endpoints for Redpanda Connect.
+// Package lint provides functionality used in endpoints for Redpanda Connect.
 package lint
 
 import (
-	_ "embed"
 	"fmt"
 
 	"github.com/benthosdev/benthos/v4/public/service"

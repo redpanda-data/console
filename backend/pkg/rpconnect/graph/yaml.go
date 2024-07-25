@@ -71,26 +71,31 @@ func moveBatchingProcs(spec docs.ComponentSpec, children []*TreeNode) []*TreeNod
 	return sorted
 }
 
-func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov docs.Provider) (treeNodes []*TreeNode, err error) {
+//nolint:gocognit,cyclop // complicated logic
+func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov docs.Provider) ([]*TreeNode, error) {
 	node = unwrapDocumentNode(node)
+
+	var treeNodes []*TreeNode
 
 	switch field.Kind {
 	case docs.Kind2DArray:
 		field = field.Array()
 		for i := 0; i < len(node.Content); i++ {
+			var err error
 			var nextTNodes []*TreeNode
 			if nextTNodes, err = yamlFieldToTree(field, append(cpath, strconv.Itoa(i)), node.Content[i], prov); err != nil {
-				return
+				return treeNodes, err
 			}
 			treeNodes = append(treeNodes, nextTNodes...)
 		}
-		return
+		return treeNodes, nil
 	case docs.KindArray:
 		field = field.Scalar()
 		for i := 0; i < len(node.Content); i++ {
+			var err error
 			var nextTNodes []*TreeNode
 			if nextTNodes, err = yamlFieldToTree(field, append(cpath, strconv.Itoa(i)), node.Content[i], prov); err != nil {
-				return
+				return treeNodes, err
 			}
 			for _, nextNode := range nextTNodes {
 				if i < (len(node.Content) - 1) {
@@ -101,23 +106,25 @@ func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov
 			}
 			treeNodes = append(treeNodes, nextTNodes...)
 		}
-		return
+		return treeNodes, nil
 	case docs.KindMap:
 		field = field.Scalar()
 		for i := 0; i < len(node.Content)-1; i += 2 {
 			var nextTNodes []*TreeNode
+			var err error
 			if nextTNodes, err = yamlFieldToTree(field, append(cpath, node.Content[i].Value), node.Content[i+1], prov); err != nil {
-				return
+				return treeNodes, err
 			}
 			treeNodes = append(treeNodes, nextTNodes...)
 		}
-		return
+		return treeNodes, nil
 	}
 
 	if coreType, is := field.Type.IsCoreComponent(); is {
 		var spec docs.ComponentSpec
+		var err error
 		if _, spec, err = docs.GetInferenceCandidateFromYAML(prov, coreType, node); err != nil {
-			return
+			return treeNodes, err
 		}
 		tnode := &TreeNode{
 			Kind:      string(coreType),
@@ -179,8 +186,10 @@ func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov
 	return nil, nil
 }
 
-func yamlFieldsToTree(fields docs.FieldSpecs, path []string, node *yaml.Node, prov docs.Provider) (treeNodes []*TreeNode, err error) {
+func yamlFieldsToTree(fields docs.FieldSpecs, path []string, node *yaml.Node, prov docs.Provider) ([]*TreeNode, error) {
 	node = unwrapDocumentNode(node)
+
+	var treeNodes []*TreeNode
 
 	fieldsMap := map[string]docs.FieldSpec{}
 	for _, field := range fields {
@@ -192,13 +201,14 @@ func yamlFieldsToTree(fields docs.FieldSpecs, path []string, node *yaml.Node, pr
 
 		if f, exists := fieldsMap[fieldName]; exists {
 			var fieldNodes []*TreeNode
+			var err error
 			if fieldNodes, err = yamlFieldToTree(f, append(path, fieldName), node.Content[i+1], prov); err != nil {
-				return
+				return treeNodes, err
 			}
 			treeNodes = append(treeNodes, fieldNodes...)
 		}
 	}
-	return
+	return treeNodes, nil
 }
 
 func yamlFieldsToTreeSplitBatching(fields docs.FieldSpecs, path []string, node *yaml.Node, prov docs.Provider) ([]*TreeNode, error) {
@@ -304,15 +314,19 @@ func outputSwitchCases(fields docs.FieldSpecs, path []string, node *yaml.Node, p
 
 func yamlComponentToTrees(
 	spec docs.ComponentSpec, path []string, node *yaml.Node, prov docs.Provider,
-) (children []*TreeNode, groupedChildren [][]*TreeNode, err error) {
+) ([]*TreeNode, [][]*TreeNode, error) {
+	var children []*TreeNode
+	var groupedChildren [][]*TreeNode
+	var err error
+
 	switch spec.Type {
 	case docs.TypeInput, docs.TypeOutput:
 		if spec.Name == "switch" {
 			children, err = outputSwitchCases(spec.Config.Children, path, node, prov)
-			return
+			return children, groupedChildren, err
 		} else if spec.Config.Kind == docs.KindScalar {
 			children, err = yamlFieldsToTreeSplitBatching(spec.Config.Children, path, node, prov)
-			return
+			return children, groupedChildren, err
 		}
 	case docs.TypeProcessor:
 		if spec.Name == "switch" || spec.Name == "group_by" {
@@ -327,7 +341,7 @@ func yamlComponentToTrees(
 				casePath = append(casePath, strconv.Itoa(i))
 				var caseChildren []*TreeNode
 				if caseChildren, err = yamlFieldToTree(eleSpec, casePath, caseNode, prov); err != nil {
-					return
+					return children, groupedChildren, err
 				}
 				caseChildren = append([]*TreeNode{{
 					Label: fmt.Sprintf("%v %v", labelPrefix, i),
@@ -344,14 +358,12 @@ func yamlComponentToTrees(
 				}
 				groupedChildren = append(groupedChildren, caseChildren)
 			}
-			return
+			return children, groupedChildren, err
 		}
 	}
 	children, err = yamlFieldToTree(spec.Config, path, node, prov)
-	return
+	return children, groupedChildren, err
 }
-
-//------------------------------------------------------------------------------
 
 func unwrapDocumentNode(node *yaml.Node) *yaml.Node {
 	if node != nil && node.Kind == yaml.DocumentNode && len(node.Content) > 0 {

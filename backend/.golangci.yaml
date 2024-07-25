@@ -10,7 +10,7 @@ run:
 issues:
   # TODO FIX THIS
   exclude-dirs:
-    - pkg/rpconnect
+    - pkg/rpconnect/docs
   exclude-rules:
     - path: (.+)_test.go
       linters:

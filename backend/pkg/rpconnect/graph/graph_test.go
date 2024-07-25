@@ -43,7 +43,7 @@ output:
 `
 
 func TestConfigToTree(t *testing.T) {
-	graph, err := NewGraphGenerator()
+	graph, err := NewGenerator()
 	assert.NoError(t, err)
 
 	var confNode yaml.Node
