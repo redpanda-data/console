@@ -92,7 +92,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                             this.isChangingPauseState = true;
 
                             const watchPipelineUpdates = async () => {
-                                const waitDelays = [200, 400, 1000];
+                                const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
                                 let waitIteration = 0;
 
                                 while (true) {
