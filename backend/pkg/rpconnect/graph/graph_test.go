@@ -53,8 +53,11 @@ func TestConfigToTree(t *testing.T) {
 	linter, err := lint.NewLinter()
 	assert.NoError(t, err)
 
-	lints, err := linter.LintYAMLConfig([]byte(pipelineYAML))
+	lints := linter.LintYAML([]byte(pipelineYAML))
 	assert.NoError(t, err)
+
+	lj, _ := json.Marshal(lints)
+	fmt.Println(string(lj))
 
 	stream, resources, err := graph.ConfigToTree(confNode, lints)
 	assert.NoError(t, err)
