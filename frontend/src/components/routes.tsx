@@ -280,8 +280,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
 
-    MakeRoute<{}>('/transforms-setup', TransformsSetup, 'Transforms', undefined, true),
-    MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true),
+    MakeRoute<{}>('/transforms-setup', TransformsSetup, 'Transforms', undefined, true,
+      routeVisibility(false, [Feature.TransformsService])
+    ),
+    MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true,
+      routeVisibility(false, [Feature.TransformsService])
+    ),
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Redpanda Connect Pipelines', LinkIcon, true),
