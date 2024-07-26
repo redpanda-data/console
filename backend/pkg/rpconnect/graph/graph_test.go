@@ -71,5 +71,5 @@ func TestConfigToTree(t *testing.T) {
 	fmt.Println("resources:")
 	fmt.Println(string(rj))
 
-	assert.Fail(t, "asdf")
+	// assert.Fail(t, "asdf")
 }
