@@ -28,9 +28,7 @@ func (c *TLS) Validate() error {
 	}
 
 	_, err := c.TLSConfig()
-	if err != nil {
-		return err
-	}
+	return err
 }
 
 // TLSConfig returns the TLS Config from the configured parameters
