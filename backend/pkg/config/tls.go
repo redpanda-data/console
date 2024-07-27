@@ -22,8 +22,15 @@ func (c *TLS) SetDefaults() {
 }
 
 // Validate the TLS config.
-func (*TLS) Validate() error {
-	return nil
+func (c *TLS) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	_, err := c.TLSConfig()
+	if err != nil {
+		return err
+	}
 }
 
 // TLSConfig returns the TLS Config from the configured parameters
