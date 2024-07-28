@@ -24,7 +24,6 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import { CheckIcon } from '@chakra-ui/icons';
-import { XIcon } from '@heroicons/react/solid';
 import { openDeleteModal } from './modals';
 import { TrashIcon } from '@heroicons/react/outline';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -32,18 +31,19 @@ import { Features } from '../../../state/supportedFeatures';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { MdOutlineQuestionMark } from 'react-icons/md';
 import { MdRefresh } from 'react-icons/md';
+import { HiX } from 'react-icons/hi';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     switch (p.status) {
-        case Pipeline_State.UNSPECIFIED: return <Flex alignItems="center" gap="2"><XIcon fontSize="17px" width="auto" color="orange" /> Unspecified</Flex>;
+        case Pipeline_State.UNSPECIFIED: return <Flex alignItems="center" gap="2"><HiX fontSize="17px" width="auto" color="orange" /> Unspecified</Flex>;
         case Pipeline_State.STARTING: return <Flex alignItems="center" gap="2"><MdRefresh fontSize="17px" width="auto" color="#444" /> Starting</Flex>;
         case Pipeline_State.RUNNING: return <Flex alignItems="center" gap="2"><CheckIcon fontSize="17px" width="auto" color="green" /> Running</Flex>;
         case Pipeline_State.STOPPING: return <Flex alignItems="center" gap="2"><MdRefresh fontSize="17px" width="auto" color="#444" /> Stopping</Flex>;
         case Pipeline_State.STOPPED: return <Flex alignItems="center" gap="2"><FaRegStopCircle fontSize="17px" width="auto" color="#444" /> Stopped</Flex>;
-        case Pipeline_State.ERROR: return <Flex alignItems="center" gap="2"><XIcon fontSize="17px" width="auto" color="red" /> Error</Flex>;
+        case Pipeline_State.ERROR: return <Flex alignItems="center" gap="2"><HiX fontSize="17px" width="auto" color="red" /> Error</Flex>;
         default:
             return <Flex alignItems="center" gap="2"><MdOutlineQuestionMark fontSize="17px" width="auto" color="red" /> Unknown</Flex>;
     }
