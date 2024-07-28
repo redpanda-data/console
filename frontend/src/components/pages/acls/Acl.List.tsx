@@ -18,17 +18,51 @@ import { makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
-import { TrashIcon, PencilIcon } from '@heroicons/react/outline';
-import { AclPrincipalGroup, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, principalGroupsView } from './Models';
+import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import {
+    AclPrincipalGroup,
+    createEmptyClusterAcl,
+    createEmptyConsumerGroupAcl,
+    createEmptyTopicAcl,
+    createEmptyTransactionalIdAcl,
+    principalGroupsView
+} from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertIcon, Badge, Box, Button, createStandaloneToast, DataTable, Flex, Icon, Menu, MenuButton, MenuItem, MenuList, redpandaTheme, redpandaToastOptions, Result, SearchField, Tabs, Text, Tooltip } from '@redpanda-data/ui';
+import {
+    Alert,
+    AlertDialog,
+    AlertDialogBody,
+    AlertDialogContent,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogOverlay,
+    AlertIcon,
+    Badge,
+    Box,
+    Button,
+    createStandaloneToast,
+    DataTable,
+    Flex,
+    Icon,
+    Menu,
+    MenuButton,
+    MenuItem,
+    MenuList,
+    redpandaTheme,
+    redpandaToastOptions,
+    Result,
+    SearchField,
+    Tabs,
+    Text,
+    Tooltip
+} from '@redpanda-data/ui';
 import { FC, useRef, useState } from 'react';
 import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
-import { Link as ReactRouterLink } from 'react-router-dom'
-import { Link as ChakraLink, Tag } from '@chakra-ui/react'
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ChakraLink } from '@chakra-ui/react';
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
@@ -45,7 +79,7 @@ const { ToastContainer, toast } = createStandaloneToast({
     }
 })
 
-export type AclListTab = 'users' | 'roles' | 'acls';
+export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 @observer
 class AclList extends PageComponent<{ tab: AclListTab }> {
@@ -98,9 +132,10 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 
         const tabs = [
-            { key: 'principals' as AclListTab, name: 'Principals', component: <PrincipalsTab /> },
+            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
             { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab />, isDisabled: Features.rolesApi ? false : 'Not supported in this cluster' },
             { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
+            { key: 'permissions-list' as AclListTab, name: 'Permissions list', component: <PermissionsListTab /> },
         ] as TabsItemProps[];
 
         // todo: maybe there is a better way to sync the tab control to the path
@@ -132,7 +167,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 export default AclList;
 
 type UsersEntry = { name: string, type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
-const PrincipalsTab = observer(() => {
+const PermissionsListTab = observer(() => {
 
     const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
         .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
@@ -149,7 +184,7 @@ const PrincipalsTab = observer(() => {
                 users.push({ name: roleMember.name, type: 'PRINCIPAL' });
 
     const usersFiltered = users.filter(u => {
-        const filter = uiSettings.aclList.usersTab.quickSearch;
+        const filter = uiSettings.aclList.permissionsTab.quickSearch;
         if (!filter) return true;
 
         try {
@@ -160,28 +195,17 @@ const PrincipalsTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            These users are Redpanda SASL users. They are users who can authenticate to the cluster via SASL/SCRAM.
-            You can create and manage these users from within Redpanda. Other principals (OIDC, Kerberos, mTLS) will not be listed here.
-            Their permissions can be found in the ACLs tab.
+            {/* TODO */}
         </Box>
 
         <SearchField
             width="300px"
-            searchText={uiSettings.aclList.usersTab.quickSearch}
-            setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
+            searchText={uiSettings.aclList.permissionsTab.quickSearch}
+            setSearchText={x => (uiSettings.aclList.permissionsTab.quickSearch = x)}
             placeholderText="Filter by name"
         />
 
         <Section>
-            <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
-                <Button variant="outline"
-                    data-testid="create-user-button"
-                    isDisabled={!Features.createUser}
-                    onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create user
-                </Button>
-            </Tooltip>
-
             <Box my={4}>
                 <DataTable<UsersEntry>
                     data={usersFiltered}
@@ -205,7 +229,6 @@ const PrincipalsTab = observer(() => {
                                 return <>
                                     <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
                                         {entry.name}
-                                        {entry.type == 'SERVICE_ACCOUNT' && <Tag variant="outline" margin="-2px 0px -2px 8px">Redpanda user</Tag>}
                                     </ChakraLink>
                                 </>
                             }
@@ -269,6 +292,130 @@ const PrincipalsTab = observer(() => {
         </Section>
     </Flex>
 });
+
+const UsersTab = observer(() => {
+
+    const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
+      .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+
+    const usersFiltered = users.filter(u => {
+        const filter = uiSettings.aclList.usersTab.quickSearch;
+        if (!filter) return true;
+
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return u.name.match(quickSearchRegExp);
+        } catch { return false; }
+    })
+
+    return <Flex flexDirection="column" gap="4">
+        <Box>
+            These users are Redpanda SASL users. They are users who can authenticate to the cluster via SASL/SCRAM.
+            You can create and manage these users from within Redpanda. Other principals (OIDC, Kerberos, mTLS) will not be listed here.
+            Their permissions can be found in the ACLs tab.
+        </Box>
+
+        <SearchField
+          width="300px"
+          searchText={uiSettings.aclList.usersTab.quickSearch}
+          setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
+          placeholderText="Filter by name"
+        />
+
+        <Section>
+            <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
+                <Button variant="outline"
+                        data-testid="create-user-button"
+                        isDisabled={!Features.createUser}
+                        onClick={() => appGlobal.history.push('/security/users/create')}>
+                    Create user
+                </Button>
+            </Tooltip>
+
+            <Box my={4}>
+                <DataTable<UsersEntry>
+                  data={usersFiltered}
+                  pagination
+                  sorting
+                  emptyText="No principals yet"
+                  emptyAction={
+                      <Button variant="outline"
+                              isDisabled={!Features.createUser}
+                              onClick={() => appGlobal.history.push('/security/users/create')}>
+                          Create user
+                      </Button>
+                  }
+                  columns={[
+                      {
+                          id: 'name',
+                          size: Infinity,
+                          header: 'Principal',
+                          cell: (ctx) => {
+                              const entry = ctx.row.original;
+                              return <>
+                                  <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                                      {entry.name}
+                                  </ChakraLink>
+                              </>
+                          }
+                      },
+                      {
+                          id: 'assignedRoles',
+                          header: 'Assigned roles',
+                          cell: (ctx) => {
+                              const entry = ctx.row.original;
+                              return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
+                          }
+                      },
+                      {
+                          size: 60,
+                          id: 'menu',
+                          header: '',
+                          cell: (ctx) => {
+                              const entry = ctx.row.original;
+                              return (
+                                <Flex flexDirection="row" gap={4}>
+                                    {Features.rolesApi &&
+                                      <button onClick={() => {
+                                          appGlobal.history.push(`/security/users/${entry.name}/edit`);
+                                      }}>
+                                          <Icon as={PencilIcon} />
+                                      </button>
+                                    }
+                                    <DeleteUserConfirmModal
+                                      onConfirm={async () => {
+                                          await api.deleteServiceAccount(entry.name);
+
+                                          // Remove user from all its roles
+                                          const promises = [];
+                                          for (const [roleName, members] of rolesApi.roleMembers) {
+                                              if (members.any(m => m.name==entry.name)) { // is this user part of this role?
+                                                  // then remove it
+                                                  promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
+                                              }
+                                          }
+
+                                          await Promise.allSettled(promises);
+                                          await rolesApi.refreshRoleMembers();
+                                          await api.refreshServiceAccounts(true);
+                                      }}
+                                      buttonEl={
+                                          <button>
+                                              <Icon as={TrashIcon}/>
+                                          </button>
+                                      }
+                                      userName={entry.name}
+                                    />
+                                </Flex>
+                              );
+                          }
+                      },
+                  ]}
+                />
+            </Box>
+        </Section>
+    </Flex>
+})
 
 const RolesTab = observer(() => {
 
