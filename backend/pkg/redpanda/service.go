@@ -60,7 +60,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	} else {
 		auth = &adminapi.NopAuth{}
 	}
-	tlsCfg, err := cfg.AdminAPI.TLS.BuildTLSConfig()
+	tlsCfg, err := cfg.AdminAPI.TLS.TLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build TLS config: %w", err)
 	}
