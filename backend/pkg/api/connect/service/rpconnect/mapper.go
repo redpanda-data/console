@@ -47,16 +47,6 @@ func (m *mapper) treeNodeToProto(nodes []*graph.TreeNode) []*consolev1alpha1.Tre
 			})
 		}
 
-		actions := make([]*consolev1alpha1.NodeAction, 0, len(n.Actions))
-
-		for _, a := range n.Actions {
-			actions = append(actions, &consolev1alpha1.NodeAction{
-				Operation: patchOperationToProto(a.Operation),
-				Path:      a.Path,
-				Kind:      a.Kind,
-			})
-		}
-
 		protoNodes = append(protoNodes, &consolev1alpha1.TreeNode{
 			Label:          n.Label,
 			Kind:           n.Kind,
@@ -64,8 +54,6 @@ func (m *mapper) treeNodeToProto(nodes []*graph.TreeNode) []*consolev1alpha1.Tre
 			Type:           n.Type,
 			Children:       children,
 			GoupedChildren: grouped,
-			RootAction:     n.RootAction,
-			Actions:        actions,
 			LineStart:      int32(n.LineStart),
 			LineEnd:        int32(n.LineEnd),
 			LintErrors:     n.LintErrors,
@@ -73,27 +61,4 @@ func (m *mapper) treeNodeToProto(nodes []*graph.TreeNode) []*consolev1alpha1.Tre
 	}
 
 	return protoNodes
-}
-
-func patchOperationToProto(op graph.PatchOperation) consolev1alpha1.PatchOperation {
-	switch op {
-	case graph.PatchAddOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_ADD
-	case graph.PatchAddFromOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_ADD_FROM
-	case graph.PatchDeleteOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_DELETE
-	case graph.PatchSetOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_SET
-	case graph.PatchReplaceOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_REPLACE
-	case graph.PatchCopyOp:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_COPY
-	case graph.PatchMoveAbove:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_MOVE_ABOVE
-	case graph.PatchMoveBelow:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_MOVE_BELOW
-	default:
-		return consolev1alpha1.PatchOperation_PATCH_OPERATION_UNSPECIFIED
-	}
 }

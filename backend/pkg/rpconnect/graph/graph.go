@@ -16,13 +16,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/rpconnect/schema"
 )
 
-// NodeAction describes an activity that a user can perform on a given node.
-type NodeAction struct {
-	Operation PatchOperation `json:"operation"`
-	Path      string         `json:"path,omitempty"`
-	Kind      string         `json:"kind,omitempty"`
-}
-
 // TreeNode describes a notable point in the config worth drawing on a graph
 // representation. A tree node is usually a component of the config, but can
 // also sometimes be a named section.
@@ -33,11 +26,6 @@ type TreeNode struct {
 	Type            string        `json:"type,omitempty"`
 	Children        []*TreeNode   `json:"children,omitempty"`
 	GroupedChildren [][]*TreeNode `json:"grouped_children,omitempty"`
-
-	// Actions a user can perform on this node.
-	Actions []NodeAction `json:"actions"`
-	// Indicates this is an action at the root of a config.
-	RootAction bool `json:"root_action"`
 
 	// Information relating back to the config file.
 	LineStart  int      `json:"line_start"`
@@ -92,43 +80,6 @@ func providerFromSchema(s *fullSchema) *docs.MappedDocsProvider {
 		prov.RegisterDocs(spec)
 	}
 	return prov
-}
-
-var sectionActions = map[string][]NodeAction{
-	"input": {
-		{Operation: PatchAddOp, Path: "/input", Kind: "input"},
-	},
-	"buffer": {
-		{Operation: PatchSetOp, Path: "/buffer", Kind: "buffer"},
-	},
-	"pipeline": {
-		// {Operation: PatchSetOp, Path: "/pipeline/threads", Kind: "int"},
-		{Operation: PatchAddOp, Path: "/pipeline/processors", Kind: "processor"},
-	},
-	"output": {
-		{Operation: PatchAddOp, Path: "/output", Kind: "output"},
-	},
-	"input_resources": {
-		{Operation: PatchAddOp, Path: "/input_resources", Kind: "input"},
-	},
-	"processor_resources": {
-		{Operation: PatchAddOp, Path: "/processor_resources", Kind: "processor"},
-	},
-	"cache_resources": {
-		{Operation: PatchAddOp, Path: "/cache_resources", Kind: "cache"},
-	},
-	"rate_limit_resources": {
-		{Operation: PatchAddOp, Path: "/rate_limit_resources", Kind: "rate_limit"},
-	},
-	"output_resources": {
-		{Operation: PatchAddOp, Path: "/output_resources", Kind: "output"},
-	},
-	"metrics": {
-		{Operation: PatchSetOp, Path: "/metrics", Kind: "metrics"},
-	},
-	"tracer": {
-		{Operation: PatchSetOp, Path: "/tracer", Kind: "tracer"},
-	},
 }
 
 func allocLintsToNode(lints []service.Lint, node *TreeNode) []service.Lint {
@@ -194,40 +145,6 @@ func addLintsToNodes(streamTree, resourceTree []*TreeNode, lints []service.Lint)
 	}
 }
 
-// Path is relative to the component path
-var componentActionsMap = map[string][]NodeAction{
-	"input": {
-		{Operation: PatchAddOp, Path: "processors", Kind: "processor"},
-	},
-	"output": {
-		{Operation: PatchAddOp, Path: "processors", Kind: "processor"},
-	},
-}
-
-func componentActions(t docs.Type) []NodeAction {
-	return componentActionsMap[string(t)]
-}
-
-func complementWithAddFrom(n *TreeNode) {
-	childrenOfKind := map[string]struct{}{}
-	for _, c := range n.Children {
-		childrenOfKind[c.Kind] = struct{}{}
-	}
-
-	var appendActions []NodeAction
-	for _, a := range n.Actions {
-		if a.Operation == PatchAddOp {
-			if _, exists := childrenOfKind[a.Kind]; !exists {
-				addFrom := a
-				addFrom.Operation = PatchAddFromOp
-				appendActions = append(appendActions, addFrom)
-			}
-		}
-	}
-
-	n.Actions = append(n.Actions, appendActions...)
-}
-
 // Generator is used to generate graph
 type Generator struct {
 	// We should use the public apis to walk the config schema and views for different fields and stuff
@@ -252,8 +169,6 @@ func NewGenerator() (*Generator, error) {
 }
 
 // ConfigToTree converts config to a graph tree.
-//
-//nolint:gocognit,cyclop // complicated logic
 func (g *Generator) ConfigToTree(confNode yaml.Node, lints []service.Lint) ([]*TreeNode, []*TreeNode, error) {
 	var streamNodes, resourceNodes []*TreeNode
 	nodeMap := map[string]yaml.Node{}
@@ -289,35 +204,10 @@ func (g *Generator) ConfigToTree(confNode yaml.Node, lints []service.Lint) ([]*T
 	for _, section := range []string{
 		"input", "buffer", "pipeline", "output",
 	} {
-		t, hasNodes := createSection(section)
-		t.Actions = sectionActions[section]
-		complementWithAddFrom(t)
-		if hasNodes {
+		if t, hasNodes := createSection(section); hasNodes {
 			streamNodes = append(streamNodes, t)
-		} else {
-			t.RootAction = true
-			if section == "buffer" {
-				resourceNodes = append(resourceNodes, t)
-			} else {
-				streamNodes = append(streamNodes, t)
-			}
 		}
 	}
-
-	// // Observability sections
-	// for _, section := range []string{
-	// 	"metrics", "tracer",
-	// } {
-	// 	t, hasNodes := createSection(section)
-	// 	// t.Actions = sectionActions[section]
-	// 	complementWithAddFrom(t)
-	// 	if !hasNodes {
-	// 		continue
-	// 		// TODO: Re-enable this once the graph view is formatted nicerly
-	// 		// t.RootAction = true
-	// 	}
-	// 	// observabilityNodes = append(observabilityNodes, t)
-	// }
 
 	// Remaining sections (resources)
 	sectionKeys := []string{}
@@ -326,43 +216,12 @@ func (g *Generator) ConfigToTree(confNode yaml.Node, lints []service.Lint) ([]*T
 	}
 	sort.Strings(sectionKeys)
 
-	tmpResourceSections := resourceNodes
-	resourceNodes = nil
-
 	for _, section := range sectionKeys {
 		if t, ok := createSection(section); ok {
-			t.Actions = sectionActions[section]
-			// No need to reorder resource children
-			for _, resChild := range t.Children {
-				var newActions []NodeAction
-				for _, a := range resChild.Actions {
-					if !strings.HasPrefix(string(a.Operation), "move ") {
-						newActions = append(newActions, a)
-					}
-				}
-				resChild.Actions = newActions
-			}
 			resourceNodes = append(resourceNodes, t)
 		}
 	}
-	resourceNodes = append(resourceNodes, tmpResourceSections...)
-
-	generalResourceNode := &TreeNode{
-		Label:      "Resources",
-		RootAction: true,
-	}
-	for k, v := range sectionActions {
-		if strings.HasSuffix(k, "resources") {
-			generalResourceNode.Actions = append(generalResourceNode.Actions, v...)
-		}
-	}
-	sort.Slice(generalResourceNode.Actions, func(i, j int) bool {
-		return generalResourceNode.Actions[i].Kind < generalResourceNode.Actions[j].Kind
-	})
-	complementWithAddFrom(generalResourceNode)
-	resourceNodes = append(resourceNodes, generalResourceNode)
 
 	addLintsToNodes(streamNodes, resourceNodes, lints)
-
 	return streamNodes, resourceNodes, nil
 }
