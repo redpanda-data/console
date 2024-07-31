@@ -26,7 +26,7 @@ type Schema struct {
 	BearerToken string `yaml:"bearerToken"`
 
 	// TLS / Custom CA
-	TLS SchemaTLS `yaml:"tls"`
+	TLS TLS `yaml:"tls"`
 }
 
 // RegisterFlags registers all nested config flags.

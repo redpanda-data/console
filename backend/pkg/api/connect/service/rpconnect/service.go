@@ -54,12 +54,11 @@ func NewService(logger *zap.Logger, authHooks hooks.AuthorizationHooks) (*Servic
 func (s *Service) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error) {
 	// This is a dummy check, we only want to ensure that the requester is authenticated.
 	canView, restErr := s.hooks.CanViewConnectCluster(ctx, "redpanda")
-	if !canView || restErr != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodePermissionDenied,
-			fmt.Errorf("you are not allowed to call this endpoint"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
-		)
+	err := apierrors.NewPermissionDeniedConnectError(canView, restErr,
+		"you are not allowed to call this endpoint",
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	yamlCfg := []byte(req.Msg.YamlConfig)

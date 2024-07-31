@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "redpanda/api/dataplane/v1alpha2/pipeline.proto";
+
+message CreatePipelineRequest {
+  redpanda.api.dataplane.v1alpha2.CreatePipelineRequest request = 1;
+}
+
+message CreatePipelineResponse {
+  redpanda.api.dataplane.v1alpha2.CreatePipelineResponse response = 1;
+}
+
+message GetPipelineRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelineRequest request = 1;
+}
+
+message GetPipelineResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelineResponse response = 1;
+}
+
+message DeletePipelineRequest {
+  redpanda.api.dataplane.v1alpha2.DeletePipelineRequest request = 1;
+}
+
+message DeletePipelineResponse {
+  redpanda.api.dataplane.v1alpha2.DeletePipelineResponse response = 1;
+}
+
+message ListPipelinesRequest {
+  redpanda.api.dataplane.v1alpha2.ListPipelinesRequest request = 1;
+}
+
+message ListPipelinesResponse {
+  redpanda.api.dataplane.v1alpha2.ListPipelinesResponse response = 1;
+}
+
+message UpdatePipelineRequest {
+  redpanda.api.dataplane.v1alpha2.UpdatePipelineRequest request = 1;
+}
+
+message UpdatePipelineResponse {
+  redpanda.api.dataplane.v1alpha2.UpdatePipelineResponse response = 1;
+}
+
+message StopPipelineRequest {
+  redpanda.api.dataplane.v1alpha2.StopPipelineRequest request = 1;
+}
+
+message StopPipelineResponse {
+  redpanda.api.dataplane.v1alpha2.StopPipelineResponse response = 1;
+}
+
+message StartPipelineRequest {
+  redpanda.api.dataplane.v1alpha2.StartPipelineRequest request = 1;
+}
+
+message StartPipelineResponse {
+  redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
+}
+
+service PipelineService {
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
+
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
+
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {}
+
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
+
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {}
+
+  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
+
+  rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {}
+}

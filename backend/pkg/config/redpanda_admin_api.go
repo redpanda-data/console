@@ -26,7 +26,7 @@ type RedpandaAdminAPI struct {
 	Password string `yaml:"password"`
 
 	// TLS Config
-	TLS RedpandaAdminAPITLS `yaml:"tls"`
+	TLS TLS `yaml:"tls"`
 
 	// Startup contains relevant configurations such as connection max retries
 	// for the initial Redpanda service creation.
@@ -43,6 +43,8 @@ func (c *RedpandaAdminAPI) SetDefaults() {
 	c.Enabled = false
 
 	c.Startup.SetDefaults()
+
+	c.TLS.SetDefaults()
 }
 
 // Validate Admin API configuration.
