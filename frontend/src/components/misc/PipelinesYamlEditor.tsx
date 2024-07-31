@@ -11,10 +11,9 @@
 
 import Editor, { EditorProps, Monaco, loader } from '@monaco-editor/react';
 import 'monaco-editor';
-import { MarkerSeverity, editor } from 'monaco-editor';
+import { editor } from 'monaco-editor';
 import { MonacoYamlOptions, configureMonacoYaml } from 'monaco-yaml';
 import benthosSchema from '../../assets/rp-connect-schema.json';
-import { pipelinesApi } from '../../state/backendApi';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -109,51 +108,51 @@ loader.init().then(async (monaco) => {
 });
 
 
-const linter = {
-    editor: undefined as undefined | IStandaloneCodeEditor,
-    monaco: undefined as undefined | Monaco,
-
-    isLinting: false,
-    text: '',
-
-    async refreshLint() {
-        if (!this.editor) return;
-        const monaco = this.monaco;
-        if (!monaco) return;
-        if (this.isLinting) return;
-
-        const model = this.editor.getModel();
-        if (!model) return;
-
-        // Save the text into a local variable, so we can compare/know if we need to lint again
-        const lintedText = this.text;
-
-        this.isLinting = true;
-        const r = await pipelinesApi.lintConfig(lintedText).catch(() => null);
-        this.isLinting = false;
-        if (!r) return;  // do nothing, don't care about fetching errors here
-
-        // Update the results
-        const markers = r.lints.map(l => {
-            return {
-                message: l.reason,
-                startLineNumber: l.line,
-                endLineNumber: l.line,
-                startColumn: l.column,
-                endColumn: l.column + 4,
-                severity: MarkerSeverity.Error,
-            } as editor.IMarkerData;
-        });
-
-        monaco.editor.setModelMarkers(model, 'owner', markers);
-
-        // Maybe, while we were linting, the user has modified the text?
-        // If so, this function didn't run (because of the isLinting check at the start)
-        // So we need to lint the new config
-        if (this.text != lintedText)
-            this.refreshLint();
-    }
-};
+// const linter = {
+//     editor: undefined as undefined | IStandaloneCodeEditor,
+//     monaco: undefined as undefined | Monaco,
+//
+//     isLinting: false,
+//     text: '',
+//
+//     async refreshLint() {
+//         if (!this.editor) return;
+//         const monaco = this.monaco;
+//         if (!monaco) return;
+//         if (this.isLinting) return;
+//
+//         const model = this.editor.getModel();
+//         if (!model) return;
+//
+//         // Save the text into a local variable, so we can compare/know if we need to lint again
+//         const lintedText = this.text;
+//
+//         this.isLinting = true;
+//         const r = await pipelinesApi.lintConfig(lintedText).catch(() => null);
+//         this.isLinting = false;
+//         if (!r) return;  // do nothing, don't care about fetching errors here
+//
+//         // Update the results
+//         const markers = r.lints.map(l => {
+//             return {
+//                 message: l.reason,
+//                 startLineNumber: l.line,
+//                 endLineNumber: l.line,
+//                 startColumn: l.column,
+//                 endColumn: l.column + 4,
+//                 severity: MarkerSeverity.Error,
+//             } as editor.IMarkerData;
+//         });
+//
+//         monaco.editor.setModelMarkers(model, 'owner', markers);
+//
+//         // Maybe, while we were linting, the user has modified the text?
+//         // If so, this function didn't run (because of the isLinting check at the start)
+//         // So we need to lint the new config
+//         if (this.text != lintedText)
+//             this.refreshLint();
+//     }
+// };
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     const { options: givenOptions, ...rest } = props;
@@ -174,10 +173,10 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         //     rest.onChange?.(v, ev);
         // }}
 
-        onMount={(editor, monaco) => {
-            linter.editor = editor;
-            linter.monaco = monaco;
-        }}
+        // onMount={(editor, monaco) => {
+        //     linter.editor = editor;
+        //     linter.monaco = monaco;
+        // }}
     />
 }
 
