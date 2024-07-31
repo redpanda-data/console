@@ -91,6 +91,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                         onClick={() => {
                             this.isChangingPauseState = true;
 
+                            pipelinesApi.configToGraph(pipeline)
+
                             const watchPipelineUpdates = async () => {
                                 const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
                                 let waitIteration = 0;

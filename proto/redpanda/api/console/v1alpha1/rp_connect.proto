@@ -23,7 +23,39 @@ message LintConfigResponse {
   repeated Lint lints = 2;
 }
 
+// TreeNodeGroup represents a group of tree nodes.
+message TreeNodeGroup {
+  repeated TreeNode children = 1;
+}
+
+// TreeNode represents a tree node.
+message TreeNode {
+  string label = 1;
+  string path = 2;
+  string kind = 3;
+  string type = 4;
+  repeated TreeNode children = 5;
+  repeated TreeNodeGroup gouped_children = 6;
+  int32 line_start = 7;
+  int32 line_end = 8;
+  repeated string lint_errors = 9;
+}
+
+// GeneratePipelineFlowRequest is the request to retrieve a pipeline flow information.
+message GeneratePipelineFlowRequest {
+  string config_yaml = 1 [(buf.validate.field).required = true];
+}
+
+// GeneratePipelineFlowResponse is the response.
+message GeneratePipelineFlowResponse {
+  repeated TreeNode stream = 1;
+  repeated TreeNode resources = 2;
+}
+
 service RedpandaConnectService {
+  // GeneratePipelineFlow generates flow based on a pipeline.
+  rpc GeneratePipelineFlow(GeneratePipelineFlowRequest) returns (GeneratePipelineFlowResponse) {}
+
   // LintConfig lists the given YAML config and returns all linting issues.
   rpc LintConfig(LintConfigRequest) returns (LintConfigResponse) {}
 }

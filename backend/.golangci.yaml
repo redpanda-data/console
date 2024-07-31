@@ -8,6 +8,8 @@ run:
 # are actually important to catch. The following ensures that we do not ignore
 # those tools ever.
 issues:
+  exclude-dirs:
+    - pkg/rpconnect/docs # Longer term we'll likely import Benthos for this
   exclude-rules:
     - path: (.+)_test.go
       linters:
