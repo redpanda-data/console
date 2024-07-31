@@ -38,6 +38,7 @@ export class Feature {
     static readonly CreateUser: FeatureEntry = { endpoint: '/api/users', method: 'POST' };
     static readonly DeleteUser: FeatureEntry = { endpoint: '/api/users', method: 'DELETE' };
     static readonly SecurityService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.SecurityService', method: 'POST' };
+    static readonly TransformsService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.TransformService', method: 'POST' };
     static readonly PipelineService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.PipelineService', method: 'POST' };
 }
 
