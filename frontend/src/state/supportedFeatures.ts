@@ -80,7 +80,7 @@ class SupportedFeatures {
     @computed get createUser(): boolean { return isSupported(Feature.CreateUser); }
     @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
     @computed get rolesApi(): boolean { return isSupported(Feature.SecurityService); }
-    @computed get pipelinesApi(): boolean { return isSupported(Feature.SecurityService); }
+    @computed get pipelinesApi(): boolean { return isSupported(Feature.PipelineService); }
 }
 
 const features = new SupportedFeatures();
