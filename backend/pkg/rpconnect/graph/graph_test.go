@@ -40,6 +40,13 @@ output:
     - mechanism: SCRAM-SHA-256
       password: rpconnect
       username: rpconnect
+
+cache_resources:
+  - label: meower
+    memory: {}
+
+logger:
+  level: INFO
 `
 
 func TestConfigToTree(t *testing.T) {
@@ -63,13 +70,6 @@ func TestConfigToTree(t *testing.T) {
 	stream, resources, err := graph.ConfigToTree(confNode, lints)
 	assert.NoError(t, err)
 
-	sj, _ := json.Marshal(stream)
-	fmt.Println("stream:")
-	fmt.Println(string(sj))
-
-	rj, _ := json.Marshal(resources)
-	fmt.Println("resources:")
-	fmt.Println(string(rj))
-
-	// assert.Fail(t, "asdf")
+	assert.Len(t, stream, 3)
+	assert.Len(t, resources, 1)
 }

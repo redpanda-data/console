@@ -3,7 +3,6 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 
@@ -97,13 +96,6 @@ func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov
 			if nextTNodes, err = yamlFieldToTree(field, append(cpath, strconv.Itoa(i)), node.Content[i], prov); err != nil {
 				return treeNodes, err
 			}
-			for _, nextNode := range nextTNodes {
-				if i < (len(node.Content) - 1) {
-					nextNode.Actions = append(nextNode.Actions, NodeAction{Operation: PatchMoveAbove})
-				} else {
-					nextNode.Actions = append(nextNode.Actions, NodeAction{Operation: PatchMoveAbove}, NodeAction{Operation: PatchMoveBelow})
-				}
-			}
 			treeNodes = append(treeNodes, nextTNodes...)
 		}
 		return treeNodes, nil
@@ -132,16 +124,6 @@ func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov
 			Path:      sliceToJSONPointer(cpath),
 			LineStart: node.Line,
 			LineEnd:   getLastLine(node),
-		}
-
-		for _, action := range componentActions(coreType) {
-			action.Path = path.Join(tnode.Path, action.Path)
-			tnode.Actions = append(tnode.Actions, action)
-		}
-
-		for _, a := range fieldToActions(spec.Config) {
-			a.Path = path.Join(tnode.Path, spec.Name, a.Path)
-			tnode.Actions = append(tnode.Actions, a)
 		}
 
 		reserved := docs.ReservedFieldsByType(coreType)
@@ -177,7 +159,6 @@ func yamlFieldToTree(field docs.FieldSpec, cpath []string, node *yaml.Node, prov
 			tnode.Children = moveBatchingProcs(spec, tnode.Children)
 		}
 
-		complementWithAddFrom(tnode)
 		return []*TreeNode{tnode}, nil
 	}
 	if len(field.Children) > 0 {
@@ -245,13 +226,6 @@ func yamlFieldsToTreeSplitBatching(fields docs.FieldSpecs, path []string, node *
 	return append(tmpNodes, &TreeNode{
 		Label:    batchingProcessorLabel,
 		Children: batchNodes,
-		Actions: []NodeAction{
-			{
-				Operation: "add",
-				Path:      sliceToJSONPointer(path) + "/batching/processors",
-				Kind:      "processor",
-			},
-		},
 	}), nil
 }
 
@@ -289,14 +263,7 @@ func outputSwitchCases(fields docs.FieldSpecs, path []string, node *yaml.Node, p
 				}
 
 				tmpNodes = append(tmpNodes, &TreeNode{
-					Label: fmt.Sprintf("case %v", j),
-					Actions: []NodeAction{
-						{
-							Operation: "set",
-							Path:      sliceToJSONPointer(casePath) + "/output",
-							Kind:      "output",
-						},
-					},
+					Label:    fmt.Sprintf("case %v", j),
 					Children: caseTreeNodes,
 				})
 			}
@@ -345,17 +312,7 @@ func yamlComponentToTrees(
 				}
 				caseChildren = append([]*TreeNode{{
 					Label: fmt.Sprintf("%v %v", labelPrefix, i),
-					Actions: []NodeAction{
-						{
-							Operation: "add",
-							Path:      sliceToJSONPointer(casePath) + "/processors",
-							Kind:      "processor",
-						},
-					},
 				}}, caseChildren...)
-				if len(caseChildren) == 1 {
-					complementWithAddFrom(caseChildren[0])
-				}
 				groupedChildren = append(groupedChildren, caseChildren)
 			}
 			return children, groupedChildren, err
