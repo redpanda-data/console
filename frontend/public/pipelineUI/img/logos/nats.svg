@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   role="img"
+   viewBox="2.42 -0.33 289.9 289.9"
+   version="1.1"
+   id="svg22"
+   sodipodi:docname="nats.svg"
+   width="289.89999"
+   height="289.89999"
+   inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs26" />
+  <sodipodi:namedview
+     id="namedview24"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     height="289.89999px"
+     inkscape:zoom="1.0939545"
+     inkscape:cx="-17.825239"
+     inkscape:cy="226.70048"
+     inkscape:window-width="1920"
+     inkscape:window-height="1016"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg22" />
+  <style
+     id="style2">svg {enable-background:new 0 0 288 288}</style>
+  <style
+     id="style4">.st3{fill:#375c93}.st4{fill:#8dc63f}</style>
+  <g
+     id="g851"
+     transform="translate(4.5699969,-0.13000305)">
+    <path
+       fill="#34a574"
+       d="M 142.8,5.3 H 277.5 V 114.5 H 142.8 Z"
+       id="path6" />
+    <path
+       fill="#27aae1"
+       d="M 8.1,5.3 H 142.8 V 114.5 H 8.1 Z"
+       id="path8" />
+    <path
+       d="M 142.8,114.6 H 277.5 V 223.8 H 142.8 Z"
+       class="st4"
+       id="path10" />
+    <path
+       d="M 8.1,114.6 H 142.8 V 223.8 H 8.1 Z"
+       class="st3"
+       id="path12" />
+    <path
+       d="m 123,223.2 65.9,61 v -61 z"
+       class="st4"
+       id="path14" />
+    <path
+       d="m 142.8,223.2 0.7,19.2 -21.1,-19.7 z"
+       class="st3"
+       id="path16" />
+    <g
+       id="g20">
+      <path
+         fill="#ffffff"
+         d="M 198.6,146.5 V 56.1 h 32.2 V 173 H 182 L 83.5,81 v 92.1 H 51.2 v -117 h 50.5 z"
+         id="path18" />
+    </g>
+  </g>
+</svg>

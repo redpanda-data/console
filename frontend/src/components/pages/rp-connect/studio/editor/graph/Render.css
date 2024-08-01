@@ -1,0 +1,141 @@
+.react-flow__node {
+  box-sizing: unset;
+}
+
+.react-flow__selection {
+  background: rgba(0, 89, 220, 0.08);
+  border: 1px dotted var(--bstdio-blue);
+}
+
+.react-flow__edge-textbg {
+  fill: white;
+}
+
+.react-flow__connection-path {
+  stroke: #b1b1b7;
+}
+
+/* NODES */
+
+.react-flow__node-componentEditMode {
+  border-radius: 3px;
+  width: var(--bstdio-component-width);
+  height: var(--bstdio-component-height);
+  font-size: 12px;
+  text-align: center;
+  border-width: 1px;
+  border-style: solid;
+  color: var(--bstdio-code-color);
+  background: var(--bstdio-code-background);
+  border-color: var(--bstdio-code-background);
+}
+
+.react-flow__node.slim {
+  width: 50px;
+}
+
+.react-flow__node.slim .title {
+  color: var(--bstdio-light-color);
+}
+
+.react-flow__node-titleEditMode.selected,
+.react-flow__node-componentTitleEditMode.selected {
+  background: none !important;
+}
+
+.react-flow__node-componentEditMode:hover {
+  background: var(--bstdio-code-highlight-background);
+}
+
+.react-flow__node-componentEditMode.selected {
+  background: var(--bstdio-code-highlight-background);
+  border: none;
+}
+
+.react-flow__node-titleEditMode {
+  padding: 0px;
+  border-radius: 3px;
+  width: 170px;
+  height: 50px;
+  font-size: 12px;
+  text-align: center;
+  border-style: none;
+  background: none;
+}
+
+.react-flow__node-componentTitleEditMode {
+  padding: 0px;
+  border-radius: 3px;
+  width: 170px;
+  height: 20px;
+  font-size: 12px;
+  text-align: center;
+  border-style: none;
+  background: none;
+}
+
+.react-flow__node.selected,
+.react-flow__node.selected:hover {
+  background: var(--bstdio-code-highlight-background);
+}
+
+.react-flow__node .react-flow__handle {
+  background: var(--bstdio-code-background);
+}
+
+.react-flow__node.resource {
+  border-color: var(--bstdio-purple);
+}
+
+.react-flow__node.resource .react-flow__handle {
+  background: var(--bstdio-purple);
+}
+
+.react-flow__node.processor {
+  border-color: var(--bstdio-green);
+}
+
+.react-flow__node.processor .react-flow__handle {
+  background: var(--bstdio-green);
+}
+
+.react-flow__node.buffer {
+  border-color: var(--bstdio-orange);
+}
+
+.react-flow__node.buffer .react-flow__handle {
+  background: var(--bstdio-orange);
+}
+
+.react-flow__node.input {
+  border-color: var(--bstdio-blue);
+}
+
+.react-flow__node.input .react-flow__handle {
+  background: var(--bstdio-blue);
+}
+
+.react-flow__node.output {
+  border-color: var(--bstdio-pink);
+}
+
+.react-flow__node.output .react-flow__handle {
+  background: var(--bstdio-pink);
+}
+
+/* !NODES */
+
+.react-flow__nodesselection-rect {
+  background: rgba(0, 89, 220, 0.08);
+  border: 1px dotted var(--bstdio-blue);
+}
+
+.react-flow__handle {
+  background: #555;
+  border: 1px solid white;
+}
+
+.react-flow__minimap {
+  background-color: var(--bstdio-code-background);
+  border-radius: 5px;
+}

@@ -1,0 +1,66 @@
+.alertsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert {
+  padding: 10px 20px;
+  border: none;
+  font-family: var(--bstdio-sansserif);
+
+  color: var(--bstdio-color);
+  background: var(--bstdio-code-background);
+  border-bottom: 1px solid var(--bstdio-background);
+
+  font-size: 0.9em;
+  line-height: 1em;
+}
+
+.alertType {
+  float: left;
+  padding: 2px 5px;
+  border-radius: 5px;
+  color: var(--bstdio-dark-background);
+  font-size: 0.7em;
+}
+
+.alertWhen {
+  float: right;
+  font-size: 0.7em;
+}
+
+.alertWhat {
+  margin-top: 30px;
+  margin-bottom: 5px;
+  font-size: 0.8em;
+}
+
+.clearBtn {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--bstdio-sansserif);
+
+  color: var(--bstdio-color);
+  background: var(--bstdio-code-highlight-background);
+
+  font-size: 0.9em;
+  line-height: 1em;
+}
+
+.clearBtn:hover {
+  background: var(--bstdio-code-background);
+}
+
+.alertInfo {
+  background-color: var(--bstdio-grey);
+}
+
+.alertWarning {
+  background-color: var(--bstdio-yellow);
+}
+
+.alertError {
+  background-color: var(--bstdio-pink);
+}
+

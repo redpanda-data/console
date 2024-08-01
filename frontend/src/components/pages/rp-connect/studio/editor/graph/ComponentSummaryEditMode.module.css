@@ -1,0 +1,265 @@
+.componentSummary {
+  padding-top: 10px;
+}
+
+.componentTitle {
+  padding-top: 3px;
+}
+
+.componentLintErrorCount {
+  position: absolute;
+  right: 5px;
+  bottom: 0px;
+  font-size: 1.4em;
+  margin: 0;
+  z-index: 50;
+}
+
+.kindLabel {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 0.7em;
+}
+
+.titleContent {
+  cursor: default;
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logoImg {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+.titleActions {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-end;
+}
+
+:global(.react-flow__node.resource) > .componentAura {
+  border-color: var(--bstdio-purple);
+}
+
+:global(.react-flow__node.processor) > .componentAura {
+  border-color: var(--bstdio-green);
+}
+
+:global(.react-flow__node.buffer) > .componentAura {
+  border-color: var(--bstdio-orange);
+}
+
+:global(.react-flow__node.input) > .componentAura {
+  border-color: var(--bstdio-blue);
+}
+
+:global(.react-flow__node.output) > .componentAura {
+  border-color: var(--bstdio-pink);
+}
+
+.componentAura {
+  --border-size: 2px;
+  --border-radius: 3px;
+  --inner-padding: 5px;
+
+  width: calc(var(--bstdio-component-width) + var(--border-size) - (var(--inner-padding) * 2));
+
+  background: var(--bstdio-code-highlight-background);
+  border-radius: var(--border-radius);
+  border: var(--border-size) solid var(--bstdio-code-background);
+
+  position: absolute;
+  top: calc(var(--border-size) * -1);
+  left: calc(var(--border-size) * -1);
+  z-index: -1;
+
+  padding: var(--bstdio-component-height) var(--inner-padding) 0 var(--inner-padding);
+}
+
+.componentActions {
+  pointer-events: auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  padding-top: var(--inner-padding);
+  border-top: solid 2px var(--bstdio-background);
+}
+
+.componentActions:empty {
+  padding: 0;
+  border-top: none;
+}
+
+.bigActionBtn {
+  pointer-events: auto;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  top: 20%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border-radius: 3px;
+  color: var(--bstdio-code-color);
+}
+
+.glowingBtn {
+  animation: var(--bstdio-white-glow);
+}
+
+.bigActionTitle {
+  border-bottom: 2px solid;
+  font-weight: bold;
+}
+
+.bigActionBtn > small {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0.3;
+  font-size: 0.6em;
+}
+
+.activatedActionBtn {
+  --button-radius: 12px;
+  --button-border: 2px;
+
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  pointer-events: auto;
+
+  width: var(--button-radius);
+  height: var(--button-radius);
+  border-radius: var(--button-radius);
+
+  background: var(--bstdio-blue);
+  border: var(--button-border) solid var(--bstdio-white);
+  animation: var(--bstdio-blue-glow);
+
+  left: calc(50% - var(--button-radius) / 2 - var(--button-border));
+}
+
+.activatedActionBtn:hover {
+  border: 2px solid var(--bstdio-white);
+}
+
+.activatedActionTopBtn {
+  position: absolute;
+  top: calc(var(--button-radius) * -0.5 - var(--button-border));
+}
+
+.activatedActionBottomBtn {
+  position: absolute;
+  bottom: calc(var(--button-radius) * -0.5 - var(--button-border));
+}
+
+.hasLintsAlert {
+  --button-radius: 12px;
+  --button-border: 0px;
+
+  color: var(--bstdio-white);
+
+  padding: 0;
+  margin: 0;
+
+  width: var(--button-radius);
+  height: var(--button-radius);
+  border: var(--button-border) solid var(--bstdio-white);
+  border-radius: var(--button-radius);
+
+  background: var(--bstdio-pink);
+  animation: var(--bstdio-pink-glow);
+
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.eventSummary {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+}
+
+.eventSummary > div {
+  margin-right: 3px;
+  font-size: 0.6rem;
+  font-weight: bold;
+}
+
+.hasEventsAlert {
+  background: var(--bstdio-blue);
+  animation: var(--bstdio-blue-glow);
+}
+
+.isMockedAlert {
+  background: var(--bstdio-purple);
+  animation: var(--bstdio-purple-glow);
+}
+
+.runErrorAlert {
+  background: var(--bstdio-pink);
+  animation: var(--bstdio-pink-glow);
+}
+
+.needsMockAlert {
+  background: var(--bstdio-yellow);
+  animation: var(--bstdio-yellow-glow);
+}
+
+.componentSummaryAlert {
+  --button-radius: 12px;
+  --button-border: 0px;
+
+  color: var(--bstdio-white);
+
+  padding: 0;
+  margin: 0;
+
+  width: var(--button-radius);
+  height: var(--button-radius);
+  border: var(--button-border) solid var(--bstdio-white);
+  border-radius: var(--button-radius);
+
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.eventConsume {
+  color: var(--bstdio-green);
+}
+
+.eventProduce {
+  color: var(--bstdio-blue);
+}
+
+.eventError {
+  color: var(--bstdio-pink);
+}
+
+.eventDelete {
+  color: var(--bstdio-yellow);
+}

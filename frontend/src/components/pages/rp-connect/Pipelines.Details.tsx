@@ -35,6 +35,7 @@ import { uiState } from '../../../state/uiState';
 import { Link } from 'react-router-dom';
 import { openDeleteModal } from './modals';
 import { PipelineStatus } from './Pipelines.List';
+import { PipelineGraph } from './Pipeline.Graph';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -63,7 +64,6 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
         pipelinesApi.refreshPipelines(_force);
     }
 
-
     render() {
         if (!pipelinesApi.pipelines) return DefaultSkeleton;
         const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
@@ -73,6 +73,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
         const isStopped = pipeline.state == Pipeline_State.STOPPED;
         const isTransitioningState = pipeline.state == Pipeline_State.STARTING || pipeline.state == Pipeline_State.STOPPING;
 
+        uiState.pageTitle = pipeline.displayName;
+
         const error = pipeline.status?.error;
 
         return (
@@ -81,6 +83,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
                 <Box my="4">
                     {QuickTable([
+                        { key: 'Name', value: pipeline.displayName ?? '' },
                         { key: 'Description', value: pipeline.description ?? '' },
                         { key: 'Status', value: <PipelineStatus status={pipeline.state} /> }
                     ], { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } })}
@@ -173,6 +176,10 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                         key: 'config',
                         title: 'Configuration',
                         content: <PipelineEditor pipeline={pipeline} />
+                    }, {
+                        key: 'graph',
+                        title: 'Graph',
+                        content: <PipelineGraph pipeline={pipeline} />
                     },
                     {
                         key: 'logs',

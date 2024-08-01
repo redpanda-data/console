@@ -1,0 +1,67 @@
+.headerStyle {
+  text-align: center;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.lintErrorSection {
+  padding: 0 0 10px 0;
+  margin: 0 0 10px 0;
+  border-bottom: 2px solid var(--bstdio-pink);
+  font-size: 0.8em;
+}
+
+.lintErrorSection > h3 {
+  color: var(--bstdio-pink);
+}
+
+.lintErrorSection > small {
+  font-size: 0.7em;
+}
+
+.lintErrorSection > pre {
+  font-size: 0.8em;
+  color: var(--bstdio-pink);
+}
+
+.editTypeBtn {
+  border: none;
+  cursor: pointer;
+  background: none;
+  margin-left: 5px;
+}
+
+.deleteBtn {
+  border: none;
+  cursor: pointer;
+  background: none;
+  margin-left: 5px;
+  flex-grow: 1;
+  text-align: right;
+}
+
+.docsBtn {
+  flex-grow: 1;
+  margin-right: 5px;
+  text-decoration: none;
+  text-align: left;
+}
+
+.docsBtn > svg {
+  display: block;
+}
+
+.titleNames {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.titleLabel {
+  font-size: 1em;
+  color: var(--bstdio-highlight-color);
+  margin-left: 5px;
+}

@@ -1,0 +1,13 @@
+.nameInputContainer {
+  display: flex;
+  align-items: stretch;
+}
+
+.nameInput {
+  margin: auto !important;
+}
+
+.nameInputContainer > code {
+  color: var(--bstdio-highlight-color);
+  margin: auto !important;
+}

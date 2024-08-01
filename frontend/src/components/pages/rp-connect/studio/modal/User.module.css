@@ -1,0 +1,42 @@
+.actionBtnGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.actionBtn {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--bstdio-sansserif);
+
+  color: var(--bstdio-color);
+  background: var(--bstdio-code-highlight-background);
+
+  font-size: 0.9em;
+  line-height: 1em;
+}
+
+.actionBtn:hover {
+  background: var(--bstdio-code-background);
+}
+
+.actionLinkBtn {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--bstdio-sansserif);
+
+  color: var(--bstdio-color);
+  background: var(--bstdio-code-highlight-background);
+
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+
+  font-size: 0.9em;
+  line-height: 1em;
+}
+
+.actionLinkBtn:hover {
+  background: var(--bstdio-code-background);
+}

@@ -1,0 +1,91 @@
+.modalActionBtnGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalActionBtn {
+  font-size: 1.2rem;
+  font-family: var(--bstdio-monospace);
+  padding: 10px 20px;
+  margin-bottom: 10px;
+}
+
+.modalActionTitle {
+  padding: 5px 0;
+  margin: 10px 0;
+  flex-grow: 1;
+}
+
+.tagGroup {
+  opacity: 0.5;
+  font-size: 0.7em;
+  padding: 5px;
+}
+
+.tagGroup > div {
+  margin: 5px 0;
+}
+
+.modalActionName {
+  text-align: center;
+}
+
+.logoImg {
+  padding: 5px;
+  height: 40px;
+}
+
+input.search {
+  margin-bottom: 10px;
+}
+
+.configHeader {
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+}
+
+.configHeader > h4 {
+  padding: 0;
+  margin: 0 0 5px 0;
+  text-align: center;
+}
+
+.configError {
+  color: var(--bstdio-pink);
+  font-size: 0.7em;
+}
+
+.labelField {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--bstdio-shadow-color);
+}
+
+.docsBtn {
+  margin-right: 5px;
+  float: left;
+  text-decoration: none;
+}
+
+.modalKindOptionsDisplay {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+}
+
+.modalKindBtnGroup {
+  display: flex;
+  flex-wrap: wrap;
+  overflow: auto;
+  padding: 5px;
+}
+
+.modalKindBtn {
+  font-family: var(--bstdio-monospace);
+  padding: 10px 20px;
+  margin: 0 10px 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

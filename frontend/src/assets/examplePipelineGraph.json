@@ -1,0 +1,169 @@
+{
+    "stream": [
+        {
+            "label": "Input",
+            "children": [
+                {
+                    "path": "/input",
+                    "kind": "input",
+                    "type": "generate",
+                    "actions": [
+                        {
+                            "operation": "PATCH_OPERATION_ADD",
+                            "path": "/input/processors",
+                            "kind": "processor"
+                        },
+                        {
+                            "operation": "PATCH_OPERATION_ADD_FROM",
+                            "path": "/input/processors",
+                            "kind": "processor"
+                        }
+                    ],
+                    "lineStart": 2,
+                    "lineEnd": 8
+                }
+            ],
+            "actions": [
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/input",
+                    "kind": "input"
+                }
+            ],
+            "lineStart": 2,
+            "lineEnd": 8
+        },
+        {
+            "label": "Processors",
+            "children": [
+                {
+                    "path": "/pipeline/processors/0",
+                    "kind": "processor",
+                    "type": "bloblang",
+                    "actions": [
+                        {
+                            "operation": "PATCH_OPERATION_MOVE_ABOVE"
+                        },
+                        {
+                            "operation": "PATCH_OPERATION_MOVE_BELOW"
+                        }
+                    ],
+                    "lineStart": 12,
+                    "lineEnd": 16
+                }
+            ],
+            "actions": [
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/pipeline/processors",
+                    "kind": "processor"
+                }
+            ],
+            "lineStart": 12,
+            "lineEnd": 16
+        },
+        {
+            "label": "Output",
+            "children": [
+                {
+                    "label": "rpconnect_gen_out",
+                    "path": "/output",
+                    "kind": "output",
+                    "type": "kafka_franz",
+                    "actions": [
+                        {
+                            "operation": "PATCH_OPERATION_ADD",
+                            "path": "/output/processors",
+                            "kind": "processor"
+                        },
+                        {
+                            "operation": "PATCH_OPERATION_ADD_FROM",
+                            "path": "/output/processors",
+                            "kind": "processor"
+                        }
+                    ],
+                    "lineStart": 19,
+                    "lineEnd": 28
+                }
+            ],
+            "actions": [
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/output",
+                    "kind": "output"
+                }
+            ],
+            "lineStart": 19,
+            "lineEnd": 28
+        }
+    ],
+    "resources": [
+        {
+            "label": "Buffer",
+            "rootAction": true,
+            "actions": [
+                {
+                    "operation": "PATCH_OPERATION_SET",
+                    "path": "/buffer",
+                    "kind": "buffer"
+                }
+            ]
+        },
+        {
+            "label": "Resources",
+            "rootAction": true,
+            "actions": [
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/cache_resources",
+                    "kind": "cache"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/input_resources",
+                    "kind": "input"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/output_resources",
+                    "kind": "output"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/processor_resources",
+                    "kind": "processor"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD",
+                    "path": "/rate_limit_resources",
+                    "kind": "rate_limit"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD_FROM",
+                    "path": "/cache_resources",
+                    "kind": "cache"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD_FROM",
+                    "path": "/input_resources",
+                    "kind": "input"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD_FROM",
+                    "path": "/output_resources",
+                    "kind": "output"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD_FROM",
+                    "path": "/processor_resources",
+                    "kind": "processor"
+                },
+                {
+                    "operation": "PATCH_OPERATION_ADD_FROM",
+                    "path": "/rate_limit_resources",
+                    "kind": "rate_limit"
+                }
+            ]
+        }
+    ]
+}

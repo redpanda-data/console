@@ -50,8 +50,11 @@ export function isSupported(f: FeatureEntry): boolean {
             if (e.endpoint == f.endpoint)
                 return e.isSupported;
 
-    // Special handling, this will be completely absent in the community version
+    // SecurityService will be missing completely in the community version, so no need to issue an error because of that
     if (f.endpoint.includes('.SecurityService'))
+        return false;
+    // Similar for pipelines (for now)
+    if (f.endpoint.includes('.PipelineService'))
         return false;
 
     featureErrors.push(`Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`);
@@ -79,7 +82,7 @@ class SupportedFeatures {
     @computed get createUser(): boolean { return isSupported(Feature.CreateUser); }
     @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
     @computed get rolesApi(): boolean { return isSupported(Feature.SecurityService); }
-    @computed get pipelinesApi(): boolean { return isSupported(Feature.SecurityService); }
+    @computed get pipelinesApi(): boolean { return isSupported(Feature.PipelineService); }
 }
 
 const features = new SupportedFeatures();

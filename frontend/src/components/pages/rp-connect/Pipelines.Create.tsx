@@ -160,8 +160,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                             value={this.fileName}
                             onChange={x => this.fileName = x.target.value}
                             width={300}
-                        />
-                        <span>.yaml</span>
+                />
                     </Flex>
                 </FormField>
                 <FormField label="Description">

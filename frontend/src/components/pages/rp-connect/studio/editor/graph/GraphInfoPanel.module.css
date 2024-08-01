@@ -1,0 +1,58 @@
+.runViewWindow {
+  position: absolute;
+  top: calc(var(--bstdio-top-bar-height));
+  right: 0px;
+  bottom: 0px;
+  z-index: 100;
+  pointer-events: auto;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: top;
+
+  margin: 10px;
+  text-align: left;
+
+  border-radius: 5px;
+  background-color: var(--bstdio-code-background);
+
+  font-family: var(--bstdio-monospace);
+}
+
+.nodeViewBoxNarrow {
+  width: 400px;
+}
+
+.nodeViewBoxWide {
+  width: 600px;
+}
+
+.expandHandle {
+  background-color: rgba(125, 125, 125, 0.05);
+  height: 100%;
+  width: 12px;
+  color: var(--bstdio-grey);
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  font-weight: bold;
+}
+
+.nodeViewContent {
+  padding: 5px;
+  max-height: 100%;
+  overflow: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}

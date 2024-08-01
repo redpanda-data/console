@@ -1,0 +1,132 @@
+.StatusBar {
+  --section-width: 250px;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+
+  height: var(--bstdio-top-bar-height);
+  padding: 0px;
+  margin: 0px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  flex-shrink: 0;
+  justify-content: space-between;
+}
+
+.StatusBar > div {
+  display: flex;
+  height: 100%;
+  margin: 0px;
+  flex-direction: row;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.StatusBar :global(.bstdioEmojiBtn) {
+  font-size: var(--bstdio-top-bar-icon-font-size);
+  height: 100%;
+  padding: 0 var(--bstdio-top-bar-btn-padding-w);
+  margin: 0; /* 10px 0 0;*/
+  display: flex;
+  align-items: center;
+}
+
+.StatusBar :global(.bstdioEmojiBtn:hover) {
+  background-color: var(--bstdio-highlight-background);
+}
+
+.rootLink {
+  text-decoration: none;
+  font-weight: bold;
+  color: var(--bstdio-color);
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.StatusBar > div > a:hover {
+  color: var(--bstdio-dark-blue);
+}
+
+.leftBlock {
+  flex-grow: 0;
+  border-radius: 0 0 8px 0;
+  background: var(--bstdio-background);
+}
+
+.leftBlock > a {
+  margin: 0 20px 0 20px;
+}
+
+.leftTitle {
+  font-size: 0.9rem;
+  font-family: var(--bstdio-header);
+}
+
+.middleBlock {
+  justify-content: left;
+  border-radius: 0 0 8px 8px;
+  padding: 0 10px;
+  background: var(--bstdio-background);
+  font-size: 0.9rem;
+  flex-grow: 1;
+}
+
+.crumbs {
+  flex-grow: 1;
+}
+
+.children {
+  display: flex;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.rightBlock {
+  flex-grow: 0;
+  border-radius: 0 0 0 8px;
+  padding-left: 10px;
+  width: var(--section-width);
+  justify-content: flex-end;
+  background: var(--bstdio-background);
+}
+
+.rightBlock > a {
+  margin: 0 10px 0 0;
+}
+
+@media (max-width: 996px) {
+  .StatusBar {
+    flex-wrap: wrap;
+    align-items: top;
+    justify-content: flex-start;
+  }
+
+  .StatusBar > div {
+    height: 50%;
+  }
+
+  .leftBlock, .rightBlock {
+    flex-shrink: 1;
+    width: unset;
+  }
+
+  .leftTitle {
+    font-size: 0.7rem;
+  }
+
+  .rightBlock {
+    flex-grow: 1;
+  }
+
+  .middleBlock {
+    order: 3;
+    width: 100%;
+    font-size: 0.7rem;
+  }
+}

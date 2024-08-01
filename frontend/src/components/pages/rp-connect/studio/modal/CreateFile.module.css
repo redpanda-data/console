@@ -1,0 +1,38 @@
+.modalTypeBtnGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalTypeBtn {
+  font-size: 1rem;
+  padding: 10px 20px;
+  margin-bottom: 10px;
+  background: var(--bstdio-code-highlight-background);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTypeBtn:hover {
+  background: var(--bstdio-code-highlighter-background);
+}
+
+.modalTypeTitle {
+  padding: 5px 0;
+  margin: 10px 0;
+  flex-grow: 1;
+}
+
+.nameInputContainer {
+  display: flex;
+  align-items: stretch;
+}
+
+.nameInput {
+  margin: auto !important;
+}
+
+.nameInputContainer > code {
+  color: var(--bstdio-highlight-color);
+  margin: auto !important;
+}

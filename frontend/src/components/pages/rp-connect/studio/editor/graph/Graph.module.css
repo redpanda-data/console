@@ -1,0 +1,43 @@
+.controlPanel {
+  position: absolute;
+  top: calc(var(--bstdio-top-bar-height) + 10px);
+  right: 10px;
+  background: var(--bstdio-background);
+  z-index: 100;
+}
+
+.tabContent {
+  overflow: auto;
+  flex-grow: 1;
+}
+
+.nodeViewContent {
+  padding: 5px;
+}
+
+.tabButtons {
+  flex-grow: 0;
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.tabButtons > button {
+  color: var(--bstdio-color);
+  font-family: var(--bstdio-monospace);
+  padding: 5px;
+  flex-grow: 1;
+  cursor: pointer;
+  opacity: 0.6;
+  border: 0;
+  outline: 0;
+  border-bottom: 2px solid var(--bstdio-code-background);
+  background: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tabButtonActive {
+  border-bottom: 2px solid var(--bstdio-grey) !important;
+  opacity: 1 !important;
+}

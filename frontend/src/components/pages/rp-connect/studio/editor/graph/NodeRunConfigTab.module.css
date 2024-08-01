@@ -1,0 +1,79 @@
+.runViewContent {
+  padding: 5px;
+}
+
+.eventsList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.eventRow {
+  padding: 10px;
+}
+
+.eventRowOdd {
+  background-color: var(--bstdio-code-highlight-background);
+}
+
+.eventType {
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding-bottom: 5px;
+}
+
+.eventConsume {
+  color: var(--bstdio-green);
+}
+
+.eventProduce {
+  color: var(--bstdio-blue);
+}
+
+.eventError {
+  color: var(--bstdio-pink);
+}
+
+.eventDelete {
+  color: var(--bstdio-yellow);
+}
+
+.eventLabel {
+  color: var(--bstdio-highlight-color);
+  font-size: 0.5rem;
+  margin-top: 5px;
+}
+
+.eventContent {
+  font-family: var(--bstdio-monospace);
+  overflow: auto;
+  font-size: 0.8rem;
+  margin: 2px 0px;
+}
+
+.eventMetadata {
+  font-family: var(--bstdio-monospace);
+  overflow: auto;
+  font-size: 0.8rem;
+  margin: 2px 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+.errorText {
+  color: var(--bstdio-pink);
+}
+
+.eventMetadataItem {
+  display: flex;
+  column-gap: 5px;
+}
+
+.eventMetadataItemKey {
+  font-weight: bold;
+}
+
+.mockHelpText {
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+}

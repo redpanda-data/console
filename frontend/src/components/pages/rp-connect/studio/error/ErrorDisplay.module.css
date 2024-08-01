@@ -1,0 +1,34 @@
+.errorWrapper {
+  text-align: center;
+  width: 100%;
+}
+
+.errorDisplay {
+  margin: 20px;
+  font-size: 1em;
+  max-width: 700px;
+  display: inline-block;
+}
+
+.errorImg {
+  width: 200px;
+  max-width: 70%;
+}
+
+.errorHeader {
+  color: red;
+}
+
+.errorDescription {
+  text-align: center;
+  text-align: left;
+}
+
+.errorMessage {
+  background: var(--bstdio-code-highlight-background);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.9em;
+  text-align: left;
+  white-space: pre-line;
+}
