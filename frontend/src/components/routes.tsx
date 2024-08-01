@@ -283,10 +283,10 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
 
     MakeRoute<{}>('/transforms-setup', TransformsSetup, 'Transforms', undefined, true,
-      routeVisibility(false, [Feature.TransformsService])
+      routeVisibility(true, [Feature.TransformsService])
     ),
     MakeRoute<{}>('/transforms', TransformsList, 'Transforms', MdOutlineSmartToy, true,
-      routeVisibility(false, [Feature.TransformsService])
+      routeVisibility(true, [Feature.TransformsService])
     ),
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
