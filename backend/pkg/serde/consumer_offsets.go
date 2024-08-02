@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kbin"
@@ -35,11 +36,16 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		offsetCommitKey := kmsg.NewOffsetCommitKey()
 		err := offsetCommitKey.ReadFrom(record.Key)
 		if err == nil {
-			// TODO: Check if the parsedPayload will actually be encoded as JSON when it's sent to the frontend
+			jsonBytes, err := json.Marshal(offsetCommitKey)
+			if err != nil {
+				return nil, fmt.Errorf("failed serializing the offset commit key into JSON: %w", err)
+			}
+
 			deserializedKey = &RecordPayload{
 				OriginalPayload:     record.Key,
 				PayloadSizeBytes:    len(record.Key),
 				DeserializedPayload: offsetCommitKey,
+				NormalizedPayload:   jsonBytes,
 				Encoding:            PayloadEncodingConsumerOffsets,
 			}
 		}
@@ -50,9 +56,15 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		offsetCommitValue := kmsg.NewOffsetCommitValue()
 		err = offsetCommitValue.ReadFrom(record.Value)
 		if err == nil {
+			jsonBytes, err := json.Marshal(offsetCommitValue)
+			if err != nil {
+				return nil, fmt.Errorf("failed serializing the offset commit value into JSON: %w", err)
+			}
+
 			deserializedVal = &RecordPayload{
 				OriginalPayload:     record.Value,
 				PayloadSizeBytes:    len(record.Value),
+				NormalizedPayload:   jsonBytes,
 				DeserializedPayload: offsetCommitValue,
 				Encoding:            PayloadEncodingConsumerOffsets,
 			}
@@ -62,9 +74,15 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		metadataKey := kmsg.NewGroupMetadataKey()
 		err := metadataKey.ReadFrom(record.Key)
 		if err == nil {
+			jsonBytes, err := json.Marshal(metadataKey)
+			if err != nil {
+				return nil, fmt.Errorf("failed serializing the group metadata key into JSON: %w", err)
+			}
+
 			deserializedKey = &RecordPayload{
 				OriginalPayload:     record.Key,
 				PayloadSizeBytes:    len(record.Key),
+				NormalizedPayload:   jsonBytes,
 				DeserializedPayload: metadataKey,
 				Encoding:            PayloadEncodingConsumerOffsets,
 			}
@@ -76,9 +94,15 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 		metadataValue := kmsg.NewGroupMetadataValue()
 		err = metadataValue.ReadFrom(record.Value)
 		if err == nil {
+			jsonBytes, err := json.Marshal(metadataValue)
+			if err != nil {
+				return nil, fmt.Errorf("failed serializing the group metadata value into JSON: %w", err)
+			}
 			deserializedVal = &RecordPayload{
-				OriginalPayload:  record.Value,
-				PayloadSizeBytes: len(record.Value),
+				OriginalPayload:     record.Value,
+				NormalizedPayload:   jsonBytes,
+				DeserializedPayload: metadataValue,
+				PayloadSizeBytes:    len(record.Value),
 			}
 		}
 	default:
