@@ -107,6 +107,11 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 			break
 		}
 
+		if doSpecificEncoding {
+			// If the specific encoding failed, it wouldn't be set. Hence, we set it here.
+			rp.Encoding = serdeEncoding
+		}
+
 		troubleshooting = append(troubleshooting, TroubleshootingReport{
 			SerdeName: string(serde.Name()),
 			Message:   err.Error(),
@@ -125,7 +130,8 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 		rp.NormalizedPayload = nil
 	}
 
-	if opts.Troubleshoot || rp.Encoding == PayloadEncodingBinary {
+	specificEncodingFailed := doSpecificEncoding && len(troubleshooting) > 0
+	if opts.Troubleshoot || rp.Encoding == PayloadEncodingBinary || specificEncodingFailed {
 		rp.Troubleshooting = troubleshooting
 	}
 
