@@ -503,7 +503,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value properties
-		assert.Equal(PayloadEncoding(""), dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(serializedOrder, dr.Value.OriginalPayload)
