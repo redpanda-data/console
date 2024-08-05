@@ -1066,6 +1066,13 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
         const msg = this.props.msg;
         const key = msg.key;
 
+        if (key.troubleshootReport && key.troubleshootReport.length > 0) {
+            return <Flex color="red.600" alignItems="center" gap="2">
+                <WarningIcon fontSize="1.25em" />
+                There were issues deserializing the key
+            </Flex>
+        }
+
         const isPrimitive =
             typeof key.payload === 'string' ||
             typeof key.payload === 'number' ||
