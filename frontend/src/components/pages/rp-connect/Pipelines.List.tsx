@@ -78,7 +78,14 @@ class RpConnectPipelinesList extends PageComponent<{}> {
     refreshData(force: boolean) {
         if (!Features.pipelinesApi) return;
 
-        pipelinesApi.refreshPipelines(force);
+        pipelinesApi.refreshPipelines(force)
+            .catch((err) => {
+                toast({
+                    status: 'error', duration: null, isClosable: true,
+                    title: 'Failed to load pipelines',
+                    description: String(err),
+                });
+            });
     }
 
     render() {
