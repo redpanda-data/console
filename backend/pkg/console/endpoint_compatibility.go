@@ -170,7 +170,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 	endpoints = append(endpoints, EndpointCompatibilityEndpoint{
 		Endpoint:    consolev1alpha1connect.PipelineServiceName,
 		Method:      "POST",
-		IsSupported: true,
+		IsSupported: false,
 	})
 
 	return EndpointCompatibility{
