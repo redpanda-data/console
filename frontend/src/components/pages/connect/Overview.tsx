@@ -56,7 +56,6 @@ class KafkaConnectOverview extends PageComponent {
                 key: 'redpandaConnect',
                 title: <Box minWidth="180px">Redpanda Connect</Box>,
                 content: <TabRedpandaConnect />,
-                disabled: !showPipelines,
             },
             {
                 key: 'kafkaConnect',
