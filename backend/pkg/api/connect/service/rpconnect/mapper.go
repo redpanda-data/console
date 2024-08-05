@@ -10,10 +10,10 @@
 package rpconnect
 
 import (
-	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/redpanda-data/benthos/v4/public/service"
 
 	consolev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
-	"github.com/redpanda-data/console/backend/pkg/rpconnect/graph"
+	"github.com/redpanda-data/console/backend/pkg/rpconnect/tree"
 )
 
 type mapper struct{}
@@ -35,7 +35,7 @@ func (m *mapper) lintsToProto(lints []service.Lint) []*consolev1alpha1.LintConfi
 	return result
 }
 
-func (m *mapper) treeNodeToProto(nodes []*graph.TreeNode) []*consolev1alpha1.TreeNode {
+func (m *mapper) treeNodeToProto(nodes []*tree.Node) []*consolev1alpha1.TreeNode {
 	protoNodes := make([]*consolev1alpha1.TreeNode, 0, len(nodes))
 	for _, n := range nodes {
 		children := m.treeNodeToProto(n.Children)
