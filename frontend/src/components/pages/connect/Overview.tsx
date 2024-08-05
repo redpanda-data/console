@@ -23,10 +23,8 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Box, DataTable, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import SearchBar from '../../misc/SearchBar';
-import { isEmbedded } from '../../../config';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
-import { IsDev } from '../../../utils/env';
 import { Features } from '../../../state/supportedFeatures';
 
 @observer
@@ -58,7 +56,6 @@ class KafkaConnectOverview extends PageComponent {
                 key: 'redpandaConnect',
                 title: <Box minWidth="180px">Redpanda Connect</Box>,
                 content: <TabRedpandaConnect />,
-                disabled: !showPipelines,
             },
             {
                 key: 'kafkaConnect',
@@ -306,10 +303,10 @@ const TabKafkaConnect = observer((_p: {}) => {
 
 
 const TabRedpandaConnect = observer((_p: {}) => {
-    if (isEmbedded() || IsDev)
-        return <RpConnectPipelinesList matchedPath="/rp-connect" />
-    else
+    if (!Features.pipelinesApi) // If the backend doesn't support pipelines, show the intro page
         return <RedpandaConnectIntro />
+
+    return <RpConnectPipelinesList matchedPath="/rp-connect" />
 })
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';

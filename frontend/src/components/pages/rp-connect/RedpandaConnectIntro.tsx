@@ -92,9 +92,6 @@ redpanda:
                                     setEditorText(e);
                             }}
                             language="yaml"
-                            options={{
-                                fontSize: 15
-                            }}
                         />
 
                     </Flex>
