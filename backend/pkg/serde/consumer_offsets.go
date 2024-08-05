@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kbin"
@@ -29,82 +30,145 @@ func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 
 	var deserializedKey *RecordPayload
 	var deserializedVal *RecordPayload
+	var err error
+
 	switch messageVer {
 	case 0, 1:
 		// We got an offset commit message
-		offsetCommitKey := kmsg.NewOffsetCommitKey()
-		err := offsetCommitKey.ReadFrom(record.Key)
-		if err == nil {
-			// TODO: Check if the parsedPayload will actually be encoded as JSON when it's sent to the frontend
-			deserializedKey = &RecordPayload{
-				OriginalPayload:     record.Key,
-				PayloadSizeBytes:    len(record.Key),
-				DeserializedPayload: offsetCommitKey,
-				Encoding:            PayloadEncodingConsumerOffsets,
-			}
+		deserializedKey, err = deserializeOffsetCommitKey(record.Key)
+		if err != nil {
+			return nil, err
 		}
 
-		if record.Value == nil {
-			break
-		}
-		offsetCommitValue := kmsg.NewOffsetCommitValue()
-		err = offsetCommitValue.ReadFrom(record.Value)
-		if err == nil {
-			deserializedVal = &RecordPayload{
-				OriginalPayload:     record.Value,
-				PayloadSizeBytes:    len(record.Value),
-				DeserializedPayload: offsetCommitValue,
-				Encoding:            PayloadEncodingConsumerOffsets,
-			}
+		deserializedVal, err = deserializeOffsetCommitValue(record.Value)
+		if err != nil {
+			return nil, err
 		}
 	case 2:
 		// We got a group metadata message
-		metadataKey := kmsg.NewGroupMetadataKey()
-		err := metadataKey.ReadFrom(record.Key)
-		if err == nil {
-			deserializedKey = &RecordPayload{
-				OriginalPayload:     record.Key,
-				PayloadSizeBytes:    len(record.Key),
-				DeserializedPayload: metadataKey,
-				Encoding:            PayloadEncodingConsumerOffsets,
-			}
+		deserializedKey, err = deserializeGroupMetadataKey(record.Key)
+		if err != nil {
+			return nil, err
 		}
 
-		if record.Value == nil {
-			break
-		}
-		metadataValue := kmsg.NewGroupMetadataValue()
-		err = metadataValue.ReadFrom(record.Value)
-		if err == nil {
-			deserializedVal = &RecordPayload{
-				OriginalPayload:  record.Value,
-				PayloadSizeBytes: len(record.Value),
-			}
+		deserializedVal, err = deserializeGroupMetadataValue(record.Value)
+		if err != nil {
+			return nil, err
 		}
 	default:
-		// Unknown format
 		return nil, fmt.Errorf("unknown message version '%d' detected", messageVer)
 	}
 
 	if deserializedKey == nil {
-		deserializedKey = &RecordPayload{
-			OriginalPayload:  record.Key,
-			PayloadSizeBytes: len(record.Key),
-			Encoding:         PayloadEncodingNull,
-		}
+		deserializedKey = &RecordPayload{Encoding: PayloadEncodingNull}
 	}
 	if deserializedVal == nil {
 		// Tombstone
-		deserializedVal = &RecordPayload{
-			OriginalPayload:  record.Value,
-			PayloadSizeBytes: len(record.Value),
-			Encoding:         PayloadEncodingNull,
-		}
+		deserializedVal = &RecordPayload{Encoding: PayloadEncodingNull}
 	}
 
 	return &Record{
 		Key:     deserializedKey,
 		Value:   deserializedVal,
 		Headers: recordHeaders(record),
+	}, nil
+}
+
+// deserializeOffsetCommitKey deserializes the key of an offset commit message.
+func deserializeOffsetCommitKey(key []byte) (*RecordPayload, error) {
+	if len(key) == 0 {
+		return nil, nil
+	}
+
+	offsetCommitKey := kmsg.NewOffsetCommitKey()
+	err := offsetCommitKey.ReadFrom(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize offset commit key: %v", err)
+	}
+
+	jsonBytes, err := json.Marshal(offsetCommitKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed serializing the offset commit key into JSON: %w", err)
+	}
+	return &RecordPayload{
+		OriginalPayload:     key,
+		PayloadSizeBytes:    len(key),
+		DeserializedPayload: offsetCommitKey,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingConsumerOffsets,
+	}, nil
+}
+
+// deserializeOffsetCommitValue deserializes the value of an offset commit message.
+func deserializeOffsetCommitValue(value []byte) (*RecordPayload, error) {
+	if len(value) == 0 {
+		return nil, nil
+	}
+
+	offsetCommitValue := kmsg.NewOffsetCommitValue()
+	err := offsetCommitValue.ReadFrom(value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize offset commit value: %w", err)
+	}
+	jsonBytes, err := json.Marshal(offsetCommitValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed serializing the offset commit value into JSON: %w", err)
+	}
+	return &RecordPayload{
+		OriginalPayload:     value,
+		PayloadSizeBytes:    len(value),
+		DeserializedPayload: offsetCommitValue,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingConsumerOffsets,
+	}, nil
+}
+
+// deserializeGroupMetadataKey deserializes the key of a group metadata message.
+func deserializeGroupMetadataKey(key []byte) (*RecordPayload, error) {
+	if len(key) == 0 {
+		return nil, nil
+	}
+
+	metadataKey := kmsg.NewGroupMetadataKey()
+	err := metadataKey.ReadFrom(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize group metadata key: %w", err)
+	}
+	jsonBytes, err := json.Marshal(metadataKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed serializing the group metadata key into JSON: %w", err)
+	}
+	return &RecordPayload{
+		OriginalPayload:     key,
+		PayloadSizeBytes:    len(key),
+		DeserializedPayload: metadataKey,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingConsumerOffsets,
+	}, nil
+}
+
+// deserializeGroupMetadataValue deserializes the value of a group metadata message.
+func deserializeGroupMetadataValue(value []byte) (*RecordPayload, error) {
+	if len(value) == 0 {
+		return nil, nil
+	}
+
+	metadataValue := kmsg.NewGroupMetadataValue()
+	err := metadataValue.ReadFrom(value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize group metadata value: %w", err)
+	}
+
+	jsonBytes, err := json.Marshal(metadataValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed serializing the group metadata value into JSON: %w", err)
+	}
+
+	return &RecordPayload{
+		OriginalPayload:     value,
+		PayloadSizeBytes:    len(value),
+		DeserializedPayload: metadataValue,
+		NormalizedPayload:   jsonBytes,
+		Encoding:            PayloadEncodingConsumerOffsets,
 	}, nil
 }
