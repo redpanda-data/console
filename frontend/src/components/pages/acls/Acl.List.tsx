@@ -195,7 +195,10 @@ const PermissionsListTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            {/* TODO */}
+            This page provides a detailed overview of all effective permissions for each principal, including those derived from assigned roles.
+            While the ACLs tab shows permissions directly granted to principals, this tab also incorporates roles
+            that may assign additional permissions to a principal. This gives you a complete picture of what each principal can do within
+            your cluster.
         </Box>
 
         <SearchField
@@ -235,7 +238,7 @@ const PermissionsListTab = observer(() => {
                         },
                         {
                             id: 'assignedRoles',
-                            header: 'Assigned roles',
+                            header: 'Permissions',
                             cell: (ctx) => {
                                 const entry = ctx.row.original;
                                 return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
@@ -310,9 +313,8 @@ const UsersTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            These users are Redpanda SASL users. They are users who can authenticate to the cluster via SASL/SCRAM.
-            You can create and manage these users from within Redpanda. Other principals (OIDC, Kerberos, mTLS) will not be listed here.
-            Their permissions can be found in the ACLs tab.
+            These users are SASL-SCRAM users that are managed by your cluster. Other authentication identities (OIDC, Kerberos, mTLS) will not be listed here.
+            You can view their permissions in the permissions list.
         </Box>
 
         <SearchField
@@ -337,7 +339,7 @@ const UsersTab = observer(() => {
                   data={usersFiltered}
                   pagination
                   sorting
-                  emptyText="No principals yet"
+                  emptyText="No users yet"
                   emptyAction={
                       <Button variant="outline"
                               isDisabled={!Features.createUser}
@@ -349,7 +351,7 @@ const UsersTab = observer(() => {
                       {
                           id: 'name',
                           size: Infinity,
-                          header: 'Principal',
+                          header: 'User',
                           cell: (ctx) => {
                               const entry = ctx.row.original;
                               return <>
@@ -361,7 +363,7 @@ const UsersTab = observer(() => {
                       },
                       {
                           id: 'assignedRoles',
-                          header: 'Assigned roles',
+                          header: 'Permissions',
                           cell: (ctx) => {
                               const entry = ctx.row.original;
                               return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
@@ -437,7 +439,7 @@ const RolesTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Roles are groups of ACLs abstracted under a single name. Roles can be assigned to users.
+            Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.
         </Box>
 
         <SearchField
@@ -539,7 +541,13 @@ const AclsTab = observer((p: {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Use access control lists (ACLs) to manage user permissions. ACLs are assigned principals, which then access resources within Redpanda. Learn more.
+            This tab displays all Kafka Access Control Lists (ACLs), grouped by each principal.
+            A principal represents any entity that can be authenticated, such as a user,
+            service, or system (e.g., a SASL-SCRAM user, OIDC identity, Kerberos principal,
+            or mTLS client). The ACLs tab shows only the permissions directly granted to
+            each principal, without considering any permissions that may be derived from
+            assigned roles. For a complete view of all effective permissions,
+            including those granted through roles, refer to the Permissions List tab.
         </Box>
 
         <Alert status="info">
