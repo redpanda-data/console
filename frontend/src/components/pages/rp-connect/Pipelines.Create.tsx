@@ -72,9 +72,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                             isRequired
                             value={this.fileName}
                             onChange={x => this.fileName = x.target.value}
-                            width={300}
-                        />
-                        <span>.yaml</span>
+                  width={500}
+                />
                     </Flex>
                 </FormField>
                 <FormField label="Description">
@@ -82,7 +81,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                         data-testid="pipelineDescription"
                         value={this.description}
                         onChange={x => this.description = x.target.value}
-                        width={300}
+                width={500}
                     />
                 </FormField>
 
