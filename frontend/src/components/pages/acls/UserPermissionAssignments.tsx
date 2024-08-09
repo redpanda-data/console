@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { rolesApi } from '../../../state/backendApi';
+import { api, rolesApi } from '../../../state/backendApi';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { Link as ChakraLink, Tag } from '@chakra-ui/react';
 import React from 'react';
@@ -54,14 +54,15 @@ export const UserPermissionAssignments = observer(({
             elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
     }
 
-    if (elements.length == 0) {
-        return <Flex>
-            No roles
-        </Flex>
-    }
+    if (elements.length == 0)
+        elements.push(<Flex>No roles</Flex>);
 
-    return <Flex>
-        {elements}
-        {numberOfHiddenElements !== 0 && <Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>}
-    </Flex>;
+    if (numberOfHiddenElements > 0)
+        elements.push(<Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>);
+
+    const hasAcls = api.ACLs?.aclResources.any(r => r.acls.any(a => a.principal == 'User:' + userName));
+    if (hasAcls)
+        elements.push(<Flex>, has ACLs</Flex>)
+
+    return <Flex>{elements}</Flex>;
 });

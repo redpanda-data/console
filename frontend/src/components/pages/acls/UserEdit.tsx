@@ -138,11 +138,11 @@ class UserEditPage extends PageComponent<{ userName: string; }> {
 
             <PageContent>
                 <Box>
-                    <Heading as="h2">Create user</Heading>
+                    <Heading as="h2">Edit user</Heading>
                     <Box>This is a Redpanda SASL/SCRAM user. For other types of users and authentication, see our documentation.</Box>
 
                     <Heading as="h3" mt="4">Username</Heading>
-                    <Input isReadOnly value={this.props.userName} width="300px" />
+                    <Input isReadOnly value={this.props.userName} readOnly width="300px" />
 
                     {Features.rolesApi && <>
                         <Heading as="h3" mt="4">Assignments</Heading>
