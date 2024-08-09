@@ -195,7 +195,10 @@ const PermissionsListTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            {/* TODO */}
+            This page provides a detailed overview of all effective permissions for each principal, including those derived from assigned roles.
+            While the ACLs tab shows permissions directly granted to principals, this tab also incorporates roles
+            that may assign additional permissions to a principal. This gives you a complete picture of what each principal can do within
+            your cluster.
         </Box>
 
         <SearchField
@@ -235,7 +238,87 @@ const PermissionsListTab = observer(() => {
                         },
                         {
                             id: 'assignedRoles',
-                            header: 'Assigned roles',
+                            header: 'Permissions',
+                            cell: (ctx) => {
+                                const entry = ctx.row.original;
+                                return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
+                            }
+                        },
+                    ]}
+                />
+            </Box>
+        </Section>
+    </Flex>
+});
+
+const UsersTab = observer(() => {
+
+    const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
+        .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+
+    const usersFiltered = users.filter(u => {
+        const filter = uiSettings.aclList.usersTab.quickSearch;
+        if (!filter) return true;
+
+        try {
+            const quickSearchRegExp = new RegExp(filter, 'i');
+            return u.name.match(quickSearchRegExp);
+        } catch { return false; }
+    })
+
+    return <Flex flexDirection="column" gap="4">
+        <Box>
+            These users are SASL-SCRAM users that are managed by your cluster. Other authentication identities (OIDC, Kerberos, mTLS) will not be listed here.
+            You can view their permissions in the permissions list.
+        </Box>
+
+        <SearchField
+            width="300px"
+            searchText={uiSettings.aclList.usersTab.quickSearch}
+            setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
+            placeholderText="Filter by name"
+        />
+
+        <Section>
+            <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
+                <Button variant="outline"
+                    data-testid="create-user-button"
+                    isDisabled={!Features.createUser}
+                    onClick={() => appGlobal.history.push('/security/users/create')}>
+                    Create user
+                </Button>
+            </Tooltip>
+
+            <Box my={4}>
+                <DataTable<UsersEntry>
+                    data={usersFiltered}
+                    pagination
+                    sorting
+                    emptyText="No users yet"
+                    emptyAction={
+                        <Button variant="outline"
+                            isDisabled={!Features.createUser}
+                            onClick={() => appGlobal.history.push('/security/users/create')}>
+                            Create user
+                        </Button>
+                    }
+                    columns={[
+                        {
+                            id: 'name',
+                            size: Infinity,
+                            header: 'User',
+                            cell: (ctx) => {
+                                const entry = ctx.row.original;
+                                return <>
+                                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                                        {entry.name}
+                                    </ChakraLink>
+                                </>
+                            }
+                        },
+                        {
+                            id: 'assignedRoles',
+                            header: 'Permissions',
                             cell: (ctx) => {
                                 const entry = ctx.row.original;
                                 return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
@@ -256,9 +339,8 @@ const PermissionsListTab = observer(() => {
                                                 <Icon as={PencilIcon} />
                                             </button>
                                         }
-                                        {entry.type == 'SERVICE_ACCOUNT' &&
-                                            <DeleteUserConfirmModal
-                                                onConfirm={async () => {
+                                        <DeleteUserConfirmModal
+                                            onConfirm={async () => {
                                                 await api.deleteServiceAccount(entry.name);
 
                                                 // Remove user from all its roles
@@ -281,136 +363,11 @@ const PermissionsListTab = observer(() => {
                                             }
                                             userName={entry.name}
                                         />
-                                        }
                                     </Flex>
                                 );
                             }
                         },
                     ]}
-                />
-            </Box>
-        </Section>
-    </Flex>
-});
-
-const UsersTab = observer(() => {
-
-    const users: UsersEntry[] = (api.serviceAccounts?.users ?? [])
-      .map(u => ({ name: u, type: 'SERVICE_ACCOUNT' }));
-
-    const usersFiltered = users.filter(u => {
-        const filter = uiSettings.aclList.usersTab.quickSearch;
-        if (!filter) return true;
-
-        try {
-            const quickSearchRegExp = new RegExp(filter, 'i');
-            return u.name.match(quickSearchRegExp);
-        } catch { return false; }
-    })
-
-    return <Flex flexDirection="column" gap="4">
-        <Box>
-            These users are Redpanda SASL users. They are users who can authenticate to the cluster via SASL/SCRAM.
-            You can create and manage these users from within Redpanda. Other principals (OIDC, Kerberos, mTLS) will not be listed here.
-            Their permissions can be found in the ACLs tab.
-        </Box>
-
-        <SearchField
-          width="300px"
-          searchText={uiSettings.aclList.usersTab.quickSearch}
-          setSearchText={x => (uiSettings.aclList.usersTab.quickSearch = x)}
-          placeholderText="Filter by name"
-        />
-
-        <Section>
-            <Tooltip isDisabled={Features.createUser} label="The cluster does not support this feature" placement="top" hasArrow>
-                <Button variant="outline"
-                        data-testid="create-user-button"
-                        isDisabled={!Features.createUser}
-                        onClick={() => appGlobal.history.push('/security/users/create')}>
-                    Create user
-                </Button>
-            </Tooltip>
-
-            <Box my={4}>
-                <DataTable<UsersEntry>
-                  data={usersFiltered}
-                  pagination
-                  sorting
-                  emptyText="No principals yet"
-                  emptyAction={
-                      <Button variant="outline"
-                              isDisabled={!Features.createUser}
-                              onClick={() => appGlobal.history.push('/security/users/create')}>
-                          Create user
-                      </Button>
-                  }
-                  columns={[
-                      {
-                          id: 'name',
-                          size: Infinity,
-                          header: 'Principal',
-                          cell: (ctx) => {
-                              const entry = ctx.row.original;
-                              return <>
-                                  <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
-                                      {entry.name}
-                                  </ChakraLink>
-                              </>
-                          }
-                      },
-                      {
-                          id: 'assignedRoles',
-                          header: 'Assigned roles',
-                          cell: (ctx) => {
-                              const entry = ctx.row.original;
-                              return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
-                          }
-                      },
-                      {
-                          size: 60,
-                          id: 'menu',
-                          header: '',
-                          cell: (ctx) => {
-                              const entry = ctx.row.original;
-                              return (
-                                <Flex flexDirection="row" gap={4}>
-                                    {Features.rolesApi &&
-                                      <button onClick={() => {
-                                          appGlobal.history.push(`/security/users/${entry.name}/edit`);
-                                      }}>
-                                          <Icon as={PencilIcon} />
-                                      </button>
-                                    }
-                                    <DeleteUserConfirmModal
-                                      onConfirm={async () => {
-                                          await api.deleteServiceAccount(entry.name);
-
-                                          // Remove user from all its roles
-                                          const promises = [];
-                                          for (const [roleName, members] of rolesApi.roleMembers) {
-                                              if (members.any(m => m.name==entry.name)) { // is this user part of this role?
-                                                  // then remove it
-                                                  promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
-                                              }
-                                          }
-
-                                          await Promise.allSettled(promises);
-                                          await rolesApi.refreshRoleMembers();
-                                          await api.refreshServiceAccounts(true);
-                                      }}
-                                      buttonEl={
-                                          <button>
-                                              <Icon as={TrashIcon}/>
-                                          </button>
-                                      }
-                                      userName={entry.name}
-                                    />
-                                </Flex>
-                              );
-                          }
-                      },
-                  ]}
                 />
             </Box>
         </Section>
@@ -437,7 +394,7 @@ const RolesTab = observer(() => {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Roles are groups of ACLs abstracted under a single name. Roles can be assigned to users.
+            Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.
         </Box>
 
         <SearchField
@@ -456,63 +413,63 @@ const RolesTab = observer(() => {
 
             <Box my={4}>
                 <DataTable
-                  data={rolesWithMembers}
-                  pagination
-                  sorting
-                  columns={[
-                      {
-                          id: 'name',
-                          size: Infinity,
-                          header: 'Role name',
-                          cell: (ctx) => {
-                              const entry = ctx.row.original;
-                              return <>
-                                  <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}
-                                              textDecoration="none">
-                                      {entry.name}
-                                  </ChakraLink>
-                              </>;
-                          }
-                      },
-                      {
-                          id: 'assignedPrincipals',
-                          header: 'Assigned principals',
-                          cell: (ctx) => {
-                              return <>{ctx.row.original.members.length}</>;
-                          }
-                      },
-                      {
-                          size: 60,
-                          id: 'menu',
-                          header: '',
-                          cell: (ctx) => {
-                              const entry = ctx.row.original;
-                              return (
-                                <Flex flexDirection="row" gap={4}>
-                                    <button onClick={() => {
-                                        appGlobal.history.push(`/security/roles/${entry.name}/edit`);
-                                    }}>
-                                        <Icon as={PencilIcon}/>
-                                    </button>
-                                    <DeleteRoleConfirmModal
-                                      numberOfPrincipals={entry.members.length}
-                                      onConfirm={async () => {
-                                          await rolesApi.deleteRole(entry.name, true);
-                                          await rolesApi.refreshRoles();
-                                          await rolesApi.refreshRoleMembers();
-                                      }}
-                                      buttonEl={
-                                          <button>
-                                              <Icon as={TrashIcon}/>
-                                          </button>
-                                      }
-                                      roleName={entry.name}
-                                    />
-                                </Flex>
-                              );
-                          }
-                      },
-                  ]}
+                    data={rolesWithMembers}
+                    pagination
+                    sorting
+                    columns={[
+                        {
+                            id: 'name',
+                            size: Infinity,
+                            header: 'Role name',
+                            cell: (ctx) => {
+                                const entry = ctx.row.original;
+                                return <>
+                                    <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}
+                                        textDecoration="none">
+                                        {entry.name}
+                                    </ChakraLink>
+                                </>;
+                            }
+                        },
+                        {
+                            id: 'assignedPrincipals',
+                            header: 'Assigned principals',
+                            cell: (ctx) => {
+                                return <>{ctx.row.original.members.length}</>;
+                            }
+                        },
+                        {
+                            size: 60,
+                            id: 'menu',
+                            header: '',
+                            cell: (ctx) => {
+                                const entry = ctx.row.original;
+                                return (
+                                    <Flex flexDirection="row" gap={4}>
+                                        <button onClick={() => {
+                                            appGlobal.history.push(`/security/roles/${entry.name}/edit`);
+                                        }}>
+                                            <Icon as={PencilIcon} />
+                                        </button>
+                                        <DeleteRoleConfirmModal
+                                            numberOfPrincipals={entry.members.length}
+                                            onConfirm={async () => {
+                                                await rolesApi.deleteRole(entry.name, true);
+                                                await rolesApi.refreshRoles();
+                                                await rolesApi.refreshRoleMembers();
+                                            }}
+                                            buttonEl={
+                                                <button>
+                                                    <Icon as={TrashIcon} />
+                                                </button>
+                                            }
+                                            roleName={entry.name}
+                                        />
+                                    </Flex>
+                                );
+                            }
+                        },
+                    ]}
                 />
             </Box>
         </Section>
@@ -539,7 +496,13 @@ const AclsTab = observer((p: {
 
     return <Flex flexDirection="column" gap="4">
         <Box>
-            Use access control lists (ACLs) to manage user permissions. ACLs are assigned principals, which then access resources within Redpanda. Learn more.
+            This tab displays all Kafka Access Control Lists (ACLs), grouped by each principal.
+            A principal represents any entity that can be authenticated, such as a user,
+            service, or system (e.g., a SASL-SCRAM user, OIDC identity, Kerberos principal,
+            or mTLS client). The ACLs tab shows only the permissions directly granted to
+            each principal, without considering any permissions that may be derived from
+            assigned roles. For a complete view of all effective permissions,
+            including those granted through roles, refer to the Permissions List tab.
         </Box>
 
         <Alert status="info">
@@ -590,128 +553,128 @@ const AclsTab = observer((p: {
 
             <Box py={4}>
                 <DataTable<AclPrincipalGroup>
-                  data={groups}
-                  pagination
-                  sorting
-                  columns={[
-                      {
-                          size: Infinity,
-                          header: 'Principal',
-                          accessorKey: 'principal',
-                          cell: ({row: {original: record}}) => {
-                              const principalType = record.principalType=='User' && record.principalName.endsWith('*')
-                                ? 'User Group'
-                                :record.principalType;
-                              return (
-                                <button className="hoverLink" onClick={() => {
-                                    setEditorType('edit');
-                                    setEdittingPrincipalGroup(observable(clone(record)));
-                                }}>
-                                    <Flex>
-                                        <Badge variant="subtle" mr="2">{principalType}</Badge>
-                                        <Text as="span" wordBreak="break-word"
-                                              whiteSpace="break-spaces">{record.principalName}</Text>
-                                    </Flex>
-                                </button>
-                              );
-                          },
-                      },
-                      {
-                          header: 'Host',
-                          accessorKey: 'host',
-                          cell: ({row: {original: {host}}}) => (!host || host=='*') ?
-                            <Badge variant="subtle">Any</Badge>:host
-                      },
-                      {
-                          size: 60,
-                          id: 'menu',
-                          header: '',
-                          cell: ({row: {original: record}}) => {
-                              const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                              const hasAcls = record.sourceEntries.length > 0;
+                    data={groups}
+                    pagination
+                    sorting
+                    columns={[
+                        {
+                            size: Infinity,
+                            header: 'Principal',
+                            accessorKey: 'principal',
+                            cell: ({ row: { original: record } }) => {
+                                //   const principalType = record.principalType=='User' && record.principalName.endsWith('*')
+                                //     ? 'User Group'
+                                //     :record.principalType;
+                                return (
+                                    <button className="hoverLink" onClick={() => {
+                                        setEditorType('edit');
+                                        setEdittingPrincipalGroup(observable(clone(record)));
+                                    }}>
+                                        <Flex>
+                                            {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
+                                            <Text as="span" wordBreak="break-word"
+                                                whiteSpace="break-spaces">{record.principalName}</Text>
+                                        </Flex>
+                                    </button>
+                                );
+                            },
+                        },
+                        {
+                            header: 'Host',
+                            accessorKey: 'host',
+                            cell: ({ row: { original: { host } } }) => (!host || host == '*') ?
+                                <Badge variant="subtle">Any</Badge> : host
+                        },
+                        {
+                            size: 60,
+                            id: 'menu',
+                            header: '',
+                            cell: ({ row: { original: record } }) => {
+                                const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                                const hasAcls = record.sourceEntries.length > 0;
 
-                              const onDelete = async (user: boolean, acls: boolean) => {
-                                  if (acls) {
-                                      try {
-                                          await api.deleteACLs({
-                                              resourceType: 'Any',
-                                              resourceName: undefined,
-                                              resourcePatternType: 'Any',
-                                              principal: record.principalType + ':' + record.principalName,
-                                              host: record.host,
-                                              operation: 'Any',
-                                              permissionType: 'Any',
-                                          });
-                                          toast({
-                                              status: 'success',
-                                              description: <Text as="span">Deleted ACLs
-                                                  for <Code>{record.principalName}</Code></Text>
-                                          });
-                                      } catch (err: unknown) {
-                                          console.error('failed to delete acls', {error: err});
-                                          setAclFailed({err});
-                                      }
-                                  }
+                                const onDelete = async (user: boolean, acls: boolean) => {
+                                    if (acls) {
+                                        try {
+                                            await api.deleteACLs({
+                                                resourceType: 'Any',
+                                                resourceName: undefined,
+                                                resourcePatternType: 'Any',
+                                                principal: record.principalType + ':' + record.principalName,
+                                                host: record.host,
+                                                operation: 'Any',
+                                                permissionType: 'Any',
+                                            });
+                                            toast({
+                                                status: 'success',
+                                                description: <Text as="span">Deleted ACLs
+                                                    for <Code>{record.principalName}</Code></Text>
+                                            });
+                                        } catch (err: unknown) {
+                                            console.error('failed to delete acls', { error: err });
+                                            setAclFailed({ err });
+                                        }
+                                    }
 
-                                  if (user) {
-                                      try {
-                                          await api.deleteServiceAccount(record.principalName);
-                                          toast({
-                                              status: 'success',
-                                              description: <Text as="span">Deleted
-                                                  user <Code>{record.principalName}</Code></Text>
-                                          });
-                                      } catch (err: unknown) {
-                                          console.error('failed to delete acls', {error: err});
-                                          setAclFailed({err});
-                                      }
-                                  }
+                                    if (user) {
+                                        try {
+                                            await api.deleteServiceAccount(record.principalName);
+                                            toast({
+                                                status: 'success',
+                                                description: <Text as="span">Deleted
+                                                    user <Code>{record.principalName}</Code></Text>
+                                            });
+                                        } catch (err: unknown) {
+                                            console.error('failed to delete acls', { error: err });
+                                            setAclFailed({ err });
+                                        }
+                                    }
 
-                                  await Promise.allSettled([
-                                      api.refreshAcls(AclRequestDefault, true),
-                                      api.refreshServiceAccounts(true)
-                                  ]);
-                              };
+                                    await Promise.allSettled([
+                                        api.refreshAcls(AclRequestDefault, true),
+                                        api.refreshServiceAccounts(true)
+                                    ]);
+                                };
 
 
-                              return <Menu>
-                                  <MenuButton as={Button} variant="ghost" className="deleteButton"
-                                              style={{height: 'auto'}}>
-                                      <Icon as={TrashIcon}/>
-                                  </MenuButton>
-                                  <MenuList>
-                                      <MenuItem
-                                        isDisabled={!userExists || !Features.deleteUser || !hasAcls}
-                                        onClick={(e) => {
-                                            void onDelete(true, true);
-                                            e.stopPropagation();
-                                        }}
-                                      >
-                                          Delete (User and ACLs)
-                                      </MenuItem>
-                                      <MenuItem
-                                        isDisabled={!userExists || !Features.deleteUser}
-                                        onClick={(e) => {
-                                            void onDelete(true, false);
-                                            e.stopPropagation();
-                                        }}
-                                      >
-                                          Delete (User only)
-                                      </MenuItem>
-                                      <MenuItem
-                                        isDisabled={!hasAcls}
-                                        onClick={(e) => {
-                                            void onDelete(false, true);
-                                            e.stopPropagation();
-                                        }}
-                                      >
-                                          Delete (ACLs only)
-                                      </MenuItem>
-                                  </MenuList>
-                              </Menu>;
-                          }
-                      },
-                  ]}
+                                return <Menu>
+                                    <MenuButton as={Button} variant="ghost" className="deleteButton"
+                                        style={{ height: 'auto' }}>
+                                        <Icon as={TrashIcon} />
+                                    </MenuButton>
+                                    <MenuList>
+                                        <MenuItem
+                                            isDisabled={!userExists || !Features.deleteUser || !hasAcls}
+                                            onClick={(e) => {
+                                                void onDelete(true, true);
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            Delete (User and ACLs)
+                                        </MenuItem>
+                                        <MenuItem
+                                            isDisabled={!userExists || !Features.deleteUser}
+                                            onClick={(e) => {
+                                                void onDelete(true, false);
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            Delete (User only)
+                                        </MenuItem>
+                                        <MenuItem
+                                            isDisabled={!hasAcls}
+                                            onClick={(e) => {
+                                                void onDelete(false, true);
+                                                e.stopPropagation();
+                                            }}
+                                        >
+                                            Delete (ACLs only)
+                                        </MenuItem>
+                                    </MenuList>
+                                </Menu>;
+                            }
+                        },
+                    ]}
                 />
             </Box>
         </Section>

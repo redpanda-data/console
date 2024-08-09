@@ -110,7 +110,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                 </Flex>
 
                 <Heading as="h3" mt="4">Permissions</Heading>
-                <Box>Below are all of the permissions assigned to this SCRAM user.</Box>
+                <Box>Below are all of the permissions assigned to this principal.</Box>
 
                 {Features.rolesApi && <>
                     <Heading as="h3" mt="4">Assignments</Heading>

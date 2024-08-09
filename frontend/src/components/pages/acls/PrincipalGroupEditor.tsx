@@ -43,6 +43,9 @@ export const AclPrincipalGroupEditor = observer((p: {
     const [error, setError] = useState(undefined as string | undefined);
     const [isFormValid, setIsFormValid] = useState(true);
 
+    const noNameOrNameInUse = (p.type == 'create')
+        && (!group.principalName || api.ACLs?.aclResources.any(r => r.acls.any(a => a.principal == 'User:' + group.principalName)));
+
     const onOK = async () => {
         setError(undefined);
         setIsLoading(true);
@@ -65,7 +68,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                     const requests = group.sourceEntries.map(acl => {
                         // try to find this in allToCreate
                         const foundIdx = allToCreate.findIndex(x => comparer.structural(acl, x))
-                        if(foundIdx !== -1) {
+                        if (foundIdx !== -1) {
                             // acl already exists, remove it from the list
                             allToCreate.splice(foundIdx, 1)
                             return Promise.resolve()
@@ -219,6 +222,10 @@ export const AclPrincipalGroupEditor = observer((p: {
                             </Button>
                         </HStack>
 
+                        {noNameOrNameInUse == true
+                            ? <Box color="red" alignSelf="start" fontWeight="500" fontSize="small">Creating new ACLs requires an unused principal name to be entered</Box>
+                            : null}
+
                         <VStack spacing={8} pr={2} w="full">
                             <Box w="full" as="section">
                                 <Text my={4} fontWeight={500}>Topics</Text>
@@ -265,7 +272,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 </ModalBody>
                 <ModalFooter gap={2}>
                     <Button variant="ghost" onClick={p.onClose}>Cancel</Button>
-                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid}>OK</Button>
+                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid || noNameOrNameInUse}>OK</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
