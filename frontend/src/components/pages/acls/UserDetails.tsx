@@ -23,7 +23,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { Link as ChakraLink } from '@chakra-ui/react';
 import { AclPrincipalGroup, principalGroupsView } from './Models';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import { UserPermissionAssignments } from './UserPermissionAssignments';
+import { UserRoleTags } from './UserPermissionAssignments';
 import { Features } from '../../../state/supportedFeatures';
 
 @observer
@@ -112,12 +112,9 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                 <Heading as="h3" mt="4">Permissions</Heading>
                 <Box>Below are all of the permissions assigned to this principal.</Box>
 
-                {Features.rolesApi && <>
-                    <Heading as="h3" mt="4">Assignments</Heading>
-                    <UserPermissionAssignments userName={userName} />
-                    <PermissionAssignemntsDetails userName={userName} />
-                </>
-                }
+                <Heading as="h3" mt="4">Assignments</Heading>
+                <UserRoleTags userName={userName} />
+                <UserPermissionDetails userName={userName} />
 
             </PageContent>
         </>
@@ -129,16 +126,18 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 export default UserDetailsPage;
 
 
-const PermissionAssignemntsDetails = observer((p: {
+const UserPermissionDetails = observer((p: {
     userName: string;
 }) => {
     // Get all roles and ACLs matching this user
     // For each "AclPrincipalGroup" show its name, then a table that shows the details
     const roles: string[] = [];
-    for (const [roleName, members] of rolesApi.roleMembers) {
-        if (!members.any(m => m.name == p.userName))
-            continue; // this role doesn't contain our user
-        roles.push(roleName);
+    if (Features.rolesApi) {
+        for (const [roleName, members] of rolesApi.roleMembers) {
+            if (!members.any(m => m.name == p.userName))
+                continue; // this role doesn't contain our user
+            roles.push(roleName);
+        }
     }
 
     // Get all AclPrincipal groups, find the ones that apply
@@ -148,10 +147,16 @@ const PermissionAssignemntsDetails = observer((p: {
         return false;
     });
 
-    console.log('groups: ' + groups.map(g => g.principalName + ' (' + g.principalType + ')').join(', '));
+    return <PrincipalGroupTables groups={groups} />
+});
 
+
+// Renders an array of AclPrincipalGroup as multiple tabls below each other
+const PrincipalGroupTables = observer((p: {
+    groups: AclPrincipalGroup[]
+}) => {
     return <>
-        {groups.map(r =>
+        {p.groups.map(r =>
             <>
                 {
                     r.principalType == 'RedpandaRole'
@@ -163,6 +168,7 @@ const PermissionAssignemntsDetails = observer((p: {
         )}
     </>
 });
+
 
 export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
 

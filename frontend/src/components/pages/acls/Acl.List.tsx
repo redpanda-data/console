@@ -66,7 +66,7 @@ import { Link as ChakraLink } from '@chakra-ui/react';
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
-import { UserPermissionAssignments } from './UserPermissionAssignments';
+import { UserRoleTags } from './UserPermissionAssignments';
 
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -241,7 +241,7 @@ const PermissionsListTab = observer(() => {
                             header: 'Permissions',
                             cell: (ctx) => {
                                 const entry = ctx.row.original;
-                                return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
+                                return <UserRoleTags userName={entry.name} showMaxItems={2} />
                             }
                         },
                     ]}
@@ -321,7 +321,7 @@ const UsersTab = observer(() => {
                             header: 'Permissions',
                             cell: (ctx) => {
                                 const entry = ctx.row.original;
-                                return <UserPermissionAssignments userName={entry.name} showMaxItems={2} />
+                                return <UserRoleTags userName={entry.name} showMaxItems={2} />
                             }
                         },
                         {
