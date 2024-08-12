@@ -15,54 +15,61 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { Link as ChakraLink, Tag } from '@chakra-ui/react';
 import React from 'react';
 import { Box, Flex, Text } from '@redpanda-data/ui';
+import { Features } from '../../../state/supportedFeatures';
 
-export const UserPermissionAssignments = observer(({
+export const UserRoleTags = observer(({
     userName,
     showMaxItems = Infinity
 }: {
     userName: string;
     showMaxItems?: number;
 }) => {
-    // Get all roles, and ACL sets that apply to this user
-    const roles = [];
-    for (const [roleName, members] of rolesApi.roleMembers) {
-        if (!members.any(m => m.name == userName)) {
-            continue; // this role doesn't contain our user
-        }
-        roles.push(roleName);
-    }
-
     const elements: JSX.Element[] = [];
+    let numberOfVisibleElements = 0;
+    let numberOfHiddenElements = 0;
 
-    const numberOfVisibleElements = Math.min(roles.length, showMaxItems);
-    const numberOfHiddenElements = showMaxItems === Infinity ? 0 : Math.max(0, roles.length - showMaxItems);
+    if (Features.rolesApi) {
+        // Get all roles, and ACL sets that apply to this user
+        const roles = [];
+        for (const [roleName, members] of rolesApi.roleMembers) {
+            if (!members.any(m => m.name == userName)) {
+                continue; // this role doesn't contain our user
+            }
+            roles.push(roleName);
+        }
 
-    for (let i = 0; i < numberOfVisibleElements; i++) {
-        const r = roles[i];
-        elements.push(
-            <React.Fragment key={r}>
+        numberOfVisibleElements = Math.min(roles.length, showMaxItems);
+        numberOfHiddenElements = showMaxItems === Infinity ? 0 : Math.max(0, roles.length - showMaxItems);
 
-                <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`} textDecoration="none">
-                    <Tag>
-                        {r}
-                    </Tag>
-                </ChakraLink>
-            </React.Fragment>
-        );
+        for (let i = 0; i < numberOfVisibleElements; i++) {
+            const r = roles[i];
+            elements.push(
+                <React.Fragment key={r}>
 
-        if (i < numberOfVisibleElements - 1)
-            elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
+                    <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`} textDecoration="none">
+                        <Tag>
+                            {r}
+                        </Tag>
+                    </ChakraLink>
+                </React.Fragment>
+            );
+
+            if (i < numberOfVisibleElements - 1)
+                elements.push(<Box whiteSpace="pre" userSelect="none">{', '}</Box>);
+        }
+
+        if (elements.length == 0)
+            elements.push(<Flex>No roles</Flex>);
+        if (numberOfHiddenElements > 0)
+            elements.push(<Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>);
     }
-
-    if (elements.length == 0)
-        elements.push(<Flex>No roles</Flex>);
-
-    if (numberOfHiddenElements > 0)
-        elements.push(<Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>);
 
     const hasAcls = api.ACLs?.aclResources.any(r => r.acls.any(a => a.principal == 'User:' + userName));
-    if (hasAcls)
-        elements.push(<Flex>, has ACLs</Flex>)
+    if (hasAcls) {
+        if (elements.length > 0)
+            elements.push(<Flex>,{' '}</Flex>);
+        elements.push(<Flex>has ACLs</Flex>)
+    }
 
     return <Flex>{elements}</Flex>;
 });
