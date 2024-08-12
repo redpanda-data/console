@@ -74,10 +74,15 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
 
         const isServiceAccount = api.serviceAccounts.users.includes(userName);
 
+        // If its an "inferred" user, and we can't change roles, then there's no way to edit
+        // - Can't change name because its an inferred user
+        // - Can't change roles because the API is not available
+        const disableEdit = !isServiceAccount && !Features.rolesApi;
+
         return <>
             <PageContent>
                 <Flex gap="4">
-                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/users/${userName}/edit`)}>
+                    <Button variant="outline" onClick={() => appGlobal.history.push(`/security/users/${userName}/edit`)} isDisabled={disableEdit}>
                         Edit
                     </Button>
                     {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
@@ -100,7 +105,7 @@ class UserDetailsPage extends PageComponent<{ userName: string; }> {
                                 appGlobal.history.push('/security/users/');
                             }}
                             buttonEl={
-                                <Button variant="outline-delete">
+                                <Button variant="outline-delete" isDisabled={!isServiceAccount}>
                                     Delete
                                 </Button>
                             }
