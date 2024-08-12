@@ -176,7 +176,6 @@ const routesIgnoredInServerless = [
     '/quotas',
     '/reassign-partitions',
     '/admin',
-    '/connect-clusters',
 ];
 
 export const embeddedAvailableRoutesObservable = observable({
