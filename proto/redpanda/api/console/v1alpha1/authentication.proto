@@ -53,8 +53,8 @@ enum AuthenticationMethod {
   AUTHENTICATION_METHOD_UNSPECIFIED = 0;
   // The authentication method using OpenID Connect.
   AUTHENTICATION_METHOD_OIDC = 1;
-  // The authentication method using SASL-SCRAM.
-  AUTHENTICATION_METHOD_SASL_SCRAM = 2;
+  // The authentication method using plain username/password.
+  AUTHENTICATION_METHOD_BASIC = 2;
   // The authentication method for Redpanda Cloud.
   AUTHENTICATION_METHOD_REDPANDA_CLOUD = 3;
 }

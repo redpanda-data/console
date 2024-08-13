@@ -57,11 +57,11 @@ export enum AuthenticationMethod {
   OIDC = 1,
 
   /**
-   * The authentication method using SASL-SCRAM.
+   * The authentication method using plain username/password.
    *
-   * @generated from enum value: AUTHENTICATION_METHOD_SASL_SCRAM = 2;
+   * @generated from enum value: AUTHENTICATION_METHOD_BASIC = 2;
    */
-  SASL_SCRAM = 2,
+  BASIC = 2,
 
   /**
    * The authentication method for Redpanda Cloud.
@@ -74,7 +74,7 @@ export enum AuthenticationMethod {
 proto3.util.setEnumType(AuthenticationMethod, "redpanda.api.console.v1alpha1.AuthenticationMethod", [
   { no: 0, name: "AUTHENTICATION_METHOD_UNSPECIFIED" },
   { no: 1, name: "AUTHENTICATION_METHOD_OIDC" },
-  { no: 2, name: "AUTHENTICATION_METHOD_SASL_SCRAM" },
+  { no: 2, name: "AUTHENTICATION_METHOD_BASIC" },
   { no: 3, name: "AUTHENTICATION_METHOD_REDPANDA_CLOUD" },
 ]);
 
