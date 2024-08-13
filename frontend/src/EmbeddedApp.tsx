@@ -25,7 +25,7 @@ import './assets/fonts/kumbh-sans.css';
 
 import { appGlobal } from './state/appGlobal';
 
-import { SetConfigArguments, setup, embeddedAvailableRoutesObservable } from './config';
+import { SetConfigArguments, setup } from './config';
 import HistorySetter from './components/misc/HistorySetter';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
@@ -57,11 +57,6 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
     useEffect(() => {
         const shellNavigationHandler = (event: Event) => {
             const pathname = (event as CustomEvent<string>).detail;
-            const { pathname: currentPathname } = appGlobal.history.location;
-            if (currentPathname === pathname || !embeddedAvailableRoutesObservable.routes.some((r) => r.path === pathname)) {
-                return;
-            }
-
             appGlobal.history.push(pathname);
         };
 
