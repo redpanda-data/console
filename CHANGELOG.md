@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.7.1 / 2024-08-12
+
+- [IMPROVEMENT] Improve descriptions and columns on Users, ACLs, Roles and Permissions List tab on the security page.
+- [BUGFIX] List all ACL and role permissions in user details page. It used to be permissions inherited via roles only.
+- [BUGFIX] Selecting a specific deserializer shows a proper error message if it fails.
+- [BUGFIX] Fix deserializer for the `__consumer_offsets` topic.
+
 ## v2.7.0 / 2024-08-01
 
 - [FEATURE] Add support for managing data transforms in Redpanda.
