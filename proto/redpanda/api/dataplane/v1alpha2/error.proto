@@ -25,4 +25,7 @@ enum Reason {
 
   // Cloud provider's secret store manager error.
   REASON_SECRET_STORE_ERROR = 7;
+
+  // Invalid pipeline configuration.
+  REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION = 8;
 }

@@ -26,15 +26,16 @@ import AclList from './Tab.Acl/AclList';
 import { TopicConfiguration } from './Tab.Config';
 import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
-import { TopicMessageView } from './Tab.Messages';
+import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Code, Popover, Result, Tooltip } from '@redpanda-data/ui';
+import { Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
+import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
@@ -100,7 +101,8 @@ class TopicTab {
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
-    @observable deleteRecordsModalVisible = false
+    @observable deleteRecordsModalAlive = false;
+
     topicTabs: TopicTab[];
 
     constructor(props: any) {
@@ -251,6 +253,20 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         <TopicQuickInfoStatistic topic={topic} />
                     )}
 
+                    <Flex mb={4} gap={2}>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                              appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                          }}
+                        >
+                            Produce Record
+                        </Button>
+                        {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions ?? [], () => {
+                            return (this.deleteRecordsModalAlive = true);
+                        })}
+                    </Flex>
+
                     {/* Tabs:  Messages, Configuration */}
                     <Section>
                         <Tabs
@@ -266,6 +282,22 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         />
                     </Section>
                 </PageContent>
+                {
+                  this.deleteRecordsModalAlive
+                  && (
+                    <DeleteRecordsModal
+                      topic={topic}
+                      visible
+                      onCancel={() => this.deleteRecordsModalAlive = false}
+                      onFinish={() => {
+                          this.deleteRecordsModalAlive = false;
+                          this.refreshData(true);
+                          appGlobal.searchMessagesFunc?.('manual')
+                      }}
+                      afterClose={() => this.deleteRecordsModalAlive = false}
+                    />
+                  )
+                }
             </>
         );
     }

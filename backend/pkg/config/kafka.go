@@ -26,7 +26,7 @@ type Kafka struct {
 	Protobuf    Proto   `yaml:"protobuf"`
 	MessagePack Msgpack `yaml:"messagePack"`
 
-	TLS  KafkaTLS  `yaml:"tls"`
+	TLS  TLS       `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
 
 	// Startup contains relevant configurations such as connection max retries

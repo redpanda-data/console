@@ -20,7 +20,8 @@ import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, crea
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
-import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
+// import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
+import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 
 declare const __webpack_public_path__: string;
@@ -67,7 +68,7 @@ interface Config {
     restBasePath: string;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
-    pipelinesClient?: PromiseClient<typeof RedpandaConnectService>;
+    pipelinesClient?: PromiseClient<typeof PipelineService>;
     transformsClient?: PromiseClient<typeof TransformService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
@@ -102,7 +103,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
 
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
-    const pipelinesGrpcClient = createPromiseClient(RedpandaConnectService, transport);
+    const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
     const transformClient = createPromiseClient(TransformService, transport);
     Object.assign(config, {
         jwt,

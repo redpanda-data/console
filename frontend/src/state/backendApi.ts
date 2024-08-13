@@ -69,7 +69,6 @@ import {
     GroupDescription,
     isApiError,
     KafkaConnectors,
-    OverviewNewsEntry,
     PartialTopicConfigsResponse,
     Partition,
     PartitionReassignmentRequest,
@@ -120,8 +119,8 @@ import { CompressionType as ProtoCompressionType, PayloadEncoding } from '../pro
 import { PublishMessageRequest, PublishMessageResponse } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
-import { LintConfigResponse } from '../protogen/redpanda/api/console/v1alpha1/rp_connect_pb';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -294,7 +293,6 @@ const apiStore = {
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
     licenses: null as (RedpandaLicense[] | null),
-    news: null as OverviewNewsEntry[] | null,
 
     clusterOverview: null as ClusterOverview | null,
     brokers: null as BrokerWithConfigAndStorage[] | null,
@@ -701,21 +699,6 @@ const apiStore = {
                 this.brokers = v;
             }, addError);
     },
-
-    refreshNews(force?: boolean) {
-        cachedApiRequest<OverviewNewsEntry[]>('https://resources.redpanda.com/rp-console.json', force)
-            .then(v => this.news = v, err => {
-                this.news = [
-                    {
-                        title: 'Unable to fetch news, please try again later',
-                        intendedAudience: 'all',
-                    }
-                ];
-
-                console.error('Unable to fetch news entries, please try again later', { error: err })
-            });
-    },
-
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force)
@@ -1646,47 +1629,83 @@ export const rolesApi = observable({
 });
 
 export const pipelinesApi = observable({
-    // pipelines: undefined as undefined | ConnectPipeline[],
+    pipelines: undefined as undefined | Pipeline[],
 
-    async lintConfig(config: string): Promise<LintConfigResponse> {
-        const client = appConfig.pipelinesClient;
-        if (!client) throw new Error('pipelines client is not initialized');
-
-        const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
-        return r;
-    },
-
-    async refreshPipelines(_force: boolean): Promise<void> {
-
-        // todo: caching by default, if force=true, ignore time limit on cache
-
-        /*         const client = appConfig.pipelinesClient;
-                if (!client) throw new Error('pipelines client is not initialized');
-
-                const pipelines = [];
-
-                let nextPageToken = '';
-                while (true) {
-                    const res = await client.listConnectPipelines({ pageSize: 500, pageToken: nextPageToken });
-
-                    pipelines.push(...res.pipelines);
-
-                    if (!res.nextPageToken || res.nextPageToken.length == 0)
-                        break;
-                    nextPageToken = res.nextPageToken;
-                }
-
-                this.pipelines = pipelines; */
-    },
-
-    // async refreshPipelineDetails(name: string): Promise<void> {
+    // async lintConfig(config: string): Promise<LintConfigResponse> {
     //     const client = appConfig.pipelinesClient;
     //     if (!client) throw new Error('pipelines client is not initialized');
     //
-    //     const pipelineDetails = await client.getConnectPipeline({ name });
-    //     pipelineDetails.pipeline?.config
+    //     const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
+    //     return r;
     // },
 
+    async refreshPipelines(_force: boolean): Promise<void> {
+
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        const pipelines = [];
+
+        let nextPageToken = '';
+        while (true) {
+            const res = await client.listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } });
+            const response = res.response;
+            if (!response) break;
+
+            pipelines.push(...response.pipelines);
+
+            if (!response.nextPageToken || response.nextPageToken.length == 0)
+                break;
+            nextPageToken = response.nextPageToken;
+        }
+
+        this.pipelines = pipelines;
+    },
+
+    async deletePipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.deletePipeline({ request: { id: id } });
+    },
+    async createPipeline(pipeline: PipelineCreate) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.createPipeline({ request: { pipeline } });
+    },
+    async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        // https://google.aip.dev/161
+        // update mask is an array of strings containing "field names" of what gets updated
+        // known field names are the "generated from" of PipelineUpdate, for example "display_name", "config_yaml", ...
+        const updates = [];
+        if (pipelineUpdate.configYaml) updates.push('config_yaml');
+        if (pipelineUpdate.description) updates.push('description');
+        if (pipelineUpdate.displayName) updates.push('display_name');
+
+        await client.updatePipeline({
+            request: {
+                id, pipeline: pipelineUpdate, updateMask: {
+                    paths: updates
+                }
+            }
+        });
+    },
+    async startPipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.startPipeline({ request: { id } });
+    },
+    async stopPipeline(id: string) {
+        const client = appConfig.pipelinesClient;
+        if (!client) throw new Error('pipelines client is not initialized');
+
+        await client.stopPipeline({ request: { id } });
+    },
 });
 
 

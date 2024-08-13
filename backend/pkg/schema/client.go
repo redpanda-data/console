@@ -11,12 +11,8 @@ package schema
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -64,52 +60,13 @@ func newClient(cfg config.Schema) (*Client, error) {
 		client = client.SetAuthToken(cfg.BearerToken)
 	}
 
-	// Configure Client Certificate transport
-	var caCertPool *x509.CertPool
 	if cfg.TLS.Enabled {
-		if cfg.TLS.CaFilepath != "" {
-			ca, err := os.ReadFile(cfg.TLS.CaFilepath)
-			if err != nil {
-				return nil, err
-			}
-			caCertPool = x509.NewCertPool()
-			isSuccessful := caCertPool.AppendCertsFromPEM(ca)
-			if !isSuccessful {
-				return nil, fmt.Errorf("failed to append ca file to cert pool, is this a valid PEM format?")
-			}
+		tlsConfig, err := cfg.TLS.TLSConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create client tls config: %w", err)
 		}
 
-		// If configured load TLS cert & key - Mutual TLS
-		var certificates []tls.Certificate
-		if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
-			cert, err := os.ReadFile(cfg.TLS.CertFilepath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
-			}
-
-			privateKey, err := os.ReadFile(cfg.TLS.KeyFilepath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
-			}
-
-			pemBlock, _ := pem.Decode(privateKey)
-			if pemBlock == nil {
-				return nil, fmt.Errorf("no valid private key found")
-			}
-
-			tlsCert, err := tls.X509KeyPair(cert, privateKey)
-			if err != nil {
-				return nil, fmt.Errorf("failed to load certificate pair for schema registry client: %w", err)
-			}
-			certificates = []tls.Certificate{tlsCert}
-		}
-
-		transport := &http.Transport{TLSClientConfig: &tls.Config{
-			//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
-			InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify,
-			Certificates:       certificates,
-			RootCAs:            caCertPool,
-		}}
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
 
 		client.SetTransport(transport)
 	}

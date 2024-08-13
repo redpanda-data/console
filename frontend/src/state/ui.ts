@@ -123,7 +123,7 @@ export class TopicDetailsSettings {
 
     @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
 
-    @observable dynamicFilters: Array<'partition' | 'keyDeserializer' | 'valueDeserializer' | 'search'> = [];
+    @observable dynamicFilters: Array<'partition'> = [];
 
     @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
@@ -234,6 +234,11 @@ const defaultUiSettings = {
         quickSearch: ''
     },
 
+    pipelinesDetails: {
+        logsQuickSearch: '',
+        sorting: [] as SortingState,
+    },
+
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',
@@ -251,6 +256,10 @@ const defaultUiSettings = {
         },
         rolesTab: {
             quickSearch: '',
+            pageSize: 20,
+        },
+        permissionsTab: {
+            quickSearch: '' ,
             pageSize: 20,
         },
 
@@ -344,7 +353,7 @@ if (storedSettingsJson) {
         ts.previewColumnFields = ts.previewColumnFields ?? [];
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
 
-        if(!ts.dynamicFilters) {
+        if (!ts.dynamicFilters) {
             ts.dynamicFilters = [];
         }
     }

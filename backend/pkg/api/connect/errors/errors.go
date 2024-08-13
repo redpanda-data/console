@@ -11,7 +11,11 @@
 package errors
 
 import (
+	"errors"
+
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
+	"github.com/cloudhut/common/rest"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/proto"
 )
@@ -69,4 +73,22 @@ func NewErrorInfo(reason string, metadata ...KeyVal) *errdetails.ErrorInfo {
 		Domain:   DomainDataplane,
 		Metadata: md,
 	}
+}
+
+// NewPermissionDeniedConnectError returns new permission denied error based on REST Error,
+// is allowed flag and a default error message
+func NewPermissionDeniedConnectError(isAllowed bool, restErr *rest.Error, defaultErrMessage string) error {
+	if restErr != nil || !isAllowed {
+		err := errors.New(defaultErrMessage)
+		if restErr != nil && restErr.Err != nil {
+			err = restErr.Err
+		}
+		return NewConnectError(
+			connect.CodePermissionDenied,
+			err,
+			NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String()),
+		)
+	}
+
+	return nil
 }
