@@ -141,22 +141,6 @@ func (s *Service) Start() error {
 	return s.ProtoService.Start()
 }
 
-// NewKgoClient creates a new Kafka client based on the stored Kafka configuration.
-func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
-	kgoOpts, err := NewKgoConfig(&s.Config.Kafka, s.Logger, s.Config.MetricsNamespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
-	}
-
-	kgoOpts = append(kgoOpts, additionalOpts...)
-	kafkaClient, err := kgo.NewClient(kgoOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka client: %w", err)
-	}
-
-	return kafkaClient, nil
-}
-
 // testConnection tries to fetch Broker metadata and prints some information if connection succeeds. An error will be
 // returned if connecting fails.
 func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duration) error {

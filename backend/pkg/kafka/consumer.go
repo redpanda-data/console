@@ -107,7 +107,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
 	}
 
-	client, err := s.NewKgoClient(kgo.ConsumePartitions(partitionOffsets))
+	opts := append(s.KafkaClient.Opts(), kgo.ConsumePartitions(partitionOffsets))
+	client, err := kgo.NewClient(opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create new kafka client: %w", err)
 	}

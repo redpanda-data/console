@@ -12,6 +12,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -58,7 +59,8 @@ func (s *Service) ProduceRecords(
 		additionalKgoOpts = append(additionalKgoOpts, kgo.TransactionalID(uuid.New().String()))
 	}
 
-	client, err := s.NewKgoClient(additionalKgoOpts...)
+	opts := slices.Concat(s.KafkaClient.Opts(), additionalKgoOpts)
+	client, err := kgo.NewClient(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new kafka client: %w", err)
 	}
