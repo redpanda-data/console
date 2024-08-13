@@ -31,13 +31,24 @@ const (
 
 // KafkaSASL for Kafka client
 type KafkaSASL struct {
-	Enabled      bool                 `yaml:"enabled"`
-	Username     string               `yaml:"username"`
-	Password     string               `yaml:"password"`
-	Mechanism    string               `yaml:"mechanism"`
-	OAUth        KafkaSASLOAuthBearer `yaml:"oauth"`
-	GSSAPIConfig KafkaSASLGSSAPI      `yaml:"gssapi"`
-	AWSMskIam    KafkaSASLAwsMskIam   `yaml:"awsMskIam"`
+	Enabled bool `yaml:"enabled"`
+	// ImpersonateUser enables an enterprise feature where the
+	// authentication credentials used by the user to log into
+	// the Web UI are impersonated for connections to upstream
+	// services like Kafka, Schema Registry, and Redpanda Admin API.
+	// When enabled, the user's Web UI authentication method
+	// (e.g., OIDC or Basic) determines the authentication mechanism
+	// used for these services. The user’s identity must exist
+	// in the upstream service and have appropriate permissions
+	// for successful authentication. If this is enabled, other
+	// login credentials cannot be set.
+	ImpersonateUser bool                 `yaml:"impersonateUser"`
+	Username        string               `yaml:"username"`
+	Password        string               `yaml:"password"`
+	Mechanism       string               `yaml:"mechanism"`
+	OAUth           KafkaSASLOAuthBearer `yaml:"oauth"`
+	GSSAPIConfig    KafkaSASLGSSAPI      `yaml:"gssapi"`
+	AWSMskIam       KafkaSASLAwsMskIam   `yaml:"awsMskIam"`
 }
 
 // RegisterFlags for all sensitive Kafka SASL configs.
