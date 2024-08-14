@@ -468,6 +468,22 @@ export class ConnectorPropertiesStore {
 
         for (const g of this.allGroups)
             for (const p of g.properties) {
+
+                if (!p.entry.definition.required) {
+                    if (p.value === p.entry.definition.default_value) {
+                        // let's ignore the default variable if the value is the same as initially rendered
+                        // otherwise, user might want to set it back to default
+                        if(p.value === p.entry.value.value) {
+                            continue;
+                        }
+                        // let's ignore the variable if the original value is null
+                        if(p.entry.value.value === null) {
+                            continue;
+                        }
+                    }
+                    if (p.value === false && !p.entry.definition.default_value) continue; // skip boolean values that default to false
+                }
+
                 config[p.name] = p.value;
             }
         return config;
