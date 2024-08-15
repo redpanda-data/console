@@ -358,7 +358,7 @@ function prettyLicenseType(type: string) {
     if (type == 'free_trial')
         return 'Free Trial';
     if (type == 'open_source')
-        return 'Open Source';
+        return 'Community';
     if (type == 'enterprise')
         return 'Enterprise';
     return type;
