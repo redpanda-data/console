@@ -411,7 +411,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
                     />
                 </Box>
                 <Flex fontSize="sm" fontWeight="bold">
-                    <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
+                    <div>{this.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}</div>
                     <Text ml="auto" pl="2em">{this.props.progressText}</Text>
                 </Flex>
                 {(this.props.bytesConsumed && this.props.messagesConsumed) &&
