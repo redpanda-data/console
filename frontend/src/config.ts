@@ -198,7 +198,6 @@ export const embeddedAvailableRoutesObservable = observable({
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     const config = setConfig(setupArgs);
 
-    console.log('setting monaco loader config in setup')
     // Tell monaco editor where to load dependencies from
     loader.config({
         paths: {
@@ -206,10 +205,8 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         },
     });
 
+    // Ensure yaml workers are being loaded locally as well
     loader.init().then(async (monaco) => {
-        console.log('setup -> loader.init -> then');
-
-
         window.MonacoEnvironment = {
             baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
 
