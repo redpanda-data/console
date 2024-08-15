@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { EditorProps, Monaco, loader } from '@monaco-editor/react';
+import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
 import { editor } from 'monaco-editor';
-import { MonacoYamlOptions, configureMonacoYaml } from 'monaco-yaml';
+import { MonacoYamlOptions } from 'monaco-yaml';
 import benthosSchema from '../../assets/rp-connect-schema.json';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
@@ -54,7 +54,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
     }
 } as const;
 
-const monacoYamlOptions = {
+export const monacoYamlOptions = {
     enableSchemaRequest: false,
     format: true,
     completion: true,
@@ -75,38 +75,6 @@ const monacoYamlOptions = {
         }
     ]
 } as MonacoYamlOptions;
-
-loader.init().then(async (monaco) => {
-    window.MonacoEnvironment = {
-        getWorker(moduleId, label) {
-            console.log(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
-            switch (label) {
-                case 'editorWorkerService':
-                    console.log('returning normal worker service...', { importMetaUrl: import.meta.url });
-                    return new Worker(
-                        new URL(
-                            'monaco-editor/esm/vs/editor/editor.worker',
-                            import.meta.url
-                        )
-                    );
-                case 'yaml':
-                    console.log('returning yaml worker service...', { importMetaUrl: import.meta.url });
-                    // return new yamlWorker();
-                    return new Worker(
-                        new URL(
-                            'monaco-yaml/yaml.worker',
-                            import.meta.url
-                        )
-                    );
-
-                default:
-                    throw new Error(`Unknown label ${label}`);
-            }
-        },
-    };
-    configureMonacoYaml(monaco, monacoYamlOptions);
-});
-
 
 // const linter = {
 //     editor: undefined as undefined | IStandaloneCodeEditor,
@@ -159,9 +127,12 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     const options = Object.assign({}, defaultOptions, givenOptions ?? {});
 
     return <Editor
+
         loading={<LoadingPlaceholder />}
         wrapperProps={{ className: 'kowlEditor', style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' } }}
         defaultValue={''}
+        defaultLanguage="yaml"
+
         options={options}
         {...rest}
 
