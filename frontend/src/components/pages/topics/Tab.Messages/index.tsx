@@ -1505,6 +1505,8 @@ const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
     const data: { [k: string]: any } = {
+        'Partition': msg.partitionID,
+        'Offset': numberToThousandsString(msg.offset),
         'Key': msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
         'Value': msg.value.isPayloadNull ? 'Null' : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
