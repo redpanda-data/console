@@ -10,13 +10,14 @@
  */
 
 import { useEffect } from 'react';
-import { observer } from 'mobx-react';
+import { observer, useLocalObservable } from 'mobx-react';
 import { observable } from 'mobx';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
 import {
   Button,
   Flex,
+  Input,
   Modal,
   ModalBody,
   ModalContent,
@@ -27,7 +28,11 @@ import {
   Text
 } from '@redpanda-data/ui';
 import { config as appConfig } from '../../config';
-import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import {
+  AuthenticationMethod,
+  LoginSaslScramRequest,
+  SASLMechanism
+} from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 
 
 // const iconMap = new Map([
@@ -46,13 +51,66 @@ const authenticationApi = observable({
 
     const { methods } = await client.listAuthenticationMethods({});
     this.methods = methods;
+  },
+
+  async loginWithUsername({username, password}: {username: string, password: string}): Promise<void> {
+    const client = appConfig.authenticationClient;
+    if (!client) throw new Error('security client is not initialized');
+
+    const response = await client.loginSaslScram({
+      username,
+      password,
+      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+    } as LoginSaslScramRequest)
+
+    console.log({response});
   }
 })
 
-const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.ReactElement>> = {
-  [AuthenticationMethod.BASIC]: <div>Basic</div>,
-  [AuthenticationMethod.OIDC]: <div>
-    <Button variant="brand" as="a" href="/auth/login/oidc">
+const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
+  [AuthenticationMethod.BASIC]: observer(() => {
+    const formState = useLocalObservable(() => ({
+      username: '',
+      password: '',
+      isLoading: false,
+      setUsername(value: string) {
+        this.username = value;
+      },
+      setPassword(value: string) {
+        this.password = value;
+      },
+      async handleSubmit() {
+        formState.isLoading = true
+        await authenticationApi.loginWithUsername({username: formState.username, password: formState.password});
+        // Reset the form or handle success/failure here
+        formState.isLoading = false
+      },
+    }));
+
+    return <Flex flexDirection="column" gap={2}><Input
+      value={formState.username}
+      data-testid="auth-username-input"
+      disabled={formState.isLoading}
+      onChange={(e) => formState.setUsername(e.target.value)}
+      placeholder="Username"
+    />
+    <Input
+      type="password"
+      data-testid="auth-password-input"
+      disabled={formState.isLoading}
+      value={formState.password}
+      onChange={(e) => formState.setPassword(e.target.value)}
+      placeholder="Password"
+    />
+    <Button
+      variant="brand"
+      onClick={formState.handleSubmit}
+    >
+      Login
+    </Button></Flex>;
+  }),
+  [AuthenticationMethod.OIDC]: () => <div>
+    <Button variant="brand" as="a" href={`${appConfig.restBasePath}/auth/login/oidc`} width="full">
       Login with SSO
     </Button>
   </div>
@@ -63,115 +121,99 @@ const Login = observer(() => {
   useEffect(() => {
     authenticationApi.refreshAuthenticationMethods();
   }, []);
+  return (
+    <div className="login">
+      <Modal
+        isOpen={uiState.loginError!=null}
+        onClose={() => {
+          uiState.loginError = null;
+        }}
+      >
+        <ModalOverlay/>
+        <ModalContent>
+          <ModalHeader>Access Denied</ModalHeader>
+          <ModalBody>
+            <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button
+              data-testid="login-error__ok-button"
+              onClick={() => {
+                uiState.loginError = null;
+              }}>
+              OK
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-  // @observable providersResponse: ProvidersResponse | null = null;
-    // @observable providersError: string | null = null;
+      <div className="loginContainer">
+        <div className="loginLeft">
+          <Flex
+            className="loginLogo"
+            placeItems="center"
+            height={15}
+            mt={8}
+            mb={16}
+          >
+            <img
+              src={SvgLogo}
+              style={{height: '36px'}}
+              alt="Redpanda Console Logo"
+            />
+          </Flex>
 
-    // async componentDidMount() {
-    //     try {
-    //         this.providersResponse = await getProviders();
-    //     } catch (err) {
-    //         this.providersResponse = null;
-    //         this.providersError = (err as Error)?.message ?? String(err);
-    //     }
-    // }
+          <Stack spacing="2">
+            {/*<Text fontSize="18px" fontWeight="600" >{this.providersResponse?.loginTitle ?? 'Howdy!'}</Text>*/}
+            <Text fontSize="lg">Sign in with an OAuth provider to&nbsp;continue</Text>
+          </Stack>
+        </div>
 
-        // const allProviders = this.providersResponse?.providers
-        //     .slice()
-        //     .sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-        // const providerButtons = allProviders?.filter(x => x.authenticationMethod != 'PLAIN_CREDENTIALS');
-        // const plainLoginProvider = allProviders?.first(x => x.authenticationMethod == 'PLAIN_CREDENTIALS');
-
-
-        return (
-          <div className="login">
-              <Modal
-                  isOpen={uiState.loginError != null}
-                  onClose={() => {
-                      uiState.loginError = null;
-                  }}
-              >
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>Access Denied</ModalHeader>
-                    <ModalBody>
-                        <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
-                    </ModalBody>
-                    <ModalFooter gap={2}>
-                        <Button
-                            data-testid="login-error__ok-button"
-                            onClick={() => {
-                              uiState.loginError = null;
-                        }}>
-                           OK
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-
-            <div className="loginContainer">
-              <div className="loginLeft">
-                <Flex
-                  className="loginLogo"
-                  placeItems="center"
-                  height={15}
-                  mt={8}
-                  mb={16}
-                >
-                  <img
-                    src={SvgLogo}
-                    style={{ height: '36px' }}
-                    alt="Redpanda Console Logo"
-                  />
+        <div className="loginRight">
+          <div className="loginContainerRight">
+            <div style={{marginTop: 'auto'}}>
+              <div style={{fontSize: '18px', fontWeight: 600}}>
+                <span>Sign in to Redpanda Console</span>
+                <Flex margin="2rem auto" width={300} flexDirection="column" gap={4}>
+                  {authenticationApi.methods.map(method => {
+                    const AuthComponent = AUTH_ELEMENTS[method];
+                    return AuthComponent ? <div key={method}><AuthComponent/></div>:null;
+                  })}
                 </Flex>
-
-                <Stack spacing="2">
-                  {/*<Text fontSize="18px" fontWeight="600" >{this.providersResponse?.loginTitle ?? 'Howdy!'}</Text>*/}
-                  <Text fontSize="lg">Sign in with an OAuth provider to&nbsp;continue</Text>
-                </Stack>
               </div>
+              <Flex placeContent="center" placeItems="center" mt={4} gap={2}>
+                {/*{providerButtons?.map((p) => (*/}
+                {/*  <LoginProviderButton key={p.displayName} provider={p} />*/}
+                {/*)) ||*/}
+                {/*  (this.providersError && (*/}
+                {/*    <ProvidersError error={this.providersError} />*/}
+                {/*  )) || (*/}
+                {/*    <div*/}
+                {/*      style={{*/}
+                {/*        fontSize: '14px',*/}
+                {/*        marginTop: '32px',*/}
+                {/*        color: '#ddd',*/}
+                {/*      }}*/}
+                {/*    >*/}
+                {/*    <Spinner size="lg" />*/}
+                {/*      <br />*/}
+                {/*      Retreiving login method from backend...*/}
+                {/*    </div>*/}
+                {/*  )}*/}
+              </Flex>
+            </div>
 
-              <div className="loginRight">
-                <div className="loginContainerRight">
-                  <div style={{ marginTop: 'auto' }}>
-                    <div style={{ fontSize: '18px', fontWeight: 600 }}>
-                      <span>Sign in to Redpanda Console</span>
-                      {authenticationApi.methods.map(method => <div key={method}>{AUTH_ELEMENTS[method]}</div>)}
-                    </div>
-                    <Flex placeContent="center" placeItems="center" mt={4} gap={2}>
-                      {/*{providerButtons?.map((p) => (*/}
-                      {/*  <LoginProviderButton key={p.displayName} provider={p} />*/}
-                      {/*)) ||*/}
-                      {/*  (this.providersError && (*/}
-                      {/*    <ProvidersError error={this.providersError} />*/}
-                      {/*  )) || (*/}
-                      {/*    <div*/}
-                      {/*      style={{*/}
-                      {/*        fontSize: '14px',*/}
-                      {/*        marginTop: '32px',*/}
-                      {/*        color: '#ddd',*/}
-                      {/*      }}*/}
-                      {/*    >*/}
-                      {/*    <Spinner size="lg" />*/}
-                      {/*      <br />*/}
-                      {/*      Retreiving login method from backend...*/}
-                      {/*    </div>*/}
-                      {/*  )}*/}
-                    </Flex>
-                  </div>
+            {/*<PlainLoginBox provider={plainLoginProvider} />*/}
 
-                  {/*<PlainLoginBox provider={plainLoginProvider} />*/}
-
-                  <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>
-                    Copyright © {new Date().getFullYear()} Redpanda Data, Inc.
-                    All rights reserved.
-                  </div>
-                </div>
-              </div>
+            <div style={{marginTop: 'auto', fontWeight: 'normal'}}>
+              Copyright © {new Date().getFullYear()} Redpanda Data, Inc.
+              All rights reserved.
             </div>
           </div>
-      );
+        </div>
+      </div>
+    </div>
+  );
 })
 
 export default Login;
