@@ -411,7 +411,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                           setCurrentJSFilter(filter);
                                       }}
                                     >
-                                        Javascript Filter
+                                        JavaScript Filter
                                     </MenuItem>
                                 </MenuList>
                             </Menu>
