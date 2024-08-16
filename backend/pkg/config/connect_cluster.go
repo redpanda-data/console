@@ -23,10 +23,10 @@ type ConnectCluster struct {
 
 	// Authentication configuration
 	//
-	TLS      ConnectClusterTLS `yaml:"tls"`
-	Username string            `yaml:"username"`
-	Password string            `yaml:"password"`
-	Token    string            `yaml:"token"`
+	TLS      TLS    `yaml:"tls"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Token    string `yaml:"token"`
 }
 
 // RegisterFlagsWithPrefix registers all nested config flags.

@@ -23,7 +23,6 @@ type Servicer interface {
 	DeleteConsumerGroup(ctx context.Context, groupID string) error
 	GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error)
 	CreateACL(ctx context.Context, createReq kmsg.CreateACLsRequestCreation) *rest.Error
-	CreateKafkaClient(_ context.Context, additionalOpts ...kgo.Opt) (*kgo.Client, error)
 	CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (CreateTopicResponse, *rest.Error)
 	DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestFilter) (DeleteACLsResponse, *rest.Error)
 	DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error)

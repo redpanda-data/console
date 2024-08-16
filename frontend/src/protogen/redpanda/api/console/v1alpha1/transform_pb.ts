@@ -5,14 +5,14 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { DeleteTransformRequest as DeleteTransformRequest$1, DeleteTransformResponse as DeleteTransformResponse$1, GetTransformRequest as GetTransformRequest$1, GetTransformResponse as GetTransformResponse$1, ListTransformsRequest as ListTransformsRequest$1, ListTransformsResponse as ListTransformsResponse$1 } from "../../dataplane/v1alpha1/transform_pb";
+import { DeleteTransformRequest as DeleteTransformRequest$1, DeleteTransformResponse as DeleteTransformResponse$1, GetTransformRequest as GetTransformRequest$1, GetTransformResponse as GetTransformResponse$1, ListTransformsRequest as ListTransformsRequest$1, ListTransformsResponse as ListTransformsResponse$1 } from "../../dataplane/v1alpha2/transform_pb";
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.ListTransformsRequest
  */
 export class ListTransformsRequest extends Message<ListTransformsRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ListTransformsRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.ListTransformsRequest request = 1;
    */
   request?: ListTransformsRequest$1;
 
@@ -49,7 +49,7 @@ export class ListTransformsRequest extends Message<ListTransformsRequest> {
  */
 export class ListTransformsResponse extends Message<ListTransformsResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.ListTransformsResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.ListTransformsResponse response = 1;
    */
   response?: ListTransformsResponse$1;
 
@@ -86,7 +86,7 @@ export class ListTransformsResponse extends Message<ListTransformsResponse> {
  */
 export class GetTransformRequest extends Message<GetTransformRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.GetTransformRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetTransformRequest request = 1;
    */
   request?: GetTransformRequest$1;
 
@@ -123,7 +123,7 @@ export class GetTransformRequest extends Message<GetTransformRequest> {
  */
 export class GetTransformResponse extends Message<GetTransformResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.GetTransformResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetTransformResponse response = 1;
    */
   response?: GetTransformResponse$1;
 
@@ -160,7 +160,7 @@ export class GetTransformResponse extends Message<GetTransformResponse> {
  */
 export class DeleteTransformRequest extends Message<DeleteTransformRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.DeleteTransformRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.DeleteTransformRequest request = 1;
    */
   request?: DeleteTransformRequest$1;
 
@@ -197,7 +197,7 @@ export class DeleteTransformRequest extends Message<DeleteTransformRequest> {
  */
 export class DeleteTransformResponse extends Message<DeleteTransformResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.DeleteTransformResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.DeleteTransformResponse response = 1;
    */
   response?: DeleteTransformResponse$1;
 

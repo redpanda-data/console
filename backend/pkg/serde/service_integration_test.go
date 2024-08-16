@@ -116,7 +116,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	ctx := context.Background()
 
 	// redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda:v23.3.18")
-	redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda-nightly:latest")
+	redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda-unstable:v24.2.1-rc5")
 	require.NoError(err)
 
 	s.redpandaContainer = redpandaContainer
@@ -503,7 +503,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value properties
-		assert.Equal(PayloadEncoding(""), dr.Value.Encoding)
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
 		assert.Equal(false, dr.Value.IsPayloadNull)
 		assert.Equal(false, dr.Value.IsPayloadTooLarge)
 		assert.Equal(serializedOrder, dr.Value.OriginalPayload)
@@ -4024,8 +4024,6 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("json schema with reference", func(t *testing.T) {
-		t.Skip("JSON Schemas with references not supported in Redpanda Schema Registry")
-
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -4073,50 +4071,20 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			"required": [ "productId", "productName" ]
 		}`
 
-		fullSchema := `{
-			"$id": "https://example.com/product.schema.json",
-			"title": "Product",
-			"description": "A product from Acme's catalog",
-			"type": "object",
-			"properties": {
-			  "productId": {
-				"description": "The unique identifier for a product",
-				"type": "integer"
-			  },
-			  "productName": {
-				"description": "Name of the product",
-				"type": "string"
-			  },
-			  "price": {
-				"description": "The price of the product",
-				"type": "number",
-				"minimum": 0
-			  }
-			},
-			"required": [ "productId", "productName" ]
-		}`
-
-		ssFull, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
-			Schema: fullSchema,
-			Type:   sr.TypeJSON,
-		})
-		require.NoError(err)
-		require.NotNil(ssFull)
-
-		ssID, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssID, err := rcl.CreateSchema(context.Background(), "product_id.json", sr.Schema{
 			Schema: productIDSchema,
 			Type:   sr.TypeJSON,
 		})
 		require.NoError(err)
 		require.NotNil(ssID)
 
-		ssName, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssName, err := rcl.CreateSchema(context.Background(), "product_name.json", sr.Schema{
 			Schema: productNameSchema,
 			Type:   sr.TypeJSON,
 		})
 		require.NoError(err)
 
-		ssPrice, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssPrice, err := rcl.CreateSchema(context.Background(), "product_price.json", sr.Schema{
 			Schema: productPriceSchema,
 			Type:   sr.TypeJSON,
 		})
@@ -4173,7 +4141,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		var srSerde sr.Serde
 		srSerde.Register(
-			1000,
+			ss.ID,
 			&ProductRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
 				return json.Marshal(v.(*ProductRecord))
