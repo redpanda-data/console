@@ -137,37 +137,6 @@ proto3.util.setEnumType(Pipeline_State, "redpanda.api.dataplane.v1alpha2.Pipelin
 ]);
 
 /**
- * @generated from message redpanda.api.dataplane.v1alpha2.Pipeline.Spec
- */
-export class Pipeline_Spec extends Message<Pipeline_Spec> {
-  constructor(data?: PartialMessage<Pipeline_Spec>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha2.Pipeline.Spec";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Pipeline_Spec {
-    return new Pipeline_Spec().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Pipeline_Spec {
-    return new Pipeline_Spec().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Pipeline_Spec {
-    return new Pipeline_Spec().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Pipeline_Spec | PlainMessage<Pipeline_Spec> | undefined, b: Pipeline_Spec | PlainMessage<Pipeline_Spec> | undefined): boolean {
-    return proto3.util.equals(Pipeline_Spec, a, b);
-  }
-}
-
-/**
  * @generated from message redpanda.api.dataplane.v1alpha2.Pipeline.Resources
  */
 export class Pipeline_Resources extends Message<Pipeline_Resources> {

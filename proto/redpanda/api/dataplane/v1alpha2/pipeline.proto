@@ -42,8 +42,6 @@ message Pipeline {
   State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   Status status = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  message Spec {}
-
   message Resources {
     // memory_shares is a string specifying the amount of memory to allocate for
     // the pipeline.
