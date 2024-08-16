@@ -388,19 +388,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                         <Flex alignItems="flex-end">
                             <Menu>
-                                <MenuButton as={Button} variant="outline">
+                                <MenuButton as={Button} variant="outline" data-testid="add-topic-filter">
                                     Add filter
                                 </MenuButton>
                                 <MenuList>
                                     <MenuItem
-                                      icon={<MdOutlineLayers size="1.5rem" />}
+                                      data-testid="add-topic-filter-partition" icon={<MdOutlineLayers size="1.5rem" />}
                                       isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
                                       onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
                                     >
                                         Partition
                                     </MenuItem>
                                     <MenuDivider />
-                                    <MenuItem
+                                    <MenuItem data-testid="add-topic-filter-javascript"
                                       isDisabled={!canUseFilters}
                                       // TODO: "You don't have permissions to use search filters in this topic",
                                       // we need support for disabledReason in @redpanda-data/ui

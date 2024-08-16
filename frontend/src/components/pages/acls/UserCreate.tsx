@@ -180,7 +180,7 @@ const CreateUserModal = observer((p: {
                     isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
                     errorText={errorText}
                 >
-                    <Input
+                    <Input data-testid="create-user-name"
                         value={state.username}
                         onChange={(v) => (state.username = v.target.value)}
                         width="100%"
@@ -195,6 +195,7 @@ const CreateUserModal = observer((p: {
                     description="Must be at least 4 characters and should not exceed 64 characters."
                     showRequiredIndicator={true}
                     label="Password"
+                    data-testid="create-user-password"
                 >
                     <Flex direction="column" gap="2">
                         <Flex alignItems="center" gap="2">
@@ -326,7 +327,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
                     </Flex>
                 </Box>
 
-                <Box fontWeight="bold" data-testid="password">
+                <Box fontWeight="bold" data-testid="mechanism">
                     Mechanism
                 </Box>
                 <Box>

@@ -175,6 +175,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                     </Box>
 
                                     <Input
+                                        data-testid="principal-name"
                                         value={group.principalName}
                                         onChange={(e) => {
                                             if (e.target.value.includes(':')) {
@@ -272,7 +273,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 </ModalBody>
                 <ModalFooter gap={2}>
                     <Button variant="ghost" onClick={p.onClose}>Cancel</Button>
-                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid || noNameOrNameInUse}>OK</Button>
+                    <Button data-testid="ok-button" variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid || noNameOrNameInUse}>OK</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
@@ -325,7 +326,7 @@ export const ResourceACLsEditor = observer((p: {
                     <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
                 ) : (
                         <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid}>
-                            <InputGroup zIndex={1}>
+                            <InputGroup zIndex={1} data-testid={`${resourceName}-input-group`}>
                                 <InputLeftAddon padding="0px" width="124px">
                                     <SingleSelect<'Any' | 'Literal' | 'Prefixed'>
                                         options={[
@@ -356,6 +357,7 @@ export const ResourceACLsEditor = observer((p: {
                                     />
                                 </InputLeftAddon>
                                 <Input
+                                    data-testid={`${resourceName}-selector`}
                                     value={res.selector}
                                     onChange={e => (res.selector = e.target.value)}
                                     isDisabled={res.patternType == 'Any'}
@@ -376,7 +378,7 @@ export const ResourceACLsEditor = observer((p: {
                         {Object.entries(res.permissions)
                             .sort(([op1], [op2]) => op1.localeCompare(op2))
                             .map(([operation, permission]) => (
-                                <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
+                                <Operation data-testid={`${resourceName}-${operation}`} key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
                             ))}
                     </Grid>
                 </Label>
