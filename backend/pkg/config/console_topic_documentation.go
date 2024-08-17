@@ -34,7 +34,7 @@ func (c *ConsoleTopicDocumentation) Validate() error {
 		return nil
 	}
 	if c.Enabled && !c.Git.Enabled {
-		return fmt.Errorf("topic documentation is enabled, but git service is diabled. At least one source for topic documentations must be configured")
+		return fmt.Errorf("topic documentation is enabled, but git service is disabled. At least one source for topic documentations must be configured")
 	}
 
 	return c.Git.Validate()

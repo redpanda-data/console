@@ -38,10 +38,10 @@ const JavascriptFilterModal: FC<{
       <ModalOverlay />
       <ModalContent minW="4xl">
         <ModalHeader>
-          Javascript filtering
+          JavaScript filtering
         </ModalHeader>
         <ModalBody>
-          <Text mb={4}>Write Javascript code to filter your records.</Text>
+          <Text mb={4}>Write JavaScript code to filter your records.</Text>
           <Grid
             templateColumns={{base: '1fr', md: '3fr 2fr'}}
             gap={6}
