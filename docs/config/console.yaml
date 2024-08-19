@@ -125,6 +125,9 @@ kafka:
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
+  # cbor:
+  #   enabled: false
+  #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
   # Startup is a configuration block to specify how often and with what delays
   # we should try to connect to the Kafka service. If all attempts have failed the
   # application will exit with code 1.
