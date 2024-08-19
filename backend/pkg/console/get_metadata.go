@@ -17,5 +17,10 @@ import (
 
 // GetMetadata proxies the get metadata Kafka request/response.
 func (s *Service) GetMetadata(ctx context.Context, kafkaReq *kmsg.MetadataRequest) (*kmsg.MetadataResponse, error) {
-	return s.kafkaSvc.GetMetadata(ctx, kafkaReq)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return kafkaReq.RequestWith(ctx, cl)
 }

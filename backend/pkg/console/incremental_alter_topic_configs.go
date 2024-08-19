@@ -17,5 +17,19 @@ import (
 
 // EditTopicConfig applies the given configs to the given topic.
 func (s *Service) EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error {
-	return s.kafkaSvc.EditTopicConfig(ctx, topicName, configs)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	alterResource := kmsg.NewIncrementalAlterConfigsRequestResource()
+	alterResource.ResourceName = topicName
+	alterResource.ResourceType = kmsg.ConfigResourceTypeTopic
+	alterResource.Configs = configs
+
+	req := kmsg.NewIncrementalAlterConfigsRequest()
+	req.Resources = []kmsg.IncrementalAlterConfigsRequestResource{alterResource}
+
+	_, err = req.RequestWith(ctx, cl)
+	return err
 }

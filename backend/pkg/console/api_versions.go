@@ -15,6 +15,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
 // APIVersion represents the supported broker versions of a specific Kafka API request (e.g. CreateTopic).
@@ -29,23 +31,31 @@ type APIVersion struct {
 // versions. This will be used by the frontend to figure out what functionality is available
 // or should be rendered as not available.
 func (s *Service) GetAPIVersions(ctx context.Context) ([]APIVersion, error) {
-	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kafka api version: %w", err)
+		return nil, err
+	}
+	req := kmsg.NewApiVersionsRequest()
+	req.ClientSoftwareVersion = version.Version
+	req.ClientSoftwareName = "RPConsole"
+
+	versionsRes, err := req.RequestWith(ctx, cl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kafka api vers: %w", err)
 	}
 
 	err = kerr.ErrorForCode(versionsRes.ErrorCode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kafka api version. Inner error: %w", err)
+		return nil, fmt.Errorf("failed to get kafka api vers. Inner error: %w", err)
 	}
 
 	versions := make([]APIVersion, len(versionsRes.ApiKeys))
-	for i, version := range versionsRes.ApiKeys {
+	for i, vers := range versionsRes.ApiKeys {
 		versions[i] = APIVersion{
-			KeyID:      version.ApiKey,
-			KeyName:    kmsg.NameForKey(version.ApiKey),
-			MaxVersion: version.MaxVersion,
-			MinVersion: version.MinVersion,
+			KeyID:      vers.ApiKey,
+			KeyName:    kmsg.NameForKey(vers.ApiKey),
+			MaxVersion: vers.MaxVersion,
+			MinVersion: vers.MinVersion,
 		}
 	}
 

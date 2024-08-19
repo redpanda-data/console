@@ -41,7 +41,12 @@ type BrokerWithLogDirs struct {
 //
 //nolint:gocognit // Breaking it up would make it harder to comprehend; currently seems still okayish.
 func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokerWithLogDirs, error) {
-	metadata, err := s.kafkaSvc.KafkaAdmClient.Metadata(ctx)
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := adminCl.Metadata(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get metadata from cluster: %w", err)
 	}
@@ -70,7 +75,7 @@ func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokerWithLogDir
 	childCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
 
-	describedLogDirs, err := s.kafkaSvc.KafkaAdmClient.DescribeAllLogDirs(childCtx, nil)
+	describedLogDirs, err := adminCl.DescribeAllLogDirs(childCtx, nil)
 	if err != nil {
 		// When an error is set we still receive a partial response from the admin client.
 		// Also, describing broker log dirs is not considered mandatory for serving a

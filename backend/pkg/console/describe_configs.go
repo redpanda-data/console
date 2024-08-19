@@ -17,5 +17,10 @@ import (
 
 // DescribeConfigs proxies the request to describe Topic or Broker configs to the Kafka client.
 func (s *Service) DescribeConfigs(ctx context.Context, req *kmsg.DescribeConfigsRequest) (*kmsg.DescribeConfigsResponse, error) {
-	return s.kafkaSvc.DescribeConfigs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.RequestWith(ctx, cl)
 }

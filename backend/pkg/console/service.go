@@ -10,7 +10,6 @@
 package console
 
 import (
-	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -18,18 +17,20 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
+
+	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
 )
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
 // several responses from Kafka concurrently and constructing them so, that they are
 type Service struct {
-	kafkaSvc    *kafka.Service
-	redpandaSvc *redpanda.Service
-	gitSvc      *git.Service // Git service can be nil if not configured
-	connectSvc  *connect.Service
-	logger      *zap.Logger
+	kafkaClientFactory kafkafactory.ClientFactory
+	redpandaSvc        *redpanda.Service
+	gitSvc             *git.Service // Git service can be nil if not configured
+	connectSvc         *connect.Service
+	logger             *zap.Logger
+	cfg                *config.Config
 
 	// configExtensionsByName contains additional metadata about Topic or BrokerWithLogDirs configs.
 	// The additional information is used by the frontend to provide a good UX when
@@ -41,6 +42,7 @@ type Service struct {
 func NewService(
 	cfg *config.Config,
 	logger *zap.Logger,
+	kafkaClientFactory kafkafactory.ClientFactory,
 	redpandaSvc *redpanda.Service,
 	connectSvc *connect.Service,
 ) (Servicer, error) {
@@ -59,17 +61,13 @@ func NewService(
 		return nil, fmt.Errorf("failed to load config extensions: %w", err)
 	}
 
-	kafkaSvc, err := kafka.NewService(cfg, logger, cfg.MetricsNamespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka svc: %w", err)
-	}
-
 	return &Service{
-		kafkaSvc:    kafkaSvc,
-		redpandaSvc: redpandaSvc,
-		gitSvc:      gitSvc,
-		connectSvc:  connectSvc,
-		logger:      logger,
+		kafkaClientFactory: kafkaClientFactory,
+		redpandaSvc:        redpandaSvc,
+		gitSvc:             gitSvc,
+		connectSvc:         connectSvc,
+		logger:             logger,
+		cfg:                cfg,
 
 		configExtensionsByName: configExtensionsByName,
 	}, nil
@@ -85,20 +83,10 @@ func (s *Service) Start() error {
 		}
 	}
 
-	if err := s.kafkaSvc.Start(); err != nil {
-		return fmt.Errorf("failed to start kafka service: %w", err)
-	}
-
 	return nil
 }
 
 // Stop stops running go routines and releases allocated resources.
 func (s *Service) Stop() {
-	s.kafkaSvc.KafkaClient.Close()
-}
-
-// IsHealthy checks if the Kafka service is reachable and therefore
-// considered healthy.
-func (s *Service) IsHealthy(ctx context.Context) error {
-	return s.kafkaSvc.IsHealthy(ctx)
+	// Nothing to stop, the gitSvc listens for OS signals itself and stops its goroutines then.
 }

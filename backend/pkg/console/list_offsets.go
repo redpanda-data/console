@@ -13,7 +13,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 // TopicOffset contains all topics' partitions offsets.
@@ -33,39 +34,40 @@ type PartitionOffset struct {
 // ListOffsets lists partition offsets (either earliest or latest, depending on the timestamp parameter)
 // of one or topic names.
 func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error) {
-	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, topicNames)
+	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metadata, err := adminCl.Metadata(ctx, topicNames...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request partition info for topics")
+	}
+	if err := metadata.Topics.Error(); err != nil {
+		return nil, fmt.Errorf("failed to request topic metadata: %w", err)
 	}
 
 	topicPartitions := make(map[string][]int32, len(metadata.Topics))
 	for _, topic := range metadata.Topics {
-		err := kerr.ErrorForCode(topic.ErrorCode)
-		if err != nil {
-			return nil, fmt.Errorf("failed to request partition info for topic '%v': %w", topic.Topic, err)
-		}
-
 		for _, partition := range topic.Partitions {
-			err := kerr.ErrorForCode(partition.ErrorCode)
-			if err != nil {
-				return nil, fmt.Errorf("failed to request partition info for topic '%v', partition: '%v': %w", topic.Topic, partition.Partition, err)
+			if partition.Err != nil {
+				return nil, fmt.Errorf("failed to request partition info for topic %q, partition: '%d': %w", partition.Topic, partition.Partition, partition.Err)
 			}
-			topicName := *topic.Topic
-			topicPartitions[topicName] = append(topicPartitions[topicName], partition.Partition)
+			topicPartitions[partition.Topic] = append(topicPartitions[partition.Topic], partition.Partition)
 		}
 	}
-	offsets := s.kafkaSvc.ListOffsets(ctx, topicPartitions, timestamp)
+	offsets := s.listOffsets(ctx, cl, topicPartitions, timestamp)
 
 	offsetResponses := make([]TopicOffset, 0, len(offsets))
 	for topicName, partitions := range offsets {
 		pOffsets := make([]PartitionOffset, len(partitions))
 		for pID, partition := range partitions {
-			if err != nil {
+			if partition.Error != "" {
 				pOffsets[pID] = PartitionOffset{
-					Error:       err.Error(),
+					Error:       partition.Error,
 					PartitionID: pID,
 					Offset:      partition.Offset,
 				}
+				continue
 			}
 
 			pOffsets[pID] = PartitionOffset{
@@ -81,4 +83,92 @@ func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestam
 	}
 
 	return offsetResponses, nil
+}
+
+// ListOffsets returns a nested map of: topic -> partitionID -> offset. Each partition may have an error because the
+// leader is not available to answer the requests, because the partition is offline etc.
+func (s *Service) listOffsets(ctx context.Context, kafkaCl *kgo.Client, topicPartitions map[string][]int32, timestamp int64) map[string]map[int32]PartitionOffset {
+	topicRequests := make([]kmsg.ListOffsetsRequestTopic, 0, len(topicPartitions))
+
+	for topic, partitionIDs := range topicPartitions {
+		// Build array of partition offset requests
+		partitionRequests := make([]kmsg.ListOffsetsRequestTopicPartition, len(partitionIDs))
+		for i, id := range partitionIDs {
+			// Request oldest offset for that partition
+			partitionReq := kmsg.NewListOffsetsRequestTopicPartition()
+			partitionReq.Partition = id
+			partitionReq.Timestamp = timestamp // -1 = latest, -2 = earliest
+			partitionRequests[i] = partitionReq
+		}
+
+		// Push topic request into array
+		topicReq := kmsg.NewListOffsetsRequestTopic()
+		topicReq.Topic = topic
+		topicReq.Partitions = partitionRequests
+		topicRequests = append(topicRequests, topicReq)
+	}
+
+	req := kmsg.ListOffsetsRequest{
+		Topics: topicRequests,
+	}
+	resShards := kafkaCl.RequestSharded(ctx, &req)
+
+	partitionsByTopic := make(map[string]map[int32]PartitionOffset)
+	for _, shard := range resShards {
+		err := shard.Err
+		if err != nil {
+			shardReq, ok := shard.Req.(*kmsg.ListOffsetsRequest)
+			if !ok {
+				s.logger.Fatal("failed to cast ListOffsetsRequest")
+			}
+
+			// Create an entry for each failed shard so that we each failed partition is visible too
+			for _, topic := range shardReq.Topics {
+				partitions, ok := partitionsByTopic[topic.Topic]
+				if !ok {
+					partitions = make(map[int32]PartitionOffset)
+				}
+				for _, p := range topic.Partitions {
+					partitions[p.Partition] = PartitionOffset{
+						PartitionID: p.Partition,
+						Offset:      -1,
+						Timestamp:   timestamp,
+						Error:       errorToString(err),
+					}
+				}
+				partitionsByTopic[topic.Topic] = partitions
+			}
+			continue
+		}
+
+		// Create an entry for each successfully requested partition
+		res, ok := shard.Resp.(*kmsg.ListOffsetsResponse)
+		if !ok {
+			s.logger.Fatal("failed to cast ListOffsetsResponse")
+		}
+		for _, topic := range res.Topics {
+			partitions, ok := partitionsByTopic[topic.Topic]
+			if !ok {
+				partitions = make(map[int32]PartitionOffset)
+			}
+			for _, p := range topic.Partitions {
+				partitions[p.Partition] = PartitionOffset{
+					PartitionID: p.Partition,
+					Offset:      p.Offset,
+					Timestamp:   p.Timestamp,
+					Error:       errorToString(err),
+				}
+			}
+			partitionsByTopic[topic.Topic] = partitions
+		}
+	}
+
+	return partitionsByTopic
+}
+
+func errorToString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

@@ -37,6 +37,11 @@ type Broker struct {
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
 func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	var logDirsByBroker map[int32]LogDirsByBroker
@@ -50,13 +55,14 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	defer cancel()
 
 	eg.Go(func() error {
-		logDirsByBroker = s.logDirsByBroker(childCtx)
+		logDirsByBroker = s.logDirsByBroker(childCtx, cl)
 		return nil
 	})
 
 	eg.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadataTopics(childCtx, nil)
+		req := kmsg.NewMetadataRequest()
+		metadata, err = req.RequestWith(childCtx, cl)
 		if err != nil {
 			return err
 		}

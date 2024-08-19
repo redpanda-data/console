@@ -18,6 +18,7 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
 // EndpointCompatibility describes what Console endpoints can be offered to the frontend,
@@ -40,7 +41,16 @@ type EndpointCompatibilityEndpoint struct {
 // Console endpoint we can let the frontend know in advance, so that these features will be rendered as
 // disabled.
 func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error) {
-	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return EndpointCompatibility{}, err
+	}
+
+	req := kmsg.NewApiVersionsRequest()
+	req.ClientSoftwareVersion = version.Version
+	req.ClientSoftwareName = "RPConsole"
+
+	versionsRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return EndpointCompatibility{}, fmt.Errorf("failed to get kafka api version: %w", err)
 	}

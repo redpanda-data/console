@@ -19,7 +19,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -59,7 +58,17 @@ type OverviewKafkaAuthorizer struct {
 }
 
 // getKafkaOverview coordinates multiple Kafka requests to return OverviewKafka.
-func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
+func (s *Service) getKafkaOverview(ctx context.Context, adminCl *kadm.Client) OverviewKafka {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return OverviewKafka{
+			OverviewStatus: OverviewStatus{
+				Status:       StatusTypeUnhealthy,
+				StatusReason: "Failed to retrieve Kafka client in Console",
+			},
+		}
+	}
+
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
 	// times in case of a single broker being down.
 	childCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -71,7 +80,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	var metadata kadm.Metadata
 	grp.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.KafkaAdmClient.Metadata(grpCtx)
+		metadata, err = adminCl.Metadata(grpCtx)
 		return err
 	})
 
@@ -291,17 +300,24 @@ func (s *Service) statusFromMetadata(metadata kadm.Metadata) OverviewStatus {
 // GetKafkaVersion extracts the guessed Apache Kafka version based on the reported
 // API versions for each API key.
 func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
-	apiVersions, err := s.kafkaSvc.GetAPIVersions(ctx)
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	brokerApiVersions, err := adminCl.ApiVersions(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to request api versions: %w", err)
 	}
 
-	err = kerr.ErrorForCode(apiVersions.ErrorCode)
-	if err != nil {
-		return "", fmt.Errorf("failed to request api versions. Inner Kafka error: %w", err)
+	var lastErr error
+	for _, brokerApiVersion := range brokerApiVersions {
+		if brokerApiVersion.Err != nil {
+			lastErr = brokerApiVersion.Err
+			continue
+		}
+		return brokerApiVersion.VersionGuess(), nil
 	}
 
-	versions := kversion.FromApiVersionsResponse(apiVersions)
-
-	return versions.VersionGuess(), nil
+	return "", lastErr
 }

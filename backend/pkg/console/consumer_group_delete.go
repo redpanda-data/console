@@ -9,10 +9,25 @@
 
 package console
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // DeleteConsumerGroup deletes a Kafka consumer group.
 func (s *Service) DeleteConsumerGroup(ctx context.Context, groupID string) error {
-	_, err := s.kafkaSvc.DeleteConsumerGroup(ctx, groupID)
-	return err
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	res, err := adminCl.DeleteGroup(ctx, groupID)
+	if err != nil {
+		return fmt.Errorf("failed to delete group: %w", err)
+	}
+	if res.Err != nil {
+		return fmt.Errorf("failed to delete group: %w", err)
+	}
+
+	return nil
 }

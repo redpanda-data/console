@@ -7,7 +7,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -34,17 +33,16 @@ type Servicer interface {
 	GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error)
 	IncrementalAlterConfigs(ctx context.Context, alterConfigs []kmsg.IncrementalAlterConfigsRequestResource) ([]IncrementalAlterConfigsResourceResponse, *rest.Error)
 	ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) (*ACLOverview, error)
-	ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error
+	ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error
 	ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error)
 	GetOverview(ctx context.Context) Overview
 	GetKafkaVersion(ctx context.Context) (string, error)
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
-	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
-	PublishRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
+	ProducePlainRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
+	ProduceRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
 	Start() error
 	Stop()
-	IsHealthy(ctx context.Context) error
 	GetTopicConfigs(ctx context.Context, topicName string, configNames []string) (*TopicConfig, *rest.Error)
 	GetTopicsConfigs(ctx context.Context, topicNames []string, configNames []string) (map[string]*TopicConfig, error)
 	ListTopicConsumers(ctx context.Context, topicName string) ([]*TopicConsumerGroup, error)

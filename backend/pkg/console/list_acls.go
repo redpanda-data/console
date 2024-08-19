@@ -65,7 +65,12 @@ type ACLRule struct {
 
 // ListAllACLs returns a list of all stored ACLs.
 func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) (*ACLOverview, error) {
-	aclResponses, err := s.kafkaSvc.ListACLs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	aclResponses, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", err)
 	}

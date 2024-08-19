@@ -44,8 +44,13 @@ type PartitionOffsets struct {
 //
 //nolint:gocognit,cyclop // Consider using kadm's CalculateGroupLag. Works slightly different, required DescribedGroup.
 func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) (map[string][]GroupTopicOffsets, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// 1. Fetch all Consumer Group Offsets for each Topic
-	fetchOffsetResponses := s.kafkaSvc.KafkaAdmClient.FetchManyOffsets(ctx, groups...)
+	fetchOffsetResponses := adminCl.FetchManyOffsets(ctx, groups...)
 	var lastErr error
 	fetchOffsetResponses.EachError(func(shardRes kadm.FetchOffsetsResponse) {
 		s.logger.Warn("failed to fetch group offset",
@@ -89,7 +94,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high watermarks for.
 	topicsWithOffsets := fetchOffsetResponses.CommittedPartitions().Topics()
 
-	metadata, err := s.kafkaSvc.KafkaAdmClient.Metadata(ctx, topicsWithOffsets...)
+	metadata, err := adminCl.Metadata(ctx, topicsWithOffsets...)
 	if err != nil {
 		s.logger.Error("failed to get topic metadata", zap.Strings("topics", topicsWithOffsets), zap.Error(err))
 		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
@@ -128,14 +133,6 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	highMarkRes := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
 	for topicName, partitions := range highMarkRes {
 		for pID, partition := range partitions {
-			if err != nil {
-				partitionInfoByIDAndTopic[topicName][pID] = partitionInfo{
-					PartitionID:   pID,
-					Error:         err.Error(),
-					HighWaterMark: -1,
-				}
-				continue
-			}
 			partitionInfoByIDAndTopic[topicName][pID] = partitionInfo{
 				PartitionID:   pID,
 				HighWaterMark: partition.Offset,

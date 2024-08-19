@@ -29,10 +29,15 @@ type DeleteACLsResponse struct {
 
 // DeleteACLs deletes Kafka ACLs based on a given filter.
 func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestFilter) (DeleteACLsResponse, *rest.Error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return DeleteACLsResponse{}, errorToRestError(err)
+	}
+
 	req := kmsg.NewDeleteACLsRequest()
 	req.Filters = []kmsg.DeleteACLsRequestFilter{filter}
 
-	res, err := s.kafkaSvc.DeleteACLs(ctx, &req)
+	res, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return DeleteACLsResponse{}, &rest.Error{
 			Err:          err,
@@ -76,5 +81,9 @@ func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestF
 
 // DeleteACLsKafka proxies the request/response via the Kafka API.
 func (s *Service) DeleteACLsKafka(ctx context.Context, req *kmsg.DeleteACLsRequest) (*kmsg.DeleteACLsResponse, error) {
-	return s.kafkaSvc.DeleteACLs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return req.RequestWith(ctx, cl)
 }
