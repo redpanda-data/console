@@ -25,6 +25,7 @@ type Kafka struct {
 	Schema      Schema  `yaml:"schemaRegistry"`
 	Protobuf    Proto   `yaml:"protobuf"`
 	MessagePack Msgpack `yaml:"messagePack"`
+	Cbor        Cbor    `yaml:"cbor"`
 
 	TLS  TLS       `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
