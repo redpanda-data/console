@@ -94,12 +94,6 @@ linters-settings:
   # We do not want every usage of fmt.Errorf to use %w.
   errorlint:
     errorf: false
-  # If gofumpt is run outside of a module, it assumes Go 1.0 rather than the
-  # latest Go. We always want the latest formatting.
-  #
-  # https://github.com/mvdan/gofumpt/issues/137
-  gofumpt:
-    lang-version: "1.23"
   gosec:
     excludes:
       - G104 # unhandled errors, we exclude for the same reason we do not use errcheck
