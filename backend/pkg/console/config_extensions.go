@@ -74,7 +74,7 @@ func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {
 	}
 
 	// Index all config entries by config name
-	//nolint: gocritic // Opting for better code readability at the cost of few additional kb in memory usage
+	//nolint:gocritic // Opting for better code readability at the cost of few additional kb in memory usage
 	allConfigs := append(rpConfigs, apacheKafkaConfigs...)
 	configsByName := make(map[string]ConfigEntryExtension)
 	for _, config := range allConfigs {
