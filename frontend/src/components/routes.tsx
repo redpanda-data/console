@@ -53,6 +53,7 @@ import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 import TransformDetails from './pages/transforms/Transform.Details';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
+import {isServerless} from "../config";
 
 //
 //	Route Types
@@ -277,7 +278,9 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true),
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true,
+        routeVisibility(!(!Feature.PipelineService && !api.connectConnectors?.isConfigured && isServerless()))
+    ),
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
