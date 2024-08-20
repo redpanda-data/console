@@ -15,13 +15,13 @@ message TransformMetadata {
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 128,
       (buf.validate.field).cel = {
-        id: "transforms_env_key_does_not_use_redpanda_prefix",
+        id: "transforms_env_key_does_not_use_redpanda_prefix"
         expression: "!this.startsWith('REDPANDA_')"
         message: "Environment variable keys that start with 'REDPANDA_' are reserved."
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-        description: "The key of your environment variable.",
-        example: "\"LOG_LEVEL\"",
+        description: "The key of your environment variable."
+        example: "\"LOG_LEVEL\""
       }
     ];
     string value = 2 [
@@ -30,8 +30,8 @@ message TransformMetadata {
       (buf.validate.field).string.min_len = 1,
       (buf.validate.field).string.max_len = 2048,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-        description: "The value of your environment variable.",
-        example: "\"DEBUG\"",
+        description: "The value of your environment variable."
+        example: "\"DEBUG\""
       }
     ];
   }
@@ -73,8 +73,8 @@ message DeployTransformRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Name of the transform.",
-      example: "\"redact-payment-details-in-orders\"",
+      description: "Name of the transform."
+      example: "\"redact-payment-details-in-orders\""
     }
   ];
   string input_topic_name = 2 [
@@ -84,34 +84,34 @@ message DeployTransformRequest {
     (buf.validate.field).string.max_len = 249,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "The input topic to apply the transform to.",
-      example: "\"orders\"",
+      description: "The input topic to apply the transform to."
+      example: "\"orders\""
     }
   ];
   repeated string output_topic_names = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).repeated = {
-      min_items: 1,
-      max_items: 1,
-      unique: true,
+      min_items: 1
+      max_items: 1
+      unique: true
       items: {
         string: {
-          min_len: 1,
-          max_len: 249,
+          min_len: 1
+          max_len: 249
           pattern: "^[a-zA-Z0-9._\\-]*$"
         }
       }
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Output topic to write the transform results to.",
-      example: "\"orders-redacted\"",
+      description: "Output topic to write the transform results to."
+      example: "\"orders-redacted\""
     }
   ];
   repeated TransformMetadata.EnvironmentVariable environment_variables = 4 [
     (buf.validate.field).repeated = {
-      min_items: 0,
-      max_items: 128,
+      min_items: 0
+      max_items: 128
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}
   ];
@@ -132,12 +132,12 @@ message ListTransformsRequest {
   string page_token = 2;
   int32 page_size = 3 [
     (buf.validate.field).int32 = {
-      gte: -1,
+      gte: -1
       lte: 1000
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
-      minimum: -1,
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
       maximum: 1000
     }
   ];

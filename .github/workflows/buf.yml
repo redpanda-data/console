@@ -2,6 +2,8 @@
 name: Buf CI
 on:
   push:
+    paths:
+      - proto/**.proto
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
   delete:
