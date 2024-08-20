@@ -165,10 +165,3 @@ func (s *Service) listOffsets(ctx context.Context, kafkaCl *kgo.Client, topicPar
 
 	return partitionsByTopic
 }
-
-func errorToString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
-}

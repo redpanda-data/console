@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 
 	"github.com/cloudhut/common/rest"
@@ -72,7 +73,7 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 		// Not existent consumer groups will be reported as "dead" by Kafka. We would like to report them as 404 instead.
 		// Hence we'll check if the passed group IDs exist in the response
 		for _, id := range groupIDs {
-			_, exists := find(groups.Groups(), id)
+			exists := slices.Contains(groupIDs, id)
 			if !exists {
 				return nil, &rest.Error{
 					Err:      fmt.Errorf("requested group id '%v' does not exist in Kafka cluster", id),
@@ -102,7 +103,7 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 		}
 	}
 
-	groupLags, err := s.getConsumerGroupOffsets(ctx, describedGroups.Names())
+	groupLags, err := s.getConsumerGroupOffsets(ctx, adminCl, describedGroups.Names())
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      fmt.Errorf("failed to get consumer group lags: %w", err),

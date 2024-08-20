@@ -58,7 +58,7 @@ type OverviewKafkaAuthorizer struct {
 }
 
 // getKafkaOverview coordinates multiple Kafka requests to return OverviewKafka.
-func (s *Service) getKafkaOverview(ctx context.Context, adminCl *kadm.Client) OverviewKafka {
+func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
 		return OverviewKafka{
