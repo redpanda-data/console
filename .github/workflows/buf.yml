@@ -1,0 +1,31 @@
+---
+name: Buf CI
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  delete:
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+jobs:
+  push-module:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/buf_token
+          parse-json-secrets: true
+      # Run `git checkout`
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          input: proto
+          token: ${{ env.BUF_TOKEN }}
+          breaking_against: https://github.com/redpanda-data/console.git#branch=master,ref=HEAD~1,subdir=proto
