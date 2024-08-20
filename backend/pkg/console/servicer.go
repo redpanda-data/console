@@ -48,7 +48,7 @@ type Servicer interface {
 	ListTopicConsumers(ctx context.Context, topicName string) ([]*TopicConsumerGroup, error)
 	GetTopicDocumentation(topicName string) *TopicDocumentation
 	GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error)
-	GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error)
+	GetAllTopicNames(ctx context.Context) ([]string, error)
 	GetTopicDetails(ctx context.Context, topicNames []string) ([]TopicDetails, *rest.Error)
 
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)

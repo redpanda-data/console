@@ -152,3 +152,22 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 
 	return res, nil
 }
+
+// GetAllTopicNames returns all topic names from the metadata. You can either pass the metadata response into
+// this method (to avoid duplicate requests) or let the function request the metadata.
+func (s *Service) GetAllTopicNames(ctx context.Context) ([]string, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := adminCl.Metadata(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch topic metadata: %w", err)
+	}
+	if err := metadata.Topics.Error(); err != nil {
+		return nil, fmt.Errorf("failed to fetch topic metadata: %w", err)
+	}
+
+	return metadata.Topics.Names(), nil
+}
