@@ -1,6 +1,5 @@
 # Redpanda Console – A UI for Data Streaming
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/redpanda-data/console?sort=semver)
 [![Docker Repository](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository")](https://hub.docker.com/r/redpandadata/console/tags)
 
@@ -13,20 +12,22 @@ https://user-images.githubusercontent.com/23424570/220130537-7b0b8596-0a06-4132-
 - **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages. Supported encodings are: JSON, Avro, Protobuf, XML, MessagePack, Text and Binary (hex view). The used encoding (except Protobuf) is recognized automatically.
 - **Consumer groups:** List all your active consumer groups along with their active group offsets, edit group offsets (by group, topic or partition) or delete a consumer group.
 - **Topic overview:** Browse through the list of your Kafka topics, check their configuration, space usage, list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...), embed topic documentation from a git repository and more.
-- **Cluster overview:** List ACLs, available brokers, their space usage, rack id and other information to get a high level overview of your brokers in your cluster.
-- **Schema Registry:** List all Avro, Protobuf or JSON schemas within your schema registry.
+- **Cluster overview:** List vailable brokers, their space usage, rack id, health, configuration and other information to get a high level overview of your brokers in your cluster.
+- **Security**: Create, list or edit Kafka ACLs and SASL-SCRAM users.
+- **Schema Registry:** List and manage all aspects of your Avro, Protobuf or JSON schemas within your schema registry.
 - **Kafka connect:** Manage connectors from multiple connect clusters, patch configs, view their current state or restart tasks.
+- **Redpanda Transforms:** Manage and monitor data transforms deployed in your Redpanda cluster.  
 
 ## Getting Started
 
 ### Prerequisites
 
 - Redpanda or any Kafka deployment (v1.0.0+) compatible
-- Docker runtime (single binary builds will be provided in the future)
+- A web browser to access the Console, which can be deployed using Docker builds or as a single binary across all platforms (amd64 / arm64)
 
 ### Installing
 
-We offer pre built docker images for RP Console, a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](https://docs.redpanda.com/docs/console/installation/).
+We offer pre built docker images for RP Console, binary builds and a Helm chart to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](https://docs.redpanda.com/current/get-started/quick-start/).
 
 ### Quick Start
 
@@ -67,9 +68,3 @@ We maintain a docker-compose file that launches Redpanda and Console: [/docs/loc
 [Code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md) code of conduct for the community
 
 [Contributing docs](./CONTRIBUTING.md)
-
-## Companies that use Redpanda Console
-
-- REWE Digital [https://www.rewe-digital.com/]
-- Redpanda Data [https://redpanda.com/]
-- OPT-NC (Office des Postes et Télécommunications de Nouvelle-Calédonie) [https://office.opt.nc/]
