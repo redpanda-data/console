@@ -23,7 +23,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
@@ -59,10 +58,10 @@ type ListMessageRequest struct {
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
 type ListMessageResponse struct {
-	ElapsedMs       float64               `json:"elapsedMs"`
-	FetchedMessages int                   `json:"fetchedMessages"`
-	IsCancelled     bool                  `json:"isCancelled"`
-	Messages        []*kafka.TopicMessage `json:"messages"`
+	ElapsedMs       float64         `json:"elapsedMs"`
+	FetchedMessages int             `json:"fetchedMessages"`
+	IsCancelled     bool            `json:"isCancelled"`
+	Messages        []*TopicMessage `json:"messages"`
 }
 
 //go:generate mockgen -destination=./mocks/kafka.go -package=mocks github.com/redpanda-data/console/backend/pkg/kafka IListMessagesProgress

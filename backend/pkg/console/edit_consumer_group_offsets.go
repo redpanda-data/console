@@ -18,8 +18,6 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // EditConsumerGroupOffsetsResponse is the sum of all brokers' response shards for
@@ -116,7 +114,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		substitutedPartitions := make([]kmsg.OffsetCommitRequestTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
 			switch partition.Partition {
-			case kafka.TimestampLatest:
+			case TimestampLatest:
 				offset, exists := endOffsets.Lookup(topic.Topic, partition.Partition)
 				if !exists {
 					return nil, &rest.Error{
@@ -127,7 +125,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 					}
 				}
 				partition.Offset = offset.Offset
-			case kafka.TimestampEarliest:
+			case TimestampEarliest:
 				offset, exists := startOffsets.Lookup(topic.Topic, partition.Partition)
 				if !exists {
 					return nil, &rest.Error{

@@ -9,6 +9,13 @@
 
 package console
 
+const (
+	// TimestampLatest is the enum that represents a request for the offsets with the most recent timestamp.
+	TimestampLatest = -1
+	// TimestampEarliest is the enum that represents a request for the offsets with the earliest timestamp.
+	TimestampEarliest = -2
+)
+
 func derefString(s *string) string {
 	if s != nil {
 		return *s
