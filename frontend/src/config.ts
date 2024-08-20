@@ -178,6 +178,7 @@ const routesIgnoredInServerless = [
     '/quotas',
     '/reassign-partitions',
     '/admin',
+    '/transforms',
 ];
 
 export const embeddedAvailableRoutesObservable = observable({
