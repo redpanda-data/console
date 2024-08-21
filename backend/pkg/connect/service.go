@@ -133,5 +133,5 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 	wg.Wait()
 	s.Logger.Info("tested Kafka connect cluster connectivity",
 		zap.Uint32("successful_clusters", successfulChecks),
-		zap.Uint32("failed_clusters", uint32(len(s.ClientsByCluster))-successfulChecks))
+		zap.Uint32("failed_clusters", uint32(len(s.ClientsByCluster))-successfulChecks)) //nolint:gosec // len conversion
 }

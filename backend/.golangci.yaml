@@ -30,6 +30,12 @@ issues:
     - path: /connector/interceptor/(.+)_hook.go
       linters:
         - goconst
+    - path: (.+).go
+      linters: [gosec]
+      text: "G115: integer overflow conversion int -> int32"
+    - path: (.+).go
+      linters: [gosec]
+      text: "G115: integer overflow conversion uint32 -> int32"
   exclude-use-default: false
   max-same-issues: 0 # 0 is unlimited
 linters:
