@@ -37,9 +37,9 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.Crea
 		partitionCount = *topicReq.PartitionCount
 	}
 
-	replicationFactor := int16(-1)
+	replicationFactor := int32(-1)
 	if topicReq.ReplicationFactor != nil {
-		replicationFactor = int16(*topicReq.ReplicationFactor)
+		replicationFactor = *topicReq.ReplicationFactor
 	}
 
 	configs := make([]kmsg.CreateTopicsRequestTopicConfig, len(topicReq.Configs))
@@ -61,7 +61,7 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.Crea
 	req := kmsg.NewCreateTopicsRequestTopic()
 	req.Topic = topicReq.Name
 	req.NumPartitions = partitionCount
-	req.ReplicationFactor = replicationFactor
+	req.ReplicationFactor = int16(replicationFactor) //nolint:gosec // conversion TODO we should change our API to match kafka
 	req.ReplicaAssignment = replicaAssignments
 	req.Configs = configs
 
