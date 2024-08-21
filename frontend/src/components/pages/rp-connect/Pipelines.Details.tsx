@@ -375,7 +375,7 @@ function isFilterMatch(str: string, m: TopicMessage) {
 
 
 async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
-    const filterCode: string = `return value.pipeline_id == "${pipelineId}";`;
+    const filterCode: string = `return key == "${pipelineId}";`;
 
     const lastXHours = 5;
     const startTime = new Date();
