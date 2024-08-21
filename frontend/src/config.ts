@@ -23,6 +23,7 @@ import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/securi
 // import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
+import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -66,6 +67,7 @@ export interface Breadcrumb {
 
 interface Config {
     restBasePath: string;
+    authenticationClient?: PromiseClient<typeof AuthenticationService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
@@ -104,6 +106,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
+    const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
     const transformClient = createPromiseClient(TransformService, transport);
     Object.assign(config, {
         jwt,
@@ -111,6 +114,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
+        authenticationClient: authenticationGrpcClient,
         consoleClient: consoleGrpcClient,
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
