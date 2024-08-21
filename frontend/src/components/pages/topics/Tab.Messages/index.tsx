@@ -326,7 +326,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     gridTemplateColumns="auto 1fr"
                     width="full"
                 >
-                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
+                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
 
                         <Label text="Start Offset">
                             <Flex gap={3}>
