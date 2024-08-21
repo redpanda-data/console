@@ -15,14 +15,14 @@ import { Partition, Topic, } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { numberToThousandsString, DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { numberToThousandsString, DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
-import { WarningTwoTone } from '@ant-design/icons';
-import { Alert, AlertIcon, DataTable, Popover } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Text, DataTable, Flex, Popover, Box } from '@redpanda-data/ui';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { uiState } from '../../../state/uiState';
+import { MdOutlineWarningAmber } from 'react-icons/md';
 
 type TopicPartitionsProps = {
     topic: Topic;
@@ -69,20 +69,12 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                         accessorKey: 'id',
                         cell: ({row: {original: partition}}) =>
                             partition.hasErrors ? (
-                                <span
-                                    style={{display: 'inline-flex', width: '100%'}}
-                                >
-                  <span>{partition.id}</span>
-                  <span
-                      style={{
-                          marginLeft: 'auto',
-                          marginRight: '2px',
-                          display: 'inline-block',
-                      }}
-                  >
-                    {renderPartitionError(partition)}
-                  </span>
-                </span>
+                                <Flex justifyContent="space-between">
+                                  <Text>{partition.id}</Text>
+                                  <Box>
+                                    <PartitionError partition={partition}/>
+                                  </Box>
+                                </Flex>
                             ) : (
                                 partition.id
                             ),
@@ -96,7 +88,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                         ),
                         accessorKey: 'waterMarkLow',
                         cell: ({row: {original: partition}}) =>
-                            !partition.hasErrors && numberToThousandsString(partition.waterMarkLow),
+                            numberToThousandsString(partition.waterMarkLow),
                     },
                     {
                         id: 'waterMarkHigh',
@@ -107,7 +99,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                         ),
                         accessorKey: 'waterMarkHigh',
                         cell: ({row: {original: partition}}) =>
-                            !partition.hasErrors && numberToThousandsString(partition.waterMarkHigh),
+                            numberToThousandsString(partition.waterMarkHigh),
                     },
                     {
                         header: 'Messages',
@@ -127,26 +119,26 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
     );
 });
 
-function renderPartitionError(partition: Partition) {
-    const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
+const PartitionError: FC<{ partition: Partition }> = ({partition}) => {
+  if (!partition.partitionError && !partition.waterMarksError) {
+    return null;
+  }
 
-    return <Popover
-        title="Partition Error"
-        placement="right-start"
-        size="auto"
-        hideCloseButton
-        content={<div style={{maxWidth: '500px', whiteSpace: 'pre-wrap'}}>
-            {txt}
-        </div>
-        }
-    >
-        <span>
-            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
-                <span style={{fontSize: '19px'}}>
-                    <WarningTwoTone twoToneColor="orange"/>
-                </span>
-            </ZeroSizeWrapper>
-        </span>
-    </Popover>;
+  return <Popover
+    title="Partition Error"
+    placement="right-start"
+    size="auto"
+    hideCloseButton
+    content={
+      <Flex maxWidth={500} whiteSpace="pre-wrap" flexDirection="column" gap={2}>
+        {partition.partitionError && <Text>{partition.partitionError}</Text>}
+        {partition.waterMarksError && <Text>{partition.waterMarksError}</Text>}
+      </Flex>
+    }
+  >
+    <Box>
+        <MdOutlineWarningAmber color="orange" size={20}/>
+    </Box>
+  </Popover>;
 
 }
