@@ -40,7 +40,7 @@ message ListRolesRequest {
 
   // Page size.
   int32 page_size = 2 [(buf.validate.field).int32 = {
-    gte: -1,
+    gte: -1
     lte: 1000
   }];
 
@@ -128,7 +128,7 @@ message ListRoleMembersRequest {
 
   // Page size.
   int32 page_size = 3 [(buf.validate.field).int32 = {
-    gte: -1,
+    gte: -1
     lte: 1000
   }];
 
