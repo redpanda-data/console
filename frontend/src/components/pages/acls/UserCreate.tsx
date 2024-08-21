@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
 import { Features } from '../../../state/supportedFeatures';
+import { Link as ReactRouterLink } from 'react-router-dom';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -339,6 +340,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 
             <Flex gap={4} mt={8}>
                 <Button onClick={p.closeModal}>Done</Button>
+                <Button variant="link" as={ReactRouterLink} to="/security/acls">Create ACLs</Button>
             </Flex>
 
         </>
