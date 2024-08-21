@@ -246,6 +246,24 @@ service PipelineService {
       }
     };
   }
+  rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha2/redpanda-connect/config_schema"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipeline service config schema"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse"}
+          }
+        }
+      }
+    };
+  }
 }
 
 message PipelineCreate {
@@ -377,4 +395,17 @@ message StartPipelineRequest {
 
 message StartPipelineResponse {
   Pipeline pipeline = 1;
+}
+
+message GetPipelineServiceConfigSchemaRequest {
+  enum Format {
+    FORMAT_UNSPECIFIED = 0;
+    FORMAT_JSONSCHEMA = 1;
+  }
+
+  Format format = 1;
+}
+
+message GetPipelineServiceConfigSchemaResponse {
+  string config_schema = 1;
 }

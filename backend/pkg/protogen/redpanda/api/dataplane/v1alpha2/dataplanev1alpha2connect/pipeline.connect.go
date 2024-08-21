@@ -56,18 +56,22 @@ const (
 	// PipelineServiceStartPipelineProcedure is the fully-qualified name of the PipelineService's
 	// StartPipeline RPC.
 	PipelineServiceStartPipelineProcedure = "/redpanda.api.dataplane.v1alpha2.PipelineService/StartPipeline"
+	// PipelineServiceGetPipelineServiceConfigSchemaProcedure is the fully-qualified name of the
+	// PipelineService's GetPipelineServiceConfigSchema RPC.
+	PipelineServiceGetPipelineServiceConfigSchemaProcedure = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	pipelineServiceServiceDescriptor              = v1alpha2.File_redpanda_api_dataplane_v1alpha2_pipeline_proto.Services().ByName("PipelineService")
-	pipelineServiceCreatePipelineMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("CreatePipeline")
-	pipelineServiceGetPipelineMethodDescriptor    = pipelineServiceServiceDescriptor.Methods().ByName("GetPipeline")
-	pipelineServiceListPipelinesMethodDescriptor  = pipelineServiceServiceDescriptor.Methods().ByName("ListPipelines")
-	pipelineServiceUpdatePipelineMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("UpdatePipeline")
-	pipelineServiceDeletePipelineMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("DeletePipeline")
-	pipelineServiceStopPipelineMethodDescriptor   = pipelineServiceServiceDescriptor.Methods().ByName("StopPipeline")
-	pipelineServiceStartPipelineMethodDescriptor  = pipelineServiceServiceDescriptor.Methods().ByName("StartPipeline")
+	pipelineServiceServiceDescriptor                              = v1alpha2.File_redpanda_api_dataplane_v1alpha2_pipeline_proto.Services().ByName("PipelineService")
+	pipelineServiceCreatePipelineMethodDescriptor                 = pipelineServiceServiceDescriptor.Methods().ByName("CreatePipeline")
+	pipelineServiceGetPipelineMethodDescriptor                    = pipelineServiceServiceDescriptor.Methods().ByName("GetPipeline")
+	pipelineServiceListPipelinesMethodDescriptor                  = pipelineServiceServiceDescriptor.Methods().ByName("ListPipelines")
+	pipelineServiceUpdatePipelineMethodDescriptor                 = pipelineServiceServiceDescriptor.Methods().ByName("UpdatePipeline")
+	pipelineServiceDeletePipelineMethodDescriptor                 = pipelineServiceServiceDescriptor.Methods().ByName("DeletePipeline")
+	pipelineServiceStopPipelineMethodDescriptor                   = pipelineServiceServiceDescriptor.Methods().ByName("StopPipeline")
+	pipelineServiceStartPipelineMethodDescriptor                  = pipelineServiceServiceDescriptor.Methods().ByName("StartPipeline")
+	pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelineServiceConfigSchema")
 )
 
 // PipelineServiceClient is a client for the redpanda.api.dataplane.v1alpha2.PipelineService
@@ -80,6 +84,7 @@ type PipelineServiceClient interface {
 	DeletePipeline(context.Context, *connect.Request[v1alpha2.DeletePipelineRequest]) (*connect.Response[v1alpha2.DeletePipelineResponse], error)
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
+	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 
 // NewPipelineServiceClient constructs a client for the
@@ -135,18 +140,25 @@ func NewPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(pipelineServiceStartPipelineMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getPipelineServiceConfigSchema: connect.NewClient[v1alpha2.GetPipelineServiceConfigSchemaRequest, v1alpha2.GetPipelineServiceConfigSchemaResponse](
+			httpClient,
+			baseURL+PipelineServiceGetPipelineServiceConfigSchemaProcedure,
+			connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // pipelineServiceClient implements PipelineServiceClient.
 type pipelineServiceClient struct {
-	createPipeline *connect.Client[v1alpha2.CreatePipelineRequest, v1alpha2.CreatePipelineResponse]
-	getPipeline    *connect.Client[v1alpha2.GetPipelineRequest, v1alpha2.GetPipelineResponse]
-	listPipelines  *connect.Client[v1alpha2.ListPipelinesRequest, v1alpha2.ListPipelinesResponse]
-	updatePipeline *connect.Client[v1alpha2.UpdatePipelineRequest, v1alpha2.UpdatePipelineResponse]
-	deletePipeline *connect.Client[v1alpha2.DeletePipelineRequest, v1alpha2.DeletePipelineResponse]
-	stopPipeline   *connect.Client[v1alpha2.StopPipelineRequest, v1alpha2.StopPipelineResponse]
-	startPipeline  *connect.Client[v1alpha2.StartPipelineRequest, v1alpha2.StartPipelineResponse]
+	createPipeline                 *connect.Client[v1alpha2.CreatePipelineRequest, v1alpha2.CreatePipelineResponse]
+	getPipeline                    *connect.Client[v1alpha2.GetPipelineRequest, v1alpha2.GetPipelineResponse]
+	listPipelines                  *connect.Client[v1alpha2.ListPipelinesRequest, v1alpha2.ListPipelinesResponse]
+	updatePipeline                 *connect.Client[v1alpha2.UpdatePipelineRequest, v1alpha2.UpdatePipelineResponse]
+	deletePipeline                 *connect.Client[v1alpha2.DeletePipelineRequest, v1alpha2.DeletePipelineResponse]
+	stopPipeline                   *connect.Client[v1alpha2.StopPipelineRequest, v1alpha2.StopPipelineResponse]
+	startPipeline                  *connect.Client[v1alpha2.StartPipelineRequest, v1alpha2.StartPipelineResponse]
+	getPipelineServiceConfigSchema *connect.Client[v1alpha2.GetPipelineServiceConfigSchemaRequest, v1alpha2.GetPipelineServiceConfigSchemaResponse]
 }
 
 // CreatePipeline calls redpanda.api.dataplane.v1alpha2.PipelineService.CreatePipeline.
@@ -184,6 +196,12 @@ func (c *pipelineServiceClient) StartPipeline(ctx context.Context, req *connect.
 	return c.startPipeline.CallUnary(ctx, req)
 }
 
+// GetPipelineServiceConfigSchema calls
+// redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelineServiceConfigSchema.
+func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Context, req *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error) {
+	return c.getPipelineServiceConfigSchema.CallUnary(ctx, req)
+}
+
 // PipelineServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha2.PipelineService service.
 type PipelineServiceHandler interface {
@@ -194,6 +212,7 @@ type PipelineServiceHandler interface {
 	DeletePipeline(context.Context, *connect.Request[v1alpha2.DeletePipelineRequest]) (*connect.Response[v1alpha2.DeletePipelineResponse], error)
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
+	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 
 // NewPipelineServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -244,6 +263,12 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 		connect.WithSchema(pipelineServiceStartPipelineMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	pipelineServiceGetPipelineServiceConfigSchemaHandler := connect.NewUnaryHandler(
+		PipelineServiceGetPipelineServiceConfigSchemaProcedure,
+		svc.GetPipelineServiceConfigSchema,
+		connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha2.PipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PipelineServiceCreatePipelineProcedure:
@@ -260,6 +285,8 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 			pipelineServiceStopPipelineHandler.ServeHTTP(w, r)
 		case PipelineServiceStartPipelineProcedure:
 			pipelineServiceStartPipelineHandler.ServeHTTP(w, r)
+		case PipelineServiceGetPipelineServiceConfigSchemaProcedure:
+			pipelineServiceGetPipelineServiceConfigSchemaHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -295,4 +322,8 @@ func (UnimplementedPipelineServiceHandler) StopPipeline(context.Context, *connec
 
 func (UnimplementedPipelineServiceHandler) StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha2.PipelineService.StartPipeline is not implemented"))
+}
+
+func (UnimplementedPipelineServiceHandler) GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelineServiceConfigSchema is not implemented"))
 }

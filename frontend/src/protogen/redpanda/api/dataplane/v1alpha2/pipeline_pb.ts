@@ -941,3 +941,97 @@ export class StartPipelineResponse extends Message<StartPipelineResponse> {
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest
+ */
+export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineServiceConfigSchemaRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest.Format format = 1;
+   */
+  format = GetPipelineServiceConfigSchemaRequest_Format.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "format", kind: "enum", T: proto3.getEnumType(GetPipelineServiceConfigSchemaRequest_Format) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined, b: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest.Format
+ */
+export enum GetPipelineServiceConfigSchemaRequest_Format {
+  /**
+   * @generated from enum value: FORMAT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: FORMAT_JSONSCHEMA = 1;
+   */
+  JSONSCHEMA = 1,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GetPipelineServiceConfigSchemaRequest_Format)
+proto3.util.setEnumType(GetPipelineServiceConfigSchemaRequest_Format, "redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest.Format", [
+  { no: 0, name: "FORMAT_UNSPECIFIED" },
+  { no: 1, name: "FORMAT_JSONSCHEMA" },
+]);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse
+ */
+export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineServiceConfigSchemaResponse> {
+  /**
+   * @generated from field: string config_schema = 1;
+   */
+  configSchema = "";
+
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "config_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined, b: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaResponse, a, b);
+  }
+}
+
