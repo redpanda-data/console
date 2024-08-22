@@ -33,7 +33,8 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { MdDoNotDisturb, MdJavascript, MdOutlineLayers, MdOutlineSettings } from 'react-icons/md';
+import {MdAccessTime,
+    MdAssignment, MdDoNotDisturb, MdFlashOn, MdJavascript, MdOutlineLayers, MdOutlineRemoveRedEye, MdOutlineSettings, MdPlayArrow } from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -181,21 +182,29 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
     return JSON.stringify(value, null, 4);
 }
 
-const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+const defaultSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
     control: (provided) => ({
         ...provided,
-        _hover: {
-            borderColor: 'transparent'
-        },
+        minWidth: 'max-content',
     }),
     option: (provided) => ({
-       ...provided,
+        ...provided,
         wordBreak: 'keep-all',
         whiteSpace: 'nowrap'
     }),
     menuList: (provided) => ({
         ...provided,
         minWidth: 'min-content',
+    }),
+}
+
+const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+    ...defaultSelectChakraStyles,
+    control: (provided) => ({
+        ...provided,
+        _hover: {
+            borderColor: 'transparent'
+        },
     }),
     container: (provided) => ({
         ...provided,
@@ -311,11 +320,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
         const startOffsetOptions = [
-            { value: PartitionOffsetOrigin.End, label: 'Newest' },
-            { value: PartitionOffsetOrigin.EndMinusResults, label: 'Newest - ' + String(searchParams.maxResults) },
-            { value: PartitionOffsetOrigin.Start, label: 'Oldest' },
-            { value: PartitionOffsetOrigin.Custom, label: 'Custom' },
-            { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
+            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdFlashOn /> Latest / Live</Flex> },
+            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdPlayArrow />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
+            { value: PartitionOffsetOrigin.Start, label: <Flex gap={2} alignItems="center"><MdOutlineRemoveRedEye />Beginning</Flex> },
+            { value: PartitionOffsetOrigin.Custom, label: <Flex gap={2} alignItems="center"><MdAssignment />Offset</Flex> },
+            { value: PartitionOffsetOrigin.Timestamp, label: <Flex gap={2} alignItems="center"><MdAccessTime />Timestamp</Flex> },
         ];
 
         return (
@@ -341,6 +350,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                         }
                                     }}
                                     options={startOffsetOptions}
+                                    chakraStyles={defaultSelectChakraStyles}
                                 />
                                 {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
                                     <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
