@@ -6,6 +6,8 @@ on:
       - proto/**.proto
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - proto/**.proto
   delete:
 permissions:
   id-token: write
