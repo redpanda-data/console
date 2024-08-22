@@ -395,20 +395,9 @@ func local_request_PipelineService_StartPipeline_0(ctx context.Context, marshale
 
 }
 
-var (
-	filter_PipelineService_GetPipelineServiceConfigSchema_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_PipelineService_GetPipelineServiceConfigSchema_0(ctx context.Context, marshaler runtime.Marshaler, client PipelineServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetPipelineServiceConfigSchemaRequest
 	var metadata runtime.ServerMetadata
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PipelineService_GetPipelineServiceConfigSchema_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 
 	msg, err := client.GetPipelineServiceConfigSchema(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -418,13 +407,6 @@ func request_PipelineService_GetPipelineServiceConfigSchema_0(ctx context.Contex
 func local_request_PipelineService_GetPipelineServiceConfigSchema_0(ctx context.Context, marshaler runtime.Marshaler, server PipelineServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetPipelineServiceConfigSchemaRequest
 	var metadata runtime.ServerMetadata
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PipelineService_GetPipelineServiceConfigSchema_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 
 	msg, err := server.GetPipelineServiceConfigSchema(ctx, &protoReq)
 	return msg, metadata, err
@@ -620,7 +602,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema", runtime.WithHTTPPathPattern("/v1alpha2/redpanda-connect/config_schema"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema", runtime.WithHTTPPathPattern("/v1alpha2/redpanda-connect/config-schema"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -838,7 +820,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema", runtime.WithHTTPPathPattern("/v1alpha2/redpanda-connect/config_schema"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema", runtime.WithHTTPPathPattern("/v1alpha2/redpanda-connect/config-schema"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -917,7 +899,7 @@ var (
 
 	pattern_PipelineService_StartPipeline_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha2", "redpanda-connect", "pipelines", "id", "start"}, ""))
 
-	pattern_PipelineService_GetPipelineServiceConfigSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha2", "redpanda-connect", "config_schema"}, ""))
+	pattern_PipelineService_GetPipelineServiceConfigSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha2", "redpanda-connect", "config-schema"}, ""))
 )
 
 var (

@@ -34,13 +34,23 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PipelineServiceClient interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(ctx context.Context, in *ListPipelinesRequest, opts ...grpc.CallOption) (*ListPipelinesResponse, error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(ctx context.Context, in *UpdatePipelineRequest, opts ...grpc.CallOption) (*UpdatePipelineResponse, error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(ctx context.Context, in *DeletePipelineRequest, opts ...grpc.CallOption) (*DeletePipelineResponse, error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
 }
 
@@ -128,13 +138,23 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 // All implementations must embed UnimplementedPipelineServiceServer
 // for forward compatibility
 type PipelineServiceServer interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(context.Context, *ListPipelinesRequest) (*ListPipelinesResponse, error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(context.Context, *UpdatePipelineRequest) (*UpdatePipelineResponse, error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(context.Context, *DeletePipelineRequest) (*DeletePipelineResponse, error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }

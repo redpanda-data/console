@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
+// Defines the pipeline resource.
 message Pipeline {
   string id = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -75,21 +76,31 @@ message Pipeline {
     ];
   }
 
+  // State of the pipeline.
   enum State {
     STATE_UNSPECIFIED = 0;
+    // The pipeline is starting.
     STATE_STARTING = 1;
+    // The pipeline is running.
     STATE_RUNNING = 2;
+    // The pipeline is in the process of stopping.
     STATE_STOPPING = 3;
+    // The pipeline is stopped and in paused state.
     STATE_STOPPED = 4;
+    // The pipeline is in error state.
     STATE_ERROR = 5;
   }
 
+  // Pipeline status can hold error message.
   message Status {
     string error = 2;
   }
 }
 
+// PipelineService is the service for Redpanda Connect.
+// It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 service PipelineService {
+  // CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
     option (google.api.http) = {
       post: "/v1alpha2/redpanda-connect/pipelines"
@@ -109,6 +120,8 @@ service PipelineService {
       }
     };
   }
+
+  // GetPipeline gets a specific Redpanda Connect pipeline.
   rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {
     option (google.api.http) = {
       get: "/v1alpha2/redpanda-connect/pipelines/{id}"
@@ -136,6 +149,9 @@ service PipelineService {
       }
     };
   }
+
+  // ListPipelines implements the list pipelines method which lists the pipelines
+  // in the Redpanda cluster.
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {
     option (google.api.http) = {get: "/v1alpha2/redpanda-connect/pipelines"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -151,6 +167,8 @@ service PipelineService {
       }
     };
   }
+
+  // UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
   rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {
     option (google.api.http) = {
       put: "/v1alpha2/redpanda-connect/pipelines/{id}"
@@ -170,6 +188,8 @@ service PipelineService {
       }
     };
   }
+
+  // DeletePipeline deletes a specific Redpanda Connect pipeline.
   rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {
     option (google.api.http) = {delete: "/v1alpha2/redpanda-connect/pipelines/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -192,6 +212,8 @@ service PipelineService {
       }
     };
   }
+
+  // StopPipeline stops a specific Redpanda Connect pipeline.
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
     option (google.api.http) = {
       put: "/v1alpha2/redpanda-connect/pipelines/{id}/stop"
@@ -219,6 +241,8 @@ service PipelineService {
       }
     };
   }
+
+  // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
     option (google.api.http) = {
       put: "/v1alpha2/redpanda-connect/pipelines/{id}/start"
@@ -246,13 +270,16 @@ service PipelineService {
       }
     };
   }
+
+  // GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+  // available components and processors in this instance.
   rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
     option (google.api.http) = {
-      get: "/v1alpha2/redpanda-connect/config_schema"
+      get: "/v1alpha2/redpanda-connect/config-schema"
       response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Redpanda Connect pipeline service config schema"
+      summary: "Retrieve the schema for configuring Redpanda Connect pipelines."
       responses: {
         key: "200"
         value: {
@@ -266,6 +293,7 @@ service PipelineService {
   }
 }
 
+// PipelineCreate contains the details for the pipeline creation request.
 message PipelineCreate {
   string display_name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -276,14 +304,20 @@ message PipelineCreate {
   ];
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
+  // The pipeline configuration in YAML format.
   string config_yaml = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+
+  // Pipeline resource requests.
   Pipeline.Resources request = 4;
+
+  // Pipeline resource limits.
   Pipeline.Resources limit = 5;
 }
 
+// CreatePipelineRequest is the request of CreatePipeline.
 message CreatePipelineRequest {
   PipelineCreate pipeline = 1;
 }
@@ -305,7 +339,10 @@ message GetPipelineResponse {
 }
 
 message ListPipelinesRequest {
+  // List filter.
   Filter filter = 1;
+
+  // Limit the paginated response to a number of items.
   int32 page_size = 2 [
     (buf.validate.field).int32 = {
       gte: -1
@@ -317,10 +354,17 @@ message ListPipelinesRequest {
       maximum: 1000
     }
   ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
   string page_token = 3;
 
   message Filter {
-    string display_name = 1;
+    // Substring match on pipeline name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+      (buf.validate.field).string.max_len = 128
+    ];
   }
 }
 
@@ -341,8 +385,13 @@ message PipelineUpdate {
     (buf.validate.field).string.max_len = 256
   ];
 
+  // The pipeline configuration in YAML format.
   string config_yaml = 3;
+
+  // Pipeline resource requests.
   Pipeline.Resources request = 4;
+
+  // Pipeline resource requests.
   Pipeline.Resources limit = 5;
 }
 
@@ -356,6 +405,8 @@ message UpdatePipelineRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+
+  // The fields to be updated.
   google.protobuf.FieldMask update_mask = 3;
 }
 
@@ -397,15 +448,9 @@ message StartPipelineResponse {
   Pipeline pipeline = 1;
 }
 
-message GetPipelineServiceConfigSchemaRequest {
-  enum Format {
-    FORMAT_UNSPECIFIED = 0;
-    FORMAT_JSONSCHEMA = 1;
-  }
-
-  Format format = 1;
-}
+message GetPipelineServiceConfigSchemaRequest {}
 
 message GetPipelineServiceConfigSchemaResponse {
+  // config_schema is the JSON schema of the configuration components that are allowed for pipelines.
   string config_schema = 1;
 }

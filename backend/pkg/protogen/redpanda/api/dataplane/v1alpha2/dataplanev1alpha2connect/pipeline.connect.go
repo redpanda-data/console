@@ -77,13 +77,23 @@ var (
 // PipelineServiceClient is a client for the redpanda.api.dataplane.v1alpha2.PipelineService
 // service.
 type PipelineServiceClient interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(context.Context, *connect.Request[v1alpha2.CreatePipelineRequest]) (*connect.Response[v1alpha2.CreatePipelineResponse], error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *connect.Request[v1alpha2.GetPipelineRequest]) (*connect.Response[v1alpha2.GetPipelineResponse], error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(context.Context, *connect.Request[v1alpha2.ListPipelinesRequest]) (*connect.Response[v1alpha2.ListPipelinesResponse], error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(context.Context, *connect.Request[v1alpha2.UpdatePipelineRequest]) (*connect.Response[v1alpha2.UpdatePipelineResponse], error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(context.Context, *connect.Request[v1alpha2.DeletePipelineRequest]) (*connect.Response[v1alpha2.DeletePipelineResponse], error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 
@@ -205,13 +215,23 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 // PipelineServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha2.PipelineService service.
 type PipelineServiceHandler interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(context.Context, *connect.Request[v1alpha2.CreatePipelineRequest]) (*connect.Response[v1alpha2.CreatePipelineResponse], error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *connect.Request[v1alpha2.GetPipelineRequest]) (*connect.Response[v1alpha2.GetPipelineResponse], error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(context.Context, *connect.Request[v1alpha2.ListPipelinesRequest]) (*connect.Response[v1alpha2.ListPipelinesResponse], error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(context.Context, *connect.Request[v1alpha2.UpdatePipelineRequest]) (*connect.Response[v1alpha2.UpdatePipelineResponse], error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(context.Context, *connect.Request[v1alpha2.DeletePipelineRequest]) (*connect.Response[v1alpha2.DeletePipelineResponse], error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 

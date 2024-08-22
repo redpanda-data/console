@@ -7,12 +7,17 @@ import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, D
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
+ * PipelineService is the service for Redpanda Connect.
+ * It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
+ *
  * @generated from service redpanda.api.dataplane.v1alpha2.PipelineService
  */
 export const PipelineService = {
   typeName: "redpanda.api.dataplane.v1alpha2.PipelineService",
   methods: {
     /**
+     * CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.CreatePipeline
      */
     createPipeline: {
@@ -22,6 +27,8 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * GetPipeline gets a specific Redpanda Connect pipeline.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.GetPipeline
      */
     getPipeline: {
@@ -31,6 +38,9 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * ListPipelines implements the list pipelines method which lists the pipelines
+     * in the Redpanda cluster.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.ListPipelines
      */
     listPipelines: {
@@ -40,6 +50,8 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.UpdatePipeline
      */
     updatePipeline: {
@@ -49,6 +61,8 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * DeletePipeline deletes a specific Redpanda Connect pipeline.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.DeletePipeline
      */
     deletePipeline: {
@@ -58,6 +72,8 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * StopPipeline stops a specific Redpanda Connect pipeline.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.StopPipeline
      */
     stopPipeline: {
@@ -67,6 +83,8 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.StartPipeline
      */
     startPipeline: {
@@ -76,6 +94,9 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
+     * GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+     * available components and processors in this instance.
+     *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelineServiceConfigSchema
      */
     getPipelineServiceConfigSchema: {
