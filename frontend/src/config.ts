@@ -182,15 +182,20 @@ const routesIgnoredInServerless = [
 ];
 
 export const embeddedAvailableRoutesObservable = observable({
-
     get routes() {
         return APP_ROUTES
             .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
             .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
             .filter(x => {
-                if (isServerless())
-                    if (routesIgnoredInServerless.includes(x.path))
-                        return false; // remove entry
+                if (x.visibilityCheck) {
+                    const state = x.visibilityCheck();
+                    return state.visible;
+                }
+                return true;
+            })
+            .filter(x => {
+                if (isServerless() && routesIgnoredInServerless.includes(x.path))
+                    return false;
                 return true;
             });
     }
