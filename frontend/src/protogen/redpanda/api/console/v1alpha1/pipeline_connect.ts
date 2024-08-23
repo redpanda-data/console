@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
+import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, GetPipelineServiceConfigSchemaRequest, GetPipelineServiceConfigSchemaResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -73,6 +73,15 @@ export const PipelineService = {
       name: "StartPipeline",
       I: StartPipelineRequest,
       O: StartPipelineResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc redpanda.api.console.v1alpha1.PipelineService.GetPipelineServiceConfigSchema
+     */
+    getPipelineServiceConfigSchema: {
+      name: "GetPipelineServiceConfigSchema",
+      I: GetPipelineServiceConfigSchemaRequest,
+      O: GetPipelineServiceConfigSchemaResponse,
       kind: MethodKind.Unary,
     },
   }
