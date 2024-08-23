@@ -26,6 +26,7 @@ import SearchBar from '../../misc/SearchBar';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 import { Features } from '../../../state/supportedFeatures';
+import {isServerless} from '../../../config';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
@@ -64,9 +65,18 @@ class KafkaConnectOverview extends PageComponent {
             },
         ] as Tab[];
 
+        if (isServerless())
+            tabs.removeAll(x => x.key == 'kafkaConnect');
+
         return (
             <PageContent>
-                <Tabs tabs={tabs} defaultSelectedTabKey={showPipelines ? 'redpandaConnect' : 'kafkaConnect'} />
+                {tabs.length == 1
+                    ? (typeof tabs[0].content == 'function'
+                            ? tabs[0].content()
+                            : tabs[0].content
+                    )
+                    : <Tabs tabs={tabs} defaultSelectedTabKey={showPipelines ? 'redpandaConnect' : 'kafkaConnect'} />
+                }
             </PageContent>
         );
     }
