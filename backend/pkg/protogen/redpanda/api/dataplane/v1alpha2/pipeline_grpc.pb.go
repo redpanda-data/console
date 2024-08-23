@@ -20,26 +20,38 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	PipelineService_CreatePipeline_FullMethodName = "/redpanda.api.dataplane.v1alpha2.PipelineService/CreatePipeline"
-	PipelineService_GetPipeline_FullMethodName    = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipeline"
-	PipelineService_ListPipelines_FullMethodName  = "/redpanda.api.dataplane.v1alpha2.PipelineService/ListPipelines"
-	PipelineService_UpdatePipeline_FullMethodName = "/redpanda.api.dataplane.v1alpha2.PipelineService/UpdatePipeline"
-	PipelineService_DeletePipeline_FullMethodName = "/redpanda.api.dataplane.v1alpha2.PipelineService/DeletePipeline"
-	PipelineService_StopPipeline_FullMethodName   = "/redpanda.api.dataplane.v1alpha2.PipelineService/StopPipeline"
-	PipelineService_StartPipeline_FullMethodName  = "/redpanda.api.dataplane.v1alpha2.PipelineService/StartPipeline"
+	PipelineService_CreatePipeline_FullMethodName                 = "/redpanda.api.dataplane.v1alpha2.PipelineService/CreatePipeline"
+	PipelineService_GetPipeline_FullMethodName                    = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipeline"
+	PipelineService_ListPipelines_FullMethodName                  = "/redpanda.api.dataplane.v1alpha2.PipelineService/ListPipelines"
+	PipelineService_UpdatePipeline_FullMethodName                 = "/redpanda.api.dataplane.v1alpha2.PipelineService/UpdatePipeline"
+	PipelineService_DeletePipeline_FullMethodName                 = "/redpanda.api.dataplane.v1alpha2.PipelineService/DeletePipeline"
+	PipelineService_StopPipeline_FullMethodName                   = "/redpanda.api.dataplane.v1alpha2.PipelineService/StopPipeline"
+	PipelineService_StartPipeline_FullMethodName                  = "/redpanda.api.dataplane.v1alpha2.PipelineService/StartPipeline"
+	PipelineService_GetPipelineServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema"
 )
 
 // PipelineServiceClient is the client API for PipelineService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PipelineServiceClient interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(ctx context.Context, in *ListPipelinesRequest, opts ...grpc.CallOption) (*ListPipelinesResponse, error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(ctx context.Context, in *UpdatePipelineRequest, opts ...grpc.CallOption) (*UpdatePipelineResponse, error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(ctx context.Context, in *DeletePipelineRequest, opts ...grpc.CallOption) (*DeletePipelineResponse, error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
+	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
 }
 
 type pipelineServiceClient struct {
@@ -113,17 +125,37 @@ func (c *pipelineServiceClient) StartPipeline(ctx context.Context, in *StartPipe
 	return out, nil
 }
 
+func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error) {
+	out := new(GetPipelineServiceConfigSchemaResponse)
+	err := c.cc.Invoke(ctx, PipelineService_GetPipelineServiceConfigSchema_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PipelineServiceServer is the server API for PipelineService service.
 // All implementations must embed UnimplementedPipelineServiceServer
 // for forward compatibility
 type PipelineServiceServer interface {
+	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
+	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error)
+	// ListPipelines implements the list pipelines method which lists the pipelines
+	// in the Redpanda cluster.
 	ListPipelines(context.Context, *ListPipelinesRequest) (*ListPipelinesResponse, error)
+	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(context.Context, *UpdatePipelineRequest) (*UpdatePipelineResponse, error)
+	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(context.Context, *DeletePipelineRequest) (*DeletePipelineResponse, error)
+	// StopPipeline stops a specific Redpanda Connect pipeline.
 	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
+	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
+	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
+	// available components and processors in this instance.
+	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }
 
@@ -151,6 +183,9 @@ func (UnimplementedPipelineServiceServer) StopPipeline(context.Context, *StopPip
 }
 func (UnimplementedPipelineServiceServer) StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartPipeline not implemented")
+}
+func (UnimplementedPipelineServiceServer) GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPipelineServiceConfigSchema not implemented")
 }
 func (UnimplementedPipelineServiceServer) mustEmbedUnimplementedPipelineServiceServer() {}
 
@@ -291,6 +326,24 @@ func _PipelineService_StartPipeline_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_GetPipelineServiceConfigSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelineServiceConfigSchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).GetPipelineServiceConfigSchema(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_GetPipelineServiceConfigSchema_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).GetPipelineServiceConfigSchema(ctx, req.(*GetPipelineServiceConfigSchemaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PipelineService_ServiceDesc is the grpc.ServiceDesc for PipelineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -325,6 +378,10 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartPipeline",
 			Handler:    _PipelineService_StartPipeline_Handler,
+		},
+		{
+			MethodName: "GetPipelineServiceConfigSchema",
+			Handler:    _PipelineService_GetPipelineServiceConfigSchema_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

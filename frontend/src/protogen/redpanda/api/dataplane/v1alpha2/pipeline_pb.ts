@@ -7,6 +7,8 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * Defines the pipeline resource.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha2.Pipeline
  */
 export class Pipeline extends Message<Pipeline> {
@@ -93,6 +95,8 @@ export class Pipeline extends Message<Pipeline> {
 }
 
 /**
+ * State of the pipeline.
+ *
  * @generated from enum redpanda.api.dataplane.v1alpha2.Pipeline.State
  */
 export enum Pipeline_State {
@@ -102,26 +106,36 @@ export enum Pipeline_State {
   UNSPECIFIED = 0,
 
   /**
+   * The pipeline is starting.
+   *
    * @generated from enum value: STATE_STARTING = 1;
    */
   STARTING = 1,
 
   /**
+   * The pipeline is running.
+   *
    * @generated from enum value: STATE_RUNNING = 2;
    */
   RUNNING = 2,
 
   /**
+   * The pipeline is in the process of stopping.
+   *
    * @generated from enum value: STATE_STOPPING = 3;
    */
   STOPPING = 3,
 
   /**
+   * The pipeline is stopped and in paused state.
+   *
    * @generated from enum value: STATE_STOPPED = 4;
    */
   STOPPED = 4,
 
   /**
+   * The pipeline is in error state.
+   *
    * @generated from enum value: STATE_ERROR = 5;
    */
   ERROR = 5,
@@ -204,6 +218,8 @@ export class Pipeline_Resources extends Message<Pipeline_Resources> {
 }
 
 /**
+ * Pipeline status can hold error message.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha2.Pipeline.Status
  */
 export class Pipeline_Status extends Message<Pipeline_Status> {
@@ -241,6 +257,8 @@ export class Pipeline_Status extends Message<Pipeline_Status> {
 }
 
 /**
+ * PipelineCreate contains the details for the pipeline creation request.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha2.PipelineCreate
  */
 export class PipelineCreate extends Message<PipelineCreate> {
@@ -255,16 +273,22 @@ export class PipelineCreate extends Message<PipelineCreate> {
   description = "";
 
   /**
+   * The pipeline configuration in YAML format.
+   *
    * @generated from field: string config_yaml = 3;
    */
   configYaml = "";
 
   /**
+   * Pipeline resource requests.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
    */
   request?: Pipeline_Resources;
 
   /**
+   * Pipeline resource limits.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 5;
    */
   limit?: Pipeline_Resources;
@@ -302,6 +326,8 @@ export class PipelineCreate extends Message<PipelineCreate> {
 }
 
 /**
+ * CreatePipelineRequest is the request of CreatePipeline.
+ *
  * @generated from message redpanda.api.dataplane.v1alpha2.CreatePipelineRequest
  */
 export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
@@ -454,16 +480,23 @@ export class GetPipelineResponse extends Message<GetPipelineResponse> {
  */
 export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
   /**
+   * List filter.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.ListPipelinesRequest.Filter filter = 1;
    */
   filter?: ListPipelinesRequest_Filter;
 
   /**
+   * Limit the paginated response to a number of items.
+   *
    * @generated from field: int32 page_size = 2;
    */
   pageSize = 0;
 
   /**
+   * Value of the next_page_token field returned by the previous response.
+   * If not provided, the system assumes the first page is requested.
+   *
    * @generated from field: string page_token = 3;
    */
   pageToken = "";
@@ -503,9 +536,11 @@ export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
  */
 export class ListPipelinesRequest_Filter extends Message<ListPipelinesRequest_Filter> {
   /**
-   * @generated from field: string display_name = 1;
+   * Substring match on pipeline name. Case-sensitive.
+   *
+   * @generated from field: string name_contains = 1;
    */
-  displayName = "";
+  nameContains = "";
 
   constructor(data?: PartialMessage<ListPipelinesRequest_Filter>) {
     super();
@@ -515,7 +550,7 @@ export class ListPipelinesRequest_Filter extends Message<ListPipelinesRequest_Fi
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha2.ListPipelinesRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPipelinesRequest_Filter {
@@ -593,16 +628,22 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
   description = "";
 
   /**
+   * The pipeline configuration in YAML format.
+   *
    * @generated from field: string config_yaml = 3;
    */
   configYaml = "";
 
   /**
+   * Pipeline resource requests.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
    */
   request?: Pipeline_Resources;
 
   /**
+   * Pipeline resource requests.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 5;
    */
   limit?: Pipeline_Resources;
@@ -654,6 +695,8 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   pipeline?: PipelineUpdate;
 
   /**
+   * The fields to be updated.
+   *
    * @generated from field: google.protobuf.FieldMask update_mask = 3;
    */
   updateMask?: FieldMask;
@@ -938,6 +981,76 @@ export class StartPipelineResponse extends Message<StartPipelineResponse> {
 
   static equals(a: StartPipelineResponse | PlainMessage<StartPipelineResponse> | undefined, b: StartPipelineResponse | PlainMessage<StartPipelineResponse> | undefined): boolean {
     return proto3.util.equals(StartPipelineResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest
+ */
+export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineServiceConfigSchemaRequest> {
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined, b: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse
+ */
+export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineServiceConfigSchemaResponse> {
+  /**
+   * config_schema is the JSON schema of the configuration components that are allowed for pipelines.
+   *
+   * @generated from field: string config_schema = 1;
+   */
+  configSchema = "";
+
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "config_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined, b: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaResponse, a, b);
   }
 }
 

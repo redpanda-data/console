@@ -145,7 +145,7 @@ func convertStringToUint(v string, ss UintSize) ([]byte, error) {
 			return nil, fmt.Errorf("failed to encode uint payload: %w", err)
 		}
 		buf := new(bytes.Buffer)
-		binary.Write(buf, binary.BigEndian, uint8(nv))
+		binary.Write(buf, binary.BigEndian, uint8(nv)) //nolint:gosec // parsed as 8
 		byteData = buf.Bytes()
 	case Uint16:
 		nv, err := strconv.ParseUint(v, 10, 16)

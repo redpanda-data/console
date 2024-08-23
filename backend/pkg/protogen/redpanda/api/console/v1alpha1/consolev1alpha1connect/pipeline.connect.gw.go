@@ -17,26 +17,28 @@ import (
 // PipelineServiceGatewayServer implements the gRPC server API for the PipelineService service.
 type PipelineServiceGatewayServer struct {
 	v1alpha1.UnimplementedPipelineServiceServer
-	createPipeline connect_gateway.UnaryHandler[v1alpha1.CreatePipelineRequest, v1alpha1.CreatePipelineResponse]
-	getPipeline    connect_gateway.UnaryHandler[v1alpha1.GetPipelineRequest, v1alpha1.GetPipelineResponse]
-	deletePipeline connect_gateway.UnaryHandler[v1alpha1.DeletePipelineRequest, v1alpha1.DeletePipelineResponse]
-	listPipelines  connect_gateway.UnaryHandler[v1alpha1.ListPipelinesRequest, v1alpha1.ListPipelinesResponse]
-	updatePipeline connect_gateway.UnaryHandler[v1alpha1.UpdatePipelineRequest, v1alpha1.UpdatePipelineResponse]
-	stopPipeline   connect_gateway.UnaryHandler[v1alpha1.StopPipelineRequest, v1alpha1.StopPipelineResponse]
-	startPipeline  connect_gateway.UnaryHandler[v1alpha1.StartPipelineRequest, v1alpha1.StartPipelineResponse]
+	createPipeline                 connect_gateway.UnaryHandler[v1alpha1.CreatePipelineRequest, v1alpha1.CreatePipelineResponse]
+	getPipeline                    connect_gateway.UnaryHandler[v1alpha1.GetPipelineRequest, v1alpha1.GetPipelineResponse]
+	deletePipeline                 connect_gateway.UnaryHandler[v1alpha1.DeletePipelineRequest, v1alpha1.DeletePipelineResponse]
+	listPipelines                  connect_gateway.UnaryHandler[v1alpha1.ListPipelinesRequest, v1alpha1.ListPipelinesResponse]
+	updatePipeline                 connect_gateway.UnaryHandler[v1alpha1.UpdatePipelineRequest, v1alpha1.UpdatePipelineResponse]
+	stopPipeline                   connect_gateway.UnaryHandler[v1alpha1.StopPipelineRequest, v1alpha1.StopPipelineResponse]
+	startPipeline                  connect_gateway.UnaryHandler[v1alpha1.StartPipelineRequest, v1alpha1.StartPipelineResponse]
+	getPipelineServiceConfigSchema connect_gateway.UnaryHandler[v1alpha1.GetPipelineServiceConfigSchemaRequest, v1alpha1.GetPipelineServiceConfigSchemaResponse]
 }
 
 // NewPipelineServiceGatewayServer constructs a Connect-Gateway gRPC server for the PipelineService
 // service.
 func NewPipelineServiceGatewayServer(svc PipelineServiceHandler, opts ...connect_gateway.HandlerOption) *PipelineServiceGatewayServer {
 	return &PipelineServiceGatewayServer{
-		createPipeline: connect_gateway.NewUnaryHandler(PipelineServiceCreatePipelineProcedure, svc.CreatePipeline, opts...),
-		getPipeline:    connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineProcedure, svc.GetPipeline, opts...),
-		deletePipeline: connect_gateway.NewUnaryHandler(PipelineServiceDeletePipelineProcedure, svc.DeletePipeline, opts...),
-		listPipelines:  connect_gateway.NewUnaryHandler(PipelineServiceListPipelinesProcedure, svc.ListPipelines, opts...),
-		updatePipeline: connect_gateway.NewUnaryHandler(PipelineServiceUpdatePipelineProcedure, svc.UpdatePipeline, opts...),
-		stopPipeline:   connect_gateway.NewUnaryHandler(PipelineServiceStopPipelineProcedure, svc.StopPipeline, opts...),
-		startPipeline:  connect_gateway.NewUnaryHandler(PipelineServiceStartPipelineProcedure, svc.StartPipeline, opts...),
+		createPipeline:                 connect_gateway.NewUnaryHandler(PipelineServiceCreatePipelineProcedure, svc.CreatePipeline, opts...),
+		getPipeline:                    connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineProcedure, svc.GetPipeline, opts...),
+		deletePipeline:                 connect_gateway.NewUnaryHandler(PipelineServiceDeletePipelineProcedure, svc.DeletePipeline, opts...),
+		listPipelines:                  connect_gateway.NewUnaryHandler(PipelineServiceListPipelinesProcedure, svc.ListPipelines, opts...),
+		updatePipeline:                 connect_gateway.NewUnaryHandler(PipelineServiceUpdatePipelineProcedure, svc.UpdatePipeline, opts...),
+		stopPipeline:                   connect_gateway.NewUnaryHandler(PipelineServiceStopPipelineProcedure, svc.StopPipeline, opts...),
+		startPipeline:                  connect_gateway.NewUnaryHandler(PipelineServiceStartPipelineProcedure, svc.StartPipeline, opts...),
+		getPipelineServiceConfigSchema: connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineServiceConfigSchemaProcedure, svc.GetPipelineServiceConfigSchema, opts...),
 	}
 }
 
@@ -66,6 +68,10 @@ func (s *PipelineServiceGatewayServer) StopPipeline(ctx context.Context, req *v1
 
 func (s *PipelineServiceGatewayServer) StartPipeline(ctx context.Context, req *v1alpha1.StartPipelineRequest) (*v1alpha1.StartPipelineResponse, error) {
 	return s.startPipeline(ctx, req)
+}
+
+func (s *PipelineServiceGatewayServer) GetPipelineServiceConfigSchema(ctx context.Context, req *v1alpha1.GetPipelineServiceConfigSchemaRequest) (*v1alpha1.GetPipelineServiceConfigSchemaResponse, error) {
+	return s.getPipelineServiceConfigSchema(ctx, req)
 }
 
 // RegisterPipelineServiceHandlerGatewayServer registers the Connect handlers for the
