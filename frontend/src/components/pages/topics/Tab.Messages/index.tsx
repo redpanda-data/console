@@ -33,8 +33,17 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import {MdAccessTime,
-    MdAssignment, MdDoNotDisturb, MdFlashOn, MdJavascript, MdOutlineLayers, MdOutlineRemoveRedEye, MdOutlineSettings, MdPlayArrow } from 'react-icons/md';
+import {
+    MdCalendarToday,
+    MdDoNotDisturb,
+    MdJavascript,
+    MdKeyboardTab,
+    MdOutlineLayers,
+    MdOutlinePlayCircle,
+    MdOutlineQuickreply,
+    MdOutlineSettings,
+    MdOutlineSkipPrevious
+} from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -320,11 +329,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
         const startOffsetOptions = [
-            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdFlashOn /> Latest / Live</Flex> },
-            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdPlayArrow />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
-            { value: PartitionOffsetOrigin.Start, label: <Flex gap={2} alignItems="center"><MdOutlineRemoveRedEye />Beginning</Flex> },
-            { value: PartitionOffsetOrigin.Custom, label: <Flex gap={2} alignItems="center"><MdAssignment />Offset</Flex> },
-            { value: PartitionOffsetOrigin.Timestamp, label: <Flex gap={2} alignItems="center"><MdAccessTime />Timestamp</Flex> },
+            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdOutlineQuickreply /> Latest / Live</Flex> },
+            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdOutlinePlayCircle />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
+            { value: PartitionOffsetOrigin.Start, label: <Flex gap={2} alignItems="center"><MdOutlineSkipPrevious />Beginning</Flex> },
+            { value: PartitionOffsetOrigin.Custom, label: <Flex gap={2} alignItems="center"><MdKeyboardTab />Offset</Flex> },
+            { value: PartitionOffsetOrigin.Timestamp, label: <Flex gap={2} alignItems="center"><MdCalendarToday />Timestamp</Flex> },
         ];
 
         return (
