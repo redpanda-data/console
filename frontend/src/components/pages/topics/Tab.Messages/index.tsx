@@ -329,8 +329,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
         const startOffsetOptions = [
-            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdOutlineQuickreply /> Latest / Live</Flex> },
-            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdOutlinePlayCircle />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
+            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdOutlinePlayCircle /> Latest / Live</Flex> },
+            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdOutlineQuickreply />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
             { value: PartitionOffsetOrigin.Start, label: <Flex gap={2} alignItems="center"><MdOutlineSkipPrevious />Beginning</Flex> },
             { value: PartitionOffsetOrigin.Custom, label: <Flex gap={2} alignItems="center"><MdKeyboardTab />Offset</Flex> },
             { value: PartitionOffsetOrigin.Timestamp, label: <Flex gap={2} alignItems="center"><MdCalendarToday />Timestamp</Flex> },
