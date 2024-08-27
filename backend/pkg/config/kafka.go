@@ -21,8 +21,6 @@ type Kafka struct {
 	ClientID string   `yaml:"clientId"`
 	RackID   string   `yaml:"rackId"`
 
-	// Schema Registry
-	Schema      Schema  `yaml:"schemaRegistry"`
 	Protobuf    Proto   `yaml:"protobuf"`
 	MessagePack Msgpack `yaml:"messagePack"`
 
@@ -39,7 +37,6 @@ func (c *Kafka) RegisterFlags(f *flag.FlagSet) {
 	c.TLS.RegisterFlags(f)
 	c.SASL.RegisterFlags(f)
 	c.Protobuf.RegisterFlags(f)
-	c.Schema.RegisterFlags(f)
 }
 
 // Validate the Kafka config
@@ -48,12 +45,7 @@ func (c *Kafka) Validate() error {
 		return fmt.Errorf("you must specify at least one broker to connect to")
 	}
 
-	err := c.Schema.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = c.Protobuf.Validate()
+	err := c.Protobuf.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate protobuf config: %w", err)
 	}

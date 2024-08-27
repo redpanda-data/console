@@ -123,7 +123,7 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 		}
 
 		// 3. Submit publish topic records request
-		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, compressionTypeToKgoCodec(req.CompressionType))
+		publishRes := api.ConsoleSvc.ProducePlainRecords(r.Context(), req.KgoRecords(), req.UseTransactions, compressionTypeToKgoCodec(req.CompressionType))
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, publishRes)
 	}

@@ -122,8 +122,6 @@ func (api *Service) ListMessages(
 }
 
 // PublishMessage serialized and produces the records.
-//
-//nolint:gocognit,cyclop // complicated response logic
 func (api *Service) PublishMessage(
 	ctx context.Context,
 	req *connect.Request[v1alpha.PublishMessageRequest],
@@ -144,7 +142,7 @@ func (api *Service) PublishMessage(
 	valueInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetValue())
 	compression := rpcCompressionTypeToKgoCodec(msg.GetCompression())
 
-	prRes, prErr := api.consoleSvc.PublishRecord(
+	prRes, prErr := api.consoleSvc.ProduceRecord(
 		ctx, msg.GetTopic(), msg.GetPartitionId(), recordHeaders,
 		keyInput, valueInput, req.Msg.GetUseTransactions(), compression,
 	)

@@ -31,21 +31,12 @@ func (api *API) handleLivenessProbe() http.HandlerFunc {
 
 func (api *API) handleStartupProbe() http.HandlerFunc {
 	type response struct {
-		IsHTTPOk  bool `json:"isHttpOk"`
-		IsKafkaOk bool `json:"isKafkaOk"`
+		IsHTTPOk bool `json:"isHttpOk"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Check Kafka connectivity
-		isKafkaOK := false
-		err := api.ConsoleSvc.IsHealthy(r.Context())
-		if err == nil {
-			isKafkaOK = true
-		}
-
 		res := &response{
-			IsHTTPOk:  true,
-			IsKafkaOk: isKafkaOK,
+			IsHTTPOk: true,
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)

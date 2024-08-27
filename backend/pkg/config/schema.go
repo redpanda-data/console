@@ -20,10 +20,7 @@ type Schema struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
 
-	// Credentials
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	BearerToken string `yaml:"bearerToken"`
+	Authentication SchemaAuthentication `yaml:"authentication"`
 
 	// TLS / Custom CA
 	TLS TLS `yaml:"tls"`
@@ -31,8 +28,7 @@ type Schema struct {
 
 // RegisterFlags registers all nested config flags.
 func (c *Schema) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Password, "schema.registry.password", "", "Password for authenticating against the schema registry (optional)")
-	f.StringVar(&c.BearerToken, "schema.registry.token", "", "Bearer token for authenticating against the schema registry (optional)")
+	c.Authentication.RegisterFlags(f)
 }
 
 // Validate the schema registry configurations.
@@ -46,21 +42,9 @@ func (c *Schema) Validate() error {
 	}
 
 	for _, u := range c.URLs {
-		urlParsed, err := url.Parse(u)
+		_, err := url.Parse(u)
 		if err != nil {
 			return fmt.Errorf("failed to parse schema registry url %q: %w", u, err)
-		}
-		switch urlParsed.Scheme {
-		case "http":
-			if c.TLS.Enabled {
-				return fmt.Errorf("URL scheme is http (given URL: %q), but you have TLS enabled. Change URL schema to https", u)
-			}
-		case "https":
-			if !c.TLS.Enabled {
-				return fmt.Errorf("URL scheme is https (given URL: %q), but you have TLS disabled. Change URL scheme to http", u)
-			}
-		default:
-			return fmt.Errorf("URL scheme must either be http or https, but got %q in url: %q", urlParsed.Scheme, u)
 		}
 	}
 

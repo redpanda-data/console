@@ -31,14 +31,14 @@ func (s *Service) ProduceRecord(
 	useTransactions bool,
 	compressionOpts []kgo.CompressionCodec,
 ) (*ProduceRecordResponse, error) {
-	data, err := s.SerdeService.SerializeRecord(ctx, serde.SerializeInput{
+	data, err := s.serdeSvc.SerializeRecord(ctx, serde.SerializeInput{
 		Topic: topic,
 		Key:   *key,
 		Value: *value,
 	})
 	if err != nil {
 		return &ProduceRecordResponse{
-			Error:                err,
+			Error:                err.Error(),
 			KeyTroubleshooting:   data.Key.Troubleshooting,
 			ValueTroubleshooting: data.Value.Troubleshooting,
 		}, err

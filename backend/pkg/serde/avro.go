@@ -20,14 +20,14 @@ import (
 	"github.com/linkedin/goavro"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/redpanda-data/console/backend/pkg/schema"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*AvroSerde)(nil)
 
 // AvroSerde represents the serde for dealing with Avro types.
 type AvroSerde struct {
-	SchemaSvc *schema.Service
+	schemaClient *schemacache.CachedClient
 }
 
 // Name returns the name of the serde payload encoding.
@@ -37,7 +37,7 @@ func (AvroSerde) Name() PayloadEncoding {
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
-	if d.SchemaSvc == nil || !d.SchemaSvc.IsEnabled() {
+	if d.schemaClient == nil {
 		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
 	}
 
@@ -52,13 +52,14 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
-	schema, err := d.SchemaSvc.GetAvroSchemaByID(ctx, schemaID)
+
+	avroSch, err := d.schemaClient.AvroSchemaByID(ctx, int(schemaID))
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
 
 	var obj any
-	err = avro.Unmarshal(schema, payload[5:], &obj)
+	err = avro.Unmarshal(avroSch, payload[5:], &obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
@@ -89,7 +90,7 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 		return nil, errors.New("no schema id specified")
 	}
 
-	schema, err := d.SchemaSvc.GetAvroSchemaByID(ctx, so.schemaID)
+	schema, err := d.schemaClient.AvroSchemaByID(ctx, int(so.schemaID))
 	if err != nil {
 		return nil, fmt.Errorf("getting avro schema from registry: %w", err)
 	}

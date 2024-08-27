@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package kafka provides methods for dynamically creating, caching
+// and retrieving Kafka clients for the given context.
 package kafka
 
 import (
@@ -55,9 +57,24 @@ var _ ClientFactory = (*CachedClientProvider)(nil)
 // configuring Kafka clients with various options such as TLS, SASL, and other
 // Kafka-specific settings.
 type CachedClientProvider struct {
-	cfg         config.Config
+	cfg         *config.Config
 	logger      *zap.Logger
-	clientCache cache.Cache[string, *kgo.Client]
+	clientCache *cache.Cache[string, *kgo.Client]
+}
+
+// NewCachedClientProvider creates a new CachedClientProvider with the specified
+// configuration and logger, initializing the client cache with defined settings.
+func NewCachedClientProvider(cfg *config.Config, logger *zap.Logger) *CachedClientProvider {
+	cacheSettings := []cache.Opt{
+		cache.MaxAge(30 * time.Second),
+		cache.MaxErrorAge(time.Second),
+	}
+
+	return &CachedClientProvider{
+		cfg:         cfg,
+		logger:      logger,
+		clientCache: cache.New[string, *kgo.Client](cacheSettings...),
+	}
 }
 
 // GetKafkaClient retrieves a cached Kafka client. If no cached client is available,
@@ -65,7 +82,7 @@ type CachedClientProvider struct {
 // the current request's lifecycle. We retain the client after the request completes,
 // as handling multiple requests in quick succession is common. Establishing a new
 // Kafka connection for each request is resource-intensive and time-consuming.
-func (f *CachedClientProvider) GetKafkaClient(ctx context.Context) (*kgo.Client, *kadm.Client, error) {
+func (f *CachedClientProvider) GetKafkaClient(context.Context) (*kgo.Client, *kadm.Client, error) {
 	kgoClient, err, _ := f.clientCache.Get("client", func() (*kgo.Client, error) {
 		return f.createClient()
 	})

@@ -47,7 +47,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20240412162337-6a58760afaa7
 	github.com/twmb/franz-go/pkg/kmsg v1.8.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/twmb/franz-go/pkg/sr v1.0.1
+	github.com/twmb/franz-go/pkg/sr v1.1.0
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
@@ -140,6 +140,7 @@ require (
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/jhump/protoreflect/v2 v2.0.0-20240207013822-c9ae7caed596 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect

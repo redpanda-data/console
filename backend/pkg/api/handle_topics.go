@@ -299,7 +299,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 		// 2. Fetch all topic names from metadata as no topic filter has been specified
 		if len(topicNames) == 0 {
 			var err error
-			topicNames, err = api.ConsoleSvc.GetAllTopicNames(r.Context(), nil)
+			topicNames, err = api.ConsoleSvc.GetAllTopicNames(r.Context())
 			if err != nil {
 				restErr := &rest.Error{
 					Err:      fmt.Errorf("failed to request metadata to fetch topic names: %w", err),

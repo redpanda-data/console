@@ -576,7 +576,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 		}
 
 		// Run Interpreter filter and check if message passes the filter
-		deserializedRec := s.SerdeService.DeserializeRecord(
+		deserializedRec := s.serdeSvc.DeserializeRecord(
 			ctx,
 			record,
 			serde.DeserializationOptions{

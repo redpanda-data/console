@@ -19,9 +19,8 @@ type Proto struct {
 	Enabled bool `json:"enabled"`
 
 	// The required proto definitions can be provided via SchemaRegistry, Git or Filesystem
-	SchemaRegistry ProtoSchemaRegistry `json:"schemaRegistry"`
-	Git            Git                 `json:"git"`
-	FileSystem     Filesystem          `json:"fileSystem"`
+	Git        Git        `json:"git"`
+	FileSystem Filesystem `json:"fileSystem"`
 
 	// Mappings define what proto types shall be used for each Kafka topic. If SchemaRegistry is used, no mappings are required.
 	Mappings []ProtoTopicMapping `json:"mappings"`
@@ -43,11 +42,11 @@ func (c *Proto) Validate() error {
 		return nil
 	}
 
-	if !c.Git.Enabled && !c.FileSystem.Enabled && !c.SchemaRegistry.Enabled {
+	if !c.Git.Enabled && !c.FileSystem.Enabled {
 		return fmt.Errorf("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
 	}
 
-	if len(c.Mappings) == 0 && !c.SchemaRegistry.Enabled {
+	if len(c.Mappings) == 0 {
 		return fmt.Errorf("protobuf deserializer is enabled, but no topic mappings have been configured")
 	}
 
@@ -58,7 +57,6 @@ func (c *Proto) Validate() error {
 func (c *Proto) SetDefaults() {
 	c.Git.SetDefaults()
 	c.FileSystem.SetDefaults()
-	c.SchemaRegistry.SetDefaults()
 
 	// Index by full filepath so that we support .proto files with the same filename in different directories
 	c.Git.IndexByFullFilepath = true

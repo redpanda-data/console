@@ -142,7 +142,7 @@ func (*Service) getConsoleOverview() OverviewConsole {
 }
 
 func (s *Service) getSchemaRegistryOverview(ctx context.Context) OverviewSchemaRegistry {
-	if s.kafkaSvc.SchemaService == nil {
+	if !s.cfg.SchemaRegistry.Enabled {
 		return OverviewSchemaRegistry{
 			IsConfigured: false,
 		}
@@ -151,16 +151,26 @@ func (s *Service) getSchemaRegistryOverview(ctx context.Context) OverviewSchemaR
 	status := OverviewStatus{
 		Status: StatusTypeHealthy,
 	}
+
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		status.SetStatus(StatusTypeUnhealthy, fmt.Sprintf("Failed to get schema registry client: %v", err.Error()))
+		return OverviewSchemaRegistry{
+			OverviewStatus: status,
+			IsConfigured:   s.cfg.SchemaRegistry.Enabled,
+		}
+	}
+
 	registeredSubjects := 0
-	subjects, err := s.kafkaSvc.SchemaService.GetSubjects(ctx, false)
+	subjects, err := srClient.Subjects(ctx)
 	if err != nil {
 		status.SetStatus(StatusTypeUnhealthy, fmt.Sprintf("Could not fetch subjects from schema registry %q", err.Error()))
 	} else {
-		registeredSubjects = len(subjects.Subjects)
+		registeredSubjects = len(subjects)
 	}
 	return OverviewSchemaRegistry{
 		OverviewStatus:     status,
-		IsConfigured:       s.kafkaSvc.SchemaService != nil,
+		IsConfigured:       s.cfg.SchemaRegistry.Enabled,
 		RegisteredSubjects: registeredSubjects,
 	}
 }

@@ -18,11 +18,11 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
@@ -36,7 +36,7 @@ func (api *API) handleSchemaRegistryNotConfigured() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaRegistryMode() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -56,7 +56,7 @@ func (api *API) handleGetSchemaRegistryMode() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaRegistrySchemaTypes() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -76,7 +76,7 @@ func (api *API) handleGetSchemaRegistrySchemaTypes() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -110,12 +110,12 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		res, err := api.ConsoleSvc.GetSchemaRegistryConfig(r.Context())
+		res, err := api.ConsoleSvc.GetSchemaRegistryConfig(r.Context(), "")
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
@@ -130,12 +130,12 @@ func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 }
 
 func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
 	type request struct {
-		Compatibility schema.CompatibilityLevel `json:"compatibility"`
+		Compatibility sr.CompatibilityLevel `json:"compatibility"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +146,7 @@ func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
 			return
 		}
 
-		res, err := api.ConsoleSvc.PutSchemaRegistryConfig(r.Context(), req.Compatibility)
+		res, err := api.ConsoleSvc.PutSchemaRegistryConfig(r.Context(), "", sr.SetCompatibility{Level: req.Compatibility})
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
@@ -161,12 +161,12 @@ func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
 }
 
 func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
 	type request struct {
-		Compatibility schema.CompatibilityLevel `json:"compatibility"`
+		Compatibility sr.CompatibilityLevel `json:"compatibility"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -181,10 +181,10 @@ func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
 		}
 
 		// 2. Set subject compatibility level
-		res, err := api.ConsoleSvc.PutSchemaRegistrySubjectConfig(r.Context(), subjectName, req.Compatibility)
+		res, err := api.ConsoleSvc.PutSchemaRegistryConfig(r.Context(), subjectName, sr.SetCompatibility{Level: req.Compatibility})
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -207,7 +207,7 @@ func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
 }
 
 func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -218,8 +218,8 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 		// 2. Set subject compatibility level
 		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectConfig(r.Context(), subjectName)
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -242,7 +242,7 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -262,7 +262,7 @@ func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -292,8 +292,8 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		// 3. Get all subjects' details
 		res, err := api.ConsoleSvc.GetSchemaRegistrySubjectDetails(r.Context(), subjectName, version)
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -316,7 +316,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 }
 
 func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -325,29 +325,18 @@ func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
 		subjectName := getSubjectFromRequestPath(r)
 
 		// 2. Parse and validate version input
-		version := rest.GetURLParam(r, "version")
-		switch version {
-		case console.SchemaVersionsLatest:
-		default:
-			// Must be number or it's invalid input
-			_, err := strconv.Atoi(version)
-			if err != nil {
-				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q, %q or a positive integer", version, console.SchemaVersionsLatest, console.SchemaVersionsAll)
-				rest.SendRESTError(w, r, api.Logger, &rest.Error{
-					Err:      descriptiveErr,
-					Status:   http.StatusBadRequest,
-					Message:  descriptiveErr.Error(),
-					IsSilent: false,
-				})
-				return
-			}
+		versionStr := rest.GetURLParam(r, "version")
+		version, restErr := parseVersionStr(versionStr)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
 		}
 
 		// 3. Get all subjects' details
 		res, err := api.ConsoleSvc.GetSchemaRegistrySchemaReferencedBy(r.Context(), subjectName, version)
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -370,7 +359,7 @@ func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
 }
 
 func (api *API) handleDeleteSubject() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -396,8 +385,8 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		// 2. Send delete request
 		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubject(r.Context(), subjectName, deletePermanently)
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -421,8 +410,28 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 	}
 }
 
+func parseVersionStr(versionStr string) (int, *rest.Error) {
+	if versionStr == console.SchemaVersionsLatest {
+		return -1, nil
+	}
+
+	// Must be number or it's invalid input
+	version, err := strconv.Atoi(versionStr)
+	if err != nil {
+		descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
+		return 0, &rest.Error{
+			Err:      descriptiveErr,
+			Status:   http.StatusBadRequest,
+			Message:  descriptiveErr.Error(),
+			IsSilent: false,
+		}
+	}
+
+	return version, nil
+}
+
 func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -430,22 +439,11 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := getSubjectFromRequestPath(r)
 
-		version := rest.GetURLParam(r, "version")
-		switch version {
-		case console.SchemaVersionsLatest:
-		default:
-			// Must be number or it's invalid input
-			_, err := strconv.Atoi(version)
-			if err != nil {
-				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
-				rest.SendRESTError(w, r, api.Logger, &rest.Error{
-					Err:      descriptiveErr,
-					Status:   http.StatusBadRequest,
-					Message:  descriptiveErr.Error(),
-					IsSilent: false,
-				})
-				return
-			}
+		versionStr := rest.GetURLParam(r, "version")
+		version, restErr := parseVersionStr(versionStr)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
 		}
 
 		deletePermanentlyStr := rest.GetQueryParam(r, "permanent")
@@ -466,8 +464,8 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 		// 2. Send delete request
 		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectVersion(r.Context(), subjectName, version, deletePermanently)
 		if err != nil {
-			var schemaError *schema.RestError
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -476,7 +474,7 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 				})
 				return
 			}
-			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeVersionNotFound {
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40402 {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:      err,
 					Status:   http.StatusNotFound,
@@ -492,7 +490,7 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 				Message: fmt.Sprintf("Failed to delete schema registry subject version: %v", err.Error()),
 				InternalLogs: []zapcore.Field{
 					zap.String("subject_name", subjectName),
-					zap.String("version", version),
+					zap.Int("version", version),
 				},
 				IsSilent: false,
 			})
@@ -504,7 +502,7 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 }
 
 func (api *API) handleCreateSchema() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -512,7 +510,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := getSubjectFromRequestPath(r)
 
-		var payload schema.Schema
+		var payload sr.Schema
 		restErr := rest.Decode(w, r, &payload)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -547,7 +545,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 }
 
 func (api *API) handleValidateSchema() http.HandlerFunc {
-	if !api.Cfg.Kafka.Schema.Enabled {
+	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
@@ -555,27 +553,15 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		// 1. Parse request parameters
 		subjectName := getSubjectFromRequestPath(r)
 
-		version := rest.GetURLParam(r, "version")
-		switch version {
-		case console.SchemaVersionsLatest:
-		default:
-			// Must be number or it's invalid input
-			_, err := strconv.Atoi(version)
-			if err != nil {
-				descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
-				rest.SendRESTError(w, r, api.Logger, &rest.Error{
-					Err:      descriptiveErr,
-					Status:   http.StatusBadRequest,
-					Message:  descriptiveErr.Error(),
-					IsSilent: false,
-				})
-				return
-			}
+		versionStr := rest.GetURLParam(r, "version")
+		version, restErr := parseVersionStr(versionStr)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
 		}
 
-		var payload schema.Schema
-		restErr := rest.Decode(w, r, &payload)
-		if restErr != nil {
+		var payload sr.Schema
+		if restErr := rest.Decode(w, r, &payload); restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
@@ -591,7 +577,21 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		}
 
 		// 2. Send validate request
-		res := api.ConsoleSvc.ValidateSchemaRegistrySchema(r.Context(), subjectName, version, payload)
+		res, err := api.ConsoleSvc.ValidateSchemaRegistrySchema(r.Context(), subjectName, version, sr.Schema{
+			Schema:     payload.Schema,
+			Type:       payload.Type,
+			References: payload.References,
+		})
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("failed validating schema: %w", err),
+				Status:       http.StatusBadRequest,
+				Message:      fmt.Sprintf("Failed validating schema: %v", err.Error()),
+				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
+				IsSilent:     false,
+			})
+			return
+		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }

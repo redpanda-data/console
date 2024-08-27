@@ -16,9 +16,10 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/schema"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Service is the struct that holds all dependencies that are required to deserialize
@@ -28,16 +29,23 @@ type Service struct {
 }
 
 // NewService creates the new serde service.
-func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
+func NewService(
+	protoSvc *proto.Service,
+	msgPackSvc *msgpack.Service,
+	schemaClientFactory schema.ClientFactory,
+	cacheNamespaceFn func(ctx context.Context) string,
+) *Service {
+	cachedSchemaClient := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},
 			JSONSerde{},
-			JSONSchemaSerde{SchemaSvc: schemaService},
+			JSONSchemaSerde{schemaClient: cachedSchemaClient},
 			XMLSerde{},
-			AvroSerde{SchemaSvc: schemaService},
+			AvroSerde{schemaClient: cachedSchemaClient},
 			ProtobufSerde{ProtoSvc: protoSvc},
-			ProtobufSchemaSerde{ProtoSvc: protoSvc},
+			ProtobufSchemaSerde{schemaClient: cachedSchemaClient},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
 			UTF8Serde{},

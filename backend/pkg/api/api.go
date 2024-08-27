@@ -29,6 +29,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/embed"
+	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
@@ -83,7 +85,22 @@ func New(cfg *config.Config, opts ...Option) *API {
 
 	var consoleSvc console.Servicer
 	if cfg.Console.Enabled {
-		consoleSvc, err = console.NewService(cfg, logger, redpandaSvc, connectSvc)
+		kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
+		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
+		if err != nil {
+			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
+		}
+		consoleSvc, err = console.NewService(
+			cfg,
+			logger,
+			kafkaClientFactory,
+			schemaClientProvider,
+			func(context.Context) string {
+				return "single/"
+			},
+			redpandaSvc,
+			connectSvc,
+		)
 		if err != nil {
 			logger.Fatal("failed to create console service", zap.Error(err))
 		}
