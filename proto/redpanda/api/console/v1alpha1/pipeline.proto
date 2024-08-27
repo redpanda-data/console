@@ -60,6 +60,14 @@ message StartPipelineResponse {
   redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
 }
 
+message GetPipelineServiceConfigSchemaRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest request = 1;
+}
+
+message GetPipelineServiceConfigSchemaResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
+}
+
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
 
@@ -74,4 +82,6 @@ service PipelineService {
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
 
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {}
+
+  rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {}
 }

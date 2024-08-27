@@ -41,7 +41,12 @@ export const AclPrincipalGroupEditor = observer((p: {
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(undefined as string | undefined);
+
     const [isFormValid, setIsFormValid] = useState(true);
+    const [isTopicsValid, setTopicsIsValid] = useState(false);
+    const [isConsumerGroupsValid, setConsumerGroupsIsValid] = useState(false);
+    const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(false);
+
 
     const noNameOrNameInUse = (p.type == 'create')
         && (!group.principalName || api.ACLs?.aclResources.any(r => r.acls.any(a => a.principal == 'User:' + group.principalName)));
@@ -175,6 +180,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                     </Box>
 
                                     <Input
+                                        data-testid="principal-name"
                                         value={group.principalName}
                                         onChange={(e) => {
                                             if (e.target.value.includes(':')) {
@@ -231,7 +237,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Topics</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.topicAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="Topic" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.topicAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="Topic" resource={t} setIsFormValid={setTopicsIsValid} onDelete={() => group.topicAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.topicAcls.push(createEmptyTopicAcl())}>
                                         Add Topic ACL
@@ -243,7 +249,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Consumer Groups</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.consumerGroupAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="Group" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.consumerGroupAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="Group" resource={t} setIsFormValid={setConsumerGroupsIsValid} onDelete={() => group.consumerGroupAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}>
                                         Add Consumer Group ACL
@@ -255,7 +261,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 <Text my={4} fontWeight={500}>Transactional ID</Text>
                                 <Flex gap={4} flexDirection="column">
                                     {group.transactionalIdAcls.map((t, i) => (
-                                        <ResourceACLsEditor key={i} resourceType="TransactionalID" resource={t} setIsFormValid={setIsFormValid} onDelete={() => group.transactionalIdAcls.remove(t)} />
+                                        <ResourceACLsEditor key={i} resourceType="TransactionalID" resource={t} setIsFormValid={setTransactionalIDIsValid} onDelete={() => group.transactionalIdAcls.remove(t)} />
                                     ))}
                                     <Button variant="outline" width="100%" onClick={() => group.transactionalIdAcls.push(createEmptyTransactionalIdAcl())}>
                                         Add Transactional ID ACL
@@ -272,7 +278,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 </ModalBody>
                 <ModalFooter gap={2}>
                     <Button variant="ghost" onClick={p.onClose}>Cancel</Button>
-                    <Button variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid || noNameOrNameInUse}>OK</Button>
+                    <Button data-testid="ok-button" variant="solid" colorScheme="red" onClick={onOK} isLoading={isLoading} isDisabled={!isFormValid || !isTopicsValid || !isConsumerGroupsValid || !isTransactionalIDValid || noNameOrNameInUse}>OK</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
@@ -325,7 +331,7 @@ export const ResourceACLsEditor = observer((p: {
                     <Text fontWeight={600} whiteSpace="nowrap">Applies to whole cluster</Text>
                 ) : (
                         <FormField label={`Selector (${resourceName} Name)`} errorText={errorText} isInvalid={isInvalid}>
-                            <InputGroup zIndex={1}>
+                            <InputGroup zIndex={1} data-testid={`${resourceName}-input-group`}>
                                 <InputLeftAddon padding="0px" width="124px">
                                     <SingleSelect<'Any' | 'Literal' | 'Prefixed'>
                                         options={[
@@ -356,6 +362,7 @@ export const ResourceACLsEditor = observer((p: {
                                     />
                                 </InputLeftAddon>
                                 <Input
+                                    data-testid={`${resourceName}-selector`}
                                     value={res.selector}
                                     onChange={e => (res.selector = e.target.value)}
                                     isDisabled={res.patternType == 'Any'}
@@ -376,7 +383,7 @@ export const ResourceACLsEditor = observer((p: {
                         {Object.entries(res.permissions)
                             .sort(([op1], [op2]) => op1.localeCompare(op2))
                             .map(([operation, permission]) => (
-                                <Operation key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
+                                <Operation data-testid={`${resourceName}-${operation}`} key={operation} operation={operation} value={isAllSet ? res.all : permission} onChange={p => ((res.permissions as any)[operation] = p)} disabled={isAllSet} />
                             ))}
                     </Grid>
                 </Label>

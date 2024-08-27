@@ -38,10 +38,10 @@ const JavascriptFilterModal: FC<{
       <ModalOverlay />
       <ModalContent minW="4xl">
         <ModalHeader>
-          Javascript filtering
+          JavaScript filtering
         </ModalHeader>
         <ModalBody>
-          <Text mb={4}>Write Javascript code to filter your records.</Text>
+          <Text mb={4}>Write JavaScript code to filter your records.</Text>
           <Grid
             templateColumns={{base: '1fr', md: '3fr 2fr'}}
             gap={6}
@@ -50,7 +50,7 @@ const JavascriptFilterModal: FC<{
               <FormField
                   label="Filter display name"
               >
-                  <Input
+                  <Input data-testid="add-javascript-filter-name"
                       value={state.currentFilter.name}
                       onChange={e => {
                         state.currentFilter.name = e.target.value;
@@ -65,7 +65,7 @@ const JavascriptFilterModal: FC<{
                 label="Filter code"
               >
                 <Box borderRadius={20}>
-                  <FilterEditor
+                  <FilterEditor data-testid="add-javascript-filter-code"
                     value={state.currentFilter.code}
                     onValueChange={(code, transpiled) => {
                       state.currentFilter.code = code;
@@ -95,8 +95,8 @@ const JavascriptFilterModal: FC<{
         </ModalBody>
         <ModalFooter>
           <Box display="flex" gap={2} alignItems="center" justifyContent="flex-end">
-            <Button onClick={() => onClose()} variant="outline">Close</Button>
-            <Button onClick={() => {
+            <Button data-testid="add-javascript-filter-close" onClick={() => onClose()} variant="outline">Close</Button>
+            <Button data-testid="add-javascript-filter-save" onClick={() => {
               onSave(state.currentFilter)
               onClose()
             }}>Save</Button>

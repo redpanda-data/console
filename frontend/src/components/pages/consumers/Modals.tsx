@@ -173,20 +173,30 @@ export class EditOffsetsModal extends Component<{
                         title: 'Specific Time',
                         subTitle: 'Choose a timestamp to which all partition\'s offsets will be set.',
                         content: (
-                            <div
-                                style={{
-                                    paddingTop: '6px',
-                                    marginLeft: '-1px'
-                                }}
-                            >
-                                <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => (this.timestampUtcMs = t)} disabled={this.isLoadingTimestamps}/>
-                            </div>
-                        )
-                    },
-                    {
-                        value: 'otherGroup',
-                        title: 'Other Consumer Group',
-                        subTitle: 'Copy offsets from another (inactive) consumer group',
+                          <div
+                            style={{
+                                paddingTop: '6px',
+                                marginLeft: '-1px'
+                            }}
+                            onClick={(e) => {
+                                // TODO: This is just a workaround, and it's basically an interactive element
+                                // inside of a radio group and we should solve this differently.
+                                // The core of the problem is that the radiogroup input steals focus from the
+                                // calendar.
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                          >
+                              <KowlTimePicker valueUtcMs={this.timestampUtcMs}
+                                              onChange={t => (this.timestampUtcMs = t)}
+                                              disabled={this.isLoadingTimestamps}/>
+                          </div>
+                    )
+                },
+                {
+                    value: 'otherGroup',
+                    title: 'Other Consumer Group',
+                    subTitle: 'Copy offsets from another (inactive) consumer group',
                         content: (
                             <>
                                 <div

@@ -67,7 +67,7 @@ tasks:
     cmds:
       - rm -rf ./proto/gen/openapi
       - |
-        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1alpha1
+        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1alpha2
       - cd backend && {{ .PATH_PREFIX }} go run ./pkg/tools/openapi-generator -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
       - |
         {{ .PATH_PREFIX }} yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml
@@ -77,7 +77,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.29.0
+      BUF_VERSION: 1.37.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin

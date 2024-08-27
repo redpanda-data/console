@@ -53,6 +53,7 @@ import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 import TransformDetails from './pages/transforms/Transform.Details';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
+import {isServerless} from '../config';
 
 //
 //	Route Types
@@ -277,7 +278,27 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true),
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true,
+        () => {
+            if (isServerless()) {
+                console.log('Connect clusters inside serverless checks.')
+                // We are in serverless, there is no kafka connect, so we can ignore it.
+                // Here, we only care about the pipeline service and use that to decide whether to show the entry
+                if (isSupported(Feature.PipelineService)) {
+                    console.log('Pipeline Service enabled. Showing sidebar link.')
+                    return {visible: true, disabledReasons: []};
+                }
+                // Pipeline service is not active? Hide entry
+                console.log('Pipeline Service NOT enabled. NOT showing sidebar link.')
+                return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
+            } else {
+                // We are in cloud (dedicated or BYOC), or self-hosted
+                // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
+                console.log('Pipeline Service state does not matter. Showing sidebar link.')
+                return { visible: true, disabledReasons: [] };
+            }
+        }
+    ),
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),

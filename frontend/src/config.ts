@@ -24,6 +24,8 @@ import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/securi
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
+import { configureMonacoYaml } from 'monaco-yaml';
+import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 
 declare const __webpack_public_path__: string;
 
@@ -89,7 +91,7 @@ export const config: Config = observable({
     fetch: window.fetch,
     assetsPath: getBasePath(),
     clusterId: 'default',
-    setSidebarItems: () => {},
+    setSidebarItems: () => { },
     setBreadcrumbs: () => { },
     isServerless: false,
 });
@@ -180,19 +182,24 @@ const routesIgnoredInServerless = [
     '/quotas',
     '/reassign-partitions',
     '/admin',
-    '/connect-clusters',
+    '/transforms',
 ];
 
 export const embeddedAvailableRoutesObservable = observable({
-
     get routes() {
         return APP_ROUTES
             .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
             .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
             .filter(x => {
-                if (isServerless())
-                    if (routesIgnoredInServerless.includes(x.path))
-                        return false; // remove entry
+                if (x.visibilityCheck) {
+                    const state = x.visibilityCheck();
+                    return state.visible;
+                }
+                return true;
+            })
+            .filter(x => {
+                if (isServerless() && routesIgnoredInServerless.includes(x.path))
+                    return false;
                 return true;
             });
     }
@@ -205,8 +212,41 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     loader.config({
         paths: {
             vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
-        }
+        },
     });
+
+    // Ensure yaml workers are being loaded locally as well
+    loader.init().then(async (monaco) => {
+        window.MonacoEnvironment = {
+            baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
+
+            getWorker(moduleId, label) {
+                console.log(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
+                switch (label) {
+                    case 'editorWorkerService':
+                        return new Worker(
+                            new URL(
+                                'monaco-editor/esm/vs/editor/editor.worker',
+                                import.meta.url
+                            )
+                        );
+                    case 'yaml':
+                        // return new yamlWorker();
+                        return new Worker(
+                            new URL(
+                                'monaco-yaml/yaml.worker',
+                                import.meta.url
+                            )
+                        );
+
+                    default:
+                        throw new Error(`Unknown label ${label}`);
+                }
+            },
+        };
+
+        configureMonacoYaml(monaco, monacoYamlOptions);
+    })
 
     // Configure MobX
     configure({

@@ -132,9 +132,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
 
 
         const tabs = [
-            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab /> },
-            { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab />, isDisabled: Features.rolesApi ? false : 'Not supported in this cluster' },
-            { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab principalGroups={principalGroupsView.principalGroups} /> },
+            { key: 'users' as AclListTab, name: 'Users', component: <UsersTab data-testid="users-tab"/> },
+            { key: 'roles' as AclListTab, name: 'Roles', component: <RolesTab data-testid="roles-tab"/>, isDisabled: Features.rolesApi ? false : 'Not supported in this cluster' },
+            { key: 'acls' as AclListTab, name: 'ACLs', component: <AclsTab data-testid="acls-tab" principalGroups={principalGroupsView.principalGroups} /> },
             { key: 'permissions-list' as AclListTab, name: 'Permissions list', component: <PermissionsListTab /> },
         ] as TabsItemProps[];
 
@@ -533,6 +533,7 @@ const AclsTab = observer((p: {
             <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
             <Button
+                data-testid="create-acls"
                 variant="outline"
                 onClick={() => {
                     setEditorType('create');

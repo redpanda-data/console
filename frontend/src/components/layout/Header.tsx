@@ -57,32 +57,27 @@ const AppPageHeader = observer(() => {
             <Flex pb={2} alignItems="center" justifyContent="space-between">
                 <Flex alignItems="center">
                     {lastBreadcrumb && (
-                        <Flex gap={2} alignItems="center">
-                            <Text
-                                fontWeight={700}
-                                as="span"
-                                fontSize="xl"
-                                {...(lastBreadcrumb.options?.canBeTruncated
-                                    ? {
-                                          wordBreak: 'break-all',
-                                          whiteSpace: 'break-spaces',
-                                      }
-                                    : {
-                                          whiteSpace: 'nowrap',
-                                      })}
-                            >
-                                {lastBreadcrumb.title}
-                            </Text>
-                            <Box>{lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}</Box>
-                        </Flex>
+                      <Text
+                        fontWeight={700}
+                        as="span"
+                        fontSize="xl"
+                        mr={2}
+                        {...(lastBreadcrumb.options?.canBeTruncated
+                          ? {
+                              wordBreak: 'break-all',
+                              whiteSpace: 'break-spaces',
+                          }
+                          :{
+                              whiteSpace: 'nowrap',
+                          })}
+                      >
+                          {lastBreadcrumb.title}
+                      </Text>
                     )}
-                    <Flex ml={2}>
-                        {showRefresh && (
-                            <Box minW={250}>
-                                <DataRefreshButton />
-                            </Box>
-                        )}
-                    </Flex>
+                    {lastBreadcrumb && <Box>{lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}</Box>}
+                    {showRefresh && (
+                        <DataRefreshButton />
+                    )}
                 </Flex>
                 <Flex alignItems="center" gap={1}>
                     <UserPreferencesButton />

@@ -16,12 +16,12 @@ message ListUsersRequest {
   Filter filter = 1;
   int32 page_size = 2 [
     (buf.validate.field).int32 = {
-      gte: -1,
+      gte: -1
       lte: 1000
     },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.",
-      minimum: -1,
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
       maximum: 1000
     }
   ];
@@ -66,7 +66,7 @@ message CreateUserRequest {
     SASLMechanism mechanism = 3 [
       (buf.validate.field).required = true,
       (buf.validate.field).enum = {
-        defined_only: true,
+        defined_only: true
         not_in: [0]
       }
     ];
@@ -100,7 +100,7 @@ message UpdateUserRequest {
     SASLMechanism mechanism = 3 [
       (buf.validate.field).required = true,
       (buf.validate.field).enum = {
-        defined_only: true,
+        defined_only: true
         not_in: [0]
       }
     ];
@@ -145,7 +145,7 @@ service UserService {
         value: {
           description: "User created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.CreateUserRequest.User"}
           }
         }
       }
@@ -173,7 +173,7 @@ service UserService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UpdateUserResponse.User"}
           }
         }
       }
@@ -198,7 +198,7 @@ service UserService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListUsersResponse"}
           }
         }
       }

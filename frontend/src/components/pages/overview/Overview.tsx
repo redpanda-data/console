@@ -339,7 +339,7 @@ function ClusterDetails() {
 
         <DetailsBlock title="Security">
             <Details title="Service Accounts" content={[
-                [<Link key={0} as={ReactRouterLink} to="/security/acls/">{serviceAccounts}</Link>]
+                [<Link key={0} as={ReactRouterLink} to="/security/users/">{serviceAccounts}</Link>]
             ]}/>
 
             <Details title="ACLs" content={[
@@ -358,7 +358,7 @@ function prettyLicenseType(type: string) {
     if (type == 'free_trial')
         return 'Free Trial';
     if (type == 'open_source')
-        return 'Open Source';
+        return 'Community';
     if (type == 'enterprise')
         return 'Enterprise';
     return type;

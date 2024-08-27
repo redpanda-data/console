@@ -86,58 +86,57 @@ export const DataRefreshButton = observer(() => {
         : '';
 
     // maybe we need to use the same 'no vertical expansion' trick:
-    return <div>
-        <Flex flexDirection="row" alignItems="center" gap={2}>
-            <Box>
-                <Popover
-                  isInPortal
-                  title="Auto Refresh"
-                  content={<div>
-                      Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
-                  </div>}
-                  placement="bottom"
-                  hideCloseButton={true}
-                >
-                    <IconButton
-                      variant="ghost"
-                      onClick={autoRefresh.toggleAutorefresh} aria-label="Auth Refresh"
-                      icon={autoRefresh.active ? <MdPause size={18}/>:<MdPlayCircleOutline size={18}/>}
-                    />
-                </Popover>
-            </Box>
-            <Flex flexDirection="column" alignItems="center">
-                {autoRefresh.active || api.activeRequests.length > 0 ?
-                  <Spinner color="red.500" size="sm" speed="0.3s" ml={2} />
-                  :
-                  <Popover
-                    isInPortal
-                    title="Force Refresh"
-                    content={<div>
-                        Click to force a refresh of the data shown in the current page.
-                        When switching pages, any data older than <span
-                      className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed
-                        automatically.
-                    </div>}
-                    placement="bottom"
-                    hideCloseButton={true}
-                  >
-                      <IconButton
-                        variant="ghost"
-                        onClick={() => appGlobal.onRefresh()}
-                        aria-label="Force Refresh"
-                        icon={<MdOutlineCached size={18}/>
-                        }
-                      />
-                  </Popover>
-                }
-            </Flex>
-            <Text userSelect="none" fontSize="sm">
-                {autoRefresh.active && api.activeRequests.length===0 &&
-                  <>Refreshing in {autoRefresh.remainingSeconds} secs</>}
-                {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}
-            </Text>
+    return <>
+        <Box>
+            <Popover
+              isInPortal
+              title="Auto Refresh"
+              content={<div>
+                  Enable or disable automatic refresh every <span
+                className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
+              </div>}
+              placement="bottom"
+              hideCloseButton={true}
+            >
+                <IconButton
+                  variant="ghost"
+                  onClick={autoRefresh.toggleAutorefresh} aria-label="Auth Refresh"
+                  icon={autoRefresh.active ? <MdPause size={18}/>:<MdPlayCircleOutline size={18}/>}
+                />
+            </Popover>
+        </Box>
+        <Flex flexDirection="column" alignItems="center">
+            {autoRefresh.active || api.activeRequests.length > 0 ?
+              <Spinner color="red.500" size="sm" speed="0.3s" ml={2}/>
+              :
+              <Popover
+                isInPortal
+                title="Force Refresh"
+                content={<div>
+                    Click to force a refresh of the data shown in the current page.
+                    When switching pages, any data older than <span
+                  className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed
+                    automatically.
+                </div>}
+                placement="bottom"
+                hideCloseButton={true}
+              >
+                  <IconButton
+                    variant="ghost"
+                    onClick={() => appGlobal.onRefresh()}
+                    aria-label="Force Refresh"
+                    icon={<MdOutlineCached size={18}/>
+                    }
+                  />
+              </Popover>
+            }
         </Flex>
-    </div>;
+        <Text userSelect="none" fontSize="sm">
+            {autoRefresh.active && api.activeRequests.length===0 &&
+              <>Refreshing in {autoRefresh.remainingSeconds} secs</>}
+            {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}
+        </Text>
+    </>;
 });
 
 export default DataRefreshButton;

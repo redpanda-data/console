@@ -33,7 +33,17 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { MdDoNotDisturb, MdJavascript, MdOutlineLayers, MdOutlineSettings } from 'react-icons/md';
+import {
+    MdCalendarToday,
+    MdDoNotDisturb,
+    MdJavascript,
+    MdKeyboardTab,
+    MdOutlineLayers,
+    MdOutlinePlayCircle,
+    MdOutlineQuickreply,
+    MdOutlineSettings,
+    MdOutlineSkipPrevious
+} from 'react-icons/md';
 import {
     Ellipsis,
     Label,
@@ -181,21 +191,29 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
     return JSON.stringify(value, null, 4);
 }
 
-const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+const defaultSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
     control: (provided) => ({
         ...provided,
-        _hover: {
-            borderColor: 'transparent'
-        },
+        minWidth: 'max-content',
     }),
     option: (provided) => ({
-       ...provided,
+        ...provided,
         wordBreak: 'keep-all',
         whiteSpace: 'nowrap'
     }),
     menuList: (provided) => ({
         ...provided,
         minWidth: 'min-content',
+    }),
+}
+
+const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+    ...defaultSelectChakraStyles,
+    control: (provided) => ({
+        ...provided,
+        _hover: {
+            borderColor: 'transparent'
+        },
     }),
     container: (provided) => ({
         ...provided,
@@ -311,11 +329,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
         const startOffsetOptions = [
-            { value: PartitionOffsetOrigin.End, label: 'Newest' },
-            { value: PartitionOffsetOrigin.EndMinusResults, label: 'Newest - ' + String(searchParams.maxResults) },
-            { value: PartitionOffsetOrigin.Start, label: 'Oldest' },
-            { value: PartitionOffsetOrigin.Custom, label: 'Custom' },
-            { value: PartitionOffsetOrigin.Timestamp, label: 'Timestamp' }
+            { value: PartitionOffsetOrigin.End, label: <Flex gap={2} alignItems="center"><MdOutlinePlayCircle /> Latest / Live</Flex> },
+            { value: PartitionOffsetOrigin.EndMinusResults, label: <Flex gap={2} alignItems="center"><MdOutlineQuickreply />{'Newest - ' + String(searchParams.maxResults)}</Flex> },
+            { value: PartitionOffsetOrigin.Start, label: <Flex gap={2} alignItems="center"><MdOutlineSkipPrevious />Beginning</Flex> },
+            { value: PartitionOffsetOrigin.Custom, label: <Flex gap={2} alignItems="center"><MdKeyboardTab />Offset</Flex> },
+            { value: PartitionOffsetOrigin.Timestamp, label: <Flex gap={2} alignItems="center"><MdCalendarToday />Timestamp</Flex> },
         ];
 
         return (
@@ -326,7 +344,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     gridTemplateColumns="auto 1fr"
                     width="full"
                 >
-                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', xl: '1' }}>
+                    <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
 
                         <Label text="Start Offset">
                             <Flex gap={3}>
@@ -341,6 +359,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                         }
                                     }}
                                     options={startOffsetOptions}
+                                    chakraStyles={defaultSelectChakraStyles}
                                 />
                                 {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
                                     <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
@@ -388,19 +407,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                         <Flex alignItems="flex-end">
                             <Menu>
-                                <MenuButton as={Button} variant="outline">
+                                <MenuButton as={Button} variant="outline" data-testid="add-topic-filter">
                                     Add filter
                                 </MenuButton>
                                 <MenuList>
                                     <MenuItem
-                                      icon={<MdOutlineLayers size="1.5rem" />}
+                                      data-testid="add-topic-filter-partition" icon={<MdOutlineLayers size="1.5rem" />}
                                       isDisabled={uiState.topicSettings.dynamicFilters.includes('partition')}
                                       onClick={() => uiState.topicSettings.dynamicFilters.pushDistinct('partition')}
                                     >
                                         Partition
                                     </MenuItem>
                                     <MenuDivider />
-                                    <MenuItem
+                                    <MenuItem data-testid="add-topic-filter-javascript"
                                       isDisabled={!canUseFilters}
                                       // TODO: "You don't have permissions to use search filters in this topic",
                                       // we need support for disabledReason in @redpanda-data/ui
@@ -411,7 +430,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                           setCurrentJSFilter(filter);
                                       }}
                                     >
-                                        Javascript Filter
+                                        JavaScript Filter
                                     </MenuItem>
                                 </MenuList>
                             </Menu>
@@ -1505,6 +1524,8 @@ const TroubleshootReportViewer = observer((props: { payload: Payload; }) => {
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
     const data: { [k: string]: any } = {
+        'Partition': msg.partitionID,
+        'Offset': numberToThousandsString(msg.offset),
         'Key': msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
         'Value': msg.value.isPayloadNull ? 'Null' : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',

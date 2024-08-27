@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
 import { Features } from '../../../state/supportedFeatures';
+import { Link as ReactRouterLink } from 'react-router-dom';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -180,7 +181,7 @@ const CreateUserModal = observer((p: {
                     isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
                     errorText={errorText}
                 >
-                    <Input
+                    <Input data-testid="create-user-name"
                         value={state.username}
                         onChange={(v) => (state.username = v.target.value)}
                         width="100%"
@@ -195,6 +196,7 @@ const CreateUserModal = observer((p: {
                     description="Must be at least 4 characters and should not exceed 64 characters."
                     showRequiredIndicator={true}
                     label="Password"
+                    data-testid="create-user-password"
                 >
                     <Flex direction="column" gap="2">
                         <Flex alignItems="center" gap="2">
@@ -326,7 +328,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
                     </Flex>
                 </Box>
 
-                <Box fontWeight="bold" data-testid="password">
+                <Box fontWeight="bold" data-testid="mechanism">
                     Mechanism
                 </Box>
                 <Box>
@@ -338,6 +340,7 @@ const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; 
 
             <Flex gap={4} mt={8}>
                 <Button onClick={p.closeModal}>Done</Button>
+                <Button variant="link" as={ReactRouterLink} to="/security/acls">Create ACLs</Button>
             </Flex>
 
         </>

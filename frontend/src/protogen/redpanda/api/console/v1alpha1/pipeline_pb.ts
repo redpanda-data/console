@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1alpha2/pipeline_pb";
+import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1alpha2/pipeline_pb";
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.CreatePipelineRequest
@@ -522,6 +522,80 @@ export class StartPipelineResponse extends Message<StartPipelineResponse> {
 
   static equals(a: StartPipelineResponse | PlainMessage<StartPipelineResponse> | undefined, b: StartPipelineResponse | PlainMessage<StartPipelineResponse> | undefined): boolean {
     return proto3.util.equals(StartPipelineResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelineServiceConfigSchemaRequest
+ */
+export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineServiceConfigSchemaRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest request = 1;
+   */
+  request?: GetPipelineServiceConfigSchemaRequest$1;
+
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelineServiceConfigSchemaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "request", kind: "message", T: GetPipelineServiceConfigSchemaRequest$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaRequest {
+    return new GetPipelineServiceConfigSchemaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined, b: GetPipelineServiceConfigSchemaRequest | PlainMessage<GetPipelineServiceConfigSchemaRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelineServiceConfigSchemaResponse
+ */
+export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineServiceConfigSchemaResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
+   */
+  response?: GetPipelineServiceConfigSchemaResponse$1;
+
+  constructor(data?: PartialMessage<GetPipelineServiceConfigSchemaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelineServiceConfigSchemaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "message", T: GetPipelineServiceConfigSchemaResponse$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelineServiceConfigSchemaResponse {
+    return new GetPipelineServiceConfigSchemaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined, b: GetPipelineServiceConfigSchemaResponse | PlainMessage<GetPipelineServiceConfigSchemaResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelineServiceConfigSchemaResponse, a, b);
   }
 }
 

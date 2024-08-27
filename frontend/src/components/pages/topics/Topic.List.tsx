@@ -563,7 +563,7 @@ function makeCreateTopicModal(parent: TopicList) {
                     templateColumns="auto auto"
                     justifyContent="center"
                     alignItems="center"
-                    justifyItems="end"
+                    justifyItems="flex-end"
                     columnGap={2}
                     rowGap={1}
                     py={2}
