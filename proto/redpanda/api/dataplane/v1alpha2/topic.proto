@@ -243,7 +243,7 @@ service TopicService {
         value: {
           description: "Topic created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.Topic"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Topic"}
           }
         }
       }
@@ -259,7 +259,7 @@ service TopicService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTopicsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListTopicsResponse"}
           }
         }
       }
@@ -301,7 +301,7 @@ service TopicService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetTopicConfigurationsResponse"}
           }
         }
       }
@@ -330,7 +330,7 @@ service TopicService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UpdateTopicConfigurationsResponse"}
           }
         }
       }
@@ -359,7 +359,7 @@ service TopicService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.SetTopicConfigurationsResponse"}
           }
         }
       }

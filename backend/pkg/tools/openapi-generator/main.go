@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 var (
@@ -186,7 +186,7 @@ func updateInfo(doc3 *openapi3.T) {
 	doc3.Info = &openapi3.Info{
 		Title:       "Redpanda Cloud",
 		Description: "Welcome to Redpanda Cloud's Dataplane API documentation.",
-		Version:     "v1alpha1",
+		Version:     "v1alpha2",
 	}
 }
 
@@ -226,11 +226,9 @@ func removeDummies(doc3 *openapi3.T) {
 func updateAny(doc3 *openapi3.T) {
 	// We replaced all cases of any with our own custom types. Safe to remove it.
 	delete(doc3.Components.Schemas, "Any")
-
 	// Status (error response)
 	{
-		// HERE!!!
-		schema := doc3.Components.Schemas["Status"].Value
+		schema := doc3.Components.Schemas["rpc.Status"].Value
 		schema.Properties["code"].Value.Description = "RPC status code, as described [here](https://github.com/googleapis/googleapis/blob/b4c238feaa1097c53798ed77035bbfeb7fc72e96/google/rpc/code.proto#L32)."
 		schema.Properties["code"].Value.Type = &openapi3.Types{openapi3.TypeString}
 		schema.Properties["code"].Value.Enum = []any{
@@ -378,7 +376,7 @@ func updateOperations(doc3 *openapi3.T) {
 func updateUsers(doc3 *openapi3.T) {
 	// Get /users
 	{
-		users := []*v1alpha1.ListUsersResponse_User{
+		users := []*v1alpha2.ListUsersResponse_User{
 			{
 				Name: "payment-service",
 			},
@@ -386,28 +384,28 @@ func updateUsers(doc3 *openapi3.T) {
 				Name: "jane",
 			},
 		}
-		response := &v1alpha1.ListUsersResponse{Users: users}
+		response := &v1alpha2.ListUsersResponse{Users: users}
 		responseExample := toExample(response, "List Users", "List users", true)
-		doc3.Paths.Value("/v1alpha1/users").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/users").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 
 	// POST /users
 	{
 		// Request
-		createUserReq := &v1alpha1.CreateUserRequest{User: &v1alpha1.CreateUserRequest_User{
+		createUserReq := &v1alpha2.CreateUserRequest{User: &v1alpha2.CreateUserRequest_User{
 			Name:      "payment-service",
 			Password:  "secure-password",
-			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			Mechanism: v1alpha2.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
 		}}
-		doc3.Paths.Value("/v1alpha1/users").Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq.User, "Create User", "Create user", false).Value
+		doc3.Paths.Value("/v1alpha2/users").Post.RequestBody.Value.Content["application/json"].Example = toExample(createUserReq.User, "Create User", "Create user", false).Value
 
 		// Responses
-		response := &v1alpha1.CreateUserResponse{User: &v1alpha1.CreateUserResponse_User{
+		response := &v1alpha2.CreateUserResponse{User: &v1alpha2.CreateUserResponse_User{
 			Name:      "payment-service",
-			Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
+			Mechanism: v1alpha2.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
 		}}
 		responseExample := toExample(response, "Create User", "Create user", true)
-		doc3.Paths.Value("/v1alpha1/users").Post.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/users").Post.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = responseExample.Value
 
 		badRequestExample := toExample(
 			newBadRequestError(
@@ -423,30 +421,30 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths.Value("/v1alpha1/users").Post.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+		doc3.Paths.Value("/v1alpha2/users").Post.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
 	}
 
 	// PUT /users/{user.name}
 	{
 		// Request
-		updateUserReq := &v1alpha1.UpdateUserRequest{
-			User: &v1alpha1.UpdateUserRequest_User{
+		updateUserReq := &v1alpha2.UpdateUserRequest{
+			User: &v1alpha2.UpdateUserRequest_User{
 				// Name:      "payment-service", // Will be populated from URL param
 				Password:  "new-password",
-				Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+				Mechanism: v1alpha2.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
 			},
 		}
-		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.RequestBody.Value.Content["application/json"].Example = toExample(updateUserReq, "Update User", "Update user", false).Value
+		doc3.Paths.Value("/v1alpha2/users/{user.name}").Put.RequestBody.Value.Content["application/json"].Example = toExample(updateUserReq, "Update User", "Update user", false).Value
 
 		// Responses
-		response := &v1alpha1.UpdateUserResponse{
-			User: &v1alpha1.UpdateUserResponse_User{
+		response := &v1alpha2.UpdateUserResponse{
+			User: &v1alpha2.UpdateUserResponse_User{
 				Name:      "payment-service",
-				Mechanism: v1alpha1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
+				Mechanism: v1alpha2.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256.Enum(),
 			},
 		}
 		responseExample := toExample(response, "Update User", "Update user", true)
-		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/users/{user.name}").Put.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 
 		badRequestExample := toExample(
 			newBadRequestError(
@@ -462,15 +460,15 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths.Value("/v1alpha1/users/{user.name}").Put.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
+		doc3.Paths.Value("/v1alpha2/users/{user.name}").Put.Responses.Status(http.StatusBadRequest).Value.Content.Get("application/json").Example = badRequestExample.Value
 	}
 
 	// DELETE /users/{name}
 	{
 		// Response
-		response := &v1alpha1.DeleteUserResponse{}
+		response := &v1alpha2.DeleteUserResponse{}
 		responseExample := toExample(response, "Delete User", "Delete user", true)
-		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/users/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
 
 		notFoundExample := toExample(
 			connectErrorToErrorStatus(
@@ -483,23 +481,23 @@ func updateUsers(doc3 *openapi3.T) {
 			"Bad Request",
 			"Bad Request",
 			true)
-		doc3.Paths.Value("/v1alpha1/users/{name}").Delete.Responses.Status(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
+		doc3.Paths.Value("/v1alpha2/users/{name}").Delete.Responses.Status(http.StatusNotFound).Value.Content.Get("application/json").Example = notFoundExample.Value
 	}
 }
 
 func updateTransforms(doc3 *openapi3.T) {
 	// GET /transforms
 	{
-		transforms := []*v1alpha1.TransformMetadata{
+		transforms := []*v1alpha2.TransformMetadata{
 			{
 				Name:             "transform1",
 				InputTopicName:   "topic1",
 				OutputTopicNames: []string{"output-topic11", "output-topic12"},
-				Statuses: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha2.PartitionTransformStatus{
 					{
 						BrokerId:    int32(1),
 						PartitionId: int32(1),
-						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Status:      v1alpha2.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
 						Lag:         int32(1),
 					},
 				},
@@ -508,27 +506,27 @@ func updateTransforms(doc3 *openapi3.T) {
 				Name:             "transform2",
 				InputTopicName:   "topic2",
 				OutputTopicNames: []string{"output-topic21", "output-topic22"},
-				Statuses: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha2.PartitionTransformStatus{
 					{
 						BrokerId:    int32(2),
 						PartitionId: int32(2),
-						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Status:      v1alpha2.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
 						Lag:         int32(2),
 					},
 				},
 			},
 		}
-		responseExample := toExample(&v1alpha1.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
-		doc3.Paths.Value("/v1alpha1/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		responseExample := toExample(&v1alpha2.ListTransformsResponse{Transforms: transforms}, "List Transforms", "List transforms", true)
+		doc3.Paths.Value("/v1alpha2/transforms").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 	// PUT /transforms
 	{
 		// Create request sample
-		deployTransformReq := v1alpha1.DeployTransformRequest{
+		deployTransformReq := v1alpha2.DeployTransformRequest{
 			Name:             "redact-orders",
 			InputTopicName:   "orders",
 			OutputTopicNames: []string{"orders-redacted"},
-			EnvironmentVariables: []*v1alpha1.TransformMetadata_EnvironmentVariable{
+			EnvironmentVariables: []*v1alpha2.TransformMetadata_EnvironmentVariable{
 				{
 					Key:   "LOGGER_LEVEL",
 					Value: "DEBUG",
@@ -560,21 +558,21 @@ func updateTransforms(doc3 *openapi3.T) {
 		}
 
 		// Create response sample
-		deployTransformResponse := v1alpha1.TransformMetadata{
+		deployTransformResponse := v1alpha2.TransformMetadata{
 			Name:             deployTransformReq.Name,
 			InputTopicName:   deployTransformReq.InputTopicName,
 			OutputTopicNames: deployTransformReq.OutputTopicNames,
-			Statuses: []*v1alpha1.PartitionTransformStatus{
+			Statuses: []*v1alpha2.PartitionTransformStatus{
 				{
 					BrokerId:    0,
 					PartitionId: 0,
-					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Status:      v1alpha2.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
 					Lag:         0,
 				},
 				{
 					BrokerId:    1,
 					PartitionId: 1,
-					Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
+					Status:      v1alpha2.PartitionTransformStatus_PARTITION_STATUS_UNKNOWN,
 					Lag:         0,
 				},
 			},
@@ -583,7 +581,7 @@ func updateTransforms(doc3 *openapi3.T) {
 
 		// We copy the majority of the propertis from an existing endpoint description, so
 		// that we don't need to construct all properties of the openapi3.Operation struct.
-		transformsOperation := *doc3.Paths.Value("/v1alpha1/transforms").Get
+		transformsOperation := *doc3.Paths.Value("/v1alpha2/transforms").Get
 		transformsOperation.OperationID = "TransformService_DeployTransform"
 		transformsOperation.Summary = "Deploy Transform"
 		transformsOperation.Description = "Initiate deployment of a new Wasm transform. This endpoint uses " +
@@ -617,47 +615,47 @@ func updateTransforms(doc3 *openapi3.T) {
 				},
 			}),
 		)
-		doc3.Paths.Value("/v1alpha1/transforms").Put = &transformsOperation
+		doc3.Paths.Value("/v1alpha2/transforms").Put = &transformsOperation
 	}
 	// Get /transforms/{name}
 	{
 		// Request
-		request := &v1alpha1.GetTransformRequest{
+		request := &v1alpha2.GetTransformRequest{
 			Name: "transform1",
 		}
-		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Parameters[0].Value.Example = toExample(request, "Get Transform", "Get transform", false).Value
+		doc3.Paths.Value("/v1alpha2/transforms/{name}").Get.Parameters[0].Value.Example = toExample(request, "Get Transform", "Get transform", false).Value
 
 		// Response
-		response := &v1alpha1.GetTransformResponse{
-			Transform: &v1alpha1.TransformMetadata{
+		response := &v1alpha2.GetTransformResponse{
+			Transform: &v1alpha2.TransformMetadata{
 				Name:             "transform1",
 				InputTopicName:   "topic1",
 				OutputTopicNames: []string{"output-topic1", "output-topic2"},
-				Statuses: []*v1alpha1.PartitionTransformStatus{
+				Statuses: []*v1alpha2.PartitionTransformStatus{
 					{
 						BrokerId:    int32(1),
 						PartitionId: int32(1),
-						Status:      v1alpha1.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
+						Status:      v1alpha2.PartitionTransformStatus_PARTITION_STATUS_RUNNING,
 						Lag:         int32(1),
 					},
 				},
 			},
 		}
 		responseExample := toExample(response, "Get Transform", "Get transform", true)
-		doc3.Paths.Value("/v1alpha1/transforms/{name}").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/transforms/{name}").Get.Responses.Status(http.StatusOK).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 	// Delete /transforms/{name}
 	{
 		// Request
-		request := &v1alpha1.DeleteTransformRequest{
+		request := &v1alpha2.DeleteTransformRequest{
 			Name: "transform1",
 		}
-		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Parameters[0].Value.Example = toExample(request, "Delete Transform", "Delete transform", false).Value
+		doc3.Paths.Value("/v1alpha2/transforms/{name}").Delete.Parameters[0].Value.Example = toExample(request, "Delete Transform", "Delete transform", false).Value
 
 		// Response
-		response := &v1alpha1.DeleteTransformResponse{}
+		response := &v1alpha2.DeleteTransformResponse{}
 		responseExample := toExample(response, "Delete Transform", "Delete transform", true)
-		doc3.Paths.Value("/v1alpha1/transforms/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
+		doc3.Paths.Value("/v1alpha2/transforms/{name}").Delete.Responses.Status(http.StatusNoContent).Value.Content.Get("application/json").Example = responseExample.Value
 	}
 }
 

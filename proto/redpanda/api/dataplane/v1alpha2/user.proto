@@ -145,7 +145,7 @@ service UserService {
         value: {
           description: "User created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.CreateUserRequest.User"}
           }
         }
       }
@@ -173,7 +173,7 @@ service UserService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UpdateUserResponse.User"}
           }
         }
       }
@@ -198,7 +198,7 @@ service UserService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListUsersResponse"}
           }
         }
       }

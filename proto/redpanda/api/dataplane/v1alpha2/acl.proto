@@ -283,7 +283,7 @@ service ACLService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListACLsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListACLsResponse"}
           }
         }
       }
@@ -303,7 +303,7 @@ service ACLService {
         value: {
           description: "Created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateACLResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.CreateACLResponse"}
           }
         }
       }
@@ -320,7 +320,7 @@ service ACLService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.DeleteACLsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.DeleteACLsResponse"}
           }
         }
       }
