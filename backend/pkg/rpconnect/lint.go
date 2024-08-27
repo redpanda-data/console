@@ -11,17 +11,10 @@
 package rpconnect
 
 import (
-	_ "embed"
 	"fmt"
 
 	"github.com/benthosdev/benthos/v4/public/service"
 )
-
-// This schema is generated with the command:
-// benthos list --format json-full-scrubbed > ./data/schema.json
-//
-//go:embed data/schema.json
-var schemaBytes []byte
 
 // Linter lints Redpanda connect configs.
 type Linter struct {
