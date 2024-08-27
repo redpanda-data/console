@@ -310,6 +310,11 @@ components:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
+    CreatePipelineResponse:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/Pipeline'
+      type: object
     CreateTopicRequest.Topic:
       properties:
         configs:
@@ -433,6 +438,8 @@ components:
       type: object
     DeleteConnectSecretResponse:
       description: DeleteConnectSecretResponse is the response of DeleteConnectSecret.
+      type: object
+    DeletePipelineResponse:
       type: object
     DeleteTopicResponse:
       type: object
@@ -617,6 +624,17 @@ components:
         status:
           $ref: '#/components/schemas/ConnectorStatus'
       type: object
+    GetPipelineResponse:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/Pipeline'
+      type: object
+    GetPipelineServiceConfigSchemaResponse:
+      properties:
+        config_schema:
+          description: config_schema is the JSON schema of the configuration components that are allowed for pipelines.
+          type: string
+      type: object
     GetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -726,6 +744,21 @@ components:
           description: Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint.
           type: string
       type: object
+    ListPipelinesRequest.Filter:
+      properties:
+        name_contains:
+          description: Substring match on pipeline name. Case-sensitive.
+          type: string
+      type: object
+    ListPipelinesResponse:
+      properties:
+        next_page_token:
+          type: string
+        pipelines:
+          items:
+            $ref: '#/components/schemas/Pipeline'
+          type: array
+      type: object
     ListSecretsFilter:
       description: ListSecretsFilter are the filter options for listing secrets.
       properties:
@@ -828,7 +861,7 @@ components:
     MatchingACL:
       properties:
         error:
-          $ref: '#/components/schemas/Status'
+          $ref: '#/components/schemas/rpc.Status'
         host:
           description: The host address to use for this ACL.
           type: string
@@ -884,6 +917,79 @@ components:
         - PERMISSION_TYPE_DENY
         - PERMISSION_TYPE_ALLOW
       type: string
+    Pipeline:
+      description: Defines the pipeline resource.
+      properties:
+        config_yaml:
+          description: The configuration of the Pipeline as YAML. See https://docs.redpanda.com/redpanda-connect/configuration/about for more details.
+          title: |-
+            The configuration of the Pipeline as YAML.
+            See https://docs.redpanda.com/redpanda-connect/configuration/about/
+          type: string
+        description:
+          description: Optional pipeline description.
+          type: string
+        display_name:
+          description: User friendly display name.
+          type: string
+        id:
+          description: Pipeline ID.
+          type: string
+        limit:
+          $ref: '#/components/schemas/Resources'
+        request:
+          $ref: '#/components/schemas/Resources'
+        state:
+          $ref: '#/components/schemas/State'
+        status:
+          $ref: '#/components/schemas/Pipeline.Status'
+      required:
+        - id
+        - display_name
+        - config_yaml
+      type: object
+    Pipeline.Status:
+      description: Pipeline status can hold error message.
+      properties:
+        error:
+          type: string
+      type: object
+    PipelineCreate:
+      description: PipelineCreate contains the details for the pipeline creation request.
+      properties:
+        config_yaml:
+          description: The pipeline configuration in YAML format.
+          type: string
+        description:
+          description: Pipeline description.
+          type: string
+        display_name:
+          description: User friendly pipeline name.
+          type: string
+        limit:
+          $ref: '#/components/schemas/Resources'
+        request:
+          $ref: '#/components/schemas/Resources'
+      required:
+        - display_name
+        - config_yaml
+      type: object
+    PipelineUpdate:
+      properties:
+        config_yaml:
+          description: The pipeline configuration in YAML format.
+          type: string
+        description:
+          description: Pipeline description.
+          type: string
+        display_name:
+          description: Pipeline name.
+          type: string
+        limit:
+          $ref: '#/components/schemas/Resources'
+        request:
+          $ref: '#/components/schemas/Resources'
+      type: object
     Policy:
       properties:
         host:
@@ -990,6 +1096,40 @@ components:
         - RESOURCE_TYPE_DELEGATION_TOKEN
         - RESOURCE_TYPE_USER
       type: string
+    Resources:
+      properties:
+        cpu_shares:
+          description: |-
+            cpu_shares is a string specifying the amount of CPU to allocate for the
+            pipeline.
+
+            This follows the Kubernetes resource quantity format. Acceptable
+            units include:
+            - Decimal SI units: "m" (e.g., "500m" for 500 millicores, "2" for 2 cores)
+            If no unit is specified, the value is interpreted as the number of cores.
+            CPU shares can be specified in millicores (1 core = 1000 millicores).
+
+            More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
+          type: string
+        memory_shares:
+          description: |-
+            memory_shares is a string specifying the amount of memory to allocate for
+            the pipeline.
+
+            This follows the Kubernetes resource quantity format. Acceptable units
+            include:
+            - Decimal SI units: "K", "M", "G", "T", "P", "E" (e.g., "128M" for 128
+              megabytes)
+            - Binary SI units: "Ki", "Mi", "Gi", "Ti", "Pi", "Ei" (e.g., "512Mi" for
+            512 mebibytes) If no unit is specified, the value is interpreted as
+            bytes.
+
+            More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
+          type: string
+      required:
+        - memory_shares
+        - cpu_shares
+      type: object
     SASLMechanism:
       description: SASL mechanism to use for authentication.
       enum:
@@ -1027,7 +1167,142 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
-    Status:
+    StartPipelineResponse:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/Pipeline'
+      type: object
+    State:
+      description: |-
+        State of the pipeline.
+
+         - STATE_STARTING: The pipeline is starting.
+         - STATE_RUNNING: The pipeline is running.
+         - STATE_STOPPING: The pipeline is in the process of stopping.
+         - STATE_STOPPED: The pipeline is stopped and in paused state.
+         - STATE_ERROR: The pipeline is in error state.
+      enum:
+        - STATE_STARTING
+        - STATE_RUNNING
+        - STATE_STOPPING
+        - STATE_STOPPED
+        - STATE_ERROR
+      type: string
+    StopPipelineResponse:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/Pipeline'
+      type: object
+    TaskInfo:
+      properties:
+        connector:
+          description: Name of connector.
+          type: string
+        task:
+          description: The connector task ID.
+          format: int32
+          type: integer
+      type: object
+    TaskStatus:
+      properties:
+        id:
+          description: The connector task ID.
+          format: int32
+          type: integer
+        state:
+          description: State of connector task.
+          type: string
+        trace:
+          description: String value of stack trace.
+          type: string
+        worker_id:
+          description: ID of worker that the task is assigned to.
+          type: string
+      type: object
+    TransformMetadata:
+      properties:
+        environment_variables:
+          description: The environment variables you want to apply to your transform's environment
+          items:
+            $ref: '#/components/schemas/EnvironmentVariable'
+          type: array
+        input_topic_name:
+          description: Input topic to apply the transform to.
+          type: string
+        name:
+          description: Name of transform.
+          type: string
+        output_topic_names:
+          description: Output topics to write the transform results to.
+          items:
+            type: string
+          type: array
+        statuses:
+          items:
+            $ref: '#/components/schemas/PartitionTransformStatus'
+          type: array
+      type: object
+    UpdateConfiguration:
+      properties:
+        name:
+          description: A topic-level config key (e.g. `segment.bytes`).
+          type: string
+        operation:
+          $ref: '#/components/schemas/ConfigAlterOperation'
+        value:
+          description: A topic-level config value (e.g. 1073741824).
+          nullable: true
+          type: string
+      type: object
+    UpdateConnectSecretResponse:
+      description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
+    UpdatePipelineResponse:
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/Pipeline'
+      type: object
+    UpdateTopicConfigurationsResponse:
+      properties:
+        configurations:
+          description: Topic's complete set of configurations after applying this partial patch.
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+      type: object
+    UpdateUserRequest.User:
+      properties:
+        mechanism:
+          $ref: '#/components/schemas/SASLMechanism'
+        name:
+          description: Username.
+          type: string
+        password:
+          description: Password.
+          type: string
+      type: object
+    UpdateUserResponse:
+      properties:
+        user:
+          $ref: '#/components/schemas/UpdateUserResponse.User'
+      type: object
+    UpdateUserResponse.User:
+      description: Updated user's name and SASL mechanism.
+      properties:
+        mechanism:
+          $ref: '#/components/schemas/SASLMechanism'
+        name:
+          type: string
+      type: object
+    UpsertConnectorResponse:
+      properties:
+        connector:
+          $ref: '#/components/schemas/ConnectorSpec'
+      type: object
+    rpc.Status:
       description: |-
         The `Status` type defines a logical error model that is suitable for
         different programming environments, including REST APIs and RPC APIs. It is
@@ -1100,111 +1375,7 @@ components:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
           type: string
       type: object
-    TaskInfo:
-      properties:
-        connector:
-          description: Name of connector.
-          type: string
-        task:
-          description: The connector task ID.
-          format: int32
-          type: integer
-      type: object
-    TaskStatus:
-      properties:
-        id:
-          description: The connector task ID.
-          format: int32
-          type: integer
-        state:
-          description: State of connector task.
-          type: string
-        trace:
-          description: String value of stack trace.
-          type: string
-        worker_id:
-          description: ID of worker that the task is assigned to.
-          type: string
-      type: object
-    TransformMetadata:
-      properties:
-        environment_variables:
-          description: The environment variables you want to apply to your transform's environment
-          items:
-            $ref: '#/components/schemas/EnvironmentVariable'
-          type: array
-        input_topic_name:
-          description: Input topic to apply the transform to.
-          type: string
-        name:
-          description: Name of transform.
-          type: string
-        output_topic_names:
-          description: Output topics to write the transform results to.
-          items:
-            type: string
-          type: array
-        statuses:
-          items:
-            $ref: '#/components/schemas/PartitionTransformStatus'
-          type: array
-      type: object
-    UpdateConfiguration:
-      properties:
-        name:
-          description: A topic-level config key (e.g. `segment.bytes`).
-          type: string
-        operation:
-          $ref: '#/components/schemas/ConfigAlterOperation'
-        value:
-          description: A topic-level config value (e.g. 1073741824).
-          nullable: true
-          type: string
-      type: object
-    UpdateConnectSecretResponse:
-      description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
-      type: object
-    UpdateTopicConfigurationsResponse:
-      properties:
-        configurations:
-          description: Topic's complete set of configurations after applying this partial patch.
-          items:
-            $ref: '#/components/schemas/Configuration'
-          type: array
-      type: object
-    UpdateUserRequest.User:
-      properties:
-        mechanism:
-          $ref: '#/components/schemas/SASLMechanism'
-        name:
-          description: Username.
-          type: string
-        password:
-          description: Password.
-          type: string
-      type: object
-    UpdateUserResponse:
-      properties:
-        user:
-          $ref: '#/components/schemas/UpdateUserResponse.User'
-      type: object
-    UpdateUserResponse.User:
-      description: Updated user's name and SASL mechanism.
-      properties:
-        mechanism:
-          $ref: '#/components/schemas/SASLMechanism'
-        name:
-          type: string
-      type: object
-    UpsertConnectorResponse:
-      properties:
-        connector:
-          $ref: '#/components/schemas/ConnectorSpec'
-      type: object
-    v1alpha1.Topic:
+    v1alpha2.Topic:
       type: object
   securitySchemes:
     auth0:
@@ -1218,10 +1389,10 @@ components:
 info:
   description: Welcome to Redpanda Cloud's Dataplane API documentation.
   title: Redpanda Cloud
-  version: v1alpha1
+  version: v1alpha2
 openapi: 3.0.3
 paths:
-  /v1alpha1/acls:
+  /v1alpha2/acls:
     delete:
       description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_DeleteACLs
@@ -1316,19 +1487,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete ACLs
       tags:
@@ -1423,19 +1594,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List ACLs
       tags:
@@ -1461,24 +1632,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create ACL
       tags:
         - ACLService
-  /v1alpha1/connect/clusters:
+  /v1alpha2/kafka-connect/clusters:
     get:
       description: List connect clusters available for being consumed by the console's kafka-connect service.
       operationId: KafkaConnectService_ListConnectClusters
@@ -1493,24 +1664,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List connect clusters
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}:
     get:
       description: Get information about an available Kafka Connect cluster.
       operationId: KafkaConnectService_GetConnectCluster
@@ -1532,30 +1703,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Connect cluster not found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get connect cluster
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors:
     get:
       description: List connectors managed by the Kafka Connect service.
       operationId: KafkaConnectService_ListConnectors
@@ -1588,19 +1759,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List connectors
       tags:
@@ -1633,24 +1804,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}:
     delete:
       description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
       operationId: KafkaConnectService_DeleteConnector
@@ -1677,19 +1848,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete connector
       tags:
@@ -1721,24 +1892,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/config:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
     get:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
@@ -1760,19 +1931,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get connector configuration
       tags:
@@ -1822,24 +1993,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Upsert connector configuration
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/pause:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
       description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_PauseConnector
@@ -1866,24 +2037,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Pause connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/restart:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
       description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
       operationId: KafkaConnectService_RestartConnector
@@ -1917,24 +2088,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Restart connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/resume:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
       description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
       operationId: KafkaConnectService_ResumeConnector
@@ -1961,24 +2132,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Resume connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/status:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/status:
     get:
       description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
       operationId: KafkaConnectService_GetConnectorStatus
@@ -2006,24 +2177,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get connector status
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/stop:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
       description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_StopConnector
@@ -2050,24 +2221,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Stop connector
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
       description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
       operationId: KafkaConnectService_ListConnectorTopics
@@ -2095,24 +2266,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List connector topics
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
       description: Resets the set of topic names that the connector is using.
       operationId: KafkaConnectService_ResetConnectorTopics
@@ -2139,24 +2310,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Reset connector topics
       tags:
         - KafkaConnectService
-  /v1alpha1/connect/clusters/{cluster_name}/secrets:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets:
     get:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListConnectSecrets
@@ -2201,19 +2372,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List Connect Cluster Secrets
       tags:
@@ -2263,24 +2434,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create Connect Cluster Secret
       tags:
         - SecretService
-  /v1alpha1/connect/clusters/{cluster_name}/secrets/{id}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets/{id}:
     delete:
       description: Delete a Kafka Connect cluster secret.
       operationId: SecretService_DeleteConnectSecret
@@ -2307,25 +2478,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete Connect Cluster Secret
       tags:
@@ -2357,25 +2528,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get Connect Cluster Secret
       tags:
@@ -2427,30 +2598,374 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Update Connect Cluster Secret
       tags:
         - SecretService
-  /v1alpha1/topics:
+  /v1alpha2/redpanda-connect/config-schema:
+    get:
+      operationId: PipelineService_GetPipelineServiceConfigSchema
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPipelineServiceConfigSchemaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the schema for configuring Redpanda Connect pipelines.
+      tags:
+        - PipelineService
+  /v1alpha2/redpanda-connect/pipelines:
+    get:
+      description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
+      operationId: PipelineService_ListPipelines
+      parameters:
+        - description: Substring match on pipeline name. Case-sensitive.
+          in: query
+          name: filter.name_contains
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPipelinesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Redpanda Connect pipelines
+      tags:
+        - PipelineService
+    post:
+      description: Create a new Redpanda Connect pipeline.
+      operationId: PipelineService_CreatePipeline
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreate'
+        required: true
+        x-originalParamName: pipeline
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPipelinesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create Redpanda Connect pipeline
+      tags:
+        - PipelineService
+  /v1alpha2/redpanda-connect/pipelines/{id}:
+    delete:
+      description: Delete a Redpanda Connect pipeline.
+      operationId: PipelineService_DeletePipeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete a Redpanda Connect pipeline
+      tags:
+        - PipelineService
+    get:
+      description: Get a specific Redpanda Connect pipeline.
+      operationId: PipelineService_GetPipeline
+      parameters:
+        - description: The pipeline ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Redpanda Connect pipeline
+      tags:
+        - PipelineService
+    put:
+      description: Update the configuration of a Redpanda Connect pipeline.
+      operationId: PipelineService_UpdatePipeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: The fields to be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineUpdate'
+        required: true
+        x-originalParamName: pipeline
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update a Redpanda Connect pipeline
+      tags:
+        - PipelineService
+  /v1alpha2/redpanda-connect/pipelines/{id}/start:
+    put:
+      description: Start a stopped Redpanda Connect pipeline.
+      operationId: PipelineService_StartPipeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+          description: Started
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Start a Redpanda Connect pipeline
+      tags:
+        - PipelineService
+  /v1alpha2/redpanda-connect/pipelines/{id}/stop:
+    put:
+      description: Stop a running Redpanda Connect pipeline.
+      operationId: PipelineService_StopPipeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+          description: Stopped
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Stops a Redpanda Connect pipeline
+      tags:
+        - PipelineService
+  /v1alpha2/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
       operationId: TopicService_ListTopics
@@ -2482,19 +2997,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List Topics
       tags:
@@ -2523,30 +3038,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1alpha1.Topic'
+                $ref: '#/components/schemas/v1alpha2.Topic'
           description: Topic created
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create Topic
       tags:
         - TopicService
-  /v1alpha1/topics/{name}:
+  /v1alpha2/topics/{name}:
     delete:
       description: Delete the Kafka topic with the requested name.
       operationId: TopicService_DeleteTopic
@@ -2567,30 +3082,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Requested topic does not exist
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete Topic
       tags:
         - TopicService
-  /v1alpha1/topics/{topic_name}/configurations:
+  /v1alpha2/topics/{topic_name}/configurations:
     get:
       description: Get key-value configs for a topic.
       operationId: TopicService_GetTopicConfigurations
@@ -2612,25 +3127,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get Topic Configurations
       tags:
@@ -2665,25 +3180,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Update Topic Configuration
       tags:
@@ -2718,30 +3233,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set Topic Configurations
       tags:
         - TopicService
-  /v1alpha1/transforms:
+  /v1alpha2/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
       operationId: TransformService_ListTransforms
@@ -2800,19 +3315,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List Transforms
       tags:
@@ -2824,7 +3339,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -2845,7 +3360,7 @@ paths:
       summary: Deploy Transform
       tags:
         - TransformService
-  /v1alpha1/transforms/{name}:
+  /v1alpha2/transforms/{name}:
     delete:
       description: Delete a Wasm transform with the requested name.
       operationId: TransformService_DeleteTransform
@@ -2869,25 +3384,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete Transform
       tags:
@@ -2928,30 +3443,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get Transform
       tags:
         - TransformService
-  /v1alpha1/users:
+  /v1alpha2/users:
     get:
       description: 'List users. Optional: filter based on username.'
       operationId: UserService_ListUsers
@@ -2995,19 +3510,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List Users
       tags:
@@ -3055,30 +3570,30 @@ paths:
                         field: user.mechanism
                 message: provided parameters are invalid
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create User
       tags:
         - UserService
-  /v1alpha1/users/{name}:
+  /v1alpha2/users/{name}:
     delete:
       description: Delete the specified user
       operationId: UserService_DeleteUser
@@ -3100,7 +3615,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "404":
           content:
@@ -3114,24 +3629,24 @@ paths:
                     reason: REASON_RESOURCE_NOT_FOUND
                 message: user not found
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Delete User
       tags:
         - UserService
-  /v1alpha1/users/{user.name}:
+  /v1alpha2/users/{user.name}:
     put:
       description: Update a user's credentials.
       operationId: UserService_UpdateUser
@@ -3188,25 +3703,25 @@ paths:
                         field: user.mechanism
                 message: provided parameters are invalid
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Bad request. Check API documentation and update request.
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Unauthenticated.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: Internal Server Error. Reach out to support.
         default:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Update User
       tags:
@@ -3231,6 +3746,7 @@ tags:
   - name: TransformService
   - description: Manage [connectors](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/) and interact with the Kafka Connect API.
     name: KafkaConnectService
+  - name: PipelineService
   - description: Manage [secrets](https://docs.redpanda.com/current/deploy/deployment-option/cloud/security/secrets/) for Redpanda Cloud.
     name: SecretService
   - description: Manage Redpanda Cloud topics.

@@ -533,7 +533,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListConnectClustersResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListConnectClustersResponse"}
           }
         }
       }
@@ -555,7 +555,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectCluster"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectCluster"}
           }
         }
       }
@@ -583,7 +583,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListConnectorsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListConnectorsResponse"}
           }
         }
       }
@@ -606,7 +606,7 @@ service KafkaConnectService {
         value: {
           description: "Created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectorSpec"}
           }
         }
       }
@@ -648,7 +648,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectorSpec"}
           }
         }
       }
@@ -673,7 +673,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorStatus"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectorStatus"}
           }
         }
       }
@@ -765,7 +765,7 @@ service KafkaConnectService {
         value: {
           description: "Updated"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectorSpec"}
           }
         }
       }
@@ -774,7 +774,7 @@ service KafkaConnectService {
         value: {
           description: "Created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ConnectorSpec"}
           }
         }
       }
@@ -804,7 +804,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListConnectorTopicsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListConnectorTopicsResponse"}
           }
         }
       }

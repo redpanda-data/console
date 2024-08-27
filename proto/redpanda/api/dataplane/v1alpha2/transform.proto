@@ -188,7 +188,7 @@ service TransformService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTransformsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListTransformsResponse"}
           }
         }
       }
@@ -208,7 +208,7 @@ service TransformService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTransformResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetTransformResponse"}
           }
         }
       }
