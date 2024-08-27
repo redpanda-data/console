@@ -13,7 +13,7 @@ package rpconnect
 import (
 	"fmt"
 
-	"github.com/benthosdev/benthos/v4/public/service"
+	"github.com/redpanda-data/benthos/v4/public/service"
 )
 
 // Linter lints Redpanda connect configs.
