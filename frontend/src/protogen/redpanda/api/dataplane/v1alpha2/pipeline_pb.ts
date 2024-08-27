@@ -13,16 +13,22 @@ import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
  */
 export class Pipeline extends Message<Pipeline> {
   /**
+   * Pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
 
   /**
+   * User friendly display name.
+   *
    * @generated from field: string display_name = 2;
    */
   displayName = "";
 
   /**
+   * Optional pipeline description.
+   *
    * @generated from field: string description = 3;
    */
   description = "";
@@ -50,6 +56,8 @@ export class Pipeline extends Message<Pipeline> {
   limit?: Pipeline_Resources;
 
   /**
+   * The current pipeline state.
+   *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.State state = 7;
    */
   state = Pipeline_State.UNSPECIFIED;
@@ -263,11 +271,15 @@ export class Pipeline_Status extends Message<Pipeline_Status> {
  */
 export class PipelineCreate extends Message<PipelineCreate> {
   /**
+   * User friendly pipeline name.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
+   * Pipeline description.
+   *
    * @generated from field: string description = 2;
    */
   description = "";
@@ -406,6 +418,8 @@ export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
  */
 export class GetPipelineRequest extends Message<GetPipelineRequest> {
   /**
+   * The pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -618,11 +632,15 @@ export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
  */
 export class PipelineUpdate extends Message<PipelineUpdate> {
   /**
+   * Pipeline name.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
+   * Pipeline description.
+   *
    * @generated from field: string description = 2;
    */
   description = "";
@@ -642,7 +660,7 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
   request?: Pipeline_Resources;
 
   /**
-   * Pipeline resource requests.
+   * Pipeline resource limits.
    *
    * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 5;
    */
