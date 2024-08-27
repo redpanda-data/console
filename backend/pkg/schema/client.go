@@ -183,7 +183,7 @@ func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema
 			schemaCache,
 		); err != nil {
 			return nil, fmt.Errorf(
-				"failed to parse schema reference (subject: %q, version %q): %w",
+				"failed to parse schema reference (subject: %q, version %d): %w",
 				reference.Subject, reference.Version, err,
 			)
 		}
