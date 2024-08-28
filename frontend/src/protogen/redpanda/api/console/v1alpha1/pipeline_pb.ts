@@ -4,17 +4,82 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
-import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1alpha2/pipeline_pb";
+import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
+import { DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, StartPipelineRequest as StartPipelineRequest$1, StopPipelineRequest as StopPipelineRequest$1 } from "../../dataplane/v1alpha2/pipeline_pb";
 
 /**
+ * RedpandaConnectTier is the tier of the pipeline.
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.RedpandaConnectTier
+ */
+export enum RedpandaConnectTier {
+  /**
+   * @generated from enum value: REDPANDA_CONNECT_TIER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The development tier.
+   *
+   * @generated from enum value: REDPANDA_CONNECT_TIER_DEV = 1;
+   */
+  DEV = 1,
+
+  /**
+   * The standard tier.
+   *
+   * @generated from enum value: REDPANDA_CONNECT_TIER_STANDARD = 2;
+   */
+  STANDARD = 2,
+
+  /**
+   * The pro tier.
+   *
+   * @generated from enum value: REDPANDA_CONNECT_TIER_PRO = 3;
+   */
+  PRO = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(RedpandaConnectTier)
+proto3.util.setEnumType(RedpandaConnectTier, "redpanda.api.console.v1alpha1.RedpandaConnectTier", [
+  { no: 0, name: "REDPANDA_CONNECT_TIER_UNSPECIFIED" },
+  { no: 1, name: "REDPANDA_CONNECT_TIER_DEV" },
+  { no: 2, name: "REDPANDA_CONNECT_TIER_STANDARD" },
+  { no: 3, name: "REDPANDA_CONNECT_TIER_PRO" },
+]);
+
+/**
+ * From redpanda.api.dataplane.v1alpha2.PipelineCreate message.
+ *
  * @generated from message redpanda.api.console.v1alpha1.CreatePipelineRequest
  */
 export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreatePipelineRequest request = 1;
+   * User friendly pipeline name.
+   *
+   * @generated from field: string display_name = 1;
    */
-  request?: CreatePipelineRequest$1;
+  displayName = "";
+
+  /**
+   * Pipeline description.
+   *
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * The pipeline configuration in YAML format.
+   *
+   * @generated from field: string config_yaml = 3;
+   */
+  configYaml = "";
+
+  /**
+   * custom
+   *
+   * @generated from field: redpanda.api.console.v1alpha1.RedpandaConnectTier tier = 4;
+   */
+  tier = RedpandaConnectTier.UNSPECIFIED;
 
   constructor(data?: PartialMessage<CreatePipelineRequest>) {
     super();
@@ -24,7 +89,10 @@ export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.CreatePipelineRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "request", kind: "message", T: CreatePipelineRequest$1 },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "tier", kind: "enum", T: proto3.getEnumType(RedpandaConnectTier) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePipelineRequest {
@@ -45,13 +113,194 @@ export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
 }
 
 /**
+ * Defines the pipeline resource.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.Pipeline
+ */
+export class Pipeline extends Message<Pipeline> {
+  /**
+   * Pipeline ID.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * User friendly display name.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * Optional pipeline description.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * The configuration of the Pipeline as YAML.
+   * See https://docs.redpanda.com/redpanda-connect/configuration/about/
+   *
+   * @generated from field: string config_yaml = 4;
+   */
+  configYaml = "";
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.RedpandaConnectTier tier = 5;
+   */
+  tier = RedpandaConnectTier.UNSPECIFIED;
+
+  /**
+   * The current pipeline state.
+   *
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline.State state = 6;
+   */
+  state = Pipeline_State.UNSPECIFIED;
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline.Status status = 7;
+   */
+  status?: Pipeline_Status;
+
+  constructor(data?: PartialMessage<Pipeline>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.Pipeline";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "tier", kind: "enum", T: proto3.getEnumType(RedpandaConnectTier) },
+    { no: 6, name: "state", kind: "enum", T: proto3.getEnumType(Pipeline_State) },
+    { no: 7, name: "status", kind: "message", T: Pipeline_Status },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Pipeline {
+    return new Pipeline().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Pipeline {
+    return new Pipeline().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Pipeline {
+    return new Pipeline().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Pipeline | PlainMessage<Pipeline> | undefined, b: Pipeline | PlainMessage<Pipeline> | undefined): boolean {
+    return proto3.util.equals(Pipeline, a, b);
+  }
+}
+
+/**
+ * State of the pipeline.
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.Pipeline.State
+ */
+export enum Pipeline_State {
+  /**
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The pipeline is starting.
+   *
+   * @generated from enum value: STATE_STARTING = 1;
+   */
+  STARTING = 1,
+
+  /**
+   * The pipeline is running.
+   *
+   * @generated from enum value: STATE_RUNNING = 2;
+   */
+  RUNNING = 2,
+
+  /**
+   * The pipeline is in the process of stopping.
+   *
+   * @generated from enum value: STATE_STOPPING = 3;
+   */
+  STOPPING = 3,
+
+  /**
+   * The pipeline is stopped and in paused state.
+   *
+   * @generated from enum value: STATE_STOPPED = 4;
+   */
+  STOPPED = 4,
+
+  /**
+   * The pipeline is in error state.
+   *
+   * @generated from enum value: STATE_ERROR = 5;
+   */
+  ERROR = 5,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Pipeline_State)
+proto3.util.setEnumType(Pipeline_State, "redpanda.api.console.v1alpha1.Pipeline.State", [
+  { no: 0, name: "STATE_UNSPECIFIED" },
+  { no: 1, name: "STATE_STARTING" },
+  { no: 2, name: "STATE_RUNNING" },
+  { no: 3, name: "STATE_STOPPING" },
+  { no: 4, name: "STATE_STOPPED" },
+  { no: 5, name: "STATE_ERROR" },
+]);
+
+/**
+ * Pipeline status can hold error message.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.Pipeline.Status
+ */
+export class Pipeline_Status extends Message<Pipeline_Status> {
+  /**
+   * @generated from field: string error = 2;
+   */
+  error = "";
+
+  constructor(data?: PartialMessage<Pipeline_Status>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.Pipeline.Status";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Pipeline_Status {
+    return new Pipeline_Status().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Pipeline_Status {
+    return new Pipeline_Status().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Pipeline_Status {
+    return new Pipeline_Status().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Pipeline_Status | PlainMessage<Pipeline_Status> | undefined, b: Pipeline_Status | PlainMessage<Pipeline_Status> | undefined): boolean {
+    return proto3.util.equals(Pipeline_Status, a, b);
+  }
+}
+
+/**
  * @generated from message redpanda.api.console.v1alpha1.CreatePipelineResponse
  */
 export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreatePipelineResponse response = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline pipeline = 1;
    */
-  response?: CreatePipelineResponse$1;
+  pipeline?: Pipeline;
 
   constructor(data?: PartialMessage<CreatePipelineResponse>) {
     super();
@@ -61,7 +310,7 @@ export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.CreatePipelineResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: CreatePipelineResponse$1 },
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePipelineResponse {
@@ -123,9 +372,9 @@ export class GetPipelineRequest extends Message<GetPipelineRequest> {
  */
 export class GetPipelineResponse extends Message<GetPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineResponse response = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline pipeline = 1;
    */
-  response?: GetPipelineResponse$1;
+  pipeline?: Pipeline;
 
   constructor(data?: PartialMessage<GetPipelineResponse>) {
     super();
@@ -135,7 +384,7 @@ export class GetPipelineResponse extends Message<GetPipelineResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelineResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: GetPipelineResponse$1 },
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelineResponse {
@@ -230,6 +479,49 @@ export class DeletePipelineResponse extends Message<DeletePipelineResponse> {
 }
 
 /**
+ * @generated from message redpanda.api.console.v1alpha1.ListPipelinesResponse
+ */
+export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.Pipeline pipelines = 1;
+   */
+  pipelines: Pipeline[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListPipelinesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListPipelinesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pipelines", kind: "message", T: Pipeline, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPipelinesResponse {
+    return new ListPipelinesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPipelinesResponse {
+    return new ListPipelinesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPipelinesResponse {
+    return new ListPipelinesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPipelinesResponse | PlainMessage<ListPipelinesResponse> | undefined, b: ListPipelinesResponse | PlainMessage<ListPipelinesResponse> | undefined): boolean {
+    return proto3.util.equals(ListPipelinesResponse, a, b);
+  }
+}
+
+/**
  * @generated from message redpanda.api.console.v1alpha1.ListPipelinesRequest
  */
 export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
@@ -267,50 +559,48 @@ export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.ListPipelinesResponse
- */
-export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
-  /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListPipelinesResponse response = 1;
-   */
-  response?: ListPipelinesResponse$1;
-
-  constructor(data?: PartialMessage<ListPipelinesResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListPipelinesResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: ListPipelinesResponse$1 },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPipelinesResponse {
-    return new ListPipelinesResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPipelinesResponse {
-    return new ListPipelinesResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPipelinesResponse {
-    return new ListPipelinesResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListPipelinesResponse | PlainMessage<ListPipelinesResponse> | undefined, b: ListPipelinesResponse | PlainMessage<ListPipelinesResponse> | undefined): boolean {
-    return proto3.util.equals(ListPipelinesResponse, a, b);
-  }
-}
-
-/**
  * @generated from message redpanda.api.console.v1alpha1.UpdatePipelineRequest
  */
 export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdatePipelineRequest request = 1;
+   * @generated from field: string id = 1;
    */
-  request?: UpdatePipelineRequest$1;
+  id = "";
+
+  /**
+   * Pipeline name.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * Pipeline description.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * The pipeline configuration in YAML format.
+   *
+   * @generated from field: string config_yaml = 4;
+   */
+  configYaml = "";
+
+  /**
+   * custom
+   *
+   * @generated from field: redpanda.api.console.v1alpha1.RedpandaConnectTier tier = 5;
+   */
+  tier = RedpandaConnectTier.UNSPECIFIED;
+
+  /**
+   * The fields to be updated.
+   *
+   * @generated from field: google.protobuf.FieldMask update_mask = 6;
+   */
+  updateMask?: FieldMask;
 
   constructor(data?: PartialMessage<UpdatePipelineRequest>) {
     super();
@@ -320,7 +610,12 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.UpdatePipelineRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "request", kind: "message", T: UpdatePipelineRequest$1 },
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "tier", kind: "enum", T: proto3.getEnumType(RedpandaConnectTier) },
+    { no: 6, name: "update_mask", kind: "message", T: FieldMask },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePipelineRequest {
@@ -345,9 +640,9 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
  */
 export class UpdatePipelineResponse extends Message<UpdatePipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdatePipelineResponse response = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline pipeline = 1;
    */
-  response?: UpdatePipelineResponse$1;
+  pipeline?: Pipeline;
 
   constructor(data?: PartialMessage<UpdatePipelineResponse>) {
     super();
@@ -357,7 +652,7 @@ export class UpdatePipelineResponse extends Message<UpdatePipelineResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.UpdatePipelineResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: UpdatePipelineResponse$1 },
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePipelineResponse {
@@ -419,9 +714,9 @@ export class StopPipelineRequest extends Message<StopPipelineRequest> {
  */
 export class StopPipelineResponse extends Message<StopPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StopPipelineResponse response = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline pipeline = 1;
    */
-  response?: StopPipelineResponse$1;
+  pipeline?: Pipeline;
 
   constructor(data?: PartialMessage<StopPipelineResponse>) {
     super();
@@ -431,7 +726,7 @@ export class StopPipelineResponse extends Message<StopPipelineResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.StopPipelineResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: StopPipelineResponse$1 },
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopPipelineResponse {
@@ -493,9 +788,9 @@ export class StartPipelineRequest extends Message<StartPipelineRequest> {
  */
 export class StartPipelineResponse extends Message<StartPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
+   * @generated from field: redpanda.api.console.v1alpha1.Pipeline pipeline = 1;
    */
-  response?: StartPipelineResponse$1;
+  pipeline?: Pipeline;
 
   constructor(data?: PartialMessage<StartPipelineResponse>) {
     super();
@@ -505,7 +800,7 @@ export class StartPipelineResponse extends Message<StartPipelineResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.StartPipelineResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "response", kind: "message", T: StartPipelineResponse$1 },
+    { no: 1, name: "pipeline", kind: "message", T: Pipeline },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartPipelineResponse {

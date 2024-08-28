@@ -2,14 +2,107 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/dataplane/v1alpha2/pipeline.proto";
 
+// RedpandaConnectTier is the tier of the pipeline.
+enum RedpandaConnectTier {
+  REDPANDA_CONNECT_TIER_UNSPECIFIED = 0;
+  // The development tier.
+  REDPANDA_CONNECT_TIER_DEV = 1;
+  // The standard tier.
+  REDPANDA_CONNECT_TIER_STANDARD = 2;
+  // The pro tier.
+  REDPANDA_CONNECT_TIER_PRO = 3;
+}
+
 message CreatePipelineRequest {
-  redpanda.api.dataplane.v1alpha2.CreatePipelineRequest request = 1;
+  // From redpanda.api.dataplane.v1alpha2.PipelineCreate message.
+
+  // User friendly pipeline name.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Pipeline description.
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+
+  // The pipeline configuration in YAML format.
+  string config_yaml = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // custom
+  RedpandaConnectTier tier = 4;
+}
+
+// Defines the pipeline resource.
+message Pipeline {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  // User friendly display name.
+  string display_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Optional pipeline description.
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+
+  // The configuration of the Pipeline as YAML.
+  // See https://docs.redpanda.com/redpanda-connect/configuration/about/
+  string config_yaml = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The configuration of the Pipeline as YAML. See https://docs.redpanda.com/redpanda-connect/configuration/about for more details."}
+  ];
+
+  RedpandaConnectTier tier = 5;
+
+  // The current pipeline state.
+  State state = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  Status status = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // State of the pipeline.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    // The pipeline is starting.
+    STATE_STARTING = 1;
+    // The pipeline is running.
+    STATE_RUNNING = 2;
+    // The pipeline is in the process of stopping.
+    STATE_STOPPING = 3;
+    // The pipeline is stopped and in paused state.
+    STATE_STOPPED = 4;
+    // The pipeline is in error state.
+    STATE_ERROR = 5;
+  }
+
+  // Pipeline status can hold error message.
+  message Status {
+    string error = 2;
+  }
 }
 
 message CreatePipelineResponse {
-  redpanda.api.dataplane.v1alpha2.CreatePipelineResponse response = 1;
+  Pipeline pipeline = 1;
 }
 
 message GetPipelineRequest {
@@ -17,7 +110,7 @@ message GetPipelineRequest {
 }
 
 message GetPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelineResponse response = 1;
+  Pipeline pipeline = 1;
 }
 
 message DeletePipelineRequest {
@@ -28,20 +121,48 @@ message DeletePipelineResponse {
   redpanda.api.dataplane.v1alpha2.DeletePipelineResponse response = 1;
 }
 
+message ListPipelinesResponse {
+  repeated Pipeline pipelines = 1;
+  string next_page_token = 2;
+}
+
 message ListPipelinesRequest {
   redpanda.api.dataplane.v1alpha2.ListPipelinesRequest request = 1;
 }
 
-message ListPipelinesResponse {
-  redpanda.api.dataplane.v1alpha2.ListPipelinesResponse response = 1;
-}
-
 message UpdatePipelineRequest {
-  redpanda.api.dataplane.v1alpha2.UpdatePipelineRequest request = 1;
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  // Pipeline name.
+  string display_name = 2 [
+    (buf.validate.field).ignore_empty = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Pipeline description.
+  string description = 3 [
+    (buf.validate.field).ignore_empty = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // The pipeline configuration in YAML format.
+  string config_yaml = 4;
+
+  // custom
+  RedpandaConnectTier tier = 5;
+
+  // The fields to be updated.
+  google.protobuf.FieldMask update_mask = 6;
 }
 
 message UpdatePipelineResponse {
-  redpanda.api.dataplane.v1alpha2.UpdatePipelineResponse response = 1;
+  Pipeline pipeline = 1;
 }
 
 message StopPipelineRequest {
@@ -49,7 +170,7 @@ message StopPipelineRequest {
 }
 
 message StopPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.StopPipelineResponse response = 1;
+  Pipeline pipeline = 1;
 }
 
 message StartPipelineRequest {
@@ -57,7 +178,7 @@ message StartPipelineRequest {
 }
 
 message StartPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
+  Pipeline pipeline = 1;
 }
 
 message GetPipelineServiceConfigSchemaRequest {
