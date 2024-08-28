@@ -21,7 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem } from '@redpanda-data/ui';
+import { Alert, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Box, Skeleton, Tooltip, AlertIcon, AlertDescription } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC } from 'react';
@@ -79,6 +79,23 @@ class Overview extends PageComponent {
 
         return <>
             <PageContent>
+                <>
+                    <Alert
+                        bg="gray.50"
+                        status="info"
+                        variant="left-accent"
+                    >
+                        <AlertIcon />
+                        <AlertDescription>
+                            <Box>
+                                You're using Enterprise features in your connected Redpanda cluster. These features require a license.
+                                <Flex gap={2} my={2}>
+                                    <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button>
+                                    <Button variant="outline" size="sm">Request a trial</Button>
+                                </Flex>
+                            </Box>
+                        </AlertDescription>
+                    </Alert>
                 <div className="overviewGrid">
                     {/*
                     <Section py={5} gridArea="health">
@@ -200,6 +217,7 @@ class Overview extends PageComponent {
                         <ClusterDetails />
                     </Section>
                 </div>
+                </>
             </PageContent>
         </>
     }
@@ -347,9 +365,15 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
+        {/*<Details title="Licensing" content={[*/}
+        {/*    [<Box key={0}>{JSON.stringify(overview.console.license)}</Box>],*/}
+        {/*    [<Box key={1}>{JSON.stringify(overview.redpanda.license)}</Box>],*/}
+        {/*]} />*/}
+
         <Details title="Licensing" content={[
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
+            [<Link key={3}>Upload enterprise license</Link>]
         ]}/>
     </Grid>;
 }

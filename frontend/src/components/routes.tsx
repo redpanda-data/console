@@ -54,6 +54,7 @@ import TransformDetails from './pages/transforms/Transform.Details';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import {isServerless} from '../config';
+import UploadLicensePage from './pages/admin/UploadLicensePage';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 
 //
@@ -325,10 +326,13 @@ export const APP_ROUTES: IRouteEntry[] = [
         )
     ),
 
+    MakeRoute<{}>('/admin/upload-license', UploadLicensePage, 'Upload License', CogIcon, false,
+        routeVisibility(() => false)
+    ),
+
     MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
-
 
 ].filterNull();
 
