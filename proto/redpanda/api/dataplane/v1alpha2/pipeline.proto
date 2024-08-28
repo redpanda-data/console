@@ -120,7 +120,7 @@ service PipelineService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListPipelinesResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
           }
         }
       }

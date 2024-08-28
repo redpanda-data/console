@@ -2718,7 +2718,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListPipelinesResponse'
+                $ref: '#/components/schemas/Pipeline'
           description: OK
         "401":
           content:
