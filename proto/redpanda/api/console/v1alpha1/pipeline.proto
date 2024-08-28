@@ -17,6 +17,8 @@ enum RedpandaConnectTier {
   REDPANDA_CONNECT_TIER_STANDARD = 2;
   // The pro tier.
   REDPANDA_CONNECT_TIER_PRO = 3;
+  // The custom tier.
+  REDPANDA_CONNECT_TIER_CUSTOM = 4;
 }
 
 message CreatePipelineRequest {

@@ -38,6 +38,13 @@ export enum RedpandaConnectTier {
    * @generated from enum value: REDPANDA_CONNECT_TIER_PRO = 3;
    */
   PRO = 3,
+
+  /**
+   * The custom tier.
+   *
+   * @generated from enum value: REDPANDA_CONNECT_TIER_CUSTOM = 4;
+   */
+  CUSTOM = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(RedpandaConnectTier)
 proto3.util.setEnumType(RedpandaConnectTier, "redpanda.api.console.v1alpha1.RedpandaConnectTier", [
@@ -45,6 +52,7 @@ proto3.util.setEnumType(RedpandaConnectTier, "redpanda.api.console.v1alpha1.Redp
   { no: 1, name: "REDPANDA_CONNECT_TIER_DEV" },
   { no: 2, name: "REDPANDA_CONNECT_TIER_STANDARD" },
   { no: 3, name: "REDPANDA_CONNECT_TIER_PRO" },
+  { no: 4, name: "REDPANDA_CONNECT_TIER_CUSTOM" },
 ]);
 
 /**
