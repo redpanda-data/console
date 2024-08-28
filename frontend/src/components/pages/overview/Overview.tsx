@@ -365,16 +365,26 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
-        {/*<Details title="Licensing" content={[*/}
-        {/*    [<Box key={0}>{JSON.stringify(overview.console.license)}</Box>],*/}
-        {/*    [<Box key={1}>{JSON.stringify(overview.redpanda.license)}</Box>],*/}
-        {/*]} />*/}
-
         <Details title="Licensing" content={[
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
-            [<Link key={3}>Upload enterprise license</Link>]
+            [<Link key={3}>Upload enterprise license</Link>],
         ]}/>
+
+        <GridItem colSpan={{base: 1, lg: 3}} mt={2}>
+            <Alert
+                bg="gray.50"
+                status="info"
+                variant="left-accent"
+            >
+                <AlertIcon/>
+                <AlertDescription>
+                    <Box>
+                        To use any of our Enterprise features, you need to request a license.
+                    </Box>
+                </AlertDescription>
+            </Alert>
+        </GridItem>
     </Grid>;
 }
 

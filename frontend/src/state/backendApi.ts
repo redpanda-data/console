@@ -121,6 +121,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1522,6 +1523,17 @@ const apiStore = {
             method: 'DELETE',
         });
         return parseOrUnwrap<void>(response, null);
+    },
+
+    async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+        const client = appConfig.licenseClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
+        const r = await client.setLicense(request);
+
+        return r;
     },
 
 };
