@@ -21,10 +21,10 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Alert, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Box, Skeleton, Tooltip, AlertIcon, AlertDescription } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 
@@ -81,9 +81,8 @@ class Overview extends PageComponent {
             <PageContent>
                 <>
                     <Alert
-                        bg="gray.50"
-                        status="info"
-                        variant="left-accent"
+                        status="warning"
+                        variant="subtle"
                     >
                         <AlertIcon />
                         <AlertDescription>
@@ -269,6 +268,10 @@ const Details: FC<DetailsProps> = ({title, content}) => {
 };
 
 function ClusterDetails() {
+    useEffect(() => {
+        void api.listLicenses()
+    }, []);
+
     const overview = api.clusterOverview;
     const brokers = api.brokers;
 
@@ -366,6 +369,7 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
+            [JSON.stringify(api.license)],
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
             [<Link key={3}>Upload enterprise license</Link>],
@@ -373,9 +377,8 @@ function ClusterDetails() {
 
         <GridItem colSpan={{base: 1, lg: 3}} mt={2}>
             <Alert
-                bg="gray.50"
-                status="info"
-                variant="left-accent"
+                status="warning"
+                variant="subtle"
             >
                 <AlertIcon/>
                 <AlertDescription>
