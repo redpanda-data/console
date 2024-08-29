@@ -56,7 +56,7 @@ func (s *APISuite) TestListConnectors_V1Alpha1() {
 		client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 		res, err := client.ListConnectors(ctx, connect.NewRequest(
 			&v1alpha1.ListConnectorsRequest{
-				ClusterName: "connect-cluster-v1alpha1",
+				ClusterName: "connect-cluster",
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
@@ -79,7 +79,7 @@ func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 		assert.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
 		assert.Equal(1, len(res.Msg.Clusters), "there should be one cluster")
-		assert.Equal("connect-cluster-v1alpha1", res.Msg.Clusters[0].Name)
+		assert.Equal("connect-cluster", res.Msg.Clusters[0].Name)
 	})
 
 	t.Run("list connect clusters request (http)", func(t *testing.T) {
@@ -119,7 +119,7 @@ func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 		assert.Equal(len(response.Clusters), 1)
-		assert.Equal("connect-cluster-v1alpha1", response.Clusters[0].Name)
+		assert.Equal("connect-cluster", response.Clusters[0].Name)
 	})
 }
 
@@ -138,7 +138,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 
 	// Create Connector request
 	input := &v1alpha1.CreateConnectorRequest{
-		ClusterName: "connect-cluster-v1alpha1",
+		ClusterName: "connect-cluster",
 		Connector: &v1alpha1.ConnectorSpec{
 			Name: "http_connect_input",
 			Config: map[string]string{
@@ -217,7 +217,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster-v1alpha1/connectors/http_connect_input").
+			Path("connect/clusters/connect-cluster/connectors/http_connect_input").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -264,7 +264,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster-v1alpha1/connectors/http_connect_input/status").
+			Path("connect/clusters/connect-cluster/connectors/http_connect_input/status").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
