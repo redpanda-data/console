@@ -21,6 +21,7 @@ import (
 	"github.com/redpanda-data/common-go/rpadmin"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
+	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
@@ -36,9 +37,15 @@ type Service struct {
 	adminapiCl     *rpadmin.AdminAPI
 	consoleLicense redpanda.License
 	mapper         mapper
+	authHooks      hooks.AuthorizationHooks
 }
 
-func NewService(logger *zap.Logger, cfg *config.Config, consoleLicense redpanda.License) (*Service, error) {
+func NewService(
+	logger *zap.Logger,
+	cfg *config.Config,
+	consoleLicense redpanda.License,
+	hooks hooks.AuthorizationHooks,
+) (*Service, error) {
 	// Build admin client with provided credentials
 	adminApiCfg := cfg.Redpanda.AdminAPI
 	var auth rpadmin.Auth
@@ -74,10 +81,20 @@ func NewService(logger *zap.Logger, cfg *config.Config, consoleLicense redpanda.
 		adminapiCl:     adminClient,
 		consoleLicense: consoleLicense,
 		mapper:         mapper{},
+		authHooks:      hooks,
 	}, nil
 }
 
 func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.ListLicensesRequest]) (*connect.Response[v1alpha1.ListLicensesResponse], error) {
+	// Use this hook to ensure the requester is some authenticated user.
+	// It doesn't matter what permisison we check. As long as the requester
+	// has at least one viewer permission we know this user is authenticated.
+	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
+	err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to list licenses")
+	if err != nil {
+		return nil, err
+	}
+
 	licenses := make([]*v1alpha1.License, 0)
 	consoleLicenseProto := s.mapper.consoleLicenseToProto(s.consoleLicense)
 	licenses = append(licenses, consoleLicenseProto)
@@ -109,12 +126,20 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 }
 
 func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error) {
+	// Use this hook to ensure the requester is some authenticated user.
+	// It doesn't matter what permisison we check. As long as the requester
+	// has at least one viewer permission we know this user is authenticated.
+	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
+	err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license")
+	if err != nil {
+		return nil, err
+	}
+
 	if s.adminapiCl == nil {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
-	err := s.adminapiCl.SetLicense(ctx, req.Msg.GetLicense())
-	if err != nil {
+	if err := s.adminapiCl.SetLicense(ctx, req.Msg.GetLicense()); err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to install license: ")
 	}
 

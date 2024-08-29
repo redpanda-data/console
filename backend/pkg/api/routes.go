@@ -120,7 +120,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvc)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
-	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.Cfg, api.License)
+	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.Cfg, api.License, api.Hooks.Authorization)
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
 	}
