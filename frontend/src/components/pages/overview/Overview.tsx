@@ -369,7 +369,6 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            [JSON.stringify(api.license)],
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
             [<Link key={3}>Upload enterprise license</Link>],
