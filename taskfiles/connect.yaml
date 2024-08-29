@@ -1,0 +1,7 @@
+version: 3
+tasks:
+ ai-schema:generate:
+    desc: generates the JSON schema for the AI version of connect
+    cmds:
+      # we use jsonschema format since frontend uses JSON Schema structured reprenentation of the config schem
+      - docker run redpandadata/connect:4.34.0-ai -- list --format jsonschema > {{.FRONTEND_ROOT}}/src/assets/rp-connect-schema.json
