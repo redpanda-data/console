@@ -33,7 +33,7 @@ import (
 
 var _ dataplanev1alpha2connect.KafkaConnectServiceHandler = (*Service)(nil)
 
-// Service that implements the KafkaConnect interface. This include the RPCs to Handle the KafkaConnect enpoints
+// Service that implements the KafkaConnect interface. This include the RPCs to Handle the KafkaConnect endpoints
 type Service struct {
 	cfg        *config.Config
 	logger     *zap.Logger
