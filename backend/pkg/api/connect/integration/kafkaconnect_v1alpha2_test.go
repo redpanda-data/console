@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/network"
 
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
-	v1alpha1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
+	v1alpha2connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
-func (s *APISuite) TestListConnectors_V1Alpha1() {
+func (s *APISuite) TestListConnectors_V1Alpha2() {
 	t := s.T()
 
 	t.Run("list Connectors with invalid Request (connect-go)", func(t *testing.T) {
@@ -37,9 +37,9 @@ func (s *APISuite) TestListConnectors_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
+		client := v1alpha2connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 		_, err := client.ListConnectors(ctx, connect.NewRequest(
-			&v1alpha1.ListConnectorsRequest{
+			&v1alpha2.ListConnectorsRequest{
 				ClusterName: "foo",
 			}))
 		assert.Error(err)
@@ -53,18 +53,18 @@ func (s *APISuite) TestListConnectors_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
+		client := v1alpha2connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 		res, err := client.ListConnectors(ctx, connect.NewRequest(
-			&v1alpha1.ListConnectorsRequest{
+			&v1alpha2.ListConnectorsRequest{
 				ClusterName: "connect-cluster",
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.IsType([]*v1alpha1.ListConnectorsResponse_ConnectorInfoStatus{}, res.Msg.Connectors)
+		assert.IsType([]*v1alpha2.ListConnectorsResponse_ConnectorInfoStatus{}, res.Msg.Connectors)
 	})
 }
 
-func (s *APISuite) TestListConnectClusters_V1Alpha1() {
+func (s *APISuite) TestListConnectClusters_v1alpha2() {
 	t := s.T()
 
 	t.Run("list connect clusters request (connect-go)", func(t *testing.T) {
@@ -73,9 +73,9 @@ func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
+		client := v1alpha2connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 		res, err := client.ListConnectClusters(ctx, connect.NewRequest(
-			&v1alpha1.ListConnectClustersRequest{}))
+			&v1alpha2.ListConnectClustersRequest{}))
 		assert.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
 		assert.Equal(1, len(res.Msg.Clusters), "there should be one cluster")
@@ -108,8 +108,8 @@ func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 		var response listConnectClustersResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters").
+			URL(s.httpAddress() + "/v1alpha2/").
+			Path("kafka-connect/clusters").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -123,7 +123,7 @@ func (s *APISuite) TestListConnectClusters_V1Alpha1() {
 	})
 }
 
-func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
+func (s *APISuite) TestGetConnectorAndStatus_v1alpha2() {
 	t := s.T()
 	requireT := require.New(t)
 
@@ -134,13 +134,13 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 	httpC, err := testutil.RunHTTPBinContainer(ctx, network.WithNetwork([]string{"httpbin", "local-httpbin"}, s.network))
 	requireT.NoError(err)
 
-	client := v1alpha1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
+	client := v1alpha2connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
 
 	// Create Connector request
-	input := &v1alpha1.CreateConnectorRequest{
+	input := &v1alpha2.CreateConnectorRequest{
 		ClusterName: "connect-cluster",
-		Connector: &v1alpha1.ConnectorSpec{
-			Name: "http_connect_input_v1alpha1",
+		Connector: &v1alpha2.ConnectorSpec{
+			Name: "http_connect_input",
 			Config: map[string]string{
 				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
@@ -150,7 +150,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 				"kafka.topic":                               "httpbin-input",
 				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
 				"key.converter.schemas.enable":              "false",
-				"name":                                      "http_connect_input_v1alpha1",
+				"name":                                      "http_connect_input",
 				"topic.creation.default.partitions":         "1",
 				"topic.creation.default.replication.factor": "1",
 				"topic.creation.enable":                     "true",
@@ -170,7 +170,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 
 		// delete connector
 		_, err := client.DeleteConnector(ctx, connect.NewRequest(
-			&v1alpha1.DeleteConnectorRequest{
+			&v1alpha2.DeleteConnectorRequest{
 				ClusterName: input.ClusterName,
 				Name:        input.Connector.Name,
 			},
@@ -190,13 +190,13 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		defer cancel()
 
 		res, err := client.GetConnector(ctx, connect.NewRequest(
-			&v1alpha1.GetConnectorRequest{
+			&v1alpha2.GetConnectorRequest{
 				ClusterName: input.ClusterName,
 				Name:        input.Connector.Name,
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input_v1alpha1", res.Msg.Connector.Name)
+		assert.Equal("http_connect_input", res.Msg.Connector.Name)
 		assert.Equal(input.Connector.Config, res.Msg.Connector.Config)
 	})
 
@@ -216,8 +216,8 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var response getConnectorResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1").
+			URL(s.httpAddress() + "/v1alpha2/").
+			Path("kafka-connect/clusters/connect-cluster/connectors/http_connect_input").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -239,13 +239,13 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		defer cancel()
 
 		res, err := client.GetConnectorStatus(ctx, connect.NewRequest(
-			&v1alpha1.GetConnectorStatusRequest{
+			&v1alpha2.GetConnectorStatusRequest{
 				ClusterName: input.ClusterName,
 				Name:        input.Connector.Name,
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input_v1alpha1", res.Msg.Status.Name)
+		assert.Equal("http_connect_input", res.Msg.Status.Name)
 	})
 
 	t.Run("Get connector status request (http)", func(t *testing.T) {
@@ -263,8 +263,8 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var response getConnectorStatusResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1/status").
+			URL(s.httpAddress() + "/v1alpha2/").
+			Path("kafka-connect/clusters/connect-cluster/connectors/http_connect_input/status").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
