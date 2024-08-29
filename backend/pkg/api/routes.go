@@ -36,6 +36,7 @@ import (
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
+	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
 	"github.com/redpanda-data/console/backend/pkg/api/connect/service/rpconnect"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -119,6 +120,10 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvc)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
 	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
+	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.Cfg, api.License)
+	if err != nil {
+		api.Logger.Fatal("failed to create license service", zap.Error(err))
+	}
 	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"), api.Hooks.Authorization)
 	if err != nil {
 		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
@@ -136,6 +141,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1alpha1connect.TransformServiceName:     transformSvcV1alpha1,
 			consolev1alpha1connect.ConsoleServiceName:         consoleSvc,
 			consolev1alpha1connect.SecurityServiceName:        securitySvc,
+			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
 			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
 			dataplanev1alpha2connect.ACLServiceName:           aclSvc,
@@ -197,6 +203,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	consoleTransformSvcPath, consoleTransformSvcHandler := consolev1alpha1connect.NewTransformServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1alpha2
@@ -262,6 +270,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.TransformServiceName,
 			MountPath:   consoleTransformSvcPath,
 			Handler:     consoleTransformSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.LicenseServiceName,
+			MountPath:   licenseSvcPath,
+			Handler:     licenseSvcHandler,
 		},
 		{
 			ServiceName: dataplanev1alpha2connect.ACLServiceName,

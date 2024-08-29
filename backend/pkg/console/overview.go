@@ -16,7 +16,6 @@ import (
 	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -36,7 +35,6 @@ type Overview struct {
 // admin API.
 type OverviewRedpanda struct {
 	IsAdminAPIConfigured    bool                              `json:"isAdminApiConfigured"`
-	License                 *redpanda.License                 `json:"license,omitempty"`
 	Version                 string                            `json:"version,omitempty"`
 	UserCount               *int                              `json:"userCount,omitempty"`
 	PartitionBalancerStatus *adminapi.PartitionBalancerStatus `json:"partitionBalancerStatus,omitempty"`
@@ -44,9 +42,8 @@ type OverviewRedpanda struct {
 
 // OverviewConsole contains information about Redpanda Console itself.
 type OverviewConsole struct {
-	License redpanda.License `json:"license"`
-	Version string           `json:"version"`
-	BuiltAt string           `json:"builtAt"`
+	Version string `json:"version"`
+	BuiltAt string `json:"builtAt"`
 }
 
 // ClusterOverviewKafkaStorage provides details about the storage that is used for
@@ -104,7 +101,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 		}
 	}
 
-	licenseInfo := s.redpandaSvc.GetLicense(ctx)
 	version, _ := s.redpandaSvc.GetClusterVersion(ctx)
 
 	var userCount *int
@@ -126,7 +122,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 
 	return OverviewRedpanda{
 		IsAdminAPIConfigured:    true,
-		License:                 &licenseInfo,
 		Version:                 version,
 		UserCount:               userCount,
 		PartitionBalancerStatus: partitionBalancerStatus,
@@ -135,7 +130,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 
 func (*Service) getConsoleOverview() OverviewConsole {
 	return OverviewConsole{
-		License: redpanda.License{}, // License will be set in the api handler
 		Version: version.Version,
 		BuiltAt: version.BuiltAt,
 	}
