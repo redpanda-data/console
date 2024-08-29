@@ -140,7 +140,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 	input := &v1alpha1.CreateConnectorRequest{
 		ClusterName: "connect-cluster",
 		Connector: &v1alpha1.ConnectorSpec{
-			Name: "http_connect_input",
+			Name: "http_connect_input_v1alpha1",
 			Config: map[string]string{
 				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
@@ -150,7 +150,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 				"kafka.topic":                               "httpbin-input",
 				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
 				"key.converter.schemas.enable":              "false",
-				"name":                                      "http_connect_input",
+				"name":                                      "http_connect_input_v1alpha1",
 				"topic.creation.default.partitions":         "1",
 				"topic.creation.default.replication.factor": "1",
 				"topic.creation.enable":                     "true",
@@ -196,7 +196,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input", res.Msg.Connector.Name)
+		assert.Equal("http_connect_input_v1alpha1", res.Msg.Connector.Name)
 		assert.Equal(input.Connector.Config, res.Msg.Connector.Config)
 	})
 
@@ -217,7 +217,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input").
+			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -245,7 +245,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input", res.Msg.Status.Name)
+		assert.Equal("http_connect_input_v1alpha1", res.Msg.Status.Name)
 	})
 
 	t.Run("Get connector status request (http)", func(t *testing.T) {
@@ -264,7 +264,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input/status").
+			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1/status").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
