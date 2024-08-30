@@ -10,7 +10,7 @@
 package license
 
 import (
-	"math"
+	"time"
 
 	"github.com/redpanda-data/common-go/rpadmin"
 
@@ -21,7 +21,7 @@ import (
 type mapper struct{}
 
 func (mapper) adminApiLicenseInformationToProto(in rpadmin.License) *v1alpha1.License {
-	expiresAt := int64(math.MaxInt64)
+	expiresAt := time.Now().Add(24 * 365 * 10).Unix()
 	licenseType := v1alpha1.License_TYPE_COMMUNITY
 
 	if in.Loaded {
@@ -49,6 +49,6 @@ func (mapper) consoleLicenseToProto(in redpanda.License) *v1alpha1.License {
 	return &v1alpha1.License{
 		Source:    v1alpha1.License_SOURCE_REDPANDA_CONSOLE,
 		Type:      licenseType,
-		ExpiresAt: int64(math.MaxInt64),
+		ExpiresAt: in.ExpiresAt,
 	}
 }

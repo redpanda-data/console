@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"math"
+	"time"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
@@ -107,7 +107,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 		License: redpanda.License{
 			Source:    redpanda.LicenseSourceConsole,
 			Type:      redpanda.LicenseTypeOpenSource,
-			ExpiresAt: math.MaxInt32,
+			ExpiresAt: time.Now().Add(24 * 365 * 10).Unix(),
 		},
 	}
 	for _, opt := range opts {
