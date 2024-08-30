@@ -21,7 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Alert, AlertDescription, AlertIcon, Box, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
@@ -347,24 +347,14 @@ function ClusterDetails() {
 
         <Details title="Licensing" content={[
             ...(licenses.map(license => [prettyLicenseType(license.type), prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
-            [<Link key={3}>Upload enterprise license</Link>]
         ]}/>
 
-        <GridItem colSpan={{base: 1, lg: 3}} mt={2}>
-            <Alert
-                status="info"
-                variant="subtle"
-            >
-                <AlertIcon/>
-                <AlertDescription>
-                    <Box>
-                        {/*{JSON.stringify(api.licenses)}*/}
-                        {/*{JSON.stringify({isRedpanda: api.isRedpanda})}*/}
-                        To use any of our Enterprise features, you need to request a license.
-                    </Box>
-                </AlertDescription>
-            </Alert>
-        </GridItem>
+        {api.isRedpanda && api.isAdminApiConfigured && <>
+            <GridItem/>
+            <GridItem colSpan={{base: 1, lg: 2}}>
+                <Link as={ReactRouterLink} to="/admin/upload-license">Upload new license</Link>
+            </GridItem>
+        </>}
     </Grid>;
 }
 

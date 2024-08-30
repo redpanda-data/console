@@ -336,7 +336,8 @@ const apiStore = {
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
-    licenses: [] as License[],
+    licenses: []  as License[],
+    licensesLoaded: false,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -691,6 +692,15 @@ const apiStore = {
             return true;
 
         return false;
+    },
+
+    get isAdminApiConfigured() {
+        const overview = this.clusterOverview;
+        if(!overview) {
+            return false
+        }
+
+        return overview.redpanda.isAdminApiConfigured
     },
 
     refreshBrokers(force?: boolean) {
@@ -1543,6 +1553,7 @@ const apiStore = {
         }
         return await client.listLicenses({}).then(response => {
             this.licenses = response.licenses
+            this.licensesLoaded = true
             return response
         })
     }
