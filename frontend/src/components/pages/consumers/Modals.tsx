@@ -153,7 +153,7 @@ export class EditOffsetsModal extends Component<{
 
     page1() {
         return (
-            <Flex flexDirection="column" gap={4}>
+            <Flex flexDirection="column" gap={4} mt={16}>
                 <Box maxW={300}>
                     <SingleSelect
                         isDisabled={this.isLoadingTimestamps}
@@ -187,7 +187,7 @@ export class EditOffsetsModal extends Component<{
                     'otherGroup': 'Copy offsets from another (inactive) consumer group',
                 } as Record<EditOptions, string>)[this.selectedOption]}</Text>
 
-                {this.selectedOption === 'time' && <Box>
+                {this.selectedOption === 'time' && <Box mt={10}>
                     <KowlTimePicker
                         valueUtcMs={this.timestampUtcMs}
                         onChange={t => (this.timestampUtcMs = t)}
@@ -195,7 +195,7 @@ export class EditOffsetsModal extends Component<{
                     />
                 </Box>}
 
-                {this.selectedOption === 'otherGroup' && <Box>
+                {this.selectedOption === 'otherGroup' && <Box mt={10}>
                     <div
                         style={{
                             display: 'flex',
