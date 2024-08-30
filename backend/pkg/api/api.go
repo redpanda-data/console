@@ -96,6 +96,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
 	}
 
+	year := 24 * time.Hour * 365
 	a := &API{
 		Cfg:               cfg,
 		Logger:            logger,
@@ -107,7 +108,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 		License: redpanda.License{
 			Source:    redpanda.LicenseSourceConsole,
 			Type:      redpanda.LicenseTypeOpenSource,
-			ExpiresAt: time.Now().Add(24 * 365 * 10).Unix(),
+			ExpiresAt: time.Now().Add(year * 10).Unix(),
 		},
 	}
 	for _, opt := range opts {

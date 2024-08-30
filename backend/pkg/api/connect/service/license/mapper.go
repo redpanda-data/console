@@ -21,7 +21,8 @@ import (
 type mapper struct{}
 
 func (mapper) adminApiLicenseInformationToProto(in rpadmin.License) *v1alpha1.License {
-	expiresAt := time.Now().Add(24 * 365 * 10).Unix()
+	year := 24 * time.Hour * 365
+	expiresAt := time.Now().Add(10 * year).Unix()
 	licenseType := v1alpha1.License_TYPE_COMMUNITY
 
 	if in.Loaded {
