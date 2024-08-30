@@ -24,9 +24,10 @@ import './Overview.scss';
 import { Alert, AlertDescription, AlertIcon, Box, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import React, { FC, useEffect } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
+import { License, License_Type } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -81,7 +82,7 @@ class Overview extends PageComponent {
             <PageContent>
                 <>
                     <Alert
-                        status="warning"
+                        status="info"
                         variant="subtle"
                     >
                         <AlertIcon />
@@ -268,12 +269,9 @@ const Details: FC<DetailsProps> = ({title, content}) => {
 };
 
 function ClusterDetails() {
-    useEffect(() => {
-        void api.listLicenses()
-    }, []);
-
     const overview = api.clusterOverview;
     const brokers = api.brokers;
+    const licenses = api.licenses;
 
     if (!overview || !brokers) {
         return <Skeleton mt={5} noOfLines={13} height={4} speed={0} />
@@ -369,19 +367,22 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
+            ...(licenses.map(license => [prettyLicenseType(license.type), prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
             consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
             redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
-            [<Link key={3}>Upload enterprise license</Link>],
+            [<Link key={3}>Upload enterprise license</Link>]
         ]}/>
 
         <GridItem colSpan={{base: 1, lg: 3}} mt={2}>
             <Alert
-                status="warning"
+                status="info"
                 variant="subtle"
             >
                 <AlertIcon/>
                 <AlertDescription>
                     <Box>
+                        {/*{JSON.stringify(api.licenses)}*/}
+                        {/*{JSON.stringify({isRedpanda: api.isRedpanda})}*/}
                         To use any of our Enterprise features, you need to request a license.
                     </Box>
                 </AlertDescription>
@@ -390,7 +391,22 @@ function ClusterDetails() {
     </Grid>;
 }
 
-function prettyLicenseType(type: string) {
+const prettyLicenseType = (type: License_Type): string => ({
+    [License_Type.COMMUNITY]: 'Redpanda Community',
+    [License_Type.UNSPECIFIED]: 'Unspecified',
+    [License_Type.ENTERPRISE]: 'Redpanda Enterprise',
+    [License_Type.TRIAL]: 'Trial',
+})[type]
+
+const prettyExpirationDate = (license: License): string => {
+    if(license.type === License_Type.COMMUNITY) {
+        return ''
+    }
+
+    return new Date(Number(license.expiresAt / BigInt(1000000))).toLocaleDateString()
+}
+
+function prettyLicenseType_(type: string) {
     if (type == 'free_trial')
         return 'Free Trial';
     if (type == 'open_source')
@@ -404,7 +420,7 @@ function prettyLicense(license?: RedpandaLicense): { name: string, expires: stri
     if (!license)
         return undefined;
 
-    const name = prettyLicenseType(license.type);
+    const name = prettyLicenseType_(license.type);
 
     const expires = license.type != 'open_source'
         ? new Date(license.expiresAt * 1000).toLocaleDateString()

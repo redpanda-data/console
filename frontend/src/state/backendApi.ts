@@ -81,7 +81,6 @@ import {
     ProduceRecordsResponse,
     PublishRecordsRequest,
     QuotaResponse,
-    RedpandaLicense,
     ResourceConfig,
     SchemaReferencedByEntry,
     SchemaRegistryCompatibilityMode,
@@ -293,7 +292,6 @@ const apiStore = {
 
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
-    licenses: null as (RedpandaLicense[] | null),
 
     clusterOverview: null as ClusterOverview | null,
     brokers: null as BrokerWithConfigAndStorage[] | null,
@@ -338,8 +336,7 @@ const apiStore = {
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
-    // todo rename to license after we migrate from REST API
-    license: [] as License[],
+    licenses: [] as License[],
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -676,7 +673,6 @@ const apiStore = {
         if (!r)
             return null;
         this.endpointCompatibility = r.endpointCompatibility;
-        this.licenses = r.licenses;
         return r;
     },
 
@@ -1546,7 +1542,7 @@ const apiStore = {
             throw new Error('Console client is not initialized');
         }
         return await client.listLicenses({}).then(response => {
-            this.license = response.licenses
+            this.licenses = response.licenses
             return response
         })
     }

@@ -41,7 +41,7 @@ class LicenseNotification extends Component {
         };
 
         const withRemainingTime = api.licenses.map(x => {
-            const remainingSec = x.expiresAt - unixNow;
+            const remainingSec = Number(x.expiresAt) - unixNow;
             const remainingDays = remainingSec / (60 * 60 * 24);
 
             const expiredForMoreThanAYear = (remainingSec < 0 && remainingDays < -365);
@@ -58,7 +58,7 @@ class LicenseNotification extends Component {
                 sourceDisplayName: sourceNames[x.source] ?? x.source,
                 typeDisplayName: typeNames[x.type] ?? x.type,
                 prettyDuration,
-                prettyDateTime: new Date(x.expiresAt * 1000).toLocaleDateString(),
+                prettyDateTime: new Date(Number(x.expiresAt) * 1000).toLocaleDateString(),
             };
         });
 

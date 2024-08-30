@@ -259,12 +259,14 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     // protected, so we need to delay the call until the user is logged in.
     if (!AppFeatures.SINGLE_SIGN_ON) {
         api.refreshSupportedEndpoints();
+        api.listLicenses();
     } else {
         when(
             () => Boolean(api.userData),
             () => {
                 setTimeout(() => {
                     api.refreshSupportedEndpoints();
+                    api.listLicenses();
                 });
             }
         );
