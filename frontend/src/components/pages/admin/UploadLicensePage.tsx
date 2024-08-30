@@ -16,7 +16,6 @@ const UploadLicenseForm: FC<{
         licenseFile: undefined as string | undefined,
         license: '',
         errorMessage: '',
-        success: true,
         setLicenseFile(value: string | undefined) {
             this.licenseFile = value;
         },
@@ -71,13 +70,13 @@ const UploadLicenseForm: FC<{
                         {state.errorMessage}
                     </AlertDescription>
                 </Alert>}
-                <Box>
-                    {/*{JSON.stringify({*/}
-                    {/*    licenseFile: state.licenseFile,*/}
-                    {/*    license: state.license*/}
-                    {/*})}*/}
+                <Flex gap={2}>
                     <Button type="submit">Upload</Button>
-                </Box>
+                    <Button onClick={() => {
+                        // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
+                        appGlobal.history.push('/overview');
+                    }} variant="outline">Back to overview</Button>
+                </Flex>
             </Flex>
         </form>
     );
@@ -113,7 +112,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                             <Box><Button onClick={() => {
                                 // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
                                 appGlobal.history.push('/overview');
-                            }} variant="solid"><Text>Back to overview</Text></Button></Box>
+                            }} variant="solid">Back to overview</Button></Box>
                         </Flex>}
                     /></Box>:
                     <>

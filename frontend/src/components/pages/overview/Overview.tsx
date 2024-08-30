@@ -12,7 +12,7 @@
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { BrokerWithConfigAndStorage, OverviewStatus, RedpandaLicense } from '../../../state/restInterfaces';
+import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restInterfaces';
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
@@ -27,7 +27,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
-import { License, License_Type } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
 
 @observer
 class Overview extends PageComponent {
@@ -80,22 +80,6 @@ class Overview extends PageComponent {
 
         return <>
             <PageContent>
-                <>
-                    <Alert
-                        status="info"
-                        variant="subtle"
-                    >
-                        <AlertIcon />
-                        <AlertDescription>
-                            <Box>
-                                You're using Enterprise features in your connected Redpanda cluster. These features require a license.
-                                <Flex gap={2} my={2}>
-                                    <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button>
-                                    <Button variant="outline" size="sm">Request a trial</Button>
-                                </Flex>
-                            </Box>
-                        </AlertDescription>
-                    </Alert>
                 <div className="overviewGrid">
                     {/*
                     <Section py={5} gridArea="health">
@@ -217,7 +201,6 @@ class Overview extends PageComponent {
                         <ClusterDetails />
                     </Section>
                 </div>
-                </>
             </PageContent>
         </>
     }
@@ -287,10 +270,6 @@ function ClusterDetails() {
 
     const aclCount = overview.kafka.authorizer?.aclCount
         ?? 'Authorizer not configured';
-
-    const consoleLicense = prettyLicense(overview.console.license);
-    const redpandaLicense = prettyLicense(overview.redpanda.license);
-
 
     const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
         let status = <div>{titleCase(overviewStatus.status)}</div>;
@@ -368,8 +347,6 @@ function ClusterDetails() {
 
         <Details title="Licensing" content={[
             ...(licenses.map(license => [prettyLicenseType(license.type), prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
-            consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
-            redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
             [<Link key={3}>Upload enterprise license</Link>]
         ]}/>
 
@@ -391,40 +368,3 @@ function ClusterDetails() {
     </Grid>;
 }
 
-const prettyLicenseType = (type: License_Type): string => ({
-    [License_Type.COMMUNITY]: 'Redpanda Community',
-    [License_Type.UNSPECIFIED]: 'Unspecified',
-    [License_Type.ENTERPRISE]: 'Redpanda Enterprise',
-    [License_Type.TRIAL]: 'Trial',
-})[type]
-
-const prettyExpirationDate = (license: License): string => {
-    if(license.type === License_Type.COMMUNITY) {
-        return ''
-    }
-
-    return new Date(Number(license.expiresAt / BigInt(1000000))).toLocaleDateString()
-}
-
-function prettyLicenseType_(type: string) {
-    if (type == 'free_trial')
-        return 'Free Trial';
-    if (type == 'open_source')
-        return 'Community';
-    if (type == 'enterprise')
-        return 'Enterprise';
-    return type;
-}
-
-function prettyLicense(license?: RedpandaLicense): { name: string, expires: string } | undefined {
-    if (!license)
-        return undefined;
-
-    const name = prettyLicenseType_(license.type);
-
-    const expires = license.type != 'open_source'
-        ? new Date(license.expiresAt * 1000).toLocaleDateString()
-        : '';
-
-    return { name, expires };
-}
