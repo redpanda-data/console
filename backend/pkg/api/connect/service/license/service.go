@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/net"
@@ -130,8 +131,7 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 	// It doesn't matter what permisison we check. As long as the requester
 	// has at least one viewer permission we know this user is authenticated.
 	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
-	err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license")
-	if err != nil {
+	if err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license"); err != nil {
 		return nil, err
 	}
 
@@ -139,7 +139,8 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
-	if err := s.adminapiCl.SetLicense(ctx, req.Msg.GetLicense()); err != nil {
+	licenseInput := strings.NewReader(req.Msg.GetLicense())
+	if err := s.adminapiCl.SetLicense(ctx, licenseInput); err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to install license: ")
 	}
 
