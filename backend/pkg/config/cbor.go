@@ -9,37 +9,19 @@
 
 package config
 
-import "fmt"
-
 // Cbor represents the CBOR config.
 type Cbor struct {
 	Enabled bool `yaml:"enabled"`
 
-	// TopicNames is a list of topic names that shall be considered for cbor decoding.
-	// These names can be provided as regex string (e. g. "/.*/" or "/prefix-.*/") or as plain topic name
-	// such as "frontend-activities".
+	// TopicName is a name of the topic that should be considered for cbor decoding. This supports regex
 	// This defaults to `/.*/`
-	TopicNames []string `yaml:"topicNames"`
+	TopicName RegexpOrLiteral `yaml:"topicName"`
 }
 
-// Validate if provided TopicNames are valid.
-func (c *Cbor) Validate() error {
-	if !c.Enabled {
-		return nil
-	}
-
-	// Check whether each provided string is valid regex
-	for _, topic := range c.TopicNames {
-		_, err := CompileRegex(topic)
-		if err != nil {
-			return fmt.Errorf("allowed topic string '%v' is not valid regex", topic)
-		}
-	}
-
+// Validate cbor configuration.
+func (*Cbor) Validate() error {
 	return nil
 }
 
 // SetDefaults for the cbor configuration.
-func (c *Cbor) SetDefaults() {
-	c.TopicNames = []string{"/.*/"}
-}
+func (*Cbor) SetDefaults() {}

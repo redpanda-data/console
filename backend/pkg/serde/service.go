@@ -12,7 +12,6 @@ package serde
 import (
 	"context"
 	"fmt"
-	"github.com/redpanda-data/console/backend/pkg/cbor"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -29,7 +28,7 @@ type Service struct {
 }
 
 // NewService creates the new serde service.
-func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service, cborSvc *cbor.Service) *Service {
+func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service, cborConfig config.Cbor) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},
@@ -41,7 +40,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			ProtobufSchemaSerde{ProtoSvc: protoSvc},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
-			CborSerde{CborService: cborSvc},
+			CborSerde{Config: cborConfig},
 			UTF8Serde{},
 			TextSerde{},
 			UintSerde{},

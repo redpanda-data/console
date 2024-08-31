@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redpanda-data/console/backend/pkg/cbor"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -175,10 +174,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -316,10 +314,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -459,10 +456,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -610,10 +606,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
 		msg := shopv1.Order{
@@ -781,10 +776,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
 		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
@@ -1077,10 +1071,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1272,10 +1265,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1453,10 +1445,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1676,10 +1667,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1893,10 +1883,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -2206,10 +2195,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -2371,7 +2359,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		err = protoSvc2.Start()
 		require.NoError(err)
 
-		serdeSvc2 := NewService(schemaSvc2, protoSvc2, mspPackSvc, cborSvc)
+		serdeSvc2 := NewService(schemaSvc2, protoSvc2, mspPackSvc, cborConfig)
 
 		for _, cr := range records {
 			cr := cr
@@ -2459,10 +2447,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 160)
@@ -2565,10 +2552,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 1952807028)
@@ -2819,10 +2805,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -3007,10 +2992,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
@@ -3073,10 +3057,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 
@@ -3150,10 +3133,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
 
@@ -3295,10 +3277,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -3392,10 +3373,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -3513,10 +3493,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3624,10 +3603,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3772,10 +3750,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3935,10 +3912,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -4083,10 +4059,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
@@ -4245,10 +4220,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
@@ -4451,10 +4425,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		cborSvc, err := cbor.NewService(cfg.Kafka.Cbor)
-		require.NoError(err)
+		cborConfig := config.Cbor{}
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborSvc)
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"customer":{"email":"user1@example.com","metadata":{"event_type":"user","id":"user1_event_2345","version":"1"},"name":"user1"},"id":"order_1","metadata":{"event_type":"order","id":"order1_event_5432","version":"2"},"price":7.50,"quantity":7}`
 

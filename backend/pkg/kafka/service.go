@@ -12,7 +12,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/redpanda-data/console/backend/pkg/cbor"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -122,16 +121,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		}
 	}
 
-	// Cbor service
-	var cborSvc *cbor.Service
-	if cfg.Kafka.Cbor.Enabled {
-		cborSvc, err = cbor.NewService(cfg.Kafka.Cbor)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create cbor service: %w", err)
-		}
-	}
-
-	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc, cborSvc)
+	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc, cfg.Kafka.Cbor)
 
 	return &Service{
 		Config:           cfg,

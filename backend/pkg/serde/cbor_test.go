@@ -12,15 +12,15 @@ package serde
 import (
 	"context"
 	"encoding/json"
-	"github.com/fxamacker/cbor/v2"
-	cborsvc "github.com/redpanda-data/console/backend/pkg/cbor"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"os"
 	"testing"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 func TestCborSerde_DeserializePayload(t *testing.T) {
@@ -33,25 +33,38 @@ func TestCborSerde_DeserializePayload(t *testing.T) {
 	cborData, err := cbor.Marshal(&in)
 	require.NoError(t, err)
 
-	cborSvc, err := cborsvc.NewService(config.Cbor{
-		Enabled:    true,
-		TopicNames: []string{"cbor_topic"},
-	})
+	topicNameLiteral := config.RegexpOrLiteral{}
+	err = topicNameLiteral.UnmarshalText([]byte("cbor_topic"))
 	require.NoError(t, err)
 
-	// serde
-	serde := CborSerde{
-		CborService: cborSvc,
+	literalConfig := config.Cbor{
+		Enabled:   true,
+		TopicName: topicNameLiteral,
+	}
+
+	topicNameRegex := config.RegexpOrLiteral{}
+	err = topicNameRegex.UnmarshalText([]byte("/^cbor_.+/"))
+	require.NoError(t, err)
+
+	regexConfig := config.Cbor{
+		Enabled:   true,
+		TopicName: topicNameRegex,
+	}
+
+	disabledConfig := config.Cbor{
+		Enabled: false,
 	}
 
 	tests := []struct {
 		name           string
 		record         func() *kgo.Record
 		payloadType    PayloadType
+		config         config.Cbor
 		validationFunc func(t *testing.T, payload RecordPayload, err error)
 	}{
 		{
-			name: "cbor in value",
+			name:   "cbor literal topic",
+			config: literalConfig,
 			record: func() *kgo.Record {
 				return &kgo.Record{
 					Value: cborData,
@@ -76,7 +89,34 @@ func TestCborSerde_DeserializePayload(t *testing.T) {
 			},
 		},
 		{
-			name: "not in topic map",
+			name:   "cbor regex topic",
+			config: regexConfig,
+			record: func() *kgo.Record {
+				return &kgo.Record{
+					Value: cborData,
+					Topic: "cbor_some_name",
+				}
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+				require.NoError(t, err)
+				assert.Nil(t, payload.Troubleshooting)
+				assert.Nil(t, payload.SchemaID)
+				assert.Equal(t, PayloadEncodingCbor, payload.Encoding)
+
+				jd, err := json.Marshal(in)
+				require.NoError(t, err)
+
+				assert.Equal(t, string(jd), string(payload.NormalizedPayload))
+
+				obj, ok := (payload.DeserializedPayload).(map[string]any)
+				require.Truef(t, ok, "parsed payload is not of type map[string]any")
+				assert.Equal(t, "bar", obj["Foo"])
+			},
+		},
+		{
+			name:   "literal does not match",
+			config: literalConfig,
 			record: func() *kgo.Record {
 				return &kgo.Record{
 					Value: cborData,
@@ -84,13 +124,44 @@ func TestCborSerde_DeserializePayload(t *testing.T) {
 				}
 			},
 			payloadType: PayloadTypeValue,
-			validationFunc: func(t *testing.T, payload RecordPayload, err error) {
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				require.Error(t, err)
 				assert.Equal(t, "cbor encoding not configured for topic: not_cbor_topic", err.Error())
 			},
 		},
 		{
-			name: "cbor 2",
+			name:   "regex does not match",
+			config: regexConfig,
+			record: func() *kgo.Record {
+				return &kgo.Record{
+					Value: cborData,
+					Topic: "not_cbor_topic",
+				}
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "cbor encoding not configured for topic: not_cbor_topic", err.Error())
+			},
+		},
+		{
+			name:   "disabled cbor",
+			config: disabledConfig,
+			record: func() *kgo.Record {
+				return &kgo.Record{
+					Value: cborData,
+					Topic: "cbor_topic",
+				}
+			},
+			payloadType: PayloadTypeValue,
+			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
+				require.Error(t, err)
+				assert.Equal(t, "cbor encoding not configured for topic: cbor_topic", err.Error())
+			},
+		},
+		{
+			name:   "cbor 2",
+			config: literalConfig,
 			record: func() *kgo.Record {
 				msgPackBinFile := "testdata/cbor/example.cbor.bin"
 
@@ -119,6 +190,9 @@ func TestCborSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			// serde
+			serde := CborSerde{Config: test.config}
+
 			payload, err := serde.DeserializePayload(context.Background(), test.record(), test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})

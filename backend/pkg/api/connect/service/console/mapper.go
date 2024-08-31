@@ -16,7 +16,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
-func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessagePayloadOptions) *serde.RecordPayloadInput {
+func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessagePayloadOptions) *serde.RecordPayloadInput { //nolint:cyclop // we have to map all possible values here
 	encoding := serde.PayloadEncodingBinary
 
 	switch po.GetEncoding() {
@@ -85,7 +85,7 @@ func rpcCompressionTypeToKgoCodec(compressionType v1alpha.CompressionType) []kgo
 	}
 }
 
-func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding {
+func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding { //nolint:cyclop // we have to map all possible values here
 	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 
 	switch serdeEncoding {
@@ -126,7 +126,7 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 	return encoding
 }
 
-func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncoding {
+func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncoding { //nolint:cyclop // we have to map all possible values here
 	encoding := serde.PayloadEncodingUnspecified
 
 	switch protoEncoding {
