@@ -47,34 +47,38 @@ func NewService(
 	consoleLicense redpanda.License,
 	hooks hooks.AuthorizationHooks,
 ) (*Service, error) {
-	// Build admin client with provided credentials
-	adminApiCfg := cfg.Redpanda.AdminAPI
-	var auth rpadmin.Auth
-	if adminApiCfg.Username != "" {
-		auth = &rpadmin.BasicAuth{
-			Username: adminApiCfg.Username,
-			Password: adminApiCfg.Password,
+	var adminClient *rpadmin.AdminAPI
+
+	if cfg.Redpanda.AdminAPI.Enabled {
+		// Build admin client with provided credentials
+		adminApiCfg := cfg.Redpanda.AdminAPI
+		var auth rpadmin.Auth
+		if adminApiCfg.Username != "" {
+			auth = &rpadmin.BasicAuth{
+				Username: adminApiCfg.Username,
+				Password: adminApiCfg.Password,
+			}
+		} else {
+			auth = &rpadmin.NopAuth{}
 		}
-	} else {
-		auth = &rpadmin.NopAuth{}
-	}
-	tlsCfg, err := adminApiCfg.TLS.TLSConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build TLS config: %w", err)
-	}
+		tlsCfg, err := adminApiCfg.TLS.TLSConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to build TLS config: %w", err)
+		}
 
-	// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
-	scheme, _, err := net.ParseHostMaybeScheme(adminApiCfg.URLs[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
-	}
-	if scheme == "http" {
-		tlsCfg = nil
-	}
+		// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
+		scheme, _, err := net.ParseHostMaybeScheme(adminApiCfg.URLs[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
+		}
+		if scheme == "http" {
+			tlsCfg = nil
+		}
 
-	adminClient, err := rpadmin.NewAdminAPI(adminApiCfg.URLs, auth, tlsCfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create admin client: %w", err)
+		adminClient, err = rpadmin.NewAdminAPI(adminApiCfg.URLs, auth, tlsCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create admin client: %w", err)
+		}
 	}
 
 	return &Service{
@@ -94,6 +98,10 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to list licenses")
 	if err != nil {
 		return nil, err
+	}
+
+	if s.adminapiCl == nil {
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 	}
 
 	licenses := make([]*v1alpha1.License, 0)
