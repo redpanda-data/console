@@ -10,6 +10,9 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
+  reserved 6;
+  reserved "limit";
+
   // Pipeline ID.
   string id = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -37,11 +40,8 @@ message Pipeline {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The configuration of the Pipeline as YAML. See https://docs.redpanda.com/redpanda-connect/configuration/about for more details."}
   ];
 
-  // The minimum amount of resources needed for the pipeline to run
-  Resources request = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The minimum amount of resources needed for the pipeline to run."}];
-
-  // The maximum amount of resources that should be assigned to the pipeline
-  Resources limit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The maximum amount of resources that should be assigned to the pipeline."}];
+  // The amount of resources that is guaranteed to be assigned to the pipeline.
+  Resources request = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The amount of resources that is guaranteed to be assigned to the pipeline."}];
 
   // The current pipeline state.
   State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -307,6 +307,9 @@ service PipelineService {
 
 // PipelineCreate contains the details for the pipeline creation request.
 message PipelineCreate {
+  reserved 5;
+  reserved "limit";
+
   // User friendly pipeline name.
   string display_name = 1 [
     (google.api.field_behavior) = REQUIRED,
@@ -325,11 +328,8 @@ message PipelineCreate {
     (buf.validate.field).required = true
   ];
 
-  // Pipeline resource requests.
+  // The amount of resources that is guaranteed to be assigned to the pipeline.
   Pipeline.Resources request = 4;
-
-  // Pipeline resource limits.
-  Pipeline.Resources limit = 5;
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
@@ -390,6 +390,8 @@ message ListPipelinesResponse {
 }
 
 message PipelineUpdate {
+  reserved 5;
+  reserved "limit";
   // Pipeline name.
   string display_name = 1 [
     (buf.validate.field).ignore_empty = true,
@@ -407,11 +409,8 @@ message PipelineUpdate {
   // The pipeline configuration in YAML format.
   string config_yaml = 3;
 
-  // Pipeline resource requests.
+  // The amount of resources that is guaranteed to be assigned to the pipeline.
   Pipeline.Resources request = 4;
-
-  // Pipeline resource limits.
-  Pipeline.Resources limit = 5;
 }
 
 message UpdatePipelineRequest {
