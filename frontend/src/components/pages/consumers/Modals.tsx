@@ -23,7 +23,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, FormLabel, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
@@ -108,7 +108,7 @@ export class EditOffsetsModal extends Component<{
                 <Modal isOpen={visible} onClose={() => {
                 }}>
                     <ModalOverlay/>
-                    <ModalContent minW="5xl">
+                    <ModalContent minW="3xl">
                         <ModalHeader>Edit consumer group</ModalHeader>
                         <ModalBody>
                             <HStack spacing={6}>
@@ -155,6 +155,7 @@ export class EditOffsetsModal extends Component<{
         return (
             <Flex flexDirection="column" gap={4} mt={16}>
                 <Box maxW={300}>
+                    <FormLabel>Start consuming at</FormLabel>
                     <SingleSelect
                         isDisabled={this.isLoadingTimestamps}
                         value={this.selectedOption}
@@ -187,7 +188,8 @@ export class EditOffsetsModal extends Component<{
                     'otherGroup': 'Copy offsets from another (inactive) consumer group',
                 } as Record<EditOptions, string>)[this.selectedOption]}</Text>
 
-                {this.selectedOption === 'time' && <Box mt={10}>
+                {this.selectedOption === 'time' && <Box mt={2}>
+                    <FormLabel>Timestamp</FormLabel>
                     <KowlTimePicker
                         valueUtcMs={this.timestampUtcMs}
                         onChange={t => (this.timestampUtcMs = t)}
@@ -195,7 +197,7 @@ export class EditOffsetsModal extends Component<{
                     />
                 </Box>}
 
-                {this.selectedOption === 'otherGroup' && <Box mt={10}>
+                {this.selectedOption === 'otherGroup' && <Box mt={2}>
                     <div
                         style={{
                             display: 'flex',
