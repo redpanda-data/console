@@ -50,11 +50,11 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
 });
 
 export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
-    const { limit } = p.pipeline;
-    if (!limit) return <></>
+    const { resources } = p.pipeline;
+    if (!resources) return <></>
 
     return <>
-        {limit.cpuShares}{' '}{limit.memoryShares}
+        {resources.cpuShares}{' '}{resources.memoryShares}
     </>;
 });
 
