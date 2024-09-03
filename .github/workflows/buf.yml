@@ -2,13 +2,10 @@
 name: Buf CI
 on:
   push:
+    branches: [master]
     paths:
+      - .github/workflows/buf.yml
       - proto/**.proto
-  pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
-    paths:
-      - proto/**.proto
-  delete:
 permissions:
   id-token: write
   contents: read
