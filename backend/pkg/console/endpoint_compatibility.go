@@ -15,9 +15,9 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -63,7 +63,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		Method          string
 		Requests        []kmsg.Request
 		HasRedpandaAPI  bool
-		RedpandaFeature redpanda.RedpandaFeature
+		RedpandaFeature redpandaFeature
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -133,7 +133,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			URL:             consolev1alpha1connect.TransformServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: redpanda.RedpandaFeatureWASMDataTransforms,
+			RedpandaFeature: redpandaFeatureWASMDataTransforms,
 		},
 	}
 
@@ -159,13 +159,19 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// and the Kafka API. If the Kafka API is not supported, but the same
 		// endpoint is exposed via the Redpanda Admin API, we support
 		// this feature anyways.
-		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
+		if endpointReq.HasRedpandaAPI && s.cfg.Redpanda.AdminAPI.Enabled {
 			endpointSupported = true
 
 			// If we have an actual feature defined that we can check explicitly
 			// lets check that specific feature.
 			if endpointReq.RedpandaFeature != "" {
-				endpointSupported = s.redpandaSvc.CheckFeature(ctx, endpointReq.RedpandaFeature)
+				adminApiCl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+				if err == nil {
+					endpointSupported = s.checkRedpandaFeature(ctx, adminApiCl, endpointReq.RedpandaFeature)
+				} else {
+					endpointSupported = false
+					s.logger.Warn("failed to retrieve a redpanda api client to check endpoint compatibility", zap.Error(err))
+				}
 			}
 		}
 

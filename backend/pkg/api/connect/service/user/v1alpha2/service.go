@@ -27,9 +27,9 @@ import (
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
@@ -37,25 +37,25 @@ var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg         *config.Config
-	logger      *zap.Logger
-	consoleSvc  console.Servicer
-	redpandaSvc *redpanda.Service
-	defaulter   defaulter
+	cfg                    *config.Config
+	logger                 *zap.Logger
+	consoleSvc             console.Servicer
+	redpandaClientProvider redpandafactory.ClientFactory
+	defaulter              defaulter
 }
 
 // NewService creates a new user service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
-	redpandaSvc *redpanda.Service,
+	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleSvc console.Servicer,
 ) *Service {
 	return &Service{
-		cfg:         cfg,
-		logger:      logger,
-		consoleSvc:  consoleSvc,
-		redpandaSvc: redpandaSvc,
-		defaulter:   defaulter{},
+		cfg:                    cfg,
+		logger:                 logger,
+		consoleSvc:             consoleSvc,
+		redpandaClientProvider: redpandaClientProvider,
+		defaulter:              defaulter{},
 	}
 }
 
@@ -72,8 +72,13 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 	}
 	s.defaulter.applyListUsersRequest(req.Msg)
 
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+	}
+
 	// 2. List users
-	users, err := s.redpandaSvc.ListUsers(ctx)
+	users, err := redpandaCl.ListUsers(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -146,6 +151,11 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+	}
+
 	// 3. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
@@ -157,7 +167,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 	}
 
 	// 4. Create user
-	err = s.redpandaSvc.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	err = redpandaCl.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -183,6 +193,11 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+	}
+
 	// 3. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
@@ -194,7 +209,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 	}
 
 	// 4. Update user
-	err = s.redpandaSvc.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	err = redpandaCl.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -219,9 +234,14 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+	}
+
 	// 3. List users to check if the requested user exists. The Redpanda admin API
 	// always returns ok, regardless whether the user exists or not.
-	listedUsers, err := s.redpandaSvc.ListUsers(ctx)
+	listedUsers, err := redpandaCl.ListUsers(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to list users: ")
 	}
@@ -241,7 +261,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 	}
 
 	// 4. Delete user
-	err = s.redpandaSvc.DeleteUser(ctx, req.Msg.Name)
+	err = redpandaCl.DeleteUser(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
 	}

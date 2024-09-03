@@ -22,7 +22,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/license"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -100,7 +100,7 @@ type ConsoleHooks interface {
 	// ConsoleLicenseInformation returns the license information for Console.
 	// Based on the returned license the frontend will display the
 	// appropriate UI and also warnings if the license is (about to be) expired.
-	ConsoleLicenseInformation(ctx context.Context) redpanda.License
+	ConsoleLicenseInformation(ctx context.Context) license.License
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
@@ -147,8 +147,8 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 }
 
 // Console hooks
-func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
-	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
+func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) license.License {
+	return license.License{Source: license.SourceConsole, Type: license.TypeOpenSource, ExpiresAt: math.MaxInt32}
 }
 
 func (*defaultHooks) EnabledFeatures() []string {

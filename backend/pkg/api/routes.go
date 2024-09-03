@@ -103,8 +103,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
-	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc)
-	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaClientProvider, api.ConsoleSvc)
+	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
 	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
 
 	// v1alpha1
@@ -309,7 +309,7 @@ func (api *API) routes() *chi.Mux {
 	if err != nil {
 		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 	}
-	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
+	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}

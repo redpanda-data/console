@@ -30,7 +30,17 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			users, err := api.RedpandaSvc.ListUsers(r.Context())
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
+			}
+
+			users, err := redpandaCl.ListUsers(r.Context())
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,
@@ -89,7 +99,16 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 
 		// 4. Create user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			err := api.RedpandaSvc.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
+			}
+			err = redpandaCl.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,
@@ -125,7 +144,17 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 
 		// 4. Delete user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			err := api.RedpandaSvc.DeleteUser(r.Context(), principalID)
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
+			}
+
+			err = redpandaCl.DeleteUser(r.Context(), principalID)
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,

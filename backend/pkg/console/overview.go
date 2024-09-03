@@ -16,7 +16,7 @@ import (
 	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/license"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -36,7 +36,7 @@ type Overview struct {
 // admin API.
 type OverviewRedpanda struct {
 	IsAdminAPIConfigured    bool                              `json:"isAdminApiConfigured"`
-	License                 *redpanda.License                 `json:"license,omitempty"`
+	License                 *license.License                  `json:"license,omitempty"`
 	Version                 string                            `json:"version,omitempty"`
 	UserCount               *int                              `json:"userCount,omitempty"`
 	PartitionBalancerStatus *adminapi.PartitionBalancerStatus `json:"partitionBalancerStatus,omitempty"`
@@ -44,9 +44,8 @@ type OverviewRedpanda struct {
 
 // OverviewConsole contains information about Redpanda Console itself.
 type OverviewConsole struct {
-	License redpanda.License `json:"license"`
-	Version string           `json:"version"`
-	BuiltAt string           `json:"builtAt"`
+	Version string `json:"version"`
+	BuiltAt string `json:"builtAt"`
 }
 
 // ClusterOverviewKafkaStorage provides details about the storage that is used for
@@ -98,17 +97,24 @@ func (s *Service) GetOverview(ctx context.Context) Overview {
 }
 
 func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
-	if s.redpandaSvc == nil {
+	if !s.cfg.Redpanda.AdminAPI.Enabled {
+		return OverviewRedpanda{
+			IsAdminAPIConfigured: false,
+		}
+	}
+	redpandaCl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+	if err != nil {
 		return OverviewRedpanda{
 			IsAdminAPIConfigured: false,
 		}
 	}
 
-	licenseInfo := s.redpandaSvc.GetLicense(ctx)
-	version, _ := s.redpandaSvc.GetClusterVersion(ctx)
+	licenseInfo := s.getRedpandaLicense(ctx, redpandaCl)
+
+	version, _ := s.redpandaClusterVersion(ctx, redpandaCl)
 
 	var userCount *int
-	users, err := s.redpandaSvc.ListUsers(ctx)
+	users, err := redpandaCl.ListUsers(ctx)
 	if err != nil {
 		s.logger.Warn("failed to list users via redpanda admin api", zap.Error(err))
 	} else {
@@ -117,7 +123,7 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 	}
 
 	var partitionBalancerStatus *adminapi.PartitionBalancerStatus
-	pbs, err := s.redpandaSvc.GetPartitionBalancerStatus(ctx)
+	pbs, err := redpandaCl.GetPartitionStatus(ctx)
 	if err != nil {
 		s.logger.Warn("failed to retrieve partition balancer status", zap.Error(err))
 	} else {
@@ -135,7 +141,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 
 func (*Service) getConsoleOverview() OverviewConsole {
 	return OverviewConsole{
-		License: redpanda.License{}, // License will be set in the api handler
 		Version: version.Version,
 		BuiltAt: version.BuiltAt,
 	}

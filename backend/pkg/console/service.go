@@ -18,11 +18,11 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -32,15 +32,15 @@ var _ Servicer = (*Service)(nil)
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
 // several responses from Kafka concurrently and constructing them so, that they are
 type Service struct {
-	kafkaClientFactory  kafkafactory.ClientFactory
-	schemaClientFactory schemafactory.ClientFactory
-	redpandaSvc         *redpanda.Service
-	gitSvc              *git.Service // Git service can be nil if not configured
-	connectSvc          *connect.Service
-	cachedSchemaClient  *schemacache.CachedClient
-	serdeSvc            *serde.Service
-	logger              *zap.Logger
-	cfg                 *config.Config
+	kafkaClientFactory    kafkafactory.ClientFactory
+	schemaClientFactory   schemafactory.ClientFactory
+	redpandaClientFactory redpandafactory.ClientFactory
+	gitSvc                *git.Service // Git service can be nil if not configured
+	connectSvc            *connect.Service
+	cachedSchemaClient    *schemacache.CachedClient
+	serdeSvc              *serde.Service
+	logger                *zap.Logger
+	cfg                   *config.Config
 
 	// configExtensionsByName contains additional metadata about Topic or BrokerWithLogDirs configs.
 	// The additional information is used by the frontend to provide a good UX when
@@ -54,8 +54,8 @@ func NewService(
 	logger *zap.Logger,
 	kafkaClientFactory kafkafactory.ClientFactory,
 	schemaClientFactory schemafactory.ClientFactory,
+	redpandaClientFactory redpandafactory.ClientFactory,
 	cacheNamespaceFn func(context.Context) string,
-	redpandaSvc *redpanda.Service,
 	connectSvc *connect.Service,
 ) (Servicer, error) {
 	var gitSvc *git.Service
@@ -96,15 +96,15 @@ func NewService(
 	serdeSvc := serde.NewService(protoSvc, msgPackSvc, schemaClientFactory, cacheNamespaceFn)
 
 	return &Service{
-		kafkaClientFactory:  kafkaClientFactory,
-		schemaClientFactory: schemaClientFactory,
-		redpandaSvc:         redpandaSvc,
-		gitSvc:              gitSvc,
-		connectSvc:          connectSvc,
-		cachedSchemaClient:  cachedSchemaClient,
-		serdeSvc:            serdeSvc,
-		logger:              logger,
-		cfg:                 cfg,
+		kafkaClientFactory:    kafkaClientFactory,
+		schemaClientFactory:   schemaClientFactory,
+		redpandaClientFactory: redpandaClientFactory,
+		gitSvc:                gitSvc,
+		connectSvc:            connectSvc,
+		cachedSchemaClient:    cachedSchemaClient,
+		serdeSvc:              serdeSvc,
+		logger:                logger,
+		cfg:                   cfg,
 
 		configExtensionsByName: configExtensionsByName,
 	}, nil

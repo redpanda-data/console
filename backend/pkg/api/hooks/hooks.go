@@ -22,7 +22,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // ConfigConnectRPCRequest is the config object that is passed into the
@@ -144,7 +143,7 @@ type ConsoleHooks interface {
 	// ConsoleLicenseInformation returns the license information for Console.
 	// Based on the returned license the frontend will display the
 	// appropriate UI and also warnings if the license is (about to be) expired.
-	ConsoleLicenseInformation(ctx context.Context) redpanda.License
+	ConsoleLicenseInformation(ctx context.Context) license.License
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.

@@ -73,9 +73,17 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		var err error
 
 		// Try to get cluster version via Redpanda Admin API.
-		if s.redpandaSvc != nil {
-			kafkaVersion, err = s.redpandaSvc.GetClusterVersion(childCtx)
-			if err == nil {
+		if s.cfg.Redpanda.AdminAPI.Enabled {
+			adminApiCl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+			if err != nil {
+				s.logger.Warn("failed to retrieve redpanda admin api client to retrieve cluster version", zap.Error(err))
+				return nil
+			}
+
+			kafkaVersion, err = s.redpandaClusterVersion(childCtx, adminApiCl)
+			if err != nil {
+				s.logger.Warn("failed to retrieve cluster version via redpanda admin api", zap.Error(err))
+			} else {
 				return nil
 			}
 		}
@@ -83,7 +91,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		// If Redpanda Admin API failed or not available, try to get cluster version via Kafka API.
 		kafkaVersion, err = s.GetKafkaVersion(childCtx)
 		if err != nil {
-			s.logger.Warn("failed to request kafka version", zap.Error(err))
+			s.logger.Warn("failed to request kafka version via Kafka API", zap.Error(err))
 		}
 
 		return nil

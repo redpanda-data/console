@@ -10,6 +10,7 @@
 package transform
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -40,6 +41,16 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.cfg.Redpanda.AdminAPI.Enabled {
 			s.writeError(w, r, apierrors.NewRedpandaAdminAPINotConfiguredError())
+			return
+		}
+
+		redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(r.Context())
+		if err != nil {
+			s.writeError(w, r, apierrors.NewConnectError(
+				connect.CodeInternal,
+				err,
+				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()),
+			))
 			return
 		}
 
@@ -112,14 +123,14 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 		}
 
 		// 3. Deploy WASM transform by calling the Redpanda Admin API
-		if err := s.redpandaSvc.DeployWasmTransform(r.Context(), s.mapper.deployTransformReqToAdminAPI(&deployTransformReq), wasmBinary); err != nil {
+		if err := redpandaCl.DeployWasmTransform(r.Context(), s.mapper.deployTransformReqToAdminAPI(&deployTransformReq), bytes.NewReader(wasmBinary)); err != nil {
 			connectErr := apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "could not deploy wasm transform: ")
 			s.writeError(w, r, connectErr)
 			return
 		}
 
 		// 4. List transforms and find the just deployed transform from the response
-		transforms, err := s.redpandaSvc.ListWasmTransforms(r.Context())
+		transforms, err := redpandaCl.ListWasmTransforms(r.Context())
 		if err != nil {
 			connectErr := apierrors.NewConnectErrorFromRedpandaAdminAPIError(
 				err,

@@ -30,9 +30,10 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/embed"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/license"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -42,11 +43,11 @@ import (
 type API struct {
 	Cfg *config.Config
 
-	Logger      *zap.Logger
-	ConsoleSvc  console.Servicer
-	ConnectSvc  *connect.Service
-	GitSvc      *git.Service
-	RedpandaSvc *redpanda.Service
+	Logger                 *zap.Logger
+	ConsoleSvc             console.Servicer
+	ConnectSvc             *connect.Service
+	GitSvc                 *git.Service
+	RedpandaClientProvider redpandafactory.ClientFactory
 
 	// FrontendResources is an in-memory Filesystem with all go:embedded frontend resources.
 	// The index.html is expected to be at the root of the filesystem. This prop will only be accessed
@@ -56,7 +57,7 @@ type API struct {
 	// License is the license information for Console that will be used for logging
 	// and visibility purposes inside the open source version. License protected features
 	// are not checked with this license.
-	License redpanda.License
+	License license.License
 
 	// Hooks to add additional functionality from the outside at different places
 	Hooks *Hooks
@@ -73,37 +74,35 @@ func New(cfg *config.Config, opts ...Option) *API {
 		zap.String("version", version.Version),
 		zap.String("built_at", version.BuiltAt))
 
-	redpandaSvc, err := redpanda.NewService(cfg.Redpanda, logger)
-	if err != nil {
-		logger.Fatal("failed to create Redpanda service", zap.Error(err))
-	}
-
 	connectSvc, err := connect.NewService(cfg.Connect, logger)
 	if err != nil {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	var consoleSvc console.Servicer
-	if cfg.Console.Enabled {
-		kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
-		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
-		if err != nil {
-			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
-		}
-		consoleSvc, err = console.NewService(
-			cfg,
-			logger,
-			kafkaClientFactory,
-			schemaClientProvider,
-			func(context.Context) string {
-				return "single/"
-			},
-			redpandaSvc,
-			connectSvc,
-		)
-		if err != nil {
-			logger.Fatal("failed to create console service", zap.Error(err))
-		}
+	kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
+	schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
+	if err != nil {
+		logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
+	}
+
+	redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg)
+	if err != nil {
+		logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
+	}
+
+	consoleSvc, err := console.NewService(
+		cfg,
+		logger,
+		kafkaClientFactory,
+		schemaClientProvider,
+		redpandaClientProvider,
+		func(context.Context) string {
+			return "single/"
+		},
+		connectSvc,
+	)
+	if err != nil {
+		logger.Fatal("failed to create console service", zap.Error(err))
 	}
 
 	// Use default frontend resources from embeds. They may be overridden via functional options.
@@ -114,16 +113,16 @@ func New(cfg *config.Config, opts ...Option) *API {
 	}
 
 	a := &API{
-		Cfg:               cfg,
-		Logger:            logger,
-		ConsoleSvc:        consoleSvc,
-		ConnectSvc:        connectSvc,
-		RedpandaSvc:       redpandaSvc,
-		Hooks:             newDefaultHooks(),
-		FrontendResources: fsys,
-		License: redpanda.License{
-			Source:    redpanda.LicenseSourceConsole,
-			Type:      redpanda.LicenseTypeOpenSource,
+		Cfg:                    cfg,
+		Logger:                 logger,
+		ConsoleSvc:             consoleSvc,
+		ConnectSvc:             connectSvc,
+		RedpandaClientProvider: redpandaClientProvider,
+		Hooks:                  newDefaultHooks(),
+		FrontendResources:      fsys,
+		License: license.License{
+			Source:    license.SourceConsole,
+			Type:      license.TypeOpenSource,
 			ExpiresAt: math.MaxInt32,
 		},
 	}
