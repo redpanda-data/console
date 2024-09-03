@@ -42,11 +42,11 @@ export class Pipeline extends Message<Pipeline> {
   configYaml = "";
 
   /**
-   * The amount of resources that is guaranteed to be assigned to the pipeline.
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 5;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 9;
    */
-  request?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   /**
    * The current pipeline state.
@@ -72,7 +72,7 @@ export class Pipeline extends Message<Pipeline> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "request", kind: "message", T: Pipeline_Resources },
+    { no: 9, name: "resources", kind: "message", T: Pipeline_Resources },
     { no: 7, name: "state", kind: "enum", T: proto3.getEnumType(Pipeline_State) },
     { no: 8, name: "status", kind: "message", T: Pipeline_Status },
   ]);
@@ -284,11 +284,11 @@ export class PipelineCreate extends Message<PipelineCreate> {
   configYaml = "";
 
   /**
-   * The amount of resources that is guaranteed to be assigned to the pipeline.
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 6;
    */
-  request?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   constructor(data?: PartialMessage<PipelineCreate>) {
     super();
@@ -301,7 +301,7 @@ export class PipelineCreate extends Message<PipelineCreate> {
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "request", kind: "message", T: Pipeline_Resources },
+    { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineCreate {
@@ -637,11 +637,11 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
   configYaml = "";
 
   /**
-   * The amount of resources that is guaranteed to be assigned to the pipeline.
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 6;
    */
-  request?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   constructor(data?: PartialMessage<PipelineUpdate>) {
     super();
@@ -654,7 +654,7 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "request", kind: "message", T: Pipeline_Resources },
+    { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineUpdate {

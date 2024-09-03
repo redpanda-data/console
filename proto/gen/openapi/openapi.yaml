@@ -935,7 +935,7 @@ components:
         id:
           description: Pipeline ID.
           type: string
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
         state:
           $ref: '#/components/schemas/State'
@@ -964,7 +964,7 @@ components:
         display_name:
           description: User friendly pipeline name.
           type: string
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
       required:
         - display_name
@@ -981,7 +981,7 @@ components:
         display_name:
           description: Pipeline name.
           type: string
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
       type: object
     Policy:
