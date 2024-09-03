@@ -935,9 +935,7 @@ components:
         id:
           description: Pipeline ID.
           type: string
-        limit:
-          $ref: '#/components/schemas/Resources'
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
         state:
           $ref: '#/components/schemas/State'
@@ -966,9 +964,7 @@ components:
         display_name:
           description: User friendly pipeline name.
           type: string
-        limit:
-          $ref: '#/components/schemas/Resources'
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
       required:
         - display_name
@@ -985,9 +981,7 @@ components:
         display_name:
           description: Pipeline name.
           type: string
-        limit:
-          $ref: '#/components/schemas/Resources'
-        request:
+        resources:
           $ref: '#/components/schemas/Resources'
       type: object
     Policy:
@@ -3339,7 +3333,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

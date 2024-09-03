@@ -114,8 +114,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             configYaml: this.editorContent,
             description: this.description,
             displayName: this.fileName,
-            limit: undefined,
-            request: undefined,
+            resources: undefined,
         }))
             .then(async () => {
                 toast({
