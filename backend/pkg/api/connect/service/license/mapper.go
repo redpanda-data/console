@@ -20,7 +20,7 @@ import (
 
 type mapper struct{}
 
-func (mapper) adminApiLicenseInformationToProto(in rpadmin.License) *v1alpha1.License {
+func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.License {
 	year := 24 * time.Hour * 365
 	expiresAt := time.Now().Add(10 * year).Unix()
 	licenseType := v1alpha1.License_TYPE_COMMUNITY

@@ -7,6 +7,9 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package license provides functionality for managing Redpanda or Kafka licenses,
+// including listing and setting licenses via a service that implements the
+// LicenseServiceHandler interface.
 package license
 
 import (
@@ -17,9 +20,8 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/net"
-	"go.uber.org/zap"
-
 	"github.com/redpanda-data/common-go/rpadmin"
+	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/hooks"
@@ -29,6 +31,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
+// Ensure that Service implements the LicenseServiceHandler interface.
 var _ consolev1alpha1connect.LicenseServiceHandler = (*Service)(nil)
 
 // Service that implements the UserServiceHandler interface. This includes all
@@ -41,6 +44,9 @@ type Service struct {
 	authHooks      hooks.AuthorizationHooks
 }
 
+// NewService creates a new instance of Service, initializing it with the
+// provided configuration, logger, and hooks. It returns an error if the admin
+// client setup fails.
 func NewService(
 	logger *zap.Logger,
 	cfg *config.Config,
@@ -51,23 +57,23 @@ func NewService(
 
 	if cfg.Redpanda.AdminAPI.Enabled {
 		// Build admin client with provided credentials
-		adminApiCfg := cfg.Redpanda.AdminAPI
+		adminAPICfg := cfg.Redpanda.AdminAPI
 		var auth rpadmin.Auth
-		if adminApiCfg.Username != "" {
+		if adminAPICfg.Username != "" {
 			auth = &rpadmin.BasicAuth{
-				Username: adminApiCfg.Username,
-				Password: adminApiCfg.Password,
+				Username: adminAPICfg.Username,
+				Password: adminAPICfg.Password,
 			}
 		} else {
 			auth = &rpadmin.NopAuth{}
 		}
-		tlsCfg, err := adminApiCfg.TLS.TLSConfig()
+		tlsCfg, err := adminAPICfg.TLS.TLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to build TLS config: %w", err)
 		}
 
 		// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
-		scheme, _, err := net.ParseHostMaybeScheme(adminApiCfg.URLs[0])
+		scheme, _, err := net.ParseHostMaybeScheme(adminAPICfg.URLs[0])
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
 		}
@@ -75,7 +81,7 @@ func NewService(
 			tlsCfg = nil
 		}
 
-		adminClient, err = rpadmin.NewAdminAPI(adminApiCfg.URLs, auth, tlsCfg)
+		adminClient, err = rpadmin.NewAdminAPI(adminAPICfg.URLs, auth, tlsCfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create admin client: %w", err)
 		}
@@ -90,9 +96,12 @@ func NewService(
 	}, nil
 }
 
+// ListLicenses retrieves the licenses associated with the Redpanda console and
+// cluster. It requires the requester to be authenticated and have the necessary
+// permissions.
 func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.ListLicensesRequest]) (*connect.Response[v1alpha1.ListLicensesResponse], error) {
 	// Use this hook to ensure the requester is some authenticated user.
-	// It doesn't matter what permisison we check. As long as the requester
+	// It doesn't matter what permissions we check. As long as the requester
 	// has at least one viewer permission we know this user is authenticated.
 	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
 	err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to list licenses")
@@ -128,15 +137,17 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 
 	// Mapping will work fine even if the request error'd because the defaults
 	// will map to a community license.
-	coreProtoLicense := s.mapper.adminApiLicenseInformationToProto(coreLicense)
+	coreProtoLicense := s.mapper.adminAPILicenseInformationToProto(coreLicense)
 	licenses = append(licenses, coreProtoLicense)
 
 	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses}), nil
 }
 
+// SetLicense installs a new license into the Redpanda cluster.
+// The requester must be authenticated and have the necessary permissions.
 func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error) {
 	// Use this hook to ensure the requester is some authenticated user.
-	// It doesn't matter what permisison we check. As long as the requester
+	// It doesn't matter what permissions we check. As long as the requester
 	// has at least one viewer permission we know this user is authenticated.
 	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
 	if err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license"); err != nil {
@@ -156,7 +167,7 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to retrieve installed license: ")
 	}
-	licenseInfoProto := s.mapper.adminApiLicenseInformationToProto(licenseInfo)
+	licenseInfoProto := s.mapper.adminAPILicenseInformationToProto(licenseInfo)
 
 	return connect.NewResponse(&v1alpha1.SetLicenseResponse{License: licenseInfoProto}), nil
 }
