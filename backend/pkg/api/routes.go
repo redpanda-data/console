@@ -151,9 +151,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		r.Use(hookOutput.HTTPMiddlewares...)
 	}
 
-	r.Mount("/v1alpha1", gwMux)
-	r.Mount("/v1alpha2", gwMux)
-
 	// Wasm Transforms
 	r.Put("/v1alpha1/transforms", transformSvcV1alpha1.HandleDeployTransform())
 	r.Put("/v1alpha2/transforms", transformSvc.HandleDeployTransform())
@@ -292,7 +289,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		r.Mount(svc.MountPath, svc.Handler)
 	}
 
-	// v1alpha1
+	// v1alpha1 / v1alpha2
+	r.Mount("/v1alpha1", gwMux)
+	r.Mount("/v1alpha2", gwMux)
 
 	// Register gRPC-Gateway Handlers of OSS. Enterprise handlers are directly registered in the hook via the *runtime.ServeMux passed.
 	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
