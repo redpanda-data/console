@@ -15,13 +15,15 @@ import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
-import { Box, Button, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, Flex, FormField, Heading, Icon, Input, ListItem, UnorderedList } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
+import { Link as ChLink } from '@redpanda-data/ui';
 import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { ExternalLinkIcon } from '@heroicons/react/outline';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -63,27 +65,44 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         return (
             <PageContent>
                 <ToastContainer />
-                <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
-                    <Flex alignItems="center" gap="2">
-                        <Input
-                            placeholder="Enter a config name..."
-                            data-testid="pipelineName"
-                            pattern="[a-zA-Z0-9_\-]+"
-                            isRequired
-                            value={this.fileName}
-                            onChange={x => this.fileName = x.target.value}
-                  width={500}
-                />
+
+                <Flex flexDirection="row" gap="8">
+                    <Flex flexDirection="column">
+                        <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+                            <Flex alignItems="center" gap="2">
+                                <Input
+                                    placeholder="Enter a config name..."
+                                    data-testid="pipelineName"
+                                    pattern="[a-zA-Z0-9_\-]+"
+                                    isRequired
+                                    value={this.fileName}
+                                    onChange={x => this.fileName = x.target.value}
+                                    width={500}
+                                />
+                            </Flex>
+                        </FormField>
+                        <FormField label="Description">
+                            <Input
+                                data-testid="pipelineDescription"
+                                value={this.description}
+                                onChange={x => this.description = x.target.value}
+                                width={500}
+                            />
+                        </FormField>
+
                     </Flex>
-                </FormField>
-                <FormField label="Description">
-                    <Input
-                        data-testid="pipelineDescription"
-                        value={this.description}
-                        onChange={x => this.description = x.target.value}
-                width={500}
-                    />
-                </FormField>
+
+                    <Box p="4" borderWidth="1px">
+                        <Heading as="h3" mb="4">Documentation</Heading>
+                        <UnorderedList>
+                            <ListItem><ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>Quickstart <Icon as={ExternalLinkIcon} /></ChLink></ListItem>
+                            <ListItem><ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>Streaming examples <Icon as={ExternalLinkIcon} /></ChLink></ListItem>
+                            <ListItem><ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>Connector catalog <Icon as={ExternalLinkIcon} /></ChLink></ListItem>
+                        </UnorderedList>
+                    </Box>
+
+                </Flex>
+
 
                 <Box mt="4">
                     <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
