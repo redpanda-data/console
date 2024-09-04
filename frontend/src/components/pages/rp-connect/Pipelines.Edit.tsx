@@ -16,23 +16,20 @@ import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Box, Button, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
-import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
-import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { PipelineEditor } from './Pipelines.Create';
 const { ToastContainer, toast } = createStandaloneToast();
 
-const exampleContent = `
-`;
 
 @observer
-class RpConnectPipelinesCreate extends PageComponent<{}> {
+class RpConnectPipelinesEdit extends PageComponent<{}> {
 
     @observable fileName = '';
     @observable description = '';
-    @observable editorContent = exampleContent;
+    @observable editorContent = '';
     @observable isCreating = false;
 
     constructor(p: any) {
@@ -72,8 +69,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                             isRequired
                             value={this.fileName}
                             onChange={x => this.fileName = x.target.value}
-                  width={500}
-                />
+                            width={500}
+                        />
                     </Flex>
                 </FormField>
                 <FormField label="Description">
@@ -81,7 +78,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                         data-testid="pipelineDescription"
                         value={this.description}
                         onChange={x => this.description = x.target.value}
-                width={500}
+                        width={500}
                     />
                 </FormField>
 
@@ -137,37 +134,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     }
 }
 
-export default RpConnectPipelinesCreate;
+export default RpConnectPipelinesEdit;
 
 
-export const PipelineEditor = observer((p: {
-    yaml: string,
-    onChange: (newYaml: string) => void
-}) => {
 
-    return <Tabs tabs={[
-        {
-            key: 'config', title: 'Configuration',
-            content: () => <Box>
-                {/* yaml editor */}
-                <Flex height="400px" maxWidth="800px">
-                    <PipelinesYamlEditor
-                        defaultPath="config.yaml"
-                        path="config.yaml"
-                        value={p.yaml}
-                        onChange={e => {
-                            if (e)
-                                p.onChange(e);
-                        }}
-                        language="yaml"
-                    />
-                </Flex>
-            </Box>
-        },
-        {
-            key: 'preview', title: 'Pipeline preview',
-            content: <></>,
-            disabled: true
-        },
-    ]} />
-});
