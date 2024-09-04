@@ -104,7 +104,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
 	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
-	userSvc := apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
+	var userSvc dataplanev1alpha2connect.UserServiceHandler = apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvc := &transformsvc.ConsoleService{Impl: transformSvc}
@@ -145,6 +145,14 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1alpha2connect.KafkaConnectServiceName:  kafkaConnectSvc,
 		},
 	})
+
+	// rewrite local variables that may have been replaced in the hooks
+	// that we need to use later on in the function to register services
+	// TODO properly rewrite all variables
+	newUserSvc, ok := hookOutput.Services[dataplanev1alpha2connect.UserServiceName].(dataplanev1alpha2connect.UserServiceHandler)
+	if ok {
+		userSvc = newUserSvc
+	}
 
 	// Use HTTP Middlewares that are configured by the Hook
 	if len(hookOutput.HTTPMiddlewares) > 0 {
