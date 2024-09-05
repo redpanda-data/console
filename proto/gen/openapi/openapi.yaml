@@ -632,7 +632,7 @@ components:
     GetPipelineServiceConfigSchemaResponse:
       properties:
         config_schema:
-          description: config_schema is the JSON schema of the configuration components that are allowed for pipelines.
+          description: JSON schema of the configuration components that are allowed for Connect pipelines.
           type: string
       type: object
     GetTopicConfigurationsResponse:
@@ -921,16 +921,16 @@ components:
       description: Defines the pipeline resource.
       properties:
         config_yaml:
-          description: The configuration of the Pipeline as YAML. See https://docs.redpanda.com/redpanda-connect/configuration/about for more details.
+          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           title: |-
-            The configuration of the Pipeline as YAML.
+            The pipeline configuration in YAML.
             See https://docs.redpanda.com/redpanda-connect/configuration/about/
           type: string
         description:
           description: Optional pipeline description.
           type: string
         display_name:
-          description: User friendly display name.
+          description: User-friendly pipeline name.
           type: string
         id:
           description: Pipeline ID.
@@ -947,7 +947,7 @@ components:
         - config_yaml
       type: object
     Pipeline.Status:
-      description: Pipeline status can hold error message.
+      description: Pipeline status may contain an error message.
       properties:
         error:
           type: string
@@ -956,13 +956,13 @@ components:
       description: PipelineCreate contains the details for the pipeline creation request.
       properties:
         config_yaml:
-          description: The pipeline configuration in YAML format.
+          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
           type: string
         display_name:
-          description: User friendly pipeline name.
+          description: User-friendly pipeline name.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -973,13 +973,13 @@ components:
     PipelineUpdate:
       properties:
         config_yaml:
-          description: The pipeline configuration in YAML format.
+          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
           type: string
         display_name:
-          description: Pipeline name.
+          description: User-friendly pipeline name.
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
@@ -1094,31 +1094,27 @@ components:
       properties:
         cpu_shares:
           description: |-
-            cpu_shares is a string specifying the amount of CPU to allocate for the
+            `cpu_shares` is a string specifying the amount of CPU to allocate for the
             pipeline.
 
-            This follows the Kubernetes resource quantity format. Acceptable
+            This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable
             units include:
             - Decimal SI units: "m" (e.g., "500m" for 500 millicores, "2" for 2 cores)
-            If no unit is specified, the value is interpreted as the number of cores.
             CPU shares can be specified in millicores (1 core = 1000 millicores).
-
-            More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
+            If you don't specify a unit, the value is interpreted as the number of cores.
           type: string
         memory_shares:
           description: |-
-            memory_shares is a string specifying the amount of memory to allocate for
+            `memory_shares` is a string specifying the amount of memory to allocate for
             the pipeline.
 
-            This follows the Kubernetes resource quantity format. Acceptable units
+            This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable units
             include:
             - Decimal SI units: "K", "M", "G", "T", "P", "E" (e.g., "128M" for 128
               megabytes)
             - Binary SI units: "Ki", "Mi", "Gi", "Ti", "Pi", "Ei" (e.g., "512Mi" for
-            512 mebibytes) If no unit is specified, the value is interpreted as
+            512 mebibytes) If you don't specify a unit, the value is interpreted as
             bytes.
-
-            More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
           type: string
       required:
         - memory_shares
@@ -1174,7 +1170,7 @@ components:
          - STATE_RUNNING: The pipeline is running.
          - STATE_STOPPING: The pipeline is in the process of stopping.
          - STATE_STOPPED: The pipeline is stopped and in paused state.
-         - STATE_ERROR: The pipeline is in error state.
+         - STATE_ERROR: The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
       enum:
         - STATE_STARTING
         - STATE_RUNNING
@@ -2617,6 +2613,7 @@ paths:
         - SecretService
   /v1alpha2/redpanda-connect/config-schema:
     get:
+      description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
       operationId: PipelineService_GetPipelineServiceConfigSchema
       responses:
         "200":
@@ -2643,7 +2640,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Retrieve the schema for configuring Redpanda Connect pipelines.
+      summary: Retrieve the schema for Redpanda Connect pipeline configurations.
       tags:
         - PipelineService
   /v1alpha2/redpanda-connect/pipelines:
@@ -2740,7 +2737,8 @@ paths:
       description: Delete a Redpanda Connect pipeline.
       operationId: PipelineService_DeletePipeline
       parameters:
-        - in: path
+        - description: Pipeline ID.
+          in: path
           name: id
           required: true
           schema:
@@ -2782,7 +2780,7 @@ paths:
       description: Get a specific Redpanda Connect pipeline.
       operationId: PipelineService_GetPipeline
       parameters:
-        - description: The pipeline ID.
+        - description: Pipeline ID.
           in: path
           name: id
           required: true
@@ -2823,10 +2821,11 @@ paths:
       tags:
         - PipelineService
     put:
-      description: Update the configuration of a Redpanda Connect pipeline.
+      description: Update the [configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) of a Redpanda Connect pipeline.
       operationId: PipelineService_UpdatePipeline
       parameters:
-        - in: path
+        - description: Pipeline ID.
+          in: path
           name: id
           required: true
           schema:
@@ -2876,7 +2875,8 @@ paths:
       description: Start a stopped Redpanda Connect pipeline.
       operationId: PipelineService_StartPipeline
       parameters:
-        - in: path
+        - description: Pipeline ID.
+          in: path
           name: id
           required: true
           schema:
@@ -2920,7 +2920,8 @@ paths:
       description: Stop a running Redpanda Connect pipeline.
       operationId: PipelineService_StopPipeline
       parameters:
-        - in: path
+        - description: Pipeline ID.
+          in: path
           name: id
           required: true
           schema:
@@ -3740,7 +3741,8 @@ tags:
   - name: TransformService
   - description: Manage [connectors](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/) and interact with the Kafka Connect API.
     name: KafkaConnectService
-  - name: PipelineService
+  - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
+    name: PipelineService
   - description: Manage [secrets](https://docs.redpanda.com/current/deploy/deployment-option/cloud/security/secrets/) for Redpanda Cloud.
     name: SecretService
   - description: Manage Redpanda Cloud topics.

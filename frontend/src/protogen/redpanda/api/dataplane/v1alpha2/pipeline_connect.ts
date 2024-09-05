@@ -94,8 +94,7 @@ export const PipelineService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
-     * available components and processors in this instance.
+     * The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelineServiceConfigSchema
      */
