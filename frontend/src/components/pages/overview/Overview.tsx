@@ -21,7 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Text, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
@@ -346,7 +346,7 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            ...(licenses.map(license => [prettyLicenseType(license.type), prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
+            ...(licenses.map(license => [<Text key={0} data-testid="overview-license-name">{prettyLicenseType(license.type)}</Text>, prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
         ]}/>
 
         {api.isRedpanda && api.isAdminApiConfigured && <>
