@@ -217,7 +217,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
             baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
 
             getWorker(moduleId, label) {
-                console.log(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
+                console.debug(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
                 switch (label) {
                     case 'editorWorkerService':
                         return new Worker(
