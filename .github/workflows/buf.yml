@@ -12,7 +12,7 @@ on:
   delete:
 jobs:
   push-module:
-    if: github.repository == 'redpanda-data/console'
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'redpanda-data/console' }}
     permissions:
       id-token: write
       contents: read
