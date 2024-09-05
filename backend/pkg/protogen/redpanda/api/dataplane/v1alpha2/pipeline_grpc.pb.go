@@ -49,8 +49,7 @@ type PipelineServiceClient interface {
 	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
-	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
-	// available components and processors in this instance.
+	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
 }
 
@@ -153,8 +152,7 @@ type PipelineServiceServer interface {
 	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
-	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
-	// available components and processors in this instance.
+	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }
