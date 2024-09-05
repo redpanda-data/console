@@ -3583,21 +3583,6 @@ $borderRadius: 8px;
     }
 }
 
-// Tries to reset styles injected by console for links
-.chakra-container {
-
-    a,
-    .chakra-linkbox {
-        color: rgba(0, 0, 0, 0.85);
-    }
-
-    input:placeholder-shown,
-    .ant-input:placeholder-shown {
-        font-style: normal !important;
-    }
-}
-
-
 .controlChar {
     display: inline-block;
     margin: 0;
