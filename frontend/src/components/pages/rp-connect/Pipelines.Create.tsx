@@ -152,8 +152,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 export default RpConnectPipelinesCreate;
 
 
-
-const PipelineEditor = observer((p: {
+export const PipelineEditor = observer((p: {
     yaml: string,
     onChange: (newYaml: string) => void
 }) => {
