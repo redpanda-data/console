@@ -93,10 +93,8 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	s.cfg.Kafka.Protobuf.Enabled = true
-	s.cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-	s.cfg.Kafka.Protobuf.SchemaRegistry.RefreshInterval = 2 * time.Second
-	s.cfg.Kafka.Schema.Enabled = true
-	s.cfg.Kafka.Schema.URLs = []string{registryAddr}
+	s.cfg.SchemaRegistry.Enabled = true
+	s.cfg.SchemaRegistry.URLs = []string{registryAddr}
 
 	// proto message mapping
 	absProtoPath, err := filepath.Abs("../testutil/testdata/proto")

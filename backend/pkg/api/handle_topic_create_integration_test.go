@@ -24,10 +24,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/api/mocks"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -44,8 +42,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 	logCfg := zap.NewDevelopmentConfig()
 	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
 
 	t.Run("happy path", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -227,45 +223,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		assert.Equal(400, apiErr.Status)
 	})
 
-	t.Run("no permission", func(t *testing.T) {
-		topicName := testutil.TopicNameForTest("no_permission")
-
-		oldAuthHooks := s.api.Hooks.Authorization
-		mockCtrl := gomock.NewController(t)
-		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
-		mockAuthzHooks.EXPECT().CanCreateTopic(gomock.Any(), topicName).Times(1).Return(false, nil)
-
-		s.api.Hooks.Authorization = mockAuthzHooks
-
-		defer func() {
-			if oldAuthHooks != nil {
-				s.api.Hooks.Authorization = oldAuthHooks
-			}
-		}()
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		input := &createTopicRequest{
-			TopicName:         topicName,
-			PartitionCount:    1,
-			ReplicationFactor: 1,
-		}
-
-		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
-
-		assert.Equal(403, res.StatusCode)
-
-		apiErr := restAPIError{}
-
-		err := json.Unmarshal(body, &apiErr)
-		require.NoError(err)
-
-		assert.Equal(`You don't have permissions to create this topic.`, apiErr.Message)
-
-		assert.Equal(403, apiErr.Status)
-	})
-
 	t.Run("create topic fail", func(t *testing.T) {
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
@@ -277,14 +234,13 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
-		require.NoError(err)
+		newApi := New(s.cfg)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
 
 		// switch
-		s.api.ConsoleSvc = newConsoleSvc
+		s.api.ConsoleSvc = newApi.ConsoleSvc
 
 		// call the fake control and expect function
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {

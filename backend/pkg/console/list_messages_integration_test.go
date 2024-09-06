@@ -32,8 +32,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/kafka/mocks"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 

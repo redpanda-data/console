@@ -16,14 +16,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
 	svc := Service{}
 	// Request less messages than we have partitions
-	marks := map[int32]*kafka.PartitionMarks{
+	marks := map[int32]*TopicPartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -37,7 +35,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 	}
 
 	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]*kafka.PartitionConsumeRequest{
+	expected := map[int32]*PartitionConsumeRequest{
 		0: {PartitionID: 0, IsDrained: false, StartOffset: marks[0].High - 1, EndOffset: marks[0].High - 1, MaxMessageCount: 1, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High},
 		1: {PartitionID: 1, IsDrained: false, StartOffset: marks[1].High - 1, EndOffset: marks[1].High - 1, MaxMessageCount: 1, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High},
 		2: {PartitionID: 2, IsDrained: false, StartOffset: marks[2].High - 1, EndOffset: marks[2].High - 1, MaxMessageCount: 1, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High},
