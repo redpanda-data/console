@@ -21,6 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
+import { AdminDebugBundle } from './Admin.DebugBundle';
 
 
 @observer
@@ -59,10 +60,15 @@ export default class AdminPage extends PageComponent {
                             component: <AdminRoles />
                         },
                         {
-                            key: 'debug',
-                            name: 'Debug',
+                            key: 'permissionsDebug',
+                            name: 'Permissions debug',
                             component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
                         },
+                        {
+                            key: 'debugBundle',
+                            name: 'Debug bundle',
+                            component: <AdminDebugBundle />
+                        }
                     ]} />
 
                     : <div>
