@@ -54,6 +54,7 @@ import TransformDetails from './pages/transforms/Transform.Details';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import {isServerless} from '../config';
+import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 
 //
 //	Route Types
@@ -314,6 +315,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
     MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
+    MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,

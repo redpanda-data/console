@@ -19,18 +19,19 @@ import { Box, Button, createStandaloneToast, Flex, FormField, Input } from '@red
 import { pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
-import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { PipelineEditor } from './Pipelines.Create';
+import { Link as ChLink } from '@redpanda-data/ui';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
 @observer
-class RpConnectPipelinesEdit extends PageComponent<{}> {
+class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
-    @observable fileName = '';
-    @observable description = '';
-    @observable editorContent = '';
-    @observable isCreating = false;
+    @observable displayName = undefined as unknown as string;
+    @observable description = undefined as unknown as string;
+    @observable editorContent = undefined as unknown as string;
+    @observable isUpdating = false;
 
     constructor(p: any) {
         super(p);
@@ -38,9 +39,11 @@ class RpConnectPipelinesEdit extends PageComponent<{}> {
     }
 
     initPage(p: PageInitHelper): void {
-        p.title = 'Create Pipeline';
+        const pipelineId = this.props.pipelineId;
+
+        p.title = 'Edit Pipeline';
         p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
-        p.addBreadcrumb('Create Pipeline', '');
+        p.addBreadcrumb('Edit Pipeline', `/rp-connect/${pipelineId}/edit`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -54,21 +57,38 @@ class RpConnectPipelinesEdit extends PageComponent<{}> {
     render() {
         if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
-        const alreadyExists = pipelinesApi.pipelines.any(x => x.id == this.fileName);
-        const isNameEmpty = this.fileName.trim().length == 0;
+        const pipelineId = this.props.pipelineId;
+        const pipeline = pipelinesApi.pipelines.first(x => x.id == pipelineId);
+        if (!pipeline) return DefaultSkeleton;
+
+        if (this.displayName == undefined) {
+            this.displayName = pipeline.displayName;
+            this.description = pipeline.description;
+            this.editorContent = pipeline.configYaml;
+        }
+
+        const isNameEmpty = !this.displayName;
 
         return (
             <PageContent>
                 <ToastContainer />
-                <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+
+                <Box my="2">
+                    For help creating your pipeline, see our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>quickstart documentation</ChLink>
+                    , our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>library of examples</ChLink>
+                    , or our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>connector catalog</ChLink>
+                    .
+                </Box>
+
+                <FormField label="Pipeline name" isInvalid={isNameEmpty} errorText="Name cannot be empty">
                     <Flex alignItems="center" gap="2">
                         <Input
                             placeholder="Enter a config name..."
                             data-testid="pipelineName"
                             pattern="[a-zA-Z0-9_\-]+"
                             isRequired
-                            value={this.fileName}
-                            onChange={x => this.fileName = x.target.value}
+                            value={this.displayName}
+                            onChange={x => this.displayName = x.target.value}
                             width={500}
                         />
                     </Flex>
@@ -88,14 +108,14 @@ class RpConnectPipelinesEdit extends PageComponent<{}> {
 
                 <Flex alignItems="center" gap="4">
                     <Button variant="solid"
-                        isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-                        loadingText="Creating..."
-                        isLoading={this.isCreating}
-                        onClick={action(() => this.createPipeline())}
+                        isDisabled={isNameEmpty || this.isUpdating}
+                        loadingText="Updating..."
+                        isLoading={this.isUpdating}
+                        onClick={action(() => this.updatePipeline())}
                     >
-                        Create
+                        Update
                     </Button>
-                    <Link to="/connect-clusters">
+                    <Link to={`/rp-connect/${pipelineId}`}>
                         <Button variant="link">Cancel</Button>
                     </Link>
                 </Flex>
@@ -104,32 +124,33 @@ class RpConnectPipelinesEdit extends PageComponent<{}> {
         );
     }
 
-    async createPipeline() {
-        this.isCreating = true;
+    async updatePipeline() {
+        this.isUpdating = true;
+        const pipelineId = this.props.pipelineId;
 
-        pipelinesApi.createPipeline(new PipelineCreate({
+        pipelinesApi.updatePipeline(pipelineId, new PipelineUpdate({
+            displayName: this.displayName,
             configYaml: this.editorContent,
             description: this.description,
-            displayName: this.fileName,
             resources: undefined,
         }))
             .then(async () => {
                 toast({
                     status: 'success', duration: 4000, isClosable: false,
-                    title: 'Pipeline created'
+                    title: 'Pipeline updated'
                 });
                 await pipelinesApi.refreshPipelines(true);
-                appGlobal.history.push('/connect-clusters');
+                appGlobal.history.push(`/rp-connect/${pipelineId}`);
             })
             .catch(err => {
                 toast({
                     status: 'error', duration: null, isClosable: true,
-                    title: 'Failed to create pipeline',
+                    title: 'Failed to update pipeline',
                     description: String(err),
                 })
             })
             .finally(() => {
-                this.isCreating = false;
+                this.isUpdating = false;
             });
     }
 }
