@@ -3,12 +3,12 @@
 
     grid-template-areas:
         "health    health"
+        "debugInfo details"
         "broker    details"
         "resources details"
-        ".         details"
     ;
     grid-template-columns: fit-content(60%) 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     align-items: start;
 
     gap: 1.5rem;
