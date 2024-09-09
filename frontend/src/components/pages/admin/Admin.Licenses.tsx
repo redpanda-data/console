@@ -11,11 +11,12 @@
 
 
 import React, { Component } from 'react';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Empty, List, ListItem, Text } from '@redpanda-data/ui';
+import { Box, Button, Empty, List, ListItem, Text } from '@redpanda-data/ui';
 import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
 
 
@@ -34,10 +35,13 @@ export class AdminLicenses extends Component<{}> {
 
         return (
             <Box>
-                <Text mb={2}>The following licenses are used:</Text>
-                <List>
+                <Text>The following licenses are used:</Text>
+
+                <List my={2}>
                     {licenses.map(((license, idx) => <ListItem key={idx}><strong>{prettyLicenseType(license, true)}</strong> {licenseCanExpire(license) ? `expiring ${prettyExpirationDate(license)}`: ''}</ListItem>))}
                 </List>
+
+                <Button as={ReactRouterLink} to="/admin/upload-license">Upload new license</Button>
             </Box>
         );
     }
