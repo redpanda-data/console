@@ -87,7 +87,7 @@ const UploadLicenseForm: FC<{
                         {state.errorMessage}
                     </AlertDescription>
                 </Alert>}
-                <Flex gap={2}>
+                <Flex gap={2} mt={2}>
                     <Button type="submit" data-testid="upload-license">Upload</Button>
                     <Button onClick={() => {
                         // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
