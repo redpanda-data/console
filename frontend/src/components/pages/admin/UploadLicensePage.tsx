@@ -13,6 +13,7 @@ const UploadLicenseForm: FC<{
     onSuccess: () => void,
 }> = observer(({onUploadLicense, onSuccess}) => {
     const state = useLocalObservable(() => ({
+        showFileUpload: true,
         licenseFile: undefined as string | undefined,
         license: '',
         errorMessage: '',
@@ -30,14 +31,16 @@ const UploadLicenseForm: FC<{
     return (
         <form onSubmit={async (e) => {
             e.preventDefault();
-            await onUploadLicense(state.licenseFile || state.license).then(() => {
+
+            const content = (state.showFileUpload ? state.licenseFile : state.license) as string
+            await onUploadLicense(content).then(() => {
                 onSuccess();
             }).catch(err => {
                 state.errorMessage = err.message;
             });
         }}>
             <Flex flexDirection="column" gap={2} my={4}>
-                <Box
+                {state.showFileUpload && <Box><Box
                     border="1px dashed"
                     borderColor="gray.200"
                     padding="4"
@@ -47,20 +50,34 @@ const UploadLicenseForm: FC<{
                         state.setLicenseFile(value);
                     }}/>
                 </Box>
-                or import text directly:
+                    or
+                    <Button variant="link" onClick={() => {
+                        state.showFileUpload = false
+                    }}>
+                        import text directly
+                    </Button>
+                </Box>}
 
-                <FormField label="License content">
-                    <Textarea
-                        rows={10}
-                        isDisabled={state.licenseFile!==undefined}
-                        data-testid="license"
-                        onChange={(e) => state.setLicense(e.target.value)}
-                        spellCheck={false}
-                        autoComplete="off"
-                    >
-                        {state.license}
-                    </Textarea>
-                </FormField>
+                {state.showFileUpload === false && <Box>
+                    <FormField label="License content">
+                        <Textarea
+                            rows={10}
+                            data-testid="license"
+                            onChange={(e) => state.setLicense(e.target.value)}
+                            spellCheck={false}
+                            autoComplete="off"
+                        >
+                            {state.license}
+                        </Textarea>
+                    </FormField>
+                    or
+                    <Button variant="link" onClick={() => {
+                        state.showFileUpload = true
+                    }}>
+                        upload file
+                    </Button>
+                </Box>}
+
                 {state.errorMessage && <Alert
                     status="error"
                     variant="left-accent"

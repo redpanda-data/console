@@ -1,4 +1,4 @@
-import { License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
 
 /**
@@ -59,19 +59,30 @@ export const getPrettyTimeToExpiration = (license: License) => {
 /**
  * Returns a user-friendly string representing the type of a license.
  *
- * @param {License_Type} type - The type of the license.
+ * @param {License} license - The license object containing the expiration date and type.
+ * @param {boolean} showSource - Determines whether to show sourae type of a license.
  * @returns {string} - A pretty, human-readable string for the license type.
  *                     - 'Redpanda Community' for `COMMUNITY`
  *                     - 'Unspecified' for `UNSPECIFIED`
  *                     - 'Redpanda Enterprise' for `ENTERPRISE`
  *                     - 'Trial' for `TRIAL`
  */
-export const prettyLicenseType = (type: License_Type): string => ({
-    [License_Type.COMMUNITY]: 'Redpanda Community',
-    [License_Type.UNSPECIFIED]: 'Unspecified',
-    [License_Type.ENTERPRISE]: 'Redpanda Enterprise',
-    [License_Type.TRIAL]: 'Trial',
-})[type];
+export const prettyLicenseType = (license: License, showSource = false): string => {
+    const licenseType = ({
+        [License_Type.COMMUNITY]: 'Community',
+        [License_Type.UNSPECIFIED]: 'Unspecified',
+        [License_Type.ENTERPRISE]: 'Enterprise',
+        [License_Type.TRIAL]: 'Trial',
+    })[license.type];
+
+    const sourceType = ({
+        [License_Source.UNSPECIFIED]: 'Unspecified',
+        [License_Source.REDPANDA_CONSOLE]: 'Console',
+        [License_Source.REDPANDA_CORE]: 'Core',
+    })[license.source]
+
+    return showSource ? `${sourceType} ${licenseType}` : licenseType
+};
 
 /**
  * Returns a formatted expiration date string for a license.

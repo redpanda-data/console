@@ -346,7 +346,7 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            ...(licenses.map(license => [<Text key={0} data-testid="overview-license-name">{prettyLicenseType(license.type)}</Text>, prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
+            ...(licenses.map(license => [<Text key={0} data-testid="overview-license-name">{prettyLicenseType(license, licenses.filter(({type}) => type === license.type).length > 1)}</Text>, prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
         ]}/>
 
         {api.isRedpanda && api.isAdminApiConfigured && <>

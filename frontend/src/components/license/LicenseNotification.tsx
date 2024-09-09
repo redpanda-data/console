@@ -41,13 +41,13 @@ export const LicenseNotification = observer(() => {
                 <AlertDescription>
                     {soonToExpireLicenses.length > 0 && <Box>
                         {soonToExpireLicenses.map((license, idx) =>
-                            <Text key={idx}>Your {prettyLicenseType(license.type)} license is expiring in {getPrettyTimeToExpiration(license)}.</Text>
+                            <Text key={idx}>Your {prettyLicenseType(license, true)} license is expiring in {getPrettyTimeToExpiration(license)}.</Text>
                         )}
                     </Box>}
 
                     {expiredLicenses.length > 0 && <Box>
                         {expiredLicenses.map((license, idx) =>
-                            <Text key={idx}>Your {prettyLicenseType(license.type)} license has expired.</Text>
+                            <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
                         )}
                     </Box>}
 
