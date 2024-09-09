@@ -5,7 +5,6 @@ package redpanda.api.dataplane.v1alpha2;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Defines the pipeline resource.
@@ -422,9 +421,6 @@ message UpdatePipelineRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
-
-  // The fields to be updated.
-  google.protobuf.FieldMask update_mask = 3;
 }
 
 message UpdatePipelineResponse {
