@@ -27,7 +27,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
-import { prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
+import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
 import { License } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 @observer
@@ -306,19 +306,19 @@ function ClusterDetails() {
         name: string;
         expiresAt: string;
     }> = Object.values(groupedLicenses).map(licenses => {
-        const [firstLicense] = licenses
+        const [firstLicenseToExpire] = licenses.sort((a, b) => {
+            return Number(a.expiresAt) - Number(b.expiresAt);
+        })
 
         if(licenses.length === 1) {
             return {
-                name: prettyLicenseType(firstLicense, true),
-                expiresAt: prettyExpirationDate(firstLicense)
+                name: prettyLicenseType(firstLicenseToExpire, true),
+                expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
             }
         }
         return {
-            name: prettyLicenseType(firstLicense, false),
-            expiresAt: prettyExpirationDate(licenses.sort((a, b) => {
-                return Number(a.expiresAt) - Number(b.expiresAt);
-            })[0])
+            name: prettyLicenseType(firstLicenseToExpire, false),
+            expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire): '',
         }
     });
 
