@@ -1678,19 +1678,9 @@ export const pipelinesApi = observable({
         const client = appConfig.pipelinesClient;
         if (!client) throw new Error('pipelines client is not initialized');
 
-        // https://google.aip.dev/161
-        // update mask is an array of strings containing "field names" of what gets updated
-        // known field names are the "generated from" of PipelineUpdate, for example "display_name", "config_yaml", ...
-        const updates = [];
-        if (pipelineUpdate.configYaml) updates.push('config_yaml');
-        if (pipelineUpdate.description) updates.push('description');
-        if (pipelineUpdate.displayName) updates.push('display_name');
-
         await client.updatePipeline({
             request: {
-                id, pipeline: pipelineUpdate, updateMask: {
-                    paths: updates
-                }
+                id, pipeline: pipelineUpdate
             }
         });
     },
