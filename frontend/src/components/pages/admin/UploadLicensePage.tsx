@@ -35,6 +35,7 @@ const UploadLicenseForm: FC<{
             const content = (state.showFileUpload ? state.licenseFile : state.license) as string
             await onUploadLicense(content).then(() => {
                 onSuccess();
+                api.listLicenses(); // refetch licenses
             }).catch(err => {
                 state.errorMessage = err.message;
             });
