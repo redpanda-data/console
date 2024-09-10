@@ -459,7 +459,7 @@ export interface Broker {
     config: BrokerConfig;
 }
 export interface BrokerConfig {
-    configs: ConfigEntry[];
+    configs: ConfigEntry[] | undefined;
     error: string | undefined;
 }
 

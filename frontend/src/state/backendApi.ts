@@ -708,7 +708,7 @@ const apiStore = {
                         // add 'type' to each synonym entry
                         for (const broker of v.clusterInfo.brokers)
                             if (broker.config && !broker.config.error)
-                                prepareSynonyms(broker.config.configs);
+                                prepareSynonyms(broker.config.configs ?? []);
 
                         // don't assign if the value didn't change
                         // we'd re-trigger all observers!
@@ -720,7 +720,7 @@ const apiStore = {
                             if (b.config.error)
                                 this.brokerConfigs.set(b.brokerId, b.config.error);
                             else
-                                this.brokerConfigs.set(b.brokerId, b.config.configs);
+                                this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
                     });
                 }
             }, addError);

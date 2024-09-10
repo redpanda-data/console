@@ -432,7 +432,7 @@ function makeCreateTopicModal(parent: TopicList) {
     const tryGetBrokerConfig = (configName: string): string | undefined => {
         return api.clusterInfo?.brokers?.find(_ => true)
             ?.config.configs
-            .find(x => x.name === configName)?.value ?? undefined;
+            ?.find(x => x.name === configName)?.value ?? undefined;
     };
 
     const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
