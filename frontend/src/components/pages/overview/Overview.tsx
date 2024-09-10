@@ -21,13 +21,14 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Text, Skeleton, Tooltip } from '@redpanda-data/ui';
+import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
+import { License } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -291,6 +292,36 @@ function ClusterDetails() {
         }
     });
 
+    const groupedLicenses = licenses.reduce((acc: { [key: string]: License[] }, license: License) => {
+        const licenseType = license.type;
+        if (!acc[licenseType]) {
+            acc[licenseType] = [];
+        }
+        acc[licenseType].push(license);
+        return acc;
+    }, {});
+
+
+    const licenseOutput: Array<{
+        name: string;
+        expiresAt: string;
+    }> = Object.values(groupedLicenses).map(licenses => {
+        const [firstLicense] = licenses
+
+        if(licenses.length === 1) {
+            return {
+                name: prettyLicenseType(firstLicense, true),
+                expiresAt: prettyExpirationDate(firstLicense)
+            }
+        }
+        return {
+            name: prettyLicenseType(firstLicense, false),
+            expiresAt: prettyExpirationDate(licenses.sort((a, b) => {
+                return Number(a.expiresAt) - Number(b.expiresAt);
+            })[0])
+        }
+    });
+
     return <Grid
         w="full"
         templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }}
@@ -346,8 +377,8 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            ...(licenses.map(license => [<Text key={0} data-testid="overview-license-name">{prettyLicenseType(license, licenses.filter(({type}) => type === license.type).length > 1)}</Text>, prettyExpirationDate(license)] as [left: ReactNode, right: ReactNode])),
-        ]}/>
+            ...(licenseOutput.map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+        ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>
             <GridItem/>
