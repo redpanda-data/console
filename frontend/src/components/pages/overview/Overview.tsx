@@ -27,8 +27,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
-import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
-import { License } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
 
 @observer
 class Overview extends PageComponent {
@@ -292,36 +291,6 @@ function ClusterDetails() {
         }
     });
 
-    const groupedLicenses = licenses.reduce((acc: { [key: string]: License[] }, license: License) => {
-        const licenseType = license.type;
-        if (!acc[licenseType]) {
-            acc[licenseType] = [];
-        }
-        acc[licenseType].push(license);
-        return acc;
-    }, {});
-
-
-    const licenseOutput: Array<{
-        name: string;
-        expiresAt: string;
-    }> = Object.values(groupedLicenses).map(licenses => {
-        const [firstLicenseToExpire] = licenses.sort((a, b) => {
-            return Number(a.expiresAt) - Number(b.expiresAt);
-        })
-
-        if(licenses.length === 1) {
-            return {
-                name: prettyLicenseType(firstLicenseToExpire, true),
-                expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
-            }
-        }
-        return {
-            name: prettyLicenseType(firstLicenseToExpire, false),
-            expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire): '',
-        }
-    });
-
     return <Grid
         w="full"
         templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }}
@@ -377,7 +346,7 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            ...(licenseOutput.map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
         ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>

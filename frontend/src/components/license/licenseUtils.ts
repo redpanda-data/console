@@ -110,3 +110,91 @@ export const prettyExpirationDate = (license: License): string => {
  * @returns {boolean} - Returns `true` if the license type can expire, otherwise `false`.
  */
 export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY
+
+
+/**
+ * Simplifies a list of licenses by grouping them based on their type and returning a simplified preview of each type.
+ *
+ * - If there are multiple licenses of the same type, it displays the type with the expiration date of the license that expires first.
+ * - If there is only one license of a specific type, it includes the detailed version of the license (with its name and source) and its expiration date.
+ *
+ * The function returns an array of objects where each object represents a license type with the earliest expiration date.
+ *
+ * @param licenses - An array of `License` objects to be simplified.
+ *
+ * @returns An array of objects with the following properties:
+ * - `name`: The license type, simplified if there are multiple licenses of that type, or detailed if there's only one license.
+ * - `expiresAt`: The expiration date of the earliest expiring license for that type, represented as a string or an empty string if the license doesn't expire.
+ *
+ * @example
+ * ```typescript
+ * const licenses = {
+ *   "licenses": [
+ *     {
+ *       "source": "SOURCE_REDPANDA_CONSOLE",
+ *       "type": "TYPE_ENTERPRISE",
+ *       "expiresAt": "2041321065"
+ *     },
+ *     {
+ *       "source": "SOURCE_REDPANDA_CORE",
+ *       "type": "TYPE_ENTERPRISE",
+ *       "expiresAt": "4813575088"
+ *     }
+ *   ]
+ * };
+ *
+ * const simplifiedPreview = licensesToSimplifiedPreview(licenses.licenses);
+ *
+ * // Output:
+ * // [
+ * //   { name: 'Enterprise', expiresAt: '...' }
+ * // ]
+ * ```
+ *
+ * @example
+ * ```typescript
+ * const licenses = {
+ *   "licenses": [
+ *     {
+ *       "source": "SOURCE_REDPANDA_CONSOLE",
+ *       "type": "TYPE_COMMUNITY",
+ *       "expiresAt": "2041321065"
+ *     },
+ *     {
+ *       "source": "SOURCE_REDPANDA_CORE",
+ *       "type": "TYPE_ENTERPRISE",
+ *       "expiresAt": "4813575088"
+ *     }
+ *   ]
+ * };
+ *
+ * const simplifiedPreview = licensesToSimplifiedPreview(licenses.licenses);
+ *
+ * // Output:
+ * // [
+ * //   { name: 'Console Community', expiresAt: '' },
+ * //   { name: 'Core Enterprise', expiresAt: '...' }
+ * // ]
+ * ```
+ */
+export const licensesToSimplifiedPreview = (licenses: License[]): Array<{
+    name: string;
+    expiresAt: string;
+}> => {
+    const groupedLicenses = licenses.groupBy(x => x.type)
+
+    return [...groupedLicenses.values()].map(licenses => {
+        const [firstLicenseToExpire] = licenses.orderBy(x => Number(x.expiresAt))
+
+        if (licenses.length === 1) {
+            return {
+                name: prettyLicenseType(firstLicenseToExpire, true),
+                expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+            };
+        }
+        return {
+            name: prettyLicenseType(firstLicenseToExpire, false),
+            expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+        };
+    });
+}
