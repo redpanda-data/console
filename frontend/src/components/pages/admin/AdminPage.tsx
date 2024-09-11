@@ -21,6 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
+import { AdminLicenses } from './Admin.Licenses';
 
 
 @observer
@@ -62,6 +63,11 @@ export default class AdminPage extends PageComponent {
                             key: 'debug',
                             name: 'Debug',
                             component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
+                        },
+                        {
+                            key: 'licenses',
+                            name: 'License details',
+                            component: <AdminLicenses />
                         },
                     ]} />
 

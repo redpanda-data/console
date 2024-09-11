@@ -81,7 +81,6 @@ import {
     ProduceRecordsResponse,
     PublishRecordsRequest,
     QuotaResponse,
-    RedpandaLicense,
     ResourceConfig,
     SchemaReferencedByEntry,
     SchemaRegistryCompatibilityMode,
@@ -121,6 +120,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { License, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -292,7 +292,6 @@ const apiStore = {
 
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
-    licenses: null as (RedpandaLicense[] | null),
 
     clusterOverview: null as ClusterOverview | null,
     brokers: null as BrokerWithConfigAndStorage[] | null,
@@ -336,6 +335,9 @@ const apiStore = {
 
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
+
+    licenses: []  as License[],
+    licensesLoaded: false,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -672,7 +674,6 @@ const apiStore = {
         if (!r)
             return null;
         this.endpointCompatibility = r.endpointCompatibility;
-        this.licenses = r.licenses;
         return r;
     },
 
@@ -691,6 +692,15 @@ const apiStore = {
             return true;
 
         return false;
+    },
+
+    get isAdminApiConfigured() {
+        const overview = this.clusterOverview;
+        if(!overview) {
+            return false
+        }
+
+        return overview.redpanda.isAdminApiConfigured
     },
 
     refreshBrokers(force?: boolean) {
@@ -1523,6 +1533,33 @@ const apiStore = {
         });
         return parseOrUnwrap<void>(response, null);
     },
+
+    async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+        const client = appConfig.licenseClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
+        const r = await client.setLicense(request);
+
+        return r;
+    },
+
+    async listLicenses(): Promise<ListLicensesResponse> {
+        const client = appConfig.licenseClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
+        return await client.listLicenses({}).then(response => {
+            this.licenses = response.licenses
+            this.licensesLoaded = true
+            return response
+        }).catch((e) => {
+            addError(e);
+            return e
+        });
+    }
 
 };
 
