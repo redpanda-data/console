@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+message CreateDebugBundleRequest {
+  int32 controller_logs_size_limit_bytes = 1;
+  int32 cpu_profiler_wait_seconds = 2;
+  string logs_since = 3; // TODO add validation 'YYYY-MM-DD', 'yesterday', or 'today'
+  int32 logs_size_limit_bytes = 4;
+  string logs_until = 5; // TODO add validation 'YYYY-MM-DD', 'yesterday', or 'today'
+  int32 metrics_interval_seconds = 6;
+  repeated string partition = 7;
+}
+
+message CreateDebugBundleResponse {
+  string job_id = 1; // UUID
+}
+
+message GetDebugBundleStatusRequest {}
+
+message GetDebugBundleStatusResponse {
+  string job_id = 1;
+  Status status = 2;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_RUNNING = 1;
+    STATUS_SUCCESS = 2;
+    STATUS_ERROR = 3;
+  }
+}
+
+message DeleteDebugBundleRequest {
+  string job_id = 1;
+}
+
+message DeleteDebugBundleResponse {}
+
+message DeleteDebugBundleFileRequest {
+  string file = 1;
+}
+
+message DeleteDebugBundleFileResponse {}
+
+// Additional API:
+// GET /api/debug_bundle/{file}
+// This will download the debug bundle zip file
+
+service DebugBundleService {
+  rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
+  rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
+  rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
+  rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
+}
