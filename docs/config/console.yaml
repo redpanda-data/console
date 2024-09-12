@@ -51,6 +51,7 @@ kafka:
   #     clientSecret: # can be set via the --kafka.sasl.oauth.clientSecret flag as well
   #     tokenEndpoint: # can be set via the --kafka.sasl.oauth.tokenEndpoint flag as well. Will be used to fetch a short living token if specified
   #     scope: # can be set via the --kafka.sasl.oauth.scope flag as well
+  #     extensions: # can be set via the --kafka.sasl.oauth.extensions flag as well. Extensions are key value pairs to add to the authentication request
   #   awsMskIam: # either set both accessKey and secretKey or leave both empty to use default AWS configuration in your environment
   #     accessKey:
   #     secretKey: # can be set via the --kafka.sasl.aws-msk-iam.secret-key flag as well
