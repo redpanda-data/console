@@ -2,25 +2,73 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// Request to start the creation of debug bundle process with given configuration parameters.
 message CreateDebugBundleRequest {
-  int32 controller_logs_size_limit_bytes = 1;
-  int32 cpu_profiler_wait_seconds = 2;
-  string logs_since = 3; // TODO add validation 'YYYY-MM-DD', 'yesterday', or 'today'
-  int32 logs_size_limit_bytes = 4;
-  string logs_until = 5; // TODO add validation 'YYYY-MM-DD', 'yesterday', or 'today'
-  int32 metrics_interval_seconds = 6;
-  repeated string partition = 7;
+  // Optional broker IDs. Do not set / leave empty to create for all.
+  repeated int32 broker_ids = 1;
+
+  // The size limit of the controller logs that can be stored in the bundle.
+  int32 controller_logs_size_limit_bytes = 2 [(buf.validate.field).int32 = {gte: 0}];
+
+  // For how long to collect samples for the CPU profiler
+  int32 cpu_profiler_wait_seconds = 3 [(buf.validate.field).int32 = {
+    gte: 15
+    lte: 600
+  }];
+
+  // Include logs dated from specified date onward.
+  google.protobuf.Timestamp logs_since = 4;
+
+  // Read the logs until the given size is reached.
+  int32 logs_size_limit_bytes = 5 [(buf.validate.field).int32 = {gte: 0}];
+
+  // Include logs older than the specified date.
+  google.protobuf.Timestamp logs_until = 6;
+
+  // Interval between metrics snapshots.
+  int32 metrics_interval_seconds = 7 [(buf.validate.field).int32 = {gte: 0}];
+
+  // Partition IDs. When provided, rpk saves extra admin API requests for those partitions.
+  // Optional.
+  repeated int32 partition_ids = 8;
 }
 
+// Response to CreateDebugBundle.
 message CreateDebugBundleResponse {
-  string job_id = 1; // UUID
+  // Job ID. UUID.
+  string job_id = 1;
 }
 
-message GetDebugBundleStatusRequest {}
+// Gets status of debug bundle progress.
+message GetDebugBundleStatusRequest {
+  // Optional broker IDs to get. If not set / empty get all.
+  repeated int32 broker_ids = 1;
+}
 
-message GetDebugBundleStatusResponse {
-  string job_id = 1;
-  Status status = 2;
+message DebugBundleStatus {
+  // The broker ID.
+  int32 broker_id = 1;
+
+  // The job UUID of this process.
+  string job_id = 2;
+
+  // The status of the job.
+  Status status = 3;
+
+  // When the job was started.
+  google.protobuf.Timestamp created_at = 4;
+
+  // Path in API to get the file.
+  string filename = 5;
+
+  // Only filled in once the process completes.  Content of stdout from rpk.
+  repeated string stdout = 6;
+
+  // Only filled in once the process completes.  Content of stderr from rpk.
+  repeated string stderr = 7;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
@@ -30,20 +78,73 @@ message GetDebugBundleStatusResponse {
   }
 }
 
+// The response to GetDebugBundleStatus.
+message GetDebugBundleStatusResponse {
+  repeated DebugBundleStatus statuses = 1;
+}
+
 message DeleteDebugBundleRequest {
   string job_id = 1;
+
+  // Optional broker IDs. Do not set / empty for all.
+  repeated int32 broker_ids = 2;
 }
 
-message DeleteDebugBundleResponse {}
+// Response for DeleteDebugBundle.
+message DeleteDebugBundleResponse {
+  repeated BundleError errors = 1;
+}
 
+// Request for DeleteDebugBundleFile.
 message DeleteDebugBundleFileRequest {
-  string file = 1;
+  string filename = 1;
+
+  // Optional broker IDs. Do not set / empty for all.
+  repeated int32 broker_ids = 2;
 }
 
-message DeleteDebugBundleFileResponse {}
+// Response for DeleteDebugBundleFile.
+message DeleteDebugBundleFileResponse {
+  repeated BundleError errors = 1;
+}
+
+// Error details for various responses and operations.
+message BundleError {
+  // The broker ID.
+  int32 broker_id = 1;
+
+  // The error code.
+  BundleErrorCode code = 2;
+
+  // Additional information
+  string message = 3;
+}
+
+// Error code enum.
+enum BundleErrorCode {
+  // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+  // OK. No Error.
+  BUNDLE_ERROR_CODE_OK = 0;
+
+  // Debug bundle process already running
+  BUNDLE_ERROR_CODE_PROCESS_ALREADY_RUNNING = 1;
+
+  // Debug bundle process not running.
+  BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING = 2;
+
+  // Job ID not recognized.
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+
+  // Debug bundle process was never started.
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+
+  // Internal error.
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+}
 
 // Additional API:
 // GET /api/debug_bundle/{file}
+// GET /api/debug_bundle/{broker_id}/{file}
 // This will download the debug bundle zip file
 
 service DebugBundleService {
