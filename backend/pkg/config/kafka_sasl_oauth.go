@@ -23,12 +23,17 @@ import (
 
 // KafkaSASLOAuthBearer is the config struct for the SASL OAuthBearer mechanism
 type KafkaSASLOAuthBearer struct {
-	Token         string `yaml:"token"`
-	ClientID      string `yaml:"clientId"`
-	ClientSecret  string `yaml:"clientSecret"`
-	TokenEndpoint string `yaml:"tokenEndpoint"`
-	Scope         string `yaml:"scope"`
-	Extensions    string `yaml:"extensions"`
+	Token         string                    `yaml:"token"`
+	ClientID      string                    `yaml:"clientId"`
+	ClientSecret  string                    `yaml:"clientSecret"`
+	TokenEndpoint string                    `yaml:"tokenEndpoint"`
+	Scope         string                    `yaml:"scope"`
+	Extensions    []KafkaSASLOAuthExtension `yaml:"extensions"`
+}
+
+type KafkaSASLOAuthExtension struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
@@ -38,7 +43,6 @@ func (c *KafkaSASLOAuthBearer) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.ClientSecret, "kafka.sasl.oauth.clientSecret", "", "OAuth Bearer Client Secret")
 	f.StringVar(&c.TokenEndpoint, "kafka.sasl.oauth.tokenEndpoint", "", "OAuth Bearer Token Endpoint")
 	f.StringVar(&c.Scope, "kafka.sasl.oauth.scope", "", "OAuth Bearer Scope")
-	f.StringVar(&c.Extensions, "kafka.sasl.oauth.extensions", "", "OAuth SASL extensions")
 }
 
 // Validate Kafka SASL OAuth configurations.

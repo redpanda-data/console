@@ -14,7 +14,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -91,20 +90,19 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 
 		// OAuth Bearer
 		if cfg.SASL.Mechanism == config.SASLMechanismOAuthBearer {
-			extensions := ParseKeyValues(cfg.SASL.OAUth.Extensions)
 			var mechanism sasl.Mechanism
 			if cfg.SASL.OAUth.TokenEndpoint != "" {
 				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 					shortToken, err := cfg.SASL.OAUth.AcquireToken(ctx)
 					return oauth.Auth{
 						Token:      shortToken,
-						Extensions: extensions,
+						Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 					}, err
 				})
 			} else {
 				mechanism = oauth.Auth{
 					Token:      cfg.SASL.OAUth.Token,
-					Extensions: extensions,
+					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 				}.AsMechanism()
 			}
 
@@ -202,16 +200,10 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 	return opts, nil
 }
 
-func ParseKeyValues(keyValueStr string) map[string]string {
-	if keyValueStr == "" {
-		return map[string]string{}
+func kafkaSASLOAuthExtensionsToStrMap(kafkaSASLOAuthExtensions []config.KafkaSASLOAuthExtension) map[string]string {
+	extensionMap := make(map[string]string)
+	for _, kafkaSASLOAuthExtension := range kafkaSASLOAuthExtensions {
+		extensionMap[kafkaSASLOAuthExtension.Key] = kafkaSASLOAuthExtension.Value
 	}
-	entries := strings.Split(keyValueStr, ";")
-
-	result := make(map[string]string)
-	for _, e := range entries {
-		parts := strings.Split(e, "=")
-		result[parts[0]] = parts[1]
-	}
-	return result
+	return extensionMap
 }
