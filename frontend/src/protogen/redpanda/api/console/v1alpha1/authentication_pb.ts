@@ -181,6 +181,49 @@ export class LoginSaslScramResponse extends Message<LoginSaslScramResponse> {
 }
 
 /**
+ * @generated from message redpanda.api.console.v1alpha1.UserIdentity
+ */
+export class UserIdentity extends Message<UserIdentity> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.AuthenticationMethod auth_method = 2;
+   */
+  authMethod = AuthenticationMethod.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<UserIdentity>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.UserIdentity";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "auth_method", kind: "enum", T: proto3.getEnumType(AuthenticationMethod) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserIdentity {
+    return new UserIdentity().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserIdentity {
+    return new UserIdentity().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserIdentity {
+    return new UserIdentity().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserIdentity | PlainMessage<UserIdentity> | undefined, b: UserIdentity | PlainMessage<UserIdentity> | undefined): boolean {
+    return proto3.util.equals(UserIdentity, a, b);
+  }
+}
+
+/**
  * @generated from message redpanda.api.console.v1alpha1.ListAuthenticationMethodsRequest
  */
 export class ListAuthenticationMethodsRequest extends Message<ListAuthenticationMethodsRequest> {
@@ -247,6 +290,80 @@ export class ListAuthenticationMethodsResponse extends Message<ListAuthenticatio
 
   static equals(a: ListAuthenticationMethodsResponse | PlainMessage<ListAuthenticationMethodsResponse> | undefined, b: ListAuthenticationMethodsResponse | PlainMessage<ListAuthenticationMethodsResponse> | undefined): boolean {
     return proto3.util.equals(ListAuthenticationMethodsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetIdentityRequest
+ */
+export class GetIdentityRequest extends Message<GetIdentityRequest> {
+  constructor(data?: PartialMessage<GetIdentityRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetIdentityRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIdentityRequest {
+    return new GetIdentityRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIdentityRequest {
+    return new GetIdentityRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIdentityRequest {
+    return new GetIdentityRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIdentityRequest | PlainMessage<GetIdentityRequest> | undefined, b: GetIdentityRequest | PlainMessage<GetIdentityRequest> | undefined): boolean {
+    return proto3.util.equals(GetIdentityRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetIdentityResponse
+ */
+export class GetIdentityResponse extends Message<GetIdentityResponse> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.AuthenticationMethod authentication_method = 2;
+   */
+  authenticationMethod = AuthenticationMethod.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<GetIdentityResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetIdentityResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "authentication_method", kind: "enum", T: proto3.getEnumType(AuthenticationMethod) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIdentityResponse {
+    return new GetIdentityResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIdentityResponse {
+    return new GetIdentityResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIdentityResponse {
+    return new GetIdentityResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined, b: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined): boolean {
+    return proto3.util.equals(GetIdentityResponse, a, b);
   }
 }
 

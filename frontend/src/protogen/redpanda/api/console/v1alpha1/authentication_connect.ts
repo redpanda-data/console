@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ListAuthenticationMethodsRequest, ListAuthenticationMethodsResponse, LoginSaslScramRequest, LoginSaslScramResponse } from "./authentication_pb";
+import { GetIdentityRequest, GetIdentityResponse, ListAuthenticationMethodsRequest, ListAuthenticationMethodsResponse, LoginSaslScramRequest, LoginSaslScramResponse } from "./authentication_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -32,6 +32,17 @@ export const AuthenticationService = {
       name: "ListAuthenticationMethods",
       I: ListAuthenticationMethodsRequest,
       O: ListAuthenticationMethodsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetIdentity returns user information for the currently logged-in user.
+     *
+     * @generated from rpc redpanda.api.console.v1alpha1.AuthenticationService.GetIdentity
+     */
+    getIdentity: {
+      name: "GetIdentity",
+      I: GetIdentityRequest,
+      O: GetIdentityResponse,
       kind: MethodKind.Unary,
     },
   }
