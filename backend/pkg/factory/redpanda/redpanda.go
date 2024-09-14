@@ -14,80 +14,73 @@ package redpanda
 
 import (
 	"context"
-	"fmt"
+	"io"
 
-	"github.com/redpanda-data/common-go/net"
 	"github.com/redpanda-data/common-go/rpadmin"
-
-	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // ClientFactory defines the interface for creating and retrieving Redpanda API clients.
 type ClientFactory interface {
 	// GetRedpandaAPIClient retrieves a Redpanda admin API client based on the context.
-	GetRedpandaAPIClient(ctx context.Context) (*rpadmin.AdminAPI, error)
+	GetRedpandaAPIClient(ctx context.Context) (AdminAPIClient, error)
 }
 
-// Ensure CachedClientProvider implements ClientFactory interface
-var _ ClientFactory = (*SingleClientProvider)(nil)
+// AdminAPIClient defines an interface for the rpadmin.AdminAPI struct, so that
+// we can return custom clients for other services that implement the same API
+// differently.
+type AdminAPIClient interface {
+	// CreateUser creates a user with the given username and password using the
+	// given mechanism (SCRAM-SHA-256, SCRAM-SHA-512).
+	CreateUser(ctx context.Context, username, password, mechanism string) error
 
-// SingleClientProvider is a struct that holds a single instance of the Redpanda
-// Admin API client. It implements the ClientFactory interface.
-type SingleClientProvider struct {
-	redpandaCl *rpadmin.AdminAPI
-	cfg        config.RedpandaAdminAPI
-}
+	// ListUsers returns the current users.
+	ListUsers(ctx context.Context) ([]string, error)
 
-// NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
-// It initializes the Redpanda admin API client using the provided configuration.
-// Returns an instance of SingleClientProvider or an error if client creation fails.
-func NewSingleClientProvider(cfg *config.Config) (*SingleClientProvider, error) {
-	redpandaCfg := cfg.Redpanda.AdminAPI
+	// UpdateUser updates a user with the given username and password using the
+	// given mechanism (SCRAM-SHA-256, SCRAM-SHA-512). The api call will error out
+	// if no default mechanism given.
+	UpdateUser(ctx context.Context, username, password, mechanism string) error
 
-	if !redpandaCfg.Enabled {
-		return &SingleClientProvider{}, nil
-	}
+	// DeleteUser deletes the given username, if it exists.
+	DeleteUser(ctx context.Context, username string) error
 
-	// Build admin client with provided credentials
-	var auth rpadmin.Auth
-	if redpandaCfg.Username != "" {
-		auth = &rpadmin.BasicAuth{
-			Username: redpandaCfg.Username,
-			Password: redpandaCfg.Password,
-		}
-	} else {
-		auth = &rpadmin.NopAuth{}
-	}
-	tlsCfg, err := redpandaCfg.TLS.TLSConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build TLS config: %w", err)
-	}
+	// DeployWasmTransform deploys a wasm transform to a cluster.
+	DeployWasmTransform(ctx context.Context, t rpadmin.TransformMetadata, file io.Reader) error
 
-	// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
-	scheme, _, err := net.ParseHostMaybeScheme(redpandaCfg.URLs[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
-	}
-	if scheme == "http" {
-		tlsCfg = nil
-	}
+	// ListWasmTransforms lists the transforms that are running on a cluster.
+	ListWasmTransforms(ctx context.Context) ([]rpadmin.TransformMetadata, error)
 
-	adminClient, err := rpadmin.NewAdminAPI(redpandaCfg.URLs, auth, tlsCfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create admin client: %w", err)
-	}
+	// DeleteWasmTransform deletes a wasm transform in a cluster.
+	DeleteWasmTransform(ctx context.Context, name string) error
 
-	return &SingleClientProvider{
-		redpandaCl: adminClient,
-		cfg:        redpandaCfg,
-	}, nil
-}
+	// Brokers queries one of the client's hosts and returns the list of brokers.
+	Brokers(ctx context.Context) ([]rpadmin.Broker, error)
 
-// GetRedpandaAPIClient returns a schema registry client for the given context.
-func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context) (*rpadmin.AdminAPI, error) {
-	if !p.cfg.Enabled {
-		return nil, fmt.Errorf("redpanda admin api is not configured")
-	}
+	// GetPartitionStatus gets the cluster partition status.
+	GetPartitionStatus(ctx context.Context) (rpadmin.PartitionBalancerStatus, error)
 
-	return p.redpandaCl, nil
+	// Role returns the specific role in Redpanda.
+	Role(ctx context.Context, roleName string) (rpadmin.RoleDetailResponse, error)
+
+	// Roles returns the roles in Redpanda, use 'prefix', 'principal', and
+	// 'principalType' to filter the results. principalType must be set along with
+	// principal. It has no effect on its own.
+	Roles(ctx context.Context, prefix, principal, principalType string) (rpadmin.RolesResponse, error)
+
+	// CreateRole creates a Role in Redpanda with the given name.
+	CreateRole(ctx context.Context, name string) (rpadmin.CreateRole, error)
+
+	// RoleMembers returns the list of RoleMembers of a given role.
+	RoleMembers(ctx context.Context, roleName string) (rpadmin.RoleMemberResponse, error)
+
+	// UpdateRoleMembership updates the role membership for 'roleName' adding and
+	// removing the passed members.
+	UpdateRoleMembership(ctx context.Context, roleName string, add, remove []rpadmin.RoleMember, createRole bool) (rpadmin.PatchRoleResponse, error)
+
+	// DeleteRole deletes a Role in Redpanda with the given name. If deleteACL is
+	// true, Redpanda will delete ACLs bound to the role.
+	DeleteRole(ctx context.Context, name string, deleteACL bool) error
+
+	// GetLicenseInfo gets the license info.
+	GetLicenseInfo(ctx context.Context) (rpadmin.License, error)
 }
