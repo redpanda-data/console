@@ -16,6 +16,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {

@@ -12,8 +12,9 @@ package mocks
 import (
 	reflect "reflect"
 
-	console "github.com/redpanda-data/console/backend/pkg/console"
 	gomock "go.uber.org/mock/gomock"
+
+	console "github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // MockIListMessagesProgress is a mock of IListMessagesProgress interface.
