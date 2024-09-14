@@ -12,7 +12,7 @@ package console
 import (
 	"context"
 
-	"github.com/redpanda-data/common-go/rpadmin"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 )
 
 // RedpandaFeature is an enum for various Redpanda capabilities we care about.
@@ -31,7 +31,7 @@ const (
 // checkRedpandaFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
-func (s *Service) checkRedpandaFeature(ctx context.Context, redpandaCl *rpadmin.AdminAPI, feature redpandaFeature) bool {
+func (s *Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient, feature redpandaFeature) bool {
 	switch feature {
 	case redpandaFeatureRBAC:
 		_, err := redpandaCl.Roles(ctx, "", "", "")

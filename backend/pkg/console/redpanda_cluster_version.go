@@ -14,9 +14,11 @@ import (
 	"strings"
 
 	"github.com/redpanda-data/common-go/rpadmin"
+
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 )
 
-func (s *Service) redpandaClusterVersion(ctx context.Context, redpandaCl *rpadmin.AdminAPI) (string, error) {
+func (s *Service) redpandaClusterVersion(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient) (string, error) {
 	brokers, err := redpandaCl.Brokers(ctx)
 	if err != nil {
 		return "", err

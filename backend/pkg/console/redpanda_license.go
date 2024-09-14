@@ -12,14 +12,14 @@ package console
 import (
 	"context"
 
-	"github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/license"
 )
 
 // getRedpandaLicense retrieves the target cluster's license information.
-func (s *Service) getRedpandaLicense(ctx context.Context, redpandaCl *rpadmin.AdminAPI) license.License {
+func (s *Service) getRedpandaLicense(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient) license.License {
 	l, err := redpandaCl.GetLicenseInfo(ctx)
 	if err != nil {
 		// This might be because the target Redpanda cluster has not yet implemented the endpoint
