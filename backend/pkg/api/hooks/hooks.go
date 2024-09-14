@@ -22,6 +22,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/license"
 )
 
 // ConfigConnectRPCRequest is the config object that is passed into the

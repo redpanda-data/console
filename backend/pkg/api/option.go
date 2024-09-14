@@ -12,26 +12,66 @@ package api
 import (
 	"io/fs"
 
+	"github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/license"
 )
 
-// Option for creating an instance of API.
-type Option func(*API)
+type options struct {
+	frontendResources      fs.FS
+	license                license.License
+	kafkaClientProvider    kafka.ClientFactory
+	redpandaClientProvider redpandafactory.ClientFactory
+	schemaClientProvider   schema.ClientFactory
+}
+
+// Option is a function that applies some configuration to the options struct.
+type Option func(*options)
+
+// apply takes an options instance and applies the configuration.
+func (opt Option) apply(opts *options) {
+	opt(opts)
+}
 
 // WithFrontendResources is an option to set an in-memory filesystem that provides the frontend resources.
 // The index.html is expected to be at the root of the filesystem. This method is called by Console
 // Enterprise, so that it can inject additional assets to the frontend.
 func WithFrontendResources(fsys fs.FS) Option {
-	return func(api *API) {
-		api.FrontendResources = fsys
+	return func(o *options) {
+		o.frontendResources = fsys
 	}
 }
 
-// WithLicense provides the license information which was used to start Redpanda Console.
-// It is used only for visibility & logging purposes and not for any license enforcing
-// actions.
+// WithLicense provides the license information which was used to start Redpanda
+// Console. It is used only for visibility & logging purposes and not for any
+// license enforcing actions.
 func WithLicense(license license.License) Option {
-	return func(api *API) {
-		api.License = license
+	return func(o *options) {
+		o.license = license
+	}
+}
+
+// WithKafkaClientFactory uses the provided ClientFactory for creating new Kafka
+// clients in all endpoint handlers.
+func WithKafkaClientFactory(factory kafka.ClientFactory) Option {
+	return func(o *options) {
+		o.kafkaClientProvider = factory
+	}
+}
+
+// WithRedpandaClientFactory uses the provided ClientFactory for creating new
+// Redpanda API clients in all endpoint handlers.
+func WithRedpandaClientFactory(factory redpandafactory.ClientFactory) Option {
+	return func(o *options) {
+		o.redpandaClientProvider = factory
+	}
+}
+
+// WithSchemaClientFactory uses the provided ClientFactory for creating new
+// Schema Registry clients in all endpoint handlers.
+func WithSchemaClientFactory(factory schema.ClientFactory) Option {
+	return func(o *options) {
+		o.schemaClientProvider = factory
 	}
 }

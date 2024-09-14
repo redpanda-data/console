@@ -43,11 +43,14 @@ import (
 type API struct {
 	Cfg *config.Config
 
-	Logger                 *zap.Logger
-	ConsoleSvc             console.Servicer
-	ConnectSvc             *connect.Service
-	GitSvc                 *git.Service
+	Logger     *zap.Logger
+	ConsoleSvc console.Servicer
+	ConnectSvc *connect.Service
+	GitSvc     *git.Service
+
 	RedpandaClientProvider redpandafactory.ClientFactory
+	KafkaClientProvider    kafkafactory.ClientFactory
+	SchemaClientProvider   schemafactory.ClientFactory
 
 	// FrontendResources is an in-memory Filesystem with all go:embedded frontend resources.
 	// The index.html is expected to be at the root of the filesystem. This prop will only be accessed
@@ -67,35 +70,43 @@ type API struct {
 }
 
 // New creates a new API instance
-func New(cfg *config.Config, opts ...Option) *API {
+func New(cfg *config.Config, inputOpts ...Option) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
 	logger.Info("started Redpanda Console",
 		zap.String("version", version.Version),
 		zap.String("built_at", version.BuiltAt))
 
+	// Apply all the functional options to the options struct
+	opts := &options{}
+	for _, opt := range inputOpts {
+		opt.apply(opts)
+	}
+
+	// Create default client factories if none are provided
+	setDefaultClientProviders(cfg, logger, opts)
+
+	// Use default frontend resources from embeds. We don't use hooks here because
+	// we may want to use the API struct without providing all hooks.
+	if opts.frontendResources == nil {
+		fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+		if err != nil {
+			logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
+		}
+		opts.frontendResources = fsys
+	}
+
 	connectSvc, err := connect.NewService(cfg.Connect, logger)
 	if err != nil {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
-	schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
-	if err != nil {
-		logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
-	}
-
-	redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg)
-	if err != nil {
-		logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
-	}
-
 	consoleSvc, err := console.NewService(
 		cfg,
 		logger,
-		kafkaClientFactory,
-		schemaClientProvider,
-		redpandaClientProvider,
+		opts.kafkaClientProvider,
+		opts.schemaClientProvider,
+		opts.redpandaClientProvider,
 		func(context.Context) string {
 			return "single/"
 		},
@@ -105,32 +116,45 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to create console service", zap.Error(err))
 	}
 
-	// Use default frontend resources from embeds. They may be overridden via functional options.
-	// We don't use hooks here because we may want to use the API struct without providing all hooks.
-	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
-	if err != nil {
-		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
-	}
-
-	a := &API{
+	return &API{
 		Cfg:                    cfg,
 		Logger:                 logger,
 		ConsoleSvc:             consoleSvc,
 		ConnectSvc:             connectSvc,
-		RedpandaClientProvider: redpandaClientProvider,
+		KafkaClientProvider:    opts.kafkaClientProvider,
+		SchemaClientProvider:   opts.schemaClientProvider,
+		RedpandaClientProvider: opts.redpandaClientProvider,
 		Hooks:                  newDefaultHooks(),
-		FrontendResources:      fsys,
+		FrontendResources:      opts.frontendResources,
 		License: license.License{
 			Source:    license.SourceConsole,
 			Type:      license.TypeOpenSource,
 			ExpiresAt: math.MaxInt32,
 		},
 	}
-	for _, opt := range opts {
-		opt(a)
+}
+
+// Set default client providers if none provided
+func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *options) {
+	if opts.kafkaClientProvider == nil {
+		opts.kafkaClientProvider = kafkafactory.NewCachedClientProvider(cfg, logger)
 	}
 
-	return a
+	if opts.schemaClientProvider == nil && cfg.SchemaRegistry.Enabled {
+		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
+		if err != nil {
+			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
+		}
+		opts.schemaClientProvider = schemaClientProvider
+	}
+
+	if opts.redpandaClientProvider == nil && cfg.Redpanda.AdminAPI.Enabled {
+		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg)
+		if err != nil {
+			logger.Fatal("failed to create the Redpanda client provider", zap.Error(err))
+		}
+		opts.redpandaClientProvider = redpandaClientProvider
+	}
 }
 
 // Start the API server and block

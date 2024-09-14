@@ -29,7 +29,7 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 		IsComplete bool     `json:"isComplete"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
+		if api.RedpandaClientProvider != nil {
 			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
@@ -98,7 +98,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 		}
 
 		// 4. Create user
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
+		if api.RedpandaClientProvider != nil {
 			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
@@ -143,7 +143,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		}
 
 		// 4. Delete user
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
+		if api.RedpandaClientProvider != nil {
 			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
