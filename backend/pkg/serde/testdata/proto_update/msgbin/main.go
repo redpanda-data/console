@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	shopv1_2 "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto_update/gen/shop/v1"
+	shopv1_2 "github.com/redpanda-data/console/backend/pkg/console/testdata/proto_update/gen/shop/v1"
 )
 
 var (
