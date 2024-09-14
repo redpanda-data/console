@@ -33,7 +33,7 @@ message LoginSaslScramRequest {
   SASLMechanism mechanism = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum = {
-      defined_only: true,
+      defined_only: true
       not_in: [0]
     },
     (google.api.field_behavior) = REQUIRED
@@ -46,6 +46,11 @@ message LoginSaslScramRequest {
 message LoginSaslScramResponse {
   // SessionToken is only set if return_token is set to true in the request.
   string session_token = 1;
+}
+
+message UserIdentity {
+  string display_name = 1;
+  AuthenticationMethod auth_method = 2;
 }
 
 enum AuthenticationMethod {
@@ -66,9 +71,18 @@ message ListAuthenticationMethodsResponse {
   repeated AuthenticationMethod methods = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
+message GetIdentityRequest {}
+
+message GetIdentityResponse {
+  string display_name = 1;
+  AuthenticationMethod authentication_method = 2;
+}
+
 service AuthenticationService {
   // RPC to login using SASL-SCRAM.
   rpc LoginSaslScram(LoginSaslScramRequest) returns (LoginSaslScramResponse) {}
   // RPC to list available authentication methods.
   rpc ListAuthenticationMethods(ListAuthenticationMethodsRequest) returns (ListAuthenticationMethodsResponse) {}
+  // GetIdentity returns user information for the currently logged-in user.
+  rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}
 }
