@@ -15,11 +15,9 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/license"
@@ -75,66 +73,6 @@ type RouteHooks interface {
 
 	// InitConnectRPCRouter is used to initialize the ConnectRPC router with any top level middleware.
 	InitConnectRPCRouter(router chi.Router)
-}
-
-// AuthorizationHooks include all functions which allow you to intercept the requests at various
-// endpoints where RBAC rules may be applied.
-type AuthorizationHooks interface {
-	// Topic Hooks
-	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
-	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
-
-	// ACL Hooks
-	CanListACLs(ctx context.Context) (bool, *rest.Error)
-	CanCreateACL(ctx context.Context) (bool, *rest.Error)
-	CanDeleteACL(ctx context.Context) (bool, *rest.Error)
-
-	// Quotas Hookas
-	CanListQuotas(ctx context.Context) (bool, *rest.Error)
-
-	// ConsumerGroup Hooks
-	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanEditConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanDeleteConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
-
-	// Operations Hooks
-	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
-	CanPatchConfigs(ctx context.Context) (bool, *rest.Error)
-
-	// Kafka Connect Hooks
-	CanViewConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
-
-	// Kafka User Hooks
-	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	IsProtectedKafkaUser(userName string) bool
-
-	// Schema Registry Hooks
-	CanViewSchemas(ctx context.Context) (bool, *rest.Error)
-	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
-	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
-	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
-
-	// Redpanda Role Hooks
-	CanListRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanCreateRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanDeleteRedpandaRoles(ctx context.Context) (bool, *rest.Error)
 }
 
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.

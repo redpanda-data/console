@@ -32,8 +32,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/console/mocks"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
+	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -85,7 +85,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 			s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 		}()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
@@ -111,9 +111,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
-		var msg *kafka.TopicMessage
+		var msg *TopicMessage
 		var int64Type int64
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
@@ -143,7 +143,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 
@@ -174,7 +174,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 
@@ -209,7 +209,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 
@@ -241,7 +241,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 
@@ -277,7 +277,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 
@@ -307,7 +307,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 		require.NoError(err)
@@ -403,7 +403,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 		require.NoError(err)
@@ -471,7 +471,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 		require.NoError(err)
@@ -548,7 +548,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 
@@ -596,7 +596,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 		orderMatcher := MatchesJSON(map[string]map[string]any{
@@ -636,7 +636,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 		orderMatcher := MatchesJSON(map[string]map[string]any{
@@ -682,7 +682,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 		// Go JSON unmarshals numeric values as float64
@@ -738,12 +738,15 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 
 	if registryAddr != "" {
 		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-		cfg.Kafka.Schema.Enabled = true
-		cfg.Kafka.Schema.URLs = []string{registryAddr}
+		cfg.SchemaRegistry.Enabled = true
+		cfg.SchemaRegistry.URLs = []string{registryAddr}
 	}
 
-	svc, err := NewService(&cfg, log, nil, nil)
+	kafkaFactory := kafkafactory.NewCachedClientProvider(&cfg, log)
+	schemaFactory, _ := schema.NewSingleClientProvider(&cfg)
+	cacheFn := func(ctx context.Context) string { return "single/" }
+
+	svc, err := NewService(&cfg, log, kafkaFactory, schemaFactory, nil, cacheFn, nil)
 	require.NoError(t, err)
 
 	err = svc.Start()
@@ -761,7 +764,7 @@ type OrderMatcher struct {
 
 // Matches implements the Matcher interface for OrderMatcher
 func (o *OrderMatcher) Matches(x any) bool {
-	if m, ok := x.(*kafka.TopicMessage); ok {
+	if m, ok := x.(*TopicMessage); ok {
 		order := testutil.Order{}
 		err := json.Unmarshal(m.Value.NormalizedPayload, &order)
 		if err != nil {
@@ -803,7 +806,7 @@ func (o *GenericMatcher) Matches(x any) bool {
 	o.actualKey = ""
 	o.failedVal = ""
 
-	if m, ok := x.(*kafka.TopicMessage); ok {
+	if m, ok := x.(*TopicMessage); ok {
 		obj := map[string]any{}
 
 		err := json.Unmarshal(m.Value.NormalizedPayload, &obj)

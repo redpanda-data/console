@@ -64,7 +64,7 @@ type ListMessageResponse struct {
 	Messages        []*TopicMessage `json:"messages"`
 }
 
-//go:generate mockgen -destination=./mocks/kafka.go -package=mocks github.com/redpanda-data/console/backend/pkg/console IListMessagesProgress
+//go:generate mockgen -destination=./list_messages_mocks_test.go -package=console github.com/redpanda-data/console/backend/pkg/console IListMessagesProgress
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
 type IListMessagesProgress interface {

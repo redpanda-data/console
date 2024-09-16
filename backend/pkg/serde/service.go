@@ -34,8 +34,11 @@ func NewService(
 	msgPackSvc *msgpack.Service,
 	schemaClientFactory schema.ClientFactory,
 	cacheNamespaceFn func(ctx context.Context) string,
-) *Service {
-	cachedSchemaClient := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+) (*Service, error) {
+	cachedSchemaClient, err := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Service{
 		SerDes: []Serde{
@@ -53,7 +56,7 @@ func NewService(
 			UintSerde{},
 			BinarySerde{},
 		},
-	}
+	}, nil
 }
 
 // DeserializeRecord tries to deserialize a Kafka record into a struct that

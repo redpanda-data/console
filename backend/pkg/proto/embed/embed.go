@@ -30,7 +30,7 @@ import (
 )
 
 //go:embed all:protobuf
-var content embed.FS
+var ProtobufStandardSchemas embed.FS
 
 var (
 	once     sync.Once
@@ -39,7 +39,7 @@ var (
 
 // CommonProtoFiles returns the file system representation of the common protobuf types.
 func CommonProtoFiles() (fs.FS, error) {
-	return fs.Sub(content, "protobuf")
+	return fs.Sub(ProtobufStandardSchemas, "protobuf")
 }
 
 // CommonProtoFileMap returns the map representation of the common protobuf types.

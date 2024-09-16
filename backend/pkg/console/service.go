@@ -91,9 +91,15 @@ func NewService(
 
 	var cachedSchemaClient *schemacache.CachedClient
 	if cfg.SchemaRegistry.Enabled {
-		cachedSchemaClient = schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+		cachedSchemaClient, err = schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema client: %w", err)
+		}
 	}
-	serdeSvc := serde.NewService(protoSvc, msgPackSvc, schemaClientFactory, cacheNamespaceFn)
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, schemaClientFactory, cacheNamespaceFn)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating serde service: %w", err)
+	}
 
 	return &Service{
 		kafkaClientFactory:    kafkaClientFactory,

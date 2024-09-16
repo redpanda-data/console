@@ -17,8 +17,11 @@
 package schema
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -29,8 +32,10 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/go-cache/cache"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/redpanda-data/console/backend/pkg/factory/schema"
+	"github.com/redpanda-data/console/backend/pkg/proto/embed"
 )
 
 const mainProtoFilename = "__console_tmp.proto"
@@ -42,6 +47,8 @@ type CachedClient struct {
 	schemaClientFactory schema.ClientFactory
 	cacheNamespace      func(context.Context) string
 
+	standardImportsResolver func(protocompile.Resolver) protocompile.Resolver
+
 	schemaCache        *cache.Cache[string, sr.Schema]
 	subjectSchemaCache *cache.Cache[string, sr.SubjectSchema]
 
@@ -52,18 +59,96 @@ type CachedClient struct {
 // NewCachedClient initializes and returns a new CachedClient instance with the
 // provided schema client factory and cache namespace function. It sets up
 // caching with specific settings.
-func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn func(context.Context) string) *CachedClient {
+func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn func(context.Context) string) (*CachedClient, error) {
 	cacheSettings := []cache.Opt{
 		cache.MaxAge(30 * time.Second),
 		cache.MaxErrorAge(time.Second),
+	}
+
+	standardImportsResolver, err := createCustomProtoResolver(context.Background())
+	if err != nil {
+		return nil, err
 	}
 
 	return &CachedClient{
 		schemaClientFactory: schemaClientFactory,
 		cacheNamespace:      cacheNamespaceFn,
 
-		schemaCache: cache.New[string, sr.Schema](cacheSettings...),
+		standardImportsResolver: standardImportsResolver,
+
+		schemaCache:        cache.New[string, sr.Schema](cacheSettings...),
+		subjectSchemaCache: cache.New[string, sr.SubjectSchema](cacheSettings...),
+
+		avroSchemaCache:  cache.New[string, avro.Schema](cacheSettings...),
+		protoSchemaCache: cache.New[string, linker.Files](cacheSettings...),
+	}, nil
+}
+
+// createCustomProtoResolver compiles embedded .proto files into file
+// descriptors and returns a resolver function that prioritizes resolving proto
+// files from the embedded filesystem. If a file is not found in the embedded
+// filesystem, it defers to the external resolver. An error is returned if
+// there's an issue reading or compiling the embedded proto files.
+func createCustomProtoResolver(ctx context.Context) (func(protocompile.Resolver) protocompile.Resolver, error) {
+	protoFilesFs := embed.ProtobufStandardSchemas
+	protoFilepaths := make([]string, 0)
+
+	// Walk through the embedded FS to find .proto files
+	err := fs.WalkDir(protoFilesFs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(path) == ".proto" {
+			protoFilepaths = append(protoFilepaths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	// Use protocompile.Compiler to compile the .proto files into descriptors
+	resolveFromEmbeddedProtosFn := protocompile.ResolverFunc(func(name string) (protocompile.SearchResult, error) {
+		data, err := fs.ReadFile(protoFilesFs, name)
+		if err != nil {
+			return protocompile.SearchResult{}, fmt.Errorf("file not found: %s", name)
+		}
+		return protocompile.SearchResult{Source: bytes.NewReader(data)}, nil
+	})
+	compiler := protocompile.Compiler{
+		Resolver:       protocompile.WithStandardImports(resolveFromEmbeddedProtosFn),
+		SourceInfoMode: protocompile.SourceInfoStandard,
+	}
+
+	// Compile proto files and store them by filepath so that we can refer to them
+	// in the proto resolver
+	descriptors, err := compiler.Compile(ctx, protoFilepaths...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile proto files: %w", err)
+	}
+
+	descriptorsByPath := make(map[string]protoreflect.FileDescriptor, len(protoFilepaths))
+	for _, desc := range descriptors {
+		descriptorsByPath[desc.Path()] = desc
+	}
+
+	// withEmbeddedProtoResolver is a resolver that checks the embedded proto files for descriptors.
+	withEmbeddedProtoResolver := func(r protocompile.Resolver) protocompile.Resolver {
+		return protocompile.ResolverFunc(func(name string) (protocompile.SearchResult, error) {
+			res, err := r.FindFileByPath(name)
+			if err != nil {
+				// error from given resolver? see if it's a known standard file
+				if desc, ok := descriptorsByPath[name]; ok {
+					return protocompile.SearchResult{Desc: desc}, nil
+				}
+			}
+
+			// if not found in embedded files, defer to the provided resolver
+			return res, err
+		})
+	}
+
+	return withEmbeddedProtoResolver, nil
 }
 
 // AvroSchemaByID retrieves and parses an Avro schema by its ID, using a cached
@@ -145,10 +230,11 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 	accessorMap[mainProtoFilename] = schema.Schema
 
 	// Compile the schema using the provided compiler.
+	sourceResolver := &protocompile.SourceResolver{
+		Accessor: protocompile.SourceAccessorFromMap(accessorMap),
+	}
 	compiler := protocompile.Compiler{
-		Resolver: &protocompile.SourceResolver{
-			Accessor: protocompile.SourceAccessorFromMap(accessorMap),
-		},
+		Resolver:       protocompile.WithStandardImports(c.standardImportsResolver(sourceResolver)),
 		SourceInfoMode: protocompile.SourceInfoStandard,
 	}
 
