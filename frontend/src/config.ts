@@ -14,7 +14,7 @@ import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
 import { AppFeatures, getBasePath } from './utils/env';
 import memoizeOne from 'memoize-one';
-import { DEFAULT_API_BASE } from './components/constants';
+import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient, PromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -33,6 +33,7 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 
 const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
+const getApiBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_HOST;
 
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
     if (config.jwt)
@@ -69,7 +70,7 @@ export interface Breadcrumb {
 
 interface Config {
     restBasePath: string;
-    grpcBasePath: string;
+    apiBasePath: string;
     authenticationClient?: PromiseClient<typeof AuthenticationService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
@@ -89,7 +90,7 @@ interface Config {
 // unexpected behaviour
 export const config: Config = observable({
     restBasePath: getRestBasePath(),
-    grpcBasePath: getGrpcBasePath(),
+    apiBasePath: getApiBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
     clusterId: 'default',
@@ -116,7 +117,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         jwt,
         isServerless,
         restBasePath: getRestBasePath(urlOverride?.rest),
-        grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
+        apiBasePath: getApiBasePath(urlOverride?.grpc),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
         authenticationClient: authenticationGrpcClient,

@@ -52,6 +52,13 @@ export default class RequireAuth extends Component<{children: ReactNode}> {
         if (api.userData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
+            // const client = appConfig.authenticationClient;
+            // if (!client) throw new Error('security client is not initialized');
+            //
+            // client.getIdentity({}).then((r) => {
+            //     console.log({r});
+            // })
+
             fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     devPrint('user fetched');

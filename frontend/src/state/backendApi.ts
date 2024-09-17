@@ -345,6 +345,13 @@ const apiStore = {
         this.userData = null;
     },
     async refreshUserData() {
+        const client = appConfig.authenticationClient;
+        if (!client) throw new Error('security client is not initialized');
+
+        // await client.getIdentity({}).then((r) => {
+        //     console.log({r});
+        // })
+
         await appConfig.fetch('./api/users/me').then(async r => {
             if (r.ok) {
                 api.userData = await r.json() as UserData;

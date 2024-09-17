@@ -111,7 +111,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
     </Button></Flex>;
   }),
   [AuthenticationMethod.OIDC]: () => <div>
-    <Button variant="brand" as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} width="full">
+    <Button variant="brand" as="a" href={`${appConfig.apiBasePath}/auth/login/oidc`} width="full">
       Login with SSO
     </Button>
   </div>
