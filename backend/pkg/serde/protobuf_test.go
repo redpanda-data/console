@@ -28,7 +28,6 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
 
@@ -42,12 +41,6 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	logger, err := zap.NewProduction()
 	require.NoError(t, err)
 
-	schemaSvc, err := schema.NewService(config.Schema{
-		Enabled: false,
-		URLs:    []string{ts.URL},
-	}, logger)
-	require.NoError(t, err)
-
 	topic0 := config.RegexpOrLiteral{}
 	topic0.UnmarshalText([]byte("protobuf_serde_test_orders"))
 	topic1 := config.RegexpOrLiteral{}
@@ -55,10 +48,6 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 
 	protoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         false,
-			RefreshInterval: 5 * time.Minute,
-		},
 		FileSystem: config.Filesystem{
 			Enabled:         true,
 			Paths:           []string{"testdata/proto"},
@@ -75,7 +64,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				ValueProtoType: "shop.v1.Order",
 			},
 		},
-	}, logger, schemaSvc)
+	}, logger)
 	require.NoError(t, err)
 
 	err = protoSvc.Start()
@@ -186,10 +175,6 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 
 	testProtoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         false,
-			RefreshInterval: 5 * time.Minute,
-		},
 		FileSystem: config.Filesystem{
 			Enabled:         true,
 			Paths:           []string{"testdata/proto"},
@@ -206,7 +191,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 				ValueProtoType: "shop.v1.Order",
 			},
 		},
-	}, logger, nil)
+	}, logger)
 	require.NoError(t, err)
 
 	err = testProtoSvc.Start()

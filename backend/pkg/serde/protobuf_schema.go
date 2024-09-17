@@ -196,6 +196,10 @@ func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Pay
 }
 
 func (d ProtobufSchemaSerde) jsonToProtobufWire(ctx context.Context, jsonInput []byte, schemaID int, indexPath []int) ([]byte, error) {
+	if len(indexPath) == 0 {
+		indexPath = []int{0}
+	}
+
 	compiledProtoFiles, rootFilename, err := d.schemaClient.ProtoFilesByID(ctx, schemaID)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting proto files: %w", err)
