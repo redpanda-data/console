@@ -222,7 +222,7 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 },
                 {
                     header: 'Partitions',
-                    accessorKey: 'partitions',
+                    accessorKey: 'partitionCount',
                     enableResizing: true,
                     cell: ({row: {original: topic}}) => topic.partitionCount,
                 },
