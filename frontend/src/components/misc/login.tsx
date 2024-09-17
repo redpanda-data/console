@@ -55,6 +55,7 @@ const authenticationApi = observable({
 
   async loginWithUsername({username, password}: {username: string, password: string}): Promise<void> {
     const client = appConfig.authenticationClient;
+
     if (!client) throw new Error('security client is not initialized');
 
     const response = await client.loginSaslScram({
@@ -110,7 +111,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
     </Button></Flex>;
   }),
   [AuthenticationMethod.OIDC]: () => <div>
-    <Button variant="brand" as="a" href={`${appConfig.restBasePath}/auth/login/oidc`} width="full">
+    <Button variant="brand" as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} width="full">
       Login with SSO
     </Button>
   </div>

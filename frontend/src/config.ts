@@ -69,6 +69,7 @@ export interface Breadcrumb {
 
 interface Config {
     restBasePath: string;
+    grpcBasePath: string;
     authenticationClient?: PromiseClient<typeof AuthenticationService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
@@ -88,6 +89,7 @@ interface Config {
 // unexpected behaviour
 export const config: Config = observable({
     restBasePath: getRestBasePath(),
+    grpcBasePath: getGrpcBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
     clusterId: 'default',
@@ -114,6 +116,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         jwt,
         isServerless,
         restBasePath: getRestBasePath(urlOverride?.rest),
+        grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
         authenticationClient: authenticationGrpcClient,
