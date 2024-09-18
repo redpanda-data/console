@@ -11,10 +11,15 @@
 
 import { useEffect } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
+import { useLocation } from 'react-router-dom';
 import { observable } from 'mobx';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
 import {
+    Alert,
+    AlertDescription,
+    AlertIcon,
+    Box,
   Button,
   Flex,
   Input,
@@ -33,6 +38,8 @@ import {
   LoginSaslScramRequest,
   SASLMechanism
 } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { appGlobal } from '../../state/appGlobal';
+import { SingleSelect } from './Select';
 
 
 // const iconMap = new Map([
@@ -62,7 +69,9 @@ const authenticationApi = observable({
       username,
       password,
       mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-    } as LoginSaslScramRequest)
+    } as LoginSaslScramRequest).then(() => {
+        appGlobal.history.push('/overview');
+    })
 
     console.log({response});
   }
@@ -73,7 +82,9 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
     const formState = useLocalObservable(() => ({
       username: '',
       password: '',
+      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
       isLoading: false,
+      error: undefined as string | undefined,
       setUsername(value: string) {
         this.username = value;
       },
@@ -82,13 +93,16 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
       },
       async handleSubmit() {
         formState.isLoading = true
-        await authenticationApi.loginWithUsername({username: formState.username, password: formState.password});
-        // Reset the form or handle success/failure here
-        formState.isLoading = false
+        await authenticationApi.loginWithUsername({username: formState.username, password: formState.password}).catch((ex) => {
+            formState.error = ex.message
+        }).finally(() => {
+            formState.isLoading = false
+        })
       },
     }));
 
     return <Flex flexDirection="column" gap={2}><Input
+      color="white"
       value={formState.username}
       data-testid="auth-username-input"
       disabled={formState.isLoading}
@@ -97,12 +111,41 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
     />
     <Input
       type="password"
+      color="white"
       data-testid="auth-password-input"
       disabled={formState.isLoading}
       value={formState.password}
       onChange={(e) => formState.setPassword(e.target.value)}
       placeholder="Password"
     />
+    <SingleSelect<SASLMechanism>
+        chakraStyles={{
+            control: (provided) => ({
+                ...provided,
+                color: 'white',
+            })
+        }}
+        options={[
+            {
+                label: 'SHA 256',
+                value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256
+            },
+            {
+                label: 'SHA 512',
+                value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512
+            }
+        ]}
+        value={formState.mechanism}
+        onChange={mechanism => formState.mechanism = mechanism}
+    />
+        {formState.error && <Alert
+            status="error"
+        >
+            <AlertIcon/>
+            <AlertDescription>
+                {formState.error}
+            </AlertDescription>
+        </Alert>}
     <Button
       variant="brand"
       onClick={formState.handleSubmit}
@@ -119,6 +162,9 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
 
 
 const Login = observer(() => {
+  const { search } = useLocation();
+  const searchParams = new URLSearchParams(search);
+
   useEffect(() => {
     authenticationApi.refreshAuthenticationMethods();
   }, []);
@@ -173,8 +219,22 @@ const Login = observer(() => {
         <div className="loginRight">
           <div className="loginContainerRight">
             <div style={{marginTop: 'auto'}}>
-              <div style={{fontSize: '18px', fontWeight: 600}}>
-                <span>Sign in to Redpanda Console</span>
+              <div>
+                <Text color="white">Sign in to Redpanda Console</Text>
+                  {searchParams.has('error_code') && <Box p={4}>
+                      <Alert
+                          status="error"
+                      >
+                          <AlertIcon />
+                          <AlertDescription>
+                              {{
+                                  token_exchange_failed: 'OIDC authentication failed. Check backend logs for details.',
+                                  kafka_authentication_failed: 'Authenticated via OIDC, but failed to authenticate with the Kafka API.',
+                                  console_internal: 'An unexpected error occurred. Check backend logs.'
+                              }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
+                          </AlertDescription>
+                      </Alert>
+                  </Box>}
                 <Flex margin="2rem auto" width={300} flexDirection="column" gap={4}>
                   {authenticationApi.methods.map(method => {
                     const AuthComponent = AUTH_ELEMENTS[method];

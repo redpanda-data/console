@@ -2,13 +2,14 @@ import { observer } from 'mobx-react';
 import { Component, ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { api } from '../state/backendApi';
-import { UserData } from '../state/restInterfaces';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
+import { config as appConfig } from '../config';
+import { UserData } from '../state/restInterfaces';
+
 
 @observer
 export default class RequireAuth extends Component<{children: ReactNode}> {
@@ -52,41 +53,38 @@ export default class RequireAuth extends Component<{children: ReactNode}> {
         if (api.userData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
-            // const client = appConfig.authenticationClient;
-            // if (!client) throw new Error('security client is not initialized');
-            //
-            // client.getIdentity({}).then((r) => {
-            //     console.log({r});
-            // })
+            const client = appConfig.authenticationClient;
+            if (!client) throw new Error('security client is not initialized');
 
-            fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
-                if (r.ok) {
-                    devPrint('user fetched');
-                    api.userData = await r.json() as UserData;
-                } else if (r.status == 401) { // unauthorized / not logged in
-                    devPrint('not logged in');
-                    api.userData = null;
-                } else if (r.status == 404) { // not found: server must be non-business version
-                    devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging');
-                    uiState.isUsingDebugUserLogin = true;
-                    api.userData = {
-                        canViewConsoleUsers: false,
-                        canListAcls: true,
-                        canListQuotas: true,
-                        canPatchConfigs: true,
-                        canReassignPartitions: true,
-                        canCreateSchemas: true,
-                        canDeleteSchemas: true,
-                        canManageSchemaRegistry: true,
-                        canViewSchemas: true,
-                        canListTransforms: true,
-                        canCreateTransforms: true,
-                        canDeleteTransforms: true,
-                        seat: null as any,
-                        user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
-                    };
-                }
-            });
+            client.getIdentity({}).then((r) => {
+                api.userData = {
+                    canViewConsoleUsers: false,
+                    canListAcls: true,
+                    canListQuotas: true,
+                    canPatchConfigs: true,
+                    canReassignPartitions: true,
+                    canCreateSchemas: true,
+                    canDeleteSchemas: true,
+                    canManageSchemaRegistry: true,
+                    canViewSchemas: true,
+                    canListTransforms: true,
+                    canCreateTransforms: true,
+                    canDeleteTransforms: true,
+                    seat: null as any,
+                    user: {
+                        providerID: r.authenticationMethod,
+                        providerName: '',
+                        id: '',
+                        internalIdentifier: '',
+                        meta: {
+                            avatarUrl: '',
+                            email: '',
+                            name: r.displayName
+                        }}
+                } as UserData;
+            }).catch(() => {
+                api.userData = null
+            })
 
             return preLogin;
         } else {
