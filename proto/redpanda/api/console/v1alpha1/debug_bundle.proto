@@ -5,11 +5,6 @@ package redpanda.api.console.v1alpha1;
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
-// OIDC Auth settings.
-message OIDCAuth {
-  string token = 1;
-}
-
 // SCRAM Auth settings.
 message SCRAMAuth {
   string username = 1;
@@ -27,8 +22,7 @@ message SCRAMAuth {
 message CreateDebugBundleRequest {
   // Optional authentication settings to use for the request.
   oneof authentication {
-    OIDCAuth oidc = 1;
-    SCRAMAuth scram = 2;
+    SCRAMAuth scram = 1;
   }
 
   // Optional broker IDs. Do not set / leave empty to create for all.

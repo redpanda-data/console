@@ -66,45 +66,6 @@ proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleEr
 ]);
 
 /**
- * OIDC Auth settings.
- *
- * @generated from message redpanda.api.console.v1alpha1.OIDCAuth
- */
-export class OIDCAuth extends Message<OIDCAuth> {
-  /**
-   * @generated from field: string token = 1;
-   */
-  token = "";
-
-  constructor(data?: PartialMessage<OIDCAuth>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.OIDCAuth";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OIDCAuth {
-    return new OIDCAuth().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OIDCAuth {
-    return new OIDCAuth().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OIDCAuth {
-    return new OIDCAuth().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OIDCAuth | PlainMessage<OIDCAuth> | undefined, b: OIDCAuth | PlainMessage<OIDCAuth> | undefined): boolean {
-    return proto3.util.equals(OIDCAuth, a, b);
-  }
-}
-
-/**
  * SCRAM Auth settings.
  *
  * @generated from message redpanda.api.console.v1alpha1.SCRAMAuth
@@ -194,13 +155,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    */
   authentication: {
     /**
-     * @generated from field: redpanda.api.console.v1alpha1.OIDCAuth oidc = 1;
-     */
-    value: OIDCAuth;
-    case: "oidc";
-  } | {
-    /**
-     * @generated from field: redpanda.api.console.v1alpha1.SCRAMAuth scram = 2;
+     * @generated from field: redpanda.api.console.v1alpha1.SCRAMAuth scram = 1;
      */
     value: SCRAMAuth;
     case: "scram";
@@ -275,8 +230,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.CreateDebugBundleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "oidc", kind: "message", T: OIDCAuth, oneof: "authentication" },
-    { no: 2, name: "scram", kind: "message", T: SCRAMAuth, oneof: "authentication" },
+    { no: 1, name: "scram", kind: "message", T: SCRAMAuth, oneof: "authentication" },
     { no: 3, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 4, name: "controller_logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
