@@ -168,7 +168,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
 	Type                sr.SchemaType                         `json:"type"`
-	Compatibility       sr.CompatibilityLevel                 `json:"compatibility"`
+	Compatibility       *sr.CompatibilityLevel                `json:"compatibility"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
 	Schemas             []SchemaRegistryVersionedSchema       `json:"schemas"`
@@ -228,7 +228,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	}
 
 	// 2. Retrieve schemas and compat level concurrently
-	var compatLevel sr.CompatibilityLevel
+	var compatLevel *sr.CompatibilityLevel
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(10)
@@ -241,7 +241,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
 			return nil
 		}
-		compatLevel = compatibility.Level
+		compatLevel = &compatibility.Level
 		return nil
 	})
 
