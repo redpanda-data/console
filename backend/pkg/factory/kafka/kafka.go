@@ -24,7 +24,6 @@ import (
 	"github.com/jcmturner/gokrb5/v8/keytab"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"github.com/twmb/franz-go/pkg/kversion"
 	"github.com/twmb/franz-go/pkg/sasl"
 	"github.com/twmb/franz-go/pkg/sasl/aws"
 	"github.com/twmb/franz-go/pkg/sasl/kerberos"
@@ -112,7 +111,6 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
-		kgo.MaxVersions(kversion.V2_6_0()),
 		kgo.ClientID(cfg.ClientID),
 		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
 		kgo.MaxConcurrentFetches(12),
