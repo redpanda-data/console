@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240715174743-9c0afe867874.2
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
@@ -35,7 +35,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redpanda-data/benthos/v4 v4.35.0
-	github.com/redpanda-data/common-go/api v0.0.0-20240731205413-a0e2fecabe80
+	github.com/redpanda-data/common-go/api v0.0.0-20240918135346-6c838a508d64
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.1.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
