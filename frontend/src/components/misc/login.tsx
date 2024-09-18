@@ -29,6 +29,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+    Spinner,
   Stack,
   Text
 } from '@redpanda-data/ui';
@@ -150,7 +151,8 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
       variant="brand"
       onClick={formState.handleSubmit}
     >
-      Login
+        {formState.isLoading && <Spinner size="sm" mr="1" />}
+        Login
     </Button></Flex>;
   }),
   [AuthenticationMethod.OIDC]: () => <div>
