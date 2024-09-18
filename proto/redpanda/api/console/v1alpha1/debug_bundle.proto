@@ -55,9 +55,13 @@ message CreateDebugBundleRequest {
   // Interval between metrics snapshots.
   int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
 
-  // Partition IDs. When provided, rpk saves extra admin API requests for those partitions.
+  // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
-  repeated int32 partition_ids = 10;
+  // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
+  // Partition IDs is comma separated numbers.
+  // kafka/foo/1,2,3. also there can be multiple of those so
+  // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
+  repeated string partitions = 10;
 }
 
 // Response to CreateDebugBundle.

@@ -256,12 +256,16 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   metricsIntervalSeconds = 0;
 
   /**
-   * Partition IDs. When provided, rpk saves extra admin API requests for those partitions.
+   * Partitions. When provided, rpk saves extra admin API requests for those partitions.
    * Optional.
+   * In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
+   * Partition IDs is comma separated numbers.
+   * kafka/foo/1,2,3. also there can be multiple of those so
+   * ['kafka/foo/1,2,3', 'private/baz/3.4.5']
    *
-   * @generated from field: repeated int32 partition_ids = 10;
+   * @generated from field: repeated string partitions = 10;
    */
-  partitionIds: number[] = [];
+  partitions: string[] = [];
 
   constructor(data?: PartialMessage<CreateDebugBundleRequest>) {
     super();
@@ -280,7 +284,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "logs_until", kind: "message", T: Timestamp },
     { no: 9, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "partition_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 10, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {
