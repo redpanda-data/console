@@ -66,57 +66,192 @@ proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleEr
 ]);
 
 /**
+ * OIDC Auth settings.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.OIDCAuth
+ */
+export class OIDCAuth extends Message<OIDCAuth> {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token = "";
+
+  constructor(data?: PartialMessage<OIDCAuth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.OIDCAuth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OIDCAuth {
+    return new OIDCAuth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OIDCAuth {
+    return new OIDCAuth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OIDCAuth {
+    return new OIDCAuth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OIDCAuth | PlainMessage<OIDCAuth> | undefined, b: OIDCAuth | PlainMessage<OIDCAuth> | undefined): boolean {
+    return proto3.util.equals(OIDCAuth, a, b);
+  }
+}
+
+/**
+ * SCRAM Auth settings.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.SCRAMAuth
+ */
+export class SCRAMAuth extends Message<SCRAMAuth> {
+  /**
+   * @generated from field: string username = 1;
+   */
+  username = "";
+
+  /**
+   * @generated from field: string password = 2;
+   */
+  password = "";
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.SCRAMAuth.Mechanism mechanism = 3;
+   */
+  mechanism = SCRAMAuth_Mechanism.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<SCRAMAuth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.SCRAMAuth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "mechanism", kind: "enum", T: proto3.getEnumType(SCRAMAuth_Mechanism) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SCRAMAuth {
+    return new SCRAMAuth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SCRAMAuth {
+    return new SCRAMAuth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SCRAMAuth {
+    return new SCRAMAuth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SCRAMAuth | PlainMessage<SCRAMAuth> | undefined, b: SCRAMAuth | PlainMessage<SCRAMAuth> | undefined): boolean {
+    return proto3.util.equals(SCRAMAuth, a, b);
+  }
+}
+
+/**
+ * @generated from enum redpanda.api.console.v1alpha1.SCRAMAuth.Mechanism
+ */
+export enum SCRAMAuth_Mechanism {
+  /**
+   * @generated from enum value: MECHANISM_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MECHANISM_SCRAM_SHA_256 = 1;
+   */
+  SCRAM_SHA_256 = 1,
+
+  /**
+   * @generated from enum value: MECHANISM_SCRAM_SHA_512 = 2;
+   */
+  SCRAM_SHA_512 = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(SCRAMAuth_Mechanism)
+proto3.util.setEnumType(SCRAMAuth_Mechanism, "redpanda.api.console.v1alpha1.SCRAMAuth.Mechanism", [
+  { no: 0, name: "MECHANISM_UNSPECIFIED" },
+  { no: 1, name: "MECHANISM_SCRAM_SHA_256" },
+  { no: 2, name: "MECHANISM_SCRAM_SHA_512" },
+]);
+
+/**
  * Request to start the creation of debug bundle process with given configuration parameters.
  *
  * @generated from message redpanda.api.console.v1alpha1.CreateDebugBundleRequest
  */
 export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> {
   /**
+   * Optional authentication settings to use for the request.
+   *
+   * @generated from oneof redpanda.api.console.v1alpha1.CreateDebugBundleRequest.authentication
+   */
+  authentication: {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.OIDCAuth oidc = 1;
+     */
+    value: OIDCAuth;
+    case: "oidc";
+  } | {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.SCRAMAuth scram = 2;
+     */
+    value: SCRAMAuth;
+    case: "scram";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
    * Optional broker IDs. Do not set / leave empty to create for all.
    *
-   * @generated from field: repeated int32 broker_ids = 1;
+   * @generated from field: repeated int32 broker_ids = 3;
    */
   brokerIds: number[] = [];
 
   /**
    * The size limit of the controller logs that can be stored in the bundle.
    *
-   * @generated from field: int32 controller_logs_size_limit_bytes = 2;
+   * @generated from field: int32 controller_logs_size_limit_bytes = 4;
    */
   controllerLogsSizeLimitBytes = 0;
 
   /**
    * For how long to collect samples for the CPU profiler
    *
-   * @generated from field: int32 cpu_profiler_wait_seconds = 3;
+   * @generated from field: int32 cpu_profiler_wait_seconds = 5;
    */
   cpuProfilerWaitSeconds = 0;
 
   /**
    * Include logs dated from specified date onward.
    *
-   * @generated from field: google.protobuf.Timestamp logs_since = 4;
+   * @generated from field: google.protobuf.Timestamp logs_since = 6;
    */
   logsSince?: Timestamp;
 
   /**
    * Read the logs until the given size is reached.
    *
-   * @generated from field: int32 logs_size_limit_bytes = 5;
+   * @generated from field: int32 logs_size_limit_bytes = 7;
    */
   logsSizeLimitBytes = 0;
 
   /**
    * Include logs older than the specified date.
    *
-   * @generated from field: google.protobuf.Timestamp logs_until = 6;
+   * @generated from field: google.protobuf.Timestamp logs_until = 8;
    */
   logsUntil?: Timestamp;
 
   /**
    * Interval between metrics snapshots.
    *
-   * @generated from field: int32 metrics_interval_seconds = 7;
+   * @generated from field: int32 metrics_interval_seconds = 9;
    */
   metricsIntervalSeconds = 0;
 
@@ -124,7 +259,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    * Partition IDs. When provided, rpk saves extra admin API requests for those partitions.
    * Optional.
    *
-   * @generated from field: repeated int32 partition_ids = 8;
+   * @generated from field: repeated int32 partition_ids = 10;
    */
   partitionIds: number[] = [];
 
@@ -136,14 +271,16 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.CreateDebugBundleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
-    { no: 2, name: "controller_logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "logs_since", kind: "message", T: Timestamp },
-    { no: 5, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 6, name: "logs_until", kind: "message", T: Timestamp },
-    { no: 7, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 8, name: "partition_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 1, name: "oidc", kind: "message", T: OIDCAuth, oneof: "authentication" },
+    { no: 2, name: "scram", kind: "message", T: SCRAMAuth, oneof: "authentication" },
+    { no: 3, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 4, name: "controller_logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "logs_since", kind: "message", T: Timestamp },
+    { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "logs_until", kind: "message", T: Timestamp },
+    { no: 9, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "partition_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {

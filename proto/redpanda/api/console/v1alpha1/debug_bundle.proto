@@ -5,35 +5,59 @@ package redpanda.api.console.v1alpha1;
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
+// OIDC Auth settings.
+message OIDCAuth {
+  string token = 1;
+}
+
+// SCRAM Auth settings.
+message SCRAMAuth {
+  string username = 1;
+  string password = 2;
+  Mechanism mechanism = 3;
+
+  enum Mechanism {
+    MECHANISM_UNSPECIFIED = 0;
+    MECHANISM_SCRAM_SHA_256 = 1;
+    MECHANISM_SCRAM_SHA_512 = 2;
+  }
+}
+
 // Request to start the creation of debug bundle process with given configuration parameters.
 message CreateDebugBundleRequest {
+  // Optional authentication settings to use for the request.
+  oneof authentication {
+    OIDCAuth oidc = 1;
+    SCRAMAuth scram = 2;
+  }
+
   // Optional broker IDs. Do not set / leave empty to create for all.
-  repeated int32 broker_ids = 1;
+  repeated int32 broker_ids = 3;
 
   // The size limit of the controller logs that can be stored in the bundle.
-  int32 controller_logs_size_limit_bytes = 2 [(buf.validate.field).int32 = {gte: 0}];
+  int32 controller_logs_size_limit_bytes = 4 [(buf.validate.field).int32 = {gte: 0}];
 
   // For how long to collect samples for the CPU profiler
-  int32 cpu_profiler_wait_seconds = 3 [(buf.validate.field).int32 = {
+  int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {
     gte: 15
     lte: 600
   }];
 
   // Include logs dated from specified date onward.
-  google.protobuf.Timestamp logs_since = 4;
+  google.protobuf.Timestamp logs_since = 6;
 
   // Read the logs until the given size is reached.
-  int32 logs_size_limit_bytes = 5 [(buf.validate.field).int32 = {gte: 0}];
+  int32 logs_size_limit_bytes = 7 [(buf.validate.field).int32 = {gte: 0}];
 
   // Include logs older than the specified date.
-  google.protobuf.Timestamp logs_until = 6;
+  google.protobuf.Timestamp logs_until = 8;
 
   // Interval between metrics snapshots.
-  int32 metrics_interval_seconds = 7 [(buf.validate.field).int32 = {gte: 0}];
+  int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
 
   // Partition IDs. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
-  repeated int32 partition_ids = 8;
+  repeated int32 partition_ids = 10;
 }
 
 // Response to CreateDebugBundle.
