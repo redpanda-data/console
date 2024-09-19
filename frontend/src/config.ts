@@ -25,6 +25,7 @@ import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeli
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
+import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -68,6 +69,7 @@ export interface Breadcrumb {
 
 interface Config {
     restBasePath: string;
+    licenseClient?: PromiseClient<typeof LicenseService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
@@ -103,6 +105,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         interceptors: [addBearerTokenInterceptor]
     });
 
+    const licenseGrpcClient = createPromiseClient(LicenseService, transport);
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
@@ -113,6 +116,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
+        licenseClient: licenseGrpcClient,
         consoleClient: consoleGrpcClient,
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
@@ -217,7 +221,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
             baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
 
             getWorker(moduleId, label) {
-                console.log(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
+                console.debug(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
                 switch (label) {
                     case 'editorWorkerService':
                         return new Worker(
@@ -255,12 +259,14 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     // protected, so we need to delay the call until the user is logged in.
     if (!AppFeatures.SINGLE_SIGN_ON) {
         api.refreshSupportedEndpoints();
+        api.listLicenses();
     } else {
         when(
             () => Boolean(api.userData),
             () => {
                 setTimeout(() => {
                     api.refreshSupportedEndpoints();
+                    api.listLicenses();
                 });
             }
         );

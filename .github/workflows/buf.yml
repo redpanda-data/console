@@ -3,18 +3,21 @@ name: Buf CI
 on:
   push:
     paths:
+      - .github/workflows/buf.yml
       - proto/**.proto
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
+      - .github/workflows/buf.yml
       - proto/**.proto
   delete:
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
 jobs:
   push-module:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'redpanda-data/console' }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4

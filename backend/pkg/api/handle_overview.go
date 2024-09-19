@@ -18,7 +18,6 @@ import (
 func (api *API) handleOverview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		overview := api.ConsoleSvc.GetOverview(r.Context())
-		overview.Console.License = api.License
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, overview)
 	}
 }

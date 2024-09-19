@@ -12,7 +12,7 @@
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { BrokerWithConfigAndStorage, OverviewStatus, RedpandaLicense } from '../../../state/restInterfaces';
+import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restInterfaces';
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
@@ -24,9 +24,10 @@ import './Overview.scss';
 import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem, List, ListItem, Box } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
+import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
 
 @observer
 class Overview extends PageComponent {
@@ -304,6 +305,7 @@ const Details: FC<DetailsProps> = ({title, content}) => {
 function ClusterDetails() {
     const overview = api.clusterOverview;
     const brokers = api.brokers;
+    const licenses = api.licenses;
 
     if (!overview || !brokers) {
         return <Skeleton mt={5} noOfLines={13} height={4} speed={0} />
@@ -319,10 +321,6 @@ function ClusterDetails() {
 
     const aclCount = overview.kafka.authorizer?.aclCount
         ?? 'Authorizer not configured';
-
-    const consoleLicense = prettyLicense(overview.console.license);
-    const redpandaLicense = prettyLicense(overview.redpanda.license);
-
 
     const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
         let status = <div>{titleCase(overviewStatus.status)}</div>;
@@ -399,31 +397,15 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={[
-            consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
-            redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
-        ]}/>
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+        ]} />
+
+        {api.isRedpanda && api.isAdminApiConfigured && <>
+            <GridItem/>
+            <GridItem colSpan={{base: 1, lg: 2}}>
+                <Link as={ReactRouterLink} to="/admin/upload-license">Upload new license</Link>
+            </GridItem>
+        </>}
     </Grid>;
 }
 
-function prettyLicenseType(type: string) {
-    if (type == 'free_trial')
-        return 'Free Trial';
-    if (type == 'open_source')
-        return 'Community';
-    if (type == 'enterprise')
-        return 'Enterprise';
-    return type;
-}
-
-function prettyLicense(license?: RedpandaLicense): { name: string, expires: string } | undefined {
-    if (!license)
-        return undefined;
-
-    const name = prettyLicenseType(license.type);
-
-    const expires = license.type != 'open_source'
-        ? new Date(license.expiresAt * 1000).toLocaleDateString()
-        : '';
-
-    return { name, expires };
-}

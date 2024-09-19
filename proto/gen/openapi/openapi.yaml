@@ -2830,11 +2830,6 @@ paths:
           required: true
           schema:
             type: string
-        - description: The fields to be updated.
-          in: query
-          name: update_mask
-          schema:
-            type: string
       requestBody:
         content:
           application/json:

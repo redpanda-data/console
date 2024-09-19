@@ -9,7 +9,9 @@
 
 package redpanda
 
-import "math"
+import (
+	"time"
+)
 
 // License describes the information we receive (and send to the frontend) about a Redpanda
 // Enterprise license that is used for Console.
@@ -23,9 +25,10 @@ type License struct {
 }
 
 func newOpenSourceCoreLicense() License {
+	year := time.Hour * 24 * 365
 	return License{
 		Source:    LicenseSourceRedpanda,
 		Type:      LicenseTypeOpenSource,
-		ExpiresAt: math.MaxInt32,
+		ExpiresAt: time.Now().Add(10 * year).Unix(),
 	}
 }

@@ -22,6 +22,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
 import { AdminDebugBundle } from './Admin.DebugBundle';
+import { AdminLicenses } from './Admin.Licenses';
 
 
 @observer
@@ -68,7 +69,12 @@ export default class AdminPage extends PageComponent {
                             key: 'debugBundle',
                             name: 'Debug bundle',
                             component: <AdminDebugBundle />
-                        }
+                        },
+                        {
+                            key: 'licenses',
+                            name: 'License details',
+                            component: <AdminLicenses />
+                        },
                     ]} />
 
                     : <div>

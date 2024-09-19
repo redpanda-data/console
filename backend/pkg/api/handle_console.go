@@ -10,16 +10,13 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/cloudhut/common/rest"
 	"golang.org/x/exp/maps"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 const (
@@ -35,7 +32,6 @@ const (
 
 func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
-		Licenses              []redpanda.License            `json:"licenses"`
 		Distribution          string                        `json:"distribution"`
 		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
@@ -65,19 +61,7 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 			distribution = KafkaDistributionRedpanda
 		}
 
-		// Get license from Redpanda cluster if Redpanda service is configured.
-		// We can warn about expiring license in the Console UI.
-		// Because this endpoint may block the rendering of the Frontend application
-		// on startup, we limit the timeout for this call to 3s
-		childCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-		defer cancel()
-		licenses := []redpanda.License{api.License}
-		if api.RedpandaSvc != nil {
-			licenses = append(licenses, api.RedpandaSvc.GetLicense(childCtx))
-		}
-
 		response := response{
-			Licenses:              licenses,
 			Distribution:          distribution,
 			EndpointCompatibility: endpointCompatibility,
 		}

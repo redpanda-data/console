@@ -55,6 +55,8 @@ import TransformDetails from './pages/transforms/Transform.Details';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import {isServerless} from '../config';
+import UploadLicensePage from './pages/admin/UploadLicensePage';
+import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 
 //
 //	Route Types
@@ -286,16 +288,16 @@ export const APP_ROUTES: IRouteEntry[] = [
                 // We are in serverless, there is no kafka connect, so we can ignore it.
                 // Here, we only care about the pipeline service and use that to decide whether to show the entry
                 if (isSupported(Feature.PipelineService)) {
-                    console.log('Pipeline Service enabled. Showing sidebar link.')
+                    console.debug('Pipeline Service enabled. Showing sidebar link.')
                     return {visible: true, disabledReasons: []};
                 }
                 // Pipeline service is not active? Hide entry
-                console.log('Pipeline Service NOT enabled. NOT showing sidebar link.')
+                console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.')
                 return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
             } else {
                 // We are in cloud (dedicated or BYOC), or self-hosted
                 // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
-                console.log('Pipeline Service state does not matter. Showing sidebar link.')
+                console.debug('Pipeline Service state does not matter. Showing sidebar link.')
                 return { visible: true, disabledReasons: [] };
             }
         }
@@ -315,6 +317,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
     MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
+    MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,
@@ -324,11 +327,15 @@ export const APP_ROUTES: IRouteEntry[] = [
         )
     ),
 
+    MakeRoute<{}>('/admin/upload-license', UploadLicensePage, 'Upload License', CogIcon, false,
+        routeVisibility(() => false)
+    ),
+
     MakeRoute<{}>('/admin/debug-bundle/new', AdminPageDebugBundleNew, 'New Debug Bundle'),
+
     MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
-
 
 
 ].filterNull();

@@ -22,7 +22,7 @@ func KafkaConnectValidateToConsoleIcebergSinkHook(response model.ValidationRespo
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "iceberg.catalog.type",
-				Value:             "rest",
+				Value:             "",
 				RecommendedValues: []string{},
 				Visible:           true,
 				Errors:            []string{},
@@ -33,6 +33,7 @@ func KafkaConnectValidateToConsoleIcebergSinkHook(response model.ValidationRespo
 					{Value: "rest", DisplayName: "REST"},
 					{Value: "hive", DisplayName: "HIVE"},
 					{Value: "hadoop", DisplayName: "HADOOP"},
+					{Value: "", DisplayName: "OTHER"},
 				},
 			},
 		},

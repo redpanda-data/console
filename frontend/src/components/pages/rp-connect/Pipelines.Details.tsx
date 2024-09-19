@@ -11,17 +11,17 @@
 
 /* eslint-disable no-useless-escape */
 import Section from '../../misc/Section';
-import { action, makeObservable, observable, runInAction } from 'mobx';
+import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
-import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField, useToast } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest, pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
-import { Pipeline, Pipeline_State, PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { Pipeline, Pipeline_Resources, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import Tabs from '../../misc/tabs/Tabs';
 import { useState } from 'react';
 import { sanitizeString } from '../../../utils/filterHelper';
@@ -81,12 +81,19 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
                 <Box my="4">
                     {QuickTable([
+                        { key: 'ID', value: pipeline.id },
+                        { key: 'Name', value: pipeline.displayName },
                         { key: 'Description', value: pipeline.description ?? '' },
-                        { key: 'Status', value: <PipelineStatus status={pipeline.state} /> }
+                        { key: 'Status', value: <PipelineStatus status={pipeline.state} /> },
+                        { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> }
                     ], { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } })}
                 </Box>
 
                 <Flex mb="4" gap="4">
+                    <Link to={`/rp-connect/${pipelineId}/edit`}>
+                        <Button variant="solid">Edit</Button>
+                    </Link>
+
                     <Button variant="outline" isDisabled={this.isChangingPauseState || isTransitioningState} isLoading={this.isChangingPauseState}
                         onClick={() => {
                             this.isChangingPauseState = true;
@@ -190,62 +197,18 @@ const PipelineEditor = observer((p: {
     pipeline: Pipeline
 }) => {
     const { pipeline } = p;
-    const [yaml, setYaml] = useState(pipeline.configYaml);
-    const [isUpdating, setUpdating] = useState(false);
-    const toast = useToast();
-
-    const updatePipeline = async () => {
-        setUpdating(true);
-
-        pipelinesApi.updatePipeline(pipeline.id, new PipelineUpdate({
-            configYaml: yaml,
-        }))
-            .then(async () => {
-                toast({
-                    status: 'success', duration: 4000, isClosable: false,
-                    title: 'Pipeline updated'
-                });
-                await pipelinesApi.refreshPipelines(true);
-                appGlobal.history.push('/connect-clusters');
-            })
-            .catch(err => {
-                toast({
-                    status: 'error', duration: null, isClosable: true,
-                    title: 'Failed to update pipeline',
-                    description: String(err),
-                })
-            })
-            .finally(() => {
-                setUpdating(false);
-            });
-    };
 
     return <Box>
         <Flex height="400px" mt="4">
             <PipelinesYamlEditor
                 defaultPath="config.yaml"
                 path="config.yaml"
-                value={yaml}
-                onChange={e => {
-                    if (e)
-                        setYaml(e);
+                value={pipeline.configYaml}
+                options={{
+                    readOnly: true
                 }}
                 language="yaml"
             />
-        </Flex>
-
-        <Flex alignItems="center" gap="4" mt="4">
-            <Button variant="solid"
-                isDisabled={isUpdating}
-                loadingText="Updating..."
-                isLoading={isUpdating}
-                onClick={action(() => updatePipeline())}
-            >
-                Update
-            </Button>
-            <Link to="/connect-clusters">
-                <Button variant="link">Cancel</Button>
-            </Link>
         </Flex>
     </Box>
 })
@@ -411,3 +374,13 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
         }
     });
 }
+
+export const PipelineResources = observer((p: { resources?: Pipeline_Resources }) => {
+    const r = p.resources;
+
+    if (!r) return <>Not set</>
+
+    return <Flex gap="4">
+        {r.cpuShares} / {r.memoryShares}
+    </Flex>
+});
