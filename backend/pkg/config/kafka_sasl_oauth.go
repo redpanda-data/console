@@ -31,6 +31,7 @@ type KafkaSASLOAuthBearer struct {
 	Extensions    []KafkaSASLOAuthExtension `yaml:"extensions"`
 }
 
+// KafkaSASLOAuthExtension is the struct for the SASL OAuth extension support(custom key-value pairs)
 type KafkaSASLOAuthExtension struct {
 	Key   string `yaml:"key"`
 	Value string `yaml:"value"`
