@@ -139,11 +139,6 @@
     }
 }
 
-// allow copy tooltip to attach to this
-.ant-tabs-tabpane {
-    position: relative;
-}
-
 .dataRefreshButton {
     height: 32px;
     display: inline-flex;
@@ -172,7 +167,7 @@
     box-shadow: none;
 }
 
-.hoverButton:hover .ant-avatar {
+.hoverButton:hover {
     border-radius: 4px;
     border-top-left-radius: 0px;
     border-bottom-left-radius: 0px;
@@ -307,111 +302,6 @@
 /* */
 /* Table size={'middle} */
 /* */
-.ant-table-middle {
-    /* Header height */
-    --headerVertical: 10px;
-    /* Row height */
-    --padRowHeight: 8px;
-    /* Cell horizontal */
-    --padCells: 12px;
-    /* Outside left/right */
-    --padOutside: 16px;
-}
-
-.ant-table.ant-table-middle .ant-table-thead>tr>th {
-    /* Header: middle (normal + sorter)*/
-    padding: var(--headerVertical) var(--padCells);
-}
-
-.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child:not(.ant-table-row-expand-icon-cell) {
-    /* Header: first (normal + sorter)*/
-    padding-left: var(--padOutside);
-}
-
-.ant-table.ant-table-middle .ant-table-thead>tr>th:last-child {
-    /* Header: last (normal + sorter)*/
-    padding-right: var(--padOutside);
-}
-
-.ant-table.ant-table-middle .ant-table-thead .ant-table-column-sorters {
-    padding: 0;
-}
-
-.ant-table.ant-table-middle .ant-table-thead th.ant-table-column-has-sorters {
-    padding: var(--headerVertical) var(--padCells);
-}
-
-.ant-table.ant-table-middle .ant-table-tbody>tr>td {
-    /* Cell: middle */
-    padding: var(--padRowHeight) var(--padCells);
-}
-
-.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child:not(.ant-table-row-expand-icon-cell) {
-    /* Cell: first */
-    padding-left: var(--padOutside);
-}
-
-.ant-table.ant-table-middle .ant-table-tbody>tr>td:last-child {
-    /* Cell: last */
-    padding-right: var(--padOutside);
-}
-
-.ant-table-tbody>tr:hover>td {
-    transition-duration: 0s, 0s !important;
-}
-
-.ant-table-tbody>tr>td {
-    transition-duration: 0s, 0s !important;
-}
-
-/* never break table headers */
-.ant-table-thead>tr>th {
-    white-space: nowrap;
-}
-
-/* */
-/* */
-/* Don't clip animated page headers */
-.ant-page-header-heading {
-    overflow: visible;
-}
-
-.ant-table-tbody>tr.ant-table-row:hover>td {
-    background-color: unset;
-}
-
-td.ant-table-column-sort {
-    background-color: unset;
-}
-
-.ant-table-tbody>tr.ant-table-row-selected>td {
-    background-color: unset;
-}
-
-.ant-pagination-total-text {
-    font-size: 13px;
-    opacity: 0.8;
-    transform: translateY(-1px);
-}
-
-.ant-pagination-item {
-    border-color: transparent;
-    background-color: transparent;
-}
-
-.ant-table-pagination.ant-pagination {
-    margin-bottom: 4px;
-}
-
-
-.ant-pagination-item-active a {
-    font-weight: bold;
-    cursor: default;
-    // does not fit well
-    // color: $color-brand-secondary;
-    // color: hsl(357deg 95% 72%);
-    color: var(--ant-primary-4);
-}
 
 .fadeIn3d {
     opacity: 1;
@@ -497,12 +387,6 @@ td.ant-table-column-sort {
     }
 }
 
-.ant-layout-sider-collapsed {
-    img[alt="logo"] {
-        padding: 25px;
-    }
-}
-
 .sideBarToggle {
     display: flex;
     flex-direction: column;
@@ -533,14 +417,6 @@ td.ant-table-column-sort {
 
 .hoverBorder:hover {
     border-color: unset;
-}
-
-.ant-result {
-    padding: 1em 2em;
-}
-
-.ant-table {
-    white-space: nowrap;
 }
 
 .whiteSpaceDefault {
@@ -639,254 +515,14 @@ td.ant-table-column-sort {
     z-index: -1;
 }
 
-ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
-    font-family: 'Poppins', sans-serif;
-    color: #828080;
-
-    .menuIcon {
-        $size: 22px;
-
-        width: $size;
-
-        transition:
-            margin 200ms ease-out,
-            margin-left 200ms ease-out;
-        margin: 0 auto;
-
-        // Safari
-        // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
-        svg {
-            width: $size;
-        }
-    }
-
-    li.ant-menu-item {
-
-        text-overflow: clip;
-        padding: 0 calc(50% - 10px);
-        transition:
-            width 2000ms,
-            color 0ms ease-out,
-            background-color 100ms ease;
-
-        line-height: 50px;
-
-        &-disabled {
-            cursor: default;
-            user-select: none;
-            opacity: .35;
-
-        }
-
-        &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
-            &:hover {
-                background: hsla(0, 0%, 50%, 0.07);
-                color: $color-brand-secondary;
-            }
-        }
-    }
-
-    >li.ant-menu-item-selected {
-        background: hsla(0deg, 0%, 50%, 0.07);
-        font-weight: 500;
-        color: var(--ant-primary-color);
-    }
-}
-
-ul.ant-menu.ant-menu-root.ant-menu-inline {
-
-    width: auto;
-
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    $baseColor: #828080;
-    font-family: 'Poppins', sans-serif;
-
-    li.ant-menu-item {
-        display: flex;
-
-        padding: 0 10px !important; // no clue why antd sets padding-left:24px; as inline style...
-        border-radius: 5px;
-        margin: 0 8px;
-        width: auto;
-        overflow: visible; // allow hit-test element of the nested link to expand beyond the list item
-        font-size: 13px;
-
-
-        transition:
-            width 2000ms,
-            color 0ms ease-out,
-            background-color 100ms ease;
-
-        color: $baseColor;
-
-        .menuIcon {
-            $size: 22px;
-
-            display: inline-flex;
-            width: $size;
-            margin: 0;
-            margin-left: 5px;
-
-            transition:
-                margin 200ms ease-out,
-                margin-left 200ms ease-out;
-
-            // Safari
-            // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
-            svg {
-                width: $size;
-            }
-        }
-
-        &::before {
-            @include tlrb;
-            left: -20px;
-            right: -20px;
-            // background-color: red;
-            content: '';
-        }
-
-        &>span {
-            color: unset; // remove antd default
-        }
-
-
-        &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
-            &:hover {
-                background: hsla(0, 0%, 50%, 0.07);
-                color: $color-brand-secondary;
-            }
-        }
-
-        &-selected {
-            background: hsla(0, 0%, 50%, 0.07);
-            font-weight: 500;
-
-            color: $color-brand-secondary;
-        }
-
-
-        &-disabled {
-            cursor: default;
-            user-select: none;
-            opacity: .35;
-
-            color: $baseColor !important;
-
-            a {
-                color: $baseColor !important;
-            }
-        }
-
-        a {
-            transition:
-                gap 200ms,
-                color 50ms ease-out;
-        }
-
-        &::after {
-            display: none;
-        }
-
-    }
-
-    // we don't need a clearfix in our menu
-    &::before {
-        display: none;
-    }
-
-}
-
-ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
-    li.ant-menu-item {
-        // place-content: center;
-
-        a {
-            gap: 0px;
-
-            .menuIcon {
-                margin-left: 10px;
-            }
-
-            &::before {
-                display: none;
-            }
-        }
-    }
-}
-
-
-
-
 .menu-permission-tooltip {
     user-select: none;
     box-shadow: 0 0 5px 1px #00000047;
     min-width: 203px;
 
     border-radius: 6px;
-
-    .ant-tooltip-content,
-    .ant-tooltip-inner {
-        border-radius: 6px !important;
-    }
-
-    .ant-tooltip-arrow {
-        display: none;
-    }
 }
 
-.ant-checkbox-wrapper {
-    user-select: none;
-}
-
-.ant-checkbox-checked .ant-checkbox-inner {
-    background-color: var(--ant-primary-color);
-    border-color: var(--ant-primary-color-outline);
-}
-
-.ant-btn-primary,
-.ant-switch-checked {
-    background-color: var(--ant-primary-color);
-    border-color: transparent;
-}
-
-.ant-btn-primary:hover {
-    // background-color: hsl(0deg 100% 68%);
-    // background-color: transparent;
-    border-color: hsl(0deg 100% 65%);
-    border-color: var(--ant-primary-color-outline);
-    background-color: var(--ant-primary-color-hover);
-}
-
-.ant-btn-primary:active {
-    border-color: hsl(0deg 100% 45%);
-    border-color: var(--ant-primary-color-outline);
-    background-color: var(--ant-primary-color-active);
-}
-
-.ant-tabs-nav .ant-tabs-tab-active {
-    color: var(--ant-primary-color);
-    background: $color-light-background !important;
-}
-
-.ant-tabs-nav-list {
-    width: 100%;
-}
-
-.ant-tabs-tab {
-    place-content: center;
-}
-
-.ant-tabs-ink-bar {
-    background-color: var(--ant-primary-color-active);
-}
-
-button.ant-btn-circle>i.anticon:only-child {
-    transform: translateY(-2px)
-}
 
 tr.tombstone {
     /* background: rgba(200, 200, 200, 0.09); */
@@ -901,30 +537,6 @@ tr.tombstone {
     background: #fff;
     border-radius: 2px;
     box-shadow: 0px 3px 3px 1px rgba(0, 0, 0, 0.05);
-}
-
-.ant-tabs-nav {
-    width: 100%;
-}
-
-.ant-tabs-nav>div {
-    display: flex;
-}
-
-.ant-tabs-nav .ant-tabs-tab {
-    flex: 1;
-    text-align: center;
-}
-
-/* tr td:nth-child(1) {
-padding-left: 30px !important;
-}
-
-tr td:nth-last-child(1) {
-padding-right: 30px !important;
-} */
-.ant-statistic {
-    margin-right: 2rem;
 }
 
 .noSelect {
@@ -949,18 +561,6 @@ padding-right: 30px !important;
     animation-duration: 0s !important;
 }
 
-tr button.ant-btn-link {
-    opacity: 0;
-}
-
-tr:hover button.ant-btn-link {
-    opacity: 1;
-}
-
-tr button.ant-dropdown-open {
-    opacity: 1;
-}
-
 // todo: fix table layout (ellipsis, never greater than min-content, only expand one row to let the table fill its parent, expand in predefined ratios, ...)
 tr td.ellipsis {
     position: relative;
@@ -980,27 +580,8 @@ tr td.ellipsis {
     text-overflow: ellipsis;
 }
 
-.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
-    padding-left: 0;
-}
-
-.ant-table.ant-table-middle .ant-table-tbody>tr>td.msgTableActionColumn {
-    padding: 0;
-}
-
 tr>td.msgTableActionColumn {
     text-align: right;
-}
-
-/* Change color of the "filter" button (which changes what columns are displayed)  */
-th.msgTableActionColumn .anticon svg {
-    min-width: 15px;
-}
-
-th.msgTableActionColumn .ant-table-filter-trigger-container {
-    /* not sure at all if any of those two lines are a good idea */
-    /* background: rgba(0, 0, 0, 0.04); */
-    border-left: 1px solid rgba(184, 184, 184, 0.4);
 }
 
 .msgTableActionColumn {
@@ -1026,30 +607,6 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
     /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
-.ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
-    padding: 0px;
-}
-
-.ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
-    padding: 0px;
-}
-
-.ant-table-expand-icon-col {
-    width: 1px;
-}
-
-button.ant-table-row-expand-icon {
-    margin-left: 12px;
-    transform: scale(1); // fixes buggy display in firefox
-}
-
-/* Fix: make it possible to configure column width */
-td .ant-table-cell {
-    word-wrap: break-word;
-    word-break: break-all;
-    white-space: normal;
-}
-
 tr.consumerGroupNoMemberAssigned {
     color: rgba(0, 0, 0, 0.3);
 }
@@ -1067,154 +624,18 @@ tr.consumerGroupNoMemberAssigned {
     user-select: none;
 }
 
-.ant-space-horizontal {
-    flex-wrap: wrap;
-}
-
-.ant-tabs .ant-tabs-top-content>.ant-tabs-tabpane,
-.ant-tabs .ant-tabs-bottom-content>.ant-tabs-tabpane {
-    transition-duration: 0.15s;
-    transition-timing-function: ease-out
-}
-
-@media only screen and (max-width: 1200px) {
-    .ant-statistic-title {
-        font-size: 12px;
-    }
-
-    .ant-statistic-content {
-        font-size: 16px;
-        line-height: 1.3;
-    }
-}
-
-.ant-modal {
-    max-height: 80%;
-}
-
-.ant-table-column-has-sorters .ant-table-column-sorter {
-    color: hsla(0, 0%, 50%, 0.3);
-}
-
-.ant-table-column-has-sorters:hover .ant-table-column-sorter {
-    color: hsla(0, 0%, 50%, 0.85);
-}
-
-.ant-table-column-sorter-up,
-.ant-table-column-sorter-down {
-    &.active {
-        // does not fit well
-        // color: $color-brand-secondary;
-        color: hsl(357deg 84% 75%);
-        color: var(--ant-primary-4);
-    }
-}
-
 
 .messagesSpecialIconButton {
     padding: 0px 15px;
 }
 
-.ant-input-group-compact .messagesSpecialIconButton:not(:first-child) {
+.messagesSpecialIconButton:not(:first-child) {
     border-left: 1px solid hsla(205, 100%, 90%, 0.5);
 }
 
 svg {
     display: inline-block;
     height: 100%;
-}
-
-.ant-popover {
-    .ant-popover-content {
-        /* popover is too hard to see on white background */
-        box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.07);
-
-        .ant-popover-inner {
-            .ant-popover-title {
-                color: hsl(0deg, 0%, 35%);
-            }
-
-            .ant-popover-inner-content {
-                color: hsl(0deg, 0%, 45%);
-            }
-        }
-    }
-}
-
-.ant-progress-status-active .ant-progress-bg::before {
-    /* faster, quadratic ease-out */
-    animation: ant-progress-active 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
-}
-
-.ant-progress-success-bg,
-.ant-progress-bg {
-    // Don't animate progress (looks strange when it goes smoothly from 100% to 0%)
-    transition-duration: 0s;
-}
-
-.ant-tag.filterTag>.anticon+span {
-    margin-left: 0;
-}
-
-@keyframes ant-progress-active {
-
-    /* improve visibility of animation */
-    0% {
-        width: 0%;
-        opacity: 0;
-    }
-
-    10% {
-        opacity: 0.6;
-    }
-
-    100% {
-        width: 100%;
-        opacity: 0.2;
-    }
-}
-
-.ant-message-notice-content {
-    /* vertical padding is way too large */
-    padding: 4px 16px;
-    padding-top: 5px;
-    /* shadow is too strong */
-    box-shadow: 0 1px 5px 0px rgba(0, 0, 0, 0.12), 0 3px 8px 2px rgba(0, 0, 0, 0.04);
-    /* */
-    border-radius: 3px;
-}
-
-.ant-tooltip {
-    font-size: 12px;
-    max-width: unset;
-    white-space: normal;
-
-    --ant-tooltip-color: hsl(0deg, 0%, 87%);
-}
-
-
-.ant-menu-inline-collapsed-tooltip a {
-    color: var(--ant-tooltip-color);
-}
-
-.ant-tooltip {
-    .ant-tooltip-inner {
-        min-height: 20px;
-        padding: .5em .75em;
-        color: var(--ant-tooltip-color);
-        border-radius: 4px;
-        background-color: hsla(210, 14%, 20%, 0.9);
-        text-align: center;
-        font-size: 11px;
-        font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
-        line-height: 1.5;
-    }
-}
-
-.ant-tooltip-arrow::before {
-    background-color: hsla(210, 14%, 20%, 0.9);
-    width: 8px;
-    height: 8px;
 }
 
 .quickTable {
@@ -1277,7 +698,7 @@ svg {
     margin-right: -3px;
 }
 
-.messageSearchFilterBar .ant-tag {
+.messageSearchFilterBar {
     padding: 0px 10px;
     border-radius: 50px;
 }
@@ -1341,15 +762,6 @@ svg {
     border-width: 0px;
 }
 
-// .ant-collapse-borderless {
-//     background-color: #f7fafc;
-// }
-
-.ant-collapse>.ant-collapse-item>.ant-collapse-header {
-    padding: 6px;
-    padding-left: 40px;
-}
-
 .roleBindingId {
     font-size: 70%;
     font-weight: 600;
@@ -1359,139 +771,15 @@ svg {
 
 .expander {
     background: none;
-
-    .ant-collapse-item {
-        border: 0;
-    }
 }
-
-// arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
-div.ant-collapse.ant-collapse-borderless>div>div>span {
-    // top: 0px;
-    padding: 0px 0 0 !important;
-}
-
-.ant-collapse>.ant-collapse-item>.ant-collapse-header .ant-collapse-arrow {
-    top: 2px;
-}
-
-.subjectListExpander .ant-collapse-header .ant-collapse-arrow {
-    // top: 0px;
-    // padding-top:0px;
-}
-
-.ant-collapse.ant-collapse-ghost {
-
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-
-    .ant-collapse-header {
-        padding-left: 20px;
-
-        .ant-collapse-arrow {
-            left: 2px;
-        }
-    }
-
-    .ant-collapse-content-box {
-        padding: 6px 9px !important;
-        padding-bottom: 2em !important;
-    }
-
-    .ant-collapse-item {
-        &>.ant-collapse-header:hover {
-            background: hsl(203deg, 20%, 97%);
-            border-radius: 5px;
-            transition: background-color 0ms;
-        }
-
-        &>.ant-collapse-header .issuesTag {
-            margin-top: 2px;
-            padding: 0px 6px;
-            border-radius: 4px;
-
-            border: 1px solid red;
-            background: #f20;
-            color: #fff;
-            font-size: 0.75em;
-
-            user-select: none;
-
-            // default hidden
-            opacity: 0;
-            transform: translateX(6px);
-            transition:
-                transform 150ms ease-out,
-                opacity 150ms ease-out;
-        }
-
-        &.hasErrors>.ant-collapse-header .issuesTag {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-
-
-}
-
 
 .subjectListExpander {
     font-size: 85%;
     padding: 0;
 }
 
-.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header {
-    padding: 0 0 0 24px;
-    border-radius: 3px;
-    /* border: 1px transparent solid; */
-    color: #777;
-}
-
-.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header:hover {
-    /* border-color: hsla(205, 100%, 50%, 0.15); */
-    transition-duration: 0ms;
-    background-color: hsla(0, 0%, 0%, 0.08);
-}
-
-.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header span[role=img] {
-    left: 8px;
-    font-size: 10px;
-}
-
 .tableRowHighlightSpecial {
     background-color: rgba(255, 187, 0, 0.185);
-}
-
-.ant-breadcrumb {
-    /* don't allow wrapping */
-    white-space: nowrap;
-
-    a {
-        display: inline-block;
-        padding: 4px 5px;
-        transition-duration: 0ms;
-
-        :hover {
-            background-color: #97d4ff3f;
-            border-radius: 5px;
-        }
-    }
-
-    ol {
-        align-items: center;
-    }
-}
-
-.ant-page-header.has-breadcrumb {
-    padding-top: 18px;
-}
-
-.ant-breadcrumb-separator {
-    margin: 0px;
-    display: inline-block;
-    vertical-align: middle;
 }
 
 .userPreferencesButton {
@@ -1511,76 +799,10 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     transform: rotateZ(45deg);
 }
 
-.ant-select-item:not(:last-of-type) {
-    border-bottom: 2px solid white;
-}
-
-.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: $color-light-background;
-    color: $color-brand-secondary;
-}
-
-.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-    background-color: $color-light-background;
-    color: $color-brand-secondary;
-}
-
-.ant-menu-item,
-.ant-select-item,
-.ant-select-item-option {
-    transition-duration: 0ms;
-}
-
-.ant-select-dropdown {
-    /* transition-duration: 0ms; */
-    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
-    animation-duration: 100ms;
-}
-
-.ant-modal.preferencesDialog {
-    width: 75% !important;
-    max-width: 700px;
-    height: auto;
-    max-height: 85%;
-    display: inline-flex;
-    justify-content: center;
-    padding: 0;
-}
-
 .preferencesDialog {
     *[display=flex] {
         max-height: 100%;
     }
-
-    .ant-modal-content {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    .ant-modal-body {
-        flex-grow: 1;
-    }
-
-    .ant-menu-vertical .ant-menu-item {
-        height: 32px;
-        line-height: 32px;
-    }
-
-    .ant-menu-vertical .ant-menu-item:not(:last-child) {
-        margin-bottom: 2px;
-    }
-
-    input.ant-input,
-    .ant-input-number-input {
-        padding: 3px 8px;
-    }
-
-    .ant-input-number {
-        width: auto;
-        height: 30px;
-    }
-
 }
 
 .smallText {
@@ -1600,22 +822,11 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     }
 }
 
-.ant-alert-info {
-    border: 1px solid hsl(220, 19%, 90%);
-    background: hsl(220, 19%, 98%);
-}
-
 .messageHeaders {
     border-bottom: 1px solid #ddd;
-
-    thead th.ant-table-cell {
-        background: hsla(0deg, 0%, 0%, 0.04);
-        padding-top: .5em !important;
-        padding-bottom: .5em !important;
-    }
 }
 
-.noPadding .ant-table-cell {
+.noPadding {
     padding: 0 !important;
 
     div.error {
@@ -1625,49 +836,10 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 
     div.brokerConfigView {
         padding: 16px 16px 8px 16px;
-
-        // .ant-descriptions-bordered.ant-descriptions-small .ant-descriptions-item-label, .ant-descriptions-bordered.ant-descriptions-small .ant-descriptions-item-content
-        .ant-descriptions-row {
-
-            .ant-descriptions-item-label,
-            .ant-descriptions-item-content {
-                padding: 6px 16px;
-                border-bottom: 1px solid hsl(228, 20%, 92%);
-            }
-
-            .ant-descriptions-item-label {
-                background: hsl(220, 19%, 95%);
-                border-right: 1px solid hsl(228, 20%, 90%);
-            }
-
-            .ant-descriptions-item-content {
-                white-space: pre-wrap;
-                word-break: break-all;
-                background: hsl(220, 19%, 97%);
-            }
-        }
-
-        .brokerConfigViewSettings {
-            .ant-radio-button-wrapper {
-                height: 28px;
-                line-height: 26px;
-                padding: 0px 14px;
-            }
-        }
     }
 
     .codeBox {
         background: hsl(0, 45%, 80%, );
-    }
-}
-
-.topicDeleteModal {
-    .ant-alert {
-        margin-bottom: 1rem;
-    }
-
-    .ant-modal-footer {
-        border-top: none;
     }
 }
 
@@ -1732,54 +904,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     border-radius: $borderRadius;
 
     user-select: none;
-
-    &>.ant-radio-wrapper {
-        display: flex;
-        align-items: center;
-        padding: 10px 20px;
-        padding-bottom: 16px;
-        margin: 0;
-        display: inline-block;
-
-        // & span:nth-child(1) {
-        //     display: inline-block;
-        // }
-
-        transition: background-color, border-color, box-shadow;
-        transition-duration: 200ms;
-        transition-timing-function: ease-out;
-
-        &>span:nth-child(2) {
-            display: contents;
-        }
-
-        &::after {
-            display: none !important;
-        }
-    }
-
-    &>.ant-radio-wrapper:first-child {
-        border-radius: $borderRadius $borderRadius 0px 0px;
-    }
-
-    &>.ant-radio-wrapper:last-child {
-        border-radius: 0px 0px $borderRadius $borderRadius;
-    }
-
-    &>.ant-radio-wrapper:not(:last-child) {
-        border-bottom: 1px solid hsl(0deg, 0%, 94%);
-    }
-
-    &>.ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
-        background: hsl(0deg, 0%, 99%);
-    }
-
-    &>.ant-radio-wrapper-checked {
-        background: hsl(198deg, 100%, 98%);
-        box-shadow: 0px 0px 2px 1px hsla(209deg, 100%, 55%, 0.66);
-        z-index: 1;
-    }
-
 }
 
 
@@ -1796,10 +920,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     100% {
         color: inherit;
     }
-}
-
-.ant-message-notice-content {
-    position: relative;
 }
 
 .waitingForMessagesBox::before {
@@ -1826,35 +946,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 }
 
 .reassignPartitions {
-    .ant-steps-item-custom {
-        user-select: none;
-
-        .ant-steps-item-icon>.ant-steps-icon {
-            font-size: 20px;
-        }
-    }
-
-    .ant-table-expanded-row th {
-        cursor: default;
-    }
-
-    .ant-table-expanded-row>td {
-        &::before {
-            content: ' ';
-            display: block;
-            position: absolute;
-            box-shadow: 0px 0px 3px 0px #000000;
-            top: 1px;
-            left: 2px;
-            right: 2px;
-            bottom: 0px;
-            z-index: -1;
-            border-radius: 2px;
-        }
-
-        border-radius: 1px;
-    }
-
     // section
     .currentReassignments {
         display: flex;
@@ -1884,27 +975,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
         color: #0005;
     }
 }
-
-.nestedTable .ant-table-container tr {
-
-    &:nth-child(2n+1) {
-        background: hsl(0deg, 0%, 98%) !important;
-    }
-
-    &>th {
-        padding: 8px 2px !important;
-    }
-
-    &>td {
-        padding: 3px 2px !important;
-    }
-}
-
-// Hide scrollbar when it's not needed
-.ant-table-body {
-    overflow-y: auto !important;
-}
-
 
 .brokerTagList {
     display: inline-flex;
@@ -2016,40 +1086,10 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     }
 }
 
-table tr th.ant-table-selection-column,
-table tr td.ant-table-selection-column {
-    width: 1px;
-    min-width: 0;
-}
-
-.ant-picker-time-panel-column>li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
-    padding: 0 0 0 14px;
-    text-align: unset;
-}
-
 mark {
     padding: 1px;
     background-color: hsl(54deg, 100%, 50%);
 }
-
-.ant-input-suffix {
-    span.ant-input-clear-icon {
-        position: relative;
-
-        &::before {
-            content: ' ';
-            display: block;
-            position: absolute;
-            top: -66%;
-            right: -66%;
-            bottom: -66%;
-            left: -66%;
-
-            // background: #f004;
-        }
-    }
-}
-
 
 .partitionReassignmentSpinner {
     display: inline-block;
@@ -2076,61 +1116,6 @@ mark {
     }
 }
 
-.ant-table-filter-trigger {
-    width: 30px;
-    border-radius: 4px;
-    transition: background-color ease-out 0.1s;
-    color: hsl(0deg, 0%, 66%);
-    justify-content: center;
-    align-items: center;
-
-    background: hsl(208deg 0% 96%);
-
-    &.active {
-        background: hsl(208deg, 100%, 93%);
-        //    mix-blend-mode: luminosity;
-    }
-
-    &:hover {
-        background: hsl(0deg, 0%, 89%);
-        //     mix-blend-mode: luminosity;
-
-
-        .tableFilterIcon {
-            color: hsl(0deg, 0%, 60%);
-        }
-    }
-
-    .tableFilterIcon {
-        position: absolute;
-        inset: 0px;
-        display: flex;
-        justify-content: center;
-        border-radius: 4px;
-
-        font-size: 15px;
-
-        &.active {
-            background: hsl(208deg, 100%, 93%);
-            color: $color-brand-secondary;
-        }
-    }
-}
-
-.ant-table-filter-dropdown {
-    box-shadow:
-        0px 1px 3px 1px rgba(0, 0, 0, 0.05),
-        0px 2px 4px 2px rgba(0, 0, 0, 0.06),
-        0px 1px 5px 2px rgba(0, 0, 0, 0.10);
-    border-radius: 3px;
-}
-
-
-.ant-table.ant-table-middle .ant-table-thead .ant-table-filter-column-title {
-    padding-right: 3em;
-}
-
-
 .devOnly {
     padding: 1em;
     background: hsl(53deg, 100%, 80%);
@@ -2139,11 +1124,6 @@ mark {
 
 // table
 .activeReassignments {
-
-    // slow animation of progress bar
-    .ant-progress-status-active .ant-progress-bg::before {
-        animation: ant-progress-active 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
-    }
 
     // make rows appear clickable
     tr {
@@ -2226,21 +1206,6 @@ mark {
     white-space: nowrap;
     font-size: 66%;
 }
-
-.ant-modal-content {
-    border-radius: 4px;
-
-    .ant-modal-header {
-        border-radius: 4px;
-    }
-
-    .ant-modal-footer {
-        button {
-            min-width: 8em;
-        }
-    }
-}
-
 
 .groupDetails {
     .iconButton {
@@ -2359,16 +1324,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 }
 
 
-// Reduce paddings for small table
-.ant-table.ant-table-small .ant-table-title,
-.ant-table.ant-table-small .ant-table-footer,
-.ant-table.ant-table-small .ant-table-thead>tr>th,
-.ant-table.ant-table-small .ant-table-tbody>tr>td,
-.ant-table.ant-table-small tfoot>tr>th,
-.ant-table.ant-table-small tfoot>tr>td {
-    padding: 6px 8px;
-}
-
 .consumerGroupModal {
     &-edit {
         // edit dialog
@@ -2378,48 +1333,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         // delete dialog
     }
 
-    .ant-collapse-content-box {
-        padding: 8px;
-    }
-
-    .ant-table.ant-table-small {
-
-        .ant-table-tbody,
-        .ant-table-thead {
-            &>tr {
-
-                &.unchanged {
-                    color: rgba(0, 0, 0, 0.3);
-                }
-
-                &>th.ant-table-cell {
-                    padding-left: 10px;
-                }
-
-                &>td {
-                    padding-top: 5px;
-                    padding-bottom: 5px;
-
-                    &:first-child {
-                        padding-left: 16px;
-                    }
-                }
-
-            }
-        }
-
-
-    }
-
 }
 
 // when a some container containing a radio button is animated,
 // it sometimes causes the inner part (the "dot") of a radio button to become misaligned
 // adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
-.ant-radio-inner {
-    transform: perspective(1px);
-}
-
 .footer {
     display: flex;
     flex-direction: column;
@@ -2446,21 +1364,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             width: auto;
             height: 1em;
             aspect-ratio: 1;
-        }
-
-        .anticon {
-            cursor: pointer;
-
-            color: hsl(216deg, 11%, 66%);
-
-            &:hover {
-                color: hsl(216deg, 11%, 50%);
-            }
-        }
-
-        .anticon-github {
-            // github is the only logo that doesn't have built-in padding, looks out of place
-            font-size: calc(100% - 1px);
         }
     }
 
@@ -2567,21 +1470,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
     &:hover {
         background: rgba(0, 0, 0, 0.2);
-    }
-
-    @at-root .ant-layout-sider-collapsed & {
-
-        background-color: transparent;
-
-        .avatar {
-            margin-left: 6px;
-        }
-
-        .text {
-            // display: none;
-            max-width: 0px;
-            opacity: 0;
-        }
     }
 
 }
@@ -2698,10 +1586,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         color: hsl(0deg, 0%, 40%);
     }
 
-    input.ant-select-selection-search-input {
-        height: 21px;
-    }
-
     .inlineButton {
         display: inline-flex;
         align-self: stretch;
@@ -2718,15 +1602,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     flex-wrap: wrap;
     column-gap: 16px;
     row-gap: 8px;
-
-    .ant-radio-group {
-        .ant-radio-button-wrapper {
-            padding: 0 12px;
-            height: 26px;
-
-            line-height: 24px;
-        }
-    }
 }
 
 .globHelpGrid {
@@ -2883,11 +1758,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         grid-column: 1 / span 3;
     }
 
-
-    .ant-input-number,
-    .ant-select {
-        width: 100%;
-    }
 }
 
 .inputWrapper {
@@ -3157,11 +2027,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     }
 }
 
-.ant-btn[disabled] {
-  cursor: default !important;
-}
-
-
 .monaco-editor.vs {
     .decorationsOverviewRuler {
         opacity: 1;
@@ -3185,7 +2050,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     }
 }
 
-.noArrow .ant-popover-arrow {
+.noArrow {
     display: none;
 }
 
@@ -3194,24 +2059,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
     border: 1px solid hsl(0deg, 0%, 90%);
     border-radius: 2px;
-}
-
-
-
-.ant-result-icon {
-    margin-bottom: 8px;
-}
-
-.ant-result-content {
-    padding: 20px 30px;
-    background-color: hsl(0deg 0% 95%);
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-.ant-modal-body {
-    padding-top: 1em;
-    padding-bottom: 1em;
 }
 
 .editorLoading {
@@ -3261,32 +2108,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 .inputGroup {
     display: inline-flex;
     flex-grow: 1;
-
-    >input.ant-input,
-    >input.chakra-input,
-    >button.chakra-button,
-    >div.ant-select,
-    >.ant-btn-default,
-    >.ant-btn-primary {
-        margin-right: -1px;
-        flex-grow: 1;
-        width: auto;
-
-        &:not(:first-child) {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-        }
-
-        &:not(:last-child) {
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        &:hover,
-        &:focus-within {
-            z-index: 1;
-        }
-    }
 }
 
 .labelText {
@@ -3314,75 +2135,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     }
 }
 
-.ant-select-selection-placeholder,
-input::placeholder {
-    font-style: italic;
-}
-
 .numericInput {
     $numericInputBtnSize: 26px;
     padding-right: 0;
-
-    .ant-input-suffix,
-    .ant-input-prefix {
-        // min-width: 18px;
-
-        .btnWrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 1px;
-            gap: 1px;
-
-            user-select: none;
-        }
-
-        .stepBtn {
-            width: $numericInputBtnSize;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            color: rgb(0 0 0 / 40%);
-
-            cursor: pointer;
-
-            >svg {
-                transform: scale(0.8) translate(1px, 0);
-            }
-
-            transition: all ease-out 150ms;
-
-            &:hover {
-                color: $color-brand-secondary;
-
-                &::after {
-                    background: hsl(207deg 7% 76% / 14%);
-                }
-            }
-
-            // larger hit-test
-            &::after {
-                content: ' ';
-                position: absolute;
-                inset: -6px 0;
-                border-radius: 2px;
-                // background: #ff000030;
-                // background: #40a9ff30;
-            }
-        }
-    }
-
-    .ant-input-affix-wrapper-disabled,
-    &.ant-input-affix-wrapper-disabled,
-    &:not(:hover) {
-        .stepBtn {
-            opacity: 0;
-            pointer-events: none;
-            cursor: default;
-        }
-    }
 }
 
 .iconSelectOption {
@@ -3396,124 +2151,12 @@ input::placeholder {
     }
 }
 
-.aclOperationSelect {
-    .ant-select-selector {
-        border-radius: 100px !important;
-        padding-inline: 10px !important;
-        // different padding on right side because icons unfortunately have built-in padding
-        padding-right: 12px !important;
-        // strangely the element already has some flex props properly configured, but it doesn't have display set
-        display: flex;
-
-        height: 25px !important;
-
-        .ant-select-selection-item {
-            display: flex;
-            line-height: normal;
-        }
-    }
-
-    &:not(.ant-select-borderless) .ant-select-selector {
-        background: hsla(0, 0%, 100%, 0.75);
-    }
-
-    .ant-select-disabled svg {
-        filter: grayscale(0.5);
-        opacity: .5;
-    }
-
-    &:not(:hover) {
-        .ant-select-selector {
-            background: transparent !important;
-            border-color: transparent !important;
-        }
-    }
-}
-
-// Fix button order in popover.
-// The right-most button is usually "cancel", with the "confirm" button usually being pushed towards the center/left
-.ant-popover-buttons {
-    flex-direction: row-reverse;
-    display: flex;
-}
-
-.ant-input-group {
-    .ant-select {
-        .ant-select-selector {
-            background-color: transparent;
-        }
-    }
-}
-
-.ant-tooltip-inner code {
-    background: hsl(0deg 0% 0% / 25%);
-    padding: 2px 4px;
-    border: 1px solid rgb(0 0 0 / 20%);
-    border-radius: 2px;
-    font-size: 95%;
-}
-
-// Used in Create ACLs modal.
-// The help icon is very small. Visually that is fine, but the cursor hitbox should be larger
-.labelText span.anticon {
-    &::after {
-        @include beforeAfter();
-        inset: -5px;
-    }
-}
-
 .flipX {
     transform: rotateX(180deg);
 }
 
-
-
-
-
-
-.ant-btn {
-    border-radius: 15px !important;
-}
-
-.ant-btn.topicActionsButton {
-    border-radius: 8px !important;
-}
-
-.ant-btn-primary {
-    // border-color: #868C96 !important;
-    border-radius: 15px !important;
-    font-weight: 600 !important;
-    background-color: #E65433;
-}
-
 body {
     font-family: 'Inter' !important;
-}
-
-.ant-statistic-content {
-    font-family: 'Inter' !important;
-
-    .ant-statistic-content-value {
-        font-weight: 500;
-    }
-}
-
-
-// This is only supposed to apply to cancel buttons in modals
-.ant-btn-default {
-    // border: none;
-}
-
-.ant-input,
-.ant-input-affix-wrapper,
-.ant-select-selector,
-.ant-picker {
-    border-radius: 8px !important;
-}
-
-// Fix that "line" that appears in input groups
-.ant-input-group.ant-input-group-compact>:last-child {
-    border-right-width: 0px !important;
 }
 
 // Console adjustments to be removed later - Dan added the below
@@ -3562,22 +2205,19 @@ h5 {
 
 $borderRadius: 8px;
 
-.ant-input-wrapper.ant-input-group,
 .inputGroup {
     >* {
         border-radius: 0 !important;
     }
 
     &:first-child,
-    input:first-child,
-    .ant-input-group-addon:first-child {
+    input:first-child {
         border-top-left-radius: $borderRadius !important;
         border-bottom-left-radius: $borderRadius !important;
     }
 
     &:last-child,
-    button:last-child,
-    .ant-input-group-addon:last-child {
+    button:last-child {
         border-top-right-radius: $borderRadius !important;
         border-bottom-right-radius: $borderRadius !important;
     }
