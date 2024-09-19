@@ -121,6 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { DebugBundleStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -338,6 +339,8 @@ const apiStore = {
 
     licenses: []  as License[],
     licensesLoaded: false,
+
+    debugBundleStatuses: [] as DebugBundleStatus[],
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -1554,6 +1557,23 @@ const apiStore = {
         return await client.listLicenses({}).then(response => {
             this.licenses = response.licenses
             this.licensesLoaded = true
+            return response
+        }).catch((e) => {
+            addError(e);
+            return e
+        });
+    },
+
+    async getDebugBundleStatuses(): Promise<DebugBundleStatus[]> {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+        return await client.getDebugBundleStatus({
+            brokerIds: [0]
+        }).then(response => {
+            this.debugBundleStatuses = response.statuses
             return response
         }).catch((e) => {
             addError(e);

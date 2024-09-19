@@ -26,6 +26,7 @@ import { TransformService } from './protogen/redpanda/api/console/v1alpha1/trans
 import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
+import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -71,6 +72,7 @@ interface Config {
     restBasePath: string;
     licenseClient?: PromiseClient<typeof LicenseService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
+    debugBundleClient?: PromiseClient<typeof DebugBundleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
     transformsClient?: PromiseClient<typeof TransformService>;
@@ -107,6 +109,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
 
     const licenseGrpcClient = createPromiseClient(LicenseService, transport);
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
+    const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
     const transformClient = createPromiseClient(TransformService, transport);
@@ -118,6 +121,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         assetsPath: assetsUrl ?? getBasePath(),
         licenseClient: licenseGrpcClient,
         consoleClient: consoleGrpcClient,
+        debugBundleClient: debugBundleGrpcClient,
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
         transformsClient: transformClient,
