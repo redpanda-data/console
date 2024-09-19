@@ -12,6 +12,8 @@ package api
 import (
 	"io/fs"
 
+	"go.uber.org/zap"
+
 	"github.com/redpanda-data/console/backend/pkg/factory/kafka"
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/factory/schema"
@@ -24,6 +26,7 @@ type options struct {
 	kafkaClientProvider    kafka.ClientFactory
 	redpandaClientProvider redpandafactory.ClientFactory
 	schemaClientProvider   schema.ClientFactory
+	logger                 *zap.Logger
 }
 
 // Option is a function that applies some configuration to the options struct.
@@ -73,5 +76,13 @@ func WithRedpandaClientFactory(factory redpandafactory.ClientFactory) Option {
 func WithSchemaClientFactory(factory schema.ClientFactory) Option {
 	return func(o *options) {
 		o.schemaClientProvider = factory
+	}
+}
+
+// WithLogger allows to plug in your own pre-configured zap.Logger. If provided
+// we will not try to set up our own logger.
+func WithLogger(logger *zap.Logger) Option {
+	return func(o *options) {
+		o.logger = logger
 	}
 }

@@ -69,17 +69,23 @@ type API struct {
 
 // New creates a new API instance
 func New(cfg *config.Config, inputOpts ...Option) *API {
-	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
-
-	logger.Info("started Redpanda Console",
-		zap.String("version", version.Version),
-		zap.String("built_at", version.BuiltAt))
 
 	// Apply all the functional options to the options struct
 	opts := &options{}
 	for _, opt := range inputOpts {
 		opt.apply(opts)
 	}
+
+	var logger *zap.Logger
+	if opts.logger == nil {
+		logger = logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
+	} else {
+		logger = opts.logger
+	}
+
+	logger.Info("started Redpanda Console",
+		zap.String("version", version.Version),
+		zap.String("built_at", version.BuiltAt))
 
 	// Create default client factories if none are provided
 	setDefaultClientProviders(cfg, logger, opts)
@@ -105,6 +111,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		opts.kafkaClientProvider,
 		opts.schemaClientProvider,
 		opts.redpandaClientProvider,
+		// TODO: Make the cachenamespace function configurable!
 		func(context.Context) string {
 			return "single/"
 		},
