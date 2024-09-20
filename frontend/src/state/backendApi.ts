@@ -1555,9 +1555,6 @@ const apiStore = {
             this.licenses = response.licenses
             this.licensesLoaded = true
             return response
-        }).catch((e) => {
-            addError(e);
-            return e
         });
     }
 
