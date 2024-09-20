@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	LicenseService_ListLicenses_FullMethodName = "/redpanda.api.console.v1alpha1.LicenseService/ListLicenses"
-	LicenseService_SetLicense_FullMethodName   = "/redpanda.api.console.v1alpha1.LicenseService/SetLicense"
+	LicenseService_ListLicenses_FullMethodName           = "/redpanda.api.console.v1alpha1.LicenseService/ListLicenses"
+	LicenseService_SetLicense_FullMethodName             = "/redpanda.api.console.v1alpha1.LicenseService/SetLicense"
+	LicenseService_ListEnterpriseFeatures_FullMethodName = "/redpanda.api.console.v1alpha1.LicenseService/ListEnterpriseFeatures"
 )
 
 // LicenseServiceClient is the client API for LicenseService service.
@@ -31,7 +32,11 @@ type LicenseServiceClient interface {
 	// ListLicenses lists all the roles based on optional filter.
 	ListLicenses(ctx context.Context, in *ListLicensesRequest, opts ...grpc.CallOption) (*ListLicensesResponse, error)
 	// SetLicense installs a new license on the Redpanda cluster.
+	// This endpoint only works if the Redpanda Admin API is configured.
 	SetLicense(ctx context.Context, in *SetLicenseRequest, opts ...grpc.CallOption) (*SetLicenseResponse, error)
+	// ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+	// This can only be reported if the Redpanda Admin API is configured and supports this request.
+	ListEnterpriseFeatures(ctx context.Context, in *ListEnterpriseFeaturesRequest, opts ...grpc.CallOption) (*ListEnterpriseFeaturesResponse, error)
 }
 
 type licenseServiceClient struct {
@@ -60,6 +65,15 @@ func (c *licenseServiceClient) SetLicense(ctx context.Context, in *SetLicenseReq
 	return out, nil
 }
 
+func (c *licenseServiceClient) ListEnterpriseFeatures(ctx context.Context, in *ListEnterpriseFeaturesRequest, opts ...grpc.CallOption) (*ListEnterpriseFeaturesResponse, error) {
+	out := new(ListEnterpriseFeaturesResponse)
+	err := c.cc.Invoke(ctx, LicenseService_ListEnterpriseFeatures_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LicenseServiceServer is the server API for LicenseService service.
 // All implementations must embed UnimplementedLicenseServiceServer
 // for forward compatibility
@@ -67,7 +81,11 @@ type LicenseServiceServer interface {
 	// ListLicenses lists all the roles based on optional filter.
 	ListLicenses(context.Context, *ListLicensesRequest) (*ListLicensesResponse, error)
 	// SetLicense installs a new license on the Redpanda cluster.
+	// This endpoint only works if the Redpanda Admin API is configured.
 	SetLicense(context.Context, *SetLicenseRequest) (*SetLicenseResponse, error)
+	// ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+	// This can only be reported if the Redpanda Admin API is configured and supports this request.
+	ListEnterpriseFeatures(context.Context, *ListEnterpriseFeaturesRequest) (*ListEnterpriseFeaturesResponse, error)
 	mustEmbedUnimplementedLicenseServiceServer()
 }
 
@@ -80,6 +98,9 @@ func (UnimplementedLicenseServiceServer) ListLicenses(context.Context, *ListLice
 }
 func (UnimplementedLicenseServiceServer) SetLicense(context.Context, *SetLicenseRequest) (*SetLicenseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetLicense not implemented")
+}
+func (UnimplementedLicenseServiceServer) ListEnterpriseFeatures(context.Context, *ListEnterpriseFeaturesRequest) (*ListEnterpriseFeaturesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListEnterpriseFeatures not implemented")
 }
 func (UnimplementedLicenseServiceServer) mustEmbedUnimplementedLicenseServiceServer() {}
 
@@ -130,6 +151,24 @@ func _LicenseService_SetLicense_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LicenseService_ListEnterpriseFeatures_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEnterpriseFeaturesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LicenseServiceServer).ListEnterpriseFeatures(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LicenseService_ListEnterpriseFeatures_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LicenseServiceServer).ListEnterpriseFeatures(ctx, req.(*ListEnterpriseFeaturesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LicenseService_ServiceDesc is the grpc.ServiceDesc for LicenseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -144,6 +183,10 @@ var LicenseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetLicense",
 			Handler:    _LicenseService_SetLicense_Handler,
+		},
+		{
+			MethodName: "ListEnterpriseFeatures",
+			Handler:    _LicenseService_ListEnterpriseFeatures_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
