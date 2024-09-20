@@ -123,8 +123,8 @@ func (s *APISuite) SetupSuite() {
 		},
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
-	s.cfg.Kafka.Schema.Enabled = true
-	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
+	s.cfg.SchemaRegistry.Enabled = true
+	s.cfg.SchemaRegistry.URLs = []string{schemaRegistryAddress}
 
 	s.cfg.Redpanda.AdminAPI.Enabled = true
 	s.cfg.Redpanda.AdminAPI.URLs = []string{adminApiAddr}

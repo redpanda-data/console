@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	shopv1_2 "github.com/redpanda-data/console/backend/pkg/console/testdata/proto_update/gen/shop/v1"
+	shopv1_2 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto_update/gen/shop/v1"
 )
 
 var (
@@ -153,7 +153,7 @@ func deserialize(base64input string, schemaID, index int) {
 		os.Exit(1)
 	}
 
-	b, err := protojson.Marshal(&msg)
+	b, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&msg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

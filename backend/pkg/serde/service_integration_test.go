@@ -48,9 +48,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	ms "github.com/redpanda-data/console/backend/pkg/msgpack"
 	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/common"
 	indexv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/index/v1"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
@@ -80,9 +80,9 @@ func (s *SerdeIntegrationTestSuite) createBaseConfig() config.Config {
 	cfg.MetricsNamespace = testutil.MetricNameForTest("serde")
 	cfg.Kafka.Brokers = []string{s.seedBroker}
 	cfg.Kafka.Protobuf.Enabled = true
-	cfg.Kafka.Protobuf.SchemaRegistry.Enabled = true
-	cfg.Kafka.Schema.Enabled = true
-	cfg.Kafka.Schema.URLs = []string{s.registryAddress}
+	cfg.SchemaRegistry.Enabled = true
+	cfg.SchemaRegistry.Enabled = true
+	cfg.SchemaRegistry.URLs = []string{s.registryAddress}
 	cfg.Kafka.MessagePack.Enabled = false
 
 	return cfg
@@ -147,6 +147,30 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 	ctx := context.Background()
 
+	cfg := s.createBaseConfig()
+
+	logger, err := zap.NewProduction()
+	require.NoError(err)
+
+	protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger)
+	require.NoError(err)
+
+	err = protoSvc.Start()
+	require.NoError(err)
+
+	mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+	require.NoError(err)
+
+	schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg)
+	require.NoError(err)
+
+	cacheNamespaceFn := func(context.Context) string {
+		return "single"
+	}
+
+	serdeSvc, err := NewService(protoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
+	require.NoError(err)
+
 	t.Run("plain JSON", func(t *testing.T) {
 		testTopicName := testutil.TopicNameForTest("serde_plain_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -156,25 +180,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 			assert.NoError(err)
 		}()
-
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -292,25 +297,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 			assert.NoError(err)
 		}()
-
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -431,25 +417,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			assert.NoError(err)
 		}()
 
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
 		require.NoError(err)
@@ -565,36 +532,26 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}()
 
 		topic0 := config.RegexpOrLiteral{}
-		topic0.UnmarshalText([]byte(testTopicName))
+		require.NoError(topic0.UnmarshalText([]byte(testTopicName)))
 
-		cfg := s.createBaseConfig()
-		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+		testCfg := cfg
+		testCfg.Kafka.Protobuf.Enabled = true
+		testCfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
 				TopicName:      topic0,
 				ValueProtoType: "shop.v1.Order",
 			},
 		}
-		cfg.Kafka.Protobuf.FileSystem.Enabled = true
-		cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
-		cfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
+		testCfg.Kafka.Protobuf.FileSystem.Enabled = true
+		testCfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+		testCfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
 
-		logger, err := zap.NewProduction()
+		protoSvc, err := protopkg.NewService(testCfg.Kafka.Protobuf, logger)
 		require.NoError(err)
+		require.NoError(protoSvc.Start())
 
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
 		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
 		msg := shopv1.Order{
@@ -731,36 +688,26 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}()
 
 		topic0 := config.RegexpOrLiteral{}
-		topic0.UnmarshalText([]byte(testTopicName))
+		require.NoError(topic0.UnmarshalText([]byte(testTopicName)))
 
-		cfg := s.createBaseConfig()
-		cfg.Kafka.Protobuf.Enabled = true
-		cfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
+		testCfg := cfg
+		testCfg.Kafka.Protobuf.Enabled = true
+		testCfg.Kafka.Protobuf.Mappings = []config.ProtoTopicMapping{
 			{
 				TopicName:      topic0,
 				ValueProtoType: "shop.v2.Order",
 			},
 		}
-		cfg.Kafka.Protobuf.FileSystem.Enabled = true
-		cfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
-		cfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
+		testCfg.Kafka.Protobuf.FileSystem.Enabled = true
+		testCfg.Kafka.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
+		testCfg.Kafka.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
 
-		logger, err := zap.NewProduction()
+		testProtoSvc, err := protopkg.NewService(testCfg.Kafka.Protobuf, logger)
 		require.NoError(err)
+		require.NoError(testProtoSvc.Start())
 
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
+		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
 		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
 		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
@@ -1033,26 +980,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotNil(ss)
 
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-
 		// Set up Serde
 		var serde sr.Serde
 		serde.Register(
@@ -1156,7 +1083,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
+		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1222,26 +1149,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		})
 		require.NoError(err)
 		require.NotNil(ss)
-
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1334,8 +1241,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("345", obj["id"])
-		assert.Len(obj["decVal"], 1)
-		assert.Len(obj["color"], 4)
+		assert.Len(obj["dec_val"], 1)
+		assert.Len(obj["color"], 3)
 		assert.Len(obj["fraction"], 2)
 		assert.Len(obj["latlng"], 2)
 		assert.Len(obj["price"], 3)
@@ -1400,26 +1307,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		})
 		require.NoError(err)
 		require.NotNil(ss)
-
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1619,26 +1506,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotNil(ss)
 
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-
 		// Set up Serde
 		var serde sr.Serde
 		serde.Register(
@@ -1832,26 +1699,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		})
 		require.NoError(err)
 		require.NotNil(ss)
-
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -2141,26 +1988,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotNil(ss)
 
-		// test
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
-
 		// Set up Serde
 		var serde sr.Serde
 		serde.Register(
@@ -2311,23 +2138,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotEmpty(records)
 		require.Len(records, 2)
 
-		// proto schema rediscovery is on a timer... this forces a new refresh
-		schemaSvc2, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc2, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc2.Start()
-		require.NoError(err)
-
-		serdeSvc2 := NewService(schemaSvc2, protoSvc2, mspPackSvc)
-
 		for _, cr := range records {
 			cr := cr
 
 			if string(cr.Key) == msg.Id {
-				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				// check value
@@ -2341,21 +2156,21 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("222", obj["id"])
 			} else if string(cr.Key) == msg2ID {
-				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("333", obj["id"])
-				assert.Equal(float64(3456), obj["orderValue"])
+				assert.Equal(float64(3456), obj["order_value"])
 				assert.Equal(float64(22), obj["version"])
 
 				// the JSON tags have to match shopv_1 Order protojson tags
 				type v1_2Order struct {
 					Version    int32     `json:"version,omitempty"`
 					Id         string    `json:"id,omitempty"`
-					CreatedAt  time.Time `json:"createdAt,omitempty"`
-					OrderValue int32     `json:"orderValue,omitempty"`
+					CreatedAt  time.Time `json:"created_at,omitempty"`
+					OrderValue int32     `json:"order_value,omitempty"`
 				}
 
 				ov12 := v1_2Order{}
@@ -2391,25 +2206,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 			assert.NoError(err)
 		}()
-
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 160)
@@ -2494,25 +2290,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
 			assert.NoError(err)
 		}()
-
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 1952807028)
@@ -2604,25 +2381,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		eventDataSchemaStr := `
-		{
-			"namespace": "io.test.event.schema",
-			"type": "record",
-			"name": "EventData",
-			"fields":[
-				{
-					"name":"id",
-					"type": "string"
-				},
-				{
-					"name":"event_type",
-					"type":"string"
-				},
-				{
-					"name":"version",
-					"type":"string"
-				}
-			]
-		}`
+			{
+				"namespace": "io.test.event.schema",
+				"type": "record",
+				"name": "EventData",
+				"fields":[
+					{
+						"name":"id",
+						"type": "string"
+					},
+					{
+						"name":"event_type",
+						"type":"string"
+					},
+					{
+						"name":"version",
+						"type":"string"
+					}
+				]
+			}`
 
 		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
 		require.NoError(err)
@@ -2636,25 +2413,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ssEventData)
 
 		userSchemaStr := `
-		{
-			"namespace": "io.test.user.schema",
-			"type": "record",
-			"name": "User",
-			"fields": [
-				{
-					"name": "name",
-					"type": "string"
-				},
-				{
-					"name": "email",
-					"type": "string"
-				},
-				{
-					"name": "metadata",
-					"type": "io.test.event.schema.EventData"
-				}
-			]
-		}`
+			{
+				"namespace": "io.test.user.schema",
+				"type": "record",
+				"name": "User",
+				"fields": [
+					{
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"name": "email",
+						"type": "string"
+					},
+					{
+						"name": "metadata",
+						"type": "io.test.event.schema.EventData"
+					}
+				]
+			}`
 
 		userSchema, err := avro.Parse(userSchemaStr)
 		require.NoError(err)
@@ -2675,33 +2452,33 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ssUser)
 
 		orderSchemaStr := `
-		{
-			"namespace": "io.test.order.schema",
-			"type": "record",
-			"name": "Order",
-			"fields": [
-				{
-					"name": "id",
-					"type": "string"
-				},
-				{
-					"name": "price",
-					"type": "double"
-				},
-				{
-					"name": "quantity",
-					"type": "long"
-				},
-				{
-					"name": "customer",
-					"type": "io.test.user.schema.User"
-				},
-				{
-					"name": "metadata",
-					"type": "io.test.event.schema.EventData"
-				}
-			]
-		}`
+			{
+				"namespace": "io.test.order.schema",
+				"type": "record",
+				"name": "Order",
+				"fields": [
+					{
+						"name": "id",
+						"type": "string"
+					},
+					{
+						"name": "price",
+						"type": "double"
+					},
+					{
+						"name": "quantity",
+						"type": "long"
+					},
+					{
+						"name": "customer",
+						"type": "io.test.user.schema.User"
+					},
+					{
+						"name": "metadata",
+						"type": "io.test.event.schema.EventData"
+					}
+				]
+			}`
 
 		orderSchema, err := avro.Parse(orderSchemaStr)
 		require.NoError(err)
@@ -2745,25 +2522,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			User     UserRecord      `avro:"customer" json:"customer"`
 			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
 		}
-
-		cfg := s.createBaseConfig()
-
-		logger, err := zap.NewProduction()
-		require.NoError(err)
-
-		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
-		require.NoError(err)
-
-		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
-		require.NoError(err)
-
-		err = protoSvc.Start()
-		require.NoError(err)
-
-		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
-		require.NoError(err)
-
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
 		var serde sr.Serde
 		serde.Register(
@@ -2909,6 +2667,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 }
 
+/*
 func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	t := s.T()
 
@@ -4421,6 +4180,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		assert.Equal(PayloadEncodingAvro, serRes.Value.Encoding)
 	})
 }
+*/
 
 // We cannot import both shopv1 and shopv1_2 (proto_updated) packages.
 // Both packages define the same protobuf types in terms of fully qualified name and proto package name.

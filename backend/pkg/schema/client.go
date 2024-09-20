@@ -90,11 +90,14 @@ func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn 
 // filesystem, it defers to the external resolver. An error is returned if
 // there's an issue reading or compiling the embedded proto files.
 func createCustomProtoResolver(ctx context.Context) (func(protocompile.Resolver) protocompile.Resolver, error) {
-	protoFilesFs := embed.ProtobufStandardSchemas
+	protoFilesFs, err := fs.Sub(embed.ProtobufStandardSchemas, "protobuf")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load embedded proto files: %w", err)
+	}
 	protoFilepaths := make([]string, 0)
 
 	// Walk through the embedded FS to find .proto files
-	err := fs.WalkDir(protoFilesFs, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(protoFilesFs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
