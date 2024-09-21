@@ -227,6 +227,41 @@ message SetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
+message NamespacedTopic {
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+  string namespace = 2;
+}
+
+message MountTopicsRequest {
+  // InboundTopic defines the migration of a topic from the cloud storage into this cluster,
+  // so that it becomes available via the Kafka API.
+  message InboundTopic {
+    NamespacedTopic source_topic = 1;
+    optional NamespacedTopic alias = 2;
+    string location = 3;
+  }
+
+  repeated string topic_names = 1;
+}
+
+message MountTopicsResponse {
+  int32 migration_id = 1;
+}
+
+message UnmountTopicsRequest {
+  // Topics is the list of topics to unmount.
+  repeated NamespacedTopic topics = 1;
+}
+
+message UnmountTopicsResponse {
+  int32 migration_id = 1;
+}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda Cloud topics."};
 
@@ -374,4 +409,6 @@ service TopicService {
       }
     };
   }
+  rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {}
+  rpc UnmountTopics(UnmountTopicsRequest) returns (UnmountTopicsResponse) {}
 }
