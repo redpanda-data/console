@@ -135,12 +135,18 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 		}
 	}
 
+	isViolation := false
+	enterpriseFeatures, err := s.adminapiCl.GetEnterpriseFeatures(ctx)
+	if err == nil {
+		isViolation = enterpriseFeatures.Violation
+	}
+
 	// Mapping will work fine even if the request error'd because the defaults
 	// will map to a community license.
 	coreProtoLicense := s.mapper.adminAPILicenseInformationToProto(coreLicense)
 	licenses = append(licenses, coreProtoLicense)
 
-	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses}), nil
+	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: isViolation}), nil
 }
 
 // SetLicense installs a new license into the Redpanda cluster.
@@ -170,4 +176,29 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 	licenseInfoProto := s.mapper.adminAPILicenseInformationToProto(licenseInfo)
 
 	return connect.NewResponse(&v1alpha1.SetLicenseResponse{License: licenseInfoProto}), nil
+}
+
+// ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+// This can only be reported if the Redpanda Admin API is configured and supports this request.
+func (s Service) ListEnterpriseFeatures(ctx context.Context, c *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error) {
+	// Use this hook to ensure the requester is some authenticated user.
+	// It doesn't matter what permissions we check. As long as the requester
+	// has at least one viewer permission we know this user is authenticated.
+	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
+	if err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license"); err != nil {
+		return nil, err
+	}
+
+	if s.adminapiCl == nil {
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	features, err := s.adminapiCl.GetEnterpriseFeatures(ctx)
+	if err != nil {
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to retrieve enterprise features: ")
+	}
+
+	featuresProto := s.mapper.enterpriseFeaturesToProto(features)
+
+	return connect.NewResponse(featuresProto), nil
 }
