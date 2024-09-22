@@ -28,7 +28,7 @@ type Service struct {
 }
 
 // NewService creates the new serde service.
-func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service) *Service {
+func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service, cborConfig config.Cbor) *Service {
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},
@@ -40,6 +40,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			ProtobufSchemaSerde{ProtoSvc: protoSvc},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
+			CborSerde{Config: cborConfig},
 			UTF8Serde{},
 			TextSerde{},
 			UintSerde{},

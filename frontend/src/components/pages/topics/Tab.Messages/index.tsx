@@ -135,6 +135,7 @@ const payloadEncodingPairs = [
     { value: PayloadEncoding.BINARY, label: 'Binary' },
     { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
     { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
+    { value: PayloadEncoding.CBOR, label: 'CBOR' },
 ];
 
 const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce((acc, pair) => {

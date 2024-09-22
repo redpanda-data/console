@@ -1980,6 +1980,9 @@ export function createMessageSearch() {
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.key.encoding = 'consumerOffsets';
                                         break;
+                                    case PayloadEncoding.CBOR:
+                                        m.key.encoding = 'cbor';
+                                        break;
                                     default:
                                         console.log('unhandled key encoding type', {
                                             encoding: key?.encoding,
@@ -2049,6 +2052,9 @@ export function createMessageSearch() {
                                         break;
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.value.encoding = 'consumerOffsets';
+                                        break;
+                                    case PayloadEncoding.CBOR:
+                                        m.value.encoding = 'cbor';
                                         break;
                                     default:
                                         console.log('unhandled value encoding type', {
