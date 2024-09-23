@@ -468,19 +468,22 @@ export class ConnectorPropertiesStore {
 
         for (const g of this.allGroups)
             for (const p of g.properties) {
-                // Skip default values
-                if (p.entry.definition.required == false) {
-                    if (p.value == p.entry.definition.default_value) continue;
+
+                if (!p.entry.definition.required) {
+                    if (p.value === p.entry.definition.default_value) {
+                        // let's ignore the default variable if the value is the same as initially rendered
+                        // otherwise, user might want to set it back to default
+                        if(p.value === p.entry.value.value) {
+                            continue;
+                        }
+                        // let's ignore the variable if the original value is null
+                        if(p.entry.value.value === null) {
+                            continue;
+                        }
+                    }
                     if (p.value === false && !p.entry.definition.default_value) continue; // skip boolean values that default to false
                 }
 
-                // Skip null/undefined
-                if (p.value === null || p.value === undefined) continue;
-
-                // Skip empty values for strings
-                if (StringLikeTypes.includes(p.entry.definition.type)) if (p.value == null || p.value == '') continue;
-
-                // Include the value
                 config[p.name] = p.value;
             }
         return config;
@@ -777,5 +780,3 @@ export interface Property {
     propertyGroup: PropertyGroup;
     crud: 'create' | 'update';
 }
-
-const StringLikeTypes = [DataType.String, DataType.Class, DataType.List, DataType.Password];
