@@ -983,6 +983,9 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+      required:
+        - display_name
+        - config_yaml
       type: object
     Policy:
       properties:
