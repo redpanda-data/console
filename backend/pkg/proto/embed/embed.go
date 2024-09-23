@@ -29,6 +29,9 @@ import (
 	"sync"
 )
 
+// ProtobufStandardSchemas is the embedded collection of standard protobuf schemas that are
+// included in standard schema registries.
+//
 //go:embed all:protobuf
 var ProtobufStandardSchemas embed.FS
 

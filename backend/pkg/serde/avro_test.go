@@ -128,7 +128,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(ctx context.Context) string {
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) string {
 		return "single/"
 	})
 	require.NoError(t, err)
@@ -308,7 +308,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(ctx context.Context) string {
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) string {
 		return "single/"
 	})
 	require.NoError(t, err)
