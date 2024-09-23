@@ -109,6 +109,7 @@ kafka:
   #       url:
   #       branch: (defaults to primary/default branch)
   #       baseDirectory: (defaults to the root directory of the repo/branch above)
+  #       maxDepth: 15
   #     # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
   #     refreshInterval: 1m
   #     # Basic Auth
@@ -189,6 +190,7 @@ kafka:
 #         url:
 #         branch: (defaults to primary/default branch)
 #         baseDirectory: .
+#         maxDepth: 15
 #       # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
 #       refreshInterval: 1m
 #       # Basic Auth
