@@ -589,16 +589,9 @@ export class DeleteDebugBundleResponse extends Message<DeleteDebugBundleResponse
  */
 export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileRequest> {
   /**
-   * @generated from field: string filename = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.DeleteDebugBundleFile files = 1;
    */
-  filename = "";
-
-  /**
-   * Optional broker IDs. Do not set / empty for all.
-   *
-   * @generated from field: repeated int32 broker_ids = 2;
-   */
-  brokerIds: number[] = [];
+  files: DeleteDebugBundleFile[] = [];
 
   constructor(data?: PartialMessage<DeleteDebugBundleFileRequest>) {
     super();
@@ -608,8 +601,7 @@ export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileR
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleFileRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 1, name: "files", kind: "message", T: DeleteDebugBundleFile, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleFileRequest {
@@ -626,6 +618,49 @@ export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileR
 
   static equals(a: DeleteDebugBundleFileRequest | PlainMessage<DeleteDebugBundleFileRequest> | undefined, b: DeleteDebugBundleFileRequest | PlainMessage<DeleteDebugBundleFileRequest> | undefined): boolean {
     return proto3.util.equals(DeleteDebugBundleFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.DeleteDebugBundleFile
+ */
+export class DeleteDebugBundleFile extends Message<DeleteDebugBundleFile> {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId = 0;
+
+  /**
+   * @generated from field: string filename = 2;
+   */
+  filename = "";
+
+  constructor(data?: PartialMessage<DeleteDebugBundleFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteDebugBundleFile | PlainMessage<DeleteDebugBundleFile> | undefined, b: DeleteDebugBundleFile | PlainMessage<DeleteDebugBundleFile> | undefined): boolean {
+    return proto3.util.equals(DeleteDebugBundleFile, a, b);
   }
 }
 

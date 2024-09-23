@@ -116,10 +116,12 @@ message DeleteDebugBundleResponse {
 
 // Request for DeleteDebugBundleFile.
 message DeleteDebugBundleFileRequest {
-  string filename = 1;
+  repeated DeleteDebugBundleFile files = 1;
+}
 
-  // Optional broker IDs. Do not set / empty for all.
-  repeated int32 broker_ids = 2;
+message DeleteDebugBundleFile {
+  int32 broker_id = 1;
+  string filename = 2;
 }
 
 // Response for DeleteDebugBundleFile.
