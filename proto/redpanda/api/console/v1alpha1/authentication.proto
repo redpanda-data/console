@@ -76,7 +76,12 @@ message GetIdentityRequest {}
 message GetIdentityResponse {
   string display_name = 1;
   AuthenticationMethod authentication_method = 2;
+  string avatar_url = 3;
 }
+
+message ClearSessionCookieRequest {}
+
+message ClearSessionCookieResponse {}
 
 service AuthenticationService {
   // RPC to login using SASL-SCRAM.
