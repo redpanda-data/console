@@ -120,7 +120,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
-import { License, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License, ListEnterpriseFeaturesResponse_Feature, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -339,6 +339,8 @@ const apiStore = {
     licenses: []  as License[],
     licenseViolation: false,
     licensesLoaded: false,
+
+    enterpriseFeaturesUsed: [] as ListEnterpriseFeaturesResponse_Feature[],
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -1552,12 +1554,22 @@ const apiStore = {
             // this shouldn't happen but better to explicitly throw
             throw new Error('License client is not initialized');
         }
-        return await client.listLicenses({}).then(response => {
-            this.licenses = response.licenses
-            this.licenseViolation = response.violation
-            this.licensesLoaded = true
-            return response
-        });
+
+        const [enterpriseFeaturesResponse, licensesResponse] = await Promise.all([
+            client.listEnterpriseFeatures({}),
+            client.listLicenses({})
+        ]).finally(() => {
+            this.licensesLoaded = true;
+        })
+
+        // Handle the first response
+        this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
+
+        // Handle the second response
+        this.licenses = licensesResponse.licenses;
+        this.licenseViolation = licensesResponse.violation;
+
+        return licensesResponse
     }
 
 };

@@ -49,7 +49,7 @@ export const LicenseNotification = observer(() => {
                     </Box>}
 
                     {showEnterpriseFeaturesWarning && <Text>
-                        You're using Enterprise features in your connected Redpanda cluster. These features require a license.
+                        You're using Enterprise features <strong>{api.enterpriseFeaturesUsed.filter(x => x.enabled).map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. These features require a license.
                     </Text>}
 
                     <Flex gap={2} my={2}>
