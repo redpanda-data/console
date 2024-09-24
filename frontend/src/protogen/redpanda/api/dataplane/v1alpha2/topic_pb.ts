@@ -1028,3 +1028,203 @@ export class SetTopicConfigurationsResponse extends Message<SetTopicConfiguratio
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.MountTopicsRequest
+ */
+export class MountTopicsRequest extends Message<MountTopicsRequest> {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha2.MountTopicsRequest.TopicMount topics = 1;
+   */
+  topics: MountTopicsRequest_TopicMount[] = [];
+
+  constructor(data?: PartialMessage<MountTopicsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.MountTopicsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topics", kind: "message", T: MountTopicsRequest_TopicMount, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MountTopicsRequest {
+    return new MountTopicsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MountTopicsRequest {
+    return new MountTopicsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MountTopicsRequest {
+    return new MountTopicsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MountTopicsRequest | PlainMessage<MountTopicsRequest> | undefined, b: MountTopicsRequest | PlainMessage<MountTopicsRequest> | undefined): boolean {
+    return proto3.util.equals(MountTopicsRequest, a, b);
+  }
+}
+
+/**
+ * TopicMount defines the migration of a topic from the cloud storage into this cluster,
+ * so that it becomes available via the Kafka API.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha2.MountTopicsRequest.TopicMount
+ */
+export class MountTopicsRequest_TopicMount extends Message<MountTopicsRequest_TopicMount> {
+  /**
+   * SourceTopic is the topic name we want to mount.
+   *
+   * @generated from field: string source_topic = 1;
+   */
+  sourceTopic = "";
+
+  /**
+   * Alias may be provided to mount the topic under a different alias.
+   *
+   * @generated from field: optional string alias = 2;
+   */
+  alias?: string;
+
+  constructor(data?: PartialMessage<MountTopicsRequest_TopicMount>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.MountTopicsRequest.TopicMount";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "source_topic", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MountTopicsRequest_TopicMount {
+    return new MountTopicsRequest_TopicMount().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MountTopicsRequest_TopicMount {
+    return new MountTopicsRequest_TopicMount().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MountTopicsRequest_TopicMount {
+    return new MountTopicsRequest_TopicMount().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MountTopicsRequest_TopicMount | PlainMessage<MountTopicsRequest_TopicMount> | undefined, b: MountTopicsRequest_TopicMount | PlainMessage<MountTopicsRequest_TopicMount> | undefined): boolean {
+    return proto3.util.equals(MountTopicsRequest_TopicMount, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.MountTopicsResponse
+ */
+export class MountTopicsResponse extends Message<MountTopicsResponse> {
+  /**
+   * @generated from field: int32 migration_id = 1;
+   */
+  migrationId = 0;
+
+  constructor(data?: PartialMessage<MountTopicsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.MountTopicsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "migration_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MountTopicsResponse {
+    return new MountTopicsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MountTopicsResponse {
+    return new MountTopicsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MountTopicsResponse {
+    return new MountTopicsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MountTopicsResponse | PlainMessage<MountTopicsResponse> | undefined, b: MountTopicsResponse | PlainMessage<MountTopicsResponse> | undefined): boolean {
+    return proto3.util.equals(MountTopicsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.UnmountTopicsRequest
+ */
+export class UnmountTopicsRequest extends Message<UnmountTopicsRequest> {
+  /**
+   * Topics is the list of topics to unmount.
+   *
+   * @generated from field: repeated string topics = 1;
+   */
+  topics: string[] = [];
+
+  constructor(data?: PartialMessage<UnmountTopicsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.UnmountTopicsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topics", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnmountTopicsRequest {
+    return new UnmountTopicsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnmountTopicsRequest {
+    return new UnmountTopicsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnmountTopicsRequest {
+    return new UnmountTopicsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnmountTopicsRequest | PlainMessage<UnmountTopicsRequest> | undefined, b: UnmountTopicsRequest | PlainMessage<UnmountTopicsRequest> | undefined): boolean {
+    return proto3.util.equals(UnmountTopicsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.UnmountTopicsResponse
+ */
+export class UnmountTopicsResponse extends Message<UnmountTopicsResponse> {
+  /**
+   * @generated from field: int32 migration_id = 1;
+   */
+  migrationId = 0;
+
+  constructor(data?: PartialMessage<UnmountTopicsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.UnmountTopicsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "migration_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnmountTopicsResponse {
+    return new UnmountTopicsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnmountTopicsResponse {
+    return new UnmountTopicsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnmountTopicsResponse {
+    return new UnmountTopicsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnmountTopicsResponse | PlainMessage<UnmountTopicsResponse> | undefined, b: UnmountTopicsResponse | PlainMessage<UnmountTopicsResponse> | undefined): boolean {
+    return proto3.util.equals(UnmountTopicsResponse, a, b);
+  }
+}
+

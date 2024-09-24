@@ -26,6 +26,8 @@ const (
 	TopicService_GetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1alpha2.TopicService/GetTopicConfigurations"
 	TopicService_UpdateTopicConfigurations_FullMethodName = "/redpanda.api.dataplane.v1alpha2.TopicService/UpdateTopicConfigurations"
 	TopicService_SetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations"
+	TopicService_MountTopics_FullMethodName               = "/redpanda.api.dataplane.v1alpha2.TopicService/MountTopics"
+	TopicService_UnmountTopics_FullMethodName             = "/redpanda.api.dataplane.v1alpha2.TopicService/UnmountTopics"
 )
 
 // TopicServiceClient is the client API for TopicService service.
@@ -38,6 +40,8 @@ type TopicServiceClient interface {
 	GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error)
+	MountTopics(ctx context.Context, in *MountTopicsRequest, opts ...grpc.CallOption) (*MountTopicsResponse, error)
+	UnmountTopics(ctx context.Context, in *UnmountTopicsRequest, opts ...grpc.CallOption) (*UnmountTopicsResponse, error)
 }
 
 type topicServiceClient struct {
@@ -102,6 +106,24 @@ func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, in *Set
 	return out, nil
 }
 
+func (c *topicServiceClient) MountTopics(ctx context.Context, in *MountTopicsRequest, opts ...grpc.CallOption) (*MountTopicsResponse, error) {
+	out := new(MountTopicsResponse)
+	err := c.cc.Invoke(ctx, TopicService_MountTopics_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) UnmountTopics(ctx context.Context, in *UnmountTopicsRequest, opts ...grpc.CallOption) (*UnmountTopicsResponse, error) {
+	out := new(UnmountTopicsResponse)
+	err := c.cc.Invoke(ctx, TopicService_UnmountTopics_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TopicServiceServer is the server API for TopicService service.
 // All implementations must embed UnimplementedTopicServiceServer
 // for forward compatibility
@@ -112,6 +134,8 @@ type TopicServiceServer interface {
 	GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(context.Context, *UpdateTopicConfigurationsRequest) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error)
+	MountTopics(context.Context, *MountTopicsRequest) (*MountTopicsResponse, error)
+	UnmountTopics(context.Context, *UnmountTopicsRequest) (*UnmountTopicsResponse, error)
 	mustEmbedUnimplementedTopicServiceServer()
 }
 
@@ -136,6 +160,12 @@ func (UnimplementedTopicServiceServer) UpdateTopicConfigurations(context.Context
 }
 func (UnimplementedTopicServiceServer) SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetTopicConfigurations not implemented")
+}
+func (UnimplementedTopicServiceServer) MountTopics(context.Context, *MountTopicsRequest) (*MountTopicsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MountTopics not implemented")
+}
+func (UnimplementedTopicServiceServer) UnmountTopics(context.Context, *UnmountTopicsRequest) (*UnmountTopicsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnmountTopics not implemented")
 }
 func (UnimplementedTopicServiceServer) mustEmbedUnimplementedTopicServiceServer() {}
 
@@ -258,6 +288,42 @@ func _TopicService_SetTopicConfigurations_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TopicService_MountTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MountTopicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).MountTopics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_MountTopics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).MountTopics(ctx, req.(*MountTopicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_UnmountTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnmountTopicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).UnmountTopics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_UnmountTopics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).UnmountTopics(ctx, req.(*UnmountTopicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TopicService_ServiceDesc is the grpc.ServiceDesc for TopicService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -288,6 +354,14 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetTopicConfigurations",
 			Handler:    _TopicService_SetTopicConfigurations_Handler,
+		},
+		{
+			MethodName: "MountTopics",
+			Handler:    _TopicService_MountTopics_Handler,
+		},
+		{
+			MethodName: "UnmountTopics",
+			Handler:    _TopicService_UnmountTopics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

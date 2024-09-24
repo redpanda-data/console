@@ -880,6 +880,12 @@ components:
         resource_type:
           $ref: '#/components/schemas/ResourceType'
       type: object
+    MountTopicsResponse:
+      properties:
+        migration_id:
+          format: int32
+          type: integer
+      type: object
     Options:
       properties:
         include_tasks:
@@ -1209,6 +1215,19 @@ components:
           description: ID of worker that the task is assigned to.
           type: string
       type: object
+    TopicMount:
+      description: |-
+        TopicMount defines the migration of a topic from the cloud storage into this cluster,
+        so that it becomes available via the Kafka API.
+      properties:
+        alias:
+          description: Alias may be provided to mount the topic under a different alias.
+          nullable: true
+          type: string
+        source_topic:
+          description: SourceTopic is the topic name we want to mount.
+          type: string
+      type: object
     TransformMetadata:
       properties:
         environment_variables:
@@ -1231,6 +1250,12 @@ components:
           items:
             $ref: '#/components/schemas/PartitionTransformStatus'
           type: array
+      type: object
+    UnmountTopicsResponse:
+      properties:
+        migration_id:
+          format: int32
+          type: integer
       type: object
     UpdateConfiguration:
       properties:
@@ -3051,6 +3076,101 @@ paths:
       summary: Create Topic
       tags:
         - TopicService
+  /v1alpha2/topics/mount:
+    post:
+      description: TThis operation restores topics that were offloaded to tiered storage, making them available for consumption and production again. Remounting a topic reloads its data and state to the local brokers, allowing active use of the topic while consuming some cluster resources.
+      operationId: TopicService_MountTopics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/TopicMount'
+              type: array
+        required: true
+        x-originalParamName: topics
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MountTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Mount topics from tiered storage
+      tags:
+        - TopicService
+  /v1alpha2/topics/unmount:
+    post:
+      description: This operation offloads topics to tiered storage, freeing up all local cluster resources. Once a topic is unmounted, it can no longer be consumed or produced, effectively disappearing from the active cluster while its data remains safely stored in the external tiered storage.
+      operationId: TopicService_UnmountTopics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                type: string
+              type: array
+        description: Topics is the list of topics to unmount.
+        required: true
+        x-originalParamName: topics
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnmountTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Unmount topics to tiered storage
+      tags:
+        - TopicService
   /v1alpha2/topics/{name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -3329,7 +3449,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
