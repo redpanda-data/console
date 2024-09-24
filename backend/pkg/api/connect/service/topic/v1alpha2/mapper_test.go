@@ -39,7 +39,7 @@ func TestDeleteTopicRequestToKafka(t *testing.T) {
 		},
 	}
 
-	kafkaMapper := kafkaClientMapper{}
+	kafkaMapper := mapper{}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestDescribeTopicConfigsToKafka(t *testing.T) {
 		},
 	}
 
-	kafkaMapper := kafkaClientMapper{}
+	kafkaMapper := mapper{}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

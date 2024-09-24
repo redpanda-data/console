@@ -302,6 +302,16 @@ func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add
 	return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove, createRole)
 }
 
+// MountTopics mounts topics according to the provided configuration
+func (s *Service) MountTopics(ctx context.Context, config adminapi.MountConfiguration) (adminapi.MigrationInfo, error) {
+	return s.adminClient.MountTopics(ctx, config)
+}
+
+// UnmountTopics unmounts topics according to the provided configuration
+func (s *Service) UnmountTopics(ctx context.Context, config adminapi.UnmountConfiguration) (adminapi.MigrationInfo, error) {
+	return s.adminClient.UnmountTopics(ctx, config)
+}
+
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".

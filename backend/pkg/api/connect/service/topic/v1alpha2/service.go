@@ -29,6 +29,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 var _ dataplanev1alpha2connect.TopicServiceHandler = (*Service)(nil)
@@ -36,11 +37,12 @@ var _ dataplanev1alpha2connect.TopicServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg        *config.Config
-	logger     *zap.Logger
-	consoleSvc console.Servicer
-	mapper     kafkaClientMapper
-	defaulter  defaulter
+	cfg         *config.Config
+	logger      *zap.Logger
+	consoleSvc  console.Servicer
+	redpandaSvc *redpanda.Service
+	mapper      mapper
+	defaulter   defaulter
 }
 
 // ListTopics lists all Kafka topics with their most important metadata.
@@ -335,13 +337,15 @@ func (s *Service) SetTopicConfigurations(ctx context.Context, req *connect.Reque
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
 	consoleSvc console.Servicer,
+	redpandaSvc *redpanda.Service,
 ) *Service {
 	return &Service{
-		cfg:        cfg,
-		logger:     logger,
-		consoleSvc: consoleSvc,
-		mapper:     kafkaClientMapper{},
-		defaulter:  defaulter{},
+		cfg:         cfg,
+		logger:      logger,
+		consoleSvc:  consoleSvc,
+		redpandaSvc: redpandaSvc,
+		mapper:      mapper{},
+		defaulter:   defaulter{},
 	}
 }
 
@@ -386,4 +390,39 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1alpha2
 	})
 	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusCreated))
 	return connectResponse, nil
+}
+
+// MountTopics initiates the process of mounting one or more topics from tiered
+// storage, so that the topics become accessible by Kafka clients.
+func (s *Service) MountTopics(ctx context.Context, req *connect.Request[v1alpha2.MountTopicsRequest]) (*connect.Response[v1alpha2.MountTopicsResponse], error) {
+	if !s.cfg.Redpanda.AdminAPI.Enabled {
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	mountConfig := s.mapper.topicMountRequestToAdminAPI(req.Msg)
+
+	migrationInfo, err := s.redpandaSvc.MountTopics(ctx, mountConfig)
+	if err != nil {
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+	}
+
+	return connect.NewResponse(&v1alpha2.MountTopicsResponse{MigrationId: int32(migrationInfo.ID)}), nil
+}
+
+// UnmountTopics initiates the process of unmounting one or more topics from
+// local brokers to the configured tiered storage. This frees up the cluster
+// resources and the topic is not accessible anymore until it's re-mounted.
+func (s *Service) UnmountTopics(ctx context.Context, req *connect.Request[v1alpha2.UnmountTopicsRequest]) (*connect.Response[v1alpha2.UnmountTopicsResponse], error) {
+	if !s.cfg.Redpanda.AdminAPI.Enabled {
+		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	}
+
+	unmountConfig := s.mapper.topicUnmountRequestToAdminAPI(req.Msg)
+
+	migrationInfo, err := s.redpandaSvc.UnmountTopics(ctx, unmountConfig)
+	if err != nil {
+		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+	}
+
+	return connect.NewResponse(&v1alpha2.UnmountTopicsResponse{MigrationId: int32(migrationInfo.ID)}), nil
 }
