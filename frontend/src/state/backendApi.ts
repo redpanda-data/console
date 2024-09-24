@@ -341,7 +341,7 @@ const apiStore = {
     // null = call completed, and we're not logged in
     userData: undefined as (UserData | null | undefined),
     async logout() {
-        await appConfig.fetch('./logout');
+        await appConfig.fetch('./auth/logout');
         this.userData = null;
     },
     async refreshUserData() {
