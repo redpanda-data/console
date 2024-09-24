@@ -338,6 +338,11 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
    */
   authenticationMethod = AuthenticationMethod.UNSPECIFIED;
 
+  /**
+   * @generated from field: string avatar_url = 3;
+   */
+  avatarUrl = "";
+
   constructor(data?: PartialMessage<GetIdentityResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -348,6 +353,7 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "authentication_method", kind: "enum", T: proto3.getEnumType(AuthenticationMethod) },
+    { no: 3, name: "avatar_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIdentityResponse {
@@ -364,6 +370,68 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
 
   static equals(a: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined, b: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined): boolean {
     return proto3.util.equals(GetIdentityResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClearSessionCookieRequest
+ */
+export class ClearSessionCookieRequest extends Message<ClearSessionCookieRequest> {
+  constructor(data?: PartialMessage<ClearSessionCookieRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ClearSessionCookieRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ClearSessionCookieRequest {
+    return new ClearSessionCookieRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ClearSessionCookieRequest {
+    return new ClearSessionCookieRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ClearSessionCookieRequest {
+    return new ClearSessionCookieRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ClearSessionCookieRequest | PlainMessage<ClearSessionCookieRequest> | undefined, b: ClearSessionCookieRequest | PlainMessage<ClearSessionCookieRequest> | undefined): boolean {
+    return proto3.util.equals(ClearSessionCookieRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClearSessionCookieResponse
+ */
+export class ClearSessionCookieResponse extends Message<ClearSessionCookieResponse> {
+  constructor(data?: PartialMessage<ClearSessionCookieResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ClearSessionCookieResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ClearSessionCookieResponse {
+    return new ClearSessionCookieResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ClearSessionCookieResponse {
+    return new ClearSessionCookieResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ClearSessionCookieResponse {
+    return new ClearSessionCookieResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ClearSessionCookieResponse | PlainMessage<ClearSessionCookieResponse> | undefined, b: ClearSessionCookieResponse | PlainMessage<ClearSessionCookieResponse> | undefined): boolean {
+    return proto3.util.equals(ClearSessionCookieResponse, a, b);
   }
 }
 
