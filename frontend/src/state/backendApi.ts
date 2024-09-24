@@ -337,6 +337,7 @@ const apiStore = {
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
     licenses: []  as License[],
+    licenseViolation: false,
     licensesLoaded: false,
 
     // undefined = we haven't checked yet
@@ -1545,14 +1546,15 @@ const apiStore = {
         return r;
     },
 
-    async listLicenses(): Promise<ListLicensesResponse> {
+    async listLicenses(): Promise<ListLicensesResponse | undefined> {
         const client = appConfig.licenseClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
-            throw new Error('Console client is not initialized');
+            throw new Error('License client is not initialized');
         }
         return await client.listLicenses({}).then(response => {
             this.licenses = response.licenses
+            this.licenseViolation = response.violation
             this.licensesLoaded = true
             return response
         });
