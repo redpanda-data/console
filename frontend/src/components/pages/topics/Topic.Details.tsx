@@ -28,7 +28,6 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
-import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
@@ -36,6 +35,7 @@ import PageContent from '../../misc/PageContent';
 import { Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
+import { MdOutlineWarningAmber } from 'react-icons/md';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
@@ -117,7 +117,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         );
         const warnIcon = (
             <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
-                <WarningOutlined color="hsl(22deg 29% 85%)" />
+                <MdOutlineWarningAmber />
             </span>
         );
         this.topicTabs = [

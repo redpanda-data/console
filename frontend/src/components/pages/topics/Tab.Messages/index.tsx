@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { ClockCircleOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -36,13 +35,15 @@ import { editQuery } from '../../../../utils/queryHelper';
 import {
     MdCalendarToday,
     MdDoNotDisturb,
+    MdDownload,
     MdJavascript,
     MdKeyboardTab,
     MdOutlineLayers,
     MdOutlinePlayCircle,
     MdOutlineQuickreply,
     MdOutlineSettings,
-    MdOutlineSkipPrevious
+    MdOutlineSkipPrevious,
+    MdOutlineTimer
 } from 'react-icons/md';
 import {
     Ellipsis,
@@ -525,8 +526,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             {this.messageSearch.searchPhase === null || this.messageSearch.searchPhase === 'Done'
                               ? (
                                 <>
-                                    <Flex alignItems="center" gap={2}><DownloadOutlined /> {prettyBytes(this.messageSearch.bytesConsumed)}</Flex>
-                                    <Flex alignItems="center" gap={2}><ClockCircleOutlined /> {this.messageSearch.elapsedMs ? prettyMilliseconds(this.messageSearch.elapsedMs):''}</Flex>
+                                    <Flex alignItems="center" gap={2}><MdDownload size={14} /> {prettyBytes(this.messageSearch.bytesConsumed)}</Flex>
+                                    <Flex alignItems="center" gap={2}><MdOutlineTimer size={14} /> {this.messageSearch.elapsedMs ? prettyMilliseconds(this.messageSearch.elapsedMs):''}</Flex>
                                 </>
                               )
                               :(
@@ -1810,8 +1811,8 @@ const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = ob
           className={e.isActive ? 'filterTag':'filterTag filterTagDisabled'}
           key={e.id}
         >
-          <SettingOutlined
-            className="settingIconFilter"
+          <MdOutlineSettings
+            size={14}
             onClick={() => {
                 onEdit(e)
             }}
