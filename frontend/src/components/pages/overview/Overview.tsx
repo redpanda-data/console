@@ -67,7 +67,7 @@ class Overview extends PageComponent {
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
             return (
-                <Flex alignItems="center" gap={4}>
+                <Flex alignItems="flex-start" gap={4}>
                     {text}
                     <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
                         <Box><FaCrown size={16} color="#0008" /></Box>

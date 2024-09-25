@@ -16,15 +16,7 @@ import React, { Component, FC, ReactNode, useState } from 'react';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
 import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import {
-    ColumnList,
-    DataColumnKey,
-    DEFAULT_SEARCH_PARAMS,
-    FilterEntry,
-    PartitionOffsetOrigin,
-    PreviewTagV2,
-    TimestampDisplayFormat,
-} from '../../../../state/ui';
+import { ColumnList, DataColumnKey, DEFAULT_SEARCH_PARAMS, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat, } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
@@ -32,81 +24,13 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import {
-    MdCalendarToday,
-    MdDoNotDisturb,
-    MdDownload,
-    MdJavascript,
-    MdKeyboardTab,
-    MdOutlineLayers,
-    MdOutlinePlayCircle,
-    MdOutlineQuickreply,
-    MdOutlineSettings,
-    MdOutlineSkipPrevious,
-    MdOutlineTimer
-} from 'react-icons/md';
-import {
-    Ellipsis,
-    Label,
-    navigatorClipboardErrorHandler,
-    numberToThousandsString,
-    StatusIndicator,
-    TimestampDisplay,
-    toSafeString
-} from '../../../../utils/tsxUtils';
-import {
-    base64FromUInt8Array,
-    cullText,
-    encodeBase64,
-    prettyBytes,
-    prettyMilliseconds,
-    titleCase
-} from '../../../../utils/utils';
+import { MdCalendarToday, MdDoNotDisturb, MdDownload, MdJavascript, MdKeyboardTab, MdOutlineLayers, MdOutlinePlayCircle, MdOutlineQuickreply, MdOutlineSettings, MdOutlineSkipPrevious, MdOutlineTimer } from 'react-icons/md';
+import { Ellipsis, Label, navigatorClipboardErrorHandler, numberToThousandsString, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { base64FromUInt8Array, cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
-import {
-    Alert,
-    AlertDescription,
-    AlertIcon,
-    AlertTitle,
-    Badge,
-    Box,
-    Button,
-    Checkbox,
-    DataTable,
-    DateTimeInput,
-    Flex,
-    Grid,
-    GridItem,
-    Heading,
-    IconButton,
-    Input,
-    Link,
-    Menu,
-    MenuButton,
-    MenuDivider,
-    MenuItem,
-    MenuList,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    RadioGroup,
-    Stack,
-    Tabs as RpTabs,
-    Tag,
-    TagCloseButton,
-    TagLabel,
-    Text,
-    Tooltip,
-    useBreakpoint,
-    useColorModeValue,
-    useToast
-} from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, AlertTitle, Badge, Box, Button, Checkbox, DataTable, DateTimeInput, Flex, Grid, GridItem, Heading, IconButton, Input, Link, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, RadioGroup, Stack, Tabs as RpTabs, Tag, TagCloseButton, TagLabel, Text, Tooltip, useBreakpoint, useColorModeValue, useToast } from '@redpanda-data/ui';
 import { SingleSelect, SingleSelectProps } from '../../../misc/Select';
 import { isServerless } from '../../../../config';
 import { Link as ReactRouterLink } from 'react-router-dom';

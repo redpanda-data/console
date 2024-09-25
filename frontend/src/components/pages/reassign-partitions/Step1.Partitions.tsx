@@ -24,8 +24,9 @@ import Highlighter from 'react-highlight-words';
 import { uiSettings } from '../../../state/ui';
 import { WarningTwoTone } from '@ant-design/icons';
 import { SearchTitle } from '../../misc/KowlTable';
-import { Box, Checkbox, DataTable, Popover } from '@redpanda-data/ui'
+import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import { Row } from '@tanstack/react-table';
+import { MdOutlineWarningAmber } from 'react-icons/md';
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -122,13 +123,12 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                         header: 'Partitions',
                         cell: ({row: {original: topic}}) => {
                             const errors = topic.partitions.count(p => p.hasErrors);
-                            if (errors == 0) return topic.partitionCount;
+                            if (errors === 0) return topic.partitionCount;
 
-                            return <span>
-                        <span>{topic.partitionCount - errors} / {topic.partitionCount}</span>
-                                {' '}
+                            return <Flex gap={2} flexDirection="row" alignItems="center">
                                 {renderPartitionErrorsForTopic(errors)}
-                    </span>
+                                <Text>{topic.partitionCount - errors} / {topic.partitionCount}</Text>
+                            </Flex>;
                         },
                         accessorKey: 'partitions'
                     },
@@ -323,9 +323,7 @@ function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
     >
         <span>
             <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
-                <span style={{fontSize: '19px'}}>
-                    <WarningTwoTone twoToneColor="orange"/>
-                </span>
+                <MdOutlineWarningAmber color="orange" size={20} />
             </ZeroSizeWrapper>
         </span>
     </Popover>
