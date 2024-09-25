@@ -131,7 +131,7 @@ export const DataRefreshButton = observer(() => {
               </Popover>
             }
         </Flex>
-        <Text userSelect="none" fontSize="sm">
+        <Text userSelect="none" fontSize="sm" ml={4}>
             {autoRefresh.active && api.activeRequests.length===0 &&
               <>Refreshing in {autoRefresh.remainingSeconds} secs</>}
             {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}

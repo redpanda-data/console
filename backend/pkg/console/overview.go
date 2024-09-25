@@ -109,8 +109,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 		}
 	}
 
-	licenseInfo := s.getRedpandaLicense(ctx, redpandaCl)
-
 	version, _ := s.redpandaClusterVersion(ctx, redpandaCl)
 
 	var userCount *int
@@ -132,7 +130,6 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 
 	return OverviewRedpanda{
 		IsAdminAPIConfigured:    true,
-		License:                 &licenseInfo,
 		Version:                 version,
 		UserCount:               userCount,
 		PartitionBalancerStatus: partitionBalancerStatus,

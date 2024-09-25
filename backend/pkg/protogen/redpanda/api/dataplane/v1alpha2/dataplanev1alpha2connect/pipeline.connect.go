@@ -92,8 +92,7 @@ type PipelineServiceClient interface {
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
-	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
-	// available components and processors in this instance.
+	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 
@@ -230,8 +229,7 @@ type PipelineServiceHandler interface {
 	StopPipeline(context.Context, *connect.Request[v1alpha2.StopPipelineRequest]) (*connect.Response[v1alpha2.StopPipelineResponse], error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	StartPipeline(context.Context, *connect.Request[v1alpha2.StartPipelineRequest]) (*connect.Response[v1alpha2.StartPipelineResponse], error)
-	// GetPipelineServiceConfigSchema returns the Pipeline service configuration enumerating all the
-	// available components and processors in this instance.
+	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha2.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha2.GetPipelineServiceConfigSchemaResponse], error)
 }
 

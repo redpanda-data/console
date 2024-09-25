@@ -32,6 +32,7 @@ func NewService(
 	protoSvc *proto.Service,
 	msgPackSvc *msgpack.Service,
 	cachedSchemaClient schema.Client,
+	cborConfig config.Cbor,
 ) (*Service, error) {
 	return &Service{
 		SerDes: []Serde{
@@ -44,6 +45,7 @@ func NewService(
 			ProtobufSchemaSerde{schemaClient: cachedSchemaClient},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
+			CborSerde{Config: cborConfig},
 			UTF8Serde{},
 			TextSerde{},
 			UintSerde{},

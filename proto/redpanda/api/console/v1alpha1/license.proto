@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+
+message License {
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
+    SOURCE_REDPANDA_CONSOLE = 1;
+    SOURCE_REDPANDA_CORE = 2;
+  }
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_COMMUNITY = 1;
+    TYPE_TRIAL = 2;
+    TYPE_ENTERPRISE = 3;
+  }
+
+  // Source is where the license is used (e.g. Redpanda Cluster, Console).
+  Source source = 1;
+  // Type is the type of license (community, trial, enterprise).
+  Type type = 2;
+  // UnixEpochSeconds is the timestamp when the license is going to expire.
+  int64 expires_at = 3;
+}
+
+message ListLicensesRequest {}
+
+message ListLicensesResponse {
+  repeated License licenses = 1;
+}
+
+message SetLicenseRequest {
+  string license = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 32,
+    (buf.validate.field).string.max_len = 1024
+  ];
+}
+
+message SetLicenseResponse {
+  License license = 1;
+}
+
+service LicenseService {
+  // ListLicenses lists all the roles based on optional filter.
+  rpc ListLicenses(ListLicensesRequest) returns (ListLicensesResponse) {}
+
+  // SetLicense installs a new license on the Redpanda cluster.
+  rpc SetLicense(SetLicenseRequest) returns (SetLicenseResponse) {}
+}

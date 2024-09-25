@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
- import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 /* start global stylesheets */
@@ -30,6 +30,7 @@ import HistorySetter from './components/misc/HistorySetter';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { ErrorBoundary } from './components/misc/ErrorBoundary';
 
 export interface EmbeddedProps extends SetConfigArguments {
     /**
@@ -77,7 +78,9 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
         <BrowserRouter basename={basePath}>
             <HistorySetter />
             <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-                <AppContent />
+                <ErrorBoundary>
+                    <AppContent />
+                </ErrorBoundary>
             </ChakraProvider>
         </BrowserRouter>
     );

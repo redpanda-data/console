@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
  * Defines the pipeline resource.
@@ -20,7 +20,7 @@ export class Pipeline extends Message<Pipeline> {
   id = "";
 
   /**
-   * User friendly display name.
+   * User-friendly pipeline name.
    *
    * @generated from field: string display_name = 2;
    */
@@ -34,7 +34,7 @@ export class Pipeline extends Message<Pipeline> {
   description = "";
 
   /**
-   * The configuration of the Pipeline as YAML.
+   * The pipeline configuration in YAML.
    * See https://docs.redpanda.com/redpanda-connect/configuration/about/
    *
    * @generated from field: string config_yaml = 4;
@@ -42,18 +42,11 @@ export class Pipeline extends Message<Pipeline> {
   configYaml = "";
 
   /**
-   * The minimum amount of resources needed for the pipeline to run
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 5;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 9;
    */
-  request?: Pipeline_Resources;
-
-  /**
-   * The maximum amount of resources that should be assigned to the pipeline
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 6;
-   */
-  limit?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   /**
    * The current pipeline state.
@@ -79,8 +72,7 @@ export class Pipeline extends Message<Pipeline> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "request", kind: "message", T: Pipeline_Resources },
-    { no: 6, name: "limit", kind: "message", T: Pipeline_Resources },
+    { no: 9, name: "resources", kind: "message", T: Pipeline_Resources },
     { no: 7, name: "state", kind: "enum", T: proto3.getEnumType(Pipeline_State) },
     { no: 8, name: "status", kind: "message", T: Pipeline_Status },
   ]);
@@ -142,7 +134,7 @@ export enum Pipeline_State {
   STOPPED = 4,
 
   /**
-   * The pipeline is in error state.
+   * The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
    *
    * @generated from enum value: STATE_ERROR = 5;
    */
@@ -163,34 +155,30 @@ proto3.util.setEnumType(Pipeline_State, "redpanda.api.dataplane.v1alpha2.Pipelin
  */
 export class Pipeline_Resources extends Message<Pipeline_Resources> {
   /**
-   * memory_shares is a string specifying the amount of memory to allocate for
+   * `memory_shares` is a string specifying the amount of memory to allocate for
    * the pipeline.
    *
-   * This follows the Kubernetes resource quantity format. Acceptable units
+   * This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable units
    * include:
    * - Decimal SI units: "K", "M", "G", "T", "P", "E" (e.g., "128M" for 128
    *   megabytes)
    * - Binary SI units: "Ki", "Mi", "Gi", "Ti", "Pi", "Ei" (e.g., "512Mi" for
-   * 512 mebibytes) If no unit is specified, the value is interpreted as
+   * 512 mebibytes) If you don't specify a unit, the value is interpreted as
    * bytes.
-   *
-   * More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
    *
    * @generated from field: string memory_shares = 1;
    */
   memoryShares = "";
 
   /**
-   * cpu_shares is a string specifying the amount of CPU to allocate for the
+   * `cpu_shares` is a string specifying the amount of CPU to allocate for the
    * pipeline.
    *
-   * This follows the Kubernetes resource quantity format. Acceptable
+   * This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable
    * units include:
    * - Decimal SI units: "m" (e.g., "500m" for 500 millicores, "2" for 2 cores)
-   * If no unit is specified, the value is interpreted as the number of cores.
    * CPU shares can be specified in millicores (1 core = 1000 millicores).
-   *
-   * More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/
+   * If you don't specify a unit, the value is interpreted as the number of cores.
    *
    * @generated from field: string cpu_shares = 2;
    */
@@ -226,7 +214,7 @@ export class Pipeline_Resources extends Message<Pipeline_Resources> {
 }
 
 /**
- * Pipeline status can hold error message.
+ * Pipeline status may contain an error message.
  *
  * @generated from message redpanda.api.dataplane.v1alpha2.Pipeline.Status
  */
@@ -271,7 +259,7 @@ export class Pipeline_Status extends Message<Pipeline_Status> {
  */
 export class PipelineCreate extends Message<PipelineCreate> {
   /**
-   * User friendly pipeline name.
+   * User-friendly pipeline name.
    *
    * @generated from field: string display_name = 1;
    */
@@ -285,25 +273,18 @@ export class PipelineCreate extends Message<PipelineCreate> {
   description = "";
 
   /**
-   * The pipeline configuration in YAML format.
+   * The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
    *
    * @generated from field: string config_yaml = 3;
    */
   configYaml = "";
 
   /**
-   * Pipeline resource requests.
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 6;
    */
-  request?: Pipeline_Resources;
-
-  /**
-   * Pipeline resource limits.
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 5;
-   */
-  limit?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   constructor(data?: PartialMessage<PipelineCreate>) {
     super();
@@ -316,8 +297,7 @@ export class PipelineCreate extends Message<PipelineCreate> {
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "request", kind: "message", T: Pipeline_Resources },
-    { no: 5, name: "limit", kind: "message", T: Pipeline_Resources },
+    { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineCreate {
@@ -418,7 +398,7 @@ export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
  */
 export class GetPipelineRequest extends Message<GetPipelineRequest> {
   /**
-   * The pipeline ID.
+   * Pipeline ID.
    *
    * @generated from field: string id = 1;
    */
@@ -632,7 +612,7 @@ export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
  */
 export class PipelineUpdate extends Message<PipelineUpdate> {
   /**
-   * Pipeline name.
+   * User-friendly pipeline name.
    *
    * @generated from field: string display_name = 1;
    */
@@ -646,25 +626,18 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
   description = "";
 
   /**
-   * The pipeline configuration in YAML format.
+   * The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
    *
    * @generated from field: string config_yaml = 3;
    */
   configYaml = "";
 
   /**
-   * Pipeline resource requests.
+   * The number of resources that are guaranteed to be assigned to the pipeline.
    *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources request = 4;
+   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources resources = 6;
    */
-  request?: Pipeline_Resources;
-
-  /**
-   * Pipeline resource limits.
-   *
-   * @generated from field: redpanda.api.dataplane.v1alpha2.Pipeline.Resources limit = 5;
-   */
-  limit?: Pipeline_Resources;
+  resources?: Pipeline_Resources;
 
   constructor(data?: PartialMessage<PipelineUpdate>) {
     super();
@@ -677,8 +650,7 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "request", kind: "message", T: Pipeline_Resources },
-    { no: 5, name: "limit", kind: "message", T: Pipeline_Resources },
+    { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineUpdate {
@@ -703,6 +675,8 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
  */
 export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   /**
+   * Pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -711,13 +685,6 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
    * @generated from field: redpanda.api.dataplane.v1alpha2.PipelineUpdate pipeline = 2;
    */
   pipeline?: PipelineUpdate;
-
-  /**
-   * The fields to be updated.
-   *
-   * @generated from field: google.protobuf.FieldMask update_mask = 3;
-   */
-  updateMask?: FieldMask;
 
   constructor(data?: PartialMessage<UpdatePipelineRequest>) {
     super();
@@ -729,7 +696,6 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "pipeline", kind: "message", T: PipelineUpdate },
-    { no: 3, name: "update_mask", kind: "message", T: FieldMask },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePipelineRequest {
@@ -791,6 +757,8 @@ export class UpdatePipelineResponse extends Message<UpdatePipelineResponse> {
  */
 export class DeletePipelineRequest extends Message<DeletePipelineRequest> {
   /**
+   * Pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -859,6 +827,8 @@ export class DeletePipelineResponse extends Message<DeletePipelineResponse> {
  */
 export class StopPipelineRequest extends Message<StopPipelineRequest> {
   /**
+   * Pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -933,6 +903,8 @@ export class StopPipelineResponse extends Message<StopPipelineResponse> {
  */
 export class StartPipelineRequest extends Message<StartPipelineRequest> {
   /**
+   * Pipeline ID.
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -1038,7 +1010,7 @@ export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineSe
  */
 export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineServiceConfigSchemaResponse> {
   /**
-   * config_schema is the JSON schema of the configuration components that are allowed for pipelines.
+   * JSON schema of the configuration components that are allowed for Connect pipelines.
    *
    * @generated from field: string config_schema = 1;
    */

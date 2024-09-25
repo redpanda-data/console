@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240715174743-9c0afe867874.2
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
@@ -16,6 +16,7 @@ require (
 	github.com/cloudhut/connect-client v0.0.0-20240523140316-27c93e339567
 	github.com/docker/go-connections v0.5.0
 	github.com/dop251/goja v0.0.0-20240806095544-3491d4a58fbe
+	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/getkin/kin-openapi v0.127.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/cors v1.2.1
@@ -34,7 +35,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redpanda-data/benthos/v4 v4.35.0
-	github.com/redpanda-data/common-go/api v0.0.0-20240731205413-a0e2fecabe80
+	github.com/redpanda-data/common-go/api v0.0.0-20240918135346-6c838a508d64
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.1.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
@@ -187,6 +188,7 @@ require (
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/urfave/cli/v2 v2.27.4 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

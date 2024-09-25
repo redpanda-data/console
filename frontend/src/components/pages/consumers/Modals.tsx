@@ -12,7 +12,7 @@
 
 import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
-import { InfoText, numberToThousandsString, RadioOptionGroup } from '../../../utils/tsxUtils';
+import { InfoText, numberToThousandsString } from '../../../utils/tsxUtils';
 import { observer } from 'mobx-react';
 import { action, autorun, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -23,7 +23,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, FormLabel, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
@@ -108,7 +108,7 @@ export class EditOffsetsModal extends Component<{
                 <Modal isOpen={visible} onClose={() => {
                 }}>
                     <ModalOverlay/>
-                    <ModalContent minW="5xl">
+                    <ModalContent minW="3xl">
                         <ModalHeader>Edit consumer group</ModalHeader>
                         <ModalBody>
                             <HStack spacing={6}>
@@ -153,95 +153,86 @@ export class EditOffsetsModal extends Component<{
 
     page1() {
         return (
-            <RadioOptionGroup<EditOptions>
-                disabled={this.isLoadingTimestamps}
-                value={this.selectedOption}
-                onChange={v => (this.selectedOption = v)}
-                options={[
-                    {
-                        value: 'startOffset',
-                        title: 'Start Offset',
-                        subTitle: 'Set all offsets to the oldest partition\'s offset.'
-                    },
-                    {
-                        value: 'endOffset',
-                        title: 'End Offset',
-                        subTitle: 'Set all offsets to the newest partition\'s offset.'
-                    },
-                    {
-                        value: 'time',
-                        title: 'Specific Time',
-                        subTitle: 'Choose a timestamp to which all partition\'s offsets will be set.',
-                        content: (
-                          <div
-                            style={{
-                                paddingTop: '6px',
-                                marginLeft: '-1px'
-                            }}
-                            onClick={(e) => {
-                                // TODO: This is just a workaround, and it's basically an interactive element
-                                // inside of a radio group and we should solve this differently.
-                                // The core of the problem is that the radiogroup input steals focus from the
-                                // calendar.
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }}
-                          >
-                              <KowlTimePicker valueUtcMs={this.timestampUtcMs}
-                                              onChange={t => (this.timestampUtcMs = t)}
-                                              disabled={this.isLoadingTimestamps}/>
-                          </div>
-                    )
-                },
-                {
-                    value: 'otherGroup',
-                    title: 'Other Consumer Group',
-                    subTitle: 'Copy offsets from another (inactive) consumer group',
-                        content: (
-                            <>
-                                <div
-                                    // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
-                                    // fixes immediately self closing Select drop down after an option has already been selected
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
-                                    style={{
-                                        display: 'flex',
-                                        gap: '.5em',
-                                        flexDirection: 'column',
-                                        paddingTop: '12px',
-                                        marginLeft: '-1px',
-                                    }}
-                                >
-                                    <SingleSelect
-                                        options={this.otherConsumerGroups.map(g => ({value: g.groupId, label: g.groupId}))}
-                                        value={this.selectedGroup}
-                                        onChange={x => (this.selectedGroup = x)}
-                                        isDisabled={this.isLoadingTimestamps}
-                                    />
+            <Flex flexDirection="column" gap={4} mt={16}>
+                <Box maxW={300}>
+                    <FormLabel>Start consuming at</FormLabel>
+                    <SingleSelect
+                        isDisabled={this.isLoadingTimestamps}
+                        value={this.selectedOption}
+                        onChange={v => (this.selectedOption = v as EditOptions)}
+                        options={[
+                            {
+                                value: 'startOffset',
+                                label: 'Start Offset',
+                            },
+                            {
+                                value: 'endOffset',
+                                label: 'End Offset',
+                            },
+                            {
+                                value: 'time',
+                                label: 'Specific Time',
+                            },
+                            {
+                                value: 'otherGroup',
+                                label: 'Other Consumer Group',
+                            }
+                        ]}
+                    />
+                </Box>
 
-                                    <Radio value="onlyExisting" isChecked={this.otherGroupCopyMode === 'onlyExisting'} onClick={() => {
-                                        this.otherGroupCopyMode = 'onlyExisting'
-                                    }}>
-                                        <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px">
-                                            Copy matching offsets
-                                        </InfoText>
-                                    </Radio>
+                <Text>{({
+                    'startOffset': 'Set all offsets to the oldest partition\'s offset.',
+                    'endOffset': 'Set all offsets to the newest partition\'s offset.',
+                    'time': 'Choose a timestamp to which all partition\'s offsets will be set.',
+                    'otherGroup': 'Copy offsets from another (inactive) consumer group',
+                } as Record<EditOptions, string>)[this.selectedOption]}</Text>
 
-                                    <Radio value="all" isChecked={this.otherGroupCopyMode === 'all'} onClick={() => {
-                                        this.otherGroupCopyMode = 'all'
-                                    }}>
-                                        <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px">
-                                            Full Copy
-                                        </InfoText>
-                                    </Radio>
-                                </div>
-                            </>
-                        )
-                    }
-                ]}
-            />
+                {this.selectedOption === 'time' && <Box mt={2}>
+                    <FormLabel>Timestamp</FormLabel>
+                    <KowlTimePicker
+                        valueUtcMs={this.timestampUtcMs}
+                        onChange={t => (this.timestampUtcMs = t)}
+                        disabled={this.isLoadingTimestamps}
+                    />
+                </Box>}
+
+                {this.selectedOption === 'otherGroup' && <Box mt={2}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: '.5em',
+                            flexDirection: 'column',
+                            paddingTop: '12px',
+                            marginLeft: '-1px',
+                        }}
+                    >
+                        <SingleSelect
+                            options={this.otherConsumerGroups.map(g => ({value: g.groupId, label: g.groupId}))}
+                            value={this.selectedGroup}
+                            onChange={x => (this.selectedGroup = x)}
+                            isDisabled={this.isLoadingTimestamps}
+                        />
+
+                        <Radio value="onlyExisting" isChecked={this.otherGroupCopyMode==='onlyExisting'} onClick={() => {
+                            this.otherGroupCopyMode = 'onlyExisting';
+                        }}>
+                            <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px">
+                                Copy matching offsets
+                            </InfoText>
+                        </Radio>
+
+                        <Radio value="all" isChecked={this.otherGroupCopyMode==='all'} onClick={() => {
+                            this.otherGroupCopyMode = 'all';
+                        }}>
+                            <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px">
+                                Full Copy
+                            </InfoText>
+                        </Radio>
+                    </div>
+                </Box>}
+            </Flex>
+
         );
     }
 

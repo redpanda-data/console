@@ -43,9 +43,9 @@ export const AclPrincipalGroupEditor = observer((p: {
     const [error, setError] = useState(undefined as string | undefined);
 
     const [isFormValid, setIsFormValid] = useState(true);
-    const [isTopicsValid, setTopicsIsValid] = useState(false);
-    const [isConsumerGroupsValid, setConsumerGroupsIsValid] = useState(false);
-    const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(false);
+    const [isTopicsValid, setTopicsIsValid] = useState(true);
+    const [isConsumerGroupsValid, setConsumerGroupsIsValid] = useState(true);
+    const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(true);
 
 
     const noNameOrNameInUse = (p.type == 'create')

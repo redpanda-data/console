@@ -144,7 +144,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'null' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile';
+export type MessageDataType = 'null' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack' | 'uint' | 'smile' | 'cbor';
 export enum CompressionType {
     Unknown = 'unknown',
 
@@ -459,7 +459,7 @@ export interface Broker {
     config: BrokerConfig;
 }
 export interface BrokerConfig {
-    configs: ConfigEntry[];
+    configs: ConfigEntry[] | undefined;
     error: string | undefined;
 }
 

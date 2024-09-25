@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// SCRAM Auth settings.
+message SCRAMAuth {
+  string username = 1;
+  string password = 2;
+  Mechanism mechanism = 3;
+
+  enum Mechanism {
+    MECHANISM_UNSPECIFIED = 0;
+    MECHANISM_SCRAM_SHA_256 = 1;
+    MECHANISM_SCRAM_SHA_512 = 2;
+  }
+}
+
+// Request to start the creation of debug bundle process with given configuration parameters.
+message CreateDebugBundleRequest {
+  // Optional authentication settings to use for the request.
+  oneof authentication {
+    SCRAMAuth scram = 1;
+  }
+
+  // Optional broker IDs. Do not set / leave empty to create for all.
+  repeated int32 broker_ids = 3;
+
+  // The size limit of the controller logs that can be stored in the bundle.
+  int32 controller_logs_size_limit_bytes = 4 [(buf.validate.field).int32 = {gte: 0}];
+
+  // For how long to collect samples for the CPU profiler
+  int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {gte: 15}];
+
+  // Include logs dated from specified date onward.
+  google.protobuf.Timestamp logs_since = 6;
+
+  // Read the logs until the given size is reached.
+  int32 logs_size_limit_bytes = 7 [(buf.validate.field).int32 = {gte: 0}];
+
+  // Include logs older than the specified date.
+  google.protobuf.Timestamp logs_until = 8;
+
+  // Interval between metrics snapshots.
+  int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
+
+  // Partitions. When provided, rpk saves extra admin API requests for those partitions.
+  // Optional.
+  // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
+  // Partition IDs is comma separated numbers.
+  // kafka/foo/1,2,3. also there can be multiple of those so
+  // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
+  repeated string partitions = 10;
+}
+
+// Response to CreateDebugBundle.
+message CreateDebugBundleResponse {
+  // Job ID. UUID.
+  string job_id = 1;
+}
+
+// Gets status of debug bundle progress.
+message GetDebugBundleStatusRequest {
+  // Optional broker IDs to get. If not set / empty get all.
+  repeated int32 broker_ids = 1;
+}
+
+message DebugBundleStatus {
+  // The broker ID.
+  int32 broker_id = 1;
+
+  // The job UUID of this process.
+  string job_id = 2;
+
+  // The status of the job.
+  Status status = 3;
+
+  // When the job was started.
+  google.protobuf.Timestamp created_at = 4;
+
+  // Path in API to get the file.
+  string filename = 5;
+
+  // Only filled in once the process completes.  Content of stdout from rpk.
+  repeated string stdout = 6;
+
+  // Only filled in once the process completes.  Content of stderr from rpk.
+  repeated string stderr = 7;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_RUNNING = 1;
+    STATUS_SUCCESS = 2;
+    STATUS_ERROR = 3;
+  }
+}
+
+// The response to GetDebugBundleStatus.
+message GetDebugBundleStatusResponse {
+  repeated DebugBundleStatus statuses = 1;
+}
+
+message DeleteDebugBundleRequest {
+  string job_id = 1;
+
+  // Optional broker IDs. Do not set / empty for all.
+  repeated int32 broker_ids = 2;
+}
+
+// Response for DeleteDebugBundle.
+message DeleteDebugBundleResponse {
+  repeated BundleError errors = 1;
+}
+
+// Request for DeleteDebugBundleFile.
+message DeleteDebugBundleFileRequest {
+  string filename = 1;
+
+  // Optional broker IDs. Do not set / empty for all.
+  repeated int32 broker_ids = 2;
+}
+
+// Response for DeleteDebugBundleFile.
+message DeleteDebugBundleFileResponse {
+  repeated BundleError errors = 1;
+}
+
+// Error details for various responses and operations.
+message BundleError {
+  // The broker ID.
+  int32 broker_id = 1;
+
+  // The error code.
+  BundleErrorCode code = 2;
+
+  // Additional information
+  string message = 3;
+}
+
+// Error code enum.
+enum BundleErrorCode {
+  // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+  // OK. No Error.
+  BUNDLE_ERROR_CODE_OK = 0;
+
+  // Debug bundle process already running
+  BUNDLE_ERROR_CODE_PROCESS_ALREADY_RUNNING = 1;
+
+  // Debug bundle process not running.
+  BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING = 2;
+
+  // Job ID not recognized.
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+
+  // Debug bundle process was never started.
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+
+  // Internal error.
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+}
+
+// Additional API:
+// GET /api/debug_bundle/{file}
+// GET /api/debug_bundle/{broker_id}/{file}
+// This will download the debug bundle zip file
+
+service DebugBundleService {
+  rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
+  rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
+  rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
+  rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
+}

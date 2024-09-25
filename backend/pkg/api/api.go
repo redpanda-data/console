@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"math"
+	"time"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
@@ -124,6 +124,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		logger.Fatal("failed to create console service", zap.Error(err))
 	}
 
+	year := 24 * time.Hour * 365
 	return &API{
 		Cfg:                    cfg,
 		Logger:                 logger,
@@ -137,7 +138,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		License: license.License{
 			Source:    license.SourceConsole,
 			Type:      license.TypeOpenSource,
-			ExpiresAt: math.MaxInt32,
+			ExpiresAt: time.Now().Add(year * 10).Unix(),,
 		},
 	}
 }

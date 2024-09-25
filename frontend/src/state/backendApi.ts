@@ -81,7 +81,6 @@ import {
     ProduceRecordsResponse,
     PublishRecordsRequest,
     QuotaResponse,
-    RedpandaLicense,
     ResourceConfig,
     SchemaReferencedByEntry,
     SchemaRegistryCompatibilityMode,
@@ -121,6 +120,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { License, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -292,7 +292,6 @@ const apiStore = {
 
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
-    licenses: null as (RedpandaLicense[] | null),
 
     clusterOverview: null as ClusterOverview | null,
     brokers: null as BrokerWithConfigAndStorage[] | null,
@@ -336,6 +335,9 @@ const apiStore = {
 
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
+
+    licenses: [] as License[],
+    licensesLoaded: false,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -677,7 +679,6 @@ const apiStore = {
         if (!r)
             return null;
         this.endpointCompatibility = r.endpointCompatibility;
-        this.licenses = r.licenses;
         return r;
     },
 
@@ -698,6 +699,15 @@ const apiStore = {
         return false;
     },
 
+    get isAdminApiConfigured() {
+        const overview = this.clusterOverview;
+        if (!overview) {
+            return false
+        }
+
+        return overview.redpanda.isAdminApiConfigured
+    },
+
     refreshBrokers(force?: boolean) {
         cachedApiRequest<BrokerWithConfigAndStorage[]>(`${appConfig.restBasePath}/brokers`, force)
             .then(v => {
@@ -713,7 +723,7 @@ const apiStore = {
                         // add 'type' to each synonym entry
                         for (const broker of v.clusterInfo.brokers)
                             if (broker.config && !broker.config.error)
-                                prepareSynonyms(broker.config.configs);
+                                prepareSynonyms(broker.config.configs ?? []);
 
                         // don't assign if the value didn't change
                         // we'd re-trigger all observers!
@@ -725,7 +735,7 @@ const apiStore = {
                             if (b.config.error)
                                 this.brokerConfigs.set(b.brokerId, b.config.error);
                             else
-                                this.brokerConfigs.set(b.brokerId, b.config.configs);
+                                this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
                     });
                 }
             }, addError);
@@ -1529,6 +1539,37 @@ const apiStore = {
         return parseOrUnwrap<void>(response, null);
     },
 
+    async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+        const client = appConfig.licenseClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
+        const r = await client.setLicense(request);
+
+        return r;
+    },
+
+    async listLicenses(): Promise<void> {
+        const client = appConfig.licenseClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Console client is not initialized');
+        }
+
+        await client.listLicenses({}).then(response => {
+            this.licenses = response.licenses
+            this.licensesLoaded = true
+            return response
+        }, err => {
+            const errorText = (err instanceof Error)
+                ? err.message
+                : String(err);
+
+            console.log('error refreshing licenses: ' + errorText);
+        });
+    }
+
 };
 
 export type RolePrincipal = { name: string, principalType: 'User' };
@@ -1683,19 +1724,9 @@ export const pipelinesApi = observable({
         const client = appConfig.pipelinesClient;
         if (!client) throw new Error('pipelines client is not initialized');
 
-        // https://google.aip.dev/161
-        // update mask is an array of strings containing "field names" of what gets updated
-        // known field names are the "generated from" of PipelineUpdate, for example "display_name", "config_yaml", ...
-        const updates = [];
-        if (pipelineUpdate.configYaml) updates.push('config_yaml');
-        if (pipelineUpdate.description) updates.push('description');
-        if (pipelineUpdate.displayName) updates.push('display_name');
-
         await client.updatePipeline({
             request: {
-                id, pipeline: pipelineUpdate, updateMask: {
-                    paths: updates
-                }
+                id, pipeline: pipelineUpdate
             }
         });
     },
@@ -1961,6 +1992,9 @@ export function createMessageSearch() {
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.key.encoding = 'consumerOffsets';
                                         break;
+                                    case PayloadEncoding.CBOR:
+                                        m.key.encoding = 'cbor';
+                                        break;
                                     default:
                                         console.log('unhandled key encoding type', {
                                             encoding: key?.encoding,
@@ -2030,6 +2064,9 @@ export function createMessageSearch() {
                                         break;
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.value.encoding = 'consumerOffsets';
+                                        break;
+                                    case PayloadEncoding.CBOR:
+                                        m.value.encoding = 'cbor';
                                         break;
                                     default:
                                         console.log('unhandled value encoding type', {

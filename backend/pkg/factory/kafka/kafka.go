@@ -163,11 +163,15 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 			if cfg.SASL.OAUth.TokenEndpoint != "" {
 				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 					shortToken, err := cfg.SASL.OAUth.AcquireToken(ctx)
-					return oauth.Auth{Token: shortToken}, err
+					return oauth.Auth{
+						Token:      shortToken,
+						Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
+					}, err
 				})
 			} else {
 				mechanism = oauth.Auth{
-					Token: cfg.SASL.OAUth.Token,
+					Token:      cfg.SASL.OAUth.Token,
+					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 				}.AsMechanism()
 			}
 
@@ -263,4 +267,12 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 	}
 
 	return opts, nil
+}
+
+func kafkaSASLOAuthExtensionsToStrMap(kafkaSASLOAuthExtensions []config.KafkaSASLOAuthExtension) map[string]string {
+	extensionMap := make(map[string]string)
+	for _, kafkaSASLOAuthExtension := range kafkaSASLOAuthExtensions {
+		extensionMap[kafkaSASLOAuthExtension.Key] = kafkaSASLOAuthExtension.Value
+	}
+	return extensionMap
 }

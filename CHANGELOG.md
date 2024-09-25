@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.7.2 / 2024-11-06
+
+- [SECURITY] Built with Go 1.23.1 which comes with secure CipherSuites by default.
+- [IMPROVEMENT] Minor visual improvements (e.g. padding on the loading spinner in the breadcrumb).
+- [BUGFIX] When updating or creating ACLs in some cases the Update/Create button remained disabled due to invalid form validation.
+- [BUGFIX] Fix resize loop of the Monacco editor in Safari.
+- [BUGFIX] Editing a consumer group by timestamp wasn't possible due to a z-index issue with the datepicker.
+
 ## v2.7.1 / 2024-08-12
 
 - [IMPROVEMENT] Improve descriptions and columns on Users, ACLs, Roles and Permissions List tab on the security page.

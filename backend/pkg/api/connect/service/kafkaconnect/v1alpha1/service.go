@@ -12,47 +12,29 @@ package kafkaconnect
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"net/http"
-	"sort"
 
 	"connectrpc.com/connect"
-	"github.com/cloudhut/common/rest"
-	con "github.com/cloudhut/connect-client"
-	"github.com/redpanda-data/common-go/api/pagination"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/config"
-	kafkaconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 )
 
 var _ dataplanev1alpha1connect.KafkaConnectServiceHandler = (*Service)(nil)
 
-// Service that implements the KafkaConnect interface. This include the RPCs to Handle the KafkaConnect enpoints
+// Service that implements the KafkaConnect interface. This include the RPCs to Handle the KafkaConnect endpoints
 type Service struct {
-	cfg        *config.Config
-	logger     *zap.Logger
-	connectSvc *kafkaconnect.Service
-	mapper     *mapper
-	defaulter  defaulter
+	targetService dataplanev1alpha2connect.KafkaConnectServiceHandler
+
+	defaulter defaulter
 }
 
 // NewService creates a new user service handler.
-func NewService(cfg *config.Config,
-	logger *zap.Logger,
-	kafkaConnectSrv *kafkaconnect.Service,
-) *Service {
+func NewService(targetService dataplanev1alpha2connect.KafkaConnectServiceHandler) *Service {
 	return &Service{
-		cfg:        cfg,
-		logger:     logger,
-		connectSvc: kafkaConnectSrv,
-		mapper:     &mapper{},
-		defaulter:  defaulter{},
+		targetService: targetService,
+		defaulter:     defaulter{},
 	}
 }
 
@@ -60,73 +42,34 @@ func NewService(cfg *config.Config,
 func (s *Service) ListConnectors(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorsRequest]) (*connect.Response[v1alpha1.ListConnectorsResponse], error) {
 	s.defaulter.applyListConnectorsRequest(req.Msg)
 
-	response, err := s.connectSvc.GetClusterConnectors(ctx, req.Msg.ClusterName)
+	pr := mapv1alpha1ToListConnectorsv1alpha2(req.Msg)
+
+	resp, err := s.targetService.ListConnectors(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
 
-	s.logger.Info("list connectors for connect cluster", zap.String("cluster", req.Msg.ClusterName))
-
-	listConnectorsResponse, mapperError := s.mapper.connectorsHTTPResponseToProto(response)
-
-	if mapperError != nil {
-		s.logger.Error("unable to map list connectors response", zap.Error(mapperError))
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("not able to parse response"),
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
-	}
-
-	if req.Msg.GetPageSize() > 0 {
-		connectors := listConnectorsResponse.Connectors
-
-		sort.SliceStable(connectors, func(i, j int) bool {
-			return connectors[i].Name < connectors[j].Name
-		})
-		page, nextPageToken, err := pagination.SliceToPaginatedWithToken(connectors, int(req.Msg.GetPageSize()), req.Msg.GetPageToken(), "name", func(x *v1alpha1.ListConnectorsResponse_ConnectorInfoStatus) string {
-			return x.GetName()
-		})
-		if err != nil {
-			return nil, apierrors.NewConnectError(
-				connect.CodeInternal,
-				fmt.Errorf("failed to apply pagination: %w", err),
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()),
-			)
-		}
-		listConnectorsResponse.Connectors = page
-		listConnectorsResponse.NextPageToken = nextPageToken
-	}
-
-	return connect.NewResponse(listConnectorsResponse), nil
+	return connect.NewResponse(&v1alpha1.ListConnectorsResponse{
+		Connectors:    mapv1alpha2ConnectorsTov1alpha2(resp.Msg.GetConnectors()),
+		NextPageToken: resp.Msg.GetNextPageToken(),
+	}), nil
 }
 
 // CreateConnector implements the handler for the create connector operation
 func (s *Service) CreateConnector(ctx context.Context, req *connect.Request[v1alpha1.CreateConnectorRequest]) (*connect.Response[v1alpha1.CreateConnectorResponse], error) {
-	kafkaConnectResponse, mapperError := s.mapper.createConnectorProtoToClientRequest(req.Msg)
-	if mapperError != nil {
-		s.logger.Error("unable to map create connector request", zap.Error(mapperError))
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			errors.New("unable create connector request"),
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
+	pr := mapv1alpha1ToCreateConnectorv1alpha2(req.Msg)
+
+	resp, err := s.targetService.CreateConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
-	response, err := s.connectSvc.CreateConnector(ctx, req.Msg.ClusterName, *kafkaConnectResponse)
-	if err != nil {
-		return nil, s.matchError(err)
-	}
 	res := connect.NewResponse(&v1alpha1.CreateConnectorResponse{
 		Connector: &v1alpha1.ConnectorSpec{
-			Name:   response.Name,
-			Type:   response.Type,
-			Tasks:  s.mapper.connectorTaskIDToProto(response.Name, response.Tasks),
-			Config: response.Config,
+			Name:   resp.Msg.GetConnector().GetName(),
+			Type:   resp.Msg.GetConnector().GetType(),
+			Tasks:  mapv1alpha2ConnectorTaskInfoTov1alpha1(resp.Msg.GetConnector().GetTasks()),
+			Config: resp.Msg.GetConnector().Config,
 		},
 	})
 
@@ -138,13 +81,20 @@ func (s *Service) CreateConnector(ctx context.Context, req *connect.Request[v1al
 
 // GetConnector implements the handler for the get connector operation
 func (s *Service) GetConnector(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error) {
-	httpRes, err := s.connectSvc.GetConnectorInfo(ctx, req.Msg.ClusterName, req.Msg.Name)
+	pr := mapv1alpha1ToGetConnectorv1alpha2(req.Msg)
+
+	resp, err := s.targetService.GetConnector(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
 
 	res := connect.NewResponse(&v1alpha1.GetConnectorResponse{
-		Connector: s.mapper.connectorSpecToProto(httpRes),
+		Connector: &v1alpha1.ConnectorSpec{
+			Name:   resp.Msg.GetConnector().GetName(),
+			Type:   resp.Msg.GetConnector().GetType(),
+			Tasks:  mapv1alpha2ConnectorTaskInfoTov1alpha1(resp.Msg.GetConnector().GetTasks()),
+			Config: resp.Msg.GetConnector().Config,
+		},
 	})
 
 	return res, nil
@@ -152,25 +102,15 @@ func (s *Service) GetConnector(ctx context.Context, req *connect.Request[v1alpha
 
 // GetConnectorStatus implements the handler for the get connector status operation
 func (s *Service) GetConnectorStatus(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error) {
-	httpRes, restErr := s.connectSvc.GetConnectorStatus(ctx, req.Msg.ClusterName, req.Msg.Name)
-	if restErr != nil {
-		return nil, s.matchError(restErr)
-	}
+	pr := mapv1alpha1ToGetConnectorStatusv1alpha2(req.Msg)
 
-	status, err := s.mapper.connectorStatusToProto(httpRes)
+	resp, err := s.targetService.GetConnectorStatus(ctx, connect.NewRequest(pr))
 	if err != nil {
-		s.logger.Error("error mapping response for connector", zap.Error(err), zap.String("cluster", req.Msg.ClusterName), zap.String("connector", req.Msg.Name))
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
+		return nil, err
 	}
 
 	res := connect.NewResponse(&v1alpha1.GetConnectorStatusResponse{
-		Status: status,
+		Status: mapv1alpha2ConnectorStatusTov1alpha1(resp.Msg.GetStatus()),
 	})
 
 	return res, nil
@@ -178,8 +118,11 @@ func (s *Service) GetConnectorStatus(ctx context.Context, req *connect.Request[v
 
 // ResumeConnector implements the handler for the resume connector operation
 func (s *Service) ResumeConnector(ctx context.Context, req *connect.Request[v1alpha1.ResumeConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
-	if err := s.connectSvc.ResumeConnector(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
-		return nil, s.matchError(err)
+	pr := mapv1alpha1ResumeConnectorv1alpha2(req.Msg)
+
+	_, err := s.targetService.ResumeConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
@@ -191,8 +134,11 @@ func (s *Service) ResumeConnector(ctx context.Context, req *connect.Request[v1al
 
 // PauseConnector implements the handler for the pause connector operation
 func (s *Service) PauseConnector(ctx context.Context, req *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
-	if err := s.connectSvc.PauseConnector(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
-		return nil, s.matchError(err)
+	pr := mapv1alpha1PauseConnectorv1alpha2(req.Msg)
+
+	_, err := s.targetService.PauseConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
@@ -204,9 +150,11 @@ func (s *Service) PauseConnector(ctx context.Context, req *connect.Request[v1alp
 
 // DeleteConnector implements the handler for the delete connector operation
 func (s *Service) DeleteConnector(ctx context.Context, req *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
-	// attempt to delete connector
-	if err := s.connectSvc.DeleteConnector(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
-		return nil, s.matchError(err)
+	pr := mapv1alpha1DeleteConnectorv1alpha2(req.Msg)
+
+	_, err := s.targetService.DeleteConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
@@ -220,8 +168,11 @@ func (s *Service) DeleteConnector(ctx context.Context, req *connect.Request[v1al
 // For now we only return 204 but don't account for the other response codes
 // and response bodies
 func (s *Service) RestartConnector(ctx context.Context, req *connect.Request[v1alpha1.RestartConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
-	if err := s.connectSvc.RestartConnector(ctx, req.Msg.ClusterName, req.Msg.Name, req.Msg.Options.IncludeTasks, req.Msg.Options.OnlyFailed); err != nil {
-		return nil, s.matchError(err)
+	pr := mapv1alpha1RestartConnectorv1alpha2(req.Msg)
+
+	_, err := s.targetService.RestartConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
@@ -232,8 +183,11 @@ func (s *Service) RestartConnector(ctx context.Context, req *connect.Request[v1a
 
 // StopConnector implements the handler for the stop connector operation
 func (s *Service) StopConnector(ctx context.Context, req *connect.Request[v1alpha1.StopConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
-	if err := s.connectSvc.StopConnector(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
-		return nil, s.matchError(err)
+	pr := mapv1alpha1StopConnectorv1alpha2(req.Msg)
+
+	_, err := s.targetService.StopConnector(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})
@@ -243,70 +197,62 @@ func (s *Service) StopConnector(ctx context.Context, req *connect.Request[v1alph
 }
 
 // ListConnectClusters implements the handler for the restart connector operation
-func (s *Service) ListConnectClusters(ctx context.Context, _ *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error) {
-	clusters := s.connectSvc.GetAllClusterInfo(ctx)
+func (s *Service) ListConnectClusters(ctx context.Context, req *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error) {
+	pr := mapv1alpha1ListConnectClustersv1alpha2(req.Msg)
 
-	clustersProto, err := s.mapper.connectorInfoListToProto(clusters)
+	resp, err := s.targetService.ListConnectClusters(ctx, connect.NewRequest(pr))
 	if err != nil {
-		// We log the error but continue since some of the clusters responses might be correct
-		s.logger.Error("there are some errors getting kakfa connect clusters", zap.Error(err))
+		return nil, err
 	}
 
 	return connect.NewResponse(&v1alpha1.ListConnectClustersResponse{
-		Clusters: clustersProto,
+		Clusters: mapv1alpha2ConnectClustersTov1alpha1(resp.Msg.GetClusters()),
 	}), nil
 }
 
 // GetConnectCluster implements the get connector info operation
 func (s *Service) GetConnectCluster(ctx context.Context, req *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error) {
-	response, httpErr := s.connectSvc.GetClusterInfo(ctx, req.Msg.ClusterName)
-	if httpErr != nil {
-		return nil, s.matchError(httpErr)
+	pr := mapv1alpha1GetConnectClusterv1alpha2(req.Msg)
+
+	resp, err := s.targetService.GetConnectCluster(ctx, connect.NewRequest(pr))
+	if err != nil {
+		return nil, err
 	}
+
 	return connect.NewResponse(&v1alpha1.GetConnectClusterResponse{
-		Cluster: s.mapper.clusterInfoToProto(response),
+		Cluster: mapv1alpha2ConnectClusterTov1alpha1(resp.Msg.GetCluster()),
 	}), nil
 }
 
 // UpsertConnector implements the handler for the upsert connector operation
 func (s *Service) UpsertConnector(ctx context.Context, req *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error) {
-	putConnectorConfigRequest := con.PutConnectorConfigOptions{
-		Config: convertStringMapToInterfaceMap(req.Msg.Config),
-	}
+	pr := mapv1alpha1UpsertConnectorv1alpha2(req.Msg)
 
-	isNew := false
-
-	if _, err := s.connectSvc.GetConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name); err != nil {
-		if err.Status == http.StatusNotFound {
-			isNew = true
-		}
-	}
-
-	conInfo, err := s.connectSvc.PutConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name, putConnectorConfigRequest)
+	resp, err := s.targetService.UpsertConnector(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
 
 	res := connect.NewResponse(&v1alpha1.UpsertConnectorResponse{
-		Connector: s.mapper.connectorSpecToProto(conInfo),
+		Connector: mapv1alpha2ConnectorSpecTov1alpha1(resp.Msg.GetConnector()),
 	})
 
-	// Check if connector already exists, if not set header to 201 created
-	if isNew {
-		res.Header().Set("x-http-code", "201")
-	}
+	res.Header().Set("x-http-code", resp.Header().Get("x-http-code"))
 
 	return res, nil
 }
 
 // GetConnectorConfig implements the handler for the get connector configuration operation
 func (s *Service) GetConnectorConfig(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error) {
-	config, err := s.connectSvc.GetConnectorConfig(ctx, req.Msg.ClusterName, req.Msg.Name)
+	pr := mapv1alpha1GetConnectorConfigv1alpha2(req.Msg)
+
+	resp, err := s.targetService.GetConnectorConfig(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
+
 	return connect.NewResponse(&v1alpha1.GetConnectorConfigResponse{
-		Config: config,
+		Config: resp.Msg.Config,
 	}), nil
 }
 
@@ -314,12 +260,15 @@ func (s *Service) GetConnectorConfig(ctx context.Context, req *connect.Request[v
 // operation,There is no defined order in which the topics are returned and
 // consecutive calls may return the same topic names but in different order
 func (s *Service) ListConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error) {
-	connectorTopics, err := s.connectSvc.ListConnectorTopics(ctx, req.Msg.ClusterName, req.Msg.Name)
+	pr := mapv1alpha1ListConnectorTopicsv1alpha2(req.Msg)
+
+	resp, err := s.targetService.ListConnectorTopics(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
+
 	return connect.NewResponse(&v1alpha1.ListConnectorTopicsResponse{
-		Topics: connectorTopics.Topics,
+		Topics: resp.Msg.Topics,
 	}), nil
 }
 
@@ -328,47 +277,12 @@ func (s *Service) ListConnectorTopics(ctx context.Context, req *connect.Request[
 // since its creation or since the last time its set of active topics was
 // reset.
 func (s *Service) ResetConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ResetConnectorTopicsRequest]) (*connect.Response[emptypb.Empty], error) {
-	err := s.connectSvc.ResetConnectorTopics(ctx, req.Msg.ClusterName, req.Msg.Name)
+	pr := mapv1alpha1ResetConnectorTopicsv1alpha2(req.Msg)
+
+	_, err := s.targetService.ResetConnectorTopics(ctx, connect.NewRequest(pr))
 	if err != nil {
-		return nil, s.matchError(err)
+		return nil, err
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
-func (*Service) matchError(err *rest.Error) *connect.Error {
-	switch err.Status {
-	case http.StatusNotFound:
-		return apierrors.NewConnectError(
-			connect.CodeNotFound,
-			err.Err,
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
-	case http.StatusConflict:
-		return apierrors.NewConnectError(
-			connect.CodeAlreadyExists,
-			err.Err,
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
-	case http.StatusBadRequest:
-		return apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			err.Err,
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
-	default:
-		return apierrors.NewConnectError(
-			connect.CodeInternal,
-			err.Err,
-			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
-			),
-		)
-	}
 }

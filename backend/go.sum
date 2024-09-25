@@ -4,8 +4,8 @@ buf.build/gen/go/connectrpc/eliza/connectrpc/go v1.15.0-20230913231627-233fca715
 buf.build/gen/go/connectrpc/eliza/connectrpc/go v1.15.0-20230913231627-233fca715f49.1/go.mod h1:OZPBPnAuuFcUf5WHYm5pIXkUhIy7Pp6dzV4W2Zbc2/c=
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1 h1:bHffCjg+jKMaDnUeYjBJXHAlH659fX4N1YExnWl5wFU=
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1/go.mod h1:v0PWlly2hqVEW2IZSPlvPHELTvdHD5hBsA0+KlCfTQk=
-buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240715174743-9c0afe867874.2 h1:mwz77izDe41jrNZqQx2iEzOt4k7pfWthVFuK2SMwCCw=
-buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240715174743-9c0afe867874.2/go.mod h1:wThyg02xJx4K/DA5fg0QlKts8XVPyTT86JC8hPfEzno=
+buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2 h1:JyGBchZNUPlQ7/qjieeKq/Cy+/i1vc0H+cIniGZNSFg=
+buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2/go.mod h1:wThyg02xJx4K/DA5fg0QlKts8XVPyTT86JC8hPfEzno=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 connectrpc.com/connect v1.16.2 h1:ybd6y+ls7GOlb7Bh5C8+ghA6SvCBajHwxssO2CGFjqE=
@@ -179,6 +179,8 @@ github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSw
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
+github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv5E=
+github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
 github.com/getkin/kin-openapi v0.127.0 h1:Mghqi3Dhryf3F8vR370nN67pAERW+3a95vomb3MAREY=
 github.com/getkin/kin-openapi v0.127.0/go.mod h1:OZrfXzUfGrNbsKj+xmFBx6E5c6yH3At/tAKSc2UszXM=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -547,8 +549,8 @@ github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5X
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/redpanda-data/benthos/v4 v4.35.0 h1:NlicpomoZzUDuBmpdYF2EftN5VXHya4+Vcvarltucoc=
 github.com/redpanda-data/benthos/v4 v4.35.0/go.mod h1:A5izknIGyzs16rCU0qliFVgdCLn2yyvLM4Hltx+s+TI=
-github.com/redpanda-data/common-go/api v0.0.0-20240731205413-a0e2fecabe80 h1:vWBK6hVIWL4zbab7VY4eOZS9Q38PkBnd7yCFQi3Wl54=
-github.com/redpanda-data/common-go/api v0.0.0-20240731205413-a0e2fecabe80/go.mod h1:ONrhdnNMjehKf5bbrhxZhb9bRndxba1pa1z88VWyrxQ=
+github.com/redpanda-data/common-go/api v0.0.0-20240918135346-6c838a508d64 h1:qkzwcssJVJ8uv14SsAP1HXtYbkjXZO92axc1O1UkEI0=
+github.com/redpanda-data/common-go/api v0.0.0-20240918135346-6c838a508d64/go.mod h1:klAmWfc8Q3hEZk8geFTMu6f2sk3VUKRS7cv/LvB05ig=
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7 h1:MXLdjFdFjOtyuUR4TdVVsqFP8xnru2YDwzH9bJTUr1M=
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7/go.mod h1:UJIi/yUxGOBYXUrfUsOkxfYxcb/ll7mZrwae/i+U2kc=
 github.com/redpanda-data/common-go/rpadmin v0.1.3 h1:JRdr4rHcdr+A0hHr+viJYnPm+dP01bsgVUoQLM7Kz44=
@@ -648,6 +650,8 @@ github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IU
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
+github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
+github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=

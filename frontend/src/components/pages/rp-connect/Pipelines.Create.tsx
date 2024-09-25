@@ -20,6 +20,7 @@ import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
+import { Link as ChLink } from '@redpanda-data/ui';
 import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 const { ToastContainer, toast } = createStandaloneToast();
@@ -63,27 +64,38 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         return (
             <PageContent>
                 <ToastContainer />
-                <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
-                    <Flex alignItems="center" gap="2">
+
+                <Box my="2">
+                    For help creating your pipeline, see our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>quickstart documentation</ChLink>
+                    , our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>library of examples</ChLink>
+                    , or our <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>connector catalog</ChLink>
+                    .
+                </Box>
+
+                <Flex flexDirection="column">
+                    <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+                        <Flex alignItems="center" gap="2">
+                            <Input
+                                placeholder="Enter a config name..."
+                                data-testid="pipelineName"
+                                pattern="[a-zA-Z0-9_\-]+"
+                                isRequired
+                                value={this.fileName}
+                                onChange={x => this.fileName = x.target.value}
+                                width={500}
+                            />
+                        </Flex>
+                    </FormField>
+                    <FormField label="Description">
                         <Input
-                            placeholder="Enter a config name..."
-                            data-testid="pipelineName"
-                            pattern="[a-zA-Z0-9_\-]+"
-                            isRequired
-                            value={this.fileName}
-                            onChange={x => this.fileName = x.target.value}
-                  width={500}
-                />
-                    </Flex>
-                </FormField>
-                <FormField label="Description">
-                    <Input
-                        data-testid="pipelineDescription"
-                        value={this.description}
-                        onChange={x => this.description = x.target.value}
-                width={500}
-                    />
-                </FormField>
+                            data-testid="pipelineDescription"
+                            value={this.description}
+                            onChange={x => this.description = x.target.value}
+                            width={500}
+                        />
+                    </FormField>
+
+                </Flex>
 
                 <Box mt="4">
                     <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
@@ -114,8 +126,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             configYaml: this.editorContent,
             description: this.description,
             displayName: this.fileName,
-            limit: undefined,
-            request: undefined,
+            resources: undefined,
         }))
             .then(async () => {
                 toast({
@@ -141,8 +152,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 export default RpConnectPipelinesCreate;
 
 
-
-const PipelineEditor = observer((p: {
+export const PipelineEditor = observer((p: {
     yaml: string,
     onChange: (newYaml: string) => void
 }) => {

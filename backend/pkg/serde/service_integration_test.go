@@ -171,7 +171,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	cachedSchemaClient, err := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
 	require.NoError(err)
 
-	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient)
+	cborConfig := config.Cbor{}
+
+	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, cborConfig)
 	require.NoError(err)
 
 	t.Run("plain JSON", func(t *testing.T) {
@@ -268,7 +270,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -287,8 +289,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain JSON deserializer option", func(t *testing.T) {
@@ -387,7 +391,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -406,8 +410,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json_deserializer_option", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json_deserializer_option", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain JSON incorrect value deserializer option", func(t *testing.T) {
@@ -501,7 +507,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -520,8 +526,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json_bad_value_deser", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json_bad_value_deser", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain protobuf", func(t *testing.T) {
@@ -553,7 +561,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(protoSvc.Start())
 
-		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient)
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, cborConfig)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
@@ -657,7 +665,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -676,8 +684,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
@@ -709,7 +719,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(testProtoSvc.Start())
 
-		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, cachedSchemaClient)
+		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, cachedSchemaClient, cborConfig)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
@@ -935,7 +945,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -954,8 +964,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf", func(t *testing.T) {
@@ -1105,7 +1117,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1124,8 +1136,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf common", func(t *testing.T) {
@@ -1461,7 +1475,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("gadget_0")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1480,8 +1494,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_multi", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_multi", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf nested", func(t *testing.T) {
@@ -1943,7 +1959,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("123456789")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1962,8 +1978,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf update", func(t *testing.T) {
@@ -2646,7 +2664,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("order_0")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -2665,8 +2683,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_avro_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_avro_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 }
 
@@ -4205,13 +4225,15 @@ func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
 		"-input="+jsonInput,
 		"-schema-id="+strconv.Itoa(schemaID),
 	)
-	var out strings.Builder
-	cmd.Stdout = &out
+	var stdout strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("go run finished with error %w, stdout: %s, stderr: %s", err, stdout.String(), stderr.String())
 	}
-	output := out.String()
+	output := stdout.String()
 	return base64.StdEncoding.DecodeString(output)
 }
 
@@ -4241,5 +4263,6 @@ func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
 		}
 		return "", err
 	}
+
 	return out.String(), nil
 }

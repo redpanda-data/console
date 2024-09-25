@@ -128,6 +128,11 @@ export enum PayloadEncoding {
    * @generated from enum value: PAYLOAD_ENCODING_CONSUMER_OFFSETS = 14;
    */
   CONSUMER_OFFSETS = 14,
+
+  /**
+   * @generated from enum value: PAYLOAD_ENCODING_CBOR = 15;
+   */
+  CBOR = 15,
 }
 // Retrieve enum metadata with: proto3.getEnumType(PayloadEncoding)
 proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha1.PayloadEncoding", [
@@ -146,6 +151,7 @@ proto3.util.setEnumType(PayloadEncoding, "redpanda.api.console.v1alpha1.PayloadE
   { no: 12, name: "PAYLOAD_ENCODING_BINARY" },
   { no: 13, name: "PAYLOAD_ENCODING_UINT" },
   { no: 14, name: "PAYLOAD_ENCODING_CONSUMER_OFFSETS" },
+  { no: 15, name: "PAYLOAD_ENCODING_CBOR" },
 ]);
 
 /**
