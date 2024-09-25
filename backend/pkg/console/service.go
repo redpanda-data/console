@@ -96,7 +96,7 @@ func NewService(
 			return nil, fmt.Errorf("failed to create schema client: %w", err)
 		}
 	}
-	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient)
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, cfg.Kafka.Cbor)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}

@@ -138,7 +138,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		License: license.License{
 			Source:    license.SourceConsole,
 			Type:      license.TypeOpenSource,
-			ExpiresAt: time.Now().Add(year * 10).Unix(),,
+			ExpiresAt: time.Now().Add(year * 10).Unix(),
 		},
 	}
 }

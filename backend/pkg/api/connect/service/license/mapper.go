@@ -14,8 +14,8 @@ import (
 
 	"github.com/redpanda-data/common-go/rpadmin"
 
+	"github.com/redpanda-data/console/backend/pkg/license"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 type mapper struct{}
@@ -37,12 +37,12 @@ func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.Li
 	}
 }
 
-func (mapper) consoleLicenseToProto(in redpanda.License) *v1alpha1.License {
+func (mapper) consoleLicenseToProto(in license.License) *v1alpha1.License {
 	var licenseType v1alpha1.License_Type
 	switch in.Type {
-	case redpanda.LicenseTypeOpenSource:
+	case license.TypeOpenSource:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
-	case redpanda.LicenseTypeEnterprise:
+	case license.TypeEnterprise:
 		licenseType = v1alpha1.License_TYPE_ENTERPRISE
 	default:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
