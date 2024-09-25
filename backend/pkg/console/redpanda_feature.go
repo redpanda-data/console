@@ -16,8 +16,6 @@ import (
 )
 
 // RedpandaFeature is an enum for various Redpanda capabilities we care about.
-//
-//nolint:revive // Yes it stutters.
 type redpandaFeature string
 
 const (

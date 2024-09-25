@@ -29,6 +29,7 @@ type License struct {
 	ExpiresAt int64 `json:"expiresAt"`
 }
 
+// NewOpenSourceCoreLicense creates a new default open source License.
 func NewOpenSourceCoreLicense() License {
 	return License{
 		Source:    SourceRedpanda,
@@ -37,6 +38,8 @@ func NewOpenSourceCoreLicense() License {
 	}
 }
 
+// AdminAPILicenseToRedpandaLicense maps the license struct returns via the
+// Redpanda admin API into a License struct.
 func AdminAPILicenseToRedpandaLicense(license adminapi.License) (License, error) {
 	if !license.Loaded {
 		return NewOpenSourceCoreLicense(), nil

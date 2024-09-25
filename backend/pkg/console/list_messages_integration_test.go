@@ -744,7 +744,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 
 	kafkaFactory := kafkafactory.NewCachedClientProvider(&cfg, log)
 	schemaFactory, _ := schema.NewSingleClientProvider(&cfg)
-	cacheFn := func(ctx context.Context) string { return "single/" }
+	cacheFn := func(ctx context.Context) (string, error) { return "single/", nil }
 
 	svc, err := NewService(&cfg, log, kafkaFactory, schemaFactory, nil, cacheFn, nil)
 	require.NoError(t, err)

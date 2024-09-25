@@ -122,6 +122,8 @@ func (api *Service) ListMessages(
 }
 
 // PublishMessage serialized and produces the records.
+//
+//nolint:gocognit // Complexity is rather high, but not unreasonable
 func (api *Service) PublishMessage(
 	ctx context.Context,
 	req *connect.Request[v1alpha.PublishMessageRequest],

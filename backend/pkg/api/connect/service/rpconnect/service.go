@@ -48,7 +48,7 @@ func NewService(logger *zap.Logger) (*Service, error) {
 }
 
 // LintConfig lints a redpanda connect config.
-func (s *Service) LintConfig(ctx context.Context, req *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error) {
+func (s *Service) LintConfig(_ context.Context, req *connect.Request[v1alpha1.LintConfigRequest]) (*connect.Response[v1alpha1.LintConfigResponse], error) {
 	// TODO: Ensure is authenticated here!
 	yamlCfg := []byte(req.Msg.YamlConfig)
 	lints, err := s.linter.LintYAMLConfig(yamlCfg)

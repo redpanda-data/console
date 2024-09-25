@@ -11,7 +11,6 @@ package proto
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -149,34 +148,12 @@ func (s *Service) Start() error {
 		s.fsSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 	}
 
-	err := s.createProtoRegistry(context.Background())
+	err := s.createProtoRegistry()
 	if err != nil {
 		return fmt.Errorf("failed to create proto registry: %w", err)
 	}
 
 	return nil
-}
-
-func (s *Service) unmarshalConfluentMessage(payload []byte) ([]byte, int, error) {
-	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
-	// Confluent's KafakProtobuf serialization format.
-	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to decode confluent wrapper from payload: %w", err)
-	}
-	schemaID := int(wrapper.SchemaID)
-
-	md, err := s.GetMessageDescriptorForSchema(int(wrapper.SchemaID), wrapper.IndexArray)
-	if err != nil {
-		return nil, schemaID, err
-	}
-
-	jsonBytes, err := s.DeserializeProtobufMessageToJSON(wrapper.ProtoPayload, md)
-	if err != nil {
-		return nil, schemaID, err
-	}
-
-	return jsonBytes, schemaID, nil
 }
 
 // DeserializeProtobufMessageToJSON deserializes the protobuf message to JSON.
@@ -408,7 +385,7 @@ func (s *Service) tryCreateProtoRegistry() {
 	// lets protect against too aggressive refresh interval
 	// or multiple concurrent triggers
 	s.sfGroup.Do("tryCreateProtoRegistry", func() (any, error) {
-		err := s.createProtoRegistry(context.Background())
+		err := s.createProtoRegistry()
 		if err != nil {
 			s.logger.Error("failed to update proto registry", zap.Error(err))
 		}
@@ -417,7 +394,7 @@ func (s *Service) tryCreateProtoRegistry() {
 	})
 }
 
-func (s *Service) createProtoRegistry(ctx context.Context) error {
+func (s *Service) createProtoRegistry() error {
 	startTime := time.Now()
 
 	files := make(map[string]filesystem.File)
@@ -565,13 +542,6 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 	}
 
 	return descriptors, nil
-}
-
-func (s *Service) setFileDescriptorsBySchemaID(descriptors map[int]*desc.FileDescriptor) {
-	s.fileDescriptorsBySchemaIDMutex.Lock()
-	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
-
-	s.fileDescriptorsBySchemaID = descriptors
 }
 
 // GetFileDescriptorBySchemaID gets the file descriptor by schema ID.

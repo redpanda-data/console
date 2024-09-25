@@ -15,9 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
@@ -141,38 +139,4 @@ func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Payload
 	binData = append(binData, trimmed...)
 
 	return binData, nil
-}
-
-// validateSchema validates a JSON schema by compiling it using the provided or a new JSON schema compiler.
-// It recursively validates all referenced schemas, ensuring they are also added to the compiler.
-// Returns an error if the schema name contains a hashtag, or if the schema fails to compile or validate.
-func (d JSONSchemaSerde) validateSchema(ctx context.Context, name string, sch sr.Schema, schemaCompiler *jsonschema.Compiler) error {
-	if schemaCompiler == nil {
-		schemaCompiler = jsonschema.NewCompiler()
-	}
-
-	for _, ref := range sch.References {
-		subjectSch, err := d.schemaClient.SchemaByVersion(ctx, ref.Subject, ref.Version)
-		if err != nil {
-			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
-		}
-		if err := d.validateSchema(ctx, ref.Name, subjectSch.Schema, schemaCompiler); err != nil {
-			return err
-		}
-	}
-
-	// Prevent a panic by the schema compiler by checking the name before AddResource
-	if strings.IndexByte(name, '#') != -1 {
-		return fmt.Errorf("hashtags are not allowed as part of the schema name")
-	}
-	err := schemaCompiler.AddResource(name, strings.NewReader(sch.Schema))
-	if err != nil {
-		return fmt.Errorf("failed to add resource for %q", name)
-	}
-
-	_, err = schemaCompiler.Compile(name)
-	if err != nil {
-		return fmt.Errorf("failed to validate schema %q: %w", name, err)
-	}
-	return nil
 }
