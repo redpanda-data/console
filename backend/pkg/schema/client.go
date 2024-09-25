@@ -45,7 +45,7 @@ const mainProtoFilename = "__console_tmp.proto"
 // utilizing in-memory caches to minimize redundant fetches and compilations.
 type CachedClient struct {
 	schemaClientFactory schema.ClientFactory
-	cacheNamespace      func(context.Context) string
+	cacheNamespace      func(context.Context) (string, error)
 
 	standardImportsResolver func(protocompile.Resolver) protocompile.Resolver
 
@@ -56,10 +56,23 @@ type CachedClient struct {
 	protoSchemaCache *cache.Cache[string, linker.Files]
 }
 
+// Client defines the interface for a schema client implementation.
+type Client interface {
+	AvroSchemaByID(ctx context.Context, id int) (avro.Schema, error)
+	ProtoFilesByID(ctx context.Context, id int) (linker.Files, string, error)
+	ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache) (avro.Schema, error)
+	ParseJSONSchema(ctx context.Context, sch sr.Schema) (*jsonschema.Schema, error)
+	SchemaByID(ctx context.Context, id int) (sr.Schema, error)
+	SchemaByVersion(ctx context.Context, subject string, id int) (sr.SubjectSchema, error)
+}
+
+// Ensure CachedClient implements the Client interface.
+var _ Client = (*CachedClient)(nil)
+
 // NewCachedClient initializes and returns a new CachedClient instance with the
 // provided schema client factory and cache namespace function. It sets up
 // caching with specific settings.
-func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn func(context.Context) string) (*CachedClient, error) {
+func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn func(context.Context) (string, error)) (*CachedClient, error) {
 	cacheSettings := []cache.Opt{
 		cache.MaxAge(30 * time.Second),
 		cache.MaxErrorAge(time.Second),
@@ -158,7 +171,12 @@ func createCustomProtoResolver(ctx context.Context) (func(protocompile.Resolver)
 // value if available. If the schema isn't cached, it fetches the schema, parses
 // it with references, and stores the result in the cache.
 func (c *CachedClient) AvroSchemaByID(ctx context.Context, id int) (avro.Schema, error) {
-	key := c.cacheNamespace(ctx) + "/avro-parsed-schemas/ids/" + strconv.Itoa(id)
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	key := namespace + "/avro-parsed-schemas/ids/" + strconv.Itoa(id)
 
 	avroSch, err, _ := c.avroSchemaCache.Get(key, func() (avro.Schema, error) {
 		sch, err := c.SchemaByID(ctx, id)
@@ -181,7 +199,12 @@ func (c *CachedClient) AvroSchemaByID(ctx context.Context, id int) (avro.Schema,
 // It first checks if the compiled schema is cached; if not, it fetches the schema by ID,
 // compiles it along with any referenced schemas, and caches the result.
 func (c *CachedClient) ProtoFilesByID(ctx context.Context, id int) (linker.Files, string, error) {
-	key := c.cacheNamespace(ctx) + "/proto-files/ids/" + strconv.Itoa(id)
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	key := namespace + "/proto-files/ids/" + strconv.Itoa(id)
 
 	compiledProtoFiles, err, _ := c.protoSchemaCache.Get(key, func() (linker.Files, error) {
 		sch, err := c.SchemaByID(ctx, id)
@@ -326,7 +349,12 @@ func (c *CachedClient) buildJSONSchemaWithReferences(ctx context.Context, compil
 // cached value if available. If the schema isn't cached, it is fetched from the
 // schema registry and stored in the cache.
 func (c *CachedClient) SchemaByID(ctx context.Context, id int) (sr.Schema, error) {
-	key := c.cacheNamespace(ctx) + "/schemas/ids/" + strconv.Itoa(id)
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return sr.Schema{}, err
+	}
+
+	key := namespace + "/schemas/ids/" + strconv.Itoa(id)
 
 	sch, err, _ := c.schemaCache.Get(key, func() (sr.Schema, error) {
 		srClient, err := c.schemaClientFactory.GetSchemaRegistryClient(ctx)
@@ -343,7 +371,12 @@ func (c *CachedClient) SchemaByID(ctx context.Context, id int) (sr.Schema, error
 // registry, using a cached value if available. If not cached, it fetches the
 // schema from the registry and stores it in the cache.
 func (c *CachedClient) SchemaByVersion(ctx context.Context, subject string, id int) (sr.SubjectSchema, error) {
-	key := c.cacheNamespace(ctx) + fmt.Sprintf("/subjects/%v/versions/%d", subject, id)
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return sr.SubjectSchema{}, err
+	}
+
+	key := namespace + fmt.Sprintf("/subjects/%v/versions/%d", subject, id)
 
 	sch, err, _ := c.subjectSchemaCache.Get(key, func() (sr.SubjectSchema, error) {
 		srClient, err := c.schemaClientFactory.GetSchemaRegistryClient(ctx)

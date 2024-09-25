@@ -51,6 +51,7 @@ import (
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	ms "github.com/redpanda-data/console/backend/pkg/msgpack"
 	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/common"
 	indexv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/index/v1"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
@@ -164,11 +165,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg)
 	require.NoError(err)
 
-	cacheNamespaceFn := func(context.Context) string {
-		return "single"
+	cacheNamespaceFn := func(context.Context) (string, error) {
+		return "single/", nil
 	}
+	cachedSchemaClient, err := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+	require.NoError(err)
 
-	serdeSvc, err := NewService(protoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
+	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient)
 	require.NoError(err)
 
 	t.Run("plain JSON", func(t *testing.T) {
@@ -550,7 +553,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(protoSvc.Start())
 
-		serdeSvc, err := NewService(protoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
@@ -706,7 +709,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(testProtoSvc.Start())
 
-		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, schemaClientFactory, cacheNamespaceFn)
+		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, cachedSchemaClient)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)

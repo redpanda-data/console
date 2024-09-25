@@ -16,10 +16,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
-	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Service is the struct that holds all dependencies that are required to deserialize
@@ -32,14 +31,8 @@ type Service struct {
 func NewService(
 	protoSvc *proto.Service,
 	msgPackSvc *msgpack.Service,
-	schemaClientFactory schema.ClientFactory,
-	cacheNamespaceFn func(ctx context.Context) string,
+	cachedSchemaClient schema.Client,
 ) (*Service, error) {
-	cachedSchemaClient, err := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},

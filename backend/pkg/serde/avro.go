@@ -20,14 +20,14 @@ import (
 	"github.com/linkedin/goavro"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*AvroSerde)(nil)
 
 // AvroSerde represents the serde for dealing with Avro types.
 type AvroSerde struct {
-	schemaClient *schemacache.CachedClient
+	schemaClient schema.Client
 }
 
 // Name returns the name of the serde payload encoding.

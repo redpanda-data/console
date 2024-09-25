@@ -55,7 +55,7 @@ func NewService(
 	kafkaClientFactory kafkafactory.ClientFactory,
 	schemaClientFactory schemafactory.ClientFactory,
 	redpandaClientFactory redpandafactory.ClientFactory,
-	cacheNamespaceFn func(context.Context) string,
+	cacheNamespaceFn func(context.Context) (string, error),
 	connectSvc *connect.Service,
 ) (Servicer, error) {
 	var gitSvc *git.Service
@@ -96,7 +96,7 @@ func NewService(
 			return nil, fmt.Errorf("failed to create schema client: %w", err)
 		}
 	}
-	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, schemaClientFactory, cacheNamespaceFn)
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}

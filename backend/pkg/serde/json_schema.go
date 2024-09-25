@@ -21,14 +21,14 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
-	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*JSONSchemaSerde)(nil)
 
 // JSONSchemaSerde represents the serde for dealing with JSON types that have a JSON schema.
 type JSONSchemaSerde struct {
-	schemaClient *schemacache.CachedClient
+	schemaClient schema.Client
 }
 
 // Name returns the name of the serde payload encoding.

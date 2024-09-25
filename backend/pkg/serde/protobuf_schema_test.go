@@ -169,8 +169,8 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) string {
-		return "single/"
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
+		return "single/", nil
 	})
 	require.NoError(t, err)
 	serde := ProtobufSchemaSerde{
@@ -361,8 +361,8 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(ctx context.Context) string {
-		return "single/"
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(ctx context.Context) (string, error) {
+		return "single/", nil
 	})
 	require.NoError(t, err)
 

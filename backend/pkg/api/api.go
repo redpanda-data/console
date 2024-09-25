@@ -69,13 +69,19 @@ type API struct {
 
 // New creates a new API instance
 func New(cfg *config.Config, inputOpts ...Option) *API {
-
-	// Apply all the functional options to the options struct
-	opts := &options{}
+	// Set default options and then apply all the provided options that will
+	// override these defaults.
+	opts := &options{
+		cacheNamespaceFn: func(ctx context.Context) (string, error) {
+			return "single/", nil
+		},
+	}
 	for _, opt := range inputOpts {
 		opt.apply(opts)
 	}
 
+	// We don't initialize the logger for the default options to avoid
+	// duplicate initialization of the logger with all its metrics.
 	var logger *zap.Logger
 	if opts.logger == nil {
 		logger = logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
@@ -111,10 +117,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		opts.kafkaClientProvider,
 		opts.schemaClientProvider,
 		opts.redpandaClientProvider,
-		// TODO: Make the cachenamespace function configurable!
-		func(context.Context) string {
-			return "single/"
-		},
+		opts.cacheNamespaceFn,
 		connectSvc,
 	)
 	if err != nil {

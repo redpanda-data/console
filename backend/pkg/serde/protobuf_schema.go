@@ -24,14 +24,14 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 var _ Serde = (*ProtobufSchemaSerde)(nil)
 
 // ProtobufSchemaSerde represents the serde for dealing with Protobuf with schema types.
 type ProtobufSchemaSerde struct {
-	schemaClient *schemacache.CachedClient
+	schemaClient schema.Client
 }
 
 // Name returns the name of the serde payload encoding.
