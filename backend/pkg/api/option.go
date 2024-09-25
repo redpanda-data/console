@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"io/fs"
 
 	"go.uber.org/zap"
@@ -27,6 +28,7 @@ type options struct {
 	redpandaClientProvider redpandafactory.ClientFactory
 	schemaClientProvider   schema.ClientFactory
 	logger                 *zap.Logger
+	cacheNamespaceFn       func(context.Context) (string, error)
 }
 
 // Option is a function that applies some configuration to the options struct.
@@ -84,5 +86,19 @@ func WithSchemaClientFactory(factory schema.ClientFactory) Option {
 func WithLogger(logger *zap.Logger) Option {
 	return func(o *options) {
 		o.logger = logger
+	}
+}
+
+// WithCacheNamespaceFn is an option to set a function that determines the
+// namespace for caching objects such as schemas. This should be set in
+// multi-tenant environments where users and tenants should be strictly isolated
+// from each other.
+//
+// The function has to return a unique identifier for the currently logged-in
+// user that can be used as a namespace for caching. Only within that namespace
+// cache objects will be stored and looked-up then.
+func WithCacheNamespaceFn(fn func(context.Context) (string, error)) Option {
+	return func(o *options) {
+		o.cacheNamespaceFn = fn
 	}
 }
