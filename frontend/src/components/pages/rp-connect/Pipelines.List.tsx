@@ -41,6 +41,7 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
         case Pipeline_State.UNSPECIFIED: return <Flex alignItems="center" gap="2"><HiX fontSize="17px" width="auto" color="orange" /> Unspecified</Flex>;
         case Pipeline_State.STARTING: return <Flex alignItems="center" gap="2"><MdRefresh fontSize="17px" width="auto" color="#444" /> Starting</Flex>;
         case Pipeline_State.RUNNING: return <Flex alignItems="center" gap="2"><CheckIcon fontSize="17px" width="auto" color="green" /> Running</Flex>;
+        case Pipeline_State.COMPLETED: return <Flex alignItems="center" gap="2"><CheckIcon fontSize="17px" width="auto" color="green" /> Completed</Flex>;
         case Pipeline_State.STOPPING: return <Flex alignItems="center" gap="2"><MdRefresh fontSize="17px" width="auto" color="#444" /> Stopping</Flex>;
         case Pipeline_State.STOPPED: return <Flex alignItems="center" gap="2"><FaRegStopCircle fontSize="17px" width="auto" color="#444" /> Stopped</Flex>;
         case Pipeline_State.ERROR: return <Flex alignItems="center" gap="2"><HiX fontSize="17px" width="auto" color="red" /> Error</Flex>;
