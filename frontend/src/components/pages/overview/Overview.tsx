@@ -28,6 +28,8 @@ import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { MdOutlineError } from 'react-icons/md';
+import colors from '../../../colors';
 
 @observer
 class Overview extends PageComponent {
@@ -346,7 +348,7 @@ function ClusterDetails() {
         </DetailsBlock>
 
         <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
-            ['Failed to load license info']
+            [<Flex key="error" gap={1} alignItems="center"><MdOutlineError color={colors.brandError} size={16} /> Failed to load license info</Flex>]
         ] : [
             ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
         ]} />

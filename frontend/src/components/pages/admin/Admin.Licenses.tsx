@@ -16,7 +16,7 @@ import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Empty, List, ListItem, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Button, Empty, List, ListItem, Text } from '@redpanda-data/ui';
 import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
 
 
@@ -28,7 +28,20 @@ export class AdminLicenses extends Component<{}> {
         const licenses = api.licenses;
 
         if (api.licensesLoaded === 'failed') {
-            return <Box>Failed to load license info</Box>
+            return <Box>
+                <Alert
+                maxW={500}
+                status="error"
+            >
+                <AlertIcon />
+                <AlertDescription>
+                    <Text>Failed to load license info</Text>
+                </AlertDescription>
+            </Alert>
+                <Box mt={4}>
+                    <Button as={ReactRouterLink} to="/admin/upload-license">Upload new license</Button>
+                </Box>
+            </Box>
         }
 
         if(licenses.length === 0) {
