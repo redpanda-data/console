@@ -30,6 +30,7 @@ message ListLicensesRequest {}
 
 message ListLicensesResponse {
   repeated License licenses = 1;
+  bool violation = 2;
 }
 
 message SetLicenseRequest {
@@ -44,10 +45,41 @@ message SetLicenseResponse {
   License license = 1;
 }
 
+message ListEnterpriseFeaturesRequest {}
+
+message ListEnterpriseFeaturesResponse {
+  enum LicenseStatus {
+    LICENSE_STATUS_UNSPECIFIED = 0;
+    LICENSE_STATUS_VALID = 1;
+    LICENSE_STATUS_EXPIRED = 2;
+    LICENSE_STATUS_NOT_PRESENT = 3;
+  }
+
+  // Feature is an enterprise feature and a bool indicating whether it's in use.
+  message Feature {
+    string name = 1;
+    bool enabled = 2;
+  }
+
+  // LicenseStatus reports the status of the installed license in the Redpanda cluster.
+  LicenseStatus license_status = 1;
+
+  // Violation is true if license_status is not 'valid' AND one or more enterprise features are enabled
+  bool violation = 2;
+
+  // Features is a ist of enterprise features (name and whether in use)
+  repeated Feature features = 3;
+}
+
 service LicenseService {
   // ListLicenses lists all the roles based on optional filter.
   rpc ListLicenses(ListLicensesRequest) returns (ListLicensesResponse) {}
 
   // SetLicense installs a new license on the Redpanda cluster.
+  // This endpoint only works if the Redpanda Admin API is configured.
   rpc SetLicense(SetLicenseRequest) returns (SetLicenseResponse) {}
+
+  // ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+  // This can only be reported if the Redpanda Admin API is configured and supports this request.
+  rpc ListEnterpriseFeatures(ListEnterpriseFeaturesRequest) returns (ListEnterpriseFeaturesResponse) {}
 }
