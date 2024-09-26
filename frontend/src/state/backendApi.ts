@@ -336,7 +336,7 @@ const apiStore = {
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
-    licenses: []  as License[],
+    licenses: [] as License[],
     licenseViolation: false,
     licensesLoaded: false,
 
@@ -699,7 +699,7 @@ const apiStore = {
 
     get isAdminApiConfigured() {
         const overview = this.clusterOverview;
-        if(!overview) {
+        if (!overview) {
             return false
         }
 
@@ -1548,7 +1548,7 @@ const apiStore = {
         return r;
     },
 
-    async listLicenses(): Promise<ListLicensesResponse | undefined> {
+    async listLicenses(): Promise<void> {
         const client = appConfig.licenseClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
@@ -1558,9 +1558,17 @@ const apiStore = {
         const [enterpriseFeaturesResponse, licensesResponse] = await Promise.all([
             client.listEnterpriseFeatures({}),
             client.listLicenses({})
-        ]).finally(() => {
-            this.licensesLoaded = true;
+        ]).catch(err => {
+            const errorText = (err instanceof Error)
+                ? err.message
+                : String(err);
+
+            console.log('error refreshing licenses: ' + errorText);
+            return err;
         })
+            .finally(() => {
+                this.licensesLoaded = true;
+            })
 
         // Handle the first response
         this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
@@ -1568,8 +1576,6 @@ const apiStore = {
         // Handle the second response
         this.licenses = licensesResponse.licenses;
         this.licenseViolation = licensesResponse.violation;
-
-        return licensesResponse
     }
 
 };
@@ -1994,6 +2000,9 @@ export function createMessageSearch() {
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.key.encoding = 'consumerOffsets';
                                         break;
+                                    case PayloadEncoding.CBOR:
+                                        m.key.encoding = 'cbor';
+                                        break;
                                     default:
                                         console.log('unhandled key encoding type', {
                                             encoding: key?.encoding,
@@ -2063,6 +2072,9 @@ export function createMessageSearch() {
                                         break;
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.value.encoding = 'consumerOffsets';
+                                        break;
+                                    case PayloadEncoding.CBOR:
+                                        m.value.encoding = 'cbor';
                                         break;
                                     default:
                                         console.log('unhandled value encoding type', {

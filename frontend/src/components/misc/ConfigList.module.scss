@@ -73,46 +73,9 @@
     text-transform: capitalize;
 }
 
-
-.nested {
-    :global(.ant-table) {
-        background-color: transparent;
-    }
-}
-
 .configEntryTable {
-
-    // popovers are ugly when perfectly rectangular
-    :global(.ant-popover-content, .ant-popover-inner) {
-        border-radius: 6px;
-
-    }
-
-    :global(.ant-popover-inner-content) {
-        padding: 6px 12px;
-        font-family: monospace;
-    }
-
-    // antd default margin makes no sense
-    :global(.ant-table-cell button.ant-table-row-expand-icon) {
-        margin-left: 0;
-    }
-
     td {
         // no wrapping by default
         white-space: nowrap;
-    }
-
-    :global(.ant-table-row-level-1) {
-        background: #f5f5f5;
-
-        td {
-            border-bottom-color: #e7e7e7;
-            white-space: nowrap;
-        }
-
-        // .name {
-        //     background-color: #ececec;
-        // }
     }
 }
