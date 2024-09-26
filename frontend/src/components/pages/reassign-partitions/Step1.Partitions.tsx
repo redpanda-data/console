@@ -22,7 +22,6 @@ import { computed, IReactionDisposer, makeObservable, observable, transaction } 
 import { PartitionSelection } from './ReassignPartitions';
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from '../../../state/ui';
-import { WarningTwoTone } from '@ant-design/icons';
 import { SearchTitle } from '../../misc/KowlTable';
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import { Row } from '@tanstack/react-table';
@@ -300,9 +299,7 @@ function renderPartitionError(partition: Partition) {
     >
         <span>
             <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
-                <span style={{fontSize: '19px'}}>
-                    <WarningTwoTone twoToneColor="orange"/>
-                </span>
+                <MdOutlineWarningAmber color="orange" size={19}/>
             </ZeroSizeWrapper>
         </span>
     </Popover>
