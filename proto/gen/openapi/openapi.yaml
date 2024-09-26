@@ -1174,12 +1174,14 @@ components:
          - STATE_STOPPING: The pipeline is in the process of stopping.
          - STATE_STOPPED: The pipeline is stopped and in paused state.
          - STATE_ERROR: The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
+         - STATE_COMPLETED: The pipeline has completed the job successfully.
       enum:
         - STATE_STARTING
         - STATE_RUNNING
         - STATE_STOPPING
         - STATE_STOPPED
         - STATE_ERROR
+        - STATE_COMPLETED
       type: string
     StopPipelineResponse:
       properties:
@@ -3332,7 +3334,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

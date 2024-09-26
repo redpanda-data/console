@@ -89,6 +89,8 @@ message Pipeline {
     STATE_STOPPED = 4;
     // The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
     STATE_ERROR = 5;
+    // The pipeline has completed the job successfully.
+    STATE_COMPLETED = 6;
   }
 
   // Pipeline status may contain an error message.
