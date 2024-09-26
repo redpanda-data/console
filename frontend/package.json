@@ -25,7 +25,6 @@
         "prepare": "npm run fetch-monaco"
     },
     "dependencies": {
-        "@ant-design/icons": "^4.7",
         "@chakra-ui/icons": "^2.1",
         "@chakra-ui/react": "^2.8.2",
         "@chakra-ui/react-use-disclosure": "^2.1",
