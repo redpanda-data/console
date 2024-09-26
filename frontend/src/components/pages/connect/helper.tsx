@@ -164,6 +164,14 @@ const connectorMetadata: ConnectorMetadata[] = [
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-postgresql-connector/',
     } as const,
     {
+        classNamePrefix: 'io.debezium.connector.sqlserver.',
+        logo: <img src={MsSqlLogo} alt="Microsoft SQL Server logo" className="connectorLogo" />,
+        author: 'Debezium',
+        friendlyName: 'SQL Server (Debezium)',
+        description: 'Imports a stream of changes from Microsoft SQL Server',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-sqlserver-connector/',
+    } as const,
+    {
         classNamePrefix: 'io.debezium.connector.cassandra.',
         logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
         author: 'Debezium'
