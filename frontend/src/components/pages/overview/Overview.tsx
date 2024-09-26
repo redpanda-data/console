@@ -345,7 +345,9 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
-        <Details title="Licensing" content={[
+        <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
+            ['Failed to load license info']
+        ] : [
             ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
         ]} />
 

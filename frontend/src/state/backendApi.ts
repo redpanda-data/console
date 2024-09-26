@@ -338,7 +338,7 @@ const apiStore = {
 
     licenses: [] as License[],
     licenseViolation: false,
-    licensesLoaded: false,
+    licensesLoaded: undefined as 'loaded' | 'failed' | undefined,
 
     enterpriseFeaturesUsed: [] as ListEnterpriseFeaturesResponse_Feature[],
 
@@ -1555,27 +1555,29 @@ const apiStore = {
             throw new Error('License client is not initialized');
         }
 
-        const [enterpriseFeaturesResponse, licensesResponse] = await Promise.all([
+        await Promise.all([
             client.listEnterpriseFeatures({}),
             client.listLicenses({})
-        ]).catch(err => {
-            const errorText = (err instanceof Error)
-                ? err.message
-                : String(err);
+        ])
+            .then(( [enterpriseFeaturesResponse, licensesResponse]) => {
+                // Handle the first response
+                this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
 
-            console.log('error refreshing licenses: ' + errorText);
-            return err;
-        })
-            .finally(() => {
-                this.licensesLoaded = true;
+                // Handle the second response
+                this.licenses = licensesResponse.licenses;
+                this.licenseViolation = licensesResponse.violation;
+
+                this.licensesLoaded = 'loaded';
             })
+            .catch(err => {
+                this.licensesLoaded = 'failed';
+                const errorText = (err instanceof Error)
+                    ? err.message
+                    : String(err);
 
-        // Handle the first response
-        this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
-
-        // Handle the second response
-        this.licenses = licensesResponse.licenses;
-        this.licenseViolation = licensesResponse.violation;
+                console.log('error refreshing licenses: ' + errorText);
+                return err;
+            })
     }
 
 };

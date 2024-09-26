@@ -24,14 +24,19 @@ import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../..
 export class AdminLicenses extends Component<{}> {
 
     render() {
-        if (!api.licensesLoaded) return DefaultSkeleton
+        if (api.licensesLoaded === undefined) return DefaultSkeleton
         const licenses = api.licenses;
+
+        if (api.licensesLoaded === 'failed') {
+            return <Box>Failed to load license info</Box>
+        }
 
         if(licenses.length === 0) {
             return <Box>
                 <Empty />
             </Box>
         }
+
 
         return (
             <Box>

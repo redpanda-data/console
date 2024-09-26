@@ -15,7 +15,7 @@ export const LicenseNotification = observer(() => {
     const showSomeLicenseExpirationInfo = expiredLicenses.length || soonToExpireLicenses.length;
     const showEnterpriseFeaturesWarning = api.licenseViolation;
 
-    if (!api.licensesLoaded) {
+    if (api.licensesLoaded === undefined) {
         return null;
     }
 
