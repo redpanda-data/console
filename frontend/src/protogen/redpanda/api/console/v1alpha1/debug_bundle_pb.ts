@@ -211,6 +211,21 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   metricsIntervalSeconds = 0;
 
   /**
+   * @generated from field: bool tls_enabled = 10;
+   */
+  tlsEnabled = false;
+
+  /**
+   * @generated from field: bool tls_insecure_skip_verify = 11;
+   */
+  tlsInsecureSkipVerify = false;
+
+  /**
+   * @generated from field: string namespace = 12;
+   */
+  namespace = "";
+
+  /**
    * Partitions. When provided, rpk saves extra admin API requests for those partitions.
    * Optional.
    * In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
@@ -218,7 +233,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    * kafka/foo/1,2,3. also there can be multiple of those so
    * ['kafka/foo/1,2,3', 'private/baz/3.4.5']
    *
-   * @generated from field: repeated string partitions = 10;
+   * @generated from field: repeated string partitions = 13;
    */
   partitions: string[] = [];
 
@@ -238,7 +253,10 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "logs_until", kind: "message", T: Timestamp },
     { no: 9, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "tls_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "tls_insecure_skip_verify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "namespace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {

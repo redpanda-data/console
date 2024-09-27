@@ -46,13 +46,22 @@ message CreateDebugBundleRequest {
   // Interval between metrics snapshots.
   int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
 
+  bool tls_enabled = 10;
+
+  bool tls_insecure_skip_verify = 11;
+
+  string namespace = 12 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-]*)$"
+  ];
+
   // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
   // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
   // Partition IDs is comma separated numbers.
   // kafka/foo/1,2,3. also there can be multiple of those so
   // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
-  repeated string partitions = 10;
+  repeated string partitions = 13;
 }
 
 // Response to CreateDebugBundle.
