@@ -32,7 +32,7 @@ message CreateDebugBundleRequest {
   int32 controller_logs_size_limit_bytes = 4 [(buf.validate.field).int32 = {gte: 0}];
 
   // For how long to collect samples for the CPU profiler
-  int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {gte: 15}];
+  optional int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {gte: 15}];
 
   // Include logs dated from specified date onward.
   google.protobuf.Timestamp logs_since = 6;

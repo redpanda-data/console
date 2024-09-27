@@ -178,9 +178,9 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   /**
    * For how long to collect samples for the CPU profiler
    *
-   * @generated from field: int32 cpu_profiler_wait_seconds = 5;
+   * @generated from field: optional int32 cpu_profiler_wait_seconds = 5;
    */
-  cpuProfilerWaitSeconds = 0;
+  cpuProfilerWaitSeconds?: number;
 
   /**
    * Include logs dated from specified date onward.
@@ -233,7 +233,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 1, name: "scram", kind: "message", T: SCRAMAuth, oneof: "authentication" },
     { no: 3, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 4, name: "controller_logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 6, name: "logs_since", kind: "message", T: Timestamp },
     { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "logs_until", kind: "message", T: Timestamp },
