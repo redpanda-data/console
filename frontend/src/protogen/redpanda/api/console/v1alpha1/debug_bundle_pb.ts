@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * Error code enum.
@@ -380,16 +380,23 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   filename = "";
 
   /**
+   * Size of the debug bundle zip file.
+   *
+   * @generated from field: int64 size = 6;
+   */
+  size = protoInt64.zero;
+
+  /**
    * Only filled in once the process completes.  Content of stdout from rpk.
    *
-   * @generated from field: repeated string stdout = 6;
+   * @generated from field: repeated string stdout = 7;
    */
   stdout: string[] = [];
 
   /**
    * Only filled in once the process completes.  Content of stderr from rpk.
    *
-   * @generated from field: repeated string stderr = 7;
+   * @generated from field: repeated string stderr = 8;
    */
   stderr: string[] = [];
 
@@ -406,8 +413,9 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
     { no: 3, name: "status", kind: "enum", T: proto3.getEnumType(DebugBundleStatus_Status) },
     { no: 4, name: "created_at", kind: "message", T: Timestamp },
     { no: 5, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "stdout", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "stderr", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 7, name: "stdout", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "stderr", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DebugBundleStatus {
