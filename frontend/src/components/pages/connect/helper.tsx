@@ -138,11 +138,6 @@ const connectorMetadata: ConnectorMetadata[] = [
 
     // Debezium Connectors
     {
-        classNamePrefix: 'io.debezium.connector.sqlserver.',
-        logo: <img src={MsSqlLogo} alt="MSSQL logo" className="connectorLogo" />,
-        author: 'Debezium'
-    } as const,
-    {
         classNamePrefix: 'io.debezium.connector.mysql.',
         logo: <img src={MySqlLogo} alt="MySQL logo" className="connectorLogo" />,
         author: 'Debezium',
