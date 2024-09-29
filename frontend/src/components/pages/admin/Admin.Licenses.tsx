@@ -53,7 +53,7 @@ export class AdminLicenses extends Component<{}> {
 
         return (
             <Box>
-                <Text>The following licenses are used:</Text>
+                <Text>The following licenses are in use:</Text>
 
                 <List my={2}>
                     {licenses.map(((license, idx) => <ListItem key={idx}><strong>{prettyLicenseType(license, true)}</strong> {licenseCanExpire(license) ? `expiring ${prettyExpirationDate(license)}`: ''}</ListItem>))}
