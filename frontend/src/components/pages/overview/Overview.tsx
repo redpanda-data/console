@@ -27,6 +27,8 @@ import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { MdOutlineError } from 'react-icons/md';
+import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 
 @observer
@@ -345,8 +347,10 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
-        <Details title="Licensing" content={[
-            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+        <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
+            [<Flex key="error" gap={1} alignItems="center"><MdOutlineError color={colors.brandError} size={16} /> Failed to load license info</Flex>]
+        ] : [
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt.length > 0 ? `(expiring ${expiresAt})`: ''] as [left: ReactNode, right: ReactNode]))
         ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>
