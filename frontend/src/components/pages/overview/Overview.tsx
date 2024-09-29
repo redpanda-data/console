@@ -350,7 +350,7 @@ function ClusterDetails() {
         <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
             [<Flex key="error" gap={1} alignItems="center"><MdOutlineError color={colors.brandError} size={16} /> Failed to load license info</Flex>]
         ] : [
-            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt.length > 0 ? `(expiring ${expiresAt})`: ''] as [left: ReactNode, right: ReactNode]))
         ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>
