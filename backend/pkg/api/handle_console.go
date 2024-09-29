@@ -52,7 +52,7 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 		// The enterprise version may provide additional endpoints. We want to report what
 		// endpoints are available, so that we can consider these features as well in the frontend.
 		// We want to merge what we got reported from the hooks into the original response.
-		hookedEndpointCompatibility := api.Hooks.Console.EndpointCompatibility()
+		hookedEndpointCompatibility := api.Hooks.Console.EndpointCompatibility(r.Context())
 		originalEndpoints := endpointCompatibility.Endpoints
 		endpointCompatibility.Endpoints = mergeCompatibilityEndpoints(originalEndpoints, hookedEndpointCompatibility)
 

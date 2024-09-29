@@ -117,7 +117,7 @@ type ConsoleHooks interface {
 	// version and what features are supported by our upstream systems.
 	// The response of this hook will be merged into the response that was originally
 	// composed by Console.
-	EndpointCompatibility() []console.EndpointCompatibilityEndpoint
+	EndpointCompatibility(ctx context.Context) []console.EndpointCompatibilityEndpoint
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -155,7 +155,7 @@ func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}
 }
 
-func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndpoint {
+func (*defaultHooks) EndpointCompatibility(context.Context) []console.EndpointCompatibilityEndpoint {
 	return nil
 }
 
