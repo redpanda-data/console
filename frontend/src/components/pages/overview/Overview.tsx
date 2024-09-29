@@ -16,12 +16,11 @@ import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restI
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
-import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
@@ -30,6 +29,7 @@ import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
 import { MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
+import { FaCrown } from 'react-icons/fa';
 
 @observer
 class Overview extends PageComponent {
@@ -69,10 +69,10 @@ class Overview extends PageComponent {
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
             return (
-                <Flex alignItems="center" gap={4}>
+                <Flex alignItems="flex-start" gap={4}>
                     {text}
                     <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
-                        <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
+                        <Box><FaCrown size={16} color="#0008" /></Box>
                     </Tooltip>
                 </Flex>
             );

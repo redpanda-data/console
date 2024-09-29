@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { GithubFilled, LinkedinFilled, SlackSquareOutlined, TwitterOutlined } from '@ant-design/icons';
+import { FaGithub, FaLinkedin, FaSlack, FaTwitter } from 'react-icons/fa';
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
 
@@ -43,7 +43,7 @@ export const VersionInfo = () => {
 export const AppFooter = () => {
     const gitHub = (link: string, title: string) => <>
         <a href={link} title={title} target="_blank" rel="noopener noreferrer">
-            <GithubFilled />
+            <FaGithub />
         </a>
     </>;
 
@@ -53,13 +53,13 @@ export const AppFooter = () => {
             {isEmbedded() ? gitHub('https://github.com/redpanda-data/redpanda', 'Visit Redpanda\'s GitHub repository') :
                 gitHub('https://github.com/redpanda-data/console', 'Visit Redpanda Console\'s GitHub repository')}
             <a href="https://redpanda.com/slack" title="Slack" target="_blank" rel="noopener noreferrer">
-                <SlackSquareOutlined />
+                <FaSlack />
             </a>
             <a href="https://twitter.com/redpandadata" title="Twitter" target="_blank" rel="noopener noreferrer">
-                <TwitterOutlined />
+                <FaTwitter />
             </a>
             <a href="https://www.linkedin.com/company/redpanda-data" title="LinkedIn" target="_blank" rel="noopener noreferrer">
-                <LinkedinFilled />
+                <FaLinkedin />
             </a>
         </div>
 

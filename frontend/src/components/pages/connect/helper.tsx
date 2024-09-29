@@ -40,12 +40,12 @@ import DB2Logo from '../../../assets/connectors/db2.png';
 import TwitterLogo from '../../../assets/connectors/twitter.svg';
 import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
 import { action, runInAction } from 'mobx';
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
 import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, useToast, VStack, Text, Empty, AlertDescription, AlertIcon, Alert } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
+import { MdCheckCircleOutline, MdErrorOutline, MdHourglassFull, MdOutlinePauseCircle, MdOutlineWarningAmber } from 'react-icons/md';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -688,7 +688,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const state = task.state;
 
     const iconWrapper = (icon: JSX.Element) =>
-        <span style={{ fontSize: '17px' }}>
+        <span style={{ fontSize: '18px' }}>
             {icon}
         </span>
 
@@ -744,11 +744,11 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
 });
 
 
-export const okIcon = <CheckCircleTwoTone twoToneColor="#52c41a" />;
-export const warnIcon = <WarningTwoTone twoToneColor="orange" />;
-export const errIcon = <ExclamationCircleTwoTone twoToneColor="orangered" />;
-const waitIcon = <HourglassTwoTone twoToneColor="#888" />;
-const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>;
+export const okIcon = <MdCheckCircleOutline color="#52c41a" />;
+export const warnIcon = <MdOutlineWarningAmber color="orange" />;
+export const errIcon = <MdErrorOutline color="orangered" />;
+const waitIcon = <MdHourglassFull color="#888" />;
+const pauseIcon = <span style={{ color: '#555' }}><MdOutlinePauseCircle /></span>;
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
