@@ -41,13 +41,17 @@ const (
 	// LicenseServiceSetLicenseProcedure is the fully-qualified name of the LicenseService's SetLicense
 	// RPC.
 	LicenseServiceSetLicenseProcedure = "/redpanda.api.console.v1alpha1.LicenseService/SetLicense"
+	// LicenseServiceListEnterpriseFeaturesProcedure is the fully-qualified name of the LicenseService's
+	// ListEnterpriseFeatures RPC.
+	LicenseServiceListEnterpriseFeaturesProcedure = "/redpanda.api.console.v1alpha1.LicenseService/ListEnterpriseFeatures"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	licenseServiceServiceDescriptor            = v1alpha1.File_redpanda_api_console_v1alpha1_license_proto.Services().ByName("LicenseService")
-	licenseServiceListLicensesMethodDescriptor = licenseServiceServiceDescriptor.Methods().ByName("ListLicenses")
-	licenseServiceSetLicenseMethodDescriptor   = licenseServiceServiceDescriptor.Methods().ByName("SetLicense")
+	licenseServiceServiceDescriptor                      = v1alpha1.File_redpanda_api_console_v1alpha1_license_proto.Services().ByName("LicenseService")
+	licenseServiceListLicensesMethodDescriptor           = licenseServiceServiceDescriptor.Methods().ByName("ListLicenses")
+	licenseServiceSetLicenseMethodDescriptor             = licenseServiceServiceDescriptor.Methods().ByName("SetLicense")
+	licenseServiceListEnterpriseFeaturesMethodDescriptor = licenseServiceServiceDescriptor.Methods().ByName("ListEnterpriseFeatures")
 )
 
 // LicenseServiceClient is a client for the redpanda.api.console.v1alpha1.LicenseService service.
@@ -55,7 +59,11 @@ type LicenseServiceClient interface {
 	// ListLicenses lists all the roles based on optional filter.
 	ListLicenses(context.Context, *connect.Request[v1alpha1.ListLicensesRequest]) (*connect.Response[v1alpha1.ListLicensesResponse], error)
 	// SetLicense installs a new license on the Redpanda cluster.
+	// This endpoint only works if the Redpanda Admin API is configured.
 	SetLicense(context.Context, *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error)
+	// ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+	// This can only be reported if the Redpanda Admin API is configured and supports this request.
+	ListEnterpriseFeatures(context.Context, *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error)
 }
 
 // NewLicenseServiceClient constructs a client for the redpanda.api.console.v1alpha1.LicenseService
@@ -80,13 +88,20 @@ func NewLicenseServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(licenseServiceSetLicenseMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listEnterpriseFeatures: connect.NewClient[v1alpha1.ListEnterpriseFeaturesRequest, v1alpha1.ListEnterpriseFeaturesResponse](
+			httpClient,
+			baseURL+LicenseServiceListEnterpriseFeaturesProcedure,
+			connect.WithSchema(licenseServiceListEnterpriseFeaturesMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // licenseServiceClient implements LicenseServiceClient.
 type licenseServiceClient struct {
-	listLicenses *connect.Client[v1alpha1.ListLicensesRequest, v1alpha1.ListLicensesResponse]
-	setLicense   *connect.Client[v1alpha1.SetLicenseRequest, v1alpha1.SetLicenseResponse]
+	listLicenses           *connect.Client[v1alpha1.ListLicensesRequest, v1alpha1.ListLicensesResponse]
+	setLicense             *connect.Client[v1alpha1.SetLicenseRequest, v1alpha1.SetLicenseResponse]
+	listEnterpriseFeatures *connect.Client[v1alpha1.ListEnterpriseFeaturesRequest, v1alpha1.ListEnterpriseFeaturesResponse]
 }
 
 // ListLicenses calls redpanda.api.console.v1alpha1.LicenseService.ListLicenses.
@@ -99,13 +114,22 @@ func (c *licenseServiceClient) SetLicense(ctx context.Context, req *connect.Requ
 	return c.setLicense.CallUnary(ctx, req)
 }
 
+// ListEnterpriseFeatures calls redpanda.api.console.v1alpha1.LicenseService.ListEnterpriseFeatures.
+func (c *licenseServiceClient) ListEnterpriseFeatures(ctx context.Context, req *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error) {
+	return c.listEnterpriseFeatures.CallUnary(ctx, req)
+}
+
 // LicenseServiceHandler is an implementation of the redpanda.api.console.v1alpha1.LicenseService
 // service.
 type LicenseServiceHandler interface {
 	// ListLicenses lists all the roles based on optional filter.
 	ListLicenses(context.Context, *connect.Request[v1alpha1.ListLicensesRequest]) (*connect.Response[v1alpha1.ListLicensesResponse], error)
 	// SetLicense installs a new license on the Redpanda cluster.
+	// This endpoint only works if the Redpanda Admin API is configured.
 	SetLicense(context.Context, *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error)
+	// ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+	// This can only be reported if the Redpanda Admin API is configured and supports this request.
+	ListEnterpriseFeatures(context.Context, *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error)
 }
 
 // NewLicenseServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -126,12 +150,20 @@ func NewLicenseServiceHandler(svc LicenseServiceHandler, opts ...connect.Handler
 		connect.WithSchema(licenseServiceSetLicenseMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	licenseServiceListEnterpriseFeaturesHandler := connect.NewUnaryHandler(
+		LicenseServiceListEnterpriseFeaturesProcedure,
+		svc.ListEnterpriseFeatures,
+		connect.WithSchema(licenseServiceListEnterpriseFeaturesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.LicenseService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LicenseServiceListLicensesProcedure:
 			licenseServiceListLicensesHandler.ServeHTTP(w, r)
 		case LicenseServiceSetLicenseProcedure:
 			licenseServiceSetLicenseHandler.ServeHTTP(w, r)
+		case LicenseServiceListEnterpriseFeaturesProcedure:
+			licenseServiceListEnterpriseFeaturesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -147,4 +179,8 @@ func (UnimplementedLicenseServiceHandler) ListLicenses(context.Context, *connect
 
 func (UnimplementedLicenseServiceHandler) SetLicense(context.Context, *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.LicenseService.SetLicense is not implemented"))
+}
+
+func (UnimplementedLicenseServiceHandler) ListEnterpriseFeatures(context.Context, *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.LicenseService.ListEnterpriseFeatures is not implemented"))
 }

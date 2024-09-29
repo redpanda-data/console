@@ -121,7 +121,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		}
 	}
 
-	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc)
+	serdeSvc := serde.NewService(schemaSvc, protoSvc, msgPackSvc, cfg.Kafka.Cbor)
 
 	return &Service{
 		Config:           cfg,

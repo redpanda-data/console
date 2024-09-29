@@ -16,7 +16,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
-func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessagePayloadOptions) *serde.RecordPayloadInput {
+func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessagePayloadOptions) *serde.RecordPayloadInput { //nolint:cyclop // we have to map all possible values here
 	encoding := serde.PayloadEncodingBinary
 
 	switch po.GetEncoding() {
@@ -48,6 +48,8 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY,
 		v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS:
 		encoding = serde.PayloadEncodingBinary
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR:
+		encoding = serde.PayloadEncodingCbor
 	}
 
 	input := &serde.RecordPayloadInput{
@@ -83,7 +85,7 @@ func rpcCompressionTypeToKgoCodec(compressionType v1alpha.CompressionType) []kgo
 	}
 }
 
-func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding {
+func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding { //nolint:cyclop // we have to map all possible values here
 	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 
 	switch serdeEncoding {
@@ -117,12 +119,14 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CONSUMER_OFFSETS
 	case serde.PayloadEncodingUnspecified:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED
+	case serde.PayloadEncodingCbor:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR
 	}
 
 	return encoding
 }
 
-func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncoding {
+func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncoding { //nolint:cyclop // we have to map all possible values here
 	encoding := serde.PayloadEncodingUnspecified
 
 	switch protoEncoding {
@@ -156,6 +160,8 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 		encoding = serde.PayloadEncodingConsumerOffsets
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED:
 		encoding = serde.PayloadEncodingUnspecified
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR:
+		encoding = serde.PayloadEncodingCbor
 	}
 
 	return encoding

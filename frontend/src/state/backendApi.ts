@@ -120,7 +120,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
-import { License, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { DebugBundleStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
@@ -337,8 +337,11 @@ const apiStore = {
     connectConnectors: undefined as (KafkaConnectors | undefined),
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
-    licenses: []  as License[],
-    licensesLoaded: false,
+    licenses: [] as License[],
+    licenseViolation: false,
+    licensesLoaded: undefined as 'loaded' | 'failed' | undefined,
+
+    enterpriseFeaturesUsed: [] as ListEnterpriseFeaturesResponse_Feature[],
 
     debugBundleStatuses: [] as DebugBundleStatus[],
 
@@ -699,7 +702,7 @@ const apiStore = {
 
     get isAdminApiConfigured() {
         const overview = this.clusterOverview;
-        if(!overview) {
+        if (!overview) {
             return false
         }
 
@@ -1548,20 +1551,36 @@ const apiStore = {
         return r;
     },
 
-    async listLicenses(): Promise<ListLicensesResponse> {
+    async listLicenses(): Promise<void> {
         const client = appConfig.licenseClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
-            throw new Error('Console client is not initialized');
+            throw new Error('License client is not initialized');
         }
-        return await client.listLicenses({}).then(response => {
-            this.licenses = response.licenses
-            this.licensesLoaded = true
-            return response
-        }).catch((e) => {
-            addError(e);
-            return e
-        });
+
+        await Promise.all([
+            client.listEnterpriseFeatures({}),
+            client.listLicenses({})
+        ])
+            .then(( [enterpriseFeaturesResponse, licensesResponse]) => {
+                // Handle the first response
+                this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
+
+                // Handle the second response
+                this.licenses = licensesResponse.licenses;
+                this.licenseViolation = licensesResponse.violation;
+
+                this.licensesLoaded = 'loaded';
+            })
+            .catch(err => {
+                this.licensesLoaded = 'failed';
+                const errorText = (err instanceof Error)
+                    ? err.message
+                    : String(err);
+
+                console.log('error refreshing licenses: ' + errorText);
+                return err;
+            })
     },
 
     async getDebugBundleStatuses(): Promise<DebugBundleStatus[]> {
@@ -2003,6 +2022,9 @@ export function createMessageSearch() {
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.key.encoding = 'consumerOffsets';
                                         break;
+                                    case PayloadEncoding.CBOR:
+                                        m.key.encoding = 'cbor';
+                                        break;
                                     default:
                                         console.log('unhandled key encoding type', {
                                             encoding: key?.encoding,
@@ -2072,6 +2094,9 @@ export function createMessageSearch() {
                                         break;
                                     case PayloadEncoding.CONSUMER_OFFSETS:
                                         m.value.encoding = 'consumerOffsets';
+                                        break;
+                                    case PayloadEncoding.CBOR:
+                                        m.value.encoding = 'cbor';
                                         break;
                                     default:
                                         console.log('unhandled value encoding type', {

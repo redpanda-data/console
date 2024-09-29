@@ -78,7 +78,7 @@ export const prettyLicenseType = (license: License, showSource = false): string 
     const sourceType = ({
         [License_Source.UNSPECIFIED]: 'Unspecified',
         [License_Source.REDPANDA_CONSOLE]: 'Console',
-        [License_Source.REDPANDA_CORE]: 'Core',
+        [License_Source.REDPANDA_CORE]: 'Redpanda',
     })[license.source]
 
     return showSource ? `${sourceType} ${licenseType}` : licenseType

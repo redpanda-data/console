@@ -16,18 +16,20 @@ import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restI
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
-import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem, Text } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem, Text } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { MdOutlineError } from 'react-icons/md';
+import colors from '../../../colors';
+import { FaCrown } from 'react-icons/fa';
 import DebugBundle from './DebugBundle';
 
 @observer
@@ -68,10 +70,10 @@ class Overview extends PageComponent {
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
             return (
-                <Flex alignItems="center" gap={4}>
+                <Flex alignItems="flex-start" gap={4}>
                     {text}
                     <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
-                        <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
+                        <Box><FaCrown size={16} color="#0008" /></Box>
                     </Tooltip>
                 </Flex>
             );
@@ -351,8 +353,10 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
-        <Details title="Licensing" content={[
-            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+        <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
+            [<Flex key="error" gap={1} alignItems="center"><MdOutlineError color={colors.brandError} size={16} /> Failed to load license info</Flex>]
+        ] : [
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt.length > 0 ? `(expiring ${expiresAt})`: ''] as [left: ReactNode, right: ReactNode]))
         ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>

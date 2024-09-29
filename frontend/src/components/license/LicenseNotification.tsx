@@ -3,7 +3,6 @@ import { observer } from 'mobx-react';
 import { api } from '../../state/backendApi';
 import { getPrettyTimeToExpiration, licenseCanExpire, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
-import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 export const LicenseNotification = observer(() => {
     const location = useLocation();
@@ -14,11 +13,9 @@ export const LicenseNotification = observer(() => {
         ?? [];
 
     const showSomeLicenseExpirationInfo = expiredLicenses.length || soonToExpireLicenses.length;
-    // TODO - will be provided by API
-    const enterpriseFeaturesUsed = false;
-    const showEnterpriseFeaturesWarning = enterpriseFeaturesUsed && !api.licenses.some(license => license.type === License_Type.ENTERPRISE || license.type === License_Type.TRIAL);
+    const showEnterpriseFeaturesWarning = api.licenseViolation;
 
-    if (!api.licensesLoaded) {
+    if (api.licensesLoaded === undefined) {
         return null;
     }
 
@@ -29,6 +26,8 @@ export const LicenseNotification = observer(() => {
     if (!showSomeLicenseExpirationInfo && !showEnterpriseFeaturesWarning) {
         return null;
     }
+
+    const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter(x => x.enabled)
 
     return (
         <Box>
@@ -52,7 +51,7 @@ export const LicenseNotification = observer(() => {
                     </Box>}
 
                     {showEnterpriseFeaturesWarning && <Text>
-                        You're using Enterprise features in your connected Redpanda cluster. These features require a license.
+                        You're using Enterprise {activeEnterpriseFeatures.length === 1 ? 'feature' : 'features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.
                     </Text>}
 
                     <Flex gap={2} my={2}>

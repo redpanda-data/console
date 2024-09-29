@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ListLicensesRequest, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from "./license_pb";
+import { ListEnterpriseFeaturesRequest, ListEnterpriseFeaturesResponse, ListLicensesRequest, ListLicensesResponse, SetLicenseRequest, SetLicenseResponse } from "./license_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -25,6 +25,7 @@ export const LicenseService = {
     },
     /**
      * SetLicense installs a new license on the Redpanda cluster.
+     * This endpoint only works if the Redpanda Admin API is configured.
      *
      * @generated from rpc redpanda.api.console.v1alpha1.LicenseService.SetLicense
      */
@@ -32,6 +33,18 @@ export const LicenseService = {
       name: "SetLicense",
       I: SetLicenseRequest,
       O: SetLicenseResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
+     * This can only be reported if the Redpanda Admin API is configured and supports this request.
+     *
+     * @generated from rpc redpanda.api.console.v1alpha1.LicenseService.ListEnterpriseFeatures
+     */
+    listEnterpriseFeatures: {
+      name: "ListEnterpriseFeatures",
+      I: ListEnterpriseFeaturesRequest,
+      O: ListEnterpriseFeaturesResponse,
       kind: MethodKind.Unary,
     },
   }
