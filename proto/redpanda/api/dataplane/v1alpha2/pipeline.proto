@@ -89,6 +89,8 @@ message Pipeline {
     STATE_STOPPED = 4;
     // The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
     STATE_ERROR = 5;
+    // The pipeline has completed the job successfully.
+    STATE_COMPLETED = 6;
   }
 
   // Pipeline status may contain an error message.
@@ -391,7 +393,8 @@ message PipelineUpdate {
   reserved "request", "limit";
   // User-friendly pipeline name.
   string display_name = 1 [
-    (buf.validate.field).ignore_empty = true,
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
     (buf.validate.field).string.min_len = 3,
     (buf.validate.field).string.max_len = 128
@@ -404,7 +407,10 @@ message PipelineUpdate {
   ];
 
   // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
-  string config_yaml = 3;
+  string config_yaml = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;

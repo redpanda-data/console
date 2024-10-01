@@ -3,38 +3,8 @@
 // - these rules can be removed when ant design is removed
 
 // Background color
-#mainLayout,
-.ant-layout-footer {
+#mainLayout {
   background: transparent !important;
-}
-
-// Default font color
-div[class^="ant-"],
-.ant-breadcrumb,
-.ant-breadcrumb li,
-.ant-breadcrumb li:last-child,
-.ant-breadcrumb li:last-child a {
-  color: unset;
-}
-
-.ant-breadcrumb ol {
-  margin-left: -4px;
-}
-
-// Gray font color
-.ant-breadcrumb a,
-.ant-breadcrumb-separator {
-  color: unset !important;
-  opacity: 0.6 !important;
-}
-
-
-.ant-page-header.has-breadcrumb {
-  padding: 0;
-}
-
-.ant-page-header {
-  padding: 0;
 }
 
 #mainLayout > div {
@@ -42,33 +12,7 @@ div[class^="ant-"],
 }
 
 body.chakra-ui-dark {
-
-  .statisticsBar .ant-row::after {
+  .statisticsBar {
     background: linear-gradient(to right, transparent, var(--chakra-colors-gray-800));
-  }
-
-  .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    background: hsl(220deg 10% 16%);
-  }
-
-  .ant-radio-button-wrapper {
-    background-color: var(--chakra-colors-gray-800);
-    color: unset;
-  }
-
-  .ant-table-thead > tr > th {
-    background: var(--chakra-colors-gray-900);
-  }
-
-  .ant-table {
-    background: var(--chakra-colors-gray-800);
-  }
-
-  .ant-table-filter-trigger {
-    background: var(--chakra-colors-gray-800);
-  }
-
-  .ant-table-column-title {
-    color: var(--chakra-colors-gray-300);
   }
 }

@@ -20,7 +20,6 @@ import { animProps, } from '../../../utils/animationProps';
 import { observable, computed, autorun, IReactionDisposer, transaction, makeObservable } from 'mobx';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
-import { CheckCircleOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { StepSelectBrokers } from './Step2.Brokers';
 import { StepSelectPartitions } from './Step1.Partitions';
@@ -38,6 +37,7 @@ import PageContent from '../../misc/PageContent';
 import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, redpandaTheme, redpandaToastOptions, Step, Stepper, Box, StepIndicator, StepStatus, StepIcon, StepNumber } from '@redpanda-data/ui';
 import { Statistic } from '../../misc/Statistic';
 import { StepSeparator } from '@chakra-ui/react';
+import { MdOutlineErrorOutline } from 'react-icons/md';
 
 
 
@@ -293,7 +293,7 @@ class ReassignPartitions extends PageComponent {
                     <ModalOverlay/>
                     <ModalContent minW="5xl">
                         <ModalHeader>
-                            <Flex gap={2}><ExclamationCircleOutlined/>Remove throttle config from topics</Flex>
+                            <Flex gap={2} alignItems="center"><MdOutlineErrorOutline size={18} />Remove throttle config from topics</Flex>
                         </ModalHeader>
                         <ModalBody>
                             <div>
@@ -733,7 +733,6 @@ export default ReassignPartitions;
 interface WizardStep {
     step: number;
     title: string;
-    icon: React.ReactElement;
     backButton?: string;
     nextButton: {
         text: string;
@@ -744,7 +743,6 @@ interface WizardStep {
 const steps: WizardStep[] = [
     {
         step: 0, title: 'Select Partitions',
-        icon: <UnorderedListOutlined />,
         nextButton: {
             text: 'Select Target Brokers',
             // Can only continue if at least one partition was selected
@@ -753,7 +751,6 @@ const steps: WizardStep[] = [
     },
     {
         step: 1, title: 'Assign to Brokers',
-        icon: <HddOutlined />,
         backButton: 'Select Partitions',
         nextButton: {
             text: 'Review Plan',
@@ -797,7 +794,6 @@ const steps: WizardStep[] = [
     },
     {
         step: 2, title: 'Review and Confirm',
-        icon: <CheckCircleOutlined />,
         backButton: 'Select Target Brokers',
         nextButton: {
             text: 'Start Reassignment',

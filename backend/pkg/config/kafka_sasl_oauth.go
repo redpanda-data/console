@@ -23,11 +23,18 @@ import (
 
 // KafkaSASLOAuthBearer is the config struct for the SASL OAuthBearer mechanism
 type KafkaSASLOAuthBearer struct {
-	Token         string `yaml:"token"`
-	ClientID      string `yaml:"clientId"`
-	ClientSecret  string `yaml:"clientSecret"`
-	TokenEndpoint string `yaml:"tokenEndpoint"`
-	Scope         string `yaml:"scope"`
+	Token         string                    `yaml:"token"`
+	ClientID      string                    `yaml:"clientId"`
+	ClientSecret  string                    `yaml:"clientSecret"`
+	TokenEndpoint string                    `yaml:"tokenEndpoint"`
+	Scope         string                    `yaml:"scope"`
+	Extensions    []KafkaSASLOAuthExtension `yaml:"extensions"`
+}
+
+// KafkaSASLOAuthExtension is the struct for the SASL OAuth extension support(custom key-value pairs)
+type KafkaSASLOAuthExtension struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag

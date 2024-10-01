@@ -12,7 +12,6 @@
 import React, { useEffect, useState } from 'react';
 import { comparer } from 'mobx';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ApiOutlined, DatabaseOutlined, SearchOutlined } from '@ant-design/icons';
 import { Wizard, WizardStep } from '../../misc/Wizard';
 import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../state/backendApi';
@@ -284,7 +283,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         {
             title: 'Connector Type',
             description: 'Choose type of connector.',
-            icon: <DatabaseOutlined />,
             content: (
                 <ConnectorType
                     connectClusters={connectClusters}
@@ -310,7 +308,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         {
             title: 'Properties',
             description: 'Configure basic connection properties.',
-            icon: <ApiOutlined />,
             content: (
                 <>
                     <CreateConnectorHeading plugin={selectedPlugin} />
@@ -337,7 +334,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         {
             title: 'Review',
             description: 'Review and optionally patch the created connector config.',
-            icon: <SearchOutlined />,
             content: selectedPlugin && (
                 <Review
                     connectorPlugin={selectedPlugin}

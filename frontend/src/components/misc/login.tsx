@@ -14,7 +14,7 @@ import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { uiState } from '../../state/uiState';
-import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
+import { FaGithub, FaGoogle } from 'react-icons/fa';
 import OktaLogo from '../../utils/svg/OktaLogo';
 import { Box, Button,
   Flex, FormLabel, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Spinner, Stack, Text } from '@redpanda-data/ui';
@@ -24,8 +24,8 @@ import AzureADLogo from '../../utils/svg/AzureADLogo';
 
 
 const iconMap = new Map([
-    ['google', <GoogleOutlined key="google-icon" style={{ marginBottom: '6px' }} />],
-    ['github', <GithubOutlined key="github-icon" style={{ marginBottom: '6px' }} />],
+    ['google', <Box key="google-icon"><FaGoogle  style={{ marginBottom: '6px' }} /></Box>],
+    ['github', <Box key="github-icon"><FaGithub style={{ marginBottom: '6px' }} /></Box>],
     ['okta', <span key="okata-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
     ['azure ad', <span key="azure-ad-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{AzureADLogo}</span>]
 ]);

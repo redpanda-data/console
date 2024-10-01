@@ -13,7 +13,7 @@ import React, { CSSProperties, FC } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import { toJson } from '../../utils/jsonUtils';
-import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
+import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
 import { envVarDebugAr } from '../../utils/env';
 import { NoClipboardPopover } from './NoClipboardPopover';
 import { isClipboardAvailable } from '../../utils/featureDetection';
@@ -180,7 +180,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                 <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/redpanda-data/console/issues">our GitHub Repo</a></p>
                 <Box mt={0} mb={2}>
                     <Button variant="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
-                        <Icon as={CloseOutlined} />
+                        <Icon as={MdClose} />
                         Dismiss
                     </Button>
                     <NoClipboardPopover>
@@ -229,7 +229,7 @@ const CopyToClipboardButton: FC<{message: string, disabled: boolean; isLoading: 
                     })
                 }).catch(navigatorClipboardErrorHandler)
             }}>
-            <Icon as={CopyOutlined}/>
+            <Icon as={MdOutlineCopyAll}/>
             Copy Info
         </Button>
     )

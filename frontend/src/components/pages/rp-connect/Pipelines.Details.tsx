@@ -381,6 +381,6 @@ export const PipelineResources = observer((p: { resources?: Pipeline_Resources }
     if (!r) return <>Not set</>
 
     return <Flex gap="4">
-        {r.cpuShares} / {r.memoryShares}
+        {r.cpuShares} CPU / {r.memoryShares} Memory
     </Flex>
 });

@@ -159,6 +159,11 @@ export class ListLicensesResponse extends Message<ListLicensesResponse> {
    */
   licenses: License[] = [];
 
+  /**
+   * @generated from field: bool violation = 2;
+   */
+  violation = false;
+
   constructor(data?: PartialMessage<ListLicensesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -168,6 +173,7 @@ export class ListLicensesResponse extends Message<ListLicensesResponse> {
   static readonly typeName = "redpanda.api.console.v1alpha1.ListLicensesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "licenses", kind: "message", T: License, repeated: true },
+    { no: 2, name: "violation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListLicensesResponse {
@@ -258,6 +264,169 @@ export class SetLicenseResponse extends Message<SetLicenseResponse> {
 
   static equals(a: SetLicenseResponse | PlainMessage<SetLicenseResponse> | undefined, b: SetLicenseResponse | PlainMessage<SetLicenseResponse> | undefined): boolean {
     return proto3.util.equals(SetLicenseResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListEnterpriseFeaturesRequest
+ */
+export class ListEnterpriseFeaturesRequest extends Message<ListEnterpriseFeaturesRequest> {
+  constructor(data?: PartialMessage<ListEnterpriseFeaturesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListEnterpriseFeaturesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListEnterpriseFeaturesRequest {
+    return new ListEnterpriseFeaturesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesRequest {
+    return new ListEnterpriseFeaturesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesRequest {
+    return new ListEnterpriseFeaturesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListEnterpriseFeaturesRequest | PlainMessage<ListEnterpriseFeaturesRequest> | undefined, b: ListEnterpriseFeaturesRequest | PlainMessage<ListEnterpriseFeaturesRequest> | undefined): boolean {
+    return proto3.util.equals(ListEnterpriseFeaturesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse
+ */
+export class ListEnterpriseFeaturesResponse extends Message<ListEnterpriseFeaturesResponse> {
+  /**
+   * LicenseStatus reports the status of the installed license in the Redpanda cluster.
+   *
+   * @generated from field: redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.LicenseStatus license_status = 1;
+   */
+  licenseStatus = ListEnterpriseFeaturesResponse_LicenseStatus.UNSPECIFIED;
+
+  /**
+   * Violation is true if license_status is not 'valid' AND one or more enterprise features are enabled
+   *
+   * @generated from field: bool violation = 2;
+   */
+  violation = false;
+
+  /**
+   * Features is a ist of enterprise features (name and whether in use)
+   *
+   * @generated from field: repeated redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.Feature features = 3;
+   */
+  features: ListEnterpriseFeaturesResponse_Feature[] = [];
+
+  constructor(data?: PartialMessage<ListEnterpriseFeaturesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "license_status", kind: "enum", T: proto3.getEnumType(ListEnterpriseFeaturesResponse_LicenseStatus) },
+    { no: 2, name: "violation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "features", kind: "message", T: ListEnterpriseFeaturesResponse_Feature, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListEnterpriseFeaturesResponse {
+    return new ListEnterpriseFeaturesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesResponse {
+    return new ListEnterpriseFeaturesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesResponse {
+    return new ListEnterpriseFeaturesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListEnterpriseFeaturesResponse | PlainMessage<ListEnterpriseFeaturesResponse> | undefined, b: ListEnterpriseFeaturesResponse | PlainMessage<ListEnterpriseFeaturesResponse> | undefined): boolean {
+    return proto3.util.equals(ListEnterpriseFeaturesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from enum redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.LicenseStatus
+ */
+export enum ListEnterpriseFeaturesResponse_LicenseStatus {
+  /**
+   * @generated from enum value: LICENSE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: LICENSE_STATUS_VALID = 1;
+   */
+  VALID = 1,
+
+  /**
+   * @generated from enum value: LICENSE_STATUS_EXPIRED = 2;
+   */
+  EXPIRED = 2,
+
+  /**
+   * @generated from enum value: LICENSE_STATUS_NOT_PRESENT = 3;
+   */
+  NOT_PRESENT = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ListEnterpriseFeaturesResponse_LicenseStatus)
+proto3.util.setEnumType(ListEnterpriseFeaturesResponse_LicenseStatus, "redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.LicenseStatus", [
+  { no: 0, name: "LICENSE_STATUS_UNSPECIFIED" },
+  { no: 1, name: "LICENSE_STATUS_VALID" },
+  { no: 2, name: "LICENSE_STATUS_EXPIRED" },
+  { no: 3, name: "LICENSE_STATUS_NOT_PRESENT" },
+]);
+
+/**
+ * Feature is an enterprise feature and a bool indicating whether it's in use.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.Feature
+ */
+export class ListEnterpriseFeaturesResponse_Feature extends Message<ListEnterpriseFeaturesResponse_Feature> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: bool enabled = 2;
+   */
+  enabled = false;
+
+  constructor(data?: PartialMessage<ListEnterpriseFeaturesResponse_Feature>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListEnterpriseFeaturesResponse.Feature";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListEnterpriseFeaturesResponse_Feature {
+    return new ListEnterpriseFeaturesResponse_Feature().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesResponse_Feature {
+    return new ListEnterpriseFeaturesResponse_Feature().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListEnterpriseFeaturesResponse_Feature {
+    return new ListEnterpriseFeaturesResponse_Feature().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListEnterpriseFeaturesResponse_Feature | PlainMessage<ListEnterpriseFeaturesResponse_Feature> | undefined, b: ListEnterpriseFeaturesResponse_Feature | PlainMessage<ListEnterpriseFeaturesResponse_Feature> | undefined): boolean {
+    return proto3.util.equals(ListEnterpriseFeaturesResponse_Feature, a, b);
   }
 }
 

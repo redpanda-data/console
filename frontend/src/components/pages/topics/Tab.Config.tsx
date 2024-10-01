@@ -14,16 +14,13 @@ import { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInter
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
-import { HighlightTwoTone } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
 import { computed, makeObservable } from 'mobx';
-import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
-import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
-import { Box, Button, Code, CodeBlock, Empty, Flex, Result, Tooltip } from '@redpanda-data/ui';
+import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
 
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?
@@ -115,21 +112,4 @@ export class TopicConfiguration extends Component<{
             </Flex>
         );
     }
-}
-
-const markerIcon = <HighlightTwoTone twoToneColor={colors.brandOrange} style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
-
-export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
-    value = formatConfigValue(name, value, formatType);
-
-    if (isDefault) return <code>{value}</code>;
-
-    return (
-        <Tooltip label="Value is different from the default">
-            <div>
-                {markerIcon}
-                <code>{value}</code>
-            </div>
-        </Tooltip>
-    );
 }

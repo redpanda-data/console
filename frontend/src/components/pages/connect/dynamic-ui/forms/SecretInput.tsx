@@ -1,4 +1,3 @@
-// import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 import { Icon, Button, Flex, Input, ButtonProps, Tooltip, useBoolean, InputGroup, InputRightElement } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';

@@ -18,12 +18,12 @@ import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Box, Button, Checkbox, CopyButton, createStandaloneToast, Flex, FormField, Grid, Heading, Input, isSingleValue, PasswordInput, redpandaTheme, redpandaToastOptions, Result, Select, Tag, TagCloseButton, TagLabel, Text, Tooltip } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Checkbox, CopyButton, createStandaloneToast, Flex, FormField, Grid, Heading, IconButton, Input, isSingleValue, PasswordInput, redpandaTheme, redpandaToastOptions, Result, Select, Tag, TagCloseButton, TagLabel, Text, Tooltip } from '@redpanda-data/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { ReloadOutlined } from '@ant-design/icons';
 import { SingleSelect } from '../../misc/Select';
 import { Features } from '../../../state/supportedFeatures';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { MdRefresh } from 'react-icons/md';
 
 const { ToastContainer, toast } = createStandaloneToast({
     theme: redpandaTheme,
@@ -208,7 +208,7 @@ const CreateUserModal = observer((p: {
                             />
 
                             <Tooltip label={'Generate new random password'} placement="top" hasArrow>
-                                <Button
+                                <IconButton
                                     onClick={() =>
                                     (state.password = generatePassword(
                                         30,
@@ -216,11 +216,10 @@ const CreateUserModal = observer((p: {
                                     ))
                                     }
                                     variant="ghost"
-                                    width="35px"
+                                    aria-label="Refresh"
+                                    icon={<MdRefresh size={16} />}
                                     display="inline-flex"
-                                >
-                                    <ReloadOutlined />
-                                </Button>
+                                />
                             </Tooltip>
                             <Tooltip label={'Copy password'} placement="top" hasArrow>
                                 <CopyButton content={state.password} variant="ghost" />

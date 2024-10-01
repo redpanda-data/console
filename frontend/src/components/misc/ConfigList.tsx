@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
+import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
 import colors from '../../colors';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
@@ -38,7 +38,9 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
                 const sensitive = record.isSensitive && (
                     <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
-                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange}/>
+                        <Box>
+                            <MdOutlineVisibilityOff color={colors.brandOrange}/>
+                        </Box>
                     </Tooltip>
                 );
 
@@ -86,7 +88,9 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                     placement="left"
                     hasArrow
                 >
-                    <InfoCircleFilled />
+                    <Box>
+                        <MdInfoOutline size={12} />
+                    </Box>
                 </Tooltip>
             </span>
         ),

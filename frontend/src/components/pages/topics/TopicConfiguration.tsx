@@ -1,4 +1,3 @@
-import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
@@ -13,6 +12,7 @@ import { api } from '../../../state/backendApi';
 import { isServerless } from '../../../config';
 import { SingleSelect } from '../../misc/Select';
 import { Label } from '../../../utils/tsxUtils';
+import { MdInfoOutline } from 'react-icons/md';
 
 
 type ConfigurationEditorProps = {
@@ -260,7 +260,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             if (canEdit) p.onEditEntry(p.entry);
                         }}
                     >
-                        <Icon as={PencilIcon}/>
+                        <Icon as={PencilIcon} />
                     </span>
                 </Tooltip>
                 {entry.documentation && (
@@ -296,7 +296,9 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             </Grid>
                         }
                     >
-                        <Icon as={InfoCircleOutlined}/>
+                        <Box>
+                            <Icon as={MdInfoOutline} />
+                        </Box>
                     </Popover>
                 )}
             </span>
