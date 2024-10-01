@@ -142,7 +142,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         const activeTab = tabs.findIndex(x => x.key == this.props.tab);
         if (activeTab == -1) {
             // No tab selected, default to users
-            appGlobal.history.push('/security/users');
+            appGlobal.history.replace('/security/users');
         }
 
         return <>
