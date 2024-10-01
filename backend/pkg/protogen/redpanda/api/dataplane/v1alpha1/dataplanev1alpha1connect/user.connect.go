@@ -55,10 +55,16 @@ var (
 )
 
 // UserServiceClient is a client for the redpanda.api.dataplane.v1alpha1.UserService service.
+//
+// Deprecated: do not use.
 type UserServiceClient interface {
+	// Deprecated: do not use.
 	CreateUser(context.Context, *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error)
+	// Deprecated: do not use.
 	UpdateUser(context.Context, *connect.Request[v1alpha1.UpdateUserRequest]) (*connect.Response[v1alpha1.UpdateUserResponse], error)
+	// Deprecated: do not use.
 	ListUsers(context.Context, *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error)
+	// Deprecated: do not use.
 	DeleteUser(context.Context, *connect.Request[v1alpha1.DeleteUserRequest]) (*connect.Response[v1alpha1.DeleteUserResponse], error)
 }
 
@@ -69,6 +75,8 @@ type UserServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) UserServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &userServiceClient{
@@ -108,31 +116,45 @@ type userServiceClient struct {
 }
 
 // CreateUser calls redpanda.api.dataplane.v1alpha1.UserService.CreateUser.
+//
+// Deprecated: do not use.
 func (c *userServiceClient) CreateUser(ctx context.Context, req *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error) {
 	return c.createUser.CallUnary(ctx, req)
 }
 
 // UpdateUser calls redpanda.api.dataplane.v1alpha1.UserService.UpdateUser.
+//
+// Deprecated: do not use.
 func (c *userServiceClient) UpdateUser(ctx context.Context, req *connect.Request[v1alpha1.UpdateUserRequest]) (*connect.Response[v1alpha1.UpdateUserResponse], error) {
 	return c.updateUser.CallUnary(ctx, req)
 }
 
 // ListUsers calls redpanda.api.dataplane.v1alpha1.UserService.ListUsers.
+//
+// Deprecated: do not use.
 func (c *userServiceClient) ListUsers(ctx context.Context, req *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error) {
 	return c.listUsers.CallUnary(ctx, req)
 }
 
 // DeleteUser calls redpanda.api.dataplane.v1alpha1.UserService.DeleteUser.
+//
+// Deprecated: do not use.
 func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request[v1alpha1.DeleteUserRequest]) (*connect.Response[v1alpha1.DeleteUserResponse], error) {
 	return c.deleteUser.CallUnary(ctx, req)
 }
 
 // UserServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha1.UserService
 // service.
+//
+// Deprecated: do not use.
 type UserServiceHandler interface {
+	// Deprecated: do not use.
 	CreateUser(context.Context, *connect.Request[v1alpha1.CreateUserRequest]) (*connect.Response[v1alpha1.CreateUserResponse], error)
+	// Deprecated: do not use.
 	UpdateUser(context.Context, *connect.Request[v1alpha1.UpdateUserRequest]) (*connect.Response[v1alpha1.UpdateUserResponse], error)
+	// Deprecated: do not use.
 	ListUsers(context.Context, *connect.Request[v1alpha1.ListUsersRequest]) (*connect.Response[v1alpha1.ListUsersResponse], error)
+	// Deprecated: do not use.
 	DeleteUser(context.Context, *connect.Request[v1alpha1.DeleteUserRequest]) (*connect.Response[v1alpha1.DeleteUserResponse], error)
 }
 
@@ -141,6 +163,8 @@ type UserServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	userServiceCreateUserHandler := connect.NewUnaryHandler(
 		UserServiceCreateUserProcedure,

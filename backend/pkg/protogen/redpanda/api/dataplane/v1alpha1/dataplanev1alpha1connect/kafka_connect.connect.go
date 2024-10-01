@@ -105,53 +105,83 @@ var (
 
 // KafkaConnectServiceClient is a client for the redpanda.api.dataplane.v1alpha1.KafkaConnectService
 // service.
+//
+// Deprecated: do not use.
 type KafkaConnectServiceClient interface {
 	// ListConnectClusters implements the list clusters method, list connect
 	// clusters available in the console configuration
+	//
+	// Deprecated: do not use.
 	ListConnectClusters(context.Context, *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error)
 	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnectCluster(context.Context, *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ListConnectors(context.Context, *connect.Request[v1alpha1.ListConnectorsRequest]) (*connect.Response[v1alpha1.ListConnectorsResponse], error)
 	// CreateConnector implements the create connector method, and exposes an
 	// equivalent REST endpoint as the Kafka connect API endpoint
+	//
+	// Deprecated: do not use.
 	CreateConnector(context.Context, *connect.Request[v1alpha1.CreateConnectorRequest]) (*connect.Response[v1alpha1.CreateConnectorResponse], error)
 	// RestartConnector implements the restart connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	RestartConnector(context.Context, *connect.Request[v1alpha1.RestartConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnector(context.Context, *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error)
 	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
 	// Whether it is running or restarting, or if it has failed or paused
 	// Which worker it is assigned to
 	// Error information if it has failed
 	// The state of all its tasks
+	//
+	// Deprecated: do not use.
 	GetConnectorStatus(context.Context, *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	PauseConnector(context.Context, *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ResumeConnector(context.Context, *connect.Request[v1alpha1.ResumeConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// StopConnector implements the stop connector method, exposes a Kafka
 	// connect equivalent REST endpoint it stops the connector but does not
 	// delete the connector. All tasks for the connector are shut down completely
+	//
+	// Deprecated: do not use.
 	StopConnector(context.Context, *connect.Request[v1alpha1.StopConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
 	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ListConnectorTopics(context.Context, *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error)
 	// ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
 	// the request body is empty.
+	//
+	// Deprecated: do not use.
 	ResetConnectorTopics(context.Context, *connect.Request[v1alpha1.ResetConnectorTopicsRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -163,6 +193,8 @@ type KafkaConnectServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewKafkaConnectServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) KafkaConnectServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &kafkaConnectServiceClient{
@@ -280,51 +312,71 @@ type kafkaConnectServiceClient struct {
 
 // ListConnectClusters calls
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectClusters.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) ListConnectClusters(ctx context.Context, req *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error) {
 	return c.listConnectClusters.CallUnary(ctx, req)
 }
 
 // GetConnectCluster calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectCluster.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) GetConnectCluster(ctx context.Context, req *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error) {
 	return c.getConnectCluster.CallUnary(ctx, req)
 }
 
 // ListConnectors calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectors.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) ListConnectors(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorsRequest]) (*connect.Response[v1alpha1.ListConnectorsResponse], error) {
 	return c.listConnectors.CallUnary(ctx, req)
 }
 
 // CreateConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.CreateConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) CreateConnector(ctx context.Context, req *connect.Request[v1alpha1.CreateConnectorRequest]) (*connect.Response[v1alpha1.CreateConnectorResponse], error) {
 	return c.createConnector.CallUnary(ctx, req)
 }
 
 // RestartConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.RestartConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) RestartConnector(ctx context.Context, req *connect.Request[v1alpha1.RestartConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.restartConnector.CallUnary(ctx, req)
 }
 
 // GetConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) GetConnector(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error) {
 	return c.getConnector.CallUnary(ctx, req)
 }
 
 // GetConnectorStatus calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorStatus.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) GetConnectorStatus(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error) {
 	return c.getConnectorStatus.CallUnary(ctx, req)
 }
 
 // PauseConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.PauseConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) PauseConnector(ctx context.Context, req *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.pauseConnector.CallUnary(ctx, req)
 }
 
 // ResumeConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.ResumeConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) ResumeConnector(ctx context.Context, req *connect.Request[v1alpha1.ResumeConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.resumeConnector.CallUnary(ctx, req)
 }
 
 // StopConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.StopConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) StopConnector(ctx context.Context, req *connect.Request[v1alpha1.StopConnectorRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.stopConnector.CallUnary(ctx, req)
 }
@@ -335,76 +387,114 @@ func (c *kafkaConnectServiceClient) DeleteConnector(ctx context.Context, req *co
 }
 
 // UpsertConnector calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.UpsertConnector.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) UpsertConnector(ctx context.Context, req *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error) {
 	return c.upsertConnector.CallUnary(ctx, req)
 }
 
 // GetConnectorConfig calls redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) GetConnectorConfig(ctx context.Context, req *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error) {
 	return c.getConnectorConfig.CallUnary(ctx, req)
 }
 
 // ListConnectorTopics calls
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectorTopics.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) ListConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error) {
 	return c.listConnectorTopics.CallUnary(ctx, req)
 }
 
 // ResetConnectorTopics calls
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService.ResetConnectorTopics.
+//
+// Deprecated: do not use.
 func (c *kafkaConnectServiceClient) ResetConnectorTopics(ctx context.Context, req *connect.Request[v1alpha1.ResetConnectorTopicsRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.resetConnectorTopics.CallUnary(ctx, req)
 }
 
 // KafkaConnectServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha1.KafkaConnectService service.
+//
+// Deprecated: do not use.
 type KafkaConnectServiceHandler interface {
 	// ListConnectClusters implements the list clusters method, list connect
 	// clusters available in the console configuration
+	//
+	// Deprecated: do not use.
 	ListConnectClusters(context.Context, *connect.Request[v1alpha1.ListConnectClustersRequest]) (*connect.Response[v1alpha1.ListConnectClustersResponse], error)
 	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnectCluster(context.Context, *connect.Request[v1alpha1.GetConnectClusterRequest]) (*connect.Response[v1alpha1.GetConnectClusterResponse], error)
 	// ListConnectors implements the list connectors method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ListConnectors(context.Context, *connect.Request[v1alpha1.ListConnectorsRequest]) (*connect.Response[v1alpha1.ListConnectorsResponse], error)
 	// CreateConnector implements the create connector method, and exposes an
 	// equivalent REST endpoint as the Kafka connect API endpoint
+	//
+	// Deprecated: do not use.
 	CreateConnector(context.Context, *connect.Request[v1alpha1.CreateConnectorRequest]) (*connect.Response[v1alpha1.CreateConnectorResponse], error)
 	// RestartConnector implements the restart connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	RestartConnector(context.Context, *connect.Request[v1alpha1.RestartConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnector(context.Context, *connect.Request[v1alpha1.GetConnectorRequest]) (*connect.Response[v1alpha1.GetConnectorResponse], error)
 	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
 	// Whether it is running or restarting, or if it has failed or paused
 	// Which worker it is assigned to
 	// Error information if it has failed
 	// The state of all its tasks
+	//
+	// Deprecated: do not use.
 	GetConnectorStatus(context.Context, *connect.Request[v1alpha1.GetConnectorStatusRequest]) (*connect.Response[v1alpha1.GetConnectorStatusResponse], error)
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	PauseConnector(context.Context, *connect.Request[v1alpha1.PauseConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ResumeConnector(context.Context, *connect.Request[v1alpha1.ResumeConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// StopConnector implements the stop connector method, exposes a Kafka
 	// connect equivalent REST endpoint it stops the connector but does not
 	// delete the connector. All tasks for the connector are shut down completely
+	//
+	// Deprecated: do not use.
 	StopConnector(context.Context, *connect.Request[v1alpha1.StopConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *connect.Request[v1alpha1.DeleteConnectorRequest]) (*connect.Response[emptypb.Empty], error)
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	UpsertConnector(context.Context, *connect.Request[v1alpha1.UpsertConnectorRequest]) (*connect.Response[v1alpha1.UpsertConnectorResponse], error)
 	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	GetConnectorConfig(context.Context, *connect.Request[v1alpha1.GetConnectorConfigRequest]) (*connect.Response[v1alpha1.GetConnectorConfigResponse], error)
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
+	//
+	// Deprecated: do not use.
 	ListConnectorTopics(context.Context, *connect.Request[v1alpha1.ListConnectorTopicsRequest]) (*connect.Response[v1alpha1.ListConnectorTopicsResponse], error)
 	// ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
 	// the request body is empty.
+	//
+	// Deprecated: do not use.
 	ResetConnectorTopics(context.Context, *connect.Request[v1alpha1.ResetConnectorTopicsRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
@@ -413,6 +503,8 @@ type KafkaConnectServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewKafkaConnectServiceHandler(svc KafkaConnectServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	kafkaConnectServiceListConnectClustersHandler := connect.NewUnaryHandler(
 		KafkaConnectServiceListConnectClustersProcedure,

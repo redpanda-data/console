@@ -15,6 +15,8 @@ import (
 )
 
 // TopicServiceGatewayServer implements the gRPC server API for the TopicService service.
+//
+// Deprecated: do not use.
 type TopicServiceGatewayServer struct {
 	v1alpha1.UnimplementedTopicServiceServer
 	createTopic               connect_gateway.UnaryHandler[v1alpha1.CreateTopicRequest, v1alpha1.CreateTopicResponse]
@@ -27,6 +29,8 @@ type TopicServiceGatewayServer struct {
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
 // service.
+//
+// Deprecated: do not use.
 func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gateway.HandlerOption) *TopicServiceGatewayServer {
 	return &TopicServiceGatewayServer{
 		createTopic:               connect_gateway.NewUnaryHandler(TopicServiceCreateTopicProcedure, svc.CreateTopic, opts...),
@@ -64,6 +68,8 @@ func (s *TopicServiceGatewayServer) SetTopicConfigurations(ctx context.Context, 
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService
 // "svc" to "mux".
+//
+// Deprecated: do not use.
 func RegisterTopicServiceHandlerGatewayServer(mux *runtime.ServeMux, svc TopicServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterTopicServiceHandlerServer(context.TODO(), mux, NewTopicServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))

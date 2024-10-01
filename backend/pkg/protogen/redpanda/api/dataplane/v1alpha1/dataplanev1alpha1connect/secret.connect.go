@@ -63,16 +63,26 @@ var (
 )
 
 // SecretServiceClient is a client for the redpanda.api.dataplane.v1alpha1.SecretService service.
+//
+// Deprecated: do not use.
 type SecretServiceClient interface {
 	// GetConnectSecret retrieves the specific secret for a specific Connect.
 	GetConnectSecret(context.Context, *connect.Request[v1alpha1.GetConnectSecretRequest]) (*connect.Response[v1alpha1.GetConnectSecretResponse], error)
 	// ListConnectSecrets lists the Connect secrets based on optional filter.
+	//
+	// Deprecated: do not use.
 	ListConnectSecrets(context.Context, *connect.Request[v1alpha1.ListConnectSecretsRequest]) (*connect.Response[v1alpha1.ListConnectSecretsResponse], error)
 	// CreateConnectSecret creates the secret for a Connect.
+	//
+	// Deprecated: do not use.
 	CreateConnectSecret(context.Context, *connect.Request[v1alpha1.CreateConnectSecretRequest]) (*connect.Response[v1alpha1.CreateConnectSecretResponse], error)
 	// UpdateConnectSecret updates the Connect secret.
+	//
+	// Deprecated: do not use.
 	UpdateConnectSecret(context.Context, *connect.Request[v1alpha1.UpdateConnectSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectSecretResponse], error)
 	// DeleteSecret deletes the secret.
+	//
+	// Deprecated: do not use.
 	DeleteConnectSecret(context.Context, *connect.Request[v1alpha1.DeleteConnectSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectSecretResponse], error)
 }
 
@@ -83,6 +93,8 @@ type SecretServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewSecretServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SecretServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &secretServiceClient{
@@ -134,37 +146,55 @@ func (c *secretServiceClient) GetConnectSecret(ctx context.Context, req *connect
 }
 
 // ListConnectSecrets calls redpanda.api.dataplane.v1alpha1.SecretService.ListConnectSecrets.
+//
+// Deprecated: do not use.
 func (c *secretServiceClient) ListConnectSecrets(ctx context.Context, req *connect.Request[v1alpha1.ListConnectSecretsRequest]) (*connect.Response[v1alpha1.ListConnectSecretsResponse], error) {
 	return c.listConnectSecrets.CallUnary(ctx, req)
 }
 
 // CreateConnectSecret calls redpanda.api.dataplane.v1alpha1.SecretService.CreateConnectSecret.
+//
+// Deprecated: do not use.
 func (c *secretServiceClient) CreateConnectSecret(ctx context.Context, req *connect.Request[v1alpha1.CreateConnectSecretRequest]) (*connect.Response[v1alpha1.CreateConnectSecretResponse], error) {
 	return c.createConnectSecret.CallUnary(ctx, req)
 }
 
 // UpdateConnectSecret calls redpanda.api.dataplane.v1alpha1.SecretService.UpdateConnectSecret.
+//
+// Deprecated: do not use.
 func (c *secretServiceClient) UpdateConnectSecret(ctx context.Context, req *connect.Request[v1alpha1.UpdateConnectSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectSecretResponse], error) {
 	return c.updateConnectSecret.CallUnary(ctx, req)
 }
 
 // DeleteConnectSecret calls redpanda.api.dataplane.v1alpha1.SecretService.DeleteConnectSecret.
+//
+// Deprecated: do not use.
 func (c *secretServiceClient) DeleteConnectSecret(ctx context.Context, req *connect.Request[v1alpha1.DeleteConnectSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectSecretResponse], error) {
 	return c.deleteConnectSecret.CallUnary(ctx, req)
 }
 
 // SecretServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha1.SecretService
 // service.
+//
+// Deprecated: do not use.
 type SecretServiceHandler interface {
 	// GetConnectSecret retrieves the specific secret for a specific Connect.
 	GetConnectSecret(context.Context, *connect.Request[v1alpha1.GetConnectSecretRequest]) (*connect.Response[v1alpha1.GetConnectSecretResponse], error)
 	// ListConnectSecrets lists the Connect secrets based on optional filter.
+	//
+	// Deprecated: do not use.
 	ListConnectSecrets(context.Context, *connect.Request[v1alpha1.ListConnectSecretsRequest]) (*connect.Response[v1alpha1.ListConnectSecretsResponse], error)
 	// CreateConnectSecret creates the secret for a Connect.
+	//
+	// Deprecated: do not use.
 	CreateConnectSecret(context.Context, *connect.Request[v1alpha1.CreateConnectSecretRequest]) (*connect.Response[v1alpha1.CreateConnectSecretResponse], error)
 	// UpdateConnectSecret updates the Connect secret.
+	//
+	// Deprecated: do not use.
 	UpdateConnectSecret(context.Context, *connect.Request[v1alpha1.UpdateConnectSecretRequest]) (*connect.Response[v1alpha1.UpdateConnectSecretResponse], error)
 	// DeleteSecret deletes the secret.
+	//
+	// Deprecated: do not use.
 	DeleteConnectSecret(context.Context, *connect.Request[v1alpha1.DeleteConnectSecretRequest]) (*connect.Response[v1alpha1.DeleteConnectSecretResponse], error)
 }
 
@@ -173,6 +203,8 @@ type SecretServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	secretServiceGetConnectSecretHandler := connect.NewUnaryHandler(
 		SecretServiceGetConnectSecretProcedure,

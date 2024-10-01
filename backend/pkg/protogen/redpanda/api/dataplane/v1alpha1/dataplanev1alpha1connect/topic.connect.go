@@ -66,12 +66,20 @@ var (
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1alpha1.TopicService service.
+//
+// Deprecated: do not use.
 type TopicServiceClient interface {
+	// Deprecated: do not use.
 	CreateTopic(context.Context, *connect.Request[v1alpha1.CreateTopicRequest]) (*connect.Response[v1alpha1.CreateTopicResponse], error)
+	// Deprecated: do not use.
 	ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error)
+	// Deprecated: do not use.
 	DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error)
+	// Deprecated: do not use.
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error)
+	// Deprecated: do not use.
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error)
+	// Deprecated: do not use.
 	SetTopicConfigurations(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationsResponse], error)
 }
 
@@ -82,6 +90,8 @@ type TopicServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TopicServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &topicServiceClient{
@@ -135,44 +145,64 @@ type topicServiceClient struct {
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1alpha1.TopicService.CreateTopic.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) CreateTopic(ctx context.Context, req *connect.Request[v1alpha1.CreateTopicRequest]) (*connect.Response[v1alpha1.CreateTopicResponse], error) {
 	return c.createTopic.CallUnary(ctx, req)
 }
 
 // ListTopics calls redpanda.api.dataplane.v1alpha1.TopicService.ListTopics.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) ListTopics(ctx context.Context, req *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error) {
 	return c.listTopics.CallUnary(ctx, req)
 }
 
 // DeleteTopic calls redpanda.api.dataplane.v1alpha1.TopicService.DeleteTopic.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) DeleteTopic(ctx context.Context, req *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error) {
 	return c.deleteTopic.CallUnary(ctx, req)
 }
 
 // GetTopicConfigurations calls redpanda.api.dataplane.v1alpha1.TopicService.GetTopicConfigurations.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) GetTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error) {
 	return c.getTopicConfigurations.CallUnary(ctx, req)
 }
 
 // UpdateTopicConfigurations calls
 // redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfigurations.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) UpdateTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error) {
 	return c.updateTopicConfigurations.CallUnary(ctx, req)
 }
 
 // SetTopicConfigurations calls redpanda.api.dataplane.v1alpha1.TopicService.SetTopicConfigurations.
+//
+// Deprecated: do not use.
 func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, req *connect.Request[v1alpha1.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationsResponse], error) {
 	return c.setTopicConfigurations.CallUnary(ctx, req)
 }
 
 // TopicServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha1.TopicService
 // service.
+//
+// Deprecated: do not use.
 type TopicServiceHandler interface {
+	// Deprecated: do not use.
 	CreateTopic(context.Context, *connect.Request[v1alpha1.CreateTopicRequest]) (*connect.Response[v1alpha1.CreateTopicResponse], error)
+	// Deprecated: do not use.
 	ListTopics(context.Context, *connect.Request[v1alpha1.ListTopicsRequest]) (*connect.Response[v1alpha1.ListTopicsResponse], error)
+	// Deprecated: do not use.
 	DeleteTopic(context.Context, *connect.Request[v1alpha1.DeleteTopicRequest]) (*connect.Response[v1alpha1.DeleteTopicResponse], error)
+	// Deprecated: do not use.
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha1.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.GetTopicConfigurationsResponse], error)
+	// Deprecated: do not use.
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha1.UpdateTopicConfigurationsResponse], error)
+	// Deprecated: do not use.
 	SetTopicConfigurations(context.Context, *connect.Request[v1alpha1.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha1.SetTopicConfigurationsResponse], error)
 }
 
@@ -181,6 +211,8 @@ type TopicServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	topicServiceCreateTopicHandler := connect.NewUnaryHandler(
 		TopicServiceCreateTopicProcedure,

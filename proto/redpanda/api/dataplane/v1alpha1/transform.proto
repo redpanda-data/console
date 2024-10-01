@@ -178,7 +178,10 @@ message DeleteTransformRequest {
 message DeleteTransformResponse {}
 
 service TransformService {
+  option deprecated = true;
+
   rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
+    option deprecated = true;
     option (google.api.http) = {get: "/v1alpha1/transforms"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Transforms"
@@ -196,6 +199,7 @@ service TransformService {
   }
 
   rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
+    option deprecated = true;
     option (google.api.http) = {
       get: "/v1alpha1/transforms/{name}"
       response_body: "transform"
@@ -225,6 +229,7 @@ service TransformService {
   }
 
   rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
+    option deprecated = true;
     option (google.api.http) = {delete: "/v1alpha1/transforms/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete Transform"
