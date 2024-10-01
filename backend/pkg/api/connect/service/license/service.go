@@ -55,15 +55,6 @@ func NewService(
 	if cfg.Redpanda.AdminAPI.Enabled {
 		// Build admin client with provided credentials
 		adminAPICfg := cfg.Redpanda.AdminAPI
-		var auth rpadmin.Auth
-		if adminAPICfg.Username != "" {
-			auth = &rpadmin.BasicAuth{
-				Username: adminAPICfg.Username,
-				Password: adminAPICfg.Password,
-			}
-		} else {
-			auth = &rpadmin.NopAuth{}
-		}
 		tlsCfg, err := adminAPICfg.TLS.TLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to build TLS config: %w", err)
@@ -78,7 +69,7 @@ func NewService(
 			tlsCfg = nil
 		}
 
-		adminClient, err = rpadmin.NewAdminAPI(adminAPICfg.URLs, auth, tlsCfg)
+		adminClient, err = rpadmin.NewAdminAPI(adminAPICfg.URLs, cfg.Redpanda.AdminAPI.RPAdminAuth(), tlsCfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create admin client: %w", err)
 		}

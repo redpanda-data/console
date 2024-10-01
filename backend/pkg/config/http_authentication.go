@@ -11,9 +11,9 @@ package config
 
 import "flag"
 
-// SchemaAuthentication defines configuration properties for authenticating against
-// the configured schema registry.
-type SchemaAuthentication struct {
+// HTTPAuthentication defines configuration properties for authenticating against
+// any upstream HTTP API.
+type HTTPAuthentication struct {
 	// ImpersonateUser enables an enterprise feature where the
 	// authentication credentials used by the user to log into
 	// the Web UI are impersonated for connections to upstream
@@ -36,7 +36,7 @@ type SchemaAuthentication struct {
 }
 
 // RegisterFlags registers flags for sensitive schema registry authentication inputs.
-func (c *SchemaAuthentication) RegisterFlags(f *flag.FlagSet) {
-	c.BasicAuth.RegisterFlagsWithPrefix(f, "schema.registry.")
-	f.StringVar(&c.BearerToken, "schema.registry.token", "", "Bearer token for authenticating against the schema registry (optional)")
+func (c *HTTPAuthentication) RegisterFlags(f *flag.FlagSet, prefix string) {
+	c.BasicAuth.RegisterFlagsWithPrefix(f, prefix)
+	f.StringVar(&c.BearerToken, prefix+"token", "", "Bearer token for authenticating against the API (optional)")
 }

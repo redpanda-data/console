@@ -20,7 +20,7 @@ type Schema struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
 
-	Authentication SchemaAuthentication `yaml:"authentication"`
+	Authentication HTTPAuthentication `yaml:"authentication"`
 
 	// TLS / Custom CA
 	TLS TLS `yaml:"tls"`
@@ -28,7 +28,7 @@ type Schema struct {
 
 // RegisterFlags registers all nested config flags.
 func (c *Schema) RegisterFlags(f *flag.FlagSet) {
-	c.Authentication.RegisterFlags(f)
+	c.Authentication.RegisterFlags(f, "schema.registry.")
 }
 
 // Validate the schema registry configurations.
