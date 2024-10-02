@@ -3,6 +3,7 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
 // SCRAM Auth settings.
@@ -115,7 +116,22 @@ message GetDebugBundleStatusResponse {
 }
 
 message DeleteDebugBundleRequest {
-  string job_id = 1;
+  string job_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.predefined) = {
+      cel: {
+        id: "string.uuid"
+        message: "value must be a valid UUID"
+        expression: "!rules.uuid || this == \'\' || this.matches(\'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$\')"
+      }
+      cel: {
+        id: "string.uuid_empty"
+        message: "value is empty, which is not a valid UUID"
+        expression: "!rules.uuid || this != \'\'"
+      }
+    }
+  ];
 
   // Optional broker IDs. Do not set / empty for all.
   repeated int32 broker_ids = 2;
