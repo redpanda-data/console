@@ -266,6 +266,11 @@ func (s *Service) BrokerIDToURL(ctx context.Context, brokerID int) (string, erro
 	return s.adminClient.BrokerIDToURL(ctx, brokerID)
 }
 
+// GetHealthOverview gets the cluster health overview.
+func (s *Service) GetHealthOverview(ctx context.Context) (adminapi.ClusterHealthOverview, error) {
+	return s.adminClient.GetHealthOverview(ctx)
+}
+
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
