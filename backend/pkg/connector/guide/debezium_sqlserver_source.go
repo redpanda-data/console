@@ -163,6 +163,8 @@ func NewDebeziumSQLServerGuide(opts ...Option) Guide {
 				},
 			},
 
+			sizing(),
+
 			reviewAndLaunch(),
 		},
 	}
