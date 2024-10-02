@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { DebugBundleStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleResponse, DebugBundleStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1590,16 +1590,26 @@ const apiStore = {
             throw new Error('Debug bundle client is not initialized');
         }
         return await client.getDebugBundleStatus({
-            brokerIds: [0]
         }).then(response => {
             this.debugBundleStatuses = response.statuses
             return response
         }).catch((e) => {
-            addError(e);
             return e
         });
-    }
+    },
 
+
+    async createDebugBundle(): Promise<CreateDebugBundleResponse> {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        return await client.createDebugBundle({
+
+        })
+    }
 };
 
 export type RolePrincipal = { name: string, principalType: 'User' };

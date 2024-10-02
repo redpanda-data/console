@@ -14,7 +14,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Flex, FormField, Input, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Flex, FormField, Input, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import { SingleSelect } from '../../misc/Select';
@@ -25,17 +25,20 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
     @observable advancedForm = false;
     @observable submitInProgress = false;
 
+    @observable jobId: string | undefined = undefined;
+    @observable createBundleError: string | undefined = '';
+
     initPage(p: PageInitHelper): void {
         p.title = 'Admin';
         p.addBreadcrumb('Admin', '/admin');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
-
     }
 
     refreshData(force: boolean) {
         api.refreshAdminInfo(force);
+        void api.getDebugBundleStatuses();
     }
 
     constructor(p: any) {
@@ -49,16 +52,26 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
         return (
             <Box>
                 <Text>Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine it’s running on. This will bundle the collected data into a ZIP file.</Text>
+                Generation progress
+
+                {this.createBundleError && <Alert status="error">
+                    <AlertIcon/>
+                    {this.createBundleError}
+                </Alert>}
                 {this.submitInProgress ? <Box>
                     Generating bundle ...
                     </Box>
                     :
                     <NewDebugBundleForm onSubmit={() => {
-                        // TODO
                         this.submitInProgress = true;
-                        setTimeout(() => {
+                        this.createBundleError = undefined;
+                        api.createDebugBundle().then(result => {
+                            console.log({result});
+                        }).catch(err => {
+                            this.createBundleError = err.message
+                        }).finally(() => {
                             this.submitInProgress = false;
-                        }, 10000);
+                        })
                     }}/>}
             </Box>
         );
@@ -66,7 +79,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
 }
 
 
-const NewDebugBundleForm: FC<{ onSubmit: () => void }> = ({onSubmit}) => {
+const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) => {
     const [advancedForm, setAdvancedForm] = useState(false);
     return (
         <Box mt={4}>
@@ -133,8 +146,8 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = ({onSubmit}) => {
                     </>
                     :
                     <>
-                        <Button onClick={() => {
-                            // TODO
+                        <Button onClick={async () => {
+                          onSubmit()
                         }}>Generate default</Button>
                         <Button variant="link" onClick={() => {
                             setAdvancedForm(true);
@@ -145,4 +158,4 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = ({onSubmit}) => {
             </Flex>
         </Box>
     );
-};
+});

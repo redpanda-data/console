@@ -15,7 +15,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Text } from '@redpanda-data/ui';
+import { Box, Button, List, ListItem, Text } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
 @observer
@@ -32,7 +32,23 @@ export class AdminDebugBundle extends Component<{}> {
 
         return (
             <Box>
-                <Text>No pre-existing debug bundle.</Text>
+                <List>
+                    {api.debugBundleStatuses.map((status, idx) =>
+                        <ListItem key={idx}>
+                            <Button
+                                variant="link"
+                                px={0}
+                                onClick={() => {
+                                }}
+                            >
+                                {status.filename}
+                            </Button>
+                            <Text>Generated {status.createdAt?.toDate().toLocaleString()}</Text>
+                            {/*{JSON.stringify(status)}*/}
+                        </ListItem>
+                    )}
+                </List>
+                {api.debugBundleStatuses.length === 0 && <Text>No pre-existing debug bundle.</Text>}
                 <Box mt={4}>
                     <Button as={ReactRouterLink} to="/admin/debug-bundle/new">Generate new</Button>
                 </Box>

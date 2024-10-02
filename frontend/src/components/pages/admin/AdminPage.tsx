@@ -40,6 +40,7 @@ export default class AdminPage extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshAdminInfo(force);
+        void api.getDebugBundleStatuses();
     }
 
     render() {
