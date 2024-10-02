@@ -8,6 +8,7 @@ import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * Error code enum.
+ * https://github.com/redpanda-data/redpanda/blob/dev/src/v/debug_bundle/error.h#L22
  *
  * @generated from enum redpanda.api.console.v1alpha1.BundleErrorCode
  */
@@ -35,34 +36,50 @@ export enum BundleErrorCode {
   PROCESS_NOT_RUNNING = 2,
 
   /**
+   * Invalid parameters.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
+   */
+  INVALID_PARAMETERS = 3,
+
+  /**
+   * Debug process failed.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+   */
+  PROCESS_FAILED = 4,
+
+  /**
    * Job ID not recognized.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
    */
-  INVALID_JOB_ID = 3,
+  INVALID_JOB_ID = 5,
 
   /**
    * Debug bundle process was never started.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
    */
-  PROCESS_NOT_STARTED = 4,
+  PROCESS_NOT_STARTED = 6,
 
   /**
    * Internal error.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
    */
-  INTERNAL_ERROR = 5,
+  INTERNAL_ERROR = 7,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BundleErrorCode)
 proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleErrorCode", [
   { no: 0, name: "BUNDLE_ERROR_CODE_OK" },
   { no: 1, name: "BUNDLE_ERROR_CODE_PROCESS_ALREADY_RUNNING" },
   { no: 2, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING" },
-  { no: 3, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
-  { no: 4, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
-  { no: 5, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
+  { no: 3, name: "BUNDLE_ERROR_CODE_INVALID_PARAMETERS" },
+  { no: 4, name: "BUNDLE_ERROR_CODE_PROCESS_FAILED" },
+  { no: 5, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
+  { no: 6, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
+  { no: 7, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
 ]);
 
 /**

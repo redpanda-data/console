@@ -171,6 +171,7 @@ message BundleError {
 }
 
 // Error code enum.
+// https://github.com/redpanda-data/redpanda/blob/dev/src/v/debug_bundle/error.h#L22
 enum BundleErrorCode {
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
   // OK. No Error.
@@ -182,14 +183,20 @@ enum BundleErrorCode {
   // Debug bundle process not running.
   BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING = 2;
 
+  // Invalid parameters.
+  BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
+
+  // Debug process failed.
+  BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+
   // Job ID not recognized.
-  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
 
   // Debug bundle process was never started.
-  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
 
   // Internal error.
-  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
 }
 
 // Request for GetClusterHealth call.
