@@ -112,7 +112,18 @@ message DebugBundleStatus {
 
 // The response to GetDebugBundleStatus.
 message GetDebugBundleStatusResponse {
-  repeated DebugBundleStatus statuses = 1;
+  message DebugBundleBrokerStatus {
+    // The broker ID.
+    int32 broker_id = 1;
+
+    // The value of the status, either Bundle Error or status.
+    oneof value {
+      BundleError errors = 2;
+      DebugBundleStatus status = 3;
+    }
+  }
+
+  repeated DebugBundleBrokerStatus statuses = 1;
 }
 
 message DeleteDebugBundleRequest {

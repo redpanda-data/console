@@ -509,9 +509,9 @@ proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1
  */
 export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusResponse> {
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.DebugBundleStatus statuses = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus statuses = 1;
    */
-  statuses: DebugBundleStatus[] = [];
+  statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
 
   constructor(data?: PartialMessage<GetDebugBundleStatusResponse>) {
     super();
@@ -521,7 +521,7 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "statuses", kind: "message", T: DebugBundleStatus, repeated: true },
+    { no: 1, name: "statuses", kind: "message", T: GetDebugBundleStatusResponse_DebugBundleBrokerStatus, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse {
@@ -538,6 +538,66 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
 
   static equals(a: GetDebugBundleStatusResponse | PlainMessage<GetDebugBundleStatusResponse> | undefined, b: GetDebugBundleStatusResponse | PlainMessage<GetDebugBundleStatusResponse> | undefined): boolean {
     return proto3.util.equals(GetDebugBundleStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus
+ */
+export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Message<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> {
+  /**
+   * The broker ID.
+   *
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId = 0;
+
+  /**
+   * The value of the status, either Bundle Error or status.
+   *
+   * @generated from oneof redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus.value
+   */
+  value: {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.BundleError errors = 2;
+     */
+    value: BundleError;
+    case: "errors";
+  } | {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus status = 3;
+     */
+    value: DebugBundleStatus;
+    case: "status";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "errors", kind: "message", T: BundleError, oneof: "value" },
+    { no: 3, name: "status", kind: "message", T: DebugBundleStatus, oneof: "value" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDebugBundleStatusResponse_DebugBundleBrokerStatus | PlainMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> | undefined, b: GetDebugBundleStatusResponse_DebugBundleBrokerStatus | PlainMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> | undefined): boolean {
+    return proto3.util.equals(GetDebugBundleStatusResponse_DebugBundleBrokerStatus, a, b);
   }
 }
 
