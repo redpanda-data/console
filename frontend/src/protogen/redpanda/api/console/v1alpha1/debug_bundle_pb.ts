@@ -648,6 +648,8 @@ export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileR
 }
 
 /**
+ * Parameters for DeleteDebugBundleFileRequest.
+ *
  * @generated from message redpanda.api.console.v1alpha1.DeleteDebugBundleFile
  */
 export class DeleteDebugBundleFile extends Message<DeleteDebugBundleFile> {
@@ -783,6 +785,145 @@ export class BundleError extends Message<BundleError> {
 
   static equals(a: BundleError | PlainMessage<BundleError> | undefined, b: BundleError | PlainMessage<BundleError> | undefined): boolean {
     return proto3.util.equals(BundleError, a, b);
+  }
+}
+
+/**
+ * Request for GetClusterHealth call.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GetClusterHealthRequest
+ */
+export class GetClusterHealthRequest extends Message<GetClusterHealthRequest> {
+  constructor(data?: PartialMessage<GetClusterHealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetClusterHealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetClusterHealthRequest | PlainMessage<GetClusterHealthRequest> | undefined, b: GetClusterHealthRequest | PlainMessage<GetClusterHealthRequest> | undefined): boolean {
+    return proto3.util.equals(GetClusterHealthRequest, a, b);
+  }
+}
+
+/**
+ * Response for GetClusterHealth call.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GetClusterHealthResponse
+ */
+export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> {
+  /**
+   * whether cluster is health or not
+   *
+   * @generated from field: bool is_healthy = 1;
+   */
+  isHealthy = false;
+
+  /**
+   * unhealthy reasons. some possible values:
+   * leaderless_partitions
+   * nodes_down
+   * under_replicated_partitions
+   *
+   * @generated from field: repeated string unhealthy_reasons = 2;
+   */
+  unhealthyReasons: string[] = [];
+
+  /**
+   * @generated from field: int32 controller_id = 3;
+   */
+  controllerId = 0;
+
+  /**
+   * @generated from field: repeated int32 all_nodes = 4;
+   */
+  allNodes: number[] = [];
+
+  /**
+   * @generated from field: repeated int32 nodes_down = 5;
+   */
+  nodesDown: number[] = [];
+
+  /**
+   * @generated from field: repeated int32 nodes_in_recovery_mode = 6;
+   */
+  nodesInRecoveryMode: number[] = [];
+
+  /**
+   * leaderless partitions. example values:
+   * kafka/events-sink-internal-default-queue-v2/101
+   *
+   * @generated from field: repeated string leaderless_partitions = 7;
+   */
+  leaderlessPartitions: string[] = [];
+
+  /**
+   * @generated from field: int32 leaderless_count = 8;
+   */
+  leaderlessCount = 0;
+
+  /**
+   * under replicated partitions. example values:
+   * kafka/events-sink-internal-default-queue-v2/101
+   *
+   * @generated from field: repeated string under_replicated_partitions = 9;
+   */
+  underReplicatedPartitions: string[] = [];
+
+  /**
+   * @generated from field: int32 under_replicated_count = 10;
+   */
+  underReplicatedCount = 0;
+
+  constructor(data?: PartialMessage<GetClusterHealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetClusterHealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "is_healthy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "unhealthy_reasons", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "controller_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "all_nodes", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 5, name: "nodes_down", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 6, name: "nodes_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 7, name: "leaderless_partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "leaderless_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "under_replicated_partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "under_replicated_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetClusterHealthResponse | PlainMessage<GetClusterHealthResponse> | undefined, b: GetClusterHealthResponse | PlainMessage<GetClusterHealthResponse> | undefined): boolean {
+    return proto3.util.equals(GetClusterHealthResponse, a, b);
   }
 }
 

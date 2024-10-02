@@ -18,6 +18,7 @@ import (
 // service.
 type DebugBundleServiceGatewayServer struct {
 	v1alpha1.UnimplementedDebugBundleServiceServer
+	getClusterHealth      connect_gateway.UnaryHandler[v1alpha1.GetClusterHealthRequest, v1alpha1.GetClusterHealthResponse]
 	createDebugBundle     connect_gateway.UnaryHandler[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse]
 	getDebugBundleStatus  connect_gateway.UnaryHandler[v1alpha1.GetDebugBundleStatusRequest, v1alpha1.GetDebugBundleStatusResponse]
 	deleteDebugBundle     connect_gateway.UnaryHandler[v1alpha1.DeleteDebugBundleRequest, v1alpha1.DeleteDebugBundleResponse]
@@ -28,11 +29,16 @@ type DebugBundleServiceGatewayServer struct {
 // DebugBundleService service.
 func NewDebugBundleServiceGatewayServer(svc DebugBundleServiceHandler, opts ...connect_gateway.HandlerOption) *DebugBundleServiceGatewayServer {
 	return &DebugBundleServiceGatewayServer{
+		getClusterHealth:      connect_gateway.NewUnaryHandler(DebugBundleServiceGetClusterHealthProcedure, svc.GetClusterHealth, opts...),
 		createDebugBundle:     connect_gateway.NewUnaryHandler(DebugBundleServiceCreateDebugBundleProcedure, svc.CreateDebugBundle, opts...),
 		getDebugBundleStatus:  connect_gateway.NewUnaryHandler(DebugBundleServiceGetDebugBundleStatusProcedure, svc.GetDebugBundleStatus, opts...),
 		deleteDebugBundle:     connect_gateway.NewUnaryHandler(DebugBundleServiceDeleteDebugBundleProcedure, svc.DeleteDebugBundle, opts...),
 		deleteDebugBundleFile: connect_gateway.NewUnaryHandler(DebugBundleServiceDeleteDebugBundleFileProcedure, svc.DeleteDebugBundleFile, opts...),
 	}
+}
+
+func (s *DebugBundleServiceGatewayServer) GetClusterHealth(ctx context.Context, req *v1alpha1.GetClusterHealthRequest) (*v1alpha1.GetClusterHealthResponse, error) {
+	return s.getClusterHealth(ctx, req)
 }
 
 func (s *DebugBundleServiceGatewayServer) CreateDebugBundle(ctx context.Context, req *v1alpha1.CreateDebugBundleRequest) (*v1alpha1.CreateDebugBundleResponse, error) {

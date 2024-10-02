@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	DebugBundleService_GetClusterHealth_FullMethodName      = "/redpanda.api.console.v1alpha1.DebugBundleService/GetClusterHealth"
 	DebugBundleService_CreateDebugBundle_FullMethodName     = "/redpanda.api.console.v1alpha1.DebugBundleService/CreateDebugBundle"
 	DebugBundleService_GetDebugBundleStatus_FullMethodName  = "/redpanda.api.console.v1alpha1.DebugBundleService/GetDebugBundleStatus"
 	DebugBundleService_DeleteDebugBundle_FullMethodName     = "/redpanda.api.console.v1alpha1.DebugBundleService/DeleteDebugBundle"
@@ -30,6 +31,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DebugBundleServiceClient interface {
+	GetClusterHealth(ctx context.Context, in *GetClusterHealthRequest, opts ...grpc.CallOption) (*GetClusterHealthResponse, error)
 	CreateDebugBundle(ctx context.Context, in *CreateDebugBundleRequest, opts ...grpc.CallOption) (*CreateDebugBundleResponse, error)
 	GetDebugBundleStatus(ctx context.Context, in *GetDebugBundleStatusRequest, opts ...grpc.CallOption) (*GetDebugBundleStatusResponse, error)
 	DeleteDebugBundle(ctx context.Context, in *DeleteDebugBundleRequest, opts ...grpc.CallOption) (*DeleteDebugBundleResponse, error)
@@ -42,6 +44,15 @@ type debugBundleServiceClient struct {
 
 func NewDebugBundleServiceClient(cc grpc.ClientConnInterface) DebugBundleServiceClient {
 	return &debugBundleServiceClient{cc}
+}
+
+func (c *debugBundleServiceClient) GetClusterHealth(ctx context.Context, in *GetClusterHealthRequest, opts ...grpc.CallOption) (*GetClusterHealthResponse, error) {
+	out := new(GetClusterHealthResponse)
+	err := c.cc.Invoke(ctx, DebugBundleService_GetClusterHealth_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *debugBundleServiceClient) CreateDebugBundle(ctx context.Context, in *CreateDebugBundleRequest, opts ...grpc.CallOption) (*CreateDebugBundleResponse, error) {
@@ -84,6 +95,7 @@ func (c *debugBundleServiceClient) DeleteDebugBundleFile(ctx context.Context, in
 // All implementations must embed UnimplementedDebugBundleServiceServer
 // for forward compatibility
 type DebugBundleServiceServer interface {
+	GetClusterHealth(context.Context, *GetClusterHealthRequest) (*GetClusterHealthResponse, error)
 	CreateDebugBundle(context.Context, *CreateDebugBundleRequest) (*CreateDebugBundleResponse, error)
 	GetDebugBundleStatus(context.Context, *GetDebugBundleStatusRequest) (*GetDebugBundleStatusResponse, error)
 	DeleteDebugBundle(context.Context, *DeleteDebugBundleRequest) (*DeleteDebugBundleResponse, error)
@@ -95,6 +107,9 @@ type DebugBundleServiceServer interface {
 type UnimplementedDebugBundleServiceServer struct {
 }
 
+func (UnimplementedDebugBundleServiceServer) GetClusterHealth(context.Context, *GetClusterHealthRequest) (*GetClusterHealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterHealth not implemented")
+}
 func (UnimplementedDebugBundleServiceServer) CreateDebugBundle(context.Context, *CreateDebugBundleRequest) (*CreateDebugBundleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDebugBundle not implemented")
 }
@@ -118,6 +133,24 @@ type UnsafeDebugBundleServiceServer interface {
 
 func RegisterDebugBundleServiceServer(s grpc.ServiceRegistrar, srv DebugBundleServiceServer) {
 	s.RegisterService(&DebugBundleService_ServiceDesc, srv)
+}
+
+func _DebugBundleService_GetClusterHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterHealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DebugBundleServiceServer).GetClusterHealth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DebugBundleService_GetClusterHealth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DebugBundleServiceServer).GetClusterHealth(ctx, req.(*GetClusterHealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DebugBundleService_CreateDebugBundle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -199,6 +232,10 @@ var DebugBundleService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "redpanda.api.console.v1alpha1.DebugBundleService",
 	HandlerType: (*DebugBundleServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetClusterHealth",
+			Handler:    _DebugBundleService_GetClusterHealth_Handler,
+		},
 		{
 			MethodName: "CreateDebugBundle",
 			Handler:    _DebugBundleService_CreateDebugBundle_Handler,

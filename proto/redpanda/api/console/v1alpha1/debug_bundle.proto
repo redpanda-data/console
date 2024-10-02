@@ -131,6 +131,7 @@ message DeleteDebugBundleFileRequest {
   repeated DeleteDebugBundleFile files = 1;
 }
 
+// Parameters for DeleteDebugBundleFileRequest.
 message DeleteDebugBundleFile {
   int32 broker_id = 1;
   string filename = 2;
@@ -175,12 +176,41 @@ enum BundleErrorCode {
   BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
 }
 
+// Request for GetClusterHealth call.
+message GetClusterHealthRequest {}
+
+// Response for GetClusterHealth call.
+message GetClusterHealthResponse {
+  // whether cluster is health or not
+  bool is_healthy = 1;
+
+  // unhealthy reasons. some possible values:
+  // leaderless_partitions
+  // nodes_down
+  // under_replicated_partitions
+  repeated string unhealthy_reasons = 2;
+  int32 controller_id = 3;
+  repeated int32 all_nodes = 4;
+  repeated int32 nodes_down = 5;
+  repeated int32 nodes_in_recovery_mode = 6;
+  // leaderless partitions. example values:
+  // kafka/events-sink-internal-default-queue-v2/101
+  repeated string leaderless_partitions = 7;
+  int32 leaderless_count = 8;
+
+  // under replicated partitions. example values:
+  // kafka/events-sink-internal-default-queue-v2/101
+  repeated string under_replicated_partitions = 9;
+  int32 under_replicated_count = 10;
+}
+
 // Additional API:
 // GET /api/debug_bundle/{file}
 // GET /api/debug_bundle/{broker_id}/{file}
 // This will download the debug bundle zip file
 
 service DebugBundleService {
+  rpc GetClusterHealth(GetClusterHealthRequest) returns (GetClusterHealthResponse) {}
   rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
   rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
