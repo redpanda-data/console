@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * Error code enum.
@@ -178,9 +178,9 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   /**
    * For how long to collect samples for the CPU profiler
    *
-   * @generated from field: int32 cpu_profiler_wait_seconds = 5;
+   * @generated from field: optional int32 cpu_profiler_wait_seconds = 5;
    */
-  cpuProfilerWaitSeconds = 0;
+  cpuProfilerWaitSeconds?: number;
 
   /**
    * Include logs dated from specified date onward.
@@ -211,6 +211,21 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   metricsIntervalSeconds = 0;
 
   /**
+   * @generated from field: bool tls_enabled = 10;
+   */
+  tlsEnabled = false;
+
+  /**
+   * @generated from field: bool tls_insecure_skip_verify = 11;
+   */
+  tlsInsecureSkipVerify = false;
+
+  /**
+   * @generated from field: string namespace = 12;
+   */
+  namespace = "";
+
+  /**
    * Partitions. When provided, rpk saves extra admin API requests for those partitions.
    * Optional.
    * In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
@@ -218,7 +233,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    * kafka/foo/1,2,3. also there can be multiple of those so
    * ['kafka/foo/1,2,3', 'private/baz/3.4.5']
    *
-   * @generated from field: repeated string partitions = 10;
+   * @generated from field: repeated string partitions = 13;
    */
   partitions: string[] = [];
 
@@ -233,12 +248,15 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 1, name: "scram", kind: "message", T: SCRAMAuth, oneof: "authentication" },
     { no: 3, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 4, name: "controller_logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "cpu_profiler_wait_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 6, name: "logs_since", kind: "message", T: Timestamp },
     { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "logs_until", kind: "message", T: Timestamp },
     { no: 9, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "tls_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "tls_insecure_skip_verify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "namespace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {
@@ -380,16 +398,23 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   filename = "";
 
   /**
+   * Size of the debug bundle zip file.
+   *
+   * @generated from field: int64 size = 6;
+   */
+  size = protoInt64.zero;
+
+  /**
    * Only filled in once the process completes.  Content of stdout from rpk.
    *
-   * @generated from field: repeated string stdout = 6;
+   * @generated from field: repeated string stdout = 7;
    */
   stdout: string[] = [];
 
   /**
    * Only filled in once the process completes.  Content of stderr from rpk.
    *
-   * @generated from field: repeated string stderr = 7;
+   * @generated from field: repeated string stderr = 8;
    */
   stderr: string[] = [];
 
@@ -406,8 +431,9 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
     { no: 3, name: "status", kind: "enum", T: proto3.getEnumType(DebugBundleStatus_Status) },
     { no: 4, name: "created_at", kind: "message", T: Timestamp },
     { no: 5, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "stdout", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "stderr", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 7, name: "stdout", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "stderr", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DebugBundleStatus {
@@ -589,16 +615,9 @@ export class DeleteDebugBundleResponse extends Message<DeleteDebugBundleResponse
  */
 export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileRequest> {
   /**
-   * @generated from field: string filename = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.DeleteDebugBundleFile files = 1;
    */
-  filename = "";
-
-  /**
-   * Optional broker IDs. Do not set / empty for all.
-   *
-   * @generated from field: repeated int32 broker_ids = 2;
-   */
-  brokerIds: number[] = [];
+  files: DeleteDebugBundleFile[] = [];
 
   constructor(data?: PartialMessage<DeleteDebugBundleFileRequest>) {
     super();
@@ -608,8 +627,7 @@ export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileR
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleFileRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 1, name: "files", kind: "message", T: DeleteDebugBundleFile, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleFileRequest {
@@ -626,6 +644,51 @@ export class DeleteDebugBundleFileRequest extends Message<DeleteDebugBundleFileR
 
   static equals(a: DeleteDebugBundleFileRequest | PlainMessage<DeleteDebugBundleFileRequest> | undefined, b: DeleteDebugBundleFileRequest | PlainMessage<DeleteDebugBundleFileRequest> | undefined): boolean {
     return proto3.util.equals(DeleteDebugBundleFileRequest, a, b);
+  }
+}
+
+/**
+ * Parameters for DeleteDebugBundleFileRequest.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.DeleteDebugBundleFile
+ */
+export class DeleteDebugBundleFile extends Message<DeleteDebugBundleFile> {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId = 0;
+
+  /**
+   * @generated from field: string filename = 2;
+   */
+  filename = "";
+
+  constructor(data?: PartialMessage<DeleteDebugBundleFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDebugBundleFile {
+    return new DeleteDebugBundleFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteDebugBundleFile | PlainMessage<DeleteDebugBundleFile> | undefined, b: DeleteDebugBundleFile | PlainMessage<DeleteDebugBundleFile> | undefined): boolean {
+    return proto3.util.equals(DeleteDebugBundleFile, a, b);
   }
 }
 
@@ -722,6 +785,145 @@ export class BundleError extends Message<BundleError> {
 
   static equals(a: BundleError | PlainMessage<BundleError> | undefined, b: BundleError | PlainMessage<BundleError> | undefined): boolean {
     return proto3.util.equals(BundleError, a, b);
+  }
+}
+
+/**
+ * Request for GetClusterHealth call.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GetClusterHealthRequest
+ */
+export class GetClusterHealthRequest extends Message<GetClusterHealthRequest> {
+  constructor(data?: PartialMessage<GetClusterHealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetClusterHealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetClusterHealthRequest {
+    return new GetClusterHealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetClusterHealthRequest | PlainMessage<GetClusterHealthRequest> | undefined, b: GetClusterHealthRequest | PlainMessage<GetClusterHealthRequest> | undefined): boolean {
+    return proto3.util.equals(GetClusterHealthRequest, a, b);
+  }
+}
+
+/**
+ * Response for GetClusterHealth call.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GetClusterHealthResponse
+ */
+export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> {
+  /**
+   * whether cluster is health or not
+   *
+   * @generated from field: bool is_healthy = 1;
+   */
+  isHealthy = false;
+
+  /**
+   * unhealthy reasons. some possible values:
+   * leaderless_partitions
+   * nodes_down
+   * under_replicated_partitions
+   *
+   * @generated from field: repeated string unhealthy_reasons = 2;
+   */
+  unhealthyReasons: string[] = [];
+
+  /**
+   * @generated from field: int32 controller_id = 3;
+   */
+  controllerId = 0;
+
+  /**
+   * @generated from field: repeated int32 all_nodes = 4;
+   */
+  allNodes: number[] = [];
+
+  /**
+   * @generated from field: repeated int32 nodes_down = 5;
+   */
+  nodesDown: number[] = [];
+
+  /**
+   * @generated from field: repeated int32 nodes_in_recovery_mode = 6;
+   */
+  nodesInRecoveryMode: number[] = [];
+
+  /**
+   * leaderless partitions. example values:
+   * kafka/events-sink-internal-default-queue-v2/101
+   *
+   * @generated from field: repeated string leaderless_partitions = 7;
+   */
+  leaderlessPartitions: string[] = [];
+
+  /**
+   * @generated from field: int32 leaderless_count = 8;
+   */
+  leaderlessCount = 0;
+
+  /**
+   * under replicated partitions. example values:
+   * kafka/events-sink-internal-default-queue-v2/101
+   *
+   * @generated from field: repeated string under_replicated_partitions = 9;
+   */
+  underReplicatedPartitions: string[] = [];
+
+  /**
+   * @generated from field: int32 under_replicated_count = 10;
+   */
+  underReplicatedCount = 0;
+
+  constructor(data?: PartialMessage<GetClusterHealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetClusterHealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "is_healthy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "unhealthy_reasons", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "controller_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "all_nodes", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 5, name: "nodes_down", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 6, name: "nodes_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 7, name: "leaderless_partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "leaderless_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "under_replicated_partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "under_replicated_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetClusterHealthResponse {
+    return new GetClusterHealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetClusterHealthResponse | PlainMessage<GetClusterHealthResponse> | undefined, b: GetClusterHealthResponse | PlainMessage<GetClusterHealthResponse> | undefined): boolean {
+    return proto3.util.equals(GetClusterHealthResponse, a, b);
   }
 }
 

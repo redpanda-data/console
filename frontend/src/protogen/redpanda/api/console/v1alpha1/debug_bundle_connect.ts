@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateDebugBundleRequest, CreateDebugBundleResponse, DeleteDebugBundleFileRequest, DeleteDebugBundleFileResponse, DeleteDebugBundleRequest, DeleteDebugBundleResponse, GetDebugBundleStatusRequest, GetDebugBundleStatusResponse } from "./debug_bundle_pb";
+import { CreateDebugBundleRequest, CreateDebugBundleResponse, DeleteDebugBundleFileRequest, DeleteDebugBundleFileResponse, DeleteDebugBundleRequest, DeleteDebugBundleResponse, GetClusterHealthRequest, GetClusterHealthResponse, GetDebugBundleStatusRequest, GetDebugBundleStatusResponse } from "./debug_bundle_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -12,6 +12,15 @@ import { MethodKind } from "@bufbuild/protobuf";
 export const DebugBundleService = {
   typeName: "redpanda.api.console.v1alpha1.DebugBundleService",
   methods: {
+    /**
+     * @generated from rpc redpanda.api.console.v1alpha1.DebugBundleService.GetClusterHealth
+     */
+    getClusterHealth: {
+      name: "GetClusterHealth",
+      I: GetClusterHealthRequest,
+      O: GetClusterHealthResponse,
+      kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc redpanda.api.console.v1alpha1.DebugBundleService.CreateDebugBundle
      */
