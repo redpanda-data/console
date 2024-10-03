@@ -490,16 +490,22 @@ export enum DebugBundleStatus_Status {
   SUCCESS = 2,
 
   /**
-   * @generated from enum value: STATUS_ERROR = 3;
+   * @generated from enum value: STATUS_EXPIRED = 3;
    */
-  ERROR = 3,
+  EXPIRED = 3,
+
+  /**
+   * @generated from enum value: STATUS_ERROR = 4;
+   */
+  ERROR = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DebugBundleStatus_Status)
 proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1.DebugBundleStatus.Status", [
   { no: 0, name: "STATUS_UNSPECIFIED" },
   { no: 1, name: "STATUS_RUNNING" },
   { no: 2, name: "STATUS_SUCCESS" },
-  { no: 3, name: "STATUS_ERROR" },
+  { no: 3, name: "STATUS_EXPIRED" },
+  { no: 4, name: "STATUS_ERROR" },
 ]);
 
 /**

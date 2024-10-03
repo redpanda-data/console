@@ -106,7 +106,8 @@ message DebugBundleStatus {
     STATUS_UNSPECIFIED = 0;
     STATUS_RUNNING = 1;
     STATUS_SUCCESS = 2;
-    STATUS_ERROR = 3;
+    STATUS_EXPIRED = 3;
+    STATUS_ERROR = 4;
   }
 }
 
