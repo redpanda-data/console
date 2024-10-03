@@ -36,6 +36,15 @@ issues:
     - path: (.+).go
       linters: [gosec]
       text: "G115: integer overflow conversion uint32 -> int32"
+    - path: (.+)_v1alpha1_test.go
+      linters: [staticcheck]
+      text: "SA1019:"
+    - path: pkg/api/routes.go
+      linters: [staticcheck]
+      text: "SA1019: dataplanev1alpha1connect"
+    - path: (.+)/v1alpha1/service.go
+      linters: [staticcheck]
+      text: "SA1019: dataplanev1alpha1connect"
   exclude-use-default: false
   max-same-issues: 0 # 0 is unlimited
 linters:
