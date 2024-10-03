@@ -509,9 +509,9 @@ proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1
  */
 export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusResponse> {
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus statuses = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus broker_statuses = 1;
    */
-  statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
+  brokerStatuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
 
   constructor(data?: PartialMessage<GetDebugBundleStatusResponse>) {
     super();
@@ -521,7 +521,7 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "statuses", kind: "message", T: GetDebugBundleStatusResponse_DebugBundleBrokerStatus, repeated: true },
+    { no: 1, name: "broker_statuses", kind: "message", T: GetDebugBundleStatusResponse_DebugBundleBrokerStatus, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse {
@@ -559,16 +559,16 @@ export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Messag
    */
   value: {
     /**
-     * @generated from field: redpanda.api.console.v1alpha1.BundleError errors = 2;
+     * @generated from field: redpanda.api.console.v1alpha1.BundleError error = 2;
      */
     value: BundleError;
-    case: "errors";
+    case: "error";
   } | {
     /**
-     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus status = 3;
+     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus bundle_status = 3;
      */
     value: DebugBundleStatus;
-    case: "status";
+    case: "bundleStatus";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus>) {
@@ -580,8 +580,8 @@ export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Messag
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "errors", kind: "message", T: BundleError, oneof: "value" },
-    { no: 3, name: "status", kind: "message", T: DebugBundleStatus, oneof: "value" },
+    { no: 2, name: "error", kind: "message", T: BundleError, oneof: "value" },
+    { no: 3, name: "bundle_status", kind: "message", T: DebugBundleStatus, oneof: "value" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {

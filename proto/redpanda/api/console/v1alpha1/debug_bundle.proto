@@ -118,12 +118,12 @@ message GetDebugBundleStatusResponse {
 
     // The value of the status, either Bundle Error or status.
     oneof value {
-      BundleError errors = 2;
-      DebugBundleStatus status = 3;
+      BundleError error = 2;
+      DebugBundleStatus bundle_status = 3;
     }
   }
 
-  repeated DebugBundleBrokerStatus statuses = 1;
+  repeated DebugBundleBrokerStatus broker_statuses = 1;
 }
 
 message DeleteDebugBundleRequest {
