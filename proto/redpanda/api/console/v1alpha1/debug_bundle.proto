@@ -106,6 +106,9 @@ message DebugBundleStatus {
     STATUS_UNSPECIFIED = 0;
     STATUS_RUNNING = 1;
     STATUS_SUCCESS = 2;
+    // There is a cluster config that permits users to set a TTL on the generated bundle.
+    // By default there is no expiration, but a user can set it to say "expire 1 day after it's generated" so once that day passes,
+    // the service will clean up the bundle from disk and mark that job as expired.
     STATUS_EXPIRED = 3;
     STATUS_ERROR = 4;
   }
@@ -127,7 +130,7 @@ message GetDebugBundleStatusResponse {
   repeated DebugBundleBrokerStatus broker_statuses = 1;
 }
 
-message DeleteDebugBundleRequest {
+message CancelDebugBundleProcessRequest {
   string job_id = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -149,8 +152,8 @@ message DeleteDebugBundleRequest {
   repeated int32 broker_ids = 2;
 }
 
-// Response for DeleteDebugBundle.
-message DeleteDebugBundleResponse {
+// Response for CancelDebugBundleProcess.
+message CancelDebugBundleProcessResponse {
   repeated BundleError errors = 1;
 }
 
@@ -248,6 +251,6 @@ service DebugBundleService {
   rpc GetClusterHealth(GetClusterHealthRequest) returns (GetClusterHealthResponse) {}
   rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
-  rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
+  rpc CancelDebugBundleProcess(CancelDebugBundleProcessRequest) returns (CancelDebugBundleProcessResponse) {}
   rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
 }
