@@ -15,6 +15,8 @@ import (
 )
 
 // TransformServiceGatewayServer implements the gRPC server API for the TransformService service.
+//
+// Deprecated: do not use.
 type TransformServiceGatewayServer struct {
 	v1alpha1.UnimplementedTransformServiceServer
 	listTransforms  connect_gateway.UnaryHandler[v1alpha1.ListTransformsRequest, v1alpha1.ListTransformsResponse]
@@ -24,6 +26,8 @@ type TransformServiceGatewayServer struct {
 
 // NewTransformServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // TransformService service.
+//
+// Deprecated: do not use.
 func NewTransformServiceGatewayServer(svc TransformServiceHandler, opts ...connect_gateway.HandlerOption) *TransformServiceGatewayServer {
 	return &TransformServiceGatewayServer{
 		listTransforms:  connect_gateway.NewUnaryHandler(TransformServiceListTransformsProcedure, svc.ListTransforms, opts...),
@@ -46,6 +50,8 @@ func (s *TransformServiceGatewayServer) DeleteTransform(ctx context.Context, req
 
 // RegisterTransformServiceHandlerGatewayServer registers the Connect handlers for the
 // TransformService "svc" to "mux".
+//
+// Deprecated: do not use.
 func RegisterTransformServiceHandlerGatewayServer(mux *runtime.ServeMux, svc TransformServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterTransformServiceHandlerServer(context.TODO(), mux, NewTransformServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))

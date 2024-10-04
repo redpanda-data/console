@@ -28,9 +28,14 @@ const (
 // TransformServiceClient is the client API for TransformService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Deprecated: Do not use.
 type TransformServiceClient interface {
+	// Deprecated: Do not use.
 	ListTransforms(ctx context.Context, in *ListTransformsRequest, opts ...grpc.CallOption) (*ListTransformsResponse, error)
+	// Deprecated: Do not use.
 	GetTransform(ctx context.Context, in *GetTransformRequest, opts ...grpc.CallOption) (*GetTransformResponse, error)
+	// Deprecated: Do not use.
 	DeleteTransform(ctx context.Context, in *DeleteTransformRequest, opts ...grpc.CallOption) (*DeleteTransformResponse, error)
 }
 
@@ -38,10 +43,12 @@ type transformServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// Deprecated: Do not use.
 func NewTransformServiceClient(cc grpc.ClientConnInterface) TransformServiceClient {
 	return &transformServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *transformServiceClient) ListTransforms(ctx context.Context, in *ListTransformsRequest, opts ...grpc.CallOption) (*ListTransformsResponse, error) {
 	out := new(ListTransformsResponse)
 	err := c.cc.Invoke(ctx, TransformService_ListTransforms_FullMethodName, in, out, opts...)
@@ -51,6 +58,7 @@ func (c *transformServiceClient) ListTransforms(ctx context.Context, in *ListTra
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *transformServiceClient) GetTransform(ctx context.Context, in *GetTransformRequest, opts ...grpc.CallOption) (*GetTransformResponse, error) {
 	out := new(GetTransformResponse)
 	err := c.cc.Invoke(ctx, TransformService_GetTransform_FullMethodName, in, out, opts...)
@@ -60,6 +68,7 @@ func (c *transformServiceClient) GetTransform(ctx context.Context, in *GetTransf
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *transformServiceClient) DeleteTransform(ctx context.Context, in *DeleteTransformRequest, opts ...grpc.CallOption) (*DeleteTransformResponse, error) {
 	out := new(DeleteTransformResponse)
 	err := c.cc.Invoke(ctx, TransformService_DeleteTransform_FullMethodName, in, out, opts...)
@@ -72,9 +81,14 @@ func (c *transformServiceClient) DeleteTransform(ctx context.Context, in *Delete
 // TransformServiceServer is the server API for TransformService service.
 // All implementations must embed UnimplementedTransformServiceServer
 // for forward compatibility
+//
+// Deprecated: Do not use.
 type TransformServiceServer interface {
+	// Deprecated: Do not use.
 	ListTransforms(context.Context, *ListTransformsRequest) (*ListTransformsResponse, error)
+	// Deprecated: Do not use.
 	GetTransform(context.Context, *GetTransformRequest) (*GetTransformResponse, error)
+	// Deprecated: Do not use.
 	DeleteTransform(context.Context, *DeleteTransformRequest) (*DeleteTransformResponse, error)
 	mustEmbedUnimplementedTransformServiceServer()
 }
@@ -101,6 +115,7 @@ type UnsafeTransformServiceServer interface {
 	mustEmbedUnimplementedTransformServiceServer()
 }
 
+// Deprecated: Do not use.
 func RegisterTransformServiceServer(s grpc.ServiceRegistrar, srv TransformServiceServer) {
 	s.RegisterService(&TransformService_ServiceDesc, srv)
 }
