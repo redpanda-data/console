@@ -3,6 +3,7 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
 // SCRAM Auth settings.
@@ -105,24 +106,54 @@ message DebugBundleStatus {
     STATUS_UNSPECIFIED = 0;
     STATUS_RUNNING = 1;
     STATUS_SUCCESS = 2;
-    STATUS_ERROR = 3;
+    // There is a cluster config that permits users to set a TTL on the generated bundle.
+    // By default there is no expiration, but a user can set it to say "expire 1 day after it's generated" so once that day passes,
+    // the service will clean up the bundle from disk and mark that job as expired.
+    STATUS_EXPIRED = 3;
+    STATUS_ERROR = 4;
   }
 }
 
 // The response to GetDebugBundleStatus.
 message GetDebugBundleStatusResponse {
-  repeated DebugBundleStatus statuses = 1;
+  message DebugBundleBrokerStatus {
+    // The broker ID.
+    int32 broker_id = 1;
+
+    // The value of the status, either Bundle Error or status.
+    oneof value {
+      BundleError error = 2;
+      DebugBundleStatus bundle_status = 3;
+    }
+  }
+
+  repeated DebugBundleBrokerStatus broker_statuses = 1;
 }
 
-message DeleteDebugBundleRequest {
-  string job_id = 1;
+message CancelDebugBundleProcessRequest {
+  string job_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.predefined) = {
+      cel: {
+        id: "string.uuid"
+        message: "value must be a valid UUID"
+        expression: "!rules.uuid || this == \'\' || this.matches(\'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$\')"
+      }
+      cel: {
+        id: "string.uuid_empty"
+        message: "value is empty, which is not a valid UUID"
+        expression: "!rules.uuid || this != \'\'"
+      }
+    }
+  ];
 
   // Optional broker IDs. Do not set / empty for all.
   repeated int32 broker_ids = 2;
 }
 
-// Response for DeleteDebugBundle.
-message DeleteDebugBundleResponse {
+// Response for CancelDebugBundleProcess.
+message CancelDebugBundleProcessResponse {
   repeated BundleError errors = 1;
 }
 
@@ -155,6 +186,7 @@ message BundleError {
 }
 
 // Error code enum.
+// https://github.com/redpanda-data/redpanda/blob/dev/src/v/debug_bundle/error.h#L22
 enum BundleErrorCode {
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
   // OK. No Error.
@@ -166,14 +198,20 @@ enum BundleErrorCode {
   // Debug bundle process not running.
   BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING = 2;
 
+  // Invalid parameters.
+  BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
+
+  // Debug process failed.
+  BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+
   // Job ID not recognized.
-  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
 
   // Debug bundle process was never started.
-  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
 
   // Internal error.
-  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
 }
 
 // Request for GetClusterHealth call.
@@ -213,6 +251,6 @@ service DebugBundleService {
   rpc GetClusterHealth(GetClusterHealthRequest) returns (GetClusterHealthResponse) {}
   rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
-  rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
+  rpc CancelDebugBundleProcess(CancelDebugBundleProcessRequest) returns (CancelDebugBundleProcessResponse) {}
   rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
 }

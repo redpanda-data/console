@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateDebugBundleRequest, CreateDebugBundleResponse, DeleteDebugBundleFileRequest, DeleteDebugBundleFileResponse, DeleteDebugBundleRequest, DeleteDebugBundleResponse, GetClusterHealthRequest, GetClusterHealthResponse, GetDebugBundleStatusRequest, GetDebugBundleStatusResponse } from "./debug_bundle_pb";
+import { CancelDebugBundleProcessRequest, CancelDebugBundleProcessResponse, CreateDebugBundleRequest, CreateDebugBundleResponse, DeleteDebugBundleFileRequest, DeleteDebugBundleFileResponse, GetClusterHealthRequest, GetClusterHealthResponse, GetDebugBundleStatusRequest, GetDebugBundleStatusResponse } from "./debug_bundle_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -40,12 +40,12 @@ export const DebugBundleService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc redpanda.api.console.v1alpha1.DebugBundleService.DeleteDebugBundle
+     * @generated from rpc redpanda.api.console.v1alpha1.DebugBundleService.CancelDebugBundleProcess
      */
-    deleteDebugBundle: {
-      name: "DeleteDebugBundle",
-      I: DeleteDebugBundleRequest,
-      O: DeleteDebugBundleResponse,
+    cancelDebugBundleProcess: {
+      name: "CancelDebugBundleProcess",
+      I: CancelDebugBundleProcessRequest,
+      O: CancelDebugBundleProcessResponse,
       kind: MethodKind.Unary,
     },
     /**

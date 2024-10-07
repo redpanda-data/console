@@ -8,6 +8,7 @@ import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * Error code enum.
+ * https://github.com/redpanda-data/redpanda/blob/dev/src/v/debug_bundle/error.h#L22
  *
  * @generated from enum redpanda.api.console.v1alpha1.BundleErrorCode
  */
@@ -35,34 +36,50 @@ export enum BundleErrorCode {
   PROCESS_NOT_RUNNING = 2,
 
   /**
+   * Invalid parameters.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
+   */
+  INVALID_PARAMETERS = 3,
+
+  /**
+   * Debug process failed.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+   */
+  PROCESS_FAILED = 4,
+
+  /**
    * Job ID not recognized.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
+   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
    */
-  INVALID_JOB_ID = 3,
+  INVALID_JOB_ID = 5,
 
   /**
    * Debug bundle process was never started.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
    */
-  PROCESS_NOT_STARTED = 4,
+  PROCESS_NOT_STARTED = 6,
 
   /**
    * Internal error.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
    */
-  INTERNAL_ERROR = 5,
+  INTERNAL_ERROR = 7,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BundleErrorCode)
 proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleErrorCode", [
   { no: 0, name: "BUNDLE_ERROR_CODE_OK" },
   { no: 1, name: "BUNDLE_ERROR_CODE_PROCESS_ALREADY_RUNNING" },
   { no: 2, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING" },
-  { no: 3, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
-  { no: 4, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
-  { no: 5, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
+  { no: 3, name: "BUNDLE_ERROR_CODE_INVALID_PARAMETERS" },
+  { no: 4, name: "BUNDLE_ERROR_CODE_PROCESS_FAILED" },
+  { no: 5, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
+  { no: 6, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
+  { no: 7, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
 ]);
 
 /**
@@ -359,7 +376,7 @@ export class GetDebugBundleStatusRequest extends Message<GetDebugBundleStatusReq
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.DebugBundleOverview
+ * @generated from message redpanda.api.console.v1alpha1.DebugBundleStatus
  */
 export class DebugBundleStatus extends Message<DebugBundleStatus> {
   /**
@@ -379,7 +396,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   /**
    * The status of the job.
    *
-   * @generated from field: redpanda.api.console.v1alpha1.DebugBundleOverview.Status status = 3;
+   * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus.Status status = 3;
    */
   status = DebugBundleStatus_Status.UNSPECIFIED;
 
@@ -424,7 +441,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DebugBundleOverview";
+  static readonly typeName = "redpanda.api.console.v1alpha1.DebugBundleStatus";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "job_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -454,7 +471,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
 }
 
 /**
- * @generated from enum redpanda.api.console.v1alpha1.DebugBundleOverview.Status
+ * @generated from enum redpanda.api.console.v1alpha1.DebugBundleStatus.Status
  */
 export enum DebugBundleStatus_Status {
   /**
@@ -473,16 +490,26 @@ export enum DebugBundleStatus_Status {
   SUCCESS = 2,
 
   /**
-   * @generated from enum value: STATUS_ERROR = 3;
+   * There is a cluster config that permits users to set a TTL on the generated bundle.
+   * By default there is no expiration, but a user can set it to say "expire 1 day after it's generated" so once that day passes,
+   * the service will clean up the bundle from disk and mark that job as expired.
+   *
+   * @generated from enum value: STATUS_EXPIRED = 3;
    */
-  ERROR = 3,
+  EXPIRED = 3,
+
+  /**
+   * @generated from enum value: STATUS_ERROR = 4;
+   */
+  ERROR = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DebugBundleStatus_Status)
-proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1.DebugBundleOverview.Status", [
+proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1.DebugBundleStatus.Status", [
   { no: 0, name: "STATUS_UNSPECIFIED" },
   { no: 1, name: "STATUS_RUNNING" },
   { no: 2, name: "STATUS_SUCCESS" },
-  { no: 3, name: "STATUS_ERROR" },
+  { no: 3, name: "STATUS_EXPIRED" },
+  { no: 4, name: "STATUS_ERROR" },
 ]);
 
 /**
@@ -492,9 +519,9 @@ proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1
  */
 export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusResponse> {
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.DebugBundleOverview statuses = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus broker_statuses = 1;
    */
-  statuses: DebugBundleStatus[] = [];
+  brokerStatuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
 
   constructor(data?: PartialMessage<GetDebugBundleStatusResponse>) {
     super();
@@ -504,7 +531,7 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "statuses", kind: "message", T: DebugBundleStatus, repeated: true },
+    { no: 1, name: "broker_statuses", kind: "message", T: GetDebugBundleStatusResponse_DebugBundleBrokerStatus, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse {
@@ -525,9 +552,69 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.DeleteDebugBundleRequest
+ * @generated from message redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus
  */
-export class DeleteDebugBundleRequest extends Message<DeleteDebugBundleRequest> {
+export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Message<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> {
+  /**
+   * The broker ID.
+   *
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId = 0;
+
+  /**
+   * The value of the status, either Bundle Error or status.
+   *
+   * @generated from oneof redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus.value
+   */
+  value: {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.BundleError error = 2;
+     */
+    value: BundleError;
+    case: "error";
+  } | {
+    /**
+     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus bundle_status = 3;
+     */
+    value: DebugBundleStatus;
+    case: "bundleStatus";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "error", kind: "message", T: BundleError, oneof: "value" },
+    { no: 3, name: "bundle_status", kind: "message", T: DebugBundleStatus, oneof: "value" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
+    return new GetDebugBundleStatusResponse_DebugBundleBrokerStatus().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDebugBundleStatusResponse_DebugBundleBrokerStatus | PlainMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> | undefined, b: GetDebugBundleStatusResponse_DebugBundleBrokerStatus | PlainMessage<GetDebugBundleStatusResponse_DebugBundleBrokerStatus> | undefined): boolean {
+    return proto3.util.equals(GetDebugBundleStatusResponse_DebugBundleBrokerStatus, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.CancelDebugBundleProcessRequest
+ */
+export class CancelDebugBundleProcessRequest extends Message<CancelDebugBundleProcessRequest> {
   /**
    * @generated from field: string job_id = 1;
    */
@@ -540,71 +627,71 @@ export class DeleteDebugBundleRequest extends Message<DeleteDebugBundleRequest> 
    */
   brokerIds: number[] = [];
 
-  constructor(data?: PartialMessage<DeleteDebugBundleRequest>) {
+  constructor(data?: PartialMessage<CancelDebugBundleProcessRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleRequest";
+  static readonly typeName = "redpanda.api.console.v1alpha1.CancelDebugBundleProcessRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "job_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleRequest {
-    return new DeleteDebugBundleRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CancelDebugBundleProcessRequest {
+    return new CancelDebugBundleProcessRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDebugBundleRequest {
-    return new DeleteDebugBundleRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CancelDebugBundleProcessRequest {
+    return new CancelDebugBundleProcessRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDebugBundleRequest {
-    return new DeleteDebugBundleRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CancelDebugBundleProcessRequest {
+    return new CancelDebugBundleProcessRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteDebugBundleRequest | PlainMessage<DeleteDebugBundleRequest> | undefined, b: DeleteDebugBundleRequest | PlainMessage<DeleteDebugBundleRequest> | undefined): boolean {
-    return proto3.util.equals(DeleteDebugBundleRequest, a, b);
+  static equals(a: CancelDebugBundleProcessRequest | PlainMessage<CancelDebugBundleProcessRequest> | undefined, b: CancelDebugBundleProcessRequest | PlainMessage<CancelDebugBundleProcessRequest> | undefined): boolean {
+    return proto3.util.equals(CancelDebugBundleProcessRequest, a, b);
   }
 }
 
 /**
- * Response for DeleteDebugBundle.
+ * Response for CancelDebugBundleProcess.
  *
- * @generated from message redpanda.api.console.v1alpha1.DeleteDebugBundleResponse
+ * @generated from message redpanda.api.console.v1alpha1.CancelDebugBundleProcessResponse
  */
-export class DeleteDebugBundleResponse extends Message<DeleteDebugBundleResponse> {
+export class CancelDebugBundleProcessResponse extends Message<CancelDebugBundleProcessResponse> {
   /**
    * @generated from field: repeated redpanda.api.console.v1alpha1.BundleError errors = 1;
    */
   errors: BundleError[] = [];
 
-  constructor(data?: PartialMessage<DeleteDebugBundleResponse>) {
+  constructor(data?: PartialMessage<CancelDebugBundleProcessResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteDebugBundleResponse";
+  static readonly typeName = "redpanda.api.console.v1alpha1.CancelDebugBundleProcessResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "errors", kind: "message", T: BundleError, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDebugBundleResponse {
-    return new DeleteDebugBundleResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CancelDebugBundleProcessResponse {
+    return new CancelDebugBundleProcessResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDebugBundleResponse {
-    return new DeleteDebugBundleResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CancelDebugBundleProcessResponse {
+    return new CancelDebugBundleProcessResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDebugBundleResponse {
-    return new DeleteDebugBundleResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CancelDebugBundleProcessResponse {
+    return new CancelDebugBundleProcessResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteDebugBundleResponse | PlainMessage<DeleteDebugBundleResponse> | undefined, b: DeleteDebugBundleResponse | PlainMessage<DeleteDebugBundleResponse> | undefined): boolean {
-    return proto3.util.equals(DeleteDebugBundleResponse, a, b);
+  static equals(a: CancelDebugBundleProcessResponse | PlainMessage<CancelDebugBundleProcessResponse> | undefined, b: CancelDebugBundleProcessResponse | PlainMessage<CancelDebugBundleProcessResponse> | undefined): boolean {
+    return proto3.util.equals(CancelDebugBundleProcessResponse, a, b);
   }
 }
 
