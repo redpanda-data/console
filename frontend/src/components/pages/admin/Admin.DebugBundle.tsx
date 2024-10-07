@@ -15,8 +15,11 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, List, ListItem, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, IconButton, List, ListItem, Text } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { MdDeleteOutline } from 'react-icons/md';
+import { DeleteDebugBundleFile } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { config } from '../../../config';
 
 @observer
 export class AdminDebugBundle extends Component<{}> {
@@ -35,14 +38,28 @@ export class AdminDebugBundle extends Component<{}> {
                 <List>
                     {api.debugBundleStatuses.map((status, idx) =>
                         <ListItem key={idx}>
-                            <Button
-                                variant="link"
-                                px={0}
-                                onClick={() => {
-                                }}
-                            >
-                                {status.filename}
-                            </Button>
+                            <Flex gap={2}>
+                                <Button
+                                    variant="link"
+                                    as="a"
+                                    href={`${config.restBasePath}/debug/bundle/file/${status.filename}`}
+                                    px={0}
+                                >
+                                    {status.filename}
+                                </Button>
+                                <IconButton
+                                    variant="ghost"
+                                    icon={<MdDeleteOutline/>}
+                                    aria-label="Delete file"
+                                    onClick={() => {
+                                        void api.deleteDebugBundleFile({
+                                            file: {
+                                                filename: status.filename
+                                            } as DeleteDebugBundleFile
+                                        })
+                                    }}
+                                />
+                            </Flex>
                             <Text>Generated {status.createdAt?.toDate().toLocaleString()}</Text>
                             {/*{JSON.stringify(status)}*/}
                         </ListItem>

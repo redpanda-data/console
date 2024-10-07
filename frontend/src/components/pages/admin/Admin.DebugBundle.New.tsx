@@ -19,6 +19,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import { SingleSelect } from '../../misc/Select';
 import { FC, useState } from 'react';
+import DebugBundleOverview from './DebugBundleOverview';
 
 @observer
 export default class AdminPageDebugBundleNew extends PageComponent<{}> {
@@ -38,7 +39,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
 
     refreshData(force: boolean) {
         api.refreshAdminInfo(force);
-        void api.getDebugBundleStatuses();
+        api.getDebugBundleStatuses();
     }
 
     constructor(p: any) {
@@ -61,7 +62,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
                 {this.submitInProgress ? <Box>
                     Generating bundle ...
                     </Box>
-                    :
+                    : (api.debugBundleStatuses ? <DebugBundleOverview statuses={api.debugBundleStatuses} /> :
                     <NewDebugBundleForm onSubmit={() => {
                         this.submitInProgress = true;
                         this.createBundleError = undefined;
@@ -72,7 +73,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
                         }).finally(() => {
                             this.submitInProgress = false;
                         })
-                    }}/>}
+                    }}/>)}
             </Box>
         );
     }

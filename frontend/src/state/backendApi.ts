@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { CreateDebugBundleResponse, DebugBundleStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { DebugBundleStatus, DeleteDebugBundleFile } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1583,13 +1583,14 @@ const apiStore = {
             })
     },
 
-    async getDebugBundleStatuses(): Promise<DebugBundleStatus[]> {
+    async getDebugBundleStatuses() {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
             throw new Error('Debug bundle client is not initialized');
         }
-        return await client.getDebugBundleStatus({
+
+        client.getDebugBundleStatus({
         }).then(response => {
             this.debugBundleStatuses = response.statuses
             return response
@@ -1599,15 +1600,27 @@ const apiStore = {
     },
 
 
-    async createDebugBundle(): Promise<CreateDebugBundleResponse> {
+    async createDebugBundle() {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
             throw new Error('Debug bundle client is not initialized');
         }
 
-        return await client.createDebugBundle({
+        await client.createDebugBundle({
 
+        })
+    },
+
+
+    async deleteDebugBundleFile({ file }: { file: DeleteDebugBundleFile }) {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+        await client.deleteDebugBundleFile({
+            files: [file]
         })
     }
 };

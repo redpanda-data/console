@@ -1,17 +1,10 @@
 import { Box, Grid, Link, List, ListItem } from '@redpanda-data/ui';
-import React, { useEffect } from 'react';
-import { api } from '../../../state/backendApi';
+import React from 'react';
 
 
 const DebugBundle = () => {
-
-    useEffect(() => {
-        void api.getDebugBundleStatuses();
-    }, []);
-
     return (
         <Box>
-            {JSON.stringify(api.debugBundleStatuses)}
             <List spacing={3}>
                 <ListItem>
                     <Grid

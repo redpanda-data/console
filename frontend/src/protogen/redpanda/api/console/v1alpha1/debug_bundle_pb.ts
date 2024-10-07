@@ -359,7 +359,7 @@ export class GetDebugBundleStatusRequest extends Message<GetDebugBundleStatusReq
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.DebugBundleStatus
+ * @generated from message redpanda.api.console.v1alpha1.DebugBundleOverview
  */
 export class DebugBundleStatus extends Message<DebugBundleStatus> {
   /**
@@ -379,7 +379,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   /**
    * The status of the job.
    *
-   * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus.Status status = 3;
+   * @generated from field: redpanda.api.console.v1alpha1.DebugBundleOverview.Status status = 3;
    */
   status = DebugBundleStatus_Status.UNSPECIFIED;
 
@@ -424,7 +424,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DebugBundleStatus";
+  static readonly typeName = "redpanda.api.console.v1alpha1.DebugBundleOverview";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "job_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -454,7 +454,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
 }
 
 /**
- * @generated from enum redpanda.api.console.v1alpha1.DebugBundleStatus.Status
+ * @generated from enum redpanda.api.console.v1alpha1.DebugBundleOverview.Status
  */
 export enum DebugBundleStatus_Status {
   /**
@@ -478,7 +478,7 @@ export enum DebugBundleStatus_Status {
   ERROR = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DebugBundleStatus_Status)
-proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1.DebugBundleStatus.Status", [
+proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1.DebugBundleOverview.Status", [
   { no: 0, name: "STATUS_UNSPECIFIED" },
   { no: 1, name: "STATUS_RUNNING" },
   { no: 2, name: "STATUS_SUCCESS" },
@@ -492,7 +492,7 @@ proto3.util.setEnumType(DebugBundleStatus_Status, "redpanda.api.console.v1alpha1
  */
 export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusResponse> {
   /**
-   * @generated from field: repeated redpanda.api.console.v1alpha1.DebugBundleStatus statuses = 1;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.DebugBundleOverview statuses = 1;
    */
   statuses: DebugBundleStatus[] = [];
 
