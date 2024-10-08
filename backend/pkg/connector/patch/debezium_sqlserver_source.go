@@ -51,6 +51,8 @@ func (*ConfigPatchDebeziumSQLServerSource) PatchDefinition(d model.ConfigDefinit
 	switch d.Definition.Name {
 	case name:
 		d.SetDefaultValue("debezium-sqlserver-connector-" + strings.ToLower(random.String(4)))
+	case "tasks.max":
+		d.SetDocumentation("Specifies the maximum number of tasks that the connector can use to capture data from the database instance. If the `database.names` list contains more than one element, you can increase the value of this property to a number less than or equal to the number of elements in the list")
 	case keyConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
