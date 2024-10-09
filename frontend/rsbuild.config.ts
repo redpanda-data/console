@@ -8,7 +8,7 @@ import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin'
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { ModuleFederationPlugin } from '@module-federation/enhanced/rspack';
 
-import { moduleFederationConfig } from './module-federation.config';
+import { dependencies } from './package.json';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
@@ -71,7 +71,33 @@ export default defineConfig({
               }
             ]
           }),
-          new ModuleFederationPlugin(moduleFederationConfig),
+          new ModuleFederationPlugin({
+            filename: 'embedded.js',
+            name: 'rp_console',
+            exposes: {
+                './EmbeddedApp': './src/EmbeddedApp',
+                './injectApp': './src/injectApp',
+                './config': './src/config.ts',
+            },
+            shared: {
+                react: {
+                    singleton: true,
+                    requiredVersion: dependencies.react,
+                },
+                'react-dom': {
+                    singleton: true,
+                    requiredVersion: dependencies['react-dom'],
+                },
+                'react-router-dom': {
+                    singleton: true,
+                    requiredVersion: dependencies['react-router-dom'],
+                },
+                '@redpanda-data/ui': {
+                    singleton: true,
+                    requiredVersion: dependencies['@redpanda-data/ui'],
+                },
+            },
+        }),
         ]
 
         if (process.env.RSDOCTOR) {
