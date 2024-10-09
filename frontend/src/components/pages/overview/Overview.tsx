@@ -30,7 +30,7 @@ import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
 import { MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
-import DebugBundle from './DebugBundle';
+import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
 class Overview extends PageComponent {
@@ -135,7 +135,7 @@ class Overview extends PageComponent {
 
                     <Section py={4} gridArea="debugInfo">
                         <Heading as="h3" >Cluster Health Debug</Heading>
-                        <DebugBundle />
+                        <ClusterHealthOverview />
                     </Section>
 
                     <Section py={4} gridArea="broker">

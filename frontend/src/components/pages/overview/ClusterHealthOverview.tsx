@@ -1,8 +1,13 @@
 import { Box, Grid, Link, List, ListItem } from '@redpanda-data/ui';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { api } from '../../../state/backendApi';
 
 
-const DebugBundle = () => {
+const ClusterHealthOverview = () => {
+    useEffect(() => {
+        void api.refreshClusterHealth();
+    }, []);
+
     return (
         <Box>
             <List spacing={3}>
@@ -56,4 +61,4 @@ const DebugBundle = () => {
     );
 };
 
-export default DebugBundle;
+export default ClusterHealthOverview;

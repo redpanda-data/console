@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { DebugBundleStatus, DeleteDebugBundleFile } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFile, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -343,7 +343,8 @@ const apiStore = {
 
     enterpriseFeaturesUsed: [] as ListEnterpriseFeaturesResponse_Feature[],
 
-    debugBundleStatuses: [] as DebugBundleStatus[],
+    clusterHealth: undefined as GetClusterHealthResponse | undefined,
+    debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -1583,7 +1584,19 @@ const apiStore = {
             })
     },
 
-    async getDebugBundleStatuses() {
+    async refreshClusterHealth() {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        client.getClusterHealth({}).then(response => {
+            this.clusterHealth = response
+        })
+    },
+
+    async refreshDebugBundleStatuses() {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
@@ -1592,26 +1605,48 @@ const apiStore = {
 
         client.getDebugBundleStatus({
         }).then(response => {
-            this.debugBundleStatuses = response.statuses
+            this.debugBundleStatuses = response.brokerStatuses
             return response
         }).catch((e) => {
+            this.debugBundleStatuses = []
             return e
         });
     },
 
+    get isDebugBundleInProgress() {
+        return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
+    },
 
-    async createDebugBundle() {
+    get debugBundleJobId() {
+        return this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus').map(x => (x.value.value as DebugBundleStatus).jobId)[0]
+    },
+
+    async createDebugBundle(): Promise<CreateDebugBundleResponse> {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
             throw new Error('Debug bundle client is not initialized');
         }
 
-        await client.createDebugBundle({
-
+        return await client.createDebugBundle({
+        }).finally(() => {
+            this.refreshDebugBundleStatuses()
         })
     },
 
+    async cancelDebugBundleProcess({ jobId }: { jobId: string }) {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        await client.cancelDebugBundleProcess({
+            jobId,
+        }).finally(() => {
+            this.refreshDebugBundleStatuses()
+        })
+    },
 
     async deleteDebugBundleFile({ file }: { file: DeleteDebugBundleFile }) {
         const client = appConfig.debugBundleClient!;
@@ -1621,6 +1656,8 @@ const apiStore = {
         }
         await client.deleteDebugBundleFile({
             files: [file]
+        }).finally(() => {
+            this.refreshDebugBundleStatuses()
         })
     }
 };
