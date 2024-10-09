@@ -56,13 +56,28 @@ message CreateDebugBundleRequest {
     (buf.validate.field).string.pattern = "^([a-zA-Z0-9-]*)$"
   ];
 
+  // Label selector configuration properties.
+  repeated LabelSelector label_selector = 13;
+
   // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
   // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
   // Partition IDs is comma separated numbers.
   // kafka/foo/1,2,3. also there can be multiple of those so
   // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
-  repeated string partitions = 13;
+  repeated string partitions = 14;
+}
+
+message LabelSelector {
+  string key = 1 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
+
+  string value = 2 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
 }
 
 // Response to CreateDebugBundle.

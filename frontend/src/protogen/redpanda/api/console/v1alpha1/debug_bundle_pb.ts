@@ -243,6 +243,13 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   namespace = "";
 
   /**
+   * Label selector configuration properties.
+   *
+   * @generated from field: repeated redpanda.api.console.v1alpha1.LabelSelector label_selector = 13;
+   */
+  labelSelector: LabelSelector[] = [];
+
+  /**
    * Partitions. When provided, rpk saves extra admin API requests for those partitions.
    * Optional.
    * In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
@@ -250,7 +257,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    * kafka/foo/1,2,3. also there can be multiple of those so
    * ['kafka/foo/1,2,3', 'private/baz/3.4.5']
    *
-   * @generated from field: repeated string partitions = 13;
+   * @generated from field: repeated string partitions = 14;
    */
   partitions: string[] = [];
 
@@ -273,7 +280,8 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 10, name: "tls_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "tls_insecure_skip_verify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "namespace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "label_selector", kind: "message", T: LabelSelector, repeated: true },
+    { no: 14, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {
@@ -290,6 +298,49 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
 
   static equals(a: CreateDebugBundleRequest | PlainMessage<CreateDebugBundleRequest> | undefined, b: CreateDebugBundleRequest | PlainMessage<CreateDebugBundleRequest> | undefined): boolean {
     return proto3.util.equals(CreateDebugBundleRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.LabelSelector
+ */
+export class LabelSelector extends Message<LabelSelector> {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string value = 2;
+   */
+  value = "";
+
+  constructor(data?: PartialMessage<LabelSelector>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.LabelSelector";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): LabelSelector {
+    return new LabelSelector().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): LabelSelector {
+    return new LabelSelector().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): LabelSelector {
+    return new LabelSelector().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: LabelSelector | PlainMessage<LabelSelector> | undefined, b: LabelSelector | PlainMessage<LabelSelector> | undefined): boolean {
+    return proto3.util.equals(LabelSelector, a, b);
   }
 }
 
