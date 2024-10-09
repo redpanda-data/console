@@ -8,21 +8,20 @@
         "node": "20"
     },
     "scripts": {
-        "start": "cross-env SKIP_PREFLIGHT_CHECK=true node ./scripts/start.js",
-        "start2": "cross-env SKIP_PREFLIGHT_CHECK=true REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS node ./scripts/start.js",
-        "build": "node ./scripts/build.js -- --profile",
-        "build-local-test": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true node ./scripts/build.js",
+        "start": "rsbuild dev",
+        "start2": "REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS rsbuild dev",
+        "preview": "rsbuild preview",
+        "build": "NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
+        "build-local-test": "REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
         "install:browsers": "npx playwright install --with-deps",
         "e2e-test": "playwright test tests/console/ -c playwright.config.ts",
         "e2e-test-enterprise": "playwright test tests/console-enterprise/ -c playwright.enterprise.config.ts",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject",
+        "test": "jest",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
         "linter": "eslint",
-        "fetch-monaco": "node scripts/fetch-monaco.mjs",
         "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
-        "prepare": "npm run fetch-monaco"
+        "analyze": "RSDOCTOR=true npm run build"
     },
     "dependencies": {
         "@chakra-ui/icons": "^2.1",
@@ -36,14 +35,15 @@
         "@primer/octicons-react": "^17",
         "@redpanda-data/ui": "^3.53.1",
         "array-move": "^4",
-        "autoprefixer": "^10.4.20",
         "framer-motion": "^7",
         "js-base64": "^3.7.5",
         "mobx": "^6.10",
         "mobx-react": "^7.6",
         "moment": "^2.29.4",
-        "monaco-editor": "^0.50.0",
+        "monaco-editor": "^0.52.0",
+        "monaco-editor-webpack-plugin": "^7.1.0",
         "monaco-yaml": "^5.2.2",
+        "node-polyfill-webpack-plugin": "^4.0.0",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
         "react": "^18.2.0",
@@ -55,7 +55,6 @@
         "react-icons": "^4.10.1",
         "react-markdown": "^8.0.7",
         "react-router-dom": "^5.2.0",
-        "react-scripts": "^5.0.1",
         "react-syntax-highlighter": "^15.4.3",
         "remark-emoji": "^3.0.2",
         "remark-gfm": "^3.0.1",
@@ -63,7 +62,14 @@
         "stacktrace-js": "^2.0.2"
     },
     "devDependencies": {
-        "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+        "@module-federation/enhanced": "^0.6.9",
+        "@module-federation/runtime": "^0.6.9",
+        "@rsbuild/core": "1.0.10",
+        "@rsbuild/plugin-react": "1.0.3",
+        "@rsbuild/plugin-sass": "1.0.2",
+        "@rsbuild/plugin-svgr": "1.0.3",
+        "@rsdoctor/rspack-plugin": "^0.4.5",
+        "@rspack/cli": "1.0.8",
         "@testing-library/jest-dom": "^5.12.0",
         "@testing-library/react": "^13.4.0",
         "@types/jest": "26.0.23",
@@ -76,28 +82,13 @@
         "@types/react-syntax-highlighter": "^15",
         "@typescript-eslint/eslint-plugin": "^5.33",
         "@typescript-eslint/parser": "^5.33",
-        "cross-env": "^7.0.3",
         "eslint-plugin-react-hooks": "^4.6.0",
         "node-fetch": "^3.3.0",
-        "sass": "^1.58.3",
         "tar-stream": "^2.2.0",
         "ts-node": "^10.9",
         "typescript": "^4.9.5"
     },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
     "resolutions": {
-        "//": "See https://github.com/facebook/create-react-app/issues/11773 ",
         "react-error-overlay": "6.0.11",
         "immer": "9.0.7"
     }
