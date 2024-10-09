@@ -92,7 +92,7 @@ export default function PipelinesYamlEditor({ options: givenOptions, ...rest }: 
         return () => {
             monacoEditorYaml.dispose();
         }
-    }, []);
+    }, [options, rest]);
 
-    return <div ref={ref} className='kowlEditor' style={{ minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' }} />
+    return <div ref={ref} className="kowlEditor" style={{ minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' }} />
 }

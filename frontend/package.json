@@ -55,6 +55,7 @@
         "react-icons": "^4.10.1",
         "react-markdown": "^8.0.7",
         "react-router-dom": "^5.2.0",
+        "react-scripts": "^5.0.1",
         "react-syntax-highlighter": "^15.4.3",
         "remark-emoji": "^3.0.2",
         "remark-gfm": "^3.0.1",
