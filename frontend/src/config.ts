@@ -22,13 +22,11 @@ import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/securi
 // import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
-import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
-
-// Monaco
 import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import * as monaco from 'monaco-editor';
 import { loader, Monaco } from '@monaco-editor/react';
+import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -42,6 +40,7 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
         req.header.append('Authorization', 'Bearer ' + config.jwt);
     return await next(req);
 };
+
 export interface SetConfigArguments {
     fetch?: WindowOrWorkerGlobalScope['fetch'];
     jwt?: string;
@@ -146,6 +145,7 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
     monaco.editor.setTheme('kowl');
 };
 
+
 setTimeout(() => {
 
     autorun(() => {
@@ -226,48 +226,47 @@ export const embeddedAvailableRoutesObservable = observable({
 });
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
-    setConfig(setupArgs);
+    const config = setConfig(setupArgs);
 
-    loader.config({ monaco });
-    window.MonacoEnvironment = {
-        getWorker: function (_moduleId: string, label: string) {
-            console.log('label: ', label);
-            switch(label) {
-                case 'editorWorkerService': {
-                    return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
-                }
-                case 'json': {
-                    return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
-                }
-                case 'css':
-                case 'scss':
-                case 'less': {
-                    return new Worker(new URL('monaco-editor/esm/vs/language/css/css.worker', import.meta.url));
-                }
-                case 'html':
-                case 'handlebars':
-                case 'razor': {
-                    return new Worker(new URL('monaco-editor/esm/vs/language/html/html.worker', import.meta.url));
-                }
-                case 'typescript':
-                case 'javascript': {
-                    return new Worker(
-                        new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url),
-                    );
-                }
-                case 'yaml':
-                case 'yml': {
-                    console.log('returning yaml worker');
-                    return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
-                }
-                default: {
-                    throw new Error(`Unknown label ${label}`);
-                }
-            }
+    // Tell monaco editor where to load dependencies from
+    loader.config({
+        paths: {
+            vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
         },
-    };
+    });
 
-    configureMonacoYaml(monaco, monacoYamlOptions);
+    // Ensure yaml workers are being loaded locally as well
+    loader.init().then(async (monaco) => {
+        window.MonacoEnvironment = {
+            baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
+
+            getWorker(moduleId, label) {
+                console.debug(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
+                switch (label) {
+                    case 'editorWorkerService':
+                        return new Worker(
+                            new URL(
+                                'monaco-editor/esm/vs/editor/editor.worker',
+                                import.meta.url
+                            )
+                        );
+                    case 'yaml':
+                        // return new yamlWorker();
+                        return new Worker(
+                            new URL(
+                                'monaco-yaml/yaml.worker',
+                                import.meta.url
+                            )
+                        );
+
+                    default:
+                        throw new Error(`Unknown label ${label}`);
+                }
+            },
+        };
+
+        configureMonacoYaml(monaco, monacoYamlOptions);
+    })
 
     // Configure MobX
     configure({
@@ -293,4 +292,3 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         );
     }
 });
-

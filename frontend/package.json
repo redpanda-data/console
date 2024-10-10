@@ -20,7 +20,9 @@
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
         "linter": "eslint",
+        "fetch-monaco": "node scripts/fetch-monaco.mjs",
         "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
+        "prepare": "npm run fetch-monaco",
         "analyze": "RSDOCTOR=true npm run build"
     },
     "dependencies": {
@@ -41,7 +43,6 @@
         "mobx-react": "^7.6",
         "moment": "^2.29.4",
         "monaco-editor": "^0.52.0",
-        "monaco-editor-webpack-plugin": "^7.1.0",
         "monaco-yaml": "^5.2.2",
         "node-polyfill-webpack-plugin": "^4.0.0",
         "pretty-bytes": "^5.6.0",
