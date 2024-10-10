@@ -56,13 +56,28 @@ message CreateDebugBundleRequest {
     (buf.validate.field).string.pattern = "^([a-zA-Z0-9-]*)$"
   ];
 
+  // Label selector configuration properties.
+  repeated LabelSelector label_selector = 13;
+
   // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
   // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
   // Partition IDs is comma separated numbers.
   // kafka/foo/1,2,3. also there can be multiple of those so
   // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
-  repeated string partitions = 13;
+  repeated string partitions = 14;
+}
+
+message LabelSelector {
+  string key = 1 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
+
+  string value = 2 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
 }
 
 // Response to CreateDebugBundle.
@@ -159,11 +174,15 @@ message CancelDebugBundleProcessResponse {
 
 // Request for DeleteDebugBundleFile.
 message DeleteDebugBundleFileRequest {
-  repeated DeleteDebugBundleFile files = 1;
+  // optionally delete all
+  // overrides individual settings
+  bool delete_all = 1;
+
+  repeated DeleteDebugBundleFileForBroker files = 2;
 }
 
 // Parameters for DeleteDebugBundleFileRequest.
-message DeleteDebugBundleFile {
+message DeleteDebugBundleFileForBroker {
   int32 broker_id = 1;
   string filename = 2;
 }
@@ -214,6 +233,15 @@ enum BundleErrorCode {
   BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
 }
 
+enum UnhealthyReason {
+  UNHEALTHY_REASON_UNSPECIFIED = 0;
+  UNHEALTHY_REASON_NODES_DOWN = 1;
+  UNHEALTHY_REASON_LEADERLESS_PARTITIONS = 2;
+  UNHEALTHY_REASON_UNDER_REPLICATED_PARTITIONS = 3;
+  UNHEALTHY_REASON_NO_ELECTED_CONTROLLER = 4;
+  UNHEALTHY_REASON_NO_HEALTH_REPORT = 5;
+}
+
 // Request for GetClusterHealth call.
 message GetClusterHealthRequest {}
 
@@ -222,24 +250,23 @@ message GetClusterHealthResponse {
   // whether cluster is health or not
   bool is_healthy = 1;
 
-  // unhealthy reasons. some possible values:
-  // leaderless_partitions
-  // nodes_down
-  // under_replicated_partitions
-  repeated string unhealthy_reasons = 2;
+  repeated UnhealthyReason unhealthy_reasons = 2;
   int32 controller_id = 3;
   repeated int32 all_nodes = 4;
   repeated int32 nodes_down = 5;
   repeated int32 nodes_in_recovery_mode = 6;
-  // leaderless partitions. example values:
-  // kafka/events-sink-internal-default-queue-v2/101
-  repeated string leaderless_partitions = 7;
-  int32 leaderless_count = 8;
 
+  int32 leaderless_count = 7;
+  // leaderless partitions. example values:
+  map<string, PartitionIDList> leaderless_partitions = 8;
+
+  int32 under_replicated_count = 9;
   // under replicated partitions. example values:
-  // kafka/events-sink-internal-default-queue-v2/101
-  repeated string under_replicated_partitions = 9;
-  int32 under_replicated_count = 10;
+  map<string, PartitionIDList> under_replicated_partitions = 10;
+}
+
+message PartitionIDList {
+  repeated int32 partition_ids = 2;
 }
 
 // Additional API:
