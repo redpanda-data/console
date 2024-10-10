@@ -59,11 +59,32 @@ export default defineConfig({
     },
     tools: {
       rspack: (config, { appendPlugins }) => {
+        config.optimization ||= {};
         config.resolve ||= {};
         config.resolve.alias ||= {};
         config.output ||= {};
         /* resolve symlinks so the proto generate code can be built. */
         config.resolve.symlinks = false;
+
+        config.output.publicPath = 'auto';
+
+        config.optimization.splitChunks = {
+          chunks: 'all',
+          minChunks: 1,
+          minSize: 500 * 1024,
+          maxSize: 1000 * 1024,
+          maxAsyncRequests: 30,
+          maxInitialRequests: 30,
+          cacheGroups: {
+            monaco: {
+              chunks: 'all',
+              test: /[\\/]node_modules[\\/]monaco-editor/,
+              priority: 1000,
+              name: 'monaco',
+              reuseExistingChunk: true,
+            },
+          }
+        }
 
         const plugins = [
           new NodePolyfillPlugin({
