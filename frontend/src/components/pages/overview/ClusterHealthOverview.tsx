@@ -1,13 +1,11 @@
-import { Box, Grid, Link, List, ListItem } from '@redpanda-data/ui';
-import React, { useEffect } from 'react';
+import { Box, Button, Flex, Grid, Link, List, ListItem } from '@redpanda-data/ui';
+import React from 'react';
 import { api } from '../../../state/backendApi';
-
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { titleCase } from '../../../utils/utils';
+import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 
 const ClusterHealthOverview = () => {
-    useEffect(() => {
-        void api.refreshClusterHealth();
-    }, []);
-
     return (
         <Box>
             <List spacing={3}>
@@ -17,7 +15,11 @@ const ClusterHealthOverview = () => {
                         gap={4}
                     >
                         <Box fontWeight="bold">Reason</Box>
-                        <Box>Under-replicated partitions</Box>
+                        <Box>{titleCase(api.clusterHealth?.unhealthyReasons?.map(x => ({
+                            leaderless_partitions: 'leaderless partitions',
+                            nodes_down: 'nodes down',
+                            under_replicated_partitions: 'under-replicated partitions',
+                        })[x] ?? x).join(', ') ?? '')}</Box>
                     </Grid>
                 </ListItem>
                 <ListItem>
@@ -26,7 +28,7 @@ const ClusterHealthOverview = () => {
                         gap={4}
                     >
                         <Box fontWeight="bold">Down nodes</Box>
-                        <Box>0</Box>
+                        <Box>{api.clusterHealth?.nodesDown.length}</Box>
                     </Grid>
                 </ListItem>
                 <ListItem>
@@ -35,25 +37,31 @@ const ClusterHealthOverview = () => {
                         gap={4}
                     >
                         <Box fontWeight="bold">Leaderless partitions</Box>
-                        <Box>0</Box>
+                        <Box>{api.clusterHealth?.leaderlessCount}</Box>
                     </Grid>
                 </ListItem>
-                <ListItem>
+                {api.clusterHealth?.unhealthyReasons.includes('under_replicated_partitions') && <ListItem>
                     <Grid
                         templateColumns={{sm: '1fr', md: '1fr 1fr'}}
                         gap={4}
                     >
                         <Box fontWeight="bold">Under-replicated partitions</Box>
-                        <Box><Link color="blue.500" href="#">Go to Topics</Link></Box>
+                        <Box>
+                            <Link as={ReactRouterLink} to="/topics">View topics</Link>
+                        </Box>
                     </Grid>
-                </ListItem>
+                </ListItem>}
                 <ListItem>
                     <Grid
                         templateColumns={{sm: '1fr', md: '1fr 1fr'}}
                         gap={4}
                     >
                         <Box fontWeight="bold">Debug bundle</Box>
-                        <Box><Link color="blue.500" href="#">Generate</Link></Box>
+                        <Flex gap={2}>
+                            {api.isDebugBundleInProgress && <Button px={0} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleJobId}`}>Bundle generation in progress...</Button>}
+                            {api.isDebugBundleReady && <DebugBundleLink statuses={api.debugBundleStatuses} />}
+                            {!api.isDebugBundleInProgress && <Button px={0} as={ReactRouterLink} variant="link" to="/admin/debug-bundle/new">Generate new</Button>}
+                        </Flex>
                     </Grid>
                 </ListItem>
             </List>

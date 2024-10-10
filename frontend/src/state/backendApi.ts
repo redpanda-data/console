@@ -1613,6 +1613,10 @@ const apiStore = {
         });
     },
 
+    get isDebugBundleReady() {
+        return api.debugBundleStatuses.length > 0 && !this.isDebugBundleInProgress
+    },
+
     get isDebugBundleInProgress() {
         return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
     },

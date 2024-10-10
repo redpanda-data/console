@@ -31,6 +31,7 @@ import { MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { GetClusterHealthResponse } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -55,6 +56,8 @@ class Overview extends PageComponent {
         api.refreshCluster(force);
         api.refreshClusterOverview(force);
         api.refreshBrokers(force);
+        void api.refreshClusterHealth();
+        void api.refreshDebugBundleStatuses();
     }
 
     render() {
@@ -84,44 +87,6 @@ class Overview extends PageComponent {
         return <>
             <PageContent>
                 <div className="overviewGrid">
-                    {/*
-                    <Section py={5} gridArea="health">
-                        <Grid flexDirection="row">
-                            <Grid templateColumns="max-content 1fr" gap={3}>
-                                <Box
-                                    backgroundColor={`green.500`}
-                                    w="4px"
-                                    h="full"
-                                    borderRadius="10px"
-                                />
-                                <Stat>
-                                    <StatNumber>{clusterStatus.displayText}</StatNumber>
-                                    <StatLabel>Cluster Status</StatLabel>
-                                </Stat>
-                            </Grid>
-
-                            <Stat>
-                                <StatNumber>{brokerSize}</StatNumber>
-                                <StatLabel>Cluster Storage Size</StatLabel>
-                            </Stat>
-
-                            <Stat>
-                                <StatNumber>{version}</StatNumber>
-                                <StatLabel>Cluster Version</StatLabel>
-                            </Stat>
-
-                            <Stat>
-                                <StatNumber>{`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`}</StatNumber>
-                                <StatLabel>Brokers Online</StatLabel>
-                            </Stat>
-
-                            <Stat>
-                                <StatNumber>{overview.kafka.topicsCount}</StatNumber>
-                                <StatLabel>Topics</StatLabel>
-                            </Stat>
-                        </Grid>
-                    </Section>
-                     */}
                     <Section py={5} gridArea="health">
                         <Flex>
                             <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
@@ -133,10 +98,10 @@ class Overview extends PageComponent {
                         </Flex>
                     </Section>
 
-                    <Section py={4} gridArea="debugInfo">
+                    {api.clusterHealth?.isHealthy === false && <Section py={4} gridArea="debugInfo">
                         <Heading as="h3" >Cluster Health Debug</Heading>
                         <ClusterHealthOverview />
-                    </Section>
+                    </Section>}
 
                     <Section py={4} gridArea="broker">
                         <Heading as="h3" >Broker Details</Heading>
