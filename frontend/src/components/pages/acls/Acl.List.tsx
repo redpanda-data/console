@@ -20,13 +20,13 @@ import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
-    AclPrincipalGroup,
     createEmptyClusterAcl,
     createEmptyConsumerGroupAcl,
     createEmptyTopicAcl,
     createEmptyTransactionalIdAcl,
     principalGroupsView
 } from './Models';
+import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';

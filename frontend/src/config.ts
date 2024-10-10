@@ -8,7 +8,6 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { loader } from '@monaco-editor/react';
 import { autorun, configure, observable, when } from 'mobx';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
@@ -25,6 +24,8 @@ import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeli
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
+import * as monaco from 'monaco-editor';
+import { loader, Monaco } from '@monaco-editor/react';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 
 declare const __webpack_public_path__: string;
@@ -125,6 +126,25 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     });
     return config;
 };
+
+export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    monaco.editor.defineTheme('kowl', {
+        base: 'vs',
+        inherit: false,
+        colors: {
+            'editor.background': '#fcfcfc',
+            'editorGutter.background': '#00000018',
+            'editor.lineHighlightBackground': '#aaaaaa20',
+            'editor.lineHighlightBorder': '#00000000',
+            'editorLineNumber.foreground': '#8c98a8',            
+            'editorOverviewRuler.background': '#606060',
+        },
+        rules: []
+    });
+
+    monaco.editor.setTheme('kowl');
+};
+
 
 setTimeout(() => {
 
@@ -272,4 +292,3 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         );
     }
 });
-

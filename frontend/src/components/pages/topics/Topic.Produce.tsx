@@ -10,12 +10,13 @@ import { Label } from '../../../utils/tsxUtils';
 import { proto3 } from '@bufbuild/protobuf';
 import { CompressionType, KafkaRecordHeader, PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { HiOutlineTrash } from 'react-icons/hi';
-import KowlEditor, { IStandaloneCodeEditor, Monaco } from '../../misc/KowlEditor';
+import KowlEditor from '../../misc/KowlEditor';
 import { Link as ReactRouterLink } from 'react-router-dom'
 import { PublishMessagePayloadOptions, PublishMessageRequest } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { setMonacoTheme } from '../../../config';
 
 type EncodingOption = {
     value: PayloadEncoding | 'base64',
@@ -419,7 +420,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                         field: { onChange, value },
                                     }) => (
                                         <KowlEditor
-                                            onMount={setTheme}
+                                            onMount={setMonacoTheme}
                                             height={300}
                                             value={value}
                                             onChange={onChange}
@@ -537,7 +538,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                                              }) => (
                                         <KowlEditor
                                             data-testid="produce-message-value"
-                                            onMount={setTheme}
+                                            onMount={setMonacoTheme}
                                             height={300}
                                             value={value}
                                             onChange={onChange}
@@ -598,31 +599,4 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
             </Box>
         )
     }
-}
-
-
-function setTheme(editor: IStandaloneCodeEditor, monaco: Monaco) {
-    monaco.editor.defineTheme('kowl', {
-        base: 'vs',
-        inherit: true,
-        colors: {
-            'editor.background': '#fcfcfc',
-            'editor.foreground': '#ff0000',
-
-            'editorGutter.background': '#00000018',
-
-            'editor.lineHighlightBackground': '#aaaaaa20',
-            'editor.lineHighlightBorder': '#00000000',
-            'editorLineNumber.foreground': '#8c98a8',
-
-            'scrollbarSlider.background': '#ff0000',
-            // "editorOverviewRuler.border": "#0000",
-            'editorOverviewRuler.background': '#606060',
-            'editorOverviewRuler.currentContentForeground': '#ff0000'
-            //         background: #0001;
-            // border-left: 1px solid #0002;
-        },
-        rules: []
-    })
-    monaco.editor.setTheme('kowl');
 }

@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { RefObject } from 'react';
+import React from 'react';
+import type { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';

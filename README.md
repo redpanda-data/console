@@ -68,3 +68,4 @@ We maintain a docker-compose file that launches Redpanda and Console: [/docs/loc
 [Code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md) code of conduct for the community
 
 [Contributing docs](./CONTRIBUTING.md)
+

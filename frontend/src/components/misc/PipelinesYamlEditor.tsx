@@ -151,8 +151,6 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     />
 }
 
-
-
 const LoadingPlaceholder = () => <div className="editorLoading">
     Loading Editor...
 </div>

@@ -14,7 +14,8 @@ import { action, autorun, computed, IReactionDisposer, makeObservable, observabl
 import { observer } from 'mobx-react';
 import React, { Component, FC, ReactNode, useState } from 'react';
 import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
-import { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
+import { Payload, Topic, TopicAction } from '../../../../state/restInterfaces';
+import type { TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, DataColumnKey, DEFAULT_SEARCH_PARAMS, FilterEntry, PartitionOffsetOrigin, PreviewTagV2, TimestampDisplayFormat, } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
