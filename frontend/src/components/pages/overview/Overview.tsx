@@ -20,18 +20,16 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Box, Button, DataTable, Flex, Heading, Icon, Link, Skeleton, Tooltip, Grid, GridItem, Text } from '@redpanda-data/ui';
-import { CheckIcon } from '@primer/octicons-react';
+import { Box, Button, DataTable, Flex, Grid, GridItem, Heading, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
-import { MdOutlineError } from 'react-icons/md';
+import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 import ClusterHealthOverview from './ClusterHealthOverview';
-import { GetClusterHealthResponse } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -119,12 +117,18 @@ class Overview extends PageComponent {
                                 },
                                 {
                                     header: 'Status',
-                                    cell: () =>
+                                    cell: ({row: {original: broker}}) =>
                                         (
-                                            <>
-                                                <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500"/>
-                                                Running
-                                            </>
+                                            <Flex gap={2}>
+                                                {api.clusterHealth?.nodesDown.includes(broker.brokerId) ?
+                                                    <>
+                                                        <MdError size={18} color={colors.brandError} />
+                                                        Down
+                                                    </> : <>
+                                                        <MdCheck size={18} color={colors.green} />
+                                                        Running
+                                                    </>}
+                                            </Flex>
                                         ),
                                     size: Infinity
                                 },

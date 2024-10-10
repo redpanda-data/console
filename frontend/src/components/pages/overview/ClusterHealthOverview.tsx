@@ -1,9 +1,21 @@
-import { Box, Button, Flex, Grid, Link, List, ListItem } from '@redpanda-data/ui';
+import { Box, Button, Flex, Grid, Link, List, ListItem, Text } from '@redpanda-data/ui';
 import React from 'react';
 import { api } from '../../../state/backendApi';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { titleCase } from '../../../utils/utils';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
+import colors from '../../../colors';
+import { MdError } from 'react-icons/md';
+import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+
+const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
+    [UnhealthyReason.UNSPECIFIED]: 'Unknown reason',
+    [UnhealthyReason.NODES_DOWN]: 'Nodes down',
+    [UnhealthyReason.LEADERLESS_PARTITIONS]: 'Leaderless partitions',
+    [UnhealthyReason.UNDER_REPLICATED_PARTITIONS]: 'Under-replicated partitions',
+    [UnhealthyReason.NO_ELECTED_CONTROLLER]: 'No elected controller',
+    [UnhealthyReason.NO_HEALTH_REPORT]: 'No health report',
+}
 
 const ClusterHealthOverview = () => {
     return (
@@ -15,11 +27,7 @@ const ClusterHealthOverview = () => {
                         gap={4}
                     >
                         <Box fontWeight="bold">Reason</Box>
-                        <Box>{titleCase(api.clusterHealth?.unhealthyReasons?.map(x => ({
-                            leaderless_partitions: 'leaderless partitions',
-                            nodes_down: 'nodes down',
-                            under_replicated_partitions: 'under-replicated partitions',
-                        })[x] ?? x).join(', ') ?? '')}</Box>
+                        <Box>{titleCase(api.clusterHealth?.unhealthyReasons?.map(x => HUMAN_READABLE_UNHEALTHY_REASONS[x].toLowerCase() ?? x).join(', ') ?? '')}</Box>
                     </Grid>
                 </ListItem>
                 <ListItem>
@@ -28,7 +36,12 @@ const ClusterHealthOverview = () => {
                         gap={4}
                     >
                         <Box fontWeight="bold">Down nodes</Box>
-                        <Box>{api.clusterHealth?.nodesDown.length}</Box>
+                        <Flex gap={2}>
+                            {api.clusterHealth?.nodesDown && api.clusterHealth?.nodesDown.length > 0 &&
+                                <MdError color={colors.brandError} size={18} />
+                            }
+                            <Text>{api.clusterHealth?.nodesDown.length}</Text>
+                        </Flex>
                     </Grid>
                 </ListItem>
                 <ListItem>
@@ -40,7 +53,7 @@ const ClusterHealthOverview = () => {
                         <Box>{api.clusterHealth?.leaderlessCount}</Box>
                     </Grid>
                 </ListItem>
-                {api.clusterHealth?.unhealthyReasons.includes('under_replicated_partitions') && <ListItem>
+                {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.UNDER_REPLICATED_PARTITIONS) && <ListItem>
                     <Grid
                         templateColumns={{sm: '1fr', md: '1fr 1fr'}}
                         gap={4}

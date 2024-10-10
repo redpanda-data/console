@@ -58,6 +58,8 @@ import { Link } from 'react-router-dom';
 import SearchBar from '../../misc/SearchBar';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../utils/pagination';
+import { MdError, MdOutlineWarning } from 'react-icons/md';
+import colors from '../../../colors';
 
 @observer
 class TopicList extends PageComponent {
@@ -107,6 +109,7 @@ class TopicList extends PageComponent {
     refreshData(force: boolean) {
         api.refreshTopics(force);
         api.refreshClusterOverview(force);
+        void api.refreshClusterHealth();
     }
 
     isFilterMatch(filter: string, item: Topic): boolean {
@@ -217,7 +220,16 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                 {
                     header: 'Name',
                     accessorKey: 'topicName',
-                    cell: ({row: {original: topic}}) => <Box wordBreak="break-word" whiteSpace="break-spaces"><Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link></Box>,
+                    cell: ({row: {original: topic}}) => {
+                        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(topic.topicName);
+                        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(topic.topicName);
+
+                        return <Flex wordBreak="break-word" whiteSpace="break-spaces" gap={2} alignItems="center">
+                            <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
+                            {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label="This topic has a leaderless partition"><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                            {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label="This topic has under-replicated partitions"><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+                        </Flex>;
+                    },
                     size: Infinity,
                 },
                 {

@@ -32,10 +32,11 @@ import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
+import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
-import { MdOutlineWarningAmber } from 'react-icons/md';
+import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
+import colors from '../../../colors';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
@@ -46,7 +47,7 @@ class TopicTab {
         public readonly topicGetter: () => Topic | undefined | null,
         public id: TopicTabId,
         private requiredPermission: TopicAction,
-        public titleText: string,
+        public titleText: React.ReactNode,
         private contentFunc: (topic: Topic) => React.ReactNode,
         private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
     ) { }
@@ -120,10 +121,20 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 <MdOutlineWarningAmber />
             </span>
         );
+
+        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(this.props.topicName);
+        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(this.props.topicName);
+        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[this.props.topicName]?.partitionIds
+        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[this.props.topicName]?.partitionIds
+
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
-            new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
+            new TopicTab(topic, 'partitions', 'viewPartitions', <Flex gap={1}>
+                Partitions
+                {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+            </Flex>, (t) => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
             new TopicTab(topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
                 return (
@@ -183,6 +194,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         // configuration is always required for the statistics bar
         api.refreshTopicConfig(this.props.topicName, force);
+
+        void api.refreshClusterHealth();
 
         // documentation can be lazy loaded
         if (uiSettings.topicDetailsActiveTabKey == 'documentation') api.refreshTopicDocumentation(this.props.topicName, force);

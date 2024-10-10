@@ -1,5 +1,5 @@
 import React from 'react';
-import { DebugBundleStatus, DeleteDebugBundleFile, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { DebugBundleStatus, DeleteDebugBundleFileForBroker, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { config } from '../../config';
 import { api } from '../../state/backendApi';
 import { Button, IconButton } from '@redpanda-data/ui';
@@ -59,7 +59,7 @@ const DebugBundleLink = ({ statuses, showDeleteButton = false }: { statuses: Get
                     void api.deleteDebugBundleFile({
                         file: {
                             filename,
-                        } as DeleteDebugBundleFile
+                        } as DeleteDebugBundleFileForBroker
                     });
                 }}
             />}
