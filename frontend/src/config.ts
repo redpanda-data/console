@@ -227,8 +227,45 @@ export const embeddedAvailableRoutesObservable = observable({
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     setConfig(setupArgs);
-    
+
     // Configure Monaco
+    // @ts-ignore
+    window.MonacoEnvironment = {
+        getWorker: function (_moduleId: string, label: string) {
+            console.log('label: ', label);
+            switch(label) {
+                case 'editorWorkerService': {
+                    return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
+                }
+                case 'json': {
+                    return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
+                }
+                case 'css':
+                case 'scss':
+                case 'less': {
+                    return new Worker(new URL('monaco-editor/esm/vs/language/css/css.worker', import.meta.url));
+                }
+                case 'html':
+                case 'handlebars':
+                case 'razor': {
+                    return new Worker(new URL('monaco-editor/esm/vs/language/html/html.worker', import.meta.url));
+                }
+                case 'typescript':
+                case 'javascript': {
+                    return new Worker(
+                        new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url),
+                    );
+                }
+                case 'yaml':
+                case 'yml': {
+                    return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
+                }
+                default: {
+                    throw new Error(`Unknown label ${label}`);
+                }
+            }
+        },
+    };
     configureMonacoYaml(monaco, monacoYamlOptions);
 
     // Configure MobX
