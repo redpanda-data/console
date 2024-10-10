@@ -28,7 +28,16 @@ export default defineConfig({
       hmr: true,
     },
     html: {
-      template: './public/index.html'
+      template: './public/index.html',
+      templateParameters: {
+        REACT_APP_ENABLED_FEATURES: process.env.REACT_APP_ENABLED_FEATURES,
+        REACT_APP_CONSOLE_GIT_SHA: process.env.REACT_APP_CONSOLE_GIT_SHA,
+        REACT_APP_CONSOLE_PLATFORM_VERSION: process.env.REACT_APP_CONSOLE_PLATFORM_VERSION,
+        REACT_APP_CONSOLE_GIT_REF: process.env.REACT_APP_CONSOLE_GIT_REF,
+        REACT_APP_BUSINESS: process.env.REACT_APP_BUSINESS,
+        REACT_APP_BUILD_TIMESTAMP: process.env.REACT_APP_BUILD_TIMESTAMP,
+        REACT_APP_DEV_HINT: process.env.REACT_APP_DEV_HINT,
+      },
     },
     server: {
       htmlFallback: 'index',
