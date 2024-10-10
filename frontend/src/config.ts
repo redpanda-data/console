@@ -29,6 +29,7 @@ import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import * as monaco from 'monaco-editor';
 import { loader, Monaco } from '@monaco-editor/react';
+import path from 'path';
 
 declare const __webpack_public_path__: string;
 
@@ -225,11 +226,36 @@ export const embeddedAvailableRoutesObservable = observable({
     }
 });
 
+function ensureFirstBackSlash(str: string) {
+    return str.length > 0 && str.charAt(0) !== '/' ? '/' + str : str;
+}
+  
+function uriFromPath(_path: string) {
+    const pathName = path.resolve(_path).replace(/\\/g, '/');
+    return encodeURI('file://' + ensureFirstBackSlash(pathName));
+}
+
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     setConfig(setupArgs);
 
-    // Configure Monaco
+    
+    const pathToMonacoEditor = uriFromPath(path.join(__dirname, '../node_modules/monaco-editor/min/vs'));
+
+    console.log('pathToMonacoEditor: ', pathToMonacoEditor);
+
+
     loader.config({
+        /**
+         * Configure Monaco loader
+         * @see https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#loader-config
+         */
+        paths: {
+            vs: pathToMonacoEditor,
+        },
+        /**
+         * Configure Monaco instance
+         * @see https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#use-monaco-editor-as-an-npm-package
+         */
         monaco // Point @monaco-editor/react to monaco-editor instance
     })
     loader.init().then(async (monaco) => {
@@ -261,6 +287,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
                     }
                     case 'yaml':
                     case 'yml': {
+                        console.log('returning yaml worker');
                         return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
                     }
                     default: {
