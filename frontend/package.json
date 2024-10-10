@@ -42,7 +42,7 @@
         "mobx": "^6.10",
         "mobx-react": "^7.6",
         "moment": "^2.29.4",
-        "monaco-editor": "^0.52.0",
+        "monaco-editor": "0.50.0",
         "monaco-yaml": "^5.2.2",
         "node-polyfill-webpack-plugin": "^4.0.0",
         "pretty-bytes": "^5.6.0",
