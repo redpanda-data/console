@@ -100,61 +100,26 @@ class TopicTab {
     }
 }
 
+
+const mkDocuTip = (text: string, icon?: JSX.Element) => (
+    <Tooltip label={text} placement="left" hasArrow>
+        <span>{icon ?? null}Documentation</span>
+    </Tooltip>
+);
+const warnIcon = (
+    <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
+        <MdOutlineWarningAmber />
+    </span>
+);
+
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
     @observable deleteRecordsModalAlive = false;
 
-    topicTabs: TopicTab[];
+    topicTabs: TopicTab[] = [];
 
     constructor(props: any) {
         super(props);
-
-        const topic = () => this.topic;
-
-        const mkDocuTip = (text: string, icon?: JSX.Element) => (
-            <Tooltip label={text} placement="left" hasArrow>
-                <span>{icon ?? null}Documentation</span>
-            </Tooltip>
-        );
-        const warnIcon = (
-            <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
-                <MdOutlineWarningAmber />
-            </span>
-        );
-
-        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(this.props.topicName);
-        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(this.props.topicName);
-        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[this.props.topicName]?.partitionIds
-        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[this.props.topicName]?.partitionIds
-
-        this.topicTabs = [
-            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
-            new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
-            new TopicTab(topic, 'partitions', 'viewPartitions', <Flex gap={1}>
-                Partitions
-                {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
-                {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
-            </Flex>, (t) => <TopicPartitions topic={t} />),
-            new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
-            new TopicTab(topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
-                return (
-                    <AclList
-                        acl={api.topicAcls.get(t.topicName)}
-                    />
-                );
-            }, [() => {
-                if (AppFeatures.SINGLE_SIGN_ON)
-                    if (api.userData != null && !api.userData.canListAcls)
-                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'} hideCloseButton={true}>
-                            <div> <LockIcon size={16} /> ACL</div>
-                        </Popover>
-                return undefined;
-            }]),
-            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
-                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null,
-                t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
-            ]),
-        ];
 
         if (isServerless())
             this.topicTabs.removeAll(x => x.id == 'documentation');
@@ -236,8 +201,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         // 2. if that tab is enabled, return it, otherwise return the first one that is not
         //    (todo: should probably show some message if all tabs are disabled...)
         const id = computeTabId();
-        if (this.topicTabs.first((t) => t.id == id)!.isEnabled) return id;
-        return this.topicTabs.first((t) => t.isEnabled)?.id ?? 'messages';
+        if (this.topicTabs.first((t) => t.id == id)!?.isEnabled) return id;
+        return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
     }
 
     componentDidMount() {
@@ -258,6 +223,41 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicConfig = this.topicConfig;
 
         setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
+
+        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(this.props.topicName);
+        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(this.props.topicName);
+        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[this.props.topicName]?.partitionIds
+        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[this.props.topicName]?.partitionIds
+
+        this.topicTabs = [
+            new TopicTab(() => topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
+            new TopicTab(() => topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
+            new TopicTab(() => topic, 'partitions', 'viewPartitions', <Flex gap={1}>
+                Partitions
+                {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+            </Flex>, (t) => <TopicPartitions topic={t} />),
+            new TopicTab(() => topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
+            new TopicTab(() => topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
+                return (
+                    <AclList
+                        acl={api.topicAcls.get(t.topicName)}
+                    />
+                );
+            }, [() => {
+                if (AppFeatures.SINGLE_SIGN_ON)
+                    if (api.userData != null && !api.userData.canListAcls)
+                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'} hideCloseButton={true}>
+                            <div> <LockIcon size={16} /> ACL</div>
+                        </Popover>
+                return undefined;
+            }]),
+            new TopicTab(() => topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
+                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null,
+                t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
+            ]),
+        ];
+
 
         return (
             <>
