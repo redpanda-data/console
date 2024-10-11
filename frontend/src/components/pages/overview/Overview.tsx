@@ -83,101 +83,106 @@ class Overview extends PageComponent {
         const version = overview.redpanda.version ?? overview.kafka.version;
 
         return <>
-            <PageContent>
-                <div className="overviewGrid">
-                    <Section py={5} gridArea="health">
-                        <Flex>
-                            <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
-                            <Statistic title="Cluster Storage Size" value={brokerSize} />
-                            <Statistic title="Cluster Version" value={version} />
-                            <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
-                            <Statistic title="Topics" value={overview.kafka.topicsCount} />
-                            <Statistic title="Replicas" value={overview.kafka.replicasCount} />
-                        </Flex>
-                    </Section>
+            <PageContent className="overviewGrid">
+                <Section py={5} my={4}>
+                    <Flex>
+                        <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
+                        <Statistic title="Cluster Storage Size" value={brokerSize} />
+                        <Statistic title="Cluster Version" value={version} />
+                        <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
+                        <Statistic title="Topics" value={overview.kafka.topicsCount} />
+                        <Statistic title="Replicas" value={overview.kafka.replicasCount} />
+                    </Flex>
+                </Section>
 
-                    {api.clusterHealth?.isHealthy === false && <Section py={4} gridArea="debugInfo">
-                        <Heading as="h3" >Cluster Health Debug</Heading>
-                        <ClusterHealthOverview />
-                    </Section>}
+                <Grid gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }} gap={6}>
 
-                    <Section py={4} gridArea="broker">
-                        <Heading as="h3" >Broker Details</Heading>
-                        <DataTable<BrokerWithConfigAndStorage>
-                            data={brokers}
-                            sorting={false}
-                            defaultPageSize={10}
-                            pagination
-                            columns={[
-                                {
-                                    size: 80,
-                                    header: 'ID',
-                                    accessorKey: 'brokerId',
-                                    cell: ({row: {original: broker}}) => renderIdColumn(`${broker.brokerId}`, broker),
-                                },
-                                {
-                                    header: 'Status',
-                                    cell: ({row: {original: broker}}) =>
-                                        (
-                                            <Flex gap={2}>
-                                                {api.clusterHealth?.nodesDown.includes(broker.brokerId) ?
-                                                    <>
-                                                        <MdError size={18} color={colors.brandError} />
-                                                        Down
-                                                    </> : <>
-                                                        <MdCheck size={18} color={colors.green} />
-                                                        Running
-                                                    </>}
-                                            </Flex>
-                                        ),
-                                    size: Infinity
-                                },
-                                {
-                                    size: 120,
-                                    header: 'Size',
-                                    accessorKey: 'totalLogDirSizeBytes',
-                                    cell: ({row: {original: {totalLogDirSizeBytes}}}) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
-                                },
-                                {
-                                    id: 'view',
-                                    size: 100,
-                                    header: '',
-                                    cell: ({row: {original: broker}}) => {
-                                        return (
-                                            <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}>
-                                                View
-                                            </Button>
-                                        );
-                                    }
-                                },
-                                ...(this.hasRack ? [{ size: 100, header: 'Rack', cell: ({row: {original: broker}}: {row: Row<BrokerWithConfigAndStorage>}) => broker.rack }] : [])
-                            ]}
-                        />
-                    </Section>
+                    <GridItem display="flex" flexDirection="column" gap={6}>
+                        {api.clusterHealth?.isHealthy===false && <Section py={4} gridArea="debugInfo">
+                            <Heading as="h3">Cluster Health Debug</Heading>
+                            <ClusterHealthOverview/>
+                        </Section>}
 
-                    <Section py={4} gridArea="resources">
-                        <h3>Resources and updates</h3>
+                        <Section py={4}>
+                            <Heading as="h3">Broker Details</Heading>
+                            <DataTable<BrokerWithConfigAndStorage>
+                                data={brokers}
+                                sorting={false}
+                                defaultPageSize={10}
+                                pagination
+                                columns={[
+                                    {
+                                        size: 80,
+                                        header: 'ID',
+                                        accessorKey: 'brokerId',
+                                        cell: ({row: {original: broker}}) => renderIdColumn(`${broker.brokerId}`, broker),
+                                    },
+                                    {
+                                        header: 'Status',
+                                        cell: ({row: {original: broker}}) =>
+                                            (
+                                                <Flex gap={2}>
+                                                    {api.clusterHealth?.nodesDown.includes(broker.brokerId) ?
+                                                        <>
+                                                            <MdError size={18} color={colors.brandError}/>
+                                                            Down
+                                                        </>:<>
+                                                            <MdCheck size={18} color={colors.green}/>
+                                                            Running
+                                                        </>}
+                                                </Flex>
+                                            ),
+                                        size: Infinity
+                                    },
+                                    {
+                                        size: 120,
+                                        header: 'Size',
+                                        accessorKey: 'totalLogDirSizeBytes',
+                                        cell: ({row: {original: {totalLogDirSizeBytes}}}) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
+                                    },
+                                    {
+                                        id: 'view',
+                                        size: 100,
+                                        header: '',
+                                        cell: ({row: {original: broker}}) => {
+                                            return (
+                                                <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}>
+                                                    View
+                                                </Button>
+                                            );
+                                        }
+                                    },
+                                    ...(this.hasRack ? [{size: 100, header: 'Rack', cell: ({row: {original: broker}}: { row: Row<BrokerWithConfigAndStorage> }) => broker.rack}]:[])
+                                ]}
+                            />
+                        </Section>
 
-                        <div style={{ display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem' }}>
-                            <ul className="resource-list">
-                                <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
-                                    Documentation
-                                </a></li>
-                                <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
-                                    CLI Tools
-                                </a></li>
-                            </ul>
-                        </div>
-                    </Section>
+                        <Section py={4}>
+                            <h3>Resources and updates</h3>
 
-                    <Section py={4} gridArea="details">
-                        <h3>Cluster Details</h3>
+                            <div style={{display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem'}}>
+                                <ul className="resource-list">
+                                    <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link">
+                                        <span className="dot">&bull;</span>
+                                        Documentation
+                                    </a></li>
+                                    <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link">
+                                        <span className="dot">&bull;</span>
+                                        CLI Tools
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </Section>
+                    </GridItem>
 
-                        <ClusterDetails />
-                    </Section>
-                </div>
+                    <GridItem>
+                        <Section py={4}>
+                            <h3>Cluster Details</h3>
+
+                            <ClusterDetails/>
+                        </Section>
+                    </GridItem>
+                </Grid>
             </PageContent>
         </>
     }
