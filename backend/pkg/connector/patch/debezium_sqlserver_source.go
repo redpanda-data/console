@@ -65,6 +65,13 @@ func (*ConfigPatchDebeziumSQLServerSource) PatchDefinition(d model.ConfigDefinit
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
+	case "transaction.boundary.interval.ms":
+		d.SetDefaultValue("1000")
+	case "snapshot.fetch.size":
+		d.SetDefaultValue("2000")
+	case "tombstones.on.delete",
+		"table.ignore.builtin":
+		d.SetDefaultValue("true")
 	}
 
 	// Importance Patches
