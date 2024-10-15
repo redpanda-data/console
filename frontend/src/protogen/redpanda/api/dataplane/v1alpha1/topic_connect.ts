@@ -8,12 +8,14 @@ import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha1.TopicService
+ * @deprecated
  */
 export const TopicService = {
   typeName: "redpanda.api.dataplane.v1alpha1.TopicService",
   methods: {
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.CreateTopic
+     * @deprecated
      */
     createTopic: {
       name: "CreateTopic",
@@ -23,6 +25,7 @@ export const TopicService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.ListTopics
+     * @deprecated
      */
     listTopics: {
       name: "ListTopics",
@@ -32,6 +35,7 @@ export const TopicService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.DeleteTopic
+     * @deprecated
      */
     deleteTopic: {
       name: "DeleteTopic",
@@ -41,6 +45,7 @@ export const TopicService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.GetTopicConfigurations
+     * @deprecated
      */
     getTopicConfigurations: {
       name: "GetTopicConfigurations",
@@ -50,6 +55,7 @@ export const TopicService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.UpdateTopicConfigurations
+     * @deprecated
      */
     updateTopicConfigurations: {
       name: "UpdateTopicConfigurations",
@@ -59,6 +65,7 @@ export const TopicService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TopicService.SetTopicConfigurations
+     * @deprecated
      */
     setTopicConfigurations: {
       name: "SetTopicConfigurations",

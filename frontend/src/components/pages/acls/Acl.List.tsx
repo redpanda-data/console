@@ -20,13 +20,13 @@ import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
-    AclPrincipalGroup,
     createEmptyClusterAcl,
     createEmptyConsumerGroupAcl,
     createEmptyTopicAcl,
     createEmptyTransactionalIdAcl,
     principalGroupsView
 } from './Models';
+import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
@@ -142,7 +142,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         const activeTab = tabs.findIndex(x => x.key == this.props.tab);
         if (activeTab == -1) {
             // No tab selected, default to users
-            appGlobal.history.push('/security/users');
+            appGlobal.history.replace('/security/users');
         }
 
         return <>

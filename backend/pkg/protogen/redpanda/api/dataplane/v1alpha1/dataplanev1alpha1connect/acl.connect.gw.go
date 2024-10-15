@@ -15,6 +15,8 @@ import (
 )
 
 // ACLServiceGatewayServer implements the gRPC server API for the ACLService service.
+//
+// Deprecated: do not use.
 type ACLServiceGatewayServer struct {
 	v1alpha1.UnimplementedACLServiceServer
 	listACLs   connect_gateway.UnaryHandler[v1alpha1.ListACLsRequest, v1alpha1.ListACLsResponse]
@@ -23,6 +25,8 @@ type ACLServiceGatewayServer struct {
 }
 
 // NewACLServiceGatewayServer constructs a Connect-Gateway gRPC server for the ACLService service.
+//
+// Deprecated: do not use.
 func NewACLServiceGatewayServer(svc ACLServiceHandler, opts ...connect_gateway.HandlerOption) *ACLServiceGatewayServer {
 	return &ACLServiceGatewayServer{
 		listACLs:   connect_gateway.NewUnaryHandler(ACLServiceListACLsProcedure, svc.ListACLs, opts...),
@@ -45,6 +49,8 @@ func (s *ACLServiceGatewayServer) DeleteACLs(ctx context.Context, req *v1alpha1.
 
 // RegisterACLServiceHandlerGatewayServer registers the Connect handlers for the ACLService "svc" to
 // "mux".
+//
+// Deprecated: do not use.
 func RegisterACLServiceHandlerGatewayServer(mux *runtime.ServeMux, svc ACLServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterACLServiceHandlerServer(context.TODO(), mux, NewACLServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))

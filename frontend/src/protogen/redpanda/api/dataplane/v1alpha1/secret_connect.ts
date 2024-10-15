@@ -8,6 +8,7 @@ import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha1.SecretService
+ * @deprecated
  */
 export const SecretService = {
   typeName: "redpanda.api.dataplane.v1alpha1.SecretService",
@@ -27,6 +28,7 @@ export const SecretService = {
      * ListConnectSecrets lists the Connect secrets based on optional filter.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.ListConnectSecrets
+     * @deprecated
      */
     listConnectSecrets: {
       name: "ListConnectSecrets",
@@ -38,6 +40,7 @@ export const SecretService = {
      * CreateConnectSecret creates the secret for a Connect.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.CreateConnectSecret
+     * @deprecated
      */
     createConnectSecret: {
       name: "CreateConnectSecret",
@@ -49,6 +52,7 @@ export const SecretService = {
      * UpdateConnectSecret updates the Connect secret.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.UpdateConnectSecret
+     * @deprecated
      */
     updateConnectSecret: {
       name: "UpdateConnectSecret",
@@ -60,6 +64,7 @@ export const SecretService = {
      * DeleteSecret deletes the secret.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.SecretService.DeleteConnectSecret
+     * @deprecated
      */
     deleteConnectSecret: {
       name: "DeleteConnectSecret",

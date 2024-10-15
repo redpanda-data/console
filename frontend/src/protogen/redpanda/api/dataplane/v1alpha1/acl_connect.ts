@@ -8,12 +8,14 @@ import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha1.ACLService
+ * @deprecated
  */
 export const ACLService = {
   typeName: "redpanda.api.dataplane.v1alpha1.ACLService",
   methods: {
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.ListACLs
+     * @deprecated
      */
     listACLs: {
       name: "ListACLs",
@@ -23,6 +25,7 @@ export const ACLService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.CreateACL
+     * @deprecated
      */
     createACL: {
       name: "CreateACL",
@@ -32,6 +35,7 @@ export const ACLService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.DeleteACLs
+     * @deprecated
      */
     deleteACLs: {
       name: "DeleteACLs",

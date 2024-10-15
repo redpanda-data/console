@@ -24,6 +24,11 @@ type ConfigPatchDebeziumMysqlSource struct {
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
+const (
+	tableIgnoreBuiltin = "table.ignore.builtin"
+	tombstonesOnDelete = "tombstones.on.delete"
+)
+
 var _ ConfigPatch = (*ConfigPatchDebeziumMysqlSource)(nil)
 
 // NewConfigPatchDebeziumMysqlSource returns a new Patch for the Debezium Mysql source connectors.
@@ -63,9 +68,9 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 		d.SetDocumentation("A comma-separated list of regular expressions matching fully-qualified names of columns to exclude from change events")
 	case "database.allowPublicKeyRetrieval",
 		"include.schema.changes",
-		"tombstones.on.delete",
+		tombstonesOnDelete,
 		"enable.time.adjuster",
-		"table.ignore.builtin",
+		tableIgnoreBuiltin,
 		"gtid.source.filter.dml.events":
 		d.SetDefaultValue("true")
 	case "database.ssl.mode":

@@ -52,9 +52,14 @@ var (
 )
 
 // ACLServiceClient is a client for the redpanda.api.dataplane.v1alpha1.ACLService service.
+//
+// Deprecated: do not use.
 type ACLServiceClient interface {
+	// Deprecated: do not use.
 	ListACLs(context.Context, *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error)
+	// Deprecated: do not use.
 	CreateACL(context.Context, *connect.Request[v1alpha1.CreateACLRequest]) (*connect.Response[v1alpha1.CreateACLResponse], error)
+	// Deprecated: do not use.
 	DeleteACLs(context.Context, *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error)
 }
 
@@ -65,6 +70,8 @@ type ACLServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewACLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ACLServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &aCLServiceClient{
@@ -97,24 +104,35 @@ type aCLServiceClient struct {
 }
 
 // ListACLs calls redpanda.api.dataplane.v1alpha1.ACLService.ListACLs.
+//
+// Deprecated: do not use.
 func (c *aCLServiceClient) ListACLs(ctx context.Context, req *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error) {
 	return c.listACLs.CallUnary(ctx, req)
 }
 
 // CreateACL calls redpanda.api.dataplane.v1alpha1.ACLService.CreateACL.
+//
+// Deprecated: do not use.
 func (c *aCLServiceClient) CreateACL(ctx context.Context, req *connect.Request[v1alpha1.CreateACLRequest]) (*connect.Response[v1alpha1.CreateACLResponse], error) {
 	return c.createACL.CallUnary(ctx, req)
 }
 
 // DeleteACLs calls redpanda.api.dataplane.v1alpha1.ACLService.DeleteACLs.
+//
+// Deprecated: do not use.
 func (c *aCLServiceClient) DeleteACLs(ctx context.Context, req *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error) {
 	return c.deleteACLs.CallUnary(ctx, req)
 }
 
 // ACLServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha1.ACLService service.
+//
+// Deprecated: do not use.
 type ACLServiceHandler interface {
+	// Deprecated: do not use.
 	ListACLs(context.Context, *connect.Request[v1alpha1.ListACLsRequest]) (*connect.Response[v1alpha1.ListACLsResponse], error)
+	// Deprecated: do not use.
 	CreateACL(context.Context, *connect.Request[v1alpha1.CreateACLRequest]) (*connect.Response[v1alpha1.CreateACLResponse], error)
+	// Deprecated: do not use.
 	DeleteACLs(context.Context, *connect.Request[v1alpha1.DeleteACLsRequest]) (*connect.Response[v1alpha1.DeleteACLsResponse], error)
 }
 
@@ -123,6 +141,8 @@ type ACLServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewACLServiceHandler(svc ACLServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	aCLServiceListACLsHandler := connect.NewUnaryHandler(
 		ACLServiceListACLsProcedure,
