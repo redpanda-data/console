@@ -42,6 +42,24 @@ func KafkaConnectToConsoleDebeziumSQLServerSourceHook(response model.ValidationR
 				Visible:           true,
 				Errors:            []string{},
 			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "database.encrypt",
+				Type:          "BOOLEAN",
+				DefaultValue:  "true",
+				Importance:    model.ConfigDefinitionImportanceMedium,
+				Required:      false,
+				DisplayName:   "Database encryption",
+				Documentation: "By default, JDBC connections to Microsoft SQL Server are protected by SSL encryption. If SSL is not enabled for a SQL Server database, or if you want to connect to the database without using SSL, you can disable SSL",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "database.encrypt",
+				Value:             "true",
+				RecommendedValues: []string{"true", "false"},
+				Visible:           true,
+				Errors:            []string{},
+			},
 		})
 
 	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJSONSchemaHook(response, config), config)
