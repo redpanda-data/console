@@ -140,22 +140,17 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 	input := &v1alpha1.CreateConnectorRequest{
 		ClusterName: "connect-cluster",
 		Connector: &v1alpha1.ConnectorSpec{
-			Name: "http_connect_input_v1alpha1",
+			Name: "mm2_connect_input_v1alpha1",
 			Config: map[string]string{
-				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
-				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-				"http.request.url":                          "http://httpbin/uuid",
-				"http.timer.catchup.interval.millis":        "10000",
-				"http.timer.interval.millis":                "1000",
-				"kafka.topic":                               "httpbin-input",
-				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
-				"key.converter.schemas.enable":              "false",
-				"name":                                      "http_connect_input_v1alpha1",
-				"topic.creation.default.partitions":         "1",
-				"topic.creation.default.replication.factor": "1",
-				"topic.creation.enable":                     "true",
-				"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
-				"value.converter.schemas.enable":            "false",
+				"connector.class":                    "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
+				"name":                               "mm2_connect_input_v1alpha1",
+				"topics":                             "input-topic",
+				"replication.factor":                 "1",
+				"source.cluster.alias":               "source",
+				"source.cluster.bootstrap.servers":   s.testSeedBroker,
+				"source.cluster.ssl.keystore.type":   "PEM",
+				"source.cluster.ssl.truststore.type": "PEM",
 			},
 		},
 	}
@@ -196,7 +191,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input_v1alpha1", res.Msg.Connector.Name)
+		assert.Equal("mm2_connect_input_v1alpha1", res.Msg.Connector.Name)
 		assert.Equal(input.Connector.Config, res.Msg.Connector.Config)
 	})
 
@@ -217,7 +212,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1").
+			Path("connect/clusters/connect-cluster/connectors/mm2_connect_input_v1alpha1").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -245,7 +240,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("http_connect_input_v1alpha1", res.Msg.Status.Name)
+		assert.Equal("mm2_connect_input_v1alpha1", res.Msg.Status.Name)
 	})
 
 	t.Run("Get connector status request (http)", func(t *testing.T) {
@@ -264,7 +259,7 @@ func (s *APISuite) TestGetConnectorAndStatus_V1Alpha1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1alpha1/").
-			Path("connect/clusters/connect-cluster/connectors/http_connect_input_v1alpha1/status").
+			Path("connect/clusters/connect-cluster/connectors/mm2_connect_input_v1alpha1/status").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),

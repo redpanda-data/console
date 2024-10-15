@@ -47,6 +47,7 @@ func NewDebeziumSQLServerGuide(opts ...Option) Guide {
 							"database.instance",
 							"database.names",
 							"database.query.timeout.ms",
+							"database.encrypt",
 						},
 					},
 				},
@@ -100,6 +101,7 @@ func NewDebeziumSQLServerGuide(opts ...Option) Guide {
 							"snapshot.mode.configuration.based.start.stream",
 							"snapshot.mode.configuration.based.snapshot.on.schema.error",
 							"snapshot.mode.configuration.based.snapshot.on.data.error",
+							"snapshot.fetch.size",
 							"incremental.snapshot.watermarking.strategy",
 							"internal.log.position.check.enable",
 							"decimal.handling.mode",
@@ -162,6 +164,8 @@ func NewDebeziumSQLServerGuide(opts ...Option) Guide {
 					},
 				},
 			},
+
+			sizing(),
 
 			reviewAndLaunch(),
 		},

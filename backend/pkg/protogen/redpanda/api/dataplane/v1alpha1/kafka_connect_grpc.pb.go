@@ -41,37 +41,49 @@ const (
 // KafkaConnectServiceClient is the client API for KafkaConnectService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Deprecated: Do not use.
 type KafkaConnectServiceClient interface {
+	// Deprecated: Do not use.
 	// ListConnectClusters implements the list clusters method, list connect
 	// clusters available in the console configuration
 	ListConnectClusters(ctx context.Context, in *ListConnectClustersRequest, opts ...grpc.CallOption) (*ListConnectClustersResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(ctx context.Context, in *GetConnectClusterRequest, opts ...grpc.CallOption) (*GetConnectClusterResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectors implements the list connectors method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
+	// Deprecated: Do not use.
 	// CreateConnector implements the create connector method, and exposes an
 	// equivalent REST endpoint as the Kafka connect API endpoint
 	CreateConnector(ctx context.Context, in *CreateConnectorRequest, opts ...grpc.CallOption) (*CreateConnectorResponse, error)
+	// Deprecated: Do not use.
 	// RestartConnector implements the restart connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	RestartConnector(ctx context.Context, in *RestartConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
 	// Whether it is running or restarting, or if it has failed or paused
 	// Which worker it is assigned to
 	// Error information if it has failed
 	// The state of all its tasks
 	GetConnectorStatus(ctx context.Context, in *GetConnectorStatusRequest, opts ...grpc.CallOption) (*GetConnectorStatusResponse, error)
+	// Deprecated: Do not use.
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(ctx context.Context, in *PauseConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	ResumeConnector(ctx context.Context, in *ResumeConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// StopConnector implements the stop connector method, exposes a Kafka
 	// connect equivalent REST endpoint it stops the connector but does not
 	// delete the connector. All tasks for the connector are shut down completely
@@ -79,13 +91,17 @@ type KafkaConnectServiceClient interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(ctx context.Context, in *DeleteConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(ctx context.Context, in *UpsertConnectorRequest, opts ...grpc.CallOption) (*UpsertConnectorResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(ctx context.Context, in *GetConnectorConfigRequest, opts ...grpc.CallOption) (*GetConnectorConfigResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(ctx context.Context, in *ListConnectorTopicsRequest, opts ...grpc.CallOption) (*ListConnectorTopicsResponse, error)
+	// Deprecated: Do not use.
 	// ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
 	// the request body is empty.
 	ResetConnectorTopics(ctx context.Context, in *ResetConnectorTopicsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -95,10 +111,12 @@ type kafkaConnectServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// Deprecated: Do not use.
 func NewKafkaConnectServiceClient(cc grpc.ClientConnInterface) KafkaConnectServiceClient {
 	return &kafkaConnectServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) ListConnectClusters(ctx context.Context, in *ListConnectClustersRequest, opts ...grpc.CallOption) (*ListConnectClustersResponse, error) {
 	out := new(ListConnectClustersResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_ListConnectClusters_FullMethodName, in, out, opts...)
@@ -108,6 +126,7 @@ func (c *kafkaConnectServiceClient) ListConnectClusters(ctx context.Context, in 
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) GetConnectCluster(ctx context.Context, in *GetConnectClusterRequest, opts ...grpc.CallOption) (*GetConnectClusterResponse, error) {
 	out := new(GetConnectClusterResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnectCluster_FullMethodName, in, out, opts...)
@@ -117,6 +136,7 @@ func (c *kafkaConnectServiceClient) GetConnectCluster(ctx context.Context, in *G
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
 	out := new(ListConnectorsResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_ListConnectors_FullMethodName, in, out, opts...)
@@ -126,6 +146,7 @@ func (c *kafkaConnectServiceClient) ListConnectors(ctx context.Context, in *List
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) CreateConnector(ctx context.Context, in *CreateConnectorRequest, opts ...grpc.CallOption) (*CreateConnectorResponse, error) {
 	out := new(CreateConnectorResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_CreateConnector_FullMethodName, in, out, opts...)
@@ -135,6 +156,7 @@ func (c *kafkaConnectServiceClient) CreateConnector(ctx context.Context, in *Cre
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) RestartConnector(ctx context.Context, in *RestartConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_RestartConnector_FullMethodName, in, out, opts...)
@@ -144,6 +166,7 @@ func (c *kafkaConnectServiceClient) RestartConnector(ctx context.Context, in *Re
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error) {
 	out := new(GetConnectorResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnector_FullMethodName, in, out, opts...)
@@ -153,6 +176,7 @@ func (c *kafkaConnectServiceClient) GetConnector(ctx context.Context, in *GetCon
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) GetConnectorStatus(ctx context.Context, in *GetConnectorStatusRequest, opts ...grpc.CallOption) (*GetConnectorStatusResponse, error) {
 	out := new(GetConnectorStatusResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnectorStatus_FullMethodName, in, out, opts...)
@@ -162,6 +186,7 @@ func (c *kafkaConnectServiceClient) GetConnectorStatus(ctx context.Context, in *
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) PauseConnector(ctx context.Context, in *PauseConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_PauseConnector_FullMethodName, in, out, opts...)
@@ -171,6 +196,7 @@ func (c *kafkaConnectServiceClient) PauseConnector(ctx context.Context, in *Paus
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) ResumeConnector(ctx context.Context, in *ResumeConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_ResumeConnector_FullMethodName, in, out, opts...)
@@ -180,6 +206,7 @@ func (c *kafkaConnectServiceClient) ResumeConnector(ctx context.Context, in *Res
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) StopConnector(ctx context.Context, in *StopConnectorRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_StopConnector_FullMethodName, in, out, opts...)
@@ -198,6 +225,7 @@ func (c *kafkaConnectServiceClient) DeleteConnector(ctx context.Context, in *Del
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) UpsertConnector(ctx context.Context, in *UpsertConnectorRequest, opts ...grpc.CallOption) (*UpsertConnectorResponse, error) {
 	out := new(UpsertConnectorResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_UpsertConnector_FullMethodName, in, out, opts...)
@@ -207,6 +235,7 @@ func (c *kafkaConnectServiceClient) UpsertConnector(ctx context.Context, in *Ups
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) GetConnectorConfig(ctx context.Context, in *GetConnectorConfigRequest, opts ...grpc.CallOption) (*GetConnectorConfigResponse, error) {
 	out := new(GetConnectorConfigResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_GetConnectorConfig_FullMethodName, in, out, opts...)
@@ -216,6 +245,7 @@ func (c *kafkaConnectServiceClient) GetConnectorConfig(ctx context.Context, in *
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) ListConnectorTopics(ctx context.Context, in *ListConnectorTopicsRequest, opts ...grpc.CallOption) (*ListConnectorTopicsResponse, error) {
 	out := new(ListConnectorTopicsResponse)
 	err := c.cc.Invoke(ctx, KafkaConnectService_ListConnectorTopics_FullMethodName, in, out, opts...)
@@ -225,6 +255,7 @@ func (c *kafkaConnectServiceClient) ListConnectorTopics(ctx context.Context, in 
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *kafkaConnectServiceClient) ResetConnectorTopics(ctx context.Context, in *ResetConnectorTopicsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, KafkaConnectService_ResetConnectorTopics_FullMethodName, in, out, opts...)
@@ -237,37 +268,49 @@ func (c *kafkaConnectServiceClient) ResetConnectorTopics(ctx context.Context, in
 // KafkaConnectServiceServer is the server API for KafkaConnectService service.
 // All implementations must embed UnimplementedKafkaConnectServiceServer
 // for forward compatibility
+//
+// Deprecated: Do not use.
 type KafkaConnectServiceServer interface {
+	// Deprecated: Do not use.
 	// ListConnectClusters implements the list clusters method, list connect
 	// clusters available in the console configuration
 	ListConnectClusters(context.Context, *ListConnectClustersRequest) (*ListConnectClustersResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectCluster implements the get cluster info method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnectCluster(context.Context, *GetConnectClusterRequest) (*GetConnectClusterResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectors implements the list connectors method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
+	// Deprecated: Do not use.
 	// CreateConnector implements the create connector method, and exposes an
 	// equivalent REST endpoint as the Kafka connect API endpoint
 	CreateConnector(context.Context, *CreateConnectorRequest) (*CreateConnectorResponse, error)
+	// Deprecated: Do not use.
 	// RestartConnector implements the restart connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	RestartConnector(context.Context, *RestartConnectorRequest) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// GetConnector implements the get connector method, exposes a Kafka
 	// Connect equivalent REST endpoint
 	GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectorStatus implement the get status method, Gets the current status of the connector, including:
 	// Whether it is running or restarting, or if it has failed or paused
 	// Which worker it is assigned to
 	// Error information if it has failed
 	// The state of all its tasks
 	GetConnectorStatus(context.Context, *GetConnectorStatusRequest) (*GetConnectorStatusResponse, error)
+	// Deprecated: Do not use.
 	// PauseConnector implements the pause connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	PauseConnector(context.Context, *PauseConnectorRequest) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// ResumeConnector implements the resume connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	ResumeConnector(context.Context, *ResumeConnectorRequest) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// StopConnector implements the stop connector method, exposes a Kafka
 	// connect equivalent REST endpoint it stops the connector but does not
 	// delete the connector. All tasks for the connector are shut down completely
@@ -275,13 +318,17 @@ type KafkaConnectServiceServer interface {
 	// DeleteConnector implements the delete connector method, exposes a Kafka
 	// connect equivalent REST endpoint
 	DeleteConnector(context.Context, *DeleteConnectorRequest) (*emptypb.Empty, error)
+	// Deprecated: Do not use.
 	// UpsertConector implements the update or create connector method, it
 	// exposes a kafka connect equivalent REST endpoint
 	UpsertConnector(context.Context, *UpsertConnectorRequest) (*UpsertConnectorResponse, error)
+	// Deprecated: Do not use.
 	// GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
 	GetConnectorConfig(context.Context, *GetConnectorConfigRequest) (*GetConnectorConfigResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
 	ListConnectorTopics(context.Context, *ListConnectorTopicsRequest) (*ListConnectorTopicsResponse, error)
+	// Deprecated: Do not use.
 	// ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
 	// the request body is empty.
 	ResetConnectorTopics(context.Context, *ResetConnectorTopicsRequest) (*emptypb.Empty, error)
@@ -346,6 +393,7 @@ type UnsafeKafkaConnectServiceServer interface {
 	mustEmbedUnimplementedKafkaConnectServiceServer()
 }
 
+// Deprecated: Do not use.
 func RegisterKafkaConnectServiceServer(s grpc.ServiceRegistrar, srv KafkaConnectServiceServer) {
 	s.RegisterService(&KafkaConnectService_ServiceDesc, srv)
 }

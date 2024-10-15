@@ -17,6 +17,8 @@ import (
 
 // KafkaConnectServiceGatewayServer implements the gRPC server API for the KafkaConnectService
 // service.
+//
+// Deprecated: do not use.
 type KafkaConnectServiceGatewayServer struct {
 	v1alpha1.UnimplementedKafkaConnectServiceServer
 	listConnectClusters  connect_gateway.UnaryHandler[v1alpha1.ListConnectClustersRequest, v1alpha1.ListConnectClustersResponse]
@@ -38,6 +40,8 @@ type KafkaConnectServiceGatewayServer struct {
 
 // NewKafkaConnectServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // KafkaConnectService service.
+//
+// Deprecated: do not use.
 func NewKafkaConnectServiceGatewayServer(svc KafkaConnectServiceHandler, opts ...connect_gateway.HandlerOption) *KafkaConnectServiceGatewayServer {
 	return &KafkaConnectServiceGatewayServer{
 		listConnectClusters:  connect_gateway.NewUnaryHandler(KafkaConnectServiceListConnectClustersProcedure, svc.ListConnectClusters, opts...),
@@ -120,6 +124,8 @@ func (s *KafkaConnectServiceGatewayServer) ResetConnectorTopics(ctx context.Cont
 
 // RegisterKafkaConnectServiceHandlerGatewayServer registers the Connect handlers for the
 // KafkaConnectService "svc" to "mux".
+//
+// Deprecated: do not use.
 func RegisterKafkaConnectServiceHandlerGatewayServer(mux *runtime.ServeMux, svc KafkaConnectServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterKafkaConnectServiceHandlerServer(context.TODO(), mux, NewKafkaConnectServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))
