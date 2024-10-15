@@ -15,6 +15,8 @@ import (
 )
 
 // SecretServiceGatewayServer implements the gRPC server API for the SecretService service.
+//
+// Deprecated: do not use.
 type SecretServiceGatewayServer struct {
 	v1alpha1.UnimplementedSecretServiceServer
 	getConnectSecret    connect_gateway.UnaryHandler[v1alpha1.GetConnectSecretRequest, v1alpha1.GetConnectSecretResponse]
@@ -26,6 +28,8 @@ type SecretServiceGatewayServer struct {
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
 // service.
+//
+// Deprecated: do not use.
 func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gateway.HandlerOption) *SecretServiceGatewayServer {
 	return &SecretServiceGatewayServer{
 		getConnectSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetConnectSecretProcedure, svc.GetConnectSecret, opts...),
@@ -58,6 +62,8 @@ func (s *SecretServiceGatewayServer) DeleteConnectSecret(ctx context.Context, re
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService
 // "svc" to "mux".
+//
+// Deprecated: do not use.
 func RegisterSecretServiceHandlerGatewayServer(mux *runtime.ServeMux, svc SecretServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterSecretServiceHandlerServer(context.TODO(), mux, NewSecretServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))

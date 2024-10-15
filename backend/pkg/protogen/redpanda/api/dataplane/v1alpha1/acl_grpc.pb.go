@@ -28,9 +28,14 @@ const (
 // ACLServiceClient is the client API for ACLService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Deprecated: Do not use.
 type ACLServiceClient interface {
+	// Deprecated: Do not use.
 	ListACLs(ctx context.Context, in *ListACLsRequest, opts ...grpc.CallOption) (*ListACLsResponse, error)
+	// Deprecated: Do not use.
 	CreateACL(ctx context.Context, in *CreateACLRequest, opts ...grpc.CallOption) (*CreateACLResponse, error)
+	// Deprecated: Do not use.
 	DeleteACLs(ctx context.Context, in *DeleteACLsRequest, opts ...grpc.CallOption) (*DeleteACLsResponse, error)
 }
 
@@ -38,10 +43,12 @@ type aCLServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// Deprecated: Do not use.
 func NewACLServiceClient(cc grpc.ClientConnInterface) ACLServiceClient {
 	return &aCLServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *aCLServiceClient) ListACLs(ctx context.Context, in *ListACLsRequest, opts ...grpc.CallOption) (*ListACLsResponse, error) {
 	out := new(ListACLsResponse)
 	err := c.cc.Invoke(ctx, ACLService_ListACLs_FullMethodName, in, out, opts...)
@@ -51,6 +58,7 @@ func (c *aCLServiceClient) ListACLs(ctx context.Context, in *ListACLsRequest, op
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *aCLServiceClient) CreateACL(ctx context.Context, in *CreateACLRequest, opts ...grpc.CallOption) (*CreateACLResponse, error) {
 	out := new(CreateACLResponse)
 	err := c.cc.Invoke(ctx, ACLService_CreateACL_FullMethodName, in, out, opts...)
@@ -60,6 +68,7 @@ func (c *aCLServiceClient) CreateACL(ctx context.Context, in *CreateACLRequest, 
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *aCLServiceClient) DeleteACLs(ctx context.Context, in *DeleteACLsRequest, opts ...grpc.CallOption) (*DeleteACLsResponse, error) {
 	out := new(DeleteACLsResponse)
 	err := c.cc.Invoke(ctx, ACLService_DeleteACLs_FullMethodName, in, out, opts...)
@@ -72,9 +81,14 @@ func (c *aCLServiceClient) DeleteACLs(ctx context.Context, in *DeleteACLsRequest
 // ACLServiceServer is the server API for ACLService service.
 // All implementations must embed UnimplementedACLServiceServer
 // for forward compatibility
+//
+// Deprecated: Do not use.
 type ACLServiceServer interface {
+	// Deprecated: Do not use.
 	ListACLs(context.Context, *ListACLsRequest) (*ListACLsResponse, error)
+	// Deprecated: Do not use.
 	CreateACL(context.Context, *CreateACLRequest) (*CreateACLResponse, error)
+	// Deprecated: Do not use.
 	DeleteACLs(context.Context, *DeleteACLsRequest) (*DeleteACLsResponse, error)
 	mustEmbedUnimplementedACLServiceServer()
 }
@@ -101,6 +115,7 @@ type UnsafeACLServiceServer interface {
 	mustEmbedUnimplementedACLServiceServer()
 }
 
+// Deprecated: Do not use.
 func RegisterACLServiceServer(s grpc.ServiceRegistrar, srv ACLServiceServer) {
 	s.RegisterService(&ACLService_ServiceDesc, srv)
 }

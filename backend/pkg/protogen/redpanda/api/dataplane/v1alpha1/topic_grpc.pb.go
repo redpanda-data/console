@@ -31,12 +31,20 @@ const (
 // TopicServiceClient is the client API for TopicService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Deprecated: Do not use.
 type TopicServiceClient interface {
+	// Deprecated: Do not use.
 	CreateTopic(ctx context.Context, in *CreateTopicRequest, opts ...grpc.CallOption) (*CreateTopicResponse, error)
+	// Deprecated: Do not use.
 	ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error)
+	// Deprecated: Do not use.
 	DeleteTopic(ctx context.Context, in *DeleteTopicRequest, opts ...grpc.CallOption) (*DeleteTopicResponse, error)
+	// Deprecated: Do not use.
 	GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error)
+	// Deprecated: Do not use.
 	UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error)
+	// Deprecated: Do not use.
 	SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error)
 }
 
@@ -44,10 +52,12 @@ type topicServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// Deprecated: Do not use.
 func NewTopicServiceClient(cc grpc.ClientConnInterface) TopicServiceClient {
 	return &topicServiceClient{cc}
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) CreateTopic(ctx context.Context, in *CreateTopicRequest, opts ...grpc.CallOption) (*CreateTopicResponse, error) {
 	out := new(CreateTopicResponse)
 	err := c.cc.Invoke(ctx, TopicService_CreateTopic_FullMethodName, in, out, opts...)
@@ -57,6 +67,7 @@ func (c *topicServiceClient) CreateTopic(ctx context.Context, in *CreateTopicReq
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error) {
 	out := new(ListTopicsResponse)
 	err := c.cc.Invoke(ctx, TopicService_ListTopics_FullMethodName, in, out, opts...)
@@ -66,6 +77,7 @@ func (c *topicServiceClient) ListTopics(ctx context.Context, in *ListTopicsReque
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) DeleteTopic(ctx context.Context, in *DeleteTopicRequest, opts ...grpc.CallOption) (*DeleteTopicResponse, error) {
 	out := new(DeleteTopicResponse)
 	err := c.cc.Invoke(ctx, TopicService_DeleteTopic_FullMethodName, in, out, opts...)
@@ -75,6 +87,7 @@ func (c *topicServiceClient) DeleteTopic(ctx context.Context, in *DeleteTopicReq
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error) {
 	out := new(GetTopicConfigurationsResponse)
 	err := c.cc.Invoke(ctx, TopicService_GetTopicConfigurations_FullMethodName, in, out, opts...)
@@ -84,6 +97,7 @@ func (c *topicServiceClient) GetTopicConfigurations(ctx context.Context, in *Get
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error) {
 	out := new(UpdateTopicConfigurationsResponse)
 	err := c.cc.Invoke(ctx, TopicService_UpdateTopicConfigurations_FullMethodName, in, out, opts...)
@@ -93,6 +107,7 @@ func (c *topicServiceClient) UpdateTopicConfigurations(ctx context.Context, in *
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error) {
 	out := new(SetTopicConfigurationsResponse)
 	err := c.cc.Invoke(ctx, TopicService_SetTopicConfigurations_FullMethodName, in, out, opts...)
@@ -105,12 +120,20 @@ func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, in *Set
 // TopicServiceServer is the server API for TopicService service.
 // All implementations must embed UnimplementedTopicServiceServer
 // for forward compatibility
+//
+// Deprecated: Do not use.
 type TopicServiceServer interface {
+	// Deprecated: Do not use.
 	CreateTopic(context.Context, *CreateTopicRequest) (*CreateTopicResponse, error)
+	// Deprecated: Do not use.
 	ListTopics(context.Context, *ListTopicsRequest) (*ListTopicsResponse, error)
+	// Deprecated: Do not use.
 	DeleteTopic(context.Context, *DeleteTopicRequest) (*DeleteTopicResponse, error)
+	// Deprecated: Do not use.
 	GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error)
+	// Deprecated: Do not use.
 	UpdateTopicConfigurations(context.Context, *UpdateTopicConfigurationsRequest) (*UpdateTopicConfigurationsResponse, error)
+	// Deprecated: Do not use.
 	SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error)
 	mustEmbedUnimplementedTopicServiceServer()
 }
@@ -146,6 +169,7 @@ type UnsafeTopicServiceServer interface {
 	mustEmbedUnimplementedTopicServiceServer()
 }
 
+// Deprecated: Do not use.
 func RegisterTopicServiceServer(s grpc.ServiceRegistrar, srv TopicServiceServer) {
 	s.RegisterService(&TopicService_ServiceDesc, srv)
 }

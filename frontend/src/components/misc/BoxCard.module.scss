@@ -1,3 +1,5 @@
+@use "sass:color";
+
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -20,8 +22,10 @@
   border-style: dashed;
 }
 
-.hoverable:hover {
-  border-color: lighten(#418fd8, 25%);
+.hoverable:hover {  
+  $color: #418fd8;
+  @debug color.adjust($color, $lightness: 25%);
+  border-color: $color;
 }
 
 .active,

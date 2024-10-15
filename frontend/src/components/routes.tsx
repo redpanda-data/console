@@ -267,7 +267,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
-    MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
+    MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
     MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
     MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),

@@ -52,14 +52,10 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		network.WithNetwork([]string{"redpanda"}, testNetwork),
 		redpanda.WithListener("redpanda:29092"),
 	)
-
 	require.NoError(err)
 
-	// HTTPBin container
-	httpC, err := testutil.RunHTTPBinContainer(ctx, network.WithNetwork([]string{"httpbin", "local-httpbin"}, testNetwork))
+	seedBroker, err := redpandaContainer.KafkaSeedBroker(ctx)
 	require.NoError(err)
-
-	httpBinContainer := httpC
 
 	// Kafka Connect container
 	connectC, err := testutil.RunRedpandaConnectorsContainer(
@@ -106,7 +102,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	}()
 
 	t.Cleanup(func() {
-		assert.NoError(httpBinContainer.Terminate(context.Background()))
 		assert.NoError(connectContainer.Terminate(context.Background()))
 		assert.NoError(redpandaContainer.Terminate(context.Background()))
 	})
@@ -116,22 +111,14 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		defer cancel()
 
 		input := &createConnectorRequest{
-			ConnectorName: "http_connect_input",
+			ConnectorName: "mm2-connector",
 			Config: map[string]any{
-				"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
-				"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
-				"http.request.url":                          "http://httpbin:80/uuid",
-				"http.timer.catchup.interval.millis":        "10000",
-				"http.timer.interval.millis":                "1000",
-				"kafka.topic":                               "httpbin-input",
-				"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
-				"key.converter.schemas.enable":              "false",
-				"name":                                      "http_connect_input",
-				"topic.creation.default.partitions":         "1",
-				"topic.creation.default.replication.factor": "1",
-				"topic.creation.enable":                     "true",
-				"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
-				"value.converter.schemas.enable":            "false",
+				"connector.class":                  "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+				"name":                             "mm2-connector",
+				"topics":                           "input-topic",
+				"replication.factor":               "1",
+				"source.cluster.alias":             "source",
+				"source.cluster.bootstrap.servers": seedBroker,
 			},
 		}
 
@@ -143,8 +130,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		err := json.Unmarshal(body, &createConnectRes)
 		require.NoError(err)
 
-		assert.Equal("http_connect_input", createConnectRes.Name)
-		assert.Equal("httpbin-input", createConnectRes.Config["kafka.topic"])
-		assert.Equal("1000", createConnectRes.Config["http.timer.interval.millis"])
+		assert.Equal("mm2-connector", createConnectRes.Name)
+		assert.Equal("input-topic", createConnectRes.Config["topics"])
 	})
 }
