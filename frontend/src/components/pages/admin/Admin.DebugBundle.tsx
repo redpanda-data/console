@@ -15,13 +15,15 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Text } from '@redpanda-data/ui';
+import { Box, Button, ConfirmModal, Text } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
+import { appGlobal } from '../../../state/appGlobal';
 
 @observer
 export class AdminDebugBundle extends Component<{}> {
     @observable quickSearch = '';
+    @observable confirmModalIsOpen = false;
 
     constructor(p: any) {
         super(p);
@@ -33,7 +35,8 @@ export class AdminDebugBundle extends Component<{}> {
 
         if (api.isDebugBundleInProgress) {
             return <Box>
-                <Button as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleJobId}`}>Bundle generation in progress...</Button>
+                <Button px={0} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>
+                <Text>Started {api.debugBundleStatus?.createdAt?.toDate().toLocaleString()}</Text>
             </Box>;
         }
 
@@ -42,7 +45,16 @@ export class AdminDebugBundle extends Component<{}> {
                 <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
                 {api.debugBundleStatuses.length === 0 && <Text>No pre-existing debug bundle.</Text>}
                 <Box mt={4}>
-                    <Button as={ReactRouterLink} to="/admin/debug-bundle/new">Generate new</Button>
+                    {api.debugBundleStatuses.length ?
+                        <ConfirmModal trigger="Generate new" heading="Generate new debug bundle" onConfirm={() => {
+                            appGlobal.history.push('/admin/debug-bundle/new');
+                            this.confirmModalIsOpen = false
+                        }}>
+                            You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?
+                        </ConfirmModal>
+                        :
+                        <Button as={ReactRouterLink} to="/admin/debug-bundle/new">Generate new</Button>
+                    }
                 </Box>
             </Box>
         );

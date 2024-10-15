@@ -29,8 +29,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
     @observable jobId: string | undefined = undefined;
 
     initPage(p: PageInitHelper): void {
-        p.title = 'Admin';
+        p.title = 'Generate debug bundle';
         p.addBreadcrumb('Admin', '/admin');
+        p.addBreadcrumb('Generate debug bundle', '/admin/debug-bundle/progress');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -69,7 +70,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                 {!api.isDebugBundleInProgress && <Box>
                     <Flex gap={2} my={2}>
                         <Text fontWeight="bold">Debug bundle complete</Text>
-                        <DebugBundleLink statuses={api.debugBundleStatuses}/>
+                        <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
                     </Flex>
                     <Button as={ReactRouterLink} to="/admin">Done</Button>
                 </Box>}

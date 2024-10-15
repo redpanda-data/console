@@ -38,7 +38,7 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                                     <Text fontWeight="bold" display="inline">
                                         Broker {status.brokerId}
                                     </Text>
-                                    <Text display="inline">{' '}started at {status.value.value.createdAt?.toDate().toLocaleDateString()}</Text>
+                                    <Text display="inline">{' '}started at {status.value.value.createdAt?.toDate().toLocaleString()}</Text>
                                 </Box>
                                 <Text color="gray.500" fontSize="sm">{status.value.value.jobId}</Text>
                             </Stack>

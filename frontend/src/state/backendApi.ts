@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileForBroker, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileForBroker, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus, UnhealthyReason } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1593,29 +1593,29 @@ const apiStore = {
 
         client.getClusterHealth({}).then(response => {
             this.clusterHealth = response
-            // this.clusterHealth = new GetClusterHealthResponse({
-            //     isHealthy: false,
-            //     unhealthyReasons: [
-            //         UnhealthyReason.LEADERLESS_PARTITIONS,
-            //         UnhealthyReason.UNDER_REPLICATED_PARTITIONS,
-            //     ],
-            //     controllerId: 3,
-            //     allNodes:[0, 1, 2, 3, 4, 5, 18, 19, 20],
-            //     nodesDown:[0],
-            //     nodesInRecoveryMode:[],
-            //     leaderlessPartitions: {
-            //         'owlshop-addresses': {
-            //             partitionIds: [0]
-            //         }
-            //     },
-            //     leaderlessCount: 2,
-            //     underReplicatedPartitions: {
-            //         'owlshop-customers': {
-            //             partitionIds: [0, 2, 3]
-            //         },
-            //     },
-            //     underReplicatedCount: 1
-            // })
+            this.clusterHealth = new GetClusterHealthResponse({
+                isHealthy: false,
+                unhealthyReasons: [
+                    UnhealthyReason.LEADERLESS_PARTITIONS,
+                    UnhealthyReason.UNDER_REPLICATED_PARTITIONS,
+                ],
+                controllerId: 3,
+                allNodes:[0, 1, 2, 3, 4, 5, 18, 19, 20],
+                nodesDown:[0],
+                nodesInRecoveryMode:[],
+                leaderlessPartitions: {
+                    'owlshop-addresses': {
+                        partitionIds: [0]
+                    }
+                },
+                leaderlessCount: 2,
+                underReplicatedPartitions: {
+                    'owlshop-customers': {
+                        partitionIds: [0, 2, 3]
+                    },
+                },
+                underReplicatedCount: 1
+            })
         })
     },
 
@@ -1644,8 +1644,8 @@ const apiStore = {
         return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
     },
 
-    get debugBundleJobId() {
-        return this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus').map(x => (x.value.value as DebugBundleStatus).jobId)[0]
+    get debugBundleStatus(): DebugBundleStatus | undefined {
+        return this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus').map(x => (x.value.value as DebugBundleStatus))[0]
     },
 
     async createDebugBundle(): Promise<CreateDebugBundleResponse> {
