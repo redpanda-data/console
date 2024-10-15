@@ -47,17 +47,20 @@ message CreateDebugBundleRequest {
   // Interval between metrics snapshots.
   int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
 
-  bool tls_enabled = 10;
+  // Interval between metrics snapshots.
+  int32 metrics_samples = 10 [(buf.validate.field).int32 = {gte: 0}];
 
-  bool tls_insecure_skip_verify = 11;
+  bool tls_enabled = 11;
 
-  string namespace = 12 [
+  bool tls_insecure_skip_verify = 12;
+
+  string namespace = 13 [
     (buf.validate.field).string.max_len = 253,
     (buf.validate.field).string.pattern = "^([a-zA-Z0-9-]*)$"
   ];
 
   // Label selector configuration properties.
-  repeated LabelSelector label_selector = 13;
+  repeated LabelSelector label_selector = 14;
 
   // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
@@ -65,7 +68,7 @@ message CreateDebugBundleRequest {
   // Partition IDs is comma separated numbers.
   // kafka/foo/1,2,3. also there can be multiple of those so
   // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
-  repeated string partitions = 14;
+  repeated string partitions = 15;
 }
 
 message LabelSelector {

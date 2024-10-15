@@ -272,24 +272,31 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
   metricsIntervalSeconds = 0;
 
   /**
-   * @generated from field: bool tls_enabled = 10;
+   * Interval between metrics snapshots.
+   *
+   * @generated from field: int32 metrics_samples = 10;
+   */
+  metricsSamples = 0;
+
+  /**
+   * @generated from field: bool tls_enabled = 11;
    */
   tlsEnabled = false;
 
   /**
-   * @generated from field: bool tls_insecure_skip_verify = 11;
+   * @generated from field: bool tls_insecure_skip_verify = 12;
    */
   tlsInsecureSkipVerify = false;
 
   /**
-   * @generated from field: string namespace = 12;
+   * @generated from field: string namespace = 13;
    */
   namespace = "";
 
   /**
    * Label selector configuration properties.
    *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.LabelSelector label_selector = 13;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.LabelSelector label_selector = 14;
    */
   labelSelector: LabelSelector[] = [];
 
@@ -301,7 +308,7 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
    * kafka/foo/1,2,3. also there can be multiple of those so
    * ['kafka/foo/1,2,3', 'private/baz/3.4.5']
    *
-   * @generated from field: repeated string partitions = 14;
+   * @generated from field: repeated string partitions = 15;
    */
   partitions: string[] = [];
 
@@ -321,11 +328,12 @@ export class CreateDebugBundleRequest extends Message<CreateDebugBundleRequest> 
     { no: 7, name: "logs_size_limit_bytes", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "logs_until", kind: "message", T: Timestamp },
     { no: 9, name: "metrics_interval_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "tls_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "tls_insecure_skip_verify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 12, name: "namespace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "label_selector", kind: "message", T: LabelSelector, repeated: true },
-    { no: 14, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "metrics_samples", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "tls_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "tls_insecure_skip_verify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "namespace", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "label_selector", kind: "message", T: LabelSelector, repeated: true },
+    { no: 15, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDebugBundleRequest {
