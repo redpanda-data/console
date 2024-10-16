@@ -37,7 +37,6 @@ import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
 import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import { Flex } from '@redpanda-data/ui';
 import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
