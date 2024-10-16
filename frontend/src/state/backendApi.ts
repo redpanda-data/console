@@ -1593,29 +1593,6 @@ const apiStore = {
 
         client.getClusterHealth({}).then(response => {
             this.clusterHealth = response
-            this.clusterHealth = new GetClusterHealthResponse({
-                isHealthy: false,
-                unhealthyReasons: [
-                    UnhealthyReason.LEADERLESS_PARTITIONS,
-                    UnhealthyReason.UNDER_REPLICATED_PARTITIONS,
-                ],
-                controllerId: 3,
-                allNodes:[0, 1, 2, 3, 4, 5, 18, 19, 20],
-                nodesDown:[0],
-                nodesInRecoveryMode:[],
-                leaderlessPartitions: {
-                    'owlshop-addresses': {
-                        partitionIds: [0]
-                    }
-                },
-                leaderlessCount: 2,
-                underReplicatedPartitions: {
-                    'owlshop-customers': {
-                        partitionIds: [0, 2, 3]
-                    },
-                },
-                underReplicatedCount: 1
-            })
         })
     },
 
