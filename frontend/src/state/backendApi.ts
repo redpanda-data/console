@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileForBroker, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus, UnhealthyReason } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileForBroker, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus, UnhealthyReason } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1619,6 +1619,10 @@ const apiStore = {
         })
     },
 
+    get hasLeaderlessPartitions() {
+        return Boolean(this.clusterHealth?.leaderlessCount);
+    },
+
     async refreshDebugBundleStatuses() {
         const client = appConfig.debugBundleClient!;
         if (!client) {
@@ -1640,6 +1644,10 @@ const apiStore = {
         return api.debugBundleStatuses.length > 0 && !this.isDebugBundleInProgress
     },
 
+    get canDownloadDebugBundle() {
+        return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS).length > 0
+    },
+
     get isDebugBundleInProgress() {
         return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
     },
@@ -1648,15 +1656,14 @@ const apiStore = {
         return this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus').map(x => (x.value.value as DebugBundleStatus))[0]
     },
 
-    async createDebugBundle(): Promise<CreateDebugBundleResponse> {
+    async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
             throw new Error('Debug bundle client is not initialized');
         }
 
-        return await client.createDebugBundle({
-        }).finally(() => {
+        return await client.createDebugBundle(request).finally(() => {
             this.refreshDebugBundleStatuses()
         })
     },

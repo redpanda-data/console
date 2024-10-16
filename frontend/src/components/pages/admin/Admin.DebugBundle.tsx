@@ -43,7 +43,7 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
-                {api.debugBundleStatuses.length === 0 && <Text>No pre-existing debug bundle.</Text>}
+                {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
                 <Box mt={4}>
                     {api.debugBundleStatuses.length ?
                         <ConfirmModal trigger="Generate new" heading="Generate new debug bundle" onConfirm={() => {

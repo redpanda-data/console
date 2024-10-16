@@ -14,12 +14,13 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Alert, AlertIcon, Box, Button, Flex, FormField, Grid, GridItem, Input, PasswordInput, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Checkbox, Flex, FormField, Grid, GridItem, Input, PasswordInput, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import { FC, useState } from 'react';
-import { SCRAMAuth } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
+import { Timestamp } from '@bufbuild/protobuf';
 
 @observer
 export default class AdminPageDebugBundleNew extends PageComponent<{}> {
@@ -68,10 +69,10 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
                         Generating bundle ...
                     </Box>
                     :
-                    <NewDebugBundleForm onSubmit={() => {
+                    <NewDebugBundleForm onSubmit={(data: CreateDebugBundleRequest) => {
                         this.submitInProgress = true;
                         this.createBundleError = undefined;
-                        api.createDebugBundle().then(result => {
+                        api.createDebugBundle(data).then(result => {
                             appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`)
                         }).catch(err => {
                             this.createBundleError = err.message;
@@ -85,7 +86,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
 }
 
 
-const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) => {
+const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => void }> = observer(({onSubmit}) => {
     const [advancedForm, setAdvancedForm] = useState(false);
 
     const formState = useLocalObservable(() => ({
@@ -95,12 +96,14 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
         } as SCRAMAuth,
         skipTlsVerification: false,
         brokerIds: '' as string,
-        controllerLogsSizeLimitBytes: '' as string,
-        cpuProfilerWaitSeconds: '' as string,
+        tlsEnabled: false,
+        tlsInsecureSkipVerify: false,
+        controllerLogsSizeLimitBytes: 0 as number,
+        cpuProfilerWaitSeconds: undefined as number | undefined,
         logsSince: '' as string,
-        logsSizeLimitBytes: '' as string,
+        logsSizeLimitBytes: 0 as number,
         logsUntil: '' as string,
-        metricsIntervalSeconds: '' as string,
+        metricsIntervalSeconds: 0 as number,
         metricsSamples: '' as string,
         namespace: '' as string,
         partitions: '' as string,
@@ -121,22 +124,22 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
         setBrokerIds(ids: string) {
             this.brokerIds = ids;
         },
-        setControllerLogsSizeLimitBytes(size: string) {
+        setControllerLogsSizeLimitBytes(size: number) {
             this.controllerLogsSizeLimitBytes = size;
         },
-        setCpuProfilerWaitSeconds(seconds: string) {
+        setCpuProfilerWaitSeconds(seconds: number) {
             this.cpuProfilerWaitSeconds = seconds;
         },
         setLogsSince(date: string) {
             this.logsSince = date;
         },
-        setLogsSizeLimitBytes(size: string) {
+        setLogsSizeLimitBytes(size: number) {
             this.logsSizeLimitBytes = size;
         },
         setLogsUntil(date: string) {
             this.logsUntil = date;
         },
-        setMetricsIntervalSeconds(seconds: string) {
+        setMetricsIntervalSeconds(seconds: number) {
             this.metricsIntervalSeconds = seconds;
         },
         setMetricsSamples(samples: string) {
@@ -182,6 +185,18 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
                         onChange={(e) => formState.setUsername(e.target.value)}
                     />
                 </FormField>
+                <Checkbox
+                    isChecked={formState.tlsEnabled}
+                    onChange={x => formState.tlsEnabled = x.target.checked}
+                >
+                    TLS enabled
+                </Checkbox>
+                <Checkbox
+                    isChecked={formState.skipTlsVerification}
+                    onChange={x => formState.skipTlsVerification = x.target.checked}
+                >
+                    Skip TLS verification
+                </Checkbox>
                 <FormField label="Password">
                     <PasswordInput
                         data-testid="scram-user-password"
@@ -198,9 +213,10 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
                 </FormField>
                 <FormField label="Controller log size limit" description={'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'}>
                     <Input
+                        type="number"
                         data-testid="controller-log-size-input"
                         value={formState.controllerLogsSizeLimitBytes}
-                        onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.value)}
+                        onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.valueAsNumber)}
                     />
                 </FormField>
                 <FormField label="CPU profiler wait" description="How long in seconds to collect samples for the CPU profiler. Must be higher than 15s (default 30s)">
@@ -208,7 +224,7 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
                         data-testid="cpu-profiler-input"
                         value={formState.cpuProfilerWaitSeconds}
                         type="number"
-                        onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.value)}
+                        onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.valueAsNumber)}
                     />
                 </FormField>
                 <FormField label="Logs since" description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'.">
@@ -227,16 +243,18 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
                 </FormField>
                 <FormField label="Log size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GiB). Default 100MiB.">
                     <Input
+                        type="number"
                         data-testid="log-size-limit-input"
                         value={formState.logsSizeLimitBytes}
-                        onChange={(e) => formState.setLogsSizeLimitBytes(e.target.value)}
+                        onChange={(e) => formState.setLogsSizeLimitBytes(e.target.valueAsNumber)}
                     />
                 </FormField>
                 <FormField label="Metrics interval duration" description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)">
                     <Input
+                        type="number"
                         data-testid="metrics-interval-duration-input"
                         value={formState.metricsIntervalSeconds}
-                        onChange={(e) => formState.setMetricsIntervalSeconds(e.target.value)}
+                        onChange={(e) => formState.setMetricsIntervalSeconds(e.target.valueAsNumber)}
                     />
                 </FormField>
                 <FormField label="Metrics samples" description="Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be >= 2">
@@ -302,16 +320,38 @@ const NewDebugBundleForm: FC<{ onSubmit: () => void }> = observer(({onSubmit}) =
                 {advancedForm ?
                     <>
                         <Button onClick={() => {
-                            onSubmit();
+                            onSubmit(new CreateDebugBundleRequest({
+                                authentication: {
+                                    case: 'scram',
+                                    value: formState.scramAuth
+                                },
+                                brokerIds: formState.brokerIds.split(',').map(Number),
+                                controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
+                                cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
+                                // @ts-ignore
+                                logsSince: new Timestamp(formState.logsSince), // TODO - ask Bojan
+                                logsSizeLimitBytes: formState.logsSizeLimitBytes,
+                                // @ts-ignore
+                                logsUntil: new Timestamp(formState.logsUntil), // TODO - ask Bojan
+                                metricsIntervalSeconds: formState.metricsIntervalSeconds,
+                                tlsEnabled: formState.tlsEnabled,
+                                tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
+                                namespace: formState.namespace,
+                                labelSelector: formState.labelSelectors.map(x => new LabelSelector(x)),
+                                partitions: formState.partitions.split(','), // TODO - ask Bojan
+                            }));
                         }}>Generate</Button>
-                        <Button variant="link" onClick={() => {
-                            setAdvancedForm(false);
-                        }}>Cancel</Button>
+                        <Flex alignItems="center" gap={1}>
+                            or
+                            <Button px={0} variant="link" onClick={() => {
+                                setAdvancedForm(false);
+                            }}>back to default</Button>
+                        </Flex>
                     </>
                     :
                     <>
                         <Button onClick={async () => {
-                            onSubmit();
+                            onSubmit(new CreateDebugBundleRequest());
                         }}>Generate default</Button>
                         <Button variant="link" onClick={() => {
                             setAdvancedForm(true);

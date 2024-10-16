@@ -72,7 +72,7 @@ const ClusterHealthOverview = () => {
                         <Box fontWeight="bold">Debug bundle</Box>
                         <Flex gap={2}>
                             {api.isDebugBundleInProgress && <Button px={0} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>}
-                            {api.isDebugBundleReady && <DebugBundleLink statuses={api.debugBundleStatuses} />}
+                            {api.isDebugBundleReady && <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
                             {!api.isDebugBundleInProgress && <Button px={0} as={ReactRouterLink} variant="link" to="/admin/debug-bundle/new">Generate new</Button>}
                         </Flex>
                     </Grid>

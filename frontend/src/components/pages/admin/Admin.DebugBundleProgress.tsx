@@ -70,7 +70,8 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                 {!api.isDebugBundleInProgress && <Box>
                     <Flex gap={2} my={2}>
                         <Text fontWeight="bold">Debug bundle complete</Text>
-                        <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
+                        {api.canDownloadDebugBundle &&
+                        <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
                     </Flex>
                     <Button as={ReactRouterLink} to="/admin">Done</Button>
                 </Box>}
