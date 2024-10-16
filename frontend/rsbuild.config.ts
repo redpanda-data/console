@@ -5,6 +5,7 @@ import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+// import MonacoEditorWebpackPlugin from 'monaco-editor-webpack-plugin'
 
 import moduleFederationConfig from './module-federation';
 
@@ -68,6 +69,8 @@ export default defineConfig({
             config.resolve.symlinks = false;
 
             config.output.publicPath = 'auto';
+            config.output.globalObject = 'self';
+            config.output.filename = '[name].bundle.js';
 
             const plugins = [
                 new NodePolyfillPlugin({

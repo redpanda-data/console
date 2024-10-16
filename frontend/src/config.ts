@@ -34,10 +34,8 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 
 const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
-
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-    if (config.jwt)
-        req.header.append('Authorization', 'Bearer ' + config.jwt);
+    if (config.jwt) req.header.append('Authorization', 'Bearer ' + config.jwt);
     return await next(req);
 };
 
@@ -92,8 +90,8 @@ export const config: Config = observable({
     fetch: window.fetch,
     assetsPath: getBasePath(),
     clusterId: 'default',
-    setSidebarItems: () => { },
-    setBreadcrumbs: () => { },
+    setSidebarItems: () => {},
+    setBreadcrumbs: () => {},
     isServerless: false,
 });
 
@@ -103,7 +101,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
     const transport = createConnectTransport({
         baseUrl: getGrpcBasePath(urlOverride?.grpc),
-        interceptors: [addBearerTokenInterceptor]
+        interceptors: [addBearerTokenInterceptor],
     });
 
     const licenseGrpcClient = createPromiseClient(LicenseService, transport);
@@ -136,18 +134,16 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
             'editorGutter.background': '#00000018',
             'editor.lineHighlightBackground': '#aaaaaa20',
             'editor.lineHighlightBorder': '#00000000',
-            'editorLineNumber.foreground': '#8c98a8',            
+            'editorLineNumber.foreground': '#8c98a8',
             'editorOverviewRuler.background': '#606060',
         },
-        rules: []
+        rules: [],
     });
 
     monaco.editor.setTheme('kowl');
 };
 
-
 setTimeout(() => {
-
     autorun(() => {
         const setBreadcrumbs = config.setBreadcrumbs;
         if (!setBreadcrumbs) return;
@@ -164,22 +160,19 @@ setTimeout(() => {
         const setSidebarItems = config.setSidebarItems;
         if (!setSidebarItems) return;
 
-
         const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
             (r, i) =>
-            ({
-                title: r.title,
-                to: r.path,
-                icon: r.icon,
-                order: i,
-            } as SidebarItem)
+                ({
+                    title: r.title,
+                    to: r.path,
+                    icon: r.icon,
+                    order: i,
+                } as SidebarItem)
         );
 
         setSidebarItems(sidebarItems);
     });
-
 }, 50);
-
 
 export function isEmbedded() {
     return config.jwt != null;
@@ -189,84 +182,67 @@ export function isServerless() {
     return config.isServerless;
 }
 
-const routesIgnoredInEmbedded = [
-    '/overview',
-    '/quotas',
-    '/reassign-partitions',
-    '/admin',
-];
+const routesIgnoredInEmbedded = ['/overview', '/quotas', '/reassign-partitions', '/admin'];
 
-const routesIgnoredInServerless = [
-    '/overview',
-    '/schema-registry',
-    '/quotas',
-    '/reassign-partitions',
-    '/admin',
-    '/transforms',
-];
+const routesIgnoredInServerless = ['/overview', '/schema-registry', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
 export const embeddedAvailableRoutesObservable = observable({
     get routes() {
-        return APP_ROUTES
-            .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
+        return APP_ROUTES.filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
             .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
-            .filter(x => {
+            .filter((x) => {
                 if (x.visibilityCheck) {
                     const state = x.visibilityCheck();
                     return state.visible;
                 }
                 return true;
             })
-            .filter(x => {
-                if (isServerless() && routesIgnoredInServerless.includes(x.path))
-                    return false;
+            .filter((x) => {
+                if (isServerless() && routesIgnoredInServerless.includes(x.path)) return false;
                 return true;
             });
-    }
+    },
 });
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
-    const config = setConfig(setupArgs);
+    setConfig(setupArgs);
 
     // Tell monaco editor where to load dependencies from
-    loader.config({
-        paths: {
-            vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
-        },
-    });
+    loader.config({ monaco });
 
     // Ensure yaml workers are being loaded locally as well
     loader.init().then(async (monaco) => {
+        // eslint-disable-next-line no-restricted-globals
         window.MonacoEnvironment = {
-            baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
-
             getWorker(moduleId, label) {
                 console.debug(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
-                switch (label) {
-                    case 'editorWorkerService':
-                        return new Worker(
-                            new URL(
-                                'monaco-editor/esm/vs/editor/editor.worker',
-                                import.meta.url
-                            )
-                        );
-                    case 'yaml':
-                        // return new yamlWorker();
-                        return new Worker(
-                            new URL(
-                                'monaco-yaml/yaml.worker',
-                                import.meta.url
-                            )
-                        );
 
+                switch (label) {
+                    case 'json':
+                        return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
+                    case 'typescript':
+                    case 'javascript':
+                        return new Worker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
+                    case 'yaml':
+                        return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
                     default:
-                        throw new Error(`Unknown label ${label}`);
+                        return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
                 }
+
+                // switch (label) {
+                //     case 'editorWorkerService':
+                //         return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
+                //     case 'yaml':
+                //         return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
+                //
+                //     default:
+                //         throw new Error(`Unknown label ${label}`);
+                // }
             },
         };
 
         configureMonacoYaml(monaco, monacoYamlOptions);
-    })
+    });
 
     // Configure MobX
     configure({
