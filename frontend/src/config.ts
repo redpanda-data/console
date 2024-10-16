@@ -27,6 +27,7 @@ import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import * as monaco from 'monaco-editor';
 import { loader, Monaco } from '@monaco-editor/react';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
+// import './remoteWebWorker';
 
 declare const __webpack_public_path__: string;
 
@@ -212,6 +213,13 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
 
     // Ensure yaml workers are being loaded locally as well
     loader.init().then(async (monaco) => {
+        // const jsonWorker = await new CorsWorker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url)).createWorker();
+        // const yamlWorker = await new CorsWorker(new URL('monaco-yaml/yaml.worker', import.meta.url)).createWorker();
+        // const tsWorker = await new CorsWorker(
+        //     new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url)
+        // ).createWorker();
+        //
+        // const genericWorker = await new CorsWorker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url)).createWorker();
         // eslint-disable-next-line no-restricted-globals
         window.MonacoEnvironment = {
             getWorker(moduleId, label) {

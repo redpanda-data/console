@@ -71,6 +71,7 @@ export default defineConfig({
             config.output.publicPath = 'auto';
             config.output.globalObject = 'self';
             config.output.filename = '[name].bundle.js';
+            config.output.crossOriginLoading = 'anonymous';
 
             const plugins = [
                 new NodePolyfillPlugin({
