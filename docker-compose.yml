@@ -1,0 +1,82 @@
+# run with:
+# docker-compose  up
+version: "3.7"
+services:
+  redpanda:
+    image: docker.vectorized.io/vectorized/redpanda:latest
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr internal://redpanda:29092,external://0.0.0.0:9092
+      - --advertise-kafka-addr internal://redpanda:29092,external://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
+      - --reserve-memory
+      - 0M
+    ports:
+      - 8081:8081
+      - 8082:8082
+      - 9092:9092
+      - 9644:9644
+
+  owl-shop:
+    #image: quay.io/cloudhut/owl-shop:v1.2.0
+    image: quay.io/cloudhut/owl-shop:latest
+    environment:
+      # - SHOP_KAFKA_BROKERS=localhost:9092
+      - SHOP_KAFKA_BROKERS=redpanda:29092
+      - SHOP_KAFKA_TOPICREPLICATIONFACTOR=1
+      - SHOP_TRAFFIC_INTERVAL_RATE=2
+      - SHOP_TRAFFIC_INTERVAL_DURATION=0.1s
+    depends_on:
+      - redpanda
+
+  debezium:
+    image: debezium/connect:2.0
+    hostname: debezium
+    depends_on:
+      - redpanda
+    ports:
+      - "8088:8083"
+    environment:
+      BOOTSTRAP_SERVERS: "redpanda:29092"
+      GROUP_ID: dbz-connect-group
+      REST_ADVERTISED_HOST_NAME: debezium
+      CONFIG_STORAGE_TOPIC: dbz-connect-configs
+      OFFSET_STORAGE_TOPIC: dbz-connect-offsets
+      STATUS_STORAGE_TOPIC: dbz-connect-status
+
+  connect:
+    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest
+    hostname: connect
+    depends_on:
+      - redpanda
+    ports:
+      - "8083:8083"
+    environment:
+      AWS_ACCESS_KEY_ID:
+      AWS_SECRET_ACCESS_KEY:
+      CONNECT_CONFIGURATION: |
+        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        group.id=connectors-cluster
+        offset.storage.topic=_internal_connectors_offsets
+        config.storage.topic=_internal_connectors_configs
+        status.storage.topic=_internal_connectors_status
+        config.storage.replication.factor=-1
+        offset.storage.replication.factor=-1
+        status.storage.replication.factor=-1
+        offset.flush.interval.ms=1000
+        producer.linger.ms=1
+        producer.batch.size=131072
+        config.config.providers=file,secretsManager
+        config.providers.file.class=org.apache.kafka.common.config.provider.FileConfigProvider
+        config.providers.secretsManager.class=com.redpanda.connectors.config.provider.aws.SecretsManagerConfigProvider
+        config.providers.secretsManager.param.secret.prefix=redpanda/my-redpanda-id/connectors/redpanda/
+        config.providers.secretsManager.param.aws.region=eu-west-1
+      CONNECT_BOOTSTRAP_SERVERS: redpanda:29092
+      CONNECT_GC_LOG_ENABLED: "false"
+      CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+      CONNECT_LOG_LEVEL: info
