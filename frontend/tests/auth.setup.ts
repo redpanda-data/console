@@ -6,10 +6,10 @@ setup('authenticate', async ({ page }) => {
     await page.goto('/');
 
     // check if there is an error modal, closed it if needed
-    // const errorOKButton = page.getByTestId('login-error__ok-button')
-    // if(errorOKButton) {
-    //     await errorOKButton.click()
-    // }
+    const errorOKButton = page.getByTestId('login-error__ok-button')
+    if(await errorOKButton.isVisible()) {
+        await errorOKButton.click();
+    }
 
     await page.getByTestId('auth-username-input').fill('e2euser');
     await page.getByTestId('auth-password-input').fill('very-secret');
