@@ -20,9 +20,10 @@ typeof window !== 'undefined' &&
         class Worker extends BaseWorker {
             constructor(scriptURL: string | URL, options?: WorkerOptions) {
                 const url = String(scriptURL);
+
                 super(
                     // Check if the URL is remote
-                    url.includes('://') && !url.startsWith(window.location.origin)
+                    url.includes('://')
                         ? // Launch the worker with an inline script that will use `importScripts`
                           // to bootstrap the actual script to work around the same origin policy.
                           URL.createObjectURL(
@@ -41,7 +42,7 @@ typeof window !== 'undefined' &&
                                       // i = original importScripts
                                       // a = arguments
                                       // u = URL
-                                      `importScripts=((i)=>(...a)=>i(...a.map((u)=>''+new URL(u,"${url}"))))(importScripts);importScripts("${url}")`,
+                                      `importScripts("${url}")`,
                                   ],
                                   { type: 'text/javascript' }
                               )

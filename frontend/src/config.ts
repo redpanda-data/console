@@ -27,7 +27,7 @@ import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import * as monaco from 'monaco-editor';
 import { loader, Monaco } from '@monaco-editor/react';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
-import './remoteWebWorker';
+// import './remoteWebWorker';
 
 declare const __webpack_public_path__: string;
 
