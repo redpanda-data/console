@@ -271,6 +271,11 @@ func (s *Service) GetHealthOverview(ctx context.Context) (adminapi.ClusterHealth
 	return s.adminClient.GetHealthOverview(ctx)
 }
 
+// GetBrokers retrieves the brokers.
+func (s *Service) GetBrokers(ctx context.Context) ([]adminapi.Broker, error) {
+	return s.adminClient.Brokers(ctx)
+}
+
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
