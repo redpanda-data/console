@@ -8,9 +8,23 @@ import "google/protobuf/timestamp.proto";
 
 // SCRAM Auth settings.
 message SCRAMAuth {
-  string username = 1;
-  string password = 2;
-  Mechanism mechanism = 3;
+  string username = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  string password = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  Mechanism mechanism = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
 
   enum Mechanism {
     MECHANISM_UNSPECIFIED = 0;
