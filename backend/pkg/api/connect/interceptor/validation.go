@@ -14,6 +14,7 @@ package interceptor
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
@@ -58,6 +59,8 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 			return next(ctx, req)
 		}
 
+		fmt.Printf("VALIDATE ERROR: %+v\n", err)
+
 		var badRequest *errdetails.BadRequest
 		var validationErr *protovalidate.ValidationError
 		var runtimeErr *protovalidate.RuntimeError
@@ -65,6 +68,8 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 
 		switch {
 		case errors.As(err, &validationErr):
+
+			fmt.Printf("IS VALIDATE ERROR\n")
 			var fieldViolations []*errdetails.BadRequest_FieldViolation
 			for _, violation := range validationErr.Violations {
 				fieldViolationErr := &errdetails.BadRequest_FieldViolation{
@@ -73,6 +78,9 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 				}
 				fieldViolations = append(fieldViolations, fieldViolationErr)
 			}
+
+			fmt.Printf("fieldViolations:%+v\n", fieldViolations)
+
 			badRequest = apierrors.NewBadRequest(fieldViolations...)
 		case errors.As(err, &runtimeErr):
 			in.logger.Error("validation runtime error", zap.Error(runtimeErr))
