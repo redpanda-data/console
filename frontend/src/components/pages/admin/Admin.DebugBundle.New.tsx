@@ -21,7 +21,6 @@ import { FC, useEffect, useState } from 'react';
 import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Timestamp } from '@bufbuild/protobuf';
-import { SingleSelect } from '../../misc/Select';
 import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
 
 @observer
@@ -110,9 +109,9 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         tlsInsecureSkipVerify: false,
         controllerLogsSizeLimitBytes: 0 as number,
         cpuProfilerWaitSeconds: undefined as number | undefined,
-        logsSince: Number(new Date()),
+        logsSince: undefined as number | undefined,
         logsSizeLimitBytes: 0 as number,
-        logsUntil: Number(new Date()),
+        logsUntil: undefined as number | undefined,
         metricsIntervalSeconds: 0 as number,
         metricsSamples: '' as string,
         namespace: '' as string,
@@ -345,9 +344,9 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                                 brokerIds: formState.brokerIds,
                                 controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
                                 cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
-                                logsSince: Timestamp.fromDate(new Date(formState.logsSince)),
+                                logsSince: formState.logsSince ? Timestamp.fromDate(new Date(formState.logsSince)): undefined,
                                 logsSizeLimitBytes: formState.logsSizeLimitBytes,
-                                logsUntil: Timestamp.fromDate(new Date(formState.logsUntil)),
+                                logsUntil: formState.logsUntil ? Timestamp.fromDate(new Date(formState.logsUntil)) : undefined,
                                 metricsIntervalSeconds: formState.metricsIntervalSeconds,
                                 tlsEnabled: formState.tlsEnabled,
                                 tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
