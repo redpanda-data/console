@@ -14,13 +14,15 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Alert, AlertIcon, Box, Button, Checkbox, Flex, FormField, Grid, GridItem, Input, PasswordInput, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Checkbox, DateTimeInput, Flex, FormField, Grid, GridItem, Input, isMultiValue, PasswordInput, Select, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Timestamp } from '@bufbuild/protobuf';
+import { SingleSelect } from '../../misc/Select';
+import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
 
 @observer
 export default class AdminPageDebugBundleNew extends PageComponent<{}> {
@@ -60,26 +62,28 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
                     This is an advanced feature, best used if you have received direction to do so from Redpanda support.
                 </Alert>
 
-                {this.createBundleError && <Alert status="error">
+
+
+                {this.submitInProgress && <Box>
+                        Generating bundle ...
+                    </Box>}
+
+                <NewDebugBundleForm onSubmit={(data: CreateDebugBundleRequest) => {
+                    this.submitInProgress = true;
+                    this.createBundleError = undefined;
+                    api.createDebugBundle(data).then(result => {
+                        appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`)
+                    }).catch(err => {
+                        this.createBundleError = err.message;
+                    }).finally(() => {
+                        this.submitInProgress = false;
+                    });
+                }}/>
+
+                {this.createBundleError && <Alert status="error" my={4}>
                     <AlertIcon/>
                     {this.createBundleError}
                 </Alert>}
-
-                {this.submitInProgress ? <Box>
-                        Generating bundle ...
-                    </Box>
-                    :
-                    <NewDebugBundleForm onSubmit={(data: CreateDebugBundleRequest) => {
-                        this.submitInProgress = true;
-                        this.createBundleError = undefined;
-                        api.createDebugBundle(data).then(result => {
-                            appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`)
-                        }).catch(err => {
-                            this.createBundleError = err.message;
-                        }).finally(() => {
-                            this.submitInProgress = false;
-                        });
-                    }}/>}
             </Box>
         );
     }
@@ -89,30 +93,31 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
 const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => void }> = observer(({onSubmit}) => {
     const [advancedForm, setAdvancedForm] = useState(false);
 
+    useEffect(() => {
+        void api.refreshBrokers(true);
+        void api.refreshPartitions('all', true);
+    }, []);
+
+
     const formState = useLocalObservable(() => ({
         scramAuth: {
             username: '',
             password: '',
         } as SCRAMAuth,
         skipTlsVerification: false,
-        brokerIds: '' as string,
+        brokerIds: [] as number[],
         tlsEnabled: false,
         tlsInsecureSkipVerify: false,
         controllerLogsSizeLimitBytes: 0 as number,
         cpuProfilerWaitSeconds: undefined as number | undefined,
-        logsSince: '' as string,
+        logsSince: Number(new Date()),
         logsSizeLimitBytes: 0 as number,
-        logsUntil: '' as string,
+        logsUntil: Number(new Date()),
         metricsIntervalSeconds: 0 as number,
         metricsSamples: '' as string,
         namespace: '' as string,
-        partitions: '' as string,
-        labelSelectors: [
-            {
-                key: '',
-                value: '',
-            }
-        ] as Array<{key: string, value: string}>,
+        partitions: [] as string[],
+        labelSelectors: [] as Array<{key: string, value: string}>,
 
         // Setters
         setUsername(username: string) {
@@ -121,7 +126,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         setPassword(password: string) {
             this.scramAuth.password = password;
         },
-        setBrokerIds(ids: string) {
+        setBrokerIds(ids: number[]) {
             this.brokerIds = ids;
         },
         setControllerLogsSizeLimitBytes(size: number) {
@@ -130,13 +135,13 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         setCpuProfilerWaitSeconds(seconds: number) {
             this.cpuProfilerWaitSeconds = seconds;
         },
-        setLogsSince(date: string) {
+        setLogsSince(date: number) {
             this.logsSince = date;
         },
         setLogsSizeLimitBytes(size: number) {
             this.logsSizeLimitBytes = size;
         },
-        setLogsUntil(date: string) {
+        setLogsUntil(date: number) {
             this.logsUntil = date;
         },
         setMetricsIntervalSeconds(seconds: number) {
@@ -148,7 +153,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         setNamespace(namespace: string) {
             this.namespace = namespace;
         },
-        setPartitions(partitions: string) {
+        setPartitions(partitions: string[]) {
             this.partitions = partitions;
         },
         addLabelSelector() {
@@ -205,10 +210,17 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                     />
                 </FormField>
                 <FormField label="Broker(s)" description="Specify broker IDs (comma-separated, or leave blank for all)">
-                    <Input
-                        data-testid="broker-ids-input"
-                        value={formState.brokerIds}
-                        onChange={(e) => formState.setBrokerIds(e.target.value)}
+                    <Select<BrokerWithConfigAndStorage['brokerId']>
+                        isMulti
+                        options={api.brokers?.map(x => ({
+                            value: x.brokerId,
+                            label: `${x.brokerId}`,
+                        })) ?? []}
+                        onChange={x => {
+                            if (isMultiValue(x)) {
+                                formState.setBrokerIds(x.map(x => x.value))
+                            }
+                        }}
                     />
                 </FormField>
                 <FormField label="Controller log size limit" description={'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'}>
@@ -228,17 +240,15 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                     />
                 </FormField>
                 <FormField label="Logs since" description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'.">
-                    <Input
-                        data-testid="logs-since-input"
+                    <DateTimeInput
                         value={formState.logsSince}
-                        onChange={(e) => formState.setLogsSince(e.target.value)}
+                        onChange={formState.setLogsSince}
                     />
                 </FormField>
                 <FormField label="Logs until" description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today').">
-                    <Input
-                        data-testid="logs-until-input"
+                    <DateTimeInput
                         value={formState.logsUntil}
-                        onChange={(e) => formState.setLogsUntil(e.target.value)}
+                        onChange={formState.setLogsUntil}
                     />
                 </FormField>
                 <FormField label="Log size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GiB). Default 100MiB.">
@@ -271,11 +281,18 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setNamespace(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Partition(s)" description="Comma-separated partition IDs.">
-                    <Input
-                        data-testid="partitions-input"
-                        value={formState.partitions}
-                        onChange={(e) => formState.setPartitions(e.target.value)}
+                <FormField label="Partition(s)" description="Comma-separated partition IDs.">a
+                    <Select<string>
+                        isMulti
+                        options={api.getTopicPartitionArray.map(x => ({
+                            value: x,
+                            label: x
+                        }))}
+                        onChange={x => {
+                            if (isMultiValue(x)) {
+                                formState.setPartitions(x.map(x => x.value))
+                            }
+                        }}
                     />
                 </FormField>
                 <FormField label="Label selectors" description="Label selectors to filter your resources.">
@@ -325,20 +342,18 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                                     case: 'scram',
                                     value: formState.scramAuth
                                 },
-                                brokerIds: formState.brokerIds.split(',').map(Number),
+                                brokerIds: formState.brokerIds,
                                 controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
                                 cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
-                                // @ts-ignore
-                                logsSince: new Timestamp(formState.logsSince), // TODO - ask Bojan
+                                logsSince: Timestamp.fromDate(new Date(formState.logsSince)),
                                 logsSizeLimitBytes: formState.logsSizeLimitBytes,
-                                // @ts-ignore
-                                logsUntil: new Timestamp(formState.logsUntil), // TODO - ask Bojan
+                                logsUntil: Timestamp.fromDate(new Date(formState.logsUntil)),
                                 metricsIntervalSeconds: formState.metricsIntervalSeconds,
                                 tlsEnabled: formState.tlsEnabled,
                                 tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
                                 namespace: formState.namespace,
                                 labelSelector: formState.labelSelectors.map(x => new LabelSelector(x)),
-                                partitions: formState.partitions.split(','), // TODO - ask Bojan
+                                partitions: formState.partitions,
                             }));
                         }}>Generate</Button>
                         <Flex alignItems="center" gap={1}>

@@ -642,6 +642,20 @@ const apiStore = {
             }, addError);
     },
 
+    get getTopicPartitionArray() {
+        const result: string[] = [];
+
+        this.topicPartitions.forEach((partitions, topicName) => {
+            if (partitions !== null) {
+                partitions.forEach(partition => {
+                    result.push(`kafka/${topicName}/${partition.id}`);
+                });
+            }
+        });
+
+        return result;
+    },
+
     refreshTopicAcls(topicName: string, force?: boolean) {
         const query = aclRequestToQuery({ ...AclRequestDefault, resourcePatternTypeFilter: 'Match', resourceType: 'Topic', resourceName: topicName });
         cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
