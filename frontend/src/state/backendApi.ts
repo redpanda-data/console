@@ -648,7 +648,7 @@ const apiStore = {
         this.topicPartitions.forEach((partitions, topicName) => {
             if (partitions !== null) {
                 partitions.forEach(partition => {
-                    result.push(`kafka/${topicName}/${partition.id}`);
+                    result.push(`${topicName}/${partition.id}`);
                 });
             }
         });
@@ -1673,14 +1673,14 @@ const apiStore = {
         })
     },
 
-    async deleteDebugBundleFile({ file }: { file: DeleteDebugBundleFileForBroker }) {
+    async deleteDebugBundleFile() {
         const client = appConfig.debugBundleClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
             throw new Error('Debug bundle client is not initialized');
         }
         await client.deleteDebugBundleFile({
-            files: [file]
+            deleteAll: true,
         }).finally(() => {
             this.refreshDebugBundleStatuses()
         })
