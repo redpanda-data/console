@@ -8,7 +8,7 @@ import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 
 import moduleFederationConfig from './module-federation';
 
-const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
+const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
 export default defineConfig({
     plugins: [
@@ -46,7 +46,10 @@ export default defineConfig({
         },
     },
     source: {
-        define: publicVars,
+        define: {
+            ...publicVars,
+            'process.env': JSON.stringify(rawPublicVars),
+        },
         decorators: {
             version: 'legacy',
         },
