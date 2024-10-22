@@ -55,11 +55,7 @@ const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = tr
                     icon={<MdDeleteOutline/>}
                     aria-label="Delete file"
                     onClick={() => {
-                        void api.deleteDebugBundleFile({
-                            file: {
-                                filename: statusWithFilename.filename,
-                            } as DeleteDebugBundleFileForBroker
-                        });
+                        void api.deleteDebugBundleFile();
                     }}
                 />}
             </Box>
