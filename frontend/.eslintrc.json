@@ -10,6 +10,8 @@
         "react"
     ],
     "extends": [
+        "react-app",
+        "react-app/jest",
         "plugin:react/recommended",
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:react-hooks/recommended"
