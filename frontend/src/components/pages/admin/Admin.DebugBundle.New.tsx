@@ -14,7 +14,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Alert, AlertIcon, Box, Button, Checkbox, DateTimeInput, Flex, FormField, Grid, GridItem, Input, isMultiValue, PasswordInput, Select, Text } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Checkbox, DateTimeInput, Flex, FormField, Grid, GridItem, Input, isMultiValue, isSingleValue, PasswordInput, Select, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import { FC, useEffect, useState } from 'react';
@@ -111,6 +111,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         cpuProfilerWaitSeconds: undefined as number | undefined,
         logsSince: undefined as number | undefined,
         logsSizeLimitBytes: 0 as number,
+        logsSizeLimitUnit: 1,
         logsUntil: undefined as number | undefined,
         metricsIntervalSeconds: 0 as number,
         metricsSamples: '' as string,
@@ -139,6 +140,9 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         },
         setLogsSizeLimitBytes(size: number) {
             this.logsSizeLimitBytes = size;
+        },
+        setLogsSizeLimitUnit(unit: number) {
+            this.logsSizeLimitUnit = unit;
         },
         setLogsUntil(date: number) {
             this.logsUntil = date;
@@ -208,7 +212,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setPassword(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Broker(s)" description="Specify broker IDs (comma-separated, or leave blank for all)">
+                <FormField label="Broker(s)" description="Specify broker IDs (or leave blank for all)">
                     <Select<BrokerWithConfigAndStorage['brokerId']>
                         isMulti
                         options={api.brokers?.map(x => ({
@@ -250,13 +254,46 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={formState.setLogsUntil}
                     />
                 </FormField>
-                <FormField label="Log size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GiB). Default 100MiB.">
-                    <Input
-                        type="number"
-                        data-testid="log-size-limit-input"
-                        value={formState.logsSizeLimitBytes}
-                        onChange={(e) => formState.setLogsSizeLimitBytes(e.target.valueAsNumber)}
-                    />
+                <FormField label="Logs size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GiB). Default 100MiB.">
+                    <Flex gap={2}>
+                        <Input
+                            type="number"
+                            data-testid="log-size-limit-input"
+                            value={formState.logsSizeLimitBytes}
+                            onChange={(e) => formState.setLogsSizeLimitBytes(e.target.valueAsNumber)}
+                        />
+                        <Select
+                            chakraStyles={{
+                                container: (provided) => ({
+                                    ...provided,
+                                    minWidth: 150
+                                }),
+                            }}
+                            options={[
+                                {
+                                    value: 1,
+                                    label: 'Bytes'
+                                },
+                                {
+                                    value: 1024,
+                                    label: 'KB'
+                                },
+                                {
+                                    value: 1024 * 1024,
+                                    label: 'MB'
+                                },
+                                {
+                                    value: 1024 * 1024 * 1024,
+                                    label: 'GB'
+                                }
+                            ]}
+                            onChange={(value) => {
+                                if(value && isSingleValue(value)) {
+                                    formState.setLogsSizeLimitUnit(value.value);
+                                }
+                            }}
+                        />
+                    </Flex>
                 </FormField>
                 <FormField label="Metrics interval duration" description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)">
                     <Input
@@ -280,7 +317,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setNamespace(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Partition(s)" description="Comma-separated partition IDs.">a
+                <FormField label="Partition(s)" description="Partition IDs.">a
                     <Select<string>
                         isMulti
                         options={api.getTopicPartitionArray.map(x => ({
@@ -345,7 +382,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                                 controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
                                 cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
                                 logsSince: formState.logsSince ? Timestamp.fromDate(new Date(formState.logsSince)): undefined,
-                                logsSizeLimitBytes: formState.logsSizeLimitBytes,
+                                logsSizeLimitBytes: formState.logsSizeLimitBytes * formState.logsSizeLimitUnit,
                                 logsUntil: formState.logsUntil ? Timestamp.fromDate(new Date(formState.logsUntil)) : undefined,
                                 metricsIntervalSeconds: formState.metricsIntervalSeconds,
                                 tlsEnabled: formState.tlsEnabled,
