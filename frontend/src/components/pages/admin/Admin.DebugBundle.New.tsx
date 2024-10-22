@@ -254,7 +254,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={formState.setLogsUntil}
                     />
                 </FormField>
-                <FormField label="Logs size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GiB). Default 100MiB.">
+                <FormField label="Logs size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB.">
                     <Flex gap={2}>
                         <Input
                             type="number"
