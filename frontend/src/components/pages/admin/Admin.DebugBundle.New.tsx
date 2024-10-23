@@ -10,7 +10,7 @@
  */
 
 import { observer, useLocalObservable } from 'mobx-react';
-import { api, } from '../../../state/backendApi';
+import { api, rolesApi, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -21,7 +21,8 @@ import { FC, useEffect, useState } from 'react';
 import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth, SCRAMAuth_Mechanism } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Timestamp } from '@bufbuild/protobuf';
-import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
+import { AclRequestDefault, BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
+import { SingleSelect } from '../../misc/Select';
 
 type ErrorDebugInfo = {
     reason?: string;
@@ -119,8 +120,10 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
     useEffect(() => {
         void api.refreshBrokers(true);
         void api.refreshPartitions('all', true);
+        void api.refreshAdminInfo(true);
     }, []);
 
+    const scramUsers = api.adminInfo?.users.filter(x => x.loginProvider === 'Plain');
 
     const fieldViolationsMap = error?.details?.find(({debug}) => debug?.fieldViolations)?.debug?.fieldViolations?.reduce((acc, violation) => {
             acc[violation.field] = violation.description;
@@ -217,10 +220,34 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 gap={2}
             >
                 <FormField label="SCRAM user" errorText={fieldViolationsMap?.['scram.username']} isInvalid={!!fieldViolationsMap?.['scram.username']}>
-                    <Input
+                    <SingleSelect<string>
                         data-testid="scram-user-input"
+                        options={scramUsers?.map(x => ({
+                            value: x.internalIdentifier,
+                            label: x.internalIdentifier,
+                        })) ?? []}
                         value={formState.scram.username}
-                        onChange={(e) => formState.setUsername(e.target.value)}
+                        onChange={(e) => {
+                            formState.scram.username = e;
+                        }}
+                    />
+                </FormField>
+                <FormField label="SASL Mechanism" showRequiredIndicator>
+                    <SingleSelect<SCRAMAuth_Mechanism>
+                        options={[
+                            {
+                                value: SCRAMAuth_Mechanism.SCRAM_SHA_256,
+                                label: 'SCRAM-SHA-256',
+                            },
+                            {
+                                value: SCRAMAuth_Mechanism.SCRAM_SHA_512,
+                                label: 'SCRAM-SHA-512',
+                            },
+                        ]}
+                        value={formState.scram.mechanism}
+                        onChange={(e) => {
+                            formState.scram.mechanism = e;
+                        }}
                     />
                 </FormField>
                 <Checkbox
