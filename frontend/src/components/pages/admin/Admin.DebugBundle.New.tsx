@@ -220,17 +220,22 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 gap={2}
             >
                 <FormField label="SCRAM user" errorText={fieldViolationsMap?.['scram.username']} isInvalid={!!fieldViolationsMap?.['scram.username']}>
-                    <SingleSelect<string>
+                    <Input
                         data-testid="scram-user-input"
-                        options={scramUsers?.map(x => ({
-                            value: x.internalIdentifier,
-                            label: x.internalIdentifier,
-                        })) ?? []}
                         value={formState.scram.username}
-                        onChange={(e) => {
-                            formState.setUsername(e)
-                        }}
+                        onChange={(e) => formState.setUsername(e.target.value)}
                     />
+                    {/*<SingleSelect<string>*/}
+                    {/*    data-testid="scram-user-input"*/}
+                    {/*    options={scramUsers?.map(x => ({*/}
+                    {/*        value: x.internalIdentifier,*/}
+                    {/*        label: x.internalIdentifier,*/}
+                    {/*    })) ?? []}*/}
+                    {/*    value={formState.scram.username}*/}
+                    {/*    onChange={(e) => {*/}
+                    {/*        formState.setUsername(e)*/}
+                    {/*    }}*/}
+                    {/*/>*/}
                 </FormField>
                 <FormField label="SASL Mechanism" showRequiredIndicator>
                     <SingleSelect<SCRAMAuth_Mechanism>
