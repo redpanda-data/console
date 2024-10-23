@@ -52,12 +52,6 @@ const (
 	// TopicServiceSetTopicConfigurationsProcedure is the fully-qualified name of the TopicService's
 	// SetTopicConfigurations RPC.
 	TopicServiceSetTopicConfigurationsProcedure = "/redpanda.api.dataplane.v1alpha2.TopicService/SetTopicConfigurations"
-	// TopicServiceMountTopicsProcedure is the fully-qualified name of the TopicService's MountTopics
-	// RPC.
-	TopicServiceMountTopicsProcedure = "/redpanda.api.dataplane.v1alpha2.TopicService/MountTopics"
-	// TopicServiceUnmountTopicsProcedure is the fully-qualified name of the TopicService's
-	// UnmountTopics RPC.
-	TopicServiceUnmountTopicsProcedure = "/redpanda.api.dataplane.v1alpha2.TopicService/UnmountTopics"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -69,8 +63,6 @@ var (
 	topicServiceGetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("GetTopicConfigurations")
 	topicServiceUpdateTopicConfigurationsMethodDescriptor = topicServiceServiceDescriptor.Methods().ByName("UpdateTopicConfigurations")
 	topicServiceSetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfigurations")
-	topicServiceMountTopicsMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("MountTopics")
-	topicServiceUnmountTopicsMethodDescriptor             = topicServiceServiceDescriptor.Methods().ByName("UnmountTopics")
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1alpha2.TopicService service.
@@ -81,8 +73,6 @@ type TopicServiceClient interface {
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha2.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha2.GetTopicConfigurationsResponse], error)
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha2.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha2.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfigurations(context.Context, *connect.Request[v1alpha2.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha2.SetTopicConfigurationsResponse], error)
-	MountTopics(context.Context, *connect.Request[v1alpha2.MountTopicsRequest]) (*connect.Response[v1alpha2.MountTopicsResponse], error)
-	UnmountTopics(context.Context, *connect.Request[v1alpha2.UnmountTopicsRequest]) (*connect.Response[v1alpha2.UnmountTopicsResponse], error)
 }
 
 // NewTopicServiceClient constructs a client for the redpanda.api.dataplane.v1alpha2.TopicService
@@ -131,18 +121,6 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceSetTopicConfigurationsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		mountTopics: connect.NewClient[v1alpha2.MountTopicsRequest, v1alpha2.MountTopicsResponse](
-			httpClient,
-			baseURL+TopicServiceMountTopicsProcedure,
-			connect.WithSchema(topicServiceMountTopicsMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
-		unmountTopics: connect.NewClient[v1alpha2.UnmountTopicsRequest, v1alpha2.UnmountTopicsResponse](
-			httpClient,
-			baseURL+TopicServiceUnmountTopicsProcedure,
-			connect.WithSchema(topicServiceUnmountTopicsMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -154,8 +132,6 @@ type topicServiceClient struct {
 	getTopicConfigurations    *connect.Client[v1alpha2.GetTopicConfigurationsRequest, v1alpha2.GetTopicConfigurationsResponse]
 	updateTopicConfigurations *connect.Client[v1alpha2.UpdateTopicConfigurationsRequest, v1alpha2.UpdateTopicConfigurationsResponse]
 	setTopicConfigurations    *connect.Client[v1alpha2.SetTopicConfigurationsRequest, v1alpha2.SetTopicConfigurationsResponse]
-	mountTopics               *connect.Client[v1alpha2.MountTopicsRequest, v1alpha2.MountTopicsResponse]
-	unmountTopics             *connect.Client[v1alpha2.UnmountTopicsRequest, v1alpha2.UnmountTopicsResponse]
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1alpha2.TopicService.CreateTopic.
@@ -189,16 +165,6 @@ func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, req *co
 	return c.setTopicConfigurations.CallUnary(ctx, req)
 }
 
-// MountTopics calls redpanda.api.dataplane.v1alpha2.TopicService.MountTopics.
-func (c *topicServiceClient) MountTopics(ctx context.Context, req *connect.Request[v1alpha2.MountTopicsRequest]) (*connect.Response[v1alpha2.MountTopicsResponse], error) {
-	return c.mountTopics.CallUnary(ctx, req)
-}
-
-// UnmountTopics calls redpanda.api.dataplane.v1alpha2.TopicService.UnmountTopics.
-func (c *topicServiceClient) UnmountTopics(ctx context.Context, req *connect.Request[v1alpha2.UnmountTopicsRequest]) (*connect.Response[v1alpha2.UnmountTopicsResponse], error) {
-	return c.unmountTopics.CallUnary(ctx, req)
-}
-
 // TopicServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha2.TopicService
 // service.
 type TopicServiceHandler interface {
@@ -208,8 +174,6 @@ type TopicServiceHandler interface {
 	GetTopicConfigurations(context.Context, *connect.Request[v1alpha2.GetTopicConfigurationsRequest]) (*connect.Response[v1alpha2.GetTopicConfigurationsResponse], error)
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1alpha2.UpdateTopicConfigurationsRequest]) (*connect.Response[v1alpha2.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfigurations(context.Context, *connect.Request[v1alpha2.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha2.SetTopicConfigurationsResponse], error)
-	MountTopics(context.Context, *connect.Request[v1alpha2.MountTopicsRequest]) (*connect.Response[v1alpha2.MountTopicsResponse], error)
-	UnmountTopics(context.Context, *connect.Request[v1alpha2.UnmountTopicsRequest]) (*connect.Response[v1alpha2.UnmountTopicsResponse], error)
 }
 
 // NewTopicServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -254,18 +218,6 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceSetTopicConfigurationsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	topicServiceMountTopicsHandler := connect.NewUnaryHandler(
-		TopicServiceMountTopicsProcedure,
-		svc.MountTopics,
-		connect.WithSchema(topicServiceMountTopicsMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
-	topicServiceUnmountTopicsHandler := connect.NewUnaryHandler(
-		TopicServiceUnmountTopicsProcedure,
-		svc.UnmountTopics,
-		connect.WithSchema(topicServiceUnmountTopicsMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/redpanda.api.dataplane.v1alpha2.TopicService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TopicServiceCreateTopicProcedure:
@@ -280,10 +232,6 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceUpdateTopicConfigurationsHandler.ServeHTTP(w, r)
 		case TopicServiceSetTopicConfigurationsProcedure:
 			topicServiceSetTopicConfigurationsHandler.ServeHTTP(w, r)
-		case TopicServiceMountTopicsProcedure:
-			topicServiceMountTopicsHandler.ServeHTTP(w, r)
-		case TopicServiceUnmountTopicsProcedure:
-			topicServiceUnmountTopicsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -315,12 +263,4 @@ func (UnimplementedTopicServiceHandler) UpdateTopicConfigurations(context.Contex
 
 func (UnimplementedTopicServiceHandler) SetTopicConfigurations(context.Context, *connect.Request[v1alpha2.SetTopicConfigurationsRequest]) (*connect.Response[v1alpha2.SetTopicConfigurationsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha2.TopicService.SetTopicConfigurations is not implemented"))
-}
-
-func (UnimplementedTopicServiceHandler) MountTopics(context.Context, *connect.Request[v1alpha2.MountTopicsRequest]) (*connect.Response[v1alpha2.MountTopicsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha2.TopicService.MountTopics is not implemented"))
-}
-
-func (UnimplementedTopicServiceHandler) UnmountTopics(context.Context, *connect.Request[v1alpha2.UnmountTopicsRequest]) (*connect.Response[v1alpha2.UnmountTopicsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha2.TopicService.UnmountTopics is not implemented"))
 }

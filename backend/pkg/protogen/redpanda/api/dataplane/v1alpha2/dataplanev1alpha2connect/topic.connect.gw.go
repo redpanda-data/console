@@ -23,8 +23,6 @@ type TopicServiceGatewayServer struct {
 	getTopicConfigurations    connect_gateway.UnaryHandler[v1alpha2.GetTopicConfigurationsRequest, v1alpha2.GetTopicConfigurationsResponse]
 	updateTopicConfigurations connect_gateway.UnaryHandler[v1alpha2.UpdateTopicConfigurationsRequest, v1alpha2.UpdateTopicConfigurationsResponse]
 	setTopicConfigurations    connect_gateway.UnaryHandler[v1alpha2.SetTopicConfigurationsRequest, v1alpha2.SetTopicConfigurationsResponse]
-	mountTopics               connect_gateway.UnaryHandler[v1alpha2.MountTopicsRequest, v1alpha2.MountTopicsResponse]
-	unmountTopics             connect_gateway.UnaryHandler[v1alpha2.UnmountTopicsRequest, v1alpha2.UnmountTopicsResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
@@ -37,8 +35,6 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		getTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
 		updateTopicConfigurations: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationsProcedure, svc.UpdateTopicConfigurations, opts...),
 		setTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationsProcedure, svc.SetTopicConfigurations, opts...),
-		mountTopics:               connect_gateway.NewUnaryHandler(TopicServiceMountTopicsProcedure, svc.MountTopics, opts...),
-		unmountTopics:             connect_gateway.NewUnaryHandler(TopicServiceUnmountTopicsProcedure, svc.UnmountTopics, opts...),
 	}
 }
 
@@ -64,14 +60,6 @@ func (s *TopicServiceGatewayServer) UpdateTopicConfigurations(ctx context.Contex
 
 func (s *TopicServiceGatewayServer) SetTopicConfigurations(ctx context.Context, req *v1alpha2.SetTopicConfigurationsRequest) (*v1alpha2.SetTopicConfigurationsResponse, error) {
 	return s.setTopicConfigurations(ctx, req)
-}
-
-func (s *TopicServiceGatewayServer) MountTopics(ctx context.Context, req *v1alpha2.MountTopicsRequest) (*v1alpha2.MountTopicsResponse, error) {
-	return s.mountTopics(ctx, req)
-}
-
-func (s *TopicServiceGatewayServer) UnmountTopics(ctx context.Context, req *v1alpha2.UnmountTopicsRequest) (*v1alpha2.UnmountTopicsResponse, error) {
-	return s.unmountTopics(ctx, req)
 }
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService
