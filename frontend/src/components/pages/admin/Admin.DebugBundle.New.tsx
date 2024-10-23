@@ -120,7 +120,6 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
     useEffect(() => {
         void api.refreshBrokers(true);
         void api.refreshPartitions('all', true);
-        void api.refreshAdminInfo(true);
     }, []);
 
     const scramUsers = api.adminInfo?.users.filter(x => x.loginProvider === 'Plain');
