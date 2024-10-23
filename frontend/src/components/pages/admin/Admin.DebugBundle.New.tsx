@@ -18,10 +18,36 @@ import { Alert, AlertIcon, Box, Button, Checkbox, DateTimeInput, Flex, FormField
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import { FC, useEffect, useState } from 'react';
-import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth, SCRAMAuth_Mechanism } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Timestamp } from '@bufbuild/protobuf';
 import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
+
+type ErrorDebugInfo = {
+    reason?: string;
+    domain?: string;
+    fieldViolations?: Array<{
+        field: string;
+        description: string;
+    }>;
+};
+
+type ErrorDetail = {
+    type: string;
+    value: string;
+    debug?: ErrorDebugInfo;
+};
+
+// This is a tmp workaround until we figure out how to properly type response errors from the backend
+type ErrorResponse = {
+    code: string;
+    message: string;
+    details: ErrorDetail[];
+};
+
+type FieldViolationsMap = {
+    [field: string]: string;
+};
 
 @observer
 export default class AdminPageDebugBundleNew extends PageComponent<{}> {
@@ -29,7 +55,7 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
     @observable submitInProgress = false;
 
     @observable jobId: string | undefined = undefined;
-    @observable createBundleError: string | undefined = '';
+    @observable createBundleError: ErrorResponse | undefined = undefined;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Generate debug bundle';
@@ -67,29 +93,27 @@ export default class AdminPageDebugBundleNew extends PageComponent<{}> {
                         Generating bundle ...
                     </Box>}
 
-                <NewDebugBundleForm onSubmit={(data: CreateDebugBundleRequest) => {
-                    this.submitInProgress = true;
-                    this.createBundleError = undefined;
-                    api.createDebugBundle(data).then(result => {
-                        appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`)
-                    }).catch(err => {
-                        this.createBundleError = err.message;
-                    }).finally(() => {
-                        this.submitInProgress = false;
-                    });
-                }}/>
-
-                {this.createBundleError && <Alert status="error" my={4}>
-                    <AlertIcon/>
-                    {this.createBundleError}
-                </Alert>}
+                <NewDebugBundleForm
+                    onSubmit={(data: CreateDebugBundleRequest) => {
+                        this.submitInProgress = true;
+                        this.createBundleError = undefined;
+                        api.createDebugBundle(data).then(result => {
+                            appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`);
+                        }).catch((err: ErrorResponse) => {
+                            this.createBundleError = err;
+                        }).finally(() => {
+                            this.submitInProgress = false;
+                        });
+                    }}
+                    error={this.createBundleError}
+                />
             </Box>
         );
     }
 }
 
 
-const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => void }> = observer(({onSubmit}) => {
+const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => void, error?: ErrorResponse }> = observer(({ onSubmit, error }) => {
     const [advancedForm, setAdvancedForm] = useState(false);
 
     useEffect(() => {
@@ -98,10 +122,16 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
     }, []);
 
 
+    const fieldViolationsMap = error?.details?.find(({debug}) => debug?.fieldViolations)?.debug?.fieldViolations?.reduce((acc, violation) => {
+            acc[violation.field] = violation.description;
+            return acc;
+        }, {} as FieldViolationsMap)
+
     const formState = useLocalObservable(() => ({
-        scramAuth: {
+        scram: {
             username: '',
             password: '',
+            mechanism: SCRAMAuth_Mechanism.SCRAM_SHA_256
         } as SCRAMAuth,
         skipTlsVerification: false,
         brokerIds: [] as number[],
@@ -121,10 +151,10 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
 
         // Setters
         setUsername(username: string) {
-            this.scramAuth.username = username;
+            this.scram.username = username;
         },
         setPassword(password: string) {
-            this.scramAuth.password = password;
+            this.scram.password = password;
         },
         setBrokerIds(ids: number[]) {
             this.brokerIds = ids;
@@ -186,10 +216,10 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 }}
                 gap={2}
             >
-                <FormField label="SCRAM user">
+                <FormField label="SCRAM user" errorText={fieldViolationsMap?.['scram.username']} isInvalid={!!fieldViolationsMap?.['scram.username']}>
                     <Input
                         data-testid="scram-user-input"
-                        value={formState.scramAuth.username}
+                        value={formState.scram.username}
                         onChange={(e) => formState.setUsername(e.target.value)}
                     />
                 </FormField>
@@ -205,10 +235,10 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 >
                     Skip TLS verification
                 </Checkbox>
-                <FormField label="Password">
+                <FormField label="Password" errorText={fieldViolationsMap?.['scram.password']} isInvalid={!!fieldViolationsMap?.['scram.password']}>
                     <PasswordInput
                         data-testid="scram-user-password"
-                        value={formState.scramAuth.password}
+                        value={formState.scram.password}
                         onChange={(e) => formState.setPassword(e.target.value)}
                     />
                 </FormField>
@@ -226,7 +256,12 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         }}
                     />
                 </FormField>
-                <FormField label="Controller log size limit" description={'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'}>
+                <FormField
+                    label="Controller log size limit"
+                    description={'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'}
+                    errorText={fieldViolationsMap?.['controllerLogsSizeLimitBytes']}
+                    isInvalid={!!fieldViolationsMap?.['controllerLogsSizeLimitBytes']}
+                >
                     <Input
                         type="number"
                         data-testid="controller-log-size-input"
@@ -234,7 +269,12 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.valueAsNumber)}
                     />
                 </FormField>
-                <FormField label="CPU profiler wait" description="How long in seconds to collect samples for the CPU profiler. Must be higher than 15s (default 30s)">
+                <FormField
+                    label="CPU profiler wait"
+                    description="How long in seconds to collect samples for the CPU profiler. Must be higher than 15s (default 30s)"
+                    errorText={fieldViolationsMap?.['cpuProfilerWaitSeconds']}
+                    isInvalid={!!fieldViolationsMap?.['cpuProfilerWaitSeconds']}
+                >
                     <Input
                         data-testid="cpu-profiler-input"
                         value={formState.cpuProfilerWaitSeconds}
@@ -242,19 +282,34 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.valueAsNumber)}
                     />
                 </FormField>
-                <FormField label="Logs since" description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'.">
+                <FormField
+                    label="Logs since"
+                    description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'."
+                    errorText={fieldViolationsMap?.['logsSince']}
+                    isInvalid={!!fieldViolationsMap?.['logsSince']}
+                >
                     <DateTimeInput
                         value={formState.logsSince}
                         onChange={formState.setLogsSince}
                     />
                 </FormField>
-                <FormField label="Logs until" description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today').">
+                <FormField
+                    label="Logs until"
+                    description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today')."
+                    errorText={fieldViolationsMap?.['logsUntil']}
+                    isInvalid={!!fieldViolationsMap?.['logsUntil']}
+                >
                     <DateTimeInput
                         value={formState.logsUntil}
                         onChange={formState.setLogsUntil}
                     />
                 </FormField>
-                <FormField label="Logs size limit" description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB.">
+                <FormField
+                    label="Logs size limit"
+                    description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB."
+                    errorText={fieldViolationsMap?.['logsSizeLimitBytes']}
+                    isInvalid={!!fieldViolationsMap?.['logsSizeLimitBytes']}
+                >
                     <Flex gap={2}>
                         <Input
                             type="number"
@@ -295,7 +350,12 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         />
                     </Flex>
                 </FormField>
-                <FormField label="Metrics interval duration" description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)">
+                <FormField
+                    label="Metrics interval duration"
+                    description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)"
+                    errorText={fieldViolationsMap?.['metricsIntervalSeconds']}
+                    isInvalid={!!fieldViolationsMap?.['metricsIntervalSeconds']}
+                >
                     <Input
                         type="number"
                         data-testid="metrics-interval-duration-input"
@@ -303,21 +363,36 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         onChange={(e) => formState.setMetricsIntervalSeconds(e.target.valueAsNumber)}
                     />
                 </FormField>
-                <FormField label="Metrics samples" description="Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be >= 2">
+                <FormField
+                    label="Metrics samples"
+                    description="Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be >= 2"
+                    errorText={fieldViolationsMap?.['metricsSamples']}
+                    isInvalid={!!fieldViolationsMap?.['metricsSamples']}
+                >
                     <Input
                         data-testid="metrics-samples-in put"
                         value={formState.metricsSamples}
                         onChange={(e) => formState.setMetricsSamples(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Namespace" description='The namespace to use to collect the resources from (k8s only). Default "redpanda".'>
+                <FormField
+                    label="Namespace"
+                    description='The namespace to use to collect the resources from (k8s only). Default "redpanda".'
+                    errorText={fieldViolationsMap?.['namespace']}
+                    isInvalid={!!fieldViolationsMap?.['namespace']}
+                >
                     <Input
                         data-testid="namespace-input"
                         value={formState.namespace}
                         onChange={(e) => formState.setNamespace(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Partition(s)" description="Partition IDs.">a
+                <FormField
+                    label="Partition(s)"
+                    description="Partition IDs."
+                    errorText={fieldViolationsMap?.['partitions']}
+                    isInvalid={!!fieldViolationsMap?.['partitions']}
+                >
                     <Select<string>
                         isMulti
                         options={api.getTopicPartitionArray.map(x => ({
@@ -331,7 +406,12 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         }}
                     />
                 </FormField>
-                <FormField label="Label selectors" description="Label selectors to filter your resources.">
+                <FormField
+                    label="Label selectors"
+                    description="Label selectors to filter your resources."
+                    errorText={fieldViolationsMap?.['labelSelectors']}
+                    isInvalid={!!fieldViolationsMap?.['labelSelectors']}
+                >
                     {formState.labelSelectors.map((labelSelector, idx) =>
                         <Grid gap={2} key={idx} templateColumns="1fr 1fr auto">
                             <GridItem>
@@ -369,6 +449,11 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 </FormField>
             </Flex>}
 
+            {error && <Alert status="error" my={4}>
+                <AlertIcon/>
+                {error.message}
+            </Alert>}
+
             <Flex gap={2} mt={4}>
                 {advancedForm ?
                     <>
@@ -376,7 +461,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                             onSubmit(new CreateDebugBundleRequest({
                                 authentication: {
                                     case: 'scram',
-                                    value: formState.scramAuth
+                                    value: formState.scram
                                 },
                                 brokerIds: formState.brokerIds,
                                 controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,

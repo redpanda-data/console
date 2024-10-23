@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileForBroker, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
