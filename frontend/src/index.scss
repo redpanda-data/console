@@ -10,7 +10,8 @@
  */
 
 @use "sass:math";
-@import "./variables.scss";
+@use "sass:color";
+@use "variables.scss";
 
 @mixin tlrb {
   top: 0;
@@ -30,7 +31,7 @@
 // $t=0 returns $a
 // $t=1 returns $b
 @function lerp($a, $b, $t) {
-  @return mix($b, $a, $t * 100);
+  @return color.mix($b, $a, $t * 100);
 }
 
 .scroll-on-hover-y {
@@ -143,8 +144,8 @@
   display: inline-flex;
   margin-left: 10px;
 
-  background: $color-reload-spinner-bg;
-  color: $color-reload-spinner;
+  background: variables.$color-reload-spinner-bg;
+  color: variables.$color-reload-spinner;
 
   border-radius: 30px;
   place-content: center;
@@ -2159,7 +2160,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       }
 
       &:hover {
-        color: $color-brand-secondary;
+        color: variables.$color-brand-secondary;
 
         &::after {
           background: hsl(207deg 7% 76% / 14%);
