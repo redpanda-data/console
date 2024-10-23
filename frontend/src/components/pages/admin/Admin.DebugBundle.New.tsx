@@ -10,7 +10,7 @@
  */
 
 import { observer, useLocalObservable } from 'mobx-react';
-import { api, rolesApi, } from '../../../state/backendApi';
+import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -21,7 +21,7 @@ import { FC, useEffect, useState } from 'react';
 import { CreateDebugBundleRequest, LabelSelector, SCRAMAuth, SCRAMAuth_Mechanism } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Timestamp } from '@bufbuild/protobuf';
-import { AclRequestDefault, BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
+import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
 import { SingleSelect } from '../../misc/Select';
 
 type ErrorDebugInfo = {
@@ -225,17 +225,6 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         value={formState.scram.username}
                         onChange={(e) => formState.setUsername(e.target.value)}
                     />
-                    {/*<SingleSelect<string>*/}
-                    {/*    data-testid="scram-user-input"*/}
-                    {/*    options={scramUsers?.map(x => ({*/}
-                    {/*        value: x.internalIdentifier,*/}
-                    {/*        label: x.internalIdentifier,*/}
-                    {/*    })) ?? []}*/}
-                    {/*    value={formState.scram.username}*/}
-                    {/*    onChange={(e) => {*/}
-                    {/*        formState.setUsername(e)*/}
-                    {/*    }}*/}
-                    {/*/>*/}
                 </FormField>
                 <FormField label="SASL Mechanism" showRequiredIndicator>
                     <SingleSelect<SCRAMAuth_Mechanism>
