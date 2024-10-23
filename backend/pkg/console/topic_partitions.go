@@ -68,6 +68,12 @@ type TopicPartitionMetadata struct {
 
 	// Leader is the broker leader for this partition. This will be -1 on leader / listener error.
 	Leader int32 `json:"leader"`
+
+	// LeaderEpoch, proposed in KIP-320 and introduced in Kafka 2.1.0 is the
+	// epoch of the broker leader.
+	//
+	// This field has a default of -1.
+	LeaderEpoch int32 `json:"leaderEpoch"`
 }
 
 // TopicPartitionMarks contains information about the offsets for a partition.
@@ -178,6 +184,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 					OfflineReplicas: partition.OfflineReplicas,
 					InSyncReplicas:  partition.InSyncReplicas,
 					Leader:          partition.Leader,
+					LeaderEpoch:     partition.LeaderEpoch,
 				},
 				TopicPartitionMarks: &TopicPartitionMarks{
 					PartitionID:     partitionMarks.PartitionID,
@@ -247,6 +254,7 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 			metadata.InSyncReplicas = partition.ISR
 			metadata.Replicas = partition.Replicas
 			metadata.Leader = partition.Leader
+			metadata.LeaderEpoch = partition.LeaderEpoch
 			metadata.OfflineReplicas = partition.OfflineReplicas
 			partitionInfo[i] = TopicPartitionDetails{
 				&metadata,
