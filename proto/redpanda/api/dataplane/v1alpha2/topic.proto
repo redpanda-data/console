@@ -227,61 +227,6 @@ message SetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
-message MountTopicsRequest {
-  // TopicMount defines the migration of a topic from the cloud storage into this cluster,
-  // so that it becomes available via the Kafka API.
-  message TopicMount {
-    // SourceTopic is the topic name we want to mount.
-    string source_topic = 1 [
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.min_len = 1,
-      (buf.validate.field).string.max_len = 249,
-      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
-    ];
-    // Alias may be provided to mount the topic under a different alias.
-    optional string alias = 2 [
-      (buf.validate.field).string.min_len = 1,
-      (buf.validate.field).string.max_len = 249,
-      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
-    ];
-  }
-
-  repeated TopicMount topics = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated = {
-      min_items: 1
-      max_items: 1024
-    }
-  ];
-}
-
-message MountTopicsResponse {
-  int32 migration_id = 1;
-}
-
-message UnmountTopicsRequest {
-  // Topics is the list of topics to unmount.
-  repeated string topics = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated = {
-      min_items: 1
-      max_items: 1024
-      unique: true
-      items: {
-        string: {
-          min_len: 1
-          max_len: 249
-          pattern: "^[a-zA-Z0-9._\\-]*$"
-        }
-      }
-    }
-  ];
-}
-
-message UnmountTopicsResponse {
-  int32 migration_id = 1;
-}
-
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda Cloud topics."};
 
@@ -415,66 +360,6 @@ service TopicService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.SetTopicConfigurationsResponse"}
-          }
-        }
-      }
-      responses: {
-        key: "404"
-        value: {
-          description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
-    };
-  }
-
-  rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha2/topics/mount"
-      body: "topics"
-      response_body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Mount topics from tiered storage"
-      description: "TThis operation restores topics that were offloaded to tiered storage, making them available for consumption and production again. Remounting a topic reloads its data and state to the local brokers, allowing active use of the topic while consuming some cluster resources."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.MountTopicsResponse"}
-          }
-        }
-      }
-      responses: {
-        key: "404"
-        value: {
-          description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
-        }
-      }
-    };
-  }
-
-  rpc UnmountTopics(UnmountTopicsRequest) returns (UnmountTopicsResponse) {
-    option (google.api.http) = {
-      post: "/v1alpha2/topics/unmount"
-      body: "topics"
-      response_body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Unmount topics to tiered storage"
-      description: "This operation offloads topics to tiered storage, freeing up all local cluster resources. Once a topic is unmounted, it can no longer be consumed or produced, effectively disappearing from the active cluster while its data remains safely stored in the external tiered storage."
-      responses: {
-        key: "200"
-        value: {
-          description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UnmountTopicsResponse"}
           }
         }
       }

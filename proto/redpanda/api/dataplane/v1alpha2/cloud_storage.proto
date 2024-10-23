@@ -1,0 +1,399 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha2;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message MountTopicsRequest {
+  // TopicMount defines the migration of a topic from the cloud storage into this cluster,
+  // so that it becomes available via the Kafka API.
+  message TopicMount {
+    // SourceTopic is the topic name or full reference we want to mount. The full reference
+    // must be used in case the same topic exists more than once. This may be the case if
+    // the same topic has been unmounted multiple times. List all mountable topics to
+    // find the full reference (contains topic name, cluster uuid and revision).
+    string source_topic_reference = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1
+    ];
+    // Alias may be provided to mount the topic under a different alias. Leave
+    // blank to re-use the source topic name.
+    string alias = 2 [
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
+  }
+
+  repeated TopicMount topics = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 1024
+    }
+  ];
+}
+
+message MountTopicsResponse {
+  int32 migration_id = 1;
+}
+
+message UnmountTopicsRequest {
+  // Topics is the list of topics to unmount.
+  repeated string topics = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 1024
+      unique: true
+      items: {
+        string: {
+          min_len: 1
+          max_len: 249
+          pattern: "^[a-zA-Z0-9._\\-]*$"
+        }
+      }
+    }
+  ];
+}
+
+message UnmountTopicsResponse {
+  int32 migration_id = 1;
+}
+
+message ListMountableTopicsRequest {}
+
+message ListMountableTopicsResponse {
+  message TopicLocation {
+    // Name is the topic name.
+    string name = 1;
+    // TopicLocation is an unique identifier for the unmounted topic in this format: topic-name/cluster-uuid/revision.
+    string topic_location = 2;
+  }
+
+  repeated TopicLocation topics = 1;
+}
+
+message MountTask {
+  message Topic {
+    // The topic reference within the current cluster, which may be either a simple topic name or a full reference
+    // in the form: cluster-uuid/topic-name/revision.
+    string topic_reference = 1;
+    // The topic reference in the source cloud storage bucket.
+    // This field is only set for tasks of type MOUNT.
+    string source_topic_reference = 2;
+  }
+
+  enum Type {
+    // Unspecified is the default value and indicates an invalid or unknown task type.
+    TYPE_UNSPECIFIED = 0;
+    // Mount represents the process of making topics available by loading them from cloud storage.
+    TYPE_MOUNT = 1;
+    // Unmount represents the process of offloading topics back to cloud storage.
+    TYPE_UNMOUNT = 2;
+  }
+
+  enum State {
+    // Unspecified is the default value, indicating an invalid or unrecognized state.
+    STATE_UNSPECIFIED = 0;
+    // Planned: The mount task has been created and is awaiting further actions.
+    STATE_PLANNED = 1;
+    // Preparing: The mount task is gathering resources and preparing for execution.
+    STATE_PREPARING = 2;
+    // Prepared: All preparations are complete, and the mount task is ready to be executed.
+    STATE_PREPARED = 3;
+    // Executing: The mount task is actively transferring or transforming data.
+    STATE_EXECUTING = 4;
+    // Executed: The core mount task actions are complete, but the mount task has not yet cut over or finalized.
+    STATE_EXECUTED = 5;
+    // Cut Over: The mount task has reached a critical point where ownership is transferred or final adjustments are made.
+    STATE_CUT_OVER = 6;
+    // Finished: The mount task has been successfully completed, and no further actions are required.
+    STATE_FINISHED = 7;
+    // Canceling: The mount task is in the process of being canceled, and rollback or cleanup actions may be in progress.
+    STATE_CANCELING = 8;
+    // Cancelled: The mount task has been fully canceled, and no further actions will be taken.
+    STATE_CANCELLED = 9;
+  }
+
+  // Id is the unique identifier for this migration task.
+  int32 id = 1;
+  // State describes the current state of the mount task (e.g. "cancelled").
+  State state = 2;
+  // Type describes the type of this task (mount or unmount).
+  Type type = 3;
+  // Topics is the list of topics that are being mounted or unmounted.
+  repeated Topic topics = 4;
+}
+
+message ListMountTasksRequest {}
+
+message ListMountTasksResponse {
+  repeated MountTask tasks = 1;
+}
+
+message GetMountTaskRequest {
+  // ID is the unique identifier of the mount task to retrieve.
+  int32 id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetMountTaskResponse {
+  MountTask task = 1;
+}
+
+message DeleteMountTaskRequest {
+  // ID is the unique identifier of the mount task to delete.
+  int32 id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message DeleteMountTaskResponse {}
+
+message UpdateMountTaskRequest {
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_PREPARE = 1;
+    ACTION_EXECUTE = 2;
+    ACTION_FINISH = 3;
+    ACTION_CANCEL = 4;
+  }
+
+  // ID is the unique identifier of the mount task to delete.
+  int32 id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Action is the action to execute on mount task.
+  Action action = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0] /* Disallow: Unspecified */
+    }
+  ];
+}
+
+message UpdateMountTaskResponse {}
+
+service CloudStorageService {
+  rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha2/cloud-storage/topics/mount"
+      body: "topics"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Mount topics from tiered storage"
+      description: "This operation restores topics that were offloaded to tiered storage, making them available for consumption and production again. Remounting a topic reloads its data and state to the local brokers, allowing active use of the topic while consuming some cluster resources."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.MountTopicsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc UnmountTopics(UnmountTopicsRequest) returns (UnmountTopicsResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha2/cloud-storage/topics/unmount"
+      body: "topics"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Unmount topics to tiered storage"
+      description: "This operation offloads topics to tiered storage, freeing up all local cluster resources. Once a topic is unmounted, it can no longer be consumed or produced, effectively disappearing from the active cluster while its data remains safely stored in the external tiered storage."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UnmountTopicsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc ListMountableTopics(ListMountableTopicsRequest) returns (ListMountableTopicsResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha2/cloud-storage/topics/mountable"
+      response_body: "topics"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Retrieve a list of mountable topics"
+      description: "This operation retrieves all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in cloud storage and can be mounted for consumption or production within the cluster."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListMountableTopicsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc ListMountTasks(ListMountTasksRequest) returns (ListMountTasksResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha2/cloud-storage/mount-tasks"
+      response_body: "tasks"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Retrieve the mount task status"
+      description:
+        "This operation retrieves the status of a task responsible for mounting or unmounting topics. "
+        "It provides details on the task’s type (mount or unmount), its current state, and the topics involved."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListMountTasksResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc GetMountTask(GetMountTaskRequest) returns (GetMountTaskResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha2/cloud-storage/mount-tasks/{id}"
+      response_body: "task"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Retrieve the mount task status"
+      description:
+        "This operation retrieves the status of a task responsible for mounting or unmounting topics. "
+        "It provides details on the task’s type (mount or unmount), its current state, and the topics involved."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetMountTaskResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc DeleteMountTask(DeleteMountTaskRequest) returns (DeleteMountTaskResponse) {
+    option (google.api.http) = {
+      delete: "/v1alpha2/cloud-storage/mount-tasks/{id}"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete a mount task"
+      description: "This operation deletes a mount task."
+      responses: {
+        key: "202"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.DeleteMountTaskResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc UpdateMountTask(UpdateMountTaskRequest) returns (UpdateMountTaskResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha2/cloud-storage/mount-tasks/{id}"
+      response_body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update a mount task"
+      description: "This operation allows performing an action on an ongoing mount task."
+      responses: {
+        key: "201"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.UpdateMountTaskResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}
