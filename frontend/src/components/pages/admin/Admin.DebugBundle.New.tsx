@@ -228,7 +228,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                         })) ?? []}
                         value={formState.scram.username}
                         onChange={(e) => {
-                            formState.scram.username = e;
+                            formState.setUsername(e)
                         }}
                     />
                 </FormField>
