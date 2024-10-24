@@ -10,7 +10,7 @@ import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1
 
 const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
     [UnhealthyReason.UNSPECIFIED]: 'Unknown reason',
-    [UnhealthyReason.NODES_DOWN]: 'Nodes down',
+    [UnhealthyReason.NODES_DOWN]: 'Unreachable brokers',
     [UnhealthyReason.LEADERLESS_PARTITIONS]: 'Leaderless partitions',
     [UnhealthyReason.UNDER_REPLICATED_PARTITIONS]: 'Under-replicated partitions',
     [UnhealthyReason.NO_ELECTED_CONTROLLER]: 'No elected controller',
@@ -35,7 +35,7 @@ const ClusterHealthOverview = () => {
                         templateColumns={{sm: '1fr', md: '1fr 1fr'}}
                         gap={4}
                     >
-                        <Box fontWeight="bold">Down nodes</Box>
+                        <Box fontWeight="bold">Unreachable brokers</Box>
                         <Flex gap={1}>
                             {api.clusterHealth?.nodesDown && api.clusterHealth?.nodesDown.length > 0 &&
                                 <MdError color={colors.brandError} size={18} />
