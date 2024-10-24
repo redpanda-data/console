@@ -122,19 +122,15 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
         void api.refreshPartitions('all', true);
     }, []);
 
-    const scramUsers = api.adminInfo?.users.filter(x => x.loginProvider === 'Plain');
-
     const fieldViolationsMap = error?.details?.find(({debug}) => debug?.fieldViolations)?.debug?.fieldViolations?.reduce((acc, violation) => {
             acc[violation.field] = violation.description;
             return acc;
         }, {} as FieldViolationsMap)
 
     const formState = useLocalObservable(() => ({
-        scram: {
-            username: '',
-            password: '',
-            mechanism: SCRAMAuth_Mechanism.SCRAM_SHA_256
-        } as SCRAMAuth,
+        scramUsername: undefined as string | undefined,
+        scramPassword: undefined as string | undefined,
+        scramMechanism: SCRAMAuth_Mechanism.SCRAM_SHA_256 as SCRAMAuth_Mechanism,
         skipTlsVerification: false,
         brokerIds: [] as number[],
         tlsEnabled: false,
@@ -153,10 +149,10 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
 
         // Setters
         setUsername(username: string) {
-            this.scram.username = username;
+            this.scramUsername = username;
         },
         setPassword(password: string) {
-            this.scram.password = password;
+            this.scramPassword = password;
         },
         setBrokerIds(ids: number[]) {
             this.brokerIds = ids;
@@ -221,7 +217,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 <FormField label="SCRAM user" errorText={fieldViolationsMap?.['scram.username']} isInvalid={!!fieldViolationsMap?.['scram.username']}>
                     <Input
                         data-testid="scram-user-input"
-                        value={formState.scram.username}
+                        value={formState.scramUsername}
                         onChange={(e) => formState.setUsername(e.target.value)}
                     />
                 </FormField>
@@ -237,9 +233,9 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                                 label: 'SCRAM-SHA-512',
                             },
                         ]}
-                        value={formState.scram.mechanism}
+                        value={formState.scramMechanism}
                         onChange={(e) => {
-                            formState.scram.mechanism = e;
+                            formState.scramMechanism = e;
                         }}
                     />
                 </FormField>
@@ -258,7 +254,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                 <FormField label="Password" errorText={fieldViolationsMap?.['scram.password']} isInvalid={!!fieldViolationsMap?.['scram.password']}>
                     <PasswordInput
                         data-testid="scram-user-password"
-                        value={formState.scram.password}
+                        value={formState.scramPassword}
                         onChange={(e) => formState.setPassword(e.target.value)}
                     />
                 </FormField>
@@ -479,10 +475,14 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
                     <>
                         <Button onClick={() => {
                             onSubmit(new CreateDebugBundleRequest({
-                                authentication: {
+                                authentication: (formState.scramUsername || formState.scramPassword) ? {
                                     case: 'scram',
-                                    value: formState.scram
-                                },
+                                    value: {
+                                        username: formState.scramUsername,
+                                        password: formState.scramPassword,
+                                        mechanism: formState.scramMechanism,
+                                    } as SCRAMAuth
+                                } : undefined,
                                 brokerIds: formState.brokerIds,
                                 controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
                                 cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
