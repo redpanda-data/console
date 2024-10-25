@@ -47,41 +47,47 @@ export default class AdminPage extends PageComponent {
         if (api.adminInfo === undefined) return DefaultSkeleton;
         const hasAdminPermissions = api.adminInfo !== null;
 
+        const items = [
+            {
+                key: 'users',
+                name: 'Users',
+                component: <AdminUsers />
+            },
+            {
+                key: 'roles',
+                name: 'Roles',
+                component: <AdminRoles />
+            },
+            {
+                key: 'permissionsDebug',
+                name: 'Permissions debug',
+                component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
+            },
+        ]
+
+        if(api.userData?.canViewDebugBundle) {
+            items.push({
+                key: 'debugBundle',
+                name: 'Debug bundle',
+                component: <AdminDebugBundle/>
+            });
+        }
+
+        items.push({
+            key: 'licenses',
+            name: 'License details',
+            component: <AdminLicenses />
+        })
+
         return <PageContent>
             <Section>
                 {hasAdminPermissions ?
-                    <Tabs size="lg" items={[
-                        {
-                            key: 'users',
-                            name: 'Users',
-                            component: <AdminUsers />
-                        },
-                        {
-                            key: 'roles',
-                            name: 'Roles',
-                            component: <AdminRoles />
-                        },
-                        {
-                            key: 'permissionsDebug',
-                            name: 'Permissions debug',
-                            component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
-                        },
-                        {
-                            key: 'debugBundle',
-                            name: 'Debug bundle',
-                            component: <AdminDebugBundle />
-                        },
-                        {
-                            key: 'licenses',
-                            name: 'License details',
-                            component: <AdminLicenses />
-                        },
-                    ]} />
+                    <Tabs size="lg" items={items} />
 
                     : <div>
                         <Alert status="error">
                             <AlertIcon />
-                            You do not have the neccesary permissions to view this page.
+                            You do not have the necessary permissions to view this page.
                         </Alert>
                     </div>
                 }
