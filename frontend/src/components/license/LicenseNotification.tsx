@@ -3,10 +3,11 @@ import { observer } from 'mobx-react';
 import { api } from '../../state/backendApi';
 import { getPrettyTimeToExpiration, licenseCanExpire, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
+import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 export const LicenseNotification = observer(() => {
     const location = useLocation();
-    const expiredLicenses = api.licenses.filter(licenseIsExpired) ?? [];
+    const expiredLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type !== License_Type.TRIAL) ?? [];
     const soonToExpireLicenses = api.licenses
             .filter(licenseSoonToExpire)
             .filter(licenseCanExpire)
