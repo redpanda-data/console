@@ -152,10 +152,16 @@ message GetDebugBundleStatusResponse {
     // The broker ID.
     int32 broker_id = 1;
 
+    // The broker URL used to get the status.
+    string broker_url = 2;
+
+    // Whether the broker URL was determined speculatively.
+    bool speculative = 3;
+
     // The value of the status, either Bundle Error or status.
     oneof value {
-      BundleError error = 2;
-      DebugBundleStatus bundle_status = 3;
+      BundleError error = 4;
+      DebugBundleStatus bundle_status = 5;
     }
   }
 
@@ -214,11 +220,17 @@ message BundleError {
   // The broker ID.
   int32 broker_id = 1;
 
+  // The broker URL used to get the status.
+  string broker_url = 2;
+
+  // Whether the broker URL was determined speculatively.
+  bool speculative = 3;
+
   // The error code.
-  BundleErrorCode code = 2;
+  BundleErrorCode code = 4;
 
   // Additional information
-  string message = 3;
+  string message = 5;
 }
 
 // Error code enum.

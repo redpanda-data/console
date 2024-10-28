@@ -666,19 +666,33 @@ export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Messag
   brokerId = 0;
 
   /**
+   * The broker URL used to get the status.
+   *
+   * @generated from field: string broker_url = 2;
+   */
+  brokerUrl = "";
+
+  /**
+   * Whether the broker URL was determined speculatively.
+   *
+   * @generated from field: bool speculative = 3;
+   */
+  speculative = false;
+
+  /**
    * The value of the status, either Bundle Error or status.
    *
    * @generated from oneof redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus.value
    */
   value: {
     /**
-     * @generated from field: redpanda.api.console.v1alpha1.BundleError error = 2;
+     * @generated from field: redpanda.api.console.v1alpha1.BundleError error = 4;
      */
     value: BundleError;
     case: "error";
   } | {
     /**
-     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus bundle_status = 3;
+     * @generated from field: redpanda.api.console.v1alpha1.DebugBundleStatus bundle_status = 5;
      */
     value: DebugBundleStatus;
     case: "bundleStatus";
@@ -693,8 +707,10 @@ export class GetDebugBundleStatusResponse_DebugBundleBrokerStatus extends Messag
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse.DebugBundleBrokerStatus";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "error", kind: "message", T: BundleError, oneof: "value" },
-    { no: 3, name: "bundle_status", kind: "message", T: DebugBundleStatus, oneof: "value" },
+    { no: 2, name: "broker_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "speculative", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "error", kind: "message", T: BundleError, oneof: "value" },
+    { no: 5, name: "bundle_status", kind: "message", T: DebugBundleStatus, oneof: "value" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse_DebugBundleBrokerStatus {
@@ -944,16 +960,30 @@ export class BundleError extends Message<BundleError> {
   brokerId = 0;
 
   /**
+   * The broker URL used to get the status.
+   *
+   * @generated from field: string broker_url = 2;
+   */
+  brokerUrl = "";
+
+  /**
+   * Whether the broker URL was determined speculatively.
+   *
+   * @generated from field: bool speculative = 3;
+   */
+  speculative = false;
+
+  /**
    * The error code.
    *
-   * @generated from field: redpanda.api.console.v1alpha1.BundleErrorCode code = 2;
+   * @generated from field: redpanda.api.console.v1alpha1.BundleErrorCode code = 4;
    */
   code = BundleErrorCode.OK;
 
   /**
    * Additional information
    *
-   * @generated from field: string message = 3;
+   * @generated from field: string message = 5;
    */
   message = "";
 
@@ -966,8 +996,10 @@ export class BundleError extends Message<BundleError> {
   static readonly typeName = "redpanda.api.console.v1alpha1.BundleError";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "code", kind: "enum", T: proto3.getEnumType(BundleErrorCode) },
-    { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "broker_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "speculative", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "code", kind: "enum", T: proto3.getEnumType(BundleErrorCode) },
+    { no: 5, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BundleError {
