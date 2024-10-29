@@ -108,7 +108,7 @@ func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
+		return nil, fmt.Errorf("failed to test redpanda admin api connection: %w", err)
 	}
 
 	return &Service{
