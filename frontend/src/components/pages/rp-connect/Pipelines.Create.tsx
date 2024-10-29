@@ -15,7 +15,7 @@ import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
-import { Box, Button, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, Text, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { pipelinesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -174,6 +174,11 @@ export const PipelineEditor = observer((p: {
                         language="yaml"
                     />
                 </Flex>
+                {isKafkaConnectPipeline(p.yaml) && <Alert status="error" my={2}>
+                    <AlertIcon />
+                    <Text>
+                        This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations, <ChLink target="_blank" href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/">see our quickstart documentation</ChLink>.</Text>
+                </Alert>}
             </Box>
         },
         {
@@ -183,3 +188,55 @@ export const PipelineEditor = observer((p: {
         },
     ]} />
 });
+
+
+
+/**
+ * Determines whether a given string represents a Kafka Connect configuration.
+ *
+ * This function first attempts to parse the input as JSON. If the parsing is successful,
+ * it checks for the presence of specific Kafka Connect-related keys commonly found in
+ * configurations, such as "connector.class", "key.converter", and "value.converter".
+ *
+ * @param {string | undefined} value - The input string to evaluate as a potential Kafka Connect configuration.
+ * @returns {boolean} - Returns `true` if the string is a valid JSON object containing
+ *                      at least a subset of Kafka Connect configuration keys; otherwise, returns `false`.
+ *
+ * @example
+ * ```typescript
+ * const configString = `{
+ *     "connector.class": "com.ibm.eventstreams.connect.mqsink.MQSinkConnector",
+ *     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+ *     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
+ * }`;
+ *
+ * const result = isKafkaConnectPipeline(configString);
+ * console.log(result); // Output: true
+ * ```
+ */
+const isKafkaConnectPipeline = (value: string | undefined): boolean => {
+    if (value === undefined) {
+        return false;
+    }
+    // Attempt to parse the input string as JSON
+    let json: object;
+    try {
+        json = JSON.parse(value);
+    } catch (e) {
+        // If parsing fails, it's not a valid JSON and hence not a Kafka Connect config
+        return false;
+    }
+
+    const kafkaConfigKeys = [
+        'connector.class',
+        'key.converter',
+        'value.converter',
+        'header.converter',
+        'tasks.max.enforce',
+        'errors.log.enable',
+    ];
+
+    const matchCount = kafkaConfigKeys.filter(key => key in json).length;
+
+    return matchCount > 0;
+};
