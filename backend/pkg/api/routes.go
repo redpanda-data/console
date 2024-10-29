@@ -149,6 +149,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
 			dataplanev1alpha2connect.TransformServiceName:     transformSvc,
 			dataplanev1alpha2connect.KafkaConnectServiceName:  kafkaConnectSvc,
+			dataplanev1alpha2connect.CloudStorageServiceName:  dataplanev1alpha2connect.UnimplementedCloudStorageServiceHandler{},
 		},
 	})
 
