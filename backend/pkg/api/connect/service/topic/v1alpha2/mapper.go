@@ -12,7 +12,6 @@ package topic
 import (
 	"fmt"
 
-	"github.com/redpanda-data/common-go/rpadmin"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1alpha2"
@@ -219,37 +218,4 @@ func (*mapper) setTopicConfigurationsResourceToKafka(req *v1alpha2.SetTopicConfi
 	kafkaReq.Value = req.Value
 
 	return kafkaReq
-}
-
-func (*mapper) topicMountRequestToAdminAPI(req *v1alpha2.MountTopicsRequest) rpadmin.MountConfiguration {
-	topics := make([]rpadmin.InboundTopic, len(req.Topics))
-	for i, topic := range req.Topics {
-		var alias *rpadmin.NamespacedTopic
-		if topic.Alias != nil {
-			alias = &rpadmin.NamespacedTopic{
-				Namespace: kmsg.StringPtr("kafka"),
-				Topic:     *topic.Alias,
-			}
-		}
-
-		topics[i] = rpadmin.InboundTopic{
-			SourceTopic: rpadmin.NamespacedTopic{Topic: topic.SourceTopic},
-			Alias:       alias,
-		}
-	}
-
-	return rpadmin.MountConfiguration{Topics: topics}
-}
-
-func (*mapper) topicUnmountRequestToAdminAPI(req *v1alpha2.UnmountTopicsRequest) rpadmin.UnmountConfiguration {
-	namespacedTopics := make([]rpadmin.NamespacedTopic, len(req.Topics))
-	for i, topic := range req.Topics {
-		namespacedTopics[i] = rpadmin.NamespacedTopic{
-			Topic: topic,
-		}
-	}
-
-	return rpadmin.UnmountConfiguration{
-		Topics: namespacedTopics,
-	}
 }
