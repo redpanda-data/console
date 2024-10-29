@@ -911,7 +911,7 @@ components:
     MountTask:
       properties:
         id:
-          description: Id is the unique identifier for this migration task.
+          description: Id is the unique identifier for this mount task.
           format: int32
           type: integer
         state:
@@ -969,7 +969,7 @@ components:
       type: string
     MountTopicsResponse:
       properties:
-        migration_id:
+        mount_task_id:
           format: int32
           type: integer
       type: object
@@ -1356,7 +1356,7 @@ components:
       type: object
     UnmountTopicsResponse:
       properties:
-        migration_id:
+        mount_task_id:
           format: int32
           type: integer
       type: object
@@ -3781,7 +3781,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

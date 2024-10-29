@@ -39,7 +39,7 @@ message MountTopicsRequest {
 }
 
 message MountTopicsResponse {
-  int32 migration_id = 1;
+  int32 mount_task_id = 1;
 }
 
 message UnmountTopicsRequest {
@@ -63,7 +63,7 @@ message UnmountTopicsRequest {
 }
 
 message UnmountTopicsResponse {
-  int32 migration_id = 1;
+  int32 mount_task_id = 1;
 }
 
 message ListMountableTopicsRequest {}
@@ -121,7 +121,7 @@ message MountTask {
     STATE_CANCELLED = 9;
   }
 
-  // Id is the unique identifier for this migration task.
+  // Id is the unique identifier for this mount task.
   int32 id = 1;
   // State describes the current state of the mount task (e.g. "cancelled").
   State state = 2;

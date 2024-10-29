@@ -102,9 +102,9 @@ export class MountTopicsRequest_TopicMount extends Message<MountTopicsRequest_To
  */
 export class MountTopicsResponse extends Message<MountTopicsResponse> {
   /**
-   * @generated from field: int32 migration_id = 1;
+   * @generated from field: int32 mount_task_id = 1;
    */
-  migrationId = 0;
+  mountTaskId = 0;
 
   constructor(data?: PartialMessage<MountTopicsResponse>) {
     super();
@@ -114,7 +114,7 @@ export class MountTopicsResponse extends Message<MountTopicsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha2.MountTopicsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "migration_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "mount_task_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MountTopicsResponse {
@@ -178,9 +178,9 @@ export class UnmountTopicsRequest extends Message<UnmountTopicsRequest> {
  */
 export class UnmountTopicsResponse extends Message<UnmountTopicsResponse> {
   /**
-   * @generated from field: int32 migration_id = 1;
+   * @generated from field: int32 mount_task_id = 1;
    */
-  migrationId = 0;
+  mountTaskId = 0;
 
   constructor(data?: PartialMessage<UnmountTopicsResponse>) {
     super();
@@ -190,7 +190,7 @@ export class UnmountTopicsResponse extends Message<UnmountTopicsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1alpha2.UnmountTopicsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "migration_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "mount_task_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnmountTopicsResponse {
@@ -330,7 +330,7 @@ export class ListMountableTopicsResponse_TopicLocation extends Message<ListMount
  */
 export class MountTask extends Message<MountTask> {
   /**
-   * Id is the unique identifier for this migration task.
+   * Id is the unique identifier for this mount task.
    *
    * @generated from field: int32 id = 1;
    */
