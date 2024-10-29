@@ -141,7 +141,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                             <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
                                 <Input
                                     data-testid="create-role__role-name"
-                                    pattern="[a-zA-Z0-9_\-]+"
+                                    // pattern="[a-zA-Z0-9_\-]+"
                                     isDisabled={editMode}
                                     isRequired
                                     value={formState.roleName}

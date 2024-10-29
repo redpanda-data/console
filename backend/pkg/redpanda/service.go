@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -299,6 +300,8 @@ func (s *Service) GetRole(ctx context.Context, roleName string) (adminapi.RoleDe
 
 // UpdateRoleMembership updates the role membership using Redpanda Admin API.
 func (s *Service) UpdateRoleMembership(ctx context.Context, roleName string, add, remove []adminapi.RoleMember, createRole bool) (adminapi.PatchRoleResponse, error) {
+	log.Printf("UpdateRoleMembership called with roleName: %s, add: %v, remove: %v, createRole: %t",
+		roleName, add, remove, createRole)
 	return s.adminClient.UpdateRoleMembership(ctx, roleName, add, remove, createRole)
 }
 
