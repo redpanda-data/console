@@ -7,10 +7,10 @@ import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/licen
 
 export const LicenseNotification = observer(() => {
     const location = useLocation();
-    const visibleExpiredLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type !== License_Type.TRIAL) ?? [];
+    const visibleExpiredLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type === License_Type.ENTERPRISE) ?? [];
     const soonToExpireLicenses = api.licenses
-            .filter(licenseSoonToExpire)
-            .filter(licenseCanExpire)
+            .filter(license => licenseSoonToExpire(license))
+            .filter(license => licenseCanExpire(license))
         ?? [];
 
     const showSomeLicenseExpirationInfo = visibleExpiredLicenses.length || soonToExpireLicenses.length;
