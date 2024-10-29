@@ -21,13 +21,12 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Badge, Box, Button, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import SearchBar from '../../misc/SearchBar';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 import { Features } from '../../../state/supportedFeatures';
 import {isServerless} from '../../../config';
-import { Link as ReactRouterLink } from 'react-router-dom';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
