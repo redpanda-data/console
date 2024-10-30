@@ -140,8 +140,8 @@ message ListMountTasksResponse {
 message GetMountTaskRequest {
   // ID is the unique identifier of the mount task to retrieve.
   int32 id = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
+    // We won't add validation required here, because 0 may be a valid id.
+    (google.api.field_behavior) = REQUIRED
   ];
 }
 
@@ -151,10 +151,7 @@ message GetMountTaskResponse {
 
 message DeleteMountTaskRequest {
   // ID is the unique identifier of the mount task to delete.
-  int32 id = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
+  int32 id = 1 [(google.api.field_behavior) = REQUIRED /* We won't add validation required here, because 0 may be a valid id. */];
 }
 
 message DeleteMountTaskResponse {}
@@ -169,10 +166,7 @@ message UpdateMountTaskRequest {
   }
 
   // ID is the unique identifier of the mount task to delete.
-  int32 id = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
+  int32 id = 1 [(google.api.field_behavior) = REQUIRED /* We won't add validation required here, because 0 may be a valid id. */];
 
   // Action is the action to execute on mount task.
   Action action = 2 [
