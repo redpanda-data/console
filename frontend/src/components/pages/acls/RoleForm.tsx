@@ -121,7 +121,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         title: `Role ${newRole.roleName} successfully ${editMode ? 'updated' : 'created'}`
                     });
 
-                    history.push(`/security/roles/${newRole.roleName}/details`);
+                    history.push(`/security/roles/${encodeURIComponent(newRole.roleName)}/details`);
                 }
                 catch (err) {
                     toast({
@@ -141,7 +141,8 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                             <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
                                 <Input
                                     data-testid="create-role__role-name"
-                                    // pattern="[a-zA-Z0-9_\-]+"
+                                    pattern="^[^,=]+$"
+                                    title="Please avoid using commas or equal signs."
                                     isDisabled={editMode}
                                     isRequired
                                     value={formState.roleName}
@@ -256,7 +257,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                             Create
                         </Button>}
                     {editMode ? <Button variant="link" onClick={() => {
-                        appGlobal.history.push(`/security/roles/${initialData?.roleName}/details`);
+                            appGlobal.history.push(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
                     }}>
                         Go back
                     </Button> :
