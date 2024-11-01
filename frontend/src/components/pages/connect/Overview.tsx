@@ -21,7 +21,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Box, DataTable, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import SearchBar from '../../misc/SearchBar';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
@@ -32,7 +32,7 @@ import {isServerless} from '../../../config';
 class KafkaConnectOverview extends PageComponent {
     initPage(p: PageInitHelper): void {
         p.title = 'Overview';
-        p.addBreadcrumb('Connectors', '/connect-clusters');
+        p.addBreadcrumb('Connect', '/connect-clusters');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -55,13 +55,24 @@ class KafkaConnectOverview extends PageComponent {
         const tabs = [
             {
                 key: 'redpandaConnect',
-                title: <Box minWidth="180px">Redpanda Connect</Box>,
-                content: <TabRedpandaConnect />,
+                title: <Box minWidth="180px">Redpanda Connect <Badge ml={2}>Recommended</Badge></Box>,
+                content:
+                    <Box>
+                        <Text mb={4}>
+                            Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors. <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">Learn more.</Link>
+                        </Text>
+                        <TabRedpandaConnect />
+                    </Box>,
             },
             {
                 key: 'kafkaConnect',
                 title: <Box minWidth="180px">Kafka Connect</Box>,
-                content: <TabKafkaConnect />
+                content:
+                <Box>
+                    <Text mb={4}>
+                        Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with different data systems. <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">Learn more.</Link></Text>
+                    <TabKafkaConnect />
+                </Box>
             },
         ] as Tab[];
 
@@ -70,6 +81,9 @@ class KafkaConnectOverview extends PageComponent {
 
         return (
             <PageContent>
+                <Text>
+                    There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka Connect.
+                </Text>
                 {tabs.length == 1
                     ? (typeof tabs[0].content == 'function'
                             ? tabs[0].content()

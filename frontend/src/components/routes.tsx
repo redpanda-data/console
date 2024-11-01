@@ -282,7 +282,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true,
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')
