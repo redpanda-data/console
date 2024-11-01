@@ -424,7 +424,7 @@ const RolesTab = observer(() => {
                             cell: (ctx) => {
                                 const entry = ctx.row.original;
                                 return <>
-                                    <ChakraLink as={ReactRouterLink} to={`/security/roles/${entry.name}/details`}
+                                    <ChakraLink as={ReactRouterLink} to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
                                         textDecoration="none">
                                         {entry.name}
                                     </ChakraLink>
