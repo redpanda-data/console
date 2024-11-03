@@ -248,8 +248,8 @@ service CloudStorageService {
       response_body: "topics"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Retrieve a list of mountable topics"
-      description: "This operation retrieves all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in cloud storage and can be mounted for consumption or production within the cluster."
+      summary: "List mountable topics"
+      description: "Retrieve all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in object storage and can be mounted for consumption or production within the cluster."
       responses: {
         key: "200"
         value: {
@@ -308,10 +308,10 @@ service CloudStorageService {
       response_body: "task"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Retrieve the mount task status"
+      summary: "Get the status of a mount or unmount by ID"
       description:
-        "This operation retrieves the status of a task responsible for mounting or unmounting topics. "
-        "It provides details on the task’s type (mount or unmount), its current state, and the topics involved."
+        "Retrieves the status of a mount or unmount by ID."
+        "The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs."
       responses: {
         key: "200"
         value: {
@@ -365,10 +365,11 @@ service CloudStorageService {
   rpc UpdateMountTask(UpdateMountTaskRequest) returns (UpdateMountTaskResponse) {
     option (google.api.http) = {
       post: "/v1alpha2/cloud-storage/mount-tasks/{id}"
+      body: "*"
       response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update a mount task"
+      summary: "Update a mount or unmount"
       description: "This operation allows performing an action on an ongoing mount task."
       responses: {
         key: "201"
