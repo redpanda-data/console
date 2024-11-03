@@ -1854,7 +1854,7 @@ paths:
       tags:
         - CloudStorageService
     get:
-      description: This operation retrieves the status of a task responsible for mounting or unmounting topics. It provides details on the task’s type (mount or unmount), its current state, and the topics involved.
+      description: Retrieves the status of a mount or unmount by ID.The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs.
       operationId: CloudStorageService_GetMountTask
       parameters:
         - description: ID is the unique identifier of the mount task to retrieve.
@@ -1895,7 +1895,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Retrieve the mount task status
+      summary: Get the status of a mount or unmount by ID
       tags:
         - CloudStorageService
     post:
@@ -1909,17 +1909,18 @@ paths:
           schema:
             format: int32
             type: integer
-        - description: Action is the action to execute on mount task.
-          in: query
-          name: action
-          required: true
-          schema:
-            enum:
-              - ACTION_PREPARE
-              - ACTION_EXECUTE
-              - ACTION_FINISH
-              - ACTION_CANCEL
-            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                action:
+                  $ref: '#/components/schemas/Action'
+              required:
+                - action
+              type: object
+        required: true
+        x-originalParamName: body
       responses:
         "201":
           content:
@@ -1951,7 +1952,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Update a mount task
+      summary: Update a mount or unmount
       tags:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/mount:
@@ -2005,7 +2006,7 @@ paths:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/mountable:
     get:
-      description: This operation retrieves all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in cloud storage and can be mounted for consumption or production within the cluster.
+      description: Retrieve all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in object storage and can be mounted for consumption or production within the cluster.
       operationId: CloudStorageService_ListMountableTopics
       responses:
         "200":
@@ -2038,7 +2039,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Retrieve a list of mountable topics
+      summary: List mountable topics
       tags:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/unmount:
