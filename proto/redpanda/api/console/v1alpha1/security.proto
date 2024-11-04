@@ -11,7 +11,7 @@ message Role {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 }
 
@@ -22,13 +22,13 @@ message ListRolesRequest {
     // Filter results only roles named with the prefix.
     string name_prefix = 1 [
       (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+      (buf.validate.field).string.pattern = "^([^,=]*)$"
     ];
 
     // Filter results to only roles with names which contain the string.
     string name_contains = 2 [
       (buf.validate.field).string.max_len = 128,
-      (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_]*)$"
+      (buf.validate.field).string.pattern = "^([^,=]*)$"
     ];
 
     // Return only roles assigned to this principal.
@@ -77,7 +77,7 @@ message GetRoleRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 }
 
@@ -97,7 +97,7 @@ message DeleteRoleRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 
   // Whether to delete the ACLs bound to the role.
@@ -120,7 +120,7 @@ message ListRoleMembersRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 
   // Optional filter.
@@ -162,7 +162,7 @@ message UpdateRoleMembershipRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 
   // Create the role if it doesn't already exist.
@@ -183,7 +183,7 @@ message UpdateRoleMembershipResponse {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 128,
-    (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$"
+    (buf.validate.field).string.pattern = "^[^,=]+$"
   ];
 
   // Members assigned to the role.
