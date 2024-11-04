@@ -285,7 +285,7 @@ message GetClusterHealthResponse {
   repeated int32 offline_broker_ids = 5;
   repeated int32 broker_ids_in_recovery_mode = 6;
 
-  int32 leaderless_count = 7;
+  int32 leaderless_partitions_count = 7;
   // leaderless partitions. example values:
   map<string, PartitionIDList> leaderless_partitions = 8;
 
