@@ -1087,9 +1087,12 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   unhealthyReasons: UnhealthyReason[] = [];
 
   /**
-   * @generated from field: int32 controller_id = 3;
+   * optional controller ID.
+   * if cluster has no controller the property will not be present.
+   *
+   * @generated from field: optional int32 controller_id = 3;
    */
-  controllerId = 0;
+  controllerId?: number;
 
   /**
    * @generated from field: repeated int32 all_broker_ids = 4;
@@ -1113,6 +1116,8 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
 
   /**
    * leaderless partitions. example values:
+   * "kafka/__consumer_offsets/17",
+   * "kafka/events-sink-internal-default-queue-v1/137"
    *
    * @generated from field: map<string, redpanda.api.console.v1alpha1.PartitionIDList> leaderless_partitions = 8;
    */
@@ -1140,7 +1145,7 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "is_healthy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "unhealthy_reasons", kind: "enum", T: proto3.getEnumType(UnhealthyReason), repeated: true },
-    { no: 3, name: "controller_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "controller_id", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 4, name: "all_broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 5, name: "offline_broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 6, name: "broker_ids_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },

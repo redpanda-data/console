@@ -286,13 +286,17 @@ message GetClusterHealthResponse {
   bool is_healthy = 1;
 
   repeated UnhealthyReason unhealthy_reasons = 2;
-  int32 controller_id = 3;
+  // optional controller ID.
+  // if cluster has no controller the property will not be present.
+  optional int32 controller_id = 3;
   repeated int32 all_broker_ids = 4;
   repeated int32 offline_broker_ids = 5;
   repeated int32 broker_ids_in_recovery_mode = 6;
 
   int32 leaderless_partitions_count = 7;
   // leaderless partitions. example values:
+  // "kafka/__consumer_offsets/17",
+  // "kafka/events-sink-internal-default-queue-v1/137"
   map<string, PartitionIDList> leaderless_partitions = 8;
 
   int32 under_replicated_partitions_count = 9;
