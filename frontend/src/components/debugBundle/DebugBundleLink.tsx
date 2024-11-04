@@ -1,5 +1,5 @@
 import React from 'react';
-import { DebugBundleStatus, DeleteDebugBundleFileForBroker, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { DebugBundleStatus, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { config } from '../../config';
 import { api } from '../../state/backendApi';
 import { Box, Button, Text, IconButton } from '@redpanda-data/ui';
