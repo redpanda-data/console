@@ -1092,24 +1092,24 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   controllerId = 0;
 
   /**
-   * @generated from field: repeated int32 all_nodes = 4;
+   * @generated from field: repeated int32 all_broker_ids = 4;
    */
-  allNodes: number[] = [];
+  allBrokerIds: number[] = [];
 
   /**
-   * @generated from field: repeated int32 nodes_down = 5;
+   * @generated from field: repeated int32 offline_broker_ids = 5;
    */
-  nodesDown: number[] = [];
+  offlineBrokerIds: number[] = [];
 
   /**
-   * @generated from field: repeated int32 nodes_in_recovery_mode = 6;
+   * @generated from field: repeated int32 broker_ids_in_recovery_mode = 6;
    */
-  nodesInRecoveryMode: number[] = [];
+  brokerIdsInRecoveryMode: number[] = [];
 
   /**
-   * @generated from field: int32 leaderless_count = 7;
+   * @generated from field: int32 leaderless_partitions_count = 7;
    */
-  leaderlessCount = 0;
+  leaderlessPartitionsCount = 0;
 
   /**
    * leaderless partitions. example values:
@@ -1119,9 +1119,9 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   leaderlessPartitions: { [key: string]: PartitionIDList } = {};
 
   /**
-   * @generated from field: int32 under_replicated_count = 9;
+   * @generated from field: int32 under_replicated_partitions_count = 9;
    */
-  underReplicatedCount = 0;
+  underReplicatedPartitionsCount = 0;
 
   /**
    * under replicated partitions. example values:
@@ -1141,12 +1141,12 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
     { no: 1, name: "is_healthy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "unhealthy_reasons", kind: "enum", T: proto3.getEnumType(UnhealthyReason), repeated: true },
     { no: 3, name: "controller_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "all_nodes", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
-    { no: 5, name: "nodes_down", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
-    { no: 6, name: "nodes_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
-    { no: 7, name: "leaderless_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "all_broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 5, name: "offline_broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 6, name: "broker_ids_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
+    { no: 7, name: "leaderless_partitions_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "leaderless_partitions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PartitionIDList} },
-    { no: 9, name: "under_replicated_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "under_replicated_partitions_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "under_replicated_partitions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PartitionIDList} },
   ]);
 
