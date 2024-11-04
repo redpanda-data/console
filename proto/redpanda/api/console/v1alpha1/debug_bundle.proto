@@ -289,7 +289,7 @@ message GetClusterHealthResponse {
   // leaderless partitions. example values:
   map<string, PartitionIDList> leaderless_partitions = 8;
 
-  int32 under_replicated_count = 9;
+  int32 under_replicated_partitions_count = 9;
   // under replicated partitions. example values:
   map<string, PartitionIDList> under_replicated_partitions = 10;
 }
