@@ -20,7 +20,6 @@ import GroupList from './pages/consumers/Group.List';
 import GroupDetails from './pages/consumers/Group.Details';
 import { uiState } from '../state/uiState';
 import AdminPage from './pages/admin/AdminPage';
-import AdminPageDebugBundleNew from './pages/admin/Admin.DebugBundle.New';
 import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
@@ -332,7 +331,6 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(() => false)
     ),
 
-    MakeRoute<{}>('/admin/debug-bundle/new', AdminPageDebugBundleNew, 'New Debug Bundle'),
     MakeRoute<{}>('/admin/debug-bundle/progress/:jobId', AdminPageDebugBundleProgress, 'Debug Bundle Progress'),
 
     MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
