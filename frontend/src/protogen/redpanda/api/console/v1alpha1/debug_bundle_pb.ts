@@ -43,32 +43,46 @@ export enum BundleErrorCode {
   INVALID_PARAMETERS = 3,
 
   /**
+   * Internal error.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 4;
+   */
+  INTERNAL_ERROR = 4,
+
+  /**
    * Debug process failed.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_FAILED = 5;
    */
-  PROCESS_FAILED = 4,
+  PROCESS_FAILED = 5,
 
   /**
    * Job ID not recognized.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
+   * @generated from enum value: BUNDLE_ERROR_CODE_INVALID_JOB_ID = 6;
    */
-  INVALID_JOB_ID = 5,
+  INVALID_JOB_ID = 6,
 
   /**
    * Debug bundle process was never started.
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
+   * @generated from enum value: BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 7;
    */
-  PROCESS_NOT_STARTED = 6,
+  PROCESS_NOT_STARTED = 7,
 
   /**
-   * Internal error.
+   * rpk binary not found
    *
-   * @generated from enum value: BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
+   * @generated from enum value: BUNDLE_ERROR_CODE_RPK_BINARY_NOT_PRESENT = 8;
    */
-  INTERNAL_ERROR = 7,
+  RPK_BINARY_NOT_PRESENT = 8,
+
+  /**
+   * Debug bundle expired.
+   *
+   * @generated from enum value: BUNDLE_ERROR_CODE_DEBUG_BUNDLE_EXPIRED = 9;
+   */
+  DEBUG_BUNDLE_EXPIRED = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(BundleErrorCode)
 proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleErrorCode", [
@@ -76,10 +90,12 @@ proto3.util.setEnumType(BundleErrorCode, "redpanda.api.console.v1alpha1.BundleEr
   { no: 1, name: "BUNDLE_ERROR_CODE_PROCESS_ALREADY_RUNNING" },
   { no: 2, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING" },
   { no: 3, name: "BUNDLE_ERROR_CODE_INVALID_PARAMETERS" },
-  { no: 4, name: "BUNDLE_ERROR_CODE_PROCESS_FAILED" },
-  { no: 5, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
-  { no: 6, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
-  { no: 7, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
+  { no: 4, name: "BUNDLE_ERROR_CODE_INTERNAL_ERROR" },
+  { no: 5, name: "BUNDLE_ERROR_CODE_PROCESS_FAILED" },
+  { no: 6, name: "BUNDLE_ERROR_CODE_INVALID_JOB_ID" },
+  { no: 7, name: "BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED" },
+  { no: 8, name: "BUNDLE_ERROR_CODE_RPK_BINARY_NOT_PRESENT" },
+  { no: 9, name: "BUNDLE_ERROR_CODE_DEBUG_BUNDLE_EXPIRED" },
 ]);
 
 /**

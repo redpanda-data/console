@@ -249,17 +249,23 @@ enum BundleErrorCode {
   // Invalid parameters.
   BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
 
+  // Internal error.
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 4;
+
   // Debug process failed.
-  BUNDLE_ERROR_CODE_PROCESS_FAILED = 4;
+  BUNDLE_ERROR_CODE_PROCESS_FAILED = 5;
 
   // Job ID not recognized.
-  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 5;
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 6;
 
   // Debug bundle process was never started.
-  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 6;
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 7;
 
-  // Internal error.
-  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 7;
+  // rpk binary not found
+  BUNDLE_ERROR_CODE_RPK_BINARY_NOT_PRESENT = 8;
+
+  // Debug bundle expired.
+  BUNDLE_ERROR_CODE_DEBUG_BUNDLE_EXPIRED = 9;
 }
 
 enum UnhealthyReason {
