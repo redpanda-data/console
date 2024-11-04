@@ -17,12 +17,23 @@ export const licenseIsExpired = (license: License): boolean => license.type !== 
  * The function returns `true` if the license is set to expire within the offset period from the current date.
  *
  * @param {License} license - The license object to check.
- * @param {number} [offsetInDays=30] - The number of days to check before the license expires. Defaults to 30 days.
+ * @param {Partial<Record<License_Type, number>>} [offsetInDays] - An optional mapping of license types
+ * to the number of days before expiration to consider for each license type. Defaults to 15 days
+ * for `TRIAL` licenses and 30 days for `ENTERPRISE` licenses.
  * @returns {boolean} - Returns `true` if the license will expire within the specified number of days, otherwise `false`.
  */
-export const licenseSoonToExpire = (license: License, offsetInDays: number = 30): boolean => {
+export const licenseSoonToExpire = (license: License, offsetInDays: Partial<Record<License_Type, number>> = {
+    [License_Type.TRIAL]: 15,
+    [License_Type.ENTERPRISE]: 30,
+}): boolean => {
+    const daysToExpire: number | undefined = offsetInDays[license.type]
+
+    if(daysToExpire === undefined) {
+        return false
+    }
+
     const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
-    const offsetInMilliseconds = offsetInDays * millisecondsInADay;
+    const offsetInMilliseconds = daysToExpire * millisecondsInADay;
 
     const timeToExpiration = getTimeToExpiration(license);
 

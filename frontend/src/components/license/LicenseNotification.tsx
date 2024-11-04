@@ -3,16 +3,17 @@ import { observer } from 'mobx-react';
 import { api } from '../../state/backendApi';
 import { getPrettyTimeToExpiration, licenseCanExpire, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
+import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 export const LicenseNotification = observer(() => {
     const location = useLocation();
-    const expiredLicenses = api.licenses.filter(licenseIsExpired) ?? [];
+    const visibleExpiredEnterpriseLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type === License_Type.ENTERPRISE) ?? [];
     const soonToExpireLicenses = api.licenses
-            .filter(licenseSoonToExpire)
-            .filter(licenseCanExpire)
+            .filter(license => licenseSoonToExpire(license))
+            .filter(license => licenseCanExpire(license))
         ?? [];
 
-    const showSomeLicenseExpirationInfo = expiredLicenses.length || soonToExpireLicenses.length;
+    const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
     const showEnterpriseFeaturesWarning = api.licenseViolation;
 
     if (api.licensesLoaded === undefined) {
@@ -44,8 +45,8 @@ export const LicenseNotification = observer(() => {
                         )}
                     </Box>}
 
-                    {expiredLicenses.length > 0 && <Box>
-                        {expiredLicenses.map((license, idx) =>
+                    {visibleExpiredEnterpriseLicenses.length > 0 && <Box>
+                        {visibleExpiredEnterpriseLicenses.map((license, idx) =>
                             <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
                         )}
                     </Box>}
