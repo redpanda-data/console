@@ -281,9 +281,9 @@ message GetClusterHealthResponse {
 
   repeated UnhealthyReason unhealthy_reasons = 2;
   int32 controller_id = 3;
-  repeated int32 all_nodes = 4;
-  repeated int32 nodes_down = 5;
-  repeated int32 nodes_in_recovery_mode = 6;
+  repeated int32 all_broker_ids = 4;
+  repeated int32 offline_broker_ids = 5;
+  repeated int32 broker_ids_in_recovery_mode = 6;
 
   int32 leaderless_count = 7;
   // leaderless partitions. example values:
