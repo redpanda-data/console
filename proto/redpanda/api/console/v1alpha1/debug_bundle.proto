@@ -126,7 +126,7 @@ message DebugBundleStatus {
   string filename = 5;
 
   // Size of the debug bundle zip file.
-  int64 size = 6;
+  int64 size_bytes = 6;
 
   // Only filled in once the process completes.  Content of stdout from rpk.
   repeated string stdout = 7;

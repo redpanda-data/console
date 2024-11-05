@@ -536,9 +536,9 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
   /**
    * Size of the debug bundle zip file.
    *
-   * @generated from field: int64 size = 6;
+   * @generated from field: int64 size_bytes = 6;
    */
-  size = protoInt64.zero;
+  sizeBytes = protoInt64.zero;
 
   /**
    * Only filled in once the process completes.  Content of stdout from rpk.
@@ -567,7 +567,7 @@ export class DebugBundleStatus extends Message<DebugBundleStatus> {
     { no: 3, name: "status", kind: "enum", T: proto3.getEnumType(DebugBundleStatus_Status) },
     { no: 4, name: "created_at", kind: "message", T: Timestamp },
     { no: 5, name: "filename", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 7, name: "stdout", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "stderr", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
