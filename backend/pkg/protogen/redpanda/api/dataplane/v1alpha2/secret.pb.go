@@ -441,7 +441,7 @@ type CreateSecretRequest struct {
 	Labels map[string]string `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Secret scopes
 	Scopes []Scope `protobuf:"varint,3,rep,packed,name=scopes,proto3,enum=redpanda.api.dataplane.v1alpha2.Scope" json:"scopes,omitempty"`
-	// The secret data.
+	// The secret data. Must be Base64-encoded.
 	SecretData []byte `protobuf:"bytes,4,opt,name=secret_data,json=secretData,proto3" json:"secret_data,omitempty"`
 }
 
@@ -566,7 +566,7 @@ type UpdateSecretRequest struct {
 	Labels map[string]string `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Secret scopes
 	Scopes []Scope `protobuf:"varint,3,rep,packed,name=scopes,proto3,enum=redpanda.api.dataplane.v1alpha2.Scope" json:"scopes,omitempty"`
-	// The secret data.
+	// The secret data. Must be Base64-encoded.
 	SecretData []byte `protobuf:"bytes,4,opt,name=secret_data,json=secretData,proto3" json:"secret_data,omitempty"`
 }
 
@@ -886,7 +886,7 @@ type CreateConnectSecretRequest struct {
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Secret labels.
 	Labels map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// The secret data.
+	// The secret data. Must be Base64-encoded.
 	SecretData []byte `protobuf:"bytes,4,opt,name=secret_data,json=secretData,proto3" json:"secret_data,omitempty"`
 }
 
@@ -1146,7 +1146,7 @@ type UpdateConnectSecretRequest struct {
 	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// Secret labels.
 	Labels map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// The secret data.
+	// The secret data. Must be Base64-encoded.
 	SecretData []byte `protobuf:"bytes,4,opt,name=secret_data,json=secretData,proto3" json:"secret_data,omitempty"`
 }
 

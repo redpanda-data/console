@@ -332,7 +332,7 @@ components:
           title: Secret scopes
           type: array
         secret_data:
-          description: The secret data.
+          description: The secret data. Must be Base64-encoded.
           format: byte
           type: string
       required:
@@ -2477,7 +2477,7 @@ paths:
                   description: Name of connector.
                   type: string
                 secret_data:
-                  description: The secret data.
+                  description: The secret data. Must be Base64-encoded.
                   format: byte
                   type: string
               required:
@@ -2642,7 +2642,7 @@ paths:
                   description: Secret labels.
                   type: object
                 secret_data:
-                  description: The secret data.
+                  description: The secret data. Must be Base64-encoded.
                   format: byte
                   type: string
               required:
@@ -3247,7 +3247,7 @@ paths:
                   title: Secret scopes
                   type: array
                 secret_data:
-                  description: The secret data.
+                  description: The secret data. Must be Base64-encoded.
                   format: byte
                   type: string
               required:
@@ -3663,7 +3663,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

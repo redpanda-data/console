@@ -359,7 +359,7 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
   scopes: Scope[] = [];
 
   /**
-   * The secret data.
+   * The secret data. Must be Base64-encoded.
    *
    * @generated from field: bytes secret_data = 4;
    */
@@ -465,7 +465,7 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   scopes: Scope[] = [];
 
   /**
-   * The secret data.
+   * The secret data. Must be Base64-encoded.
    *
    * @generated from field: bytes secret_data = 4;
    */
@@ -735,7 +735,7 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
   labels: { [key: string]: string } = {};
 
   /**
-   * The secret data.
+   * The secret data. Must be Base64-encoded.
    *
    * @generated from field: bytes secret_data = 4;
    */
@@ -956,7 +956,7 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
   labels: { [key: string]: string } = {};
 
   /**
-   * The secret data.
+   * The secret data. Must be Base64-encoded.
    *
    * @generated from field: bytes secret_data = 4;
    */
