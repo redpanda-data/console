@@ -122,7 +122,7 @@ class Overview extends PageComponent {
                                         cell: ({row: {original: broker}}) =>
                                             (
                                                 <Flex gap={2}>
-                                                    {api.clusterHealth?.nodesDown.includes(broker.brokerId) ?
+                                                    {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ?
                                                         <>
                                                             <MdError size={18} color={colors.brandError}/>
                                                             Down
