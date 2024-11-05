@@ -23,7 +23,7 @@ const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = tr
                 <Button
                     variant="link"
                     onClick={() => {
-                        config.fetch(`${config.restBasePath}/debug_bundle/${downloadFilename}`).then(async response => {
+                        config.fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`).then(async response => {
                             const url = window.URL.createObjectURL(await response.blob());
 
                             // Create a new anchor element

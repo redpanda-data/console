@@ -306,8 +306,8 @@ message TopicPartitions {
 }
 
 // Additional API:
-// GET /api/debug_bundle/{file}
-// GET /api/debug_bundle/{broker_id}/{file}
+// GET /api/debug_bundle/files/{file}
+// GET /api/debug_bundle/brokers/{broker_id}/files/{file}
 // This will download the debug bundle zip file
 
 service DebugBundleService {
