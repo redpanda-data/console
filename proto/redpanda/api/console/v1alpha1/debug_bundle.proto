@@ -294,17 +294,14 @@ message GetClusterHealthResponse {
   repeated int32 broker_ids_in_recovery_mode = 6;
 
   int32 leaderless_partitions_count = 7;
-  // leaderless partitions. example values:
-  // "kafka/__consumer_offsets/17",
-  // "kafka/events-sink-internal-default-queue-v1/137"
-  map<string, PartitionIDList> leaderless_partitions = 8;
+  repeated TopicPartitions leaderless_partitions = 8;
 
   int32 under_replicated_partitions_count = 9;
-  // under replicated partitions. example values:
-  map<string, PartitionIDList> under_replicated_partitions = 10;
+  repeated TopicPartitions under_replicated_partitions = 10;
 }
 
-message PartitionIDList {
+message TopicPartitions {
+  string topic_name = 1;
   repeated int32 partition_ids = 2;
 }
 

@@ -1115,13 +1115,9 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   leaderlessPartitionsCount = 0;
 
   /**
-   * leaderless partitions. example values:
-   * "kafka/__consumer_offsets/17",
-   * "kafka/events-sink-internal-default-queue-v1/137"
-   *
-   * @generated from field: map<string, redpanda.api.console.v1alpha1.PartitionIDList> leaderless_partitions = 8;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicPartitions leaderless_partitions = 8;
    */
-  leaderlessPartitions: { [key: string]: PartitionIDList } = {};
+  leaderlessPartitions: TopicPartitions[] = [];
 
   /**
    * @generated from field: int32 under_replicated_partitions_count = 9;
@@ -1129,11 +1125,9 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
   underReplicatedPartitionsCount = 0;
 
   /**
-   * under replicated partitions. example values:
-   *
-   * @generated from field: map<string, redpanda.api.console.v1alpha1.PartitionIDList> under_replicated_partitions = 10;
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicPartitions under_replicated_partitions = 10;
    */
-  underReplicatedPartitions: { [key: string]: PartitionIDList } = {};
+  underReplicatedPartitions: TopicPartitions[] = [];
 
   constructor(data?: PartialMessage<GetClusterHealthResponse>) {
     super();
@@ -1150,9 +1144,9 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
     { no: 5, name: "offline_broker_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 6, name: "broker_ids_in_recovery_mode", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
     { no: 7, name: "leaderless_partitions_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 8, name: "leaderless_partitions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PartitionIDList} },
+    { no: 8, name: "leaderless_partitions", kind: "message", T: TopicPartitions, repeated: true },
     { no: 9, name: "under_replicated_partitions_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "under_replicated_partitions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: PartitionIDList} },
+    { no: 10, name: "under_replicated_partitions", kind: "message", T: TopicPartitions, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetClusterHealthResponse {
@@ -1173,39 +1167,45 @@ export class GetClusterHealthResponse extends Message<GetClusterHealthResponse> 
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.PartitionIDList
+ * @generated from message redpanda.api.console.v1alpha1.TopicPartitions
  */
-export class PartitionIDList extends Message<PartitionIDList> {
+export class TopicPartitions extends Message<TopicPartitions> {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName = "";
+
   /**
    * @generated from field: repeated int32 partition_ids = 2;
    */
   partitionIds: number[] = [];
 
-  constructor(data?: PartialMessage<PartitionIDList>) {
+  constructor(data?: PartialMessage<TopicPartitions>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.PartitionIDList";
+  static readonly typeName = "redpanda.api.console.v1alpha1.TopicPartitions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "partition_ids", kind: "scalar", T: 5 /* ScalarType.INT32 */, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PartitionIDList {
-    return new PartitionIDList().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TopicPartitions {
+    return new TopicPartitions().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PartitionIDList {
-    return new PartitionIDList().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TopicPartitions {
+    return new TopicPartitions().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PartitionIDList {
-    return new PartitionIDList().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TopicPartitions {
+    return new TopicPartitions().fromJsonString(jsonString, options);
   }
 
-  static equals(a: PartitionIDList | PlainMessage<PartitionIDList> | undefined, b: PartitionIDList | PlainMessage<PartitionIDList> | undefined): boolean {
-    return proto3.util.equals(PartitionIDList, a, b);
+  static equals(a: TopicPartitions | PlainMessage<TopicPartitions> | undefined, b: TopicPartitions | PlainMessage<TopicPartitions> | undefined): boolean {
+    return proto3.util.equals(TopicPartitions, a, b);
   }
 }
 
