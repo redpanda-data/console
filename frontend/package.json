@@ -25,6 +25,9 @@
         "prepare": "npm run fetch-monaco",
         "analyze": "RSDOCTOR=true npm run build"
     },
+    "overrides": {
+      "elliptic": "^6.5.7"
+    },
     "dependencies": {
         "@chakra-ui/icons": "^2.1",
         "@chakra-ui/react": "^2.8.2",
