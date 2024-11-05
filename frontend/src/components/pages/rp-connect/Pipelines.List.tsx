@@ -88,11 +88,13 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     return;
                 }
 
-                toast({
-                    status: 'error', duration: null, isClosable: true,
-                    title: 'Failed to load pipelines',
-                    description: String(err),
-                });
+                if(Features.pipelinesApi) {
+                    toast({
+                        status: 'error', duration: null, isClosable: true,
+                        title: 'Failed to load pipelines',
+                        description: String(err),
+                    });
+                }
             });
     }
 
