@@ -38,8 +38,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
       return <div />; // todo: show the error (if one was reported);
     }
 
-    const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[topic.topicName]?.partitionIds
-    const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[topic.topicName]?.partitionIds
+    const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds;
+    const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds
 
     let warning: JSX.Element = <></>;
     if (topic.cleanupPolicy.toLowerCase() === 'compact')

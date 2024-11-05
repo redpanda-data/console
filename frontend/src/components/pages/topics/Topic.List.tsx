@@ -221,15 +221,13 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
                     header: 'Name',
                     accessorKey: 'topicName',
                     cell: ({row: {original: topic}}) => {
-                        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(topic.topicName);
-                        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(topic.topicName);
-                        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[topic.topicName]?.partitionIds
-                        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[topic.topicName]?.partitionIds
+                        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds;
+                        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds
 
                         return <Flex wordBreak="break-word" whiteSpace="break-spaces" gap={2} alignItems="center">
                             <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
-                            {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
-                            {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+                            {!!leaderLessPartitions && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                            {!!underReplicatedPartitions && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
                         </Flex>;
                     },
                     size: Infinity,

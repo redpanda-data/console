@@ -224,18 +224,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
 
-        const hasLeaderLessPartition = Object.keys(api.clusterHealth?.leaderlessPartitions ?? {}).includes(this.props.topicName);
-        const hasUnderReplicatedPartition = Object.keys(api.clusterHealth?.underReplicatedPartitions ?? {}).includes(this.props.topicName);
-        const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? {})[this.props.topicName]?.partitionIds
-        const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? {})[this.props.topicName]?.partitionIds
+        const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(({topicName}) => topicName === this.props.topicName)?.partitionIds;
+        const underReplicatedPartitionIds = (api.clusterHealth?.underReplicatedPartitions ?? []).find(({topicName}) => topicName === this.props.topicName)?.partitionIds
 
         this.topicTabs = [
             new TopicTab(() => topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(() => topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
             new TopicTab(() => topic, 'partitions', 'viewPartitions', <Flex gap={1}>
                 Partitions
-                {hasLeaderLessPartition && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
-                {hasUnderReplicatedPartition && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+                {!!leaderLessPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitionIds.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                {!!underReplicatedPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitionIds.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
             </Flex>, (t) => <TopicPartitions topic={t} />),
             new TopicTab(() => topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
             new TopicTab(() => topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
