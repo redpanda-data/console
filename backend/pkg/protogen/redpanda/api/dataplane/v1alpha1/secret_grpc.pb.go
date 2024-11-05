@@ -30,15 +30,21 @@ const (
 // SecretServiceClient is the client API for SecretService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Deprecated: Do not use.
 type SecretServiceClient interface {
 	// GetConnectSecret retrieves the specific secret for a specific Connect.
 	GetConnectSecret(ctx context.Context, in *GetConnectSecretRequest, opts ...grpc.CallOption) (*GetConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectSecrets lists the Connect secrets based on optional filter.
 	ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error)
+	// Deprecated: Do not use.
 	// CreateConnectSecret creates the secret for a Connect.
 	CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// UpdateConnectSecret updates the Connect secret.
 	UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// DeleteSecret deletes the secret.
 	DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error)
 }
@@ -47,6 +53,7 @@ type secretServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// Deprecated: Do not use.
 func NewSecretServiceClient(cc grpc.ClientConnInterface) SecretServiceClient {
 	return &secretServiceClient{cc}
 }
@@ -60,6 +67,7 @@ func (c *secretServiceClient) GetConnectSecret(ctx context.Context, in *GetConne
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *secretServiceClient) ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error) {
 	out := new(ListConnectSecretsResponse)
 	err := c.cc.Invoke(ctx, SecretService_ListConnectSecrets_FullMethodName, in, out, opts...)
@@ -69,6 +77,7 @@ func (c *secretServiceClient) ListConnectSecrets(ctx context.Context, in *ListCo
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *secretServiceClient) CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error) {
 	out := new(CreateConnectSecretResponse)
 	err := c.cc.Invoke(ctx, SecretService_CreateConnectSecret_FullMethodName, in, out, opts...)
@@ -78,6 +87,7 @@ func (c *secretServiceClient) CreateConnectSecret(ctx context.Context, in *Creat
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *secretServiceClient) UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error) {
 	out := new(UpdateConnectSecretResponse)
 	err := c.cc.Invoke(ctx, SecretService_UpdateConnectSecret_FullMethodName, in, out, opts...)
@@ -87,6 +97,7 @@ func (c *secretServiceClient) UpdateConnectSecret(ctx context.Context, in *Updat
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *secretServiceClient) DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error) {
 	out := new(DeleteConnectSecretResponse)
 	err := c.cc.Invoke(ctx, SecretService_DeleteConnectSecret_FullMethodName, in, out, opts...)
@@ -99,15 +110,21 @@ func (c *secretServiceClient) DeleteConnectSecret(ctx context.Context, in *Delet
 // SecretServiceServer is the server API for SecretService service.
 // All implementations must embed UnimplementedSecretServiceServer
 // for forward compatibility
+//
+// Deprecated: Do not use.
 type SecretServiceServer interface {
 	// GetConnectSecret retrieves the specific secret for a specific Connect.
 	GetConnectSecret(context.Context, *GetConnectSecretRequest) (*GetConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// ListConnectSecrets lists the Connect secrets based on optional filter.
 	ListConnectSecrets(context.Context, *ListConnectSecretsRequest) (*ListConnectSecretsResponse, error)
+	// Deprecated: Do not use.
 	// CreateConnectSecret creates the secret for a Connect.
 	CreateConnectSecret(context.Context, *CreateConnectSecretRequest) (*CreateConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// UpdateConnectSecret updates the Connect secret.
 	UpdateConnectSecret(context.Context, *UpdateConnectSecretRequest) (*UpdateConnectSecretResponse, error)
+	// Deprecated: Do not use.
 	// DeleteSecret deletes the secret.
 	DeleteConnectSecret(context.Context, *DeleteConnectSecretRequest) (*DeleteConnectSecretResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
@@ -141,6 +158,7 @@ type UnsafeSecretServiceServer interface {
 	mustEmbedUnimplementedSecretServiceServer()
 }
 
+// Deprecated: Do not use.
 func RegisterSecretServiceServer(s grpc.ServiceRegistrar, srv SecretServiceServer) {
 	s.RegisterService(&SecretService_ServiceDesc, srv)
 }

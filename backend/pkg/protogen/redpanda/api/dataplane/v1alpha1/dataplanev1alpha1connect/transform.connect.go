@@ -56,9 +56,14 @@ var (
 
 // TransformServiceClient is a client for the redpanda.api.dataplane.v1alpha1.TransformService
 // service.
+//
+// Deprecated: do not use.
 type TransformServiceClient interface {
+	// Deprecated: do not use.
 	ListTransforms(context.Context, *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error)
+	// Deprecated: do not use.
 	GetTransform(context.Context, *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error)
+	// Deprecated: do not use.
 	DeleteTransform(context.Context, *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error)
 }
 
@@ -70,6 +75,8 @@ type TransformServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
+//
+// Deprecated: do not use.
 func NewTransformServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TransformServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &transformServiceClient{
@@ -102,25 +109,36 @@ type transformServiceClient struct {
 }
 
 // ListTransforms calls redpanda.api.dataplane.v1alpha1.TransformService.ListTransforms.
+//
+// Deprecated: do not use.
 func (c *transformServiceClient) ListTransforms(ctx context.Context, req *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error) {
 	return c.listTransforms.CallUnary(ctx, req)
 }
 
 // GetTransform calls redpanda.api.dataplane.v1alpha1.TransformService.GetTransform.
+//
+// Deprecated: do not use.
 func (c *transformServiceClient) GetTransform(ctx context.Context, req *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error) {
 	return c.getTransform.CallUnary(ctx, req)
 }
 
 // DeleteTransform calls redpanda.api.dataplane.v1alpha1.TransformService.DeleteTransform.
+//
+// Deprecated: do not use.
 func (c *transformServiceClient) DeleteTransform(ctx context.Context, req *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error) {
 	return c.deleteTransform.CallUnary(ctx, req)
 }
 
 // TransformServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha1.TransformService service.
+//
+// Deprecated: do not use.
 type TransformServiceHandler interface {
+	// Deprecated: do not use.
 	ListTransforms(context.Context, *connect.Request[v1alpha1.ListTransformsRequest]) (*connect.Response[v1alpha1.ListTransformsResponse], error)
+	// Deprecated: do not use.
 	GetTransform(context.Context, *connect.Request[v1alpha1.GetTransformRequest]) (*connect.Response[v1alpha1.GetTransformResponse], error)
+	// Deprecated: do not use.
 	DeleteTransform(context.Context, *connect.Request[v1alpha1.DeleteTransformRequest]) (*connect.Response[v1alpha1.DeleteTransformResponse], error)
 }
 
@@ -129,6 +147,8 @@ type TransformServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
+//
+// Deprecated: do not use.
 func NewTransformServiceHandler(svc TransformServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	transformServiceListTransformsHandler := connect.NewUnaryHandler(
 		TransformServiceListTransformsProcedure,

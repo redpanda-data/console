@@ -52,9 +52,6 @@
             &:not(.disabled):hover {
                 color: var(--ant-primary-color);
                 background: rgb(239 239 239);
-
-                // color: var(--ant-primary-color);
-                // border-bottom-color: var(--ant-primary-5);
             }
 
             &.disabled {
@@ -64,40 +61,5 @@
                 }
             }
         }
-    }
-}
-
-.configModal {
-
-    .ant-modal-body {
-        padding: 2em;
-
-        .ant-modal-confirm-title {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-
-            svg {
-                font-size: 1.5em;
-            }
-        }
-
-        .ant-modal-confirm-body {
-
-            .ant-modal-confirm-title {
-                font-weight: 700;
-            }
-
-            .ant-modal-confirm-content {
-                margin-left: 0;
-            }
-        }
-
-    }
-
-    .ant-modal-confirm-btns {
-        display: flex;
-        flex-direction: row-reverse;
-        gap: 8px;
     }
 }

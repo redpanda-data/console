@@ -74,7 +74,7 @@ export default class AdminPage extends PageComponent {
                     : <div>
                         <Alert status="error">
                             <AlertIcon />
-                            You do not have the neccesary permissions to view this page.
+                            You do not have the necessary permissions to view this page.
                         </Alert>
                     </div>
                 }

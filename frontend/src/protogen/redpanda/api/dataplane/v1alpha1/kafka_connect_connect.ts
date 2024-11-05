@@ -14,6 +14,7 @@ import { Empty, MethodKind } from "@bufbuild/protobuf";
  * documentation and configuration
  *
  * @generated from service redpanda.api.dataplane.v1alpha1.KafkaConnectService
+ * @deprecated
  */
 export const KafkaConnectService = {
   typeName: "redpanda.api.dataplane.v1alpha1.KafkaConnectService",
@@ -23,6 +24,7 @@ export const KafkaConnectService = {
      * clusters available in the console configuration
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectClusters
+     * @deprecated
      */
     listConnectClusters: {
       name: "ListConnectClusters",
@@ -35,6 +37,7 @@ export const KafkaConnectService = {
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectCluster
+     * @deprecated
      */
     getConnectCluster: {
       name: "GetConnectCluster",
@@ -47,6 +50,7 @@ export const KafkaConnectService = {
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectors
+     * @deprecated
      */
     listConnectors: {
       name: "ListConnectors",
@@ -59,6 +63,7 @@ export const KafkaConnectService = {
      * equivalent REST endpoint as the Kafka connect API endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.CreateConnector
+     * @deprecated
      */
     createConnector: {
       name: "CreateConnector",
@@ -71,6 +76,7 @@ export const KafkaConnectService = {
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.RestartConnector
+     * @deprecated
      */
     restartConnector: {
       name: "RestartConnector",
@@ -83,6 +89,7 @@ export const KafkaConnectService = {
      * Connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnector
+     * @deprecated
      */
     getConnector: {
       name: "GetConnector",
@@ -98,6 +105,7 @@ export const KafkaConnectService = {
      * The state of all its tasks
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorStatus
+     * @deprecated
      */
     getConnectorStatus: {
       name: "GetConnectorStatus",
@@ -110,6 +118,7 @@ export const KafkaConnectService = {
      * connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.PauseConnector
+     * @deprecated
      */
     pauseConnector: {
       name: "PauseConnector",
@@ -122,6 +131,7 @@ export const KafkaConnectService = {
      * connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ResumeConnector
+     * @deprecated
      */
     resumeConnector: {
       name: "ResumeConnector",
@@ -135,6 +145,7 @@ export const KafkaConnectService = {
      * delete the connector. All tasks for the connector are shut down completely
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.StopConnector
+     * @deprecated
      */
     stopConnector: {
       name: "StopConnector",
@@ -159,6 +170,7 @@ export const KafkaConnectService = {
      * exposes a kafka connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.UpsertConnector
+     * @deprecated
      */
     upsertConnector: {
       name: "UpsertConnector",
@@ -170,6 +182,7 @@ export const KafkaConnectService = {
      * GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.GetConnectorConfig
+     * @deprecated
      */
     getConnectorConfig: {
       name: "GetConnectorConfig",
@@ -181,6 +194,7 @@ export const KafkaConnectService = {
      * ListConnectorTopics implements the list connector topics method, expose a kafka connect equivalent REST endpoint
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ListConnectorTopics
+     * @deprecated
      */
     listConnectorTopics: {
       name: "ListConnectorTopics",
@@ -193,6 +207,7 @@ export const KafkaConnectService = {
      * the request body is empty.
      *
      * @generated from rpc redpanda.api.dataplane.v1alpha1.KafkaConnectService.ResetConnectorTopics
+     * @deprecated
      */
     resetConnectorTopics: {
       name: "ResetConnectorTopics",

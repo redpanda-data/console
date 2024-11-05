@@ -139,6 +139,13 @@ export enum Pipeline_State {
    * @generated from enum value: STATE_ERROR = 5;
    */
   ERROR = 5,
+
+  /**
+   * The pipeline has completed the job successfully.
+   *
+   * @generated from enum value: STATE_COMPLETED = 6;
+   */
+  COMPLETED = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Pipeline_State)
 proto3.util.setEnumType(Pipeline_State, "redpanda.api.dataplane.v1alpha2.Pipeline.State", [
@@ -148,6 +155,7 @@ proto3.util.setEnumType(Pipeline_State, "redpanda.api.dataplane.v1alpha2.Pipelin
   { no: 3, name: "STATE_STOPPING" },
   { no: 4, name: "STATE_STOPPED" },
   { no: 5, name: "STATE_ERROR" },
+  { no: 6, name: "STATE_COMPLETED" },
 ]);
 
 /**

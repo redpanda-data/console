@@ -13,7 +13,6 @@ import React, { Component, CSSProperties, ReactNode, useState } from 'react';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
 import { Box, Button as RpButton, ButtonProps as RpButtonProps, createStandaloneToast, Flex, PlacementWithLogical, Progress, RadioGroup, redpandaTheme, redpandaToastOptions, Text, ToastId, Tooltip } from '@redpanda-data/ui';
-import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
 import { motion } from 'framer-motion';
@@ -22,6 +21,7 @@ import { makeObservable, observable } from 'mobx';
 import { InfoIcon } from '@primer/octicons-react';
 import colors from '../colors';
 import { Skeleton } from '@chakra-ui/react';
+import { MdContentCopy, MdHelpOutline, MdOutlineDownload } from 'react-icons/md';
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -415,13 +415,13 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
                     <Text ml="auto" pl="2em">{this.props.progressText}</Text>
                 </Flex>
                 {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                    <Flex fontSize="sm" fontWeight="bold">
-                        <Flex alignItems="center">
-                            <DownloadOutlined style={{color: colors.brandOrange}}/> {this.props.bytesConsumed}
+                    <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
+                        <Flex alignItems="center" gap={2}>
+                            <MdOutlineDownload color={colors.brandOrange} size={14} /> {this.props.bytesConsumed}
                         </Flex>
-                        <Box style={{alignItems: 'center', marginLeft: 'auto'}}>
-                            <CopyOutlined style={{color: colors.brandOrange}}/>{this.props.messagesConsumed} messages
-                        </Box>
+                        <Flex alignItems="center" gap={2}>
+                            <MdContentCopy color={colors.brandOrange} size={14} /> {this.props.messagesConsumed} messages
+                        </Flex>
                     </Flex>
                 }
             </Box>
@@ -527,14 +527,11 @@ export function LabelTooltip(p: { children?: React.ReactNode; width?: number; ma
 
     return (
         <Tooltip label={content} placement="top" hasArrow maxW={p.maxW}>
-            <QuestionCircleOutlined
-                style={{
-                    color: 'hsl(0deg 0% 66%)',
-                    fontSize: '13px',
-                    transform: 'translateY(1px)',
-                    marginLeft: '3px'
-                }}
-            />
+            <Box display="inline-block" transform="translateY(2px)">
+                <MdHelpOutline
+                    size={13}
+                />
+            </Box>
         </Tooltip>
     );
 }

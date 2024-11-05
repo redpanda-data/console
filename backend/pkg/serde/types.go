@@ -43,6 +43,8 @@ const (
 	PayloadEncodingSmile PayloadEncoding = "smile"
 	// PayloadEncodingUint is the enum of Uint types.
 	PayloadEncodingUint PayloadEncoding = "uint"
+	// PayloadEncodingCbor is the enum of cbor types.
+	PayloadEncodingCbor PayloadEncoding = "cbor"
 )
 
 // HeaderEncoding is an enum for different header encoding types.

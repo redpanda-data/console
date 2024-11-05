@@ -265,7 +265,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
-    MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
+    MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
     MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
     MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
@@ -280,7 +280,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true,
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')

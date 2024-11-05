@@ -174,7 +174,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -260,7 +262,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -279,8 +281,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain JSON deserializer option", func(t *testing.T) {
@@ -310,7 +314,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -398,7 +404,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -417,8 +423,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json_deserializer_option", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json_deserializer_option", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain JSON incorrect value deserializer option", func(t *testing.T) {
@@ -448,7 +456,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		order := testutil.Order{ID: strconv.Itoa(123)}
 		serializedOrder, err := json.Marshal(order)
@@ -531,7 +541,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(order.ID)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -550,8 +560,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_json_bad_value_deser", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_json_bad_value_deser", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain protobuf", func(t *testing.T) {
@@ -594,7 +606,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
 		msg := shopv1.Order{
@@ -697,7 +711,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -716,8 +730,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_protobuf", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
@@ -760,7 +776,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
 		orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
@@ -985,7 +1003,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1004,8 +1022,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_plain_protobuf_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf", func(t *testing.T) {
@@ -1051,7 +1071,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1175,7 +1197,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte(msg.Id)), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1194,8 +1216,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf common", func(t *testing.T) {
@@ -1241,7 +1265,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1419,7 +1445,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1571,7 +1599,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("gadget_0")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -1590,8 +1618,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_multi", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_multi", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf nested", func(t *testing.T) {
@@ -1637,7 +1667,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -1851,7 +1883,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -2093,7 +2127,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("123456789")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -2112,8 +2146,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_protobuf_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 
 	t.Run("schema registry protobuf update", func(t *testing.T) {
@@ -2159,7 +2195,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -2321,7 +2359,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		err = protoSvc2.Start()
 		require.NoError(err)
 
-		serdeSvc2 := NewService(schemaSvc2, protoSvc2, mspPackSvc)
+		serdeSvc2 := NewService(schemaSvc2, protoSvc2, mspPackSvc, cborConfig)
 
 		for _, cr := range records {
 			cr := cr
@@ -2409,7 +2447,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 160)
@@ -2512,7 +2552,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		keyBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(keyBytes, 1952807028)
@@ -2763,7 +2805,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -2885,7 +2929,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(len([]byte("order_0")), dr.Key.PayloadSizeBytes)
 
 		// key troubleshooting
-		require.Len(dr.Key.Troubleshooting, 10)
+		require.Len(dr.Key.Troubleshooting, 11)
 		assert.Equal(string(PayloadEncodingNull), dr.Key.Troubleshooting[0].SerdeName)
 		assert.Equal("payload is not null as expected for none encoding", dr.Key.Troubleshooting[0].Message)
 		assert.Equal(string(PayloadEncodingJSON), dr.Key.Troubleshooting[1].SerdeName)
@@ -2904,8 +2948,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("message pack encoding not configured for topic: test.redpanda.console.serde_schema_avro_ref", dr.Key.Troubleshooting[7].Message)
 		assert.Equal(string(PayloadEncodingSmile), dr.Key.Troubleshooting[8].SerdeName)
 		assert.Equal("first bytes indicate this it not valid Smile format", dr.Key.Troubleshooting[8].Message)
-		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[9].SerdeName)
-		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingCbor), dr.Key.Troubleshooting[9].SerdeName)
+		assert.Equal("cbor encoding not configured for topic: test.redpanda.console.serde_schema_avro_ref", dr.Key.Troubleshooting[9].Message)
+		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
+		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
 }
 
@@ -2946,7 +2992,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
@@ -3009,7 +3057,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 
@@ -3083,7 +3133,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
 
@@ -3225,7 +3277,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -3319,7 +3373,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		var serde sr.Serde
 		serde.Register(
@@ -3437,7 +3493,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3545,7 +3603,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3690,7 +3750,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3850,7 +3912,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		// Set up Serde
 		var serde sr.Serde
@@ -3995,7 +4059,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
@@ -4154,7 +4220,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		expectData, err := srSerde.Encode(&ProductRecord{ProductID: 11, ProductName: "foo", Price: 10.25})
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
 			Topic: testTopicName,
@@ -4357,7 +4425,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
 		require.NoError(err)
 
-		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
+		cborConfig := config.Cbor{}
+
+		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc, cborConfig)
 
 		inputData := `{"customer":{"email":"user1@example.com","metadata":{"event_type":"user","id":"user1_event_2345","version":"1"},"name":"user1"},"id":"order_1","metadata":{"event_type":"order","id":"order1_event_5432","version":"2"},"price":7.50,"quantity":7}`
 
@@ -4442,13 +4512,15 @@ func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
 		"-input="+jsonInput,
 		"-schema-id="+strconv.Itoa(schemaID),
 	)
-	var out strings.Builder
-	cmd.Stdout = &out
+	var stdout strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("go run finished with error %w, stdout: %s, stderr: %s", err, stdout.String(), stderr.String())
 	}
-	output := out.String()
+	output := stdout.String()
 	return base64.StdEncoding.DecodeString(output)
 }
 
@@ -4478,5 +4550,6 @@ func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
 		}
 		return "", err
 	}
+
 	return out.String(), nil
 }

@@ -8,12 +8,14 @@ import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha1.TransformService
+ * @deprecated
  */
 export const TransformService = {
   typeName: "redpanda.api.dataplane.v1alpha1.TransformService",
   methods: {
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TransformService.ListTransforms
+     * @deprecated
      */
     listTransforms: {
       name: "ListTransforms",
@@ -23,6 +25,7 @@ export const TransformService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TransformService.GetTransform
+     * @deprecated
      */
     getTransform: {
       name: "GetTransform",
@@ -32,6 +35,7 @@ export const TransformService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.TransformService.DeleteTransform
+     * @deprecated
      */
     deleteTransform: {
       name: "DeleteTransform",
