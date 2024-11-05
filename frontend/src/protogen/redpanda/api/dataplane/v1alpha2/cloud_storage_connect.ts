@@ -7,6 +7,9 @@ import { DeleteMountTaskRequest, DeleteMountTaskResponse, GetMountTaskRequest, G
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
+ * CloudStorageService implements endpoints for mounting and unmounting topics in Redpanda clusters.
+ * Requires that you have tiered storage enabled.
+ *
  * @generated from service redpanda.api.dataplane.v1alpha2.CloudStorageService
  */
 export const CloudStorageService = {

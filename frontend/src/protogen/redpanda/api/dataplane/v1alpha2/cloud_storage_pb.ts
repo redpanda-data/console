@@ -51,7 +51,7 @@ export class MountTopicsRequest extends Message<MountTopicsRequest> {
  */
 export class MountTopicsRequest_TopicMount extends Message<MountTopicsRequest_TopicMount> {
   /**
-   * SourceTopic is the topic name or full reference we want to mount. The full reference
+   * The topic name or full reference of the topic to mount. The full reference
    * must be used in case the same topic exists more than once. This may be the case if
    * the same topic has been unmounted multiple times. List all mountable topics to
    * find the full reference (contains topic name, cluster uuid and revision).
@@ -61,8 +61,9 @@ export class MountTopicsRequest_TopicMount extends Message<MountTopicsRequest_To
   sourceTopicReference = "";
 
   /**
-   * Alias may be provided to mount the topic under a different alias. Leave
-   * blank to re-use the source topic name.
+   * Alias may be provided to mount the topic under a different name. Leave
+   * blank to re-use the source topic name. The alias does not persist if you
+   * unmount the topic again.
    *
    * @generated from field: string alias = 2;
    */
@@ -102,6 +103,8 @@ export class MountTopicsRequest_TopicMount extends Message<MountTopicsRequest_To
  */
 export class MountTopicsResponse extends Message<MountTopicsResponse> {
   /**
+   * ID of mount
+   *
    * @generated from field: int32 mount_task_id = 1;
    */
   mountTaskId = 0;
@@ -139,7 +142,7 @@ export class MountTopicsResponse extends Message<MountTopicsResponse> {
  */
 export class UnmountTopicsRequest extends Message<UnmountTopicsRequest> {
   /**
-   * Topics is the list of topics to unmount.
+   * List of topics to unmount.
    *
    * @generated from field: repeated string topics = 1;
    */
@@ -178,6 +181,8 @@ export class UnmountTopicsRequest extends Message<UnmountTopicsRequest> {
  */
 export class UnmountTopicsResponse extends Message<UnmountTopicsResponse> {
   /**
+   * ID of unmount
+   *
    * @generated from field: int32 mount_task_id = 1;
    */
   mountTaskId = 0;
@@ -283,14 +288,16 @@ export class ListMountableTopicsResponse extends Message<ListMountableTopicsResp
  */
 export class ListMountableTopicsResponse_TopicLocation extends Message<ListMountableTopicsResponse_TopicLocation> {
   /**
-   * Name is the topic name.
+   * Topic name.
    *
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * TopicLocation is an unique identifier for the unmounted topic in this format: topic-name/cluster-uuid/revision.
+   * Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
+   * Use this as unique identifier for mounting a topic if there are multiple topics available
+   * with the same name.
    *
    * @generated from field: string topic_location = 2;
    */
@@ -330,7 +337,7 @@ export class ListMountableTopicsResponse_TopicLocation extends Message<ListMount
  */
 export class MountTask extends Message<MountTask> {
   /**
-   * Id is the unique identifier for this mount task.
+   * Unique identifier for this mount task.
    *
    * @generated from field: int32 id = 1;
    */
@@ -351,7 +358,7 @@ export class MountTask extends Message<MountTask> {
   type = MountTask_Type.UNSPECIFIED;
 
   /**
-   * Topics is the list of topics that are being mounted or unmounted.
+   * List of topics that are being mounted or unmounted.
    *
    * @generated from field: repeated redpanda.api.dataplane.v1alpha2.MountTask.Topic topics = 4;
    */
@@ -393,21 +400,21 @@ export class MountTask extends Message<MountTask> {
  */
 export enum MountTask_Type {
   /**
-   * Unspecified is the default value and indicates an invalid or unknown task type.
+   * Default value; indicates an invalid or unknown task type.
    *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * Mount represents the process of making topics available by loading them from cloud storage.
+   * Mount represents the process of making topics available in a cluster by loading them from object storage.
    *
    * @generated from enum value: TYPE_MOUNT = 1;
    */
   MOUNT = 1,
 
   /**
-   * Unmount represents the process of offloading topics back to cloud storage.
+   * Unmount represents the process of offloading topics back to object storage.
    *
    * @generated from enum value: TYPE_UNMOUNT = 2;
    */
@@ -521,7 +528,7 @@ export class MountTask_Topic extends Message<MountTask_Topic> {
   topicReference = "";
 
   /**
-   * The topic reference in the source cloud storage bucket.
+   * The topic reference in the object storage bucket.
    * This field is only set for tasks of type MOUNT.
    *
    * @generated from field: string source_topic_reference = 2;
@@ -630,7 +637,7 @@ export class ListMountTasksResponse extends Message<ListMountTasksResponse> {
  */
 export class GetMountTaskRequest extends Message<GetMountTaskRequest> {
   /**
-   * ID is the unique identifier of the mount task to retrieve.
+   * Unique identifier of the mount or unmount task to retrieve.
    *
    * @generated from field: int32 id = 1;
    */
@@ -706,7 +713,7 @@ export class GetMountTaskResponse extends Message<GetMountTaskResponse> {
  */
 export class DeleteMountTaskRequest extends Message<DeleteMountTaskRequest> {
   /**
-   * ID is the unique identifier of the mount task to delete.
+   * Unique identifier of the mount or unmount task to delete.
    *
    * @generated from field: int32 id = 1;
    */
@@ -776,14 +783,14 @@ export class DeleteMountTaskResponse extends Message<DeleteMountTaskResponse> {
  */
 export class UpdateMountTaskRequest extends Message<UpdateMountTaskRequest> {
   /**
-   * ID is the unique identifier of the mount task to delete.
+   * ID is the unique identifier of the mount or unmount to update.
    *
    * @generated from field: int32 id = 1;
    */
   id = 0;
 
   /**
-   * Action is the action to execute on mount task.
+   * Action to execute on mount task.
    *
    * @generated from field: redpanda.api.dataplane.v1alpha2.UpdateMountTaskRequest.Action action = 2;
    */

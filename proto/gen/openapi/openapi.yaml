@@ -911,13 +911,13 @@ components:
     MountTask:
       properties:
         id:
-          description: Id is the unique identifier for this mount task.
+          description: Unique identifier for this mount task.
           format: int32
           type: integer
         state:
           $ref: '#/components/schemas/MountTask.State'
         topics:
-          description: Topics is the list of topics that are being mounted or unmounted.
+          description: List of topics that are being mounted or unmounted.
           items:
             $ref: '#/components/schemas/MountTask.Topic'
           type: array
@@ -950,7 +950,7 @@ components:
       properties:
         source_topic_reference:
           description: |-
-            The topic reference in the source cloud storage bucket.
+            The topic reference in the object storage bucket.
             This field is only set for tasks of type MOUNT.
           type: string
         topic_reference:
@@ -961,8 +961,8 @@ components:
       type: object
     MountTask.Type:
       description: |2-
-         - TYPE_MOUNT: Mount represents the process of making topics available by loading them from cloud storage.
-         - TYPE_UNMOUNT: Unmount represents the process of offloading topics back to cloud storage.
+         - TYPE_MOUNT: Mount represents the process of making topics available in a cluster by loading them from object storage.
+         - TYPE_UNMOUNT: Unmount represents the process of offloading topics back to object storage.
       enum:
         - TYPE_MOUNT
         - TYPE_UNMOUNT
@@ -971,6 +971,7 @@ components:
       properties:
         mount_task_id:
           format: int32
+          title: ID of mount
           type: integer
       type: object
     Options:
@@ -1305,10 +1306,13 @@ components:
     TopicLocation:
       properties:
         name:
-          description: Name is the topic name.
+          description: Topic name.
           type: string
         topic_location:
-          description: 'TopicLocation is an unique identifier for the unmounted topic in this format: topic-name/cluster-uuid/revision.'
+          description: |-
+            Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
+            Use this as unique identifier for mounting a topic if there are multiple topics available
+            with the same name.
           type: string
       type: object
     TopicMount:
@@ -1318,12 +1322,13 @@ components:
       properties:
         alias:
           description: |-
-            Alias may be provided to mount the topic under a different alias. Leave
-            blank to re-use the source topic name.
+            Alias may be provided to mount the topic under a different name. Leave
+            blank to re-use the source topic name. The alias does not persist if you
+            unmount the topic again.
           type: string
         source_topic_reference:
           description: |-
-            SourceTopic is the topic name or full reference we want to mount. The full reference
+            The topic name or full reference of the topic to mount. The full reference
             must be used in case the same topic exists more than once. This may be the case if
             the same topic has been unmounted multiple times. List all mountable topics to
             find the full reference (contains topic name, cluster uuid and revision).
@@ -1358,6 +1363,7 @@ components:
       properties:
         mount_task_id:
           format: int32
+          title: ID of unmount
           type: integer
       type: object
     UpdateConfiguration:
@@ -1809,10 +1815,10 @@ paths:
         - CloudStorageService
   /v1alpha2/cloud-storage/mount-tasks/{id}:
     delete:
-      description: This operation deletes a mount task.
+      description: Delete a mount or unmount by ID.
       operationId: CloudStorageService_DeleteMountTask
       parameters:
-        - description: ID is the unique identifier of the mount task to delete.
+        - description: Unique identifier of the mount or unmount task to delete.
           in: path
           name: id
           required: true
@@ -1850,14 +1856,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Delete a mount task
+      summary: Delete a mount or unmount
       tags:
         - CloudStorageService
     get:
       description: Retrieves the status of a mount or unmount by ID.The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs.
       operationId: CloudStorageService_GetMountTask
       parameters:
-        - description: ID is the unique identifier of the mount task to retrieve.
+        - description: Unique identifier of the mount or unmount task to retrieve.
           in: path
           name: id
           required: true
@@ -1902,7 +1908,7 @@ paths:
       description: This operation allows performing an action on an ongoing mount task.
       operationId: CloudStorageService_UpdateMountTask
       parameters:
-        - description: ID is the unique identifier of the mount task to delete.
+        - description: ID is the unique identifier of the mount or unmount to update.
           in: path
           name: id
           required: true
@@ -1957,7 +1963,7 @@ paths:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/mount:
     post:
-      description: This operation restores topics that were offloaded to tiered storage, making them available for consumption and production again. Remounting a topic reloads its data and state to the local brokers, allowing active use of the topic while consuming some cluster resources.
+      description: Attach mountable topics from object storage to a cluster, making them available for consumption and production again. Mounting a topic reloads its data and state to the local brokers, allowing active use of the topic.
       operationId: CloudStorageService_MountTopics
       requestBody:
         content:
@@ -2001,7 +2007,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Mount topics from tiered storage
+      summary: Mount topics from object storage
       tags:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/mountable:
@@ -2044,7 +2050,7 @@ paths:
         - CloudStorageService
   /v1alpha2/cloud-storage/topics/unmount:
     post:
-      description: This operation offloads topics to tiered storage, freeing up all local cluster resources. Once a topic is unmounted, it can no longer be consumed or produced, effectively disappearing from the active cluster while its data remains safely stored in the external tiered storage.
+      description: Unmount topics to object storage, freeing up all local cluster resources. Once you unmount a topic, it can no longer be consumed or produced to. It detaches from the active cluster while its data remains safely stored in the external Object Storage.
       operationId: CloudStorageService_UnmountTopics
       requestBody:
         content:
@@ -2055,7 +2061,7 @@ paths:
               required:
                 - topics
               type: array
-        description: Topics is the list of topics to unmount.
+        description: List of topics to unmount.
         required: true
         x-originalParamName: topics
       responses:
@@ -2089,7 +2095,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Unmount topics to tiered storage
+      summary: Unmount topics to object storage
       tags:
         - CloudStorageService
   /v1alpha2/kafka-connect/clusters:
@@ -3782,7 +3788,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
