@@ -44,15 +44,6 @@ const ClusterHealthOverview = () => {
                         </Flex>
                     </Grid>
                 </ListItem>
-                <ListItem>
-                    <Grid
-                        templateColumns={{sm: '1fr', md: '1fr 1fr'}}
-                        gap={4}
-                    >
-                        <Box fontWeight="bold">Leaderless partitions</Box>
-                        <Box>{api.clusterHealth?.leaderlessPartitionsCount}</Box>
-                    </Grid>
-                </ListItem>
                 {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.LEADERLESS_PARTITIONS) && <ListItem>
                     <Grid
                         templateColumns={{sm: '1fr', md: '1fr 1fr'}}
@@ -60,7 +51,7 @@ const ClusterHealthOverview = () => {
                     >
                         <Box fontWeight="bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</Box>
                         <Flex gap={2}>
-                            <Flex gap={1}><MdOutlineWarning color={colors.brandWarning} size={18} /> <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text></Flex> <Link as={ReactRouterLink} to="/topics">View topics</Link>
+                            <Flex gap={1}><MdError color={colors.brandError} size={18} /> <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text></Flex> <Link as={ReactRouterLink} to="/topics">View topics</Link>
                         </Flex>
                     </Grid>
                 </ListItem>}
@@ -71,7 +62,7 @@ const ClusterHealthOverview = () => {
                     >
                         <Box fontWeight="bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.UNDER_REPLICATED_PARTITIONS]}</Box>
                         <Flex gap={2}>
-                            <Flex gap={1}><MdError color={colors.brandError} size={18} /> <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text></Flex> <Link as={ReactRouterLink} to="/topics">View topics</Link>
+                            <Flex gap={1}><MdOutlineWarning color={colors.brandWarning} size={18} /> <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text></Flex> <Link as={ReactRouterLink} to="/topics">View topics</Link>
                         </Flex>
                     </Grid>
                 </ListItem>}
