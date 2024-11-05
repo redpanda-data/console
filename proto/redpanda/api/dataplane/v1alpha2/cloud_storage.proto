@@ -11,7 +11,7 @@ message MountTopicsRequest {
   // TopicMount defines the migration of a topic from the cloud storage into this cluster,
   // so that it becomes available via the Kafka API.
   message TopicMount {
-    // SourceTopic is the topic name or full reference we want to mount. The full reference
+    // The topic name or full reference of the topic to mount. The full reference
     // must be used in case the same topic exists more than once. This may be the case if
     // the same topic has been unmounted multiple times. List all mountable topics to
     // find the full reference (contains topic name, cluster uuid and revision).
@@ -20,8 +20,9 @@ message MountTopicsRequest {
       (buf.validate.field).required = true,
       (buf.validate.field).string.min_len = 1
     ];
-    // Alias may be provided to mount the topic under a different alias. Leave
-    // blank to re-use the source topic name.
+    // Alias may be provided to mount the topic under a different name. Leave
+    // blank to re-use the source topic name. The alias does not persist if you
+    // unmount the topic again.
     string alias = 2 [
       (buf.validate.field).string.max_len = 249,
       (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
@@ -39,11 +40,12 @@ message MountTopicsRequest {
 }
 
 message MountTopicsResponse {
+  // ID of mount
   int32 mount_task_id = 1;
 }
 
 message UnmountTopicsRequest {
-  // Topics is the list of topics to unmount.
+  // List of topics to unmount.
   repeated string topics = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -63,6 +65,7 @@ message UnmountTopicsRequest {
 }
 
 message UnmountTopicsResponse {
+  // ID of unmount
   int32 mount_task_id = 1;
 }
 
@@ -70,9 +73,11 @@ message ListMountableTopicsRequest {}
 
 message ListMountableTopicsResponse {
   message TopicLocation {
-    // Name is the topic name.
+    // Topic name.
     string name = 1;
-    // TopicLocation is an unique identifier for the unmounted topic in this format: topic-name/cluster-uuid/revision.
+    // Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
+    // Use this as unique identifier for mounting a topic if there are multiple topics available
+    // with the same name.
     string topic_location = 2;
   }
 
@@ -84,17 +89,17 @@ message MountTask {
     // The topic reference within the current cluster, which may be either a simple topic name or a full reference
     // in the form: cluster-uuid/topic-name/revision.
     string topic_reference = 1;
-    // The topic reference in the source cloud storage bucket.
+    // The topic reference in the object storage bucket.
     // This field is only set for tasks of type MOUNT.
     string source_topic_reference = 2;
   }
 
   enum Type {
-    // Unspecified is the default value and indicates an invalid or unknown task type.
+    // Default value; indicates an invalid or unknown task type.
     TYPE_UNSPECIFIED = 0;
-    // Mount represents the process of making topics available by loading them from cloud storage.
+    // Mount represents the process of making topics available in a cluster by loading them from object storage.
     TYPE_MOUNT = 1;
-    // Unmount represents the process of offloading topics back to cloud storage.
+    // Unmount represents the process of offloading topics back to object storage.
     TYPE_UNMOUNT = 2;
   }
 
@@ -121,13 +126,13 @@ message MountTask {
     STATE_CANCELLED = 9;
   }
 
-  // Id is the unique identifier for this mount task.
+  // Unique identifier for this mount task.
   int32 id = 1;
   // State describes the current state of the mount task (e.g. "cancelled").
   State state = 2;
   // Type describes the type of this task (mount or unmount).
   Type type = 3;
-  // Topics is the list of topics that are being mounted or unmounted.
+  // List of topics that are being mounted or unmounted.
   repeated Topic topics = 4;
 }
 
@@ -138,7 +143,7 @@ message ListMountTasksResponse {
 }
 
 message GetMountTaskRequest {
-  // ID is the unique identifier of the mount task to retrieve.
+  // Unique identifier of the mount or unmount task to retrieve.
   int32 id = 1 [
     // We won't add validation required here, because 0 may be a valid id.
     (google.api.field_behavior) = REQUIRED
@@ -150,7 +155,7 @@ message GetMountTaskResponse {
 }
 
 message DeleteMountTaskRequest {
-  // ID is the unique identifier of the mount task to delete.
+  // Unique identifier of the mount or unmount task to delete.
   int32 id = 1 [(google.api.field_behavior) = REQUIRED /* We won't add validation required here, because 0 may be a valid id. */];
 }
 
@@ -165,10 +170,10 @@ message UpdateMountTaskRequest {
     ACTION_CANCEL = 4;
   }
 
-  // ID is the unique identifier of the mount task to delete.
+  // ID is the unique identifier of the mount or unmount to update.
   int32 id = 1 [(google.api.field_behavior) = REQUIRED /* We won't add validation required here, because 0 may be a valid id. */];
 
-  // Action is the action to execute on mount task.
+  // Action to execute on mount task.
   Action action = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
@@ -181,6 +186,8 @@ message UpdateMountTaskRequest {
 
 message UpdateMountTaskResponse {}
 
+// CloudStorageService implements endpoints for mounting and unmounting topics in Redpanda clusters.
+// Requires that you have tiered storage enabled.
 service CloudStorageService {
   rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {
     option (google.api.http) = {
@@ -189,8 +196,11 @@ service CloudStorageService {
       response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Mount topics from tiered storage"
-      description: "This operation restores topics that were offloaded to tiered storage, making them available for consumption and production again. Remounting a topic reloads its data and state to the local brokers, allowing active use of the topic while consuming some cluster resources."
+      summary: "Mount topics from object storage"
+      description:
+        "Attach mountable topics from object storage to a cluster, making them available "
+        "for consumption and production again. Mounting a topic reloads its data and state to the local "
+        "brokers, allowing active use of the topic."
       responses: {
         key: "200"
         value: {
@@ -219,8 +229,11 @@ service CloudStorageService {
       response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Unmount topics to tiered storage"
-      description: "This operation offloads topics to tiered storage, freeing up all local cluster resources. Once a topic is unmounted, it can no longer be consumed or produced, effectively disappearing from the active cluster while its data remains safely stored in the external tiered storage."
+      summary: "Unmount topics to object storage"
+      description:
+        "Unmount topics to object storage, freeing up all local cluster resources. "
+        "Once you unmount a topic, it can no longer be consumed or produced to. It detaches from "
+        "the active cluster while its data remains safely stored in the external Object Storage."
       responses: {
         key: "200"
         value: {
@@ -311,7 +324,9 @@ service CloudStorageService {
       summary: "Get the status of a mount or unmount by ID"
       description:
         "Retrieves the status of a mount or unmount by ID."
-        "The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs."
+        "The response provides details on the operation type (mount or unmount), its current "
+        "state, and the topics involved. Use the ID returned when you start the mount or unmount, "
+        "or use the ListMountTasks endpoint to retrieve a list of IDs."
       responses: {
         key: "200"
         value: {
@@ -339,8 +354,8 @@ service CloudStorageService {
       response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete a mount task"
-      description: "This operation deletes a mount task."
+      summary: "Delete a mount or unmount"
+      description: "Delete a mount or unmount by ID."
       responses: {
         key: "202"
         value: {
