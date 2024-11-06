@@ -67,7 +67,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 			return
 		}
 
-		cfgs, restErr := api.ConsoleSvc.GetBrokerConfig(r.Context(), int32(brokerID)) //nolint:gosec // broker ID is parsed as 32
+		cfgs, restErr := api.ConsoleSvc.GetBrokerConfig(r.Context(), int32(brokerID))
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

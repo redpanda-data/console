@@ -67,7 +67,6 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exportloopref
     - gci
     - gocheckcompilerdirectives
     - gocognit
@@ -112,6 +111,7 @@ linters-settings:
   gosec:
     excludes:
       - G104 # unhandled errors, we exclude for the same reason we do not use errcheck
+      - G115 # Go has no built-in solution to check the overflow
   # Complexity analysis: the recommendations are to be between 10-20, with a
   # default of 30 for gocyclo and gocognit, and a default of 10 for cyclop. We
   # will choose the middle of the range for cyclo analysis, which should be

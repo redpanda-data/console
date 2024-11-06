@@ -111,7 +111,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.R
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
-	sID := uint32(schemaID) //nolint:gosec // conversion
+	sID := uint32(schemaID)
 
 	return &RecordPayload{
 		DeserializedPayload: native,

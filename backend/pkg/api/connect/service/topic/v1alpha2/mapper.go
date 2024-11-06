@@ -61,7 +61,7 @@ func (*mapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.CreateTopicRequ
 	req := kmsg.NewCreateTopicsRequestTopic()
 	req.Topic = topicReq.Name
 	req.NumPartitions = partitionCount
-	req.ReplicationFactor = int16(replicationFactor) //nolint:gosec // conversion TODO we should change our API to match kafka
+	req.ReplicationFactor = int16(replicationFactor) // TODO we should change our API to match kafka
 	req.ReplicaAssignment = replicaAssignments
 	req.Configs = configs
 
