@@ -268,31 +268,11 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                         hideCloseButton
                         size="lg"
                         content={
-                            <Grid templateColumns="1fr" gap={4} w="fit-content">
-                                <GridItem>
-                                    <Text fontSize="lg" fontWeight="bold">{entry.name}</Text>
-                                    <Text fontSize="sm">{entry.documentation}</Text>
-                                </GridItem>
-                                <GridItem>
-                                    <Grid templateColumns="25% 1fr" gap={2}>
-                                        <GridItem>
-                                            <Text fontSize="md" fontWeight="bold">Value</Text>
-                                        </GridItem>
-                                        <GridItem>
-                                            <Text fontSize="sm">{friendlyValue}</Text>
-                                        </GridItem>
-                                        <GridItem>
-                                            <Text fontSize="md" fontWeight="bold">Source</Text>
-                                        </GridItem>
-                                        <GridItem>
-                                            <Text fontSize="sm">
-                                                {entry.source}
-                                            </Text>
-                                            <Text fontSize="sm">{getConfigSourceExplanation(entry.source)}</Text>
-                                        </GridItem>
-                                    </Grid>
-                                </GridItem>
-                            </Grid>
+                            <Flex flexDirection="column" gap={2}>
+                                <Text fontSize="lg" fontWeight="bold">{entry.name}</Text>
+                                <Text fontSize="sm">{entry.documentation}</Text>
+                                <Text fontSize="sm">{getConfigDescription(entry.source)}</Text>
+                            </Flex>
                         }
                     >
                         <Box>
@@ -381,23 +361,37 @@ export const ConfigEntryEditor = observer((p: {
     }
 });
 
-function getConfigSourceExplanation(source: string) {
+function getConfigDescription(source: string): string {
     switch (source) {
         case 'DEFAULT_CONFIG':
-            return 'This default value is used if the setting is not overwritten.';
-
-        case 'DYNAMIC_BROKER_CONFIG':
-        case 'DYNAMIC_BROKER_LOGGER_CONFIG':
-        case 'DYNAMIC_DEFAULT_BROKER_CONFIG':
-            return 'Set at broker level';
-
+            return 'Inherited from DEFAULT_CONFIG';
         case 'DYNAMIC_TOPIC_CONFIG':
-            return 'Set for this specific topic';
-
+            return 'This is a custom setting for this topic';
+        case 'DYNAMIC_BROKER_CONFIG':
         case 'STATIC_BROKER_CONFIG':
-            return 'Set on the broker by either a config file or environment variable';
-
+            return 'This is a custom setting set on the BROKER_CONFIG level.';
         default:
             return '';
     }
 }
+
+// function getConfigSourceExplanation(source: string) {
+//     switch (source) {
+//         case 'DEFAULT_CONFIG':
+//             return 'This default value is used if the setting is not overwritten.';
+//
+//         case 'DYNAMIC_BROKER_CONFIG':
+//         case 'DYNAMIC_BROKER_LOGGER_CONFIG':
+//         case 'DYNAMIC_DEFAULT_BROKER_CONFIG':
+//             return 'Set at broker level';
+//
+//         case 'DYNAMIC_TOPIC_CONFIG':
+//             return 'Set for this specific topic';
+//
+//         case 'STATIC_BROKER_CONFIG':
+//             return 'Set on the broker by either a config file or environment variable';
+//
+//         default:
+//             return '';
+//     }
+// }
