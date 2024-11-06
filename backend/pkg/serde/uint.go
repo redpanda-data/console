@@ -145,7 +145,7 @@ func convertStringToUint(v string, ss UintSize) ([]byte, error) {
 			return nil, fmt.Errorf("failed to encode uint payload: %w", err)
 		}
 		buf := new(bytes.Buffer)
-		binary.Write(buf, binary.BigEndian, uint8(nv)) //nolint:gosec // parsed as 8
+		binary.Write(buf, binary.BigEndian, uint8(nv))
 		byteData = buf.Bytes()
 	case Uint16:
 		nv, err := strconv.ParseUint(v, 10, 16)
@@ -153,7 +153,7 @@ func convertStringToUint(v string, ss UintSize) ([]byte, error) {
 			return nil, fmt.Errorf("failed to encode uint payload: %w", err)
 		}
 		buf := new(bytes.Buffer)
-		binary.Write(buf, binary.BigEndian, uint16(nv)) //nolint:gosec // parsed as 16
+		binary.Write(buf, binary.BigEndian, uint16(nv))
 		byteData = buf.Bytes()
 	case Uint32:
 		nv, err := strconv.ParseUint(v, 10, 32)
@@ -161,7 +161,7 @@ func convertStringToUint(v string, ss UintSize) ([]byte, error) {
 			return nil, fmt.Errorf("failed to encode uint payload: %w", err)
 		}
 		buf := new(bytes.Buffer)
-		binary.Write(buf, binary.BigEndian, uint32(nv)) //nolint:gosec // parsed as 32
+		binary.Write(buf, binary.BigEndian, uint32(nv))
 		byteData = buf.Bytes()
 	default:
 		nv, err := strconv.ParseUint(v, 10, 64)
