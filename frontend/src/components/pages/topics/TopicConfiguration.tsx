@@ -1,6 +1,6 @@
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
+import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
     PasswordInput, Popover, RadioGroup, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
 import { FC } from 'react';
