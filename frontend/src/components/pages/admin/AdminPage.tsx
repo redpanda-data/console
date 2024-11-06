@@ -21,6 +21,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
+import { AdminDebugBundle } from './Admin.DebugBundle';
 import { AdminLicenses } from './Admin.Licenses';
 
 
@@ -39,37 +40,49 @@ export default class AdminPage extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshAdminInfo(force);
+        void api.refreshDebugBundleStatuses();
     }
 
     render() {
         if (api.adminInfo === undefined) return DefaultSkeleton;
         const hasAdminPermissions = api.adminInfo !== null;
 
+        const items = [
+            {
+                key: 'users',
+                name: 'Users',
+                component: <AdminUsers />
+            },
+            {
+                key: 'roles',
+                name: 'Roles',
+                component: <AdminRoles />
+            },
+            {
+                key: 'permissionsDebug',
+                name: 'Permissions debug',
+                component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
+            },
+        ]
+
+        if(api.userData?.canViewDebugBundle) {
+            items.push({
+                key: 'debugBundle',
+                name: 'Debug bundle',
+                component: <AdminDebugBundle/>
+            });
+        }
+
+        items.push({
+            key: 'licenses',
+            name: 'License details',
+            component: <AdminLicenses />
+        })
+
         return <PageContent>
             <Section>
                 {hasAdminPermissions ?
-                    <Tabs size="lg" items={[
-                        {
-                            key: 'users',
-                            name: 'Users',
-                            component: <AdminUsers />
-                        },
-                        {
-                            key: 'roles',
-                            name: 'Roles',
-                            component: <AdminRoles />
-                        },
-                        {
-                            key: 'debug',
-                            name: 'Debug',
-                            component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
-                        },
-                        {
-                            key: 'licenses',
-                            name: 'License details',
-                            component: <AdminLicenses />
-                        },
-                    ]} />
+                    <Tabs size="lg" items={items} />
 
                     : <div>
                         <Alert status="error">

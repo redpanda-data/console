@@ -526,6 +526,7 @@ export interface UserData {
     canCreateSchemas: boolean;
     canDeleteSchemas: boolean;
     canManageSchemaRegistry: boolean;
+    canViewDebugBundle: boolean;
 
     canListTransforms: boolean;
     canCreateTransforms: boolean;
