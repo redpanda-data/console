@@ -83,6 +83,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
                         <Statistic title="Broker ID" value={this.id} />
                         <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
                         <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
+                        <Statistic title="IP address" value={broker.address} />
                         {broker.rack && <Statistic title="Rack" value={broker.rack} />}
                     </Flex>
                 </Section>

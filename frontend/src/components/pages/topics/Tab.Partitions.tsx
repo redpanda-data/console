@@ -17,7 +17,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { numberToThousandsString, DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
-import { Alert, AlertIcon, Text, DataTable, Flex, Popover, Box } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Text, DataTable, Flex, Popover, Box, Badge } from '@redpanda-data/ui';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
@@ -37,6 +37,9 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
     if (partitions === null) {
       return <div />; // todo: show the error (if one was reported);
     }
+
+    const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds;
+    const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(({topicName}) => topicName === topic.topicName)?.partitionIds
 
     let warning: JSX.Element = <></>;
     if (topic.cleanupPolicy.toLowerCase() === 'compact')
@@ -67,17 +70,24 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({topic}) => {
                     {
                         header: 'Partition ID',
                         accessorKey: 'id',
-                        cell: ({row: {original: partition}}) =>
-                            partition.hasErrors ? (
+                        cell: ({row: {original: partition}}) => {
+                            const header = partition.hasErrors ? (
                                 <Flex justifyContent="space-between">
-                                  <Text>{partition.id}</Text>
-                                  <Box>
-                                    <PartitionError partition={partition}/>
-                                  </Box>
+                                    <Text>{partition.id}</Text>
+                                    <Box>
+                                        <PartitionError partition={partition}/>
+                                    </Box>
                                 </Flex>
-                            ) : (
+                            ):(
                                 partition.id
-                            ),
+                            );
+
+                            return <Flex alignItems="center" gap={2}>
+                                {header}
+                                {leaderLessPartitions?.includes(partition.id) && <Badge variant="error">Leaderless</Badge>}
+                                {underReplicatedPartitions?.includes(partition.id) && <Badge variant="warning">Under-replicated</Badge>}
+                            </Flex>
+                        },
                     },
                     {
                         id: 'waterMarkLow',

@@ -35,15 +35,18 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// DebugBundleServiceGetClusterHealthProcedure is the fully-qualified name of the
+	// DebugBundleService's GetClusterHealth RPC.
+	DebugBundleServiceGetClusterHealthProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/GetClusterHealth"
 	// DebugBundleServiceCreateDebugBundleProcedure is the fully-qualified name of the
 	// DebugBundleService's CreateDebugBundle RPC.
 	DebugBundleServiceCreateDebugBundleProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/CreateDebugBundle"
 	// DebugBundleServiceGetDebugBundleStatusProcedure is the fully-qualified name of the
 	// DebugBundleService's GetDebugBundleStatus RPC.
 	DebugBundleServiceGetDebugBundleStatusProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/GetDebugBundleStatus"
-	// DebugBundleServiceDeleteDebugBundleProcedure is the fully-qualified name of the
-	// DebugBundleService's DeleteDebugBundle RPC.
-	DebugBundleServiceDeleteDebugBundleProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/DeleteDebugBundle"
+	// DebugBundleServiceCancelDebugBundleProcessProcedure is the fully-qualified name of the
+	// DebugBundleService's CancelDebugBundleProcess RPC.
+	DebugBundleServiceCancelDebugBundleProcessProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/CancelDebugBundleProcess"
 	// DebugBundleServiceDeleteDebugBundleFileProcedure is the fully-qualified name of the
 	// DebugBundleService's DeleteDebugBundleFile RPC.
 	DebugBundleServiceDeleteDebugBundleFileProcedure = "/redpanda.api.console.v1alpha1.DebugBundleService/DeleteDebugBundleFile"
@@ -51,19 +54,21 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	debugBundleServiceServiceDescriptor                     = v1alpha1.File_redpanda_api_console_v1alpha1_debug_bundle_proto.Services().ByName("DebugBundleService")
-	debugBundleServiceCreateDebugBundleMethodDescriptor     = debugBundleServiceServiceDescriptor.Methods().ByName("CreateDebugBundle")
-	debugBundleServiceGetDebugBundleStatusMethodDescriptor  = debugBundleServiceServiceDescriptor.Methods().ByName("GetDebugBundleStatus")
-	debugBundleServiceDeleteDebugBundleMethodDescriptor     = debugBundleServiceServiceDescriptor.Methods().ByName("DeleteDebugBundle")
-	debugBundleServiceDeleteDebugBundleFileMethodDescriptor = debugBundleServiceServiceDescriptor.Methods().ByName("DeleteDebugBundleFile")
+	debugBundleServiceServiceDescriptor                        = v1alpha1.File_redpanda_api_console_v1alpha1_debug_bundle_proto.Services().ByName("DebugBundleService")
+	debugBundleServiceGetClusterHealthMethodDescriptor         = debugBundleServiceServiceDescriptor.Methods().ByName("GetClusterHealth")
+	debugBundleServiceCreateDebugBundleMethodDescriptor        = debugBundleServiceServiceDescriptor.Methods().ByName("CreateDebugBundle")
+	debugBundleServiceGetDebugBundleStatusMethodDescriptor     = debugBundleServiceServiceDescriptor.Methods().ByName("GetDebugBundleStatus")
+	debugBundleServiceCancelDebugBundleProcessMethodDescriptor = debugBundleServiceServiceDescriptor.Methods().ByName("CancelDebugBundleProcess")
+	debugBundleServiceDeleteDebugBundleFileMethodDescriptor    = debugBundleServiceServiceDescriptor.Methods().ByName("DeleteDebugBundleFile")
 )
 
 // DebugBundleServiceClient is a client for the redpanda.api.console.v1alpha1.DebugBundleService
 // service.
 type DebugBundleServiceClient interface {
+	GetClusterHealth(context.Context, *connect.Request[v1alpha1.GetClusterHealthRequest]) (*connect.Response[v1alpha1.GetClusterHealthResponse], error)
 	CreateDebugBundle(context.Context, *connect.Request[v1alpha1.CreateDebugBundleRequest]) (*connect.Response[v1alpha1.CreateDebugBundleResponse], error)
 	GetDebugBundleStatus(context.Context, *connect.Request[v1alpha1.GetDebugBundleStatusRequest]) (*connect.Response[v1alpha1.GetDebugBundleStatusResponse], error)
-	DeleteDebugBundle(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleResponse], error)
+	CancelDebugBundleProcess(context.Context, *connect.Request[v1alpha1.CancelDebugBundleProcessRequest]) (*connect.Response[v1alpha1.CancelDebugBundleProcessResponse], error)
 	DeleteDebugBundleFile(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleFileRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleFileResponse], error)
 }
 
@@ -78,6 +83,12 @@ type DebugBundleServiceClient interface {
 func NewDebugBundleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DebugBundleServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &debugBundleServiceClient{
+		getClusterHealth: connect.NewClient[v1alpha1.GetClusterHealthRequest, v1alpha1.GetClusterHealthResponse](
+			httpClient,
+			baseURL+DebugBundleServiceGetClusterHealthProcedure,
+			connect.WithSchema(debugBundleServiceGetClusterHealthMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 		createDebugBundle: connect.NewClient[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse](
 			httpClient,
 			baseURL+DebugBundleServiceCreateDebugBundleProcedure,
@@ -90,10 +101,10 @@ func NewDebugBundleServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(debugBundleServiceGetDebugBundleStatusMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		deleteDebugBundle: connect.NewClient[v1alpha1.DeleteDebugBundleRequest, v1alpha1.DeleteDebugBundleResponse](
+		cancelDebugBundleProcess: connect.NewClient[v1alpha1.CancelDebugBundleProcessRequest, v1alpha1.CancelDebugBundleProcessResponse](
 			httpClient,
-			baseURL+DebugBundleServiceDeleteDebugBundleProcedure,
-			connect.WithSchema(debugBundleServiceDeleteDebugBundleMethodDescriptor),
+			baseURL+DebugBundleServiceCancelDebugBundleProcessProcedure,
+			connect.WithSchema(debugBundleServiceCancelDebugBundleProcessMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		deleteDebugBundleFile: connect.NewClient[v1alpha1.DeleteDebugBundleFileRequest, v1alpha1.DeleteDebugBundleFileResponse](
@@ -107,10 +118,16 @@ func NewDebugBundleServiceClient(httpClient connect.HTTPClient, baseURL string, 
 
 // debugBundleServiceClient implements DebugBundleServiceClient.
 type debugBundleServiceClient struct {
-	createDebugBundle     *connect.Client[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse]
-	getDebugBundleStatus  *connect.Client[v1alpha1.GetDebugBundleStatusRequest, v1alpha1.GetDebugBundleStatusResponse]
-	deleteDebugBundle     *connect.Client[v1alpha1.DeleteDebugBundleRequest, v1alpha1.DeleteDebugBundleResponse]
-	deleteDebugBundleFile *connect.Client[v1alpha1.DeleteDebugBundleFileRequest, v1alpha1.DeleteDebugBundleFileResponse]
+	getClusterHealth         *connect.Client[v1alpha1.GetClusterHealthRequest, v1alpha1.GetClusterHealthResponse]
+	createDebugBundle        *connect.Client[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse]
+	getDebugBundleStatus     *connect.Client[v1alpha1.GetDebugBundleStatusRequest, v1alpha1.GetDebugBundleStatusResponse]
+	cancelDebugBundleProcess *connect.Client[v1alpha1.CancelDebugBundleProcessRequest, v1alpha1.CancelDebugBundleProcessResponse]
+	deleteDebugBundleFile    *connect.Client[v1alpha1.DeleteDebugBundleFileRequest, v1alpha1.DeleteDebugBundleFileResponse]
+}
+
+// GetClusterHealth calls redpanda.api.console.v1alpha1.DebugBundleService.GetClusterHealth.
+func (c *debugBundleServiceClient) GetClusterHealth(ctx context.Context, req *connect.Request[v1alpha1.GetClusterHealthRequest]) (*connect.Response[v1alpha1.GetClusterHealthResponse], error) {
+	return c.getClusterHealth.CallUnary(ctx, req)
 }
 
 // CreateDebugBundle calls redpanda.api.console.v1alpha1.DebugBundleService.CreateDebugBundle.
@@ -123,9 +140,10 @@ func (c *debugBundleServiceClient) GetDebugBundleStatus(ctx context.Context, req
 	return c.getDebugBundleStatus.CallUnary(ctx, req)
 }
 
-// DeleteDebugBundle calls redpanda.api.console.v1alpha1.DebugBundleService.DeleteDebugBundle.
-func (c *debugBundleServiceClient) DeleteDebugBundle(ctx context.Context, req *connect.Request[v1alpha1.DeleteDebugBundleRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleResponse], error) {
-	return c.deleteDebugBundle.CallUnary(ctx, req)
+// CancelDebugBundleProcess calls
+// redpanda.api.console.v1alpha1.DebugBundleService.CancelDebugBundleProcess.
+func (c *debugBundleServiceClient) CancelDebugBundleProcess(ctx context.Context, req *connect.Request[v1alpha1.CancelDebugBundleProcessRequest]) (*connect.Response[v1alpha1.CancelDebugBundleProcessResponse], error) {
+	return c.cancelDebugBundleProcess.CallUnary(ctx, req)
 }
 
 // DeleteDebugBundleFile calls
@@ -137,9 +155,10 @@ func (c *debugBundleServiceClient) DeleteDebugBundleFile(ctx context.Context, re
 // DebugBundleServiceHandler is an implementation of the
 // redpanda.api.console.v1alpha1.DebugBundleService service.
 type DebugBundleServiceHandler interface {
+	GetClusterHealth(context.Context, *connect.Request[v1alpha1.GetClusterHealthRequest]) (*connect.Response[v1alpha1.GetClusterHealthResponse], error)
 	CreateDebugBundle(context.Context, *connect.Request[v1alpha1.CreateDebugBundleRequest]) (*connect.Response[v1alpha1.CreateDebugBundleResponse], error)
 	GetDebugBundleStatus(context.Context, *connect.Request[v1alpha1.GetDebugBundleStatusRequest]) (*connect.Response[v1alpha1.GetDebugBundleStatusResponse], error)
-	DeleteDebugBundle(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleResponse], error)
+	CancelDebugBundleProcess(context.Context, *connect.Request[v1alpha1.CancelDebugBundleProcessRequest]) (*connect.Response[v1alpha1.CancelDebugBundleProcessResponse], error)
 	DeleteDebugBundleFile(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleFileRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleFileResponse], error)
 }
 
@@ -149,6 +168,12 @@ type DebugBundleServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewDebugBundleServiceHandler(svc DebugBundleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	debugBundleServiceGetClusterHealthHandler := connect.NewUnaryHandler(
+		DebugBundleServiceGetClusterHealthProcedure,
+		svc.GetClusterHealth,
+		connect.WithSchema(debugBundleServiceGetClusterHealthMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	debugBundleServiceCreateDebugBundleHandler := connect.NewUnaryHandler(
 		DebugBundleServiceCreateDebugBundleProcedure,
 		svc.CreateDebugBundle,
@@ -161,10 +186,10 @@ func NewDebugBundleServiceHandler(svc DebugBundleServiceHandler, opts ...connect
 		connect.WithSchema(debugBundleServiceGetDebugBundleStatusMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	debugBundleServiceDeleteDebugBundleHandler := connect.NewUnaryHandler(
-		DebugBundleServiceDeleteDebugBundleProcedure,
-		svc.DeleteDebugBundle,
-		connect.WithSchema(debugBundleServiceDeleteDebugBundleMethodDescriptor),
+	debugBundleServiceCancelDebugBundleProcessHandler := connect.NewUnaryHandler(
+		DebugBundleServiceCancelDebugBundleProcessProcedure,
+		svc.CancelDebugBundleProcess,
+		connect.WithSchema(debugBundleServiceCancelDebugBundleProcessMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	debugBundleServiceDeleteDebugBundleFileHandler := connect.NewUnaryHandler(
@@ -175,12 +200,14 @@ func NewDebugBundleServiceHandler(svc DebugBundleServiceHandler, opts ...connect
 	)
 	return "/redpanda.api.console.v1alpha1.DebugBundleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case DebugBundleServiceGetClusterHealthProcedure:
+			debugBundleServiceGetClusterHealthHandler.ServeHTTP(w, r)
 		case DebugBundleServiceCreateDebugBundleProcedure:
 			debugBundleServiceCreateDebugBundleHandler.ServeHTTP(w, r)
 		case DebugBundleServiceGetDebugBundleStatusProcedure:
 			debugBundleServiceGetDebugBundleStatusHandler.ServeHTTP(w, r)
-		case DebugBundleServiceDeleteDebugBundleProcedure:
-			debugBundleServiceDeleteDebugBundleHandler.ServeHTTP(w, r)
+		case DebugBundleServiceCancelDebugBundleProcessProcedure:
+			debugBundleServiceCancelDebugBundleProcessHandler.ServeHTTP(w, r)
 		case DebugBundleServiceDeleteDebugBundleFileProcedure:
 			debugBundleServiceDeleteDebugBundleFileHandler.ServeHTTP(w, r)
 		default:
@@ -192,6 +219,10 @@ func NewDebugBundleServiceHandler(svc DebugBundleServiceHandler, opts ...connect
 // UnimplementedDebugBundleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedDebugBundleServiceHandler struct{}
 
+func (UnimplementedDebugBundleServiceHandler) GetClusterHealth(context.Context, *connect.Request[v1alpha1.GetClusterHealthRequest]) (*connect.Response[v1alpha1.GetClusterHealthResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.DebugBundleService.GetClusterHealth is not implemented"))
+}
+
 func (UnimplementedDebugBundleServiceHandler) CreateDebugBundle(context.Context, *connect.Request[v1alpha1.CreateDebugBundleRequest]) (*connect.Response[v1alpha1.CreateDebugBundleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.DebugBundleService.CreateDebugBundle is not implemented"))
 }
@@ -200,8 +231,8 @@ func (UnimplementedDebugBundleServiceHandler) GetDebugBundleStatus(context.Conte
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.DebugBundleService.GetDebugBundleStatus is not implemented"))
 }
 
-func (UnimplementedDebugBundleServiceHandler) DeleteDebugBundle(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.DebugBundleService.DeleteDebugBundle is not implemented"))
+func (UnimplementedDebugBundleServiceHandler) CancelDebugBundleProcess(context.Context, *connect.Request[v1alpha1.CancelDebugBundleProcessRequest]) (*connect.Response[v1alpha1.CancelDebugBundleProcessResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.DebugBundleService.CancelDebugBundleProcess is not implemented"))
 }
 
 func (UnimplementedDebugBundleServiceHandler) DeleteDebugBundleFile(context.Context, *connect.Request[v1alpha1.DeleteDebugBundleFileRequest]) (*connect.Response[v1alpha1.DeleteDebugBundleFileResponse], error) {

@@ -1,17 +1,4 @@
 .overviewGrid {
-    display: grid;
-
-    grid-template-areas:
-        "health    health"
-        "broker    details"
-        "resources details"
-        ".         details"
-    ;
-    grid-template-columns: fit-content(60%) 1fr;
-    grid-template-rows: auto auto 1fr;
-    align-items: start;
-
-    gap: 1.5rem;
 
     h3 {
         margin-bottom: 22px;
