@@ -374,24 +374,3 @@ function getConfigDescription(source: string): string {
             return '';
     }
 }
-
-// function getConfigSourceExplanation(source: string) {
-//     switch (source) {
-//         case 'DEFAULT_CONFIG':
-//             return 'This default value is used if the setting is not overwritten.';
-//
-//         case 'DYNAMIC_BROKER_CONFIG':
-//         case 'DYNAMIC_BROKER_LOGGER_CONFIG':
-//         case 'DYNAMIC_DEFAULT_BROKER_CONFIG':
-//             return 'Set at broker level';
-//
-//         case 'DYNAMIC_TOPIC_CONFIG':
-//             return 'Set for this specific topic';
-//
-//         case 'STATIC_BROKER_CONFIG':
-//             return 'Set on the broker by either a config file or environment variable';
-//
-//         default:
-//             return '';
-//     }
-// }
