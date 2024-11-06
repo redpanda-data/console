@@ -104,7 +104,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// v1alpha2
 
 	aclSvc := apiaclsvc.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
-	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
+	topicSvc := topicsvc.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc, api.RedpandaSvc)
 	var userSvc dataplanev1alpha2connect.UserServiceHandler = apiusersvc.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaSvc, api.ConsoleSvc, api.Hooks.Authorization.IsProtectedKafkaUser)
 	transformSvc := transformsvc.NewService(api.Cfg, api.Logger.Named("transform_service"), api.RedpandaSvc, v)
 	kafkaConnectSvc := apikafkaconnectsvc.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
@@ -149,6 +149,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
 			dataplanev1alpha2connect.TransformServiceName:     transformSvc,
 			dataplanev1alpha2connect.KafkaConnectServiceName:  kafkaConnectSvc,
+			dataplanev1alpha2connect.CloudStorageServiceName:  dataplanev1alpha2connect.UnimplementedCloudStorageServiceHandler{},
 		},
 	})
 
@@ -223,6 +224,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	kafkaConnectSvcPath, kafkaConnectSvcHandler := dataplanev1alpha2connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.KafkaConnectServiceName].(dataplanev1alpha2connect.KafkaConnectServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	cloudStorageSvcPath, cloudStorageSvcHandler := dataplanev1alpha2connect.NewCloudStorageServiceHandler(
+		hookOutput.Services[dataplanev1alpha2connect.CloudStorageServiceName].(dataplanev1alpha2connect.CloudStorageServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
@@ -300,6 +304,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: dataplanev1alpha2connect.KafkaConnectServiceName,
 			MountPath:   kafkaConnectSvcPath,
 			Handler:     kafkaConnectSvcHandler,
+		},
+		{
+			ServiceName: dataplanev1alpha2connect.CloudStorageServiceName,
+			MountPath:   cloudStorageSvcPath,
+			Handler:     cloudStorageSvcHandler,
 		},
 	}
 

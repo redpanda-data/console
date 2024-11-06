@@ -276,6 +276,41 @@ func (s *Service) GetBrokers(ctx context.Context) ([]adminapi.Broker, error) {
 	return s.adminClient.Brokers(ctx)
 }
 
+// MountTopics mounts topics according to the provided configuration.
+func (s *Service) MountTopics(ctx context.Context, config adminapi.MountConfiguration) (adminapi.MigrationInfo, error) {
+	return s.adminClient.MountTopics(ctx, config)
+}
+
+// UnmountTopics unmounts topics according to the provided configuration.
+func (s *Service) UnmountTopics(ctx context.Context, config adminapi.UnmountConfiguration) (adminapi.MigrationInfo, error) {
+	return s.adminClient.UnmountTopics(ctx, config)
+}
+
+// ListMountableTopics retrieves a list of topics that can be mounted from cloud storage.
+func (s *Service) ListMountableTopics(ctx context.Context) (adminapi.ListMountableTopicsResponse, error) {
+	return s.adminClient.ListMountableTopics(ctx)
+}
+
+// ListMountTasks returns a list of all ongoing mount, and unmount operations.
+func (s *Service) ListMountTasks(ctx context.Context) ([]adminapi.MigrationState, error) {
+	return s.adminClient.ListMigrations(ctx)
+}
+
+// GetMountTask describes the state of the requested mount task.
+func (s *Service) GetMountTask(ctx context.Context, id int) (adminapi.MigrationState, error) {
+	return s.adminClient.GetMigration(ctx, id)
+}
+
+// DeleteMountTask removes a mount task.
+func (s *Service) DeleteMountTask(ctx context.Context, id int) error {
+	return s.adminClient.DeleteMigration(ctx, id)
+}
+
+// UpdateMountTask executes a migration action (e.g. cancel) on the given mount or unmount task.
+func (s *Service) UpdateMountTask(ctx context.Context, id int, action adminapi.MigrationAction) error {
+	return s.adminClient.ExecuteMigration(ctx, id, action)
+}
+
 // CheckFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
