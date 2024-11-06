@@ -270,25 +270,24 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                         content={
                             <Grid templateColumns="1fr" gap={4} w="fit-content">
                                 <GridItem>
-                                    <strong>{entry.name}</strong>
-                                    <br/>
-                                    {entry.documentation}
+                                    <Text fontSize="lg" fontWeight="bold">{entry.name}</Text>
+                                    <Text fontSize="sm">{entry.documentation}</Text>
                                 </GridItem>
                                 <GridItem>
                                     <Grid templateColumns="25% 1fr" gap={2}>
                                         <GridItem>
-                                            <strong>Value</strong>
+                                            <Text fontSize="md" fontWeight="bold">Value</Text>
                                         </GridItem>
                                         <GridItem>
-                                            <span>{friendlyValue}</span>
+                                            <Text fontSize="sm">{friendlyValue}</Text>
                                         </GridItem>
                                         <GridItem>
-                                            <strong>Source</strong>
+                                            <Text fontSize="md" fontWeight="bold">Source</Text>
                                         </GridItem>
                                         <GridItem>
-                                            <div>
-                                                <code>{entry.source}</code>
-                                            </div>
+                                            <Text fontSize="sm">
+                                                {entry.source}
+                                            </Text>
                                             <Text fontSize="sm">{getConfigSourceExplanation(entry.source)}</Text>
                                         </GridItem>
                                     </Grid>
