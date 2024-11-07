@@ -9,7 +9,8 @@ import "redpanda/api/console/v1alpha1/common.proto";
 message ListMessagesRequest {
   string topic = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
   ]; // Topic name.
 
   sint64 start_offset = 2 [(buf.validate.field).sint64 = {
