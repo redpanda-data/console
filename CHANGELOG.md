@@ -2,7 +2,7 @@
 
 ## v2.8.0-beta.1
 
-- [FEATURE] Add debug bundle support to Console, enabling Console to now generate cluster wide debug bundles.
+- [FEATURE] Add debug bundle support, enabling Console to now generate cluster wide debug bundles on Redpanda clusters.
 - [CHANGE] Improve Redpanda license checks.
 - [CHANGE] Move to rspack/rsbuild.
 - [IMPROVEMENT] Add support for CBOR payload deserialization.
