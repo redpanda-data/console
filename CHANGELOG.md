@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.8.0-beta.1
+
+- [FEATURE] Add debug bundle support to Console, enabling Console to now generate cluster wide debug bundles.
+- [CHANGE] Improve Redpanda license checks.
+- [CHANGE] Move to rspack/rsbuild.
+- [IMPROVEMENT] Add support for CBOR payload deserialization.
+- [IMPROVEMENT] Make git max clone depth configurable.
+- [IMPROVEMENT] Redpanda Connect in Cloud functionality and usability improvements.
+- [IMPROVEMENT] Relax regex restriction to allow greater set of characters for Role names.
+- [BUFGIX] Fix a bug with topic creation under certain scenarios.
+- [BUFGIX] Fix topic list sorting to use partition count.
+
 ## v2.7.2 / 2024-11-06
 
 - [SECURITY] Built with Go 1.23.1 which comes with secure CipherSuites by default.
