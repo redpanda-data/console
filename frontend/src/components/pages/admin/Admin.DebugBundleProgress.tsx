@@ -14,7 +14,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Flex, Spinner, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import DebugBundleOverview from './DebugBundleOverview';

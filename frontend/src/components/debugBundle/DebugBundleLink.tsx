@@ -2,7 +2,7 @@ import React from 'react';
 import { DebugBundleStatus, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { config } from '../../config';
 import { api } from '../../state/backendApi';
-import { Box, Button, Text, IconButton, Link } from '@redpanda-data/ui';
+import { Box, Text, IconButton, Link } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
 
 const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = true }: { statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[], showDeleteButton?: boolean, showDatetime?: boolean }) => {
