@@ -54,13 +54,13 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box>
                 <Text>Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine it’s running on. This will bundle the collected data into a ZIP file.</Text>
 
-                {api.isDebugBundleInProgress && <Flex flexDirection="column" gap={4} mt={6}>
-                    <Flex alignItems="center" gap={2}><Spinner size="sm" /> <Text>Generating bundle...</Text></Flex>
-                </Flex>}
+                {api.isDebugBundleInProgress && <Box mt={6}>
+                    <Text>Generating bundle...</Text>
+                </Box>}
 
                 {!api.isDebugBundleInProgress && <Box>
                     <Flex gap={2} my={2}>
-                        <Text fontWeight="bold">Debug bundle complete</Text>
+                        <Text fontWeight="bold">Debug bundle complete:</Text>
                         {api.canDownloadDebugBundle &&
                         <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
                     </Flex>
