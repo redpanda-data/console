@@ -166,6 +166,10 @@ message GetDebugBundleStatusResponse {
   }
 
   repeated DebugBundleBrokerStatus broker_statuses = 1;
+
+  // true IFF all broker statuses return
+  // "debug bundle process" not started error code
+  bool debug_bundle_process_not_started = 2;
 }
 
 message CancelDebugBundleProcessRequest {
