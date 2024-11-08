@@ -56,15 +56,6 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
 
                 {api.isDebugBundleInProgress && <Flex flexDirection="column" gap={4} mt={6}>
                     <Flex alignItems="center" gap={2}><Spinner size="sm" /> <Text>Generating bundle...</Text></Flex>
-                    <Box>
-                        <Button variant="outline" onClick={() => {
-                            api.debugBundleStatuses.forEach(status => {
-                                if (status.value.case==='bundleStatus') {
-                                    void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
-                                }
-                            });
-                        }}>Stop</Button>
-                    </Box>
                 </Flex>}
 
                 {!api.isDebugBundleInProgress && <Box>
@@ -73,10 +64,19 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                         {api.canDownloadDebugBundle &&
                         <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
                     </Flex>
-                    <Button as={ReactRouterLink} to="/admin">Done</Button>
                 </Box>}
 
                 {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
+
+                <Box my={2}>
+                    {api.isDebugBundleInProgress ? <Button variant="outline" onClick={() => {
+                        api.debugBundleStatuses.forEach(status => {
+                            if (status.value.case==='bundleStatus') {
+                                void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
+                            }
+                        });
+                    }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin">Done</Button>}
+                </Box>
             </Box>
         );
     }
