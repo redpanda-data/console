@@ -23,8 +23,7 @@ import { Link } from 'react-router-dom';
 import { Link as ChLink } from '@redpanda-data/ui';
 import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
-import { ConnectError } from '@connectrpc/connect';
-import { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
+import { formatPipelineError } from './errors';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -139,32 +138,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                 appGlobal.history.push('/connect-clusters');
             })
             .catch(err => {
-                const details = [];
-                let genDesc = String(err);
-                if (err instanceof ConnectError) {
-                    genDesc = err.message;
-                    for (const detail of err.details) {
-                        if (isLintHint(detail)) {
-                            const hint = LintHint.fromJsonString(JSON.stringify(detail.debug));
-                            details.push(`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`)
-                        }
-                    }
-                }
-                let desc = <Text as="span">{genDesc}</Text>
-                if (details.length > 0) {
-                    desc = <>
-                        <Text as="span">{genDesc}</Text>
-                        <ul>
-                            {details.map((d, idx) => (
-                                <li style={{ listStylePosition: 'inside' }} key={idx}>{d}</li>
-                            ))}
-                        </ul>
-                    </>
-                }
                 toast({
                     status: 'error', duration: null, isClosable: true,
                     title: 'Failed to create pipeline',
-                    description: desc,
+                    description: formatPipelineError(err),
                 })
             })
             .finally(() => {
@@ -264,7 +241,3 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
 
     return matchCount > 0;
 };
-
-function isLintHint(obj: any): obj is { type: string, debug: any } {
-    return obj && obj.type === LintHint.typeName;
-}

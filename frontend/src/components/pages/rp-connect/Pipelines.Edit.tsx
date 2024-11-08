@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { PipelineEditor } from './Pipelines.Create';
 import { Link as ChLink } from '@redpanda-data/ui';
+import { formatPipelineError } from './errors';
 const { ToastContainer, toast } = createStandaloneToast();
 
 
@@ -146,7 +147,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
                 toast({
                     status: 'error', duration: null, isClosable: true,
                     title: 'Failed to update pipeline',
-                    description: String(err),
+                    description: formatPipelineError(err),
                 })
             })
             .finally(() => {
