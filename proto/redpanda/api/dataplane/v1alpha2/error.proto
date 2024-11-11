@@ -28,4 +28,7 @@ enum Reason {
 
   // Invalid pipeline configuration.
   REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION = 8;
+
+  // The Redpanda enterprise license has expired and is no longer valid.
+  REASON_ENTERPRISE_LICENSE_EXPIRED = 9;
 }
