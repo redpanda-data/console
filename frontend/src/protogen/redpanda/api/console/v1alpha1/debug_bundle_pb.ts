@@ -643,9 +643,9 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
   brokerStatuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
 
   /**
-   * true IFF any of the brokers have debug bundle process
+   * true if any of the brokers have debug bundle process
    * status regardless of error state
-   * false if we get "not debug bundle process" error
+   * false if we get "debug bundle process not started" error
    * for all brokers
    *
    * @generated from field: bool has_debug_process = 2;

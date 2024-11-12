@@ -796,9 +796,9 @@ type GetDebugBundleStatusResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	BrokerStatuses []*GetDebugBundleStatusResponse_DebugBundleBrokerStatus `protobuf:"bytes,1,rep,name=broker_statuses,json=brokerStatuses,proto3" json:"broker_statuses,omitempty"`
-	// true IFF any of the brokers have debug bundle process
+	// true if any of the brokers have debug bundle process
 	// status regardless of error state
-	// false if we get "not debug bundle process" error
+	// false if we get "debug bundle process not started" error
 	// for all brokers
 	HasDebugProcess bool `protobuf:"varint,2,opt,name=has_debug_process,json=hasDebugProcess,proto3" json:"has_debug_process,omitempty"`
 }
