@@ -477,6 +477,9 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
 				r.Patch("/operations/configs", api.handlePatchConfigs())
 
+				// Producer Compression Type Default
+				r.Get("/producer-compression-type", api.handleGetProducerCompressionType())
+
 				// Schema Registry
 				r.Get("/schema-registry/mode", api.handleGetSchemaRegistryMode())
 				r.Get("/schema-registry/config", api.handleGetSchemaRegistryConfig())

@@ -79,6 +79,7 @@ import {
     PatchTopicConfigsRequest,
     Payload,
     ProduceRecordsResponse,
+    ProducerCompressionTypeResponse,
     PublishRecordsRequest,
     QuotaResponse,
     ResourceConfig,
@@ -324,6 +325,8 @@ const apiStore = {
     topicConsumers: new Map<string, TopicConsumer[]>(),
     topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
+    producerCompressionType: undefined as ProtoCompressionType | undefined,
+
     serviceAccounts: undefined as GetUsersResponse | undefined | null,
     ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
@@ -455,6 +458,31 @@ const apiStore = {
                 const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
                 v.documentation.text = text;
                 this.topicDocumentation.set(topicName, v.documentation);
+            }, addError);
+    },
+
+    refreshProducerCompressionType(force?: boolean) {
+        cachedApiRequest<ProducerCompressionTypeResponse>(`${appConfig.restBasePath}/producer-compression-type`, force)
+            .then(r => {
+                if (r.producerCompressionType!=null && r.producerCompressionType.includes('snappy')) {
+                    this.producerCompressionType = ProtoCompressionType.SNAPPY;
+                    return
+                } if (r.producerCompressionType!=null && r.producerCompressionType?.includes('uncompressed')) {
+                    this.producerCompressionType = ProtoCompressionType.UNCOMPRESSED;
+                    return
+                } if (r.producerCompressionType!=null && r.producerCompressionType?.includes('gzip')) {
+                    this.producerCompressionType = ProtoCompressionType.GZIP;
+                    return
+                } if (r.producerCompressionType!=null && r.producerCompressionType?.includes('lz4')) {
+                    this.producerCompressionType = ProtoCompressionType.LZ4;
+                    return
+                } if (r.producerCompressionType!=null && r.producerCompressionType?.includes('zstd')) {
+                    this.producerCompressionType = ProtoCompressionType.ZSTD;
+                    return
+                } else {
+                    this.producerCompressionType = ProtoCompressionType.SNAPPY //default to snappy
+                    return
+                }
             }, addError);
     },
 

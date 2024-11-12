@@ -268,7 +268,10 @@ export interface TopicDocumentationResponse {
     documentation: TopicDocumentation;
 }
 
-
+// GET /producer-compression-type
+export type ProducerCompressionTypeResponse = {
+    producerCompressionType: string | null;
+};
 
 
 export interface GroupMemberAssignment {

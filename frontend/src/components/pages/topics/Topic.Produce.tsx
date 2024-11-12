@@ -87,7 +87,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     } = useForm<Inputs>({
         defaultValues: {
             partition: -1,
-            compressionType: CompressionType.SNAPPY,
+            compressionType: api.producerCompressionType,
             headers: [],
             key: {
                 data: '',
@@ -583,6 +583,7 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
 
     refreshData(force?: boolean) {
         api.refreshSchemaSubjects(force);
+        api.refreshProducerCompressionType(force);
     }
 
     render() {

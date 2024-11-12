@@ -23,6 +23,7 @@ type Kafka struct {
 
 	// Schema Registry
 	Schema      Schema  `yaml:"schemaRegistry"`
+	PComp       PComp   `yaml:"producerCompressionType"`
 	Protobuf    Proto   `yaml:"protobuf"`
 	MessagePack Msgpack `yaml:"messagePack"`
 	Cbor        Cbor    `yaml:"cbor"`
