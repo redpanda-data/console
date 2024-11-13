@@ -226,8 +226,8 @@ const TopicsTable: FC<{ topics: Topic[], onDelete: (record: Topic) => void }> = 
 
                         return <Flex wordBreak="break-word" whiteSpace="break-spaces" gap={2} alignItems="center">
                             <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
-                            {!!leaderLessPartitions && <Tooltip placement="top" hasArrow label={`This topic has ${leaderLessPartitions.length} leaderless ${leaderLessPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
-                            {!!underReplicatedPartitions && <Tooltip placement="top" hasArrow label={`This topic has ${underReplicatedPartitions.length} under-replicated ${underReplicatedPartitions.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+                            {!!leaderLessPartitions && <Tooltip placement="top" hasArrow label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                            {!!underReplicatedPartitions && <Tooltip placement="top" hasArrow label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
                         </Flex>;
                     },
                     size: Infinity,
