@@ -6,14 +6,14 @@ import { Box, Text, IconButton, Link } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
 
 const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = true }: { statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[], showDeleteButton?: boolean, showDatetime?: boolean }) => {
-    const statusWithFilename = statuses.find(status => status.value.case === 'bundleStatus' && status.value.value.filename)?.value.value as DebugBundleStatus
+    const statusWithFilename = statuses.find(status => status.value.case === 'bundleStatus' && status.value.value.filename)?.value.value as DebugBundleStatus | undefined
     const downloadFilename = 'debug-bundle.zip'
 
     if(statuses.length === 0) {
         return null
     }
 
-    if(!statusWithFilename.filename) {
+    if(!statusWithFilename?.filename) {
         return null
     }
 
