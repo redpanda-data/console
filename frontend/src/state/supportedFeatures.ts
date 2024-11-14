@@ -40,6 +40,7 @@ export class Feature {
     static readonly SecurityService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.SecurityService', method: 'POST' };
     static readonly TransformsService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.TransformService', method: 'POST' };
     static readonly PipelineService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.PipelineService', method: 'POST' };
+    static readonly DebugBundleService: FeatureEntry = { endpoint: 'redpanda.api.console.v1alpha1.DebugBundleService', method: 'POST' }
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -81,6 +82,7 @@ class SupportedFeatures {
     @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
     @computed get rolesApi(): boolean { return isSupported(Feature.SecurityService); }
     @computed get pipelinesApi(): boolean { return isSupported(Feature.PipelineService); }
+    @computed get debugBundle(): boolean { return isSupported(Feature.DebugBundleService); }
 }
 
 const features = new SupportedFeatures();

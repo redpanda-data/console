@@ -23,6 +23,7 @@ import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
 import { AdminDebugBundle } from './Admin.DebugBundle';
 import { AdminLicenses } from './Admin.Licenses';
+import { Features } from '../../../state/supportedFeatures';
 
 
 @observer
@@ -65,7 +66,7 @@ export default class AdminPage extends PageComponent {
             },
         ]
 
-        if(api.userData?.canViewDebugBundle) {
+        if(api.userData?.canViewDebugBundle && Features.debugBundle) {
             items.push({
                 key: 'debugBundle',
                 name: 'Debug bundle',

@@ -7,6 +7,7 @@ import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import colors from '../../../colors';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { Features } from '../../../state/supportedFeatures';
 
 const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
     [UnhealthyReason.UNSPECIFIED]: 'Unknown reason',
@@ -66,7 +67,7 @@ const ClusterHealthOverview = () => {
                         </Flex>
                     </Grid>
                 </ListItem>}
-                {api.userData?.canViewDebugBundle &&
+                {api.userData?.canViewDebugBundle && Features.debugBundle &&
                     <ListItem>
                         <Grid
                             templateColumns={{sm: '1fr', md: '1fr 1fr'}}
