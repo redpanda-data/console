@@ -58,7 +58,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                     <Text>Generating bundle...</Text>
                 </Box>}
 
-                {!api.isDebugBundleInProgress && <Box>
+                {api.isDebugBundleExpired && <Text fontWeight="bold" mt={4}>Your previous bundle has expired and cannot be downloaded.</Text>}
+
+                {!api.isDebugBundleInProgress && !api.isDebugBundleExpired && <Box>
                     <Flex gap={2} my={2}>
                         <Text fontWeight="bold">Debug bundle complete:</Text>
                         {api.canDownloadDebugBundle &&

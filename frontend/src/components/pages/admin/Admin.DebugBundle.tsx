@@ -82,8 +82,8 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <Header />
-                {api.canDownloadDebugBundle && <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>}
-                <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
+                {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>}
+                {api.isDebugBundleExpired ? <Text>Your previous bundle has expired and cannot be downloaded.</Text> : <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />}
                 {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
 
 
@@ -503,7 +503,7 @@ const NewDebugBundleForm: FC<{ onSubmit: (data: CreateDebugBundleRequest) => voi
             </Alert>}
 
             <Flex gap={2} mt={4}>
-                {debugBundleExists ? <ConfirmModal trigger={advancedForm ? 'Generate':'Generate default'} heading="Generate new debug bundle" onConfirm={() => {
+                {(debugBundleExists && !api.isDebugBundleExpired) ? <ConfirmModal trigger={advancedForm ? 'Generate':'Generate default'} heading="Generate new debug bundle" onConfirm={() => {
                         generateNewDebugBundle();
                     }}>
                         You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?

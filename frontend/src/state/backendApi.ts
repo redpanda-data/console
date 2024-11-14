@@ -1638,6 +1638,10 @@ const apiStore = {
         return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS).length > 0
     },
 
+    get isDebugBundleExpired() {
+        return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED).length > 0
+    },
+
     get isDebugBundleInProgress() {
         return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
     },
