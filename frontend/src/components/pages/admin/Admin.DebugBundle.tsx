@@ -105,23 +105,10 @@ export class AdminDebugBundle extends Component<{}> {
                                 this.submitInProgress = false;
                             });
                         }}
-                        debugBundleExists={api.debugBundleStatuses.length > 0}
+                        debugBundleExists={api.hasDebugProcess}
                         error={this.createBundleError}
                     />
                 </Box>
-                {/*<ConfirmModal trigger="Generate new" heading="Generate new debug bundle" onConfirm={() => {*/}
-                {/*    appGlobal.history.push('/admin/debug-bundle/new');*/}
-                {/*    this.confirmModalIsOpen = false*/}
-                {/*}}>*/}
-                {/*    You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?*/}
-                {/*</ConfirmModal>*/}
-                {/*<Box mt={4}>*/}
-                {/*    {api.debugBundleStatuses.length ?*/}
-                {/*     */}
-                {/*        :*/}
-                {/*        <Button as={ReactRouterLink} to="/admin/debug-bundle/new">Generate new</Button>*/}
-                {/*    }*/}
-                {/*</Box>*/}
             </Box>
         );
     }

@@ -345,6 +345,7 @@ const apiStore = {
 
     clusterHealth: undefined as GetClusterHealthResponse | undefined,
     debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
+    hasDebugProcess: false as boolean,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -1621,6 +1622,7 @@ const apiStore = {
         client.getDebugBundleStatus({
         }).then(response => {
             this.debugBundleStatuses = response.brokerStatuses
+            this.hasDebugProcess = response.hasDebugProcess
             return response
         }).catch((e) => {
             this.debugBundleStatuses = []
