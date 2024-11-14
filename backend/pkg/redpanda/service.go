@@ -12,7 +12,9 @@ package redpanda
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -35,6 +37,9 @@ const (
 
 	// RedpandaFeatureWASMDataTransforms represents WASM data transforms feature.
 	RedpandaFeatureWASMDataTransforms RedpandaFeature = "redpanda_feature_wasm_data_transforms"
+
+	// RedpandaFeatureDebugBundle represents debug bundle Admin API feature.
+	RedpandaFeatureDebugBundle RedpandaFeature = "redpanda_feature_debug_bundle"
 )
 
 // Service is the abstraction for communicating with a Redpanda cluster via the admin api.
@@ -326,6 +331,17 @@ func (s *Service) CheckFeature(ctx context.Context, feature RedpandaFeature) boo
 		_, err := s.ListWasmTransforms(ctx)
 		if err != nil {
 			return false
+		}
+		return true
+	case RedpandaFeatureDebugBundle:
+		_, err := s.adminClient.GetDebugBundleStatus(ctx)
+		if err != nil {
+			var httpErr *adminapi.HTTPResponseError
+			if errors.As(err, &httpErr) {
+				if httpErr.Response.StatusCode == http.StatusNotFound {
+					return false
+				}
+			}
 		}
 		return true
 	default:
