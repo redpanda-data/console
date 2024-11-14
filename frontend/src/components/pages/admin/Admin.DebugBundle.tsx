@@ -74,7 +74,7 @@ export class AdminDebugBundle extends Component<{}> {
         if (api.isDebugBundleInProgress) {
             return <Box>
                 <Header />
-                <Button px={0} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>
+                <Button px={0} mt={4} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>
                 <Text>Started {api.debugBundleStatus?.createdAt?.toDate().toLocaleString()}</Text>
             </Box>;
         }
@@ -82,7 +82,6 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <Header />
-                <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>
                 <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
                 {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
 

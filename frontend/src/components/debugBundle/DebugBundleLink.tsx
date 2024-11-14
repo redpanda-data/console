@@ -19,6 +19,7 @@ const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = tr
 
     return (
         <Box>
+            <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>
             <Box>
                 <Link
                     role="button"
