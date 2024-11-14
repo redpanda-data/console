@@ -116,10 +116,12 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
         const leaderThrottle = [...api.brokerConfigs.values()]
             .filter(c => typeof c != 'string')
             .flatMap(c => c as ConfigEntry[])
+            .filter(c => c !== undefined)
             .first(e => e.name == 'leader.replication.throttled.rate');
         const followerThrottle = [...api.brokerConfigs.values()]
             .filter(c => typeof c != 'string')
             .flatMap(c => c as ConfigEntry[])
+            .filter(c => c !== undefined)
             .first(e => e.name == 'follower.replication.throttled.rate');
 
         const result = {
