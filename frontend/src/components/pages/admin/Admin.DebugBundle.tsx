@@ -82,6 +82,7 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <Header />
+                {api.canDownloadDebugBundle && <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>}
                 <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
                 {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
 
