@@ -1575,20 +1575,15 @@ const apiStore = {
         }
 
         await Promise.all([
-            client.listEnterpriseFeatures({}),
-            client.listLicenses({})
-        ])
-            .then(( [enterpriseFeaturesResponse, licensesResponse]) => {
-                // Handle the first response
+            client.listEnterpriseFeatures({}).then(enterpriseFeaturesResponse => {
                 this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
-
-                // Handle the second response
+            }),
+            client.listLicenses({}).then(licensesResponse => {
                 this.licenses = licensesResponse.licenses;
                 this.licenseViolation = licensesResponse.violation;
 
                 this.licensesLoaded = 'loaded';
-            })
-            .catch(err => {
+            }).catch(err => {
                 this.licensesLoaded = 'failed';
                 const errorText = (err instanceof Error)
                     ? err.message
@@ -1597,6 +1592,7 @@ const apiStore = {
                 console.log('error refreshing licenses: ' + errorText);
                 return err;
             })
+        ])
     },
 
     async refreshClusterHealth() {
