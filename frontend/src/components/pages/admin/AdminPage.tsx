@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
+import React, { ReactElement } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -55,7 +55,7 @@ export default class AdminPage extends PageComponent<{ tab: AdminPageTab }> {
         if (api.adminInfo === undefined) return DefaultSkeleton;
         const hasAdminPermissions = api.adminInfo !== null;
 
-        const tabs = [
+        const tabs: { key: AdminPageTab; name: string; component: ReactElement }[] = [
             {
                 key: 'users',
                 name: 'Users',
