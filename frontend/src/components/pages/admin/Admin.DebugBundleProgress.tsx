@@ -54,31 +54,31 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box>
                 <Text>Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine it’s running on. This will bundle the collected data into a ZIP file.</Text>
 
-                {api.isDebugBundleInProgress && <Box mt={6}>
-                    <Text>Generating bundle...</Text>
-                </Box>}
-
-                {api.isDebugBundleExpired && <Text fontWeight="bold" mt={4}>Your previous bundle has expired and cannot be downloaded.</Text>}
-
-                {!api.isDebugBundleInProgress && !api.isDebugBundleExpired && <Box>
-                    <Flex gap={2} my={2}>
-                        <Text fontWeight="bold">Debug bundle complete:</Text>
-                        {api.canDownloadDebugBundle &&
-                        <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
-                    </Flex>
-                </Box>}
-
-                {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
-
-                <Box my={2}>
-                    {api.isDebugBundleInProgress ? <Button variant="outline" onClick={() => {
-                        api.debugBundleStatuses.forEach(status => {
-                            if (status.value.case==='bundleStatus') {
-                                void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
-                            }
-                        });
-                    }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin">Done</Button>}
+                <Box mt={4}>
+                    {api.isDebugBundleInProgress && <Text>Generating bundle...</Text>}
+                    {api.isDebugBundleExpired && <Text fontWeight="bold">Your previous bundle has expired and cannot be downloaded.</Text>}
+                    {api.isDebugBundleError && <Text>This debug bundle was cancelled by the user and is not available for download.</Text>}
+                    {api.canDownloadDebugBundle && <Box>
+                        <Flex gap={2}>
+                            <Text fontWeight="bold">Debug bundle complete:</Text>
+                            <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false}/>
+                        </Flex>
+                    </Box>}
                 </Box>
+
+                {!api.isDebugBundleExpired && <Box mt={2}>
+                    {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
+
+                    <Box my={2}>
+                        {api.isDebugBundleInProgress ? <Button variant="outline" onClick={() => {
+                            api.debugBundleStatuses.forEach(status => {
+                                if (status.value.case==='bundleStatus') {
+                                    void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
+                                }
+                            });
+                        }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin">Done</Button>}
+                    </Box>
+                </Box>}
             </Box>
         );
     }

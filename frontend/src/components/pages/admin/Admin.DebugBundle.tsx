@@ -82,9 +82,14 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <Header />
-                {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>}
-                {api.isDebugBundleExpired ? <Text>Your previous bundle has expired and cannot be downloaded.</Text> : <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />}
-                {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
+                <Box mt={4}>
+                    {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && <Text fontWeight="bold">Latest debug bundle:</Text>}
+                    {api.isDebugBundleExpired && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
+                    {api.isDebugBundleError && <Text>This debug bundle was cancelled by the user and is not available for download.</Text>}
+                    {api.canDownloadDebugBundle && <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton/>}
+
+                    {api.debugBundleStatuses.length===0 && <Text>No debug bundle available for download.</Text>}
+                </Box>
 
 
 
@@ -97,7 +102,8 @@ export class AdminDebugBundle extends Component<{}> {
                         onSubmit={(data: CreateDebugBundleRequest) => {
                             this.submitInProgress = true;
                             this.createBundleError = undefined;
-                            api.createDebugBundle(data).then(result => {
+                            api.createDebugBundle(data).then(async result => {
+                                await api.refreshDebugBundleStatuses();
                                 appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`);
                             }).catch((err: ErrorResponse) => {
                                 this.createBundleError = err;

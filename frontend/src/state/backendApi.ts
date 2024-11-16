@@ -121,7 +121,7 @@ import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, DeleteDebugBundleFileResponse, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1619,7 +1619,7 @@ const apiStore = {
             throw new Error('Debug bundle client is not initialized');
         }
 
-        client.getDebugBundleStatus({
+        await client.getDebugBundleStatus({
         }).then(response => {
             this.debugBundleStatuses = response.brokerStatuses
             this.hasDebugProcess = response.hasDebugProcess
@@ -1635,11 +1635,15 @@ const apiStore = {
     },
 
     get canDownloadDebugBundle() {
-        return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS).length > 0
+        return this.isDebugBundleReady && this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS);
+    },
+
+    get isDebugBundleError() {
+        return this.isDebugBundleReady && this.debugBundleStatuses.all(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR);
     },
 
     get isDebugBundleExpired() {
-        return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED).length > 0
+        return this.isDebugBundleReady && this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED);
     },
 
     get isDebugBundleInProgress() {
