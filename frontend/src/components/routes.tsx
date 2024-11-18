@@ -333,9 +333,10 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/admin/debug-bundle/progress/:jobId', AdminPageDebugBundleProgress, 'Debug Bundle Progress'),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, true,
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
+    MakeRoute<{}>('/admin/:tab?', AdminPage, 'Admin'),
 
 
 ].filterNull();
