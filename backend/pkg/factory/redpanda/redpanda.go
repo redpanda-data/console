@@ -83,4 +83,8 @@ type AdminAPIClient interface {
 
 	// GetLicenseInfo gets the license info.
 	GetLicenseInfo(ctx context.Context) (rpadmin.License, error)
+
+	// GetDebugBundleStatus gets the current debug bundle process status on the specified broker node.
+	// This should be called using Host client to issue a request against a specific broker node.
+	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
 }

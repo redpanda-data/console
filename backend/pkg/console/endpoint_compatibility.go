@@ -139,7 +139,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			URL:             consolev1alpha1connect.DebugBundleServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: redpanda.RedpandaFeatureDebugBundle,
+			RedpandaFeature: redpandaFeatureDebugBundle,
 		},
 	}
 

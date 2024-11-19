@@ -154,13 +154,7 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 // ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
 // This can only be reported if the Redpanda Admin API is configured and supports this request.
 func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error) {
-	// Use this hook to ensure the requester is some authenticated user.
-	// It doesn't matter what permissions we check. As long as the requester
-	// has at least one viewer permission we know this user is authenticated.
-	isAllowed, restErr := s.authHooks.CanViewSchemas(ctx)
-	if err := apierrors.NewPermissionDeniedConnectError(isAllowed, restErr, "you don't have permissions to set a license"); err != nil {
-		return nil, err
-	}
+	// TODO: Ensure endpoint is authorized
 
 	if s.adminapiCl == nil {
 		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()

@@ -11,6 +11,10 @@ package console
 
 import (
 	"context"
+	"errors"
+	"net/http"
+
+	adminapi "github.com/redpanda-data/common-go/rpadmin"
 
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 )
@@ -24,6 +28,9 @@ const (
 
 	// redpandaFeatureWASMDataTransforms represents WASM data transforms feature.
 	redpandaFeatureWASMDataTransforms redpandaFeature = "redpanda_feature_wasm_data_transforms"
+
+	// redpandaFeatureDebugBundle represents debug bundle Admin API feature.
+	redpandaFeatureDebugBundle redpandaFeature = "redpanda_feature_debug_bundle"
 )
 
 // checkRedpandaFeature checks whether redpanda has the specified feature in the specified state.
@@ -41,6 +48,17 @@ func (s *Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandaf
 		_, err := redpandaCl.ListWasmTransforms(ctx)
 		if err != nil {
 			return false
+		}
+		return true
+	case redpandaFeatureDebugBundle:
+		_, err := redpandaCl.GetDebugBundleStatus(ctx)
+		if err != nil {
+			var httpErr *adminapi.HTTPResponseError
+			if errors.As(err, &httpErr) {
+				if httpErr.Response.StatusCode == http.StatusNotFound {
+					return false
+				}
+			}
 		}
 		return true
 	default:
