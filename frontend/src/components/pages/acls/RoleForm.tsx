@@ -204,7 +204,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                     <Flex flexDirection="column" gap={4} data-testid="create-role-consumer-groups-section">
                         <Heading>Consumer Groups</Heading>
                         {formState.consumerGroupsACLs.map((acl, index) =>
-                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
+                            <ResourceACLsEditor key={index} resourceType="Group" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
                                 formState.consumerGroupsACLs.splice(index, 1);
                             }} />
                         )}
@@ -219,7 +219,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                     <Flex flexDirection="column" gap={4} data-testid="create-role-transactional-ids-section">
                         <Heading>Transactional IDs</Heading>
                         {formState.transactionalIDACLs.map((acl, index) =>
-                            <ResourceACLsEditor key={index} resourceType="Topic" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
+                            <ResourceACLsEditor key={index} resourceType="TransactionalID" resource={acl} setIsFormValid={setIsFormValid} onDelete={() => {
                                 formState.transactionalIDACLs.splice(index, 1);
                             }} />
                         )}
@@ -235,7 +235,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                         <Heading>Cluster</Heading>
                         <HStack>
                             <Box flexGrow={1}>
-                                <ResourceACLsEditor resourceType="Topic" resource={formState.clusterACLs} setIsFormValid={setIsFormValid} />
+                                <ResourceACLsEditor resourceType="Cluster" resource={formState.clusterACLs} setIsFormValid={setIsFormValid} />
                             </Box>
                         </HStack>
                     </Flex>
