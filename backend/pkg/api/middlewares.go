@@ -77,6 +77,8 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		rctx := chi.RouteContext(r.Context())
 		if rctx.RoutePath != "" {
 			path = rctx.RoutePath
+		} else if r.URL.RawPath != "" {
+			path = r.URL.RawPath
 		} else {
 			path = r.URL.Path
 		}
@@ -89,6 +91,11 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		// URL.path
 		if strings.HasPrefix(r.URL.Path, prefix) {
 			r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, prefix)
+		}
+
+		// URL.RawPath
+		if strings.HasPrefix(r.URL.RawPath, prefix) {
+			r.URL.RawPath = "/" + strings.TrimPrefix(r.URL.RawPath, prefix)
 		}
 
 		// requestURI
