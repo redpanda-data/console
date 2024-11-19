@@ -20,7 +20,8 @@ export const LicenseNotification = observer(() => {
         return null;
     }
 
-    if (location.pathname === '/admin/upload-license') {
+    // For these paths, we don't need to show a notification banner because the pages themselves handle license management
+    if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
         return null;
     }
 
