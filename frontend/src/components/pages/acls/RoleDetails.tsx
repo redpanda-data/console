@@ -31,20 +31,20 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
 
     @observable isDeleting: boolean = false;
     @observable principalSearch: string = '';
+    @observable roleName: string = '';
 
     constructor(p: any) {
         super(p);
         makeObservable(this);
+        this.roleName = decodeURIComponent(this.props.roleName);
         this.deleteRole = this.deleteRole.bind(this);
     }
 
     initPage(p: PageInitHelper): void {
-        const roleName = decodeURIComponent(this.props.roleName);
-
         p.title = 'Role details';
         p.addBreadcrumb('Access control', '/security');
         p.addBreadcrumb('Roles', '/security/roles');
-        p.addBreadcrumb(roleName, `/security/roles/${roleName}`);
+        p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${this.props.roleName}`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -65,7 +65,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     async deleteRole() {
         this.isDeleting = true
         try {
-            await rolesApi.deleteRole(this.props.roleName, true)
+            await rolesApi.deleteRole(this.roleName, true)
             await rolesApi.refreshRoles();
             await rolesApi.refreshRoleMembers(); // need to refresh assignments as well, otherwise users will still be marked as having that role, even though it doesn't exist anymore
         } finally {
@@ -81,9 +81,9 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
         const aclPrincipalGroup = principalGroupsView.principalGroups.find(({
             principalType,
             principalName
-        }) => principalType === 'RedpandaRole' && principalName === this.props.roleName)
+        }) => principalType === 'RedpandaRole' && principalName === this.roleName)
 
-        let members = rolesApi.roleMembers.get(this.props.roleName) ?? []
+        let members = rolesApi.roleMembers.get(this.roleName) ?? []
         try {
             const quickSearchRegExp = new RegExp(this.principalSearch, 'i')
             members = members.filter(({name}) => name.match(quickSearchRegExp))
@@ -91,7 +91,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             console.warn('Invalid expression')
         }
 
-        const numberOfPrincipals = rolesApi.roleMembers.get(this.props.roleName)?.length ?? 0;
+        const numberOfPrincipals = rolesApi.roleMembers.get(this.roleName)?.length ?? 0;
 
         return <>
             <PageContent>
@@ -109,7 +109,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                                 Delete
                             </Button>
                         }
-                        roleName={this.props.roleName}
+                        roleName={this.roleName}
                     />
                 </Flex>
                 <Flex flexDirection="column">

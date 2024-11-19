@@ -124,7 +124,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                         title="License uploaded successfully"
                         subTitle={<Flex flexDirection="column" gap={4}>
                             <Box>
-                                <Text fontWeight="normal">A restart will be needed to use Redpanda Console's enterprise features.</Text>
+                                <Text fontWeight="normal">To use Console's enterprise features, you'll need to restart console.</Text>
                                 <Text fontWeight="normal">Enterprise features in your Redpanda cluster will be available right away.</Text>
                             </Box>
                             <Box><Button onClick={() => {
@@ -134,10 +134,13 @@ export default class UploadLicensePage extends PageComponent<{}> {
                         </Flex>}
                     /></Box>:
                     <>
-                        <Box>
-                            To get an enterprise license, <Link href="https://www.redpanda.com/try-redpanda" target="_blank">contact our support team</Link>.
+                        <Text>
+                            If you're interested in Redpanda Enterprise, please <Link href="https://www.redpanda.com/contact" target="_blank">contact us</Link>.
+                        </Text>
+                        <Text>
+                            If you're an existing customer, get in touch with <Link href="https://support.redpanda.com/hc/en-us" target="_blank">our support team</Link> to request a license.
                             To see a list of what is available with Redpanda Enterprise, check <Link href="https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition" target="_blank">our documentation</Link>.
-                        </Box>
+                        </Text>
                         <Box width={{sm: '100%', md: '600px'}}>
                             <UploadLicenseForm
                                 onUploadLicense={async (license) => {

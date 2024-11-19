@@ -53,3 +53,36 @@ func (mapper) consoleLicenseToProto(in license.License) *v1alpha1.License {
 		ExpiresAt: in.ExpiresAt,
 	}
 }
+
+func (m mapper) enterpriseFeaturesToProto(in rpadmin.EnterpriseFeaturesResponse) *v1alpha1.ListEnterpriseFeaturesResponse {
+	features := make([]*v1alpha1.ListEnterpriseFeaturesResponse_Feature, len(in.Features))
+	for i, f := range in.Features {
+		features[i] = m.enterpriseFeatureToProto(f)
+	}
+
+	return &v1alpha1.ListEnterpriseFeaturesResponse{
+		LicenseStatus: m.licenseStatusToProto(in.LicenseStatus),
+		Violation:     in.Violation,
+		Features:      features,
+	}
+}
+
+func (mapper) licenseStatusToProto(in rpadmin.LicenseStatus) v1alpha1.ListEnterpriseFeaturesResponse_LicenseStatus {
+	switch in {
+	case rpadmin.LicenseStatusValid:
+		return v1alpha1.ListEnterpriseFeaturesResponse_LICENSE_STATUS_VALID
+	case rpadmin.LicenseStatusExpired:
+		return v1alpha1.ListEnterpriseFeaturesResponse_LICENSE_STATUS_EXPIRED
+	case rpadmin.LicenseStatusNotPresent:
+		return v1alpha1.ListEnterpriseFeaturesResponse_LICENSE_STATUS_NOT_PRESENT
+	default:
+		return v1alpha1.ListEnterpriseFeaturesResponse_LICENSE_STATUS_UNSPECIFIED
+	}
+}
+
+func (mapper) enterpriseFeatureToProto(in rpadmin.EnterpriseFeature) *v1alpha1.ListEnterpriseFeaturesResponse_Feature {
+	return &v1alpha1.ListEnterpriseFeaturesResponse_Feature{
+		Name:    in.Name,
+		Enabled: in.Enabled,
+	}
+}

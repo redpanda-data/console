@@ -25,19 +25,19 @@ import { principalGroupsView } from './Models';
 class RoleEditPage extends PageComponent<{ roleName: string }> {
 
     @observable allDataLoaded  = false;
+    @observable roleName: string = '';
 
     constructor(p: any) {
         super(p);
         makeObservable(this);
+        this.roleName = decodeURIComponent(this.props.roleName);
     }
 
     initPage(p: PageInitHelper): void {
-        const roleName = decodeURIComponent(this.props.roleName);
-
         p.title = 'Edit role';
         p.addBreadcrumb('Access control', '/security');
         p.addBreadcrumb('Roles', '/security/roles');
-        p.addBreadcrumb(roleName, `/security/roles/${roleName}`);
+        p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${encodeURIComponent(this.props.roleName)}`);
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -72,7 +72,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
         return <>
             <PageContent>
                 <RoleForm initialData={{
-                    roleName: this.props.roleName,
+                    roleName: this.roleName,
                     topicACLs: aclPrincipalGroup?.topicAcls ?? [],
                     consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
                     clusterACLs: aclPrincipalGroup?.clusterAcls,

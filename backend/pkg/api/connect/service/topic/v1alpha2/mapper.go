@@ -18,12 +18,12 @@ import (
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
-type kafkaClientMapper struct {
+type mapper struct {
 	commonKafkaClientMapper common.KafkaClientMapper
 }
 
 // createTopicRequestToKafka maps the proto request to create a topic into a kmsg.CreateTopicsRequestTopic.
-func (k *kafkaClientMapper) createTopicRequestToKafka(req *v1alpha2.CreateTopicRequest) *kmsg.CreateTopicsRequest {
+func (k *mapper) createTopicRequestToKafka(req *v1alpha2.CreateTopicRequest) *kmsg.CreateTopicsRequest {
 	kafkaReq := kmsg.NewCreateTopicsRequest()
 	kafkaReq.ValidateOnly = req.ValidateOnly
 	kafkaReq.Topics = []kmsg.CreateTopicsRequestTopic{k.createTopicRequestTopicToKafka(req.Topic)}
@@ -31,7 +31,7 @@ func (k *kafkaClientMapper) createTopicRequestToKafka(req *v1alpha2.CreateTopicR
 }
 
 // createTopicRequestToKafka maps the proto message for creating a topic to kmsg.CreateTopicsRequestTopic.
-func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.CreateTopicRequest_Topic) kmsg.CreateTopicsRequestTopic {
+func (*mapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.CreateTopicRequest_Topic) kmsg.CreateTopicsRequestTopic {
 	partitionCount := int32(-1)
 	if topicReq.PartitionCount != nil {
 		partitionCount = *topicReq.PartitionCount
@@ -61,14 +61,14 @@ func (*kafkaClientMapper) createTopicRequestTopicToKafka(topicReq *v1alpha2.Crea
 	req := kmsg.NewCreateTopicsRequestTopic()
 	req.Topic = topicReq.Name
 	req.NumPartitions = partitionCount
-	req.ReplicationFactor = int16(replicationFactor) //nolint:gosec // conversion TODO we should change our API to match kafka
+	req.ReplicationFactor = int16(replicationFactor) // TODO we should change our API to match kafka
 	req.ReplicaAssignment = replicaAssignments
 	req.Configs = configs
 
 	return req
 }
 
-func (*kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) *v1alpha2.CreateTopicResponse {
+func (*mapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) *v1alpha2.CreateTopicResponse {
 	return &v1alpha2.CreateTopicResponse{
 		Name:              topic.Topic,
 		PartitionCount:    topic.NumPartitions,
@@ -76,7 +76,7 @@ func (*kafkaClientMapper) createTopicResponseTopicToProto(topic kmsg.CreateTopic
 	}
 }
 
-func (*kafkaClientMapper) describeTopicConfigsToKafka(req *v1alpha2.GetTopicConfigurationsRequest) kmsg.DescribeConfigsRequest {
+func (*mapper) describeTopicConfigsToKafka(req *v1alpha2.GetTopicConfigurationsRequest) kmsg.DescribeConfigsRequest {
 	configResource := kmsg.NewDescribeConfigsRequestResource()
 	configResource.ResourceType = kmsg.ConfigResourceTypeTopic
 	configResource.ResourceName = req.TopicName
@@ -90,7 +90,7 @@ func (*kafkaClientMapper) describeTopicConfigsToKafka(req *v1alpha2.GetTopicConf
 	return kafkaReq
 }
 
-func (k *kafkaClientMapper) describeTopicConfigsToProto(resources []kmsg.DescribeConfigsResponseResourceConfig) ([]*v1alpha2.Topic_Configuration, error) {
+func (k *mapper) describeTopicConfigsToProto(resources []kmsg.DescribeConfigsResponseResourceConfig) ([]*v1alpha2.Topic_Configuration, error) {
 	mappedResources := make([]*v1alpha2.Topic_Configuration, len(resources))
 	for i, resource := range resources {
 		configType, err := k.commonKafkaClientMapper.ConfigTypeToProto(resource.ConfigType)
@@ -127,7 +127,7 @@ func (k *kafkaClientMapper) describeTopicConfigsToProto(resources []kmsg.Describ
 	return mappedResources, nil
 }
 
-func (*kafkaClientMapper) deleteTopicToKmsg(req *v1alpha2.DeleteTopicRequest) kmsg.DeleteTopicsRequest {
+func (*mapper) deleteTopicToKmsg(req *v1alpha2.DeleteTopicRequest) kmsg.DeleteTopicsRequest {
 	kafkaReq := kmsg.NewDeleteTopicsRequest()
 	kafkaReq.TopicNames = []string{req.Name}
 	kafkaReq.Topics = []kmsg.DeleteTopicsRequestTopic{
@@ -139,7 +139,7 @@ func (*kafkaClientMapper) deleteTopicToKmsg(req *v1alpha2.DeleteTopicRequest) km
 	return kafkaReq
 }
 
-func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha2.UpdateTopicConfigurationsRequest) (*kmsg.IncrementalAlterConfigsRequest, error) {
+func (k *mapper) updateTopicConfigsToKafka(req *v1alpha2.UpdateTopicConfigurationsRequest) (*kmsg.IncrementalAlterConfigsRequest, error) {
 	// We only have one resource (a single topic) whose configs we want to update incrementally
 	// The API allows to add many, independent resources of different types. Because we always only
 	// want to patch configs for a single Kafka topic, we can simplify the mapping here by hardcoding
@@ -170,7 +170,7 @@ func (k *kafkaClientMapper) updateTopicConfigsToKafka(req *v1alpha2.UpdateTopicC
 	return &kafkaReq, nil
 }
 
-func (k *kafkaClientMapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) []*v1alpha2.ListTopicsResponse_Topic {
+func (k *mapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) []*v1alpha2.ListTopicsResponse_Topic {
 	topics := make([]*v1alpha2.ListTopicsResponse_Topic, len(metadata.Topics))
 	for i, topicMetadata := range metadata.Topics {
 		topics[i] = k.kafkaTopicMetadataToProto(topicMetadata)
@@ -179,7 +179,7 @@ func (k *kafkaClientMapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse
 	return topics
 }
 
-func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1alpha2.ListTopicsResponse_Topic {
+func (*mapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1alpha2.ListTopicsResponse_Topic {
 	// We iterate through all partitions to figure out the replication factor,
 	// in case we get an error for the first partitions
 	replicationFactor := -1
@@ -197,7 +197,7 @@ func (*kafkaClientMapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataR
 	}
 }
 
-func (k *kafkaClientMapper) setTopicConfigurationsToKafka(req *v1alpha2.SetTopicConfigurationsRequest) *kmsg.AlterConfigsRequest {
+func (k *mapper) setTopicConfigurationsToKafka(req *v1alpha2.SetTopicConfigurationsRequest) *kmsg.AlterConfigsRequest {
 	alterConfigResource := kmsg.NewAlterConfigsRequestResource()
 	alterConfigResource.ResourceType = kmsg.ConfigResourceTypeTopic
 	alterConfigResource.ResourceName = req.TopicName
@@ -212,7 +212,7 @@ func (k *kafkaClientMapper) setTopicConfigurationsToKafka(req *v1alpha2.SetTopic
 	return &kafkaReq
 }
 
-func (*kafkaClientMapper) setTopicConfigurationsResourceToKafka(req *v1alpha2.SetTopicConfigurationsRequest_SetConfiguration) kmsg.AlterConfigsRequestResourceConfig {
+func (*mapper) setTopicConfigurationsResourceToKafka(req *v1alpha2.SetTopicConfigurationsRequest_SetConfiguration) kmsg.AlterConfigsRequestResourceConfig {
 	kafkaReq := kmsg.NewAlterConfigsRequestResourceConfig()
 	kafkaReq.Name = req.Name
 	kafkaReq.Value = req.Value

@@ -3,13 +3,28 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
 // SCRAM Auth settings.
 message SCRAMAuth {
-  string username = 1;
-  string password = 2;
-  Mechanism mechanism = 3;
+  string username = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  string password = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  Mechanism mechanism = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
 
   enum Mechanism {
     MECHANISM_UNSPECIFIED = 0;
@@ -32,7 +47,7 @@ message CreateDebugBundleRequest {
   int32 controller_logs_size_limit_bytes = 4 [(buf.validate.field).int32 = {gte: 0}];
 
   // For how long to collect samples for the CPU profiler
-  int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {gte: 15}];
+  optional int32 cpu_profiler_wait_seconds = 5 [(buf.validate.field).int32 = {gte: 15}];
 
   // Include logs dated from specified date onward.
   google.protobuf.Timestamp logs_since = 6;
@@ -46,13 +61,40 @@ message CreateDebugBundleRequest {
   // Interval between metrics snapshots.
   int32 metrics_interval_seconds = 9 [(buf.validate.field).int32 = {gte: 0}];
 
+  // Interval between metrics snapshots.
+  int32 metrics_samples = 10 [(buf.validate.field).int32 = {gte: 0}];
+
+  bool tls_enabled = 11;
+
+  bool tls_insecure_skip_verify = 12;
+
+  string namespace = 13 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-]*)$"
+  ];
+
+  // Label selector configuration properties.
+  repeated LabelSelector label_selector = 14;
+
   // Partitions. When provided, rpk saves extra admin API requests for those partitions.
   // Optional.
   // In format {namespace/}topic/{partition ids} where namespace is optional and will be replaced with "kafka" if not provided.
   // Partition IDs is comma separated numbers.
   // kafka/foo/1,2,3. also there can be multiple of those so
   // ['kafka/foo/1,2,3', 'private/baz/3.4.5']
-  repeated string partitions = 10;
+  repeated string partitions = 15;
+}
+
+message LabelSelector {
+  string key = 1 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
+
+  string value = 2 [
+    (buf.validate.field).string.max_len = 253,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+  ];
 }
 
 // Response to CreateDebugBundle.
@@ -83,43 +125,95 @@ message DebugBundleStatus {
   // Path in API to get the file.
   string filename = 5;
 
+  // Size of the debug bundle zip file.
+  int64 size_bytes = 6;
+
   // Only filled in once the process completes.  Content of stdout from rpk.
-  repeated string stdout = 6;
+  repeated string stdout = 7;
 
   // Only filled in once the process completes.  Content of stderr from rpk.
-  repeated string stderr = 7;
+  repeated string stderr = 8;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
     STATUS_RUNNING = 1;
     STATUS_SUCCESS = 2;
-    STATUS_ERROR = 3;
+    // There is a cluster config that permits users to set a TTL on the generated bundle.
+    // By default there is no expiration, but a user can set it to say "expire 1 day after it's generated" so once that day passes,
+    // the service will clean up the bundle from disk and mark that job as expired.
+    STATUS_EXPIRED = 3;
+    STATUS_ERROR = 4;
   }
 }
 
 // The response to GetDebugBundleStatus.
 message GetDebugBundleStatusResponse {
-  repeated DebugBundleStatus statuses = 1;
+  message DebugBundleBrokerStatus {
+    // The broker ID.
+    int32 broker_id = 1;
+
+    // The broker URL used to get the status.
+    string broker_url = 2;
+
+    // Whether the broker URL was determined speculatively.
+    bool speculative = 3;
+
+    // The value of the status, either Bundle Error or status.
+    oneof value {
+      BundleError error = 4;
+      DebugBundleStatus bundle_status = 5;
+    }
+  }
+
+  repeated DebugBundleBrokerStatus broker_statuses = 1;
+
+  // true if any of the brokers have debug bundle process
+  // status regardless of error state
+  // false if we get "debug bundle process not started" error
+  // for all brokers
+  bool has_debug_process = 2;
 }
 
-message DeleteDebugBundleRequest {
-  string job_id = 1;
+message CancelDebugBundleProcessRequest {
+  string job_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.predefined) = {
+      cel: {
+        id: "string.uuid"
+        message: "value must be a valid UUID"
+        expression: "!rules.uuid || this == \'\' || this.matches(\'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$\')"
+      }
+      cel: {
+        id: "string.uuid_empty"
+        message: "value is empty, which is not a valid UUID"
+        expression: "!rules.uuid || this != \'\'"
+      }
+    }
+  ];
 
   // Optional broker IDs. Do not set / empty for all.
   repeated int32 broker_ids = 2;
 }
 
-// Response for DeleteDebugBundle.
-message DeleteDebugBundleResponse {
+// Response for CancelDebugBundleProcess.
+message CancelDebugBundleProcessResponse {
   repeated BundleError errors = 1;
 }
 
 // Request for DeleteDebugBundleFile.
 message DeleteDebugBundleFileRequest {
-  string filename = 1;
+  // optionally delete all
+  // overrides individual settings
+  bool delete_all = 1;
 
-  // Optional broker IDs. Do not set / empty for all.
-  repeated int32 broker_ids = 2;
+  repeated DeleteDebugBundleFileForBroker files = 2;
+}
+
+// Parameters for DeleteDebugBundleFileRequest.
+message DeleteDebugBundleFileForBroker {
+  int32 broker_id = 1;
+  string filename = 2;
 }
 
 // Response for DeleteDebugBundleFile.
@@ -132,14 +226,21 @@ message BundleError {
   // The broker ID.
   int32 broker_id = 1;
 
+  // The broker URL used to get the status.
+  string broker_url = 2;
+
+  // Whether the broker URL was determined speculatively.
+  bool speculative = 3;
+
   // The error code.
-  BundleErrorCode code = 2;
+  BundleErrorCode code = 4;
 
   // Additional information
-  string message = 3;
+  string message = 5;
 }
 
 // Error code enum.
+// https://github.com/redpanda-data/redpanda/blob/dev/src/v/debug_bundle/error.h#L22
 enum BundleErrorCode {
   // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
   // OK. No Error.
@@ -151,24 +252,74 @@ enum BundleErrorCode {
   // Debug bundle process not running.
   BUNDLE_ERROR_CODE_PROCESS_NOT_RUNNING = 2;
 
-  // Job ID not recognized.
-  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 3;
-
-  // Debug bundle process was never started.
-  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 4;
+  // Invalid parameters.
+  BUNDLE_ERROR_CODE_INVALID_PARAMETERS = 3;
 
   // Internal error.
-  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 5;
+  BUNDLE_ERROR_CODE_INTERNAL_ERROR = 4;
+
+  // Debug process failed.
+  BUNDLE_ERROR_CODE_PROCESS_FAILED = 5;
+
+  // Job ID not recognized.
+  BUNDLE_ERROR_CODE_INVALID_JOB_ID = 6;
+
+  // Debug bundle process was never started.
+  BUNDLE_ERROR_CODE_PROCESS_NOT_STARTED = 7;
+
+  // rpk binary not found
+  BUNDLE_ERROR_CODE_RPK_BINARY_NOT_PRESENT = 8;
+
+  // Debug bundle expired.
+  BUNDLE_ERROR_CODE_DEBUG_BUNDLE_EXPIRED = 9;
+}
+
+enum UnhealthyReason {
+  UNHEALTHY_REASON_UNSPECIFIED = 0;
+  UNHEALTHY_REASON_NODES_DOWN = 1;
+  UNHEALTHY_REASON_LEADERLESS_PARTITIONS = 2;
+  UNHEALTHY_REASON_UNDER_REPLICATED_PARTITIONS = 3;
+  UNHEALTHY_REASON_NO_ELECTED_CONTROLLER = 4;
+  UNHEALTHY_REASON_NO_HEALTH_REPORT = 5;
+}
+
+// Request for GetClusterHealth call.
+message GetClusterHealthRequest {}
+
+// Response for GetClusterHealth call.
+message GetClusterHealthResponse {
+  // whether cluster is health or not
+  bool is_healthy = 1;
+
+  repeated UnhealthyReason unhealthy_reasons = 2;
+  // optional controller ID.
+  // if cluster has no controller the property will not be present.
+  optional int32 controller_id = 3;
+  repeated int32 all_broker_ids = 4;
+  repeated int32 offline_broker_ids = 5;
+  repeated int32 broker_ids_in_recovery_mode = 6;
+
+  int32 leaderless_partitions_count = 7;
+  repeated TopicPartitions leaderless_partitions = 8;
+
+  int32 under_replicated_partitions_count = 9;
+  repeated TopicPartitions under_replicated_partitions = 10;
+}
+
+message TopicPartitions {
+  string topic_name = 1;
+  repeated int32 partition_ids = 2;
 }
 
 // Additional API:
-// GET /api/debug_bundle/{file}
-// GET /api/debug_bundle/{broker_id}/{file}
+// GET /api/debug_bundle/files/{file}
+// GET /api/debug_bundle/brokers/{broker_id}/files/{file}
 // This will download the debug bundle zip file
 
 service DebugBundleService {
+  rpc GetClusterHealth(GetClusterHealthRequest) returns (GetClusterHealthResponse) {}
   rpc CreateDebugBundle(CreateDebugBundleRequest) returns (CreateDebugBundleResponse) {}
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
-  rpc DeleteDebugBundle(DeleteDebugBundleRequest) returns (DeleteDebugBundleResponse) {}
+  rpc CancelDebugBundleProcess(CancelDebugBundleProcessRequest) returns (CancelDebugBundleProcessResponse) {}
   rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
 }

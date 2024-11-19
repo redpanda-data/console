@@ -16,18 +16,20 @@ import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restI
 import { computed, makeObservable } from 'mobx';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
-import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Button, DataTable, Flex, Grid, GridItem, Heading, Icon, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
-import { CheckIcon } from '@primer/octicons-react';
+import { Box, Button, DataTable, Flex, Grid, GridItem, Heading, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
 import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
+import colors from '../../../colors';
+import { FaCrown } from 'react-icons/fa';
+import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
 class Overview extends PageComponent {
@@ -52,6 +54,8 @@ class Overview extends PageComponent {
         api.refreshCluster(force);
         api.refreshClusterOverview(force);
         api.refreshBrokers(force);
+        void api.refreshClusterHealth();
+        void api.refreshDebugBundleStatuses();
     }
 
     render() {
@@ -67,10 +71,10 @@ class Overview extends PageComponent {
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
             if (!record.isController) return text;
             return (
-                <Flex alignItems="center" gap={4}>
+                <Flex alignItems="flex-start" gap={4}>
                     {text}
                     <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
-                        <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
+                        <Box><FaCrown size={16} color="#0008" /></Box>
                     </Tooltip>
                 </Flex>
             );
@@ -79,128 +83,106 @@ class Overview extends PageComponent {
         const version = overview.redpanda.version ?? overview.kafka.version;
 
         return <>
-            <PageContent>
-                <div className="overviewGrid">
-                    {/*
-                    <Section py={5} gridArea="health">
-                        <Grid flexDirection="row">
-                            <Grid templateColumns="max-content 1fr" gap={3}>
-                                <Box
-                                    backgroundColor={`green.500`}
-                                    w="4px"
-                                    h="full"
-                                    borderRadius="10px"
-                                />
-                                <Stat>
-                                    <StatNumber>{clusterStatus.displayText}</StatNumber>
-                                    <StatLabel>Cluster Status</StatLabel>
-                                </Stat>
-                            </Grid>
+            <PageContent className="overviewGrid">
+                <Section py={5} my={4}>
+                    <Flex>
+                        <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
+                        <Statistic title="Cluster Storage Size" value={brokerSize} />
+                        <Statistic title="Cluster Version" value={version} />
+                        <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
+                        <Statistic title="Topics" value={overview.kafka.topicsCount} />
+                        <Statistic title="Replicas" value={overview.kafka.replicasCount} />
+                    </Flex>
+                </Section>
 
-                            <Stat>
-                                <StatNumber>{brokerSize}</StatNumber>
-                                <StatLabel>Cluster Storage Size</StatLabel>
-                            </Stat>
+                <Grid gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }} gap={6}>
 
-                            <Stat>
-                                <StatNumber>{version}</StatNumber>
-                                <StatLabel>Cluster Version</StatLabel>
-                            </Stat>
+                    <GridItem display="flex" flexDirection="column" gap={6}>
+                        {api.clusterHealth?.isHealthy===false && <Section py={4} gridArea="debugInfo">
+                            <Heading as="h3">Cluster Health Debug</Heading>
+                            <ClusterHealthOverview/>
+                        </Section>}
 
-                            <Stat>
-                                <StatNumber>{`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`}</StatNumber>
-                                <StatLabel>Brokers Online</StatLabel>
-                            </Stat>
+                        <Section py={4}>
+                            <Heading as="h3">Broker Details</Heading>
+                            <DataTable<BrokerWithConfigAndStorage>
+                                data={brokers}
+                                sorting={false}
+                                defaultPageSize={10}
+                                pagination
+                                columns={[
+                                    {
+                                        size: 80,
+                                        header: 'ID',
+                                        accessorKey: 'brokerId',
+                                        cell: ({row: {original: broker}}) => renderIdColumn(`${broker.brokerId}`, broker),
+                                    },
+                                    {
+                                        header: 'Status',
+                                        cell: ({row: {original: broker}}) =>
+                                            (
+                                                <Flex gap={2}>
+                                                    {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ?
+                                                        <>
+                                                            <MdError size={18} color={colors.brandError}/>
+                                                            Down
+                                                        </>:<>
+                                                            <MdCheck size={18} color={colors.green}/>
+                                                            Running
+                                                        </>}
+                                                </Flex>
+                                            ),
+                                        size: Infinity
+                                    },
+                                    {
+                                        size: 120,
+                                        header: 'Size',
+                                        accessorKey: 'totalLogDirSizeBytes',
+                                        cell: ({row: {original: {totalLogDirSizeBytes}}}) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
+                                    },
+                                    {
+                                        id: 'view',
+                                        size: 100,
+                                        header: '',
+                                        cell: ({row: {original: broker}}) => {
+                                            return (
+                                                <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}>
+                                                    View
+                                                </Button>
+                                            );
+                                        }
+                                    },
+                                    ...(this.hasRack ? [{size: 100, header: 'Rack', cell: ({row: {original: broker}}: { row: Row<BrokerWithConfigAndStorage> }) => broker.rack}]:[])
+                                ]}
+                            />
+                        </Section>
 
-                            <Stat>
-                                <StatNumber>{overview.kafka.topicsCount}</StatNumber>
-                                <StatLabel>Topics</StatLabel>
-                            </Stat>
-                        </Grid>
-                    </Section>
-                     */}
-                    <Section py={5} gridArea="health">
-                        <Flex>
-                            <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
-                            <Statistic title="Cluster Storage Size" value={brokerSize} />
-                            <Statistic title="Cluster Version" value={version} />
-                            <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
-                            <Statistic title="Topics" value={overview.kafka.topicsCount} />
-                            <Statistic title="Replicas" value={overview.kafka.replicasCount} />
-                        </Flex>
-                    </Section>
+                        <Section py={4}>
+                            <h3>Resources and updates</h3>
 
-                    <Section py={4} gridArea="broker">
-                        <Heading as="h3" >Broker Details</Heading>
-                        <DataTable<BrokerWithConfigAndStorage>
-                            data={brokers}
-                            sorting={false}
-                            defaultPageSize={10}
-                            pagination
-                            columns={[
-                                {
-                                    size: 80,
-                                    header: 'ID',
-                                    accessorKey: 'brokerId',
-                                    cell: ({row: {original: broker}}) => renderIdColumn(`${broker.brokerId}`, broker),
-                                },
-                                {
-                                    header: 'Status',
-                                    cell: () =>
-                                        (
-                                            <>
-                                                <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500"/>
-                                                Running
-                                            </>
-                                        ),
-                                    size: Infinity
-                                },
-                                {
-                                    size: 120,
-                                    header: 'Size',
-                                    accessorKey: 'totalLogDirSizeBytes',
-                                    cell: ({row: {original: {totalLogDirSizeBytes}}}) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
-                                },
-                                {
-                                    id: 'view',
-                                    size: 100,
-                                    header: '',
-                                    cell: ({row: {original: broker}}) => {
-                                        return (
-                                            <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}>
-                                                View
-                                            </Button>
-                                        );
-                                    }
-                                },
-                                ...(this.hasRack ? [{ size: 100, header: 'Rack', cell: ({row: {original: broker}}: {row: Row<BrokerWithConfigAndStorage>}) => broker.rack }] : [])
-                            ]}
-                        />
-                    </Section>
+                            <div style={{display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem'}}>
+                                <ul className="resource-list">
+                                    <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link">
+                                        <span className="dot">&bull;</span>
+                                        Documentation
+                                    </a></li>
+                                    <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link">
+                                        <span className="dot">&bull;</span>
+                                        CLI Tools
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </Section>
+                    </GridItem>
 
-                    <Section py={4} gridArea="resources">
-                        <h3>Resources and updates</h3>
+                    <GridItem>
+                        <Section py={4}>
+                            <h3>Cluster Details</h3>
 
-                        <div style={{ display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem' }}>
-                            <ul className="resource-list">
-                                <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
-                                    Documentation
-                                </a></li>
-                                <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link" >
-                                    <span className="dot">&bull;</span>
-                                    CLI Tools
-                                </a></li>
-                            </ul>
-                        </div>
-                    </Section>
-
-                    <Section py={4} gridArea="details">
-                        <h3>Cluster Details</h3>
-
-                        <ClusterDetails />
-                    </Section>
-                </div>
+                            <ClusterDetails/>
+                        </Section>
+                    </GridItem>
+                </Grid>
             </PageContent>
         </>
     }
@@ -345,8 +327,10 @@ function ClusterDetails() {
             ]}/>
         </DetailsBlock>
 
-        <Details title="Licensing" content={[
-            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt] as [left: ReactNode, right: ReactNode]))
+        <Details title="Licensing" content={api.licensesLoaded === 'failed' ? [
+            [<Flex key="error" gap={1} alignItems="center"><MdOutlineError color={colors.brandError} size={16} /> Failed to load license info</Flex>]
+        ] : [
+            ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt.length > 0 ? `(expiring ${expiresAt})`: ''] as [left: ReactNode, right: ReactNode]))
         ]} />
 
         {api.isRedpanda && api.isAdminApiConfigured && <>

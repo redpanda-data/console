@@ -56,6 +56,7 @@ import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import {isServerless} from '../config';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
+import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 
 //
 //	Route Types
@@ -265,7 +266,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
-    MakeRoute<{ tab: AclListTab }>('/security/:tab', AclList, 'Security'),
+    MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
     MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
     MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
@@ -280,7 +281,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true,
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')
@@ -330,9 +331,13 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(() => false)
     ),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
+    MakeRoute<{}>('/admin/debug-bundle/progress/:jobId', AdminPageDebugBundleProgress, 'Debug Bundle Progress'),
+
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, true,
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
+    MakeRoute<{}>('/admin/:tab?', AdminPage, 'Admin'),
+
 
 ].filterNull();
 

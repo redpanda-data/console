@@ -7,18 +7,16 @@ import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/licen
 
 export const LicenseNotification = observer(() => {
     const location = useLocation();
-    const expiredLicenses = api.licenses.filter(licenseIsExpired) ?? [];
+    const visibleExpiredEnterpriseLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type === License_Type.ENTERPRISE) ?? [];
     const soonToExpireLicenses = api.licenses
-            .filter(licenseSoonToExpire)
-            .filter(licenseCanExpire)
+            .filter(license => licenseSoonToExpire(license))
+            .filter(license => licenseCanExpire(license))
         ?? [];
 
-    const showSomeLicenseExpirationInfo = expiredLicenses.length || soonToExpireLicenses.length;
-    // TODO - will be provided by API
-    const enterpriseFeaturesUsed = false;
-    const showEnterpriseFeaturesWarning = enterpriseFeaturesUsed && !api.licenses.some(license => license.type === License_Type.ENTERPRISE || license.type === License_Type.TRIAL);
+    const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
+    const showEnterpriseFeaturesWarning = api.licenseViolation;
 
-    if (!api.licensesLoaded) {
+    if (api.licensesLoaded === undefined) {
         return null;
     }
 
@@ -29,6 +27,8 @@ export const LicenseNotification = observer(() => {
     if (!showSomeLicenseExpirationInfo && !showEnterpriseFeaturesWarning) {
         return null;
     }
+
+    const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter(x => x.enabled)
 
     return (
         <Box>
@@ -45,14 +45,14 @@ export const LicenseNotification = observer(() => {
                         )}
                     </Box>}
 
-                    {expiredLicenses.length > 0 && <Box>
-                        {expiredLicenses.map((license, idx) =>
+                    {visibleExpiredEnterpriseLicenses.length > 0 && <Box>
+                        {visibleExpiredEnterpriseLicenses.map((license, idx) =>
                             <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
                         )}
                     </Box>}
 
                     {showEnterpriseFeaturesWarning && <Text>
-                        You're using Enterprise features in your connected Redpanda cluster. These features require a license.
+                        You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.
                     </Text>}
 
                     <Flex gap={2} my={2}>

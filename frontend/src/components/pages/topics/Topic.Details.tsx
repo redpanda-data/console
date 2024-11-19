@@ -28,14 +28,15 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
-import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
+import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { isServerless } from '../../../config';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
+import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
+import colors from '../../../colors';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
@@ -46,7 +47,7 @@ class TopicTab {
         public readonly topicGetter: () => Topic | undefined | null,
         public id: TopicTabId,
         private requiredPermission: TopicAction,
-        public titleText: string,
+        public titleText: React.ReactNode,
         private contentFunc: (topic: Topic) => React.ReactNode,
         private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
     ) { }
@@ -99,51 +100,26 @@ class TopicTab {
     }
 }
 
+
+const mkDocuTip = (text: string, icon?: JSX.Element) => (
+    <Tooltip label={text} placement="left" hasArrow>
+        <span>{icon ?? null}Documentation</span>
+    </Tooltip>
+);
+const warnIcon = (
+    <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
+        <MdOutlineWarningAmber />
+    </span>
+);
+
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
     @observable deleteRecordsModalAlive = false;
 
-    topicTabs: TopicTab[];
+    topicTabs: TopicTab[] = [];
 
     constructor(props: any) {
         super(props);
-
-        const topic = () => this.topic;
-
-        const mkDocuTip = (text: string, icon?: JSX.Element) => (
-            <Tooltip label={text} placement="left" hasArrow>
-                <span>{icon ?? null}Documentation</span>
-            </Tooltip>
-        );
-        const warnIcon = (
-            <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
-                <WarningOutlined color="hsl(22deg 29% 85%)" />
-            </span>
-        );
-        this.topicTabs = [
-            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
-            new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
-            new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
-            new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
-            new TopicTab(topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
-                return (
-                    <AclList
-                        acl={api.topicAcls.get(t.topicName)}
-                    />
-                );
-            }, [() => {
-                if (AppFeatures.SINGLE_SIGN_ON)
-                    if (api.userData != null && !api.userData.canListAcls)
-                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'} hideCloseButton={true}>
-                            <div> <LockIcon size={16} /> ACL</div>
-                        </Popover>
-                return undefined;
-            }]),
-            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
-                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null,
-                t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
-            ]),
-        ];
 
         if (isServerless())
             this.topicTabs.removeAll(x => x.id == 'documentation');
@@ -184,6 +160,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         // configuration is always required for the statistics bar
         api.refreshTopicConfig(this.props.topicName, force);
 
+        void api.refreshClusterHealth();
+
         // documentation can be lazy loaded
         if (uiSettings.topicDetailsActiveTabKey == 'documentation') api.refreshTopicDocumentation(this.props.topicName, force);
 
@@ -223,8 +201,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         // 2. if that tab is enabled, return it, otherwise return the first one that is not
         //    (todo: should probably show some message if all tabs are disabled...)
         const id = computeTabId();
-        if (this.topicTabs.first((t) => t.id == id)!.isEnabled) return id;
-        return this.topicTabs.first((t) => t.isEnabled)?.id ?? 'messages';
+        if (this.topicTabs.first((t) => t.id == id)!?.isEnabled) return id;
+        return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
     }
 
     componentDidMount() {
@@ -245,6 +223,39 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicConfig = this.topicConfig;
 
         setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
+
+        const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(({topicName}) => topicName === this.props.topicName)?.partitionIds;
+        const underReplicatedPartitionIds = (api.clusterHealth?.underReplicatedPartitions ?? []).find(({topicName}) => topicName === this.props.topicName)?.partitionIds
+
+        this.topicTabs = [
+            new TopicTab(() => topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
+            new TopicTab(() => topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
+            new TopicTab(() => topic, 'partitions', 'viewPartitions', <Flex gap={1}>
+                Partitions
+                {!!leaderLessPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                {!!underReplicatedPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+            </Flex>, (t) => <TopicPartitions topic={t} />),
+            new TopicTab(() => topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
+            new TopicTab(() => topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
+                return (
+                    <AclList
+                        acl={api.topicAcls.get(t.topicName)}
+                    />
+                );
+            }, [() => {
+                if (AppFeatures.SINGLE_SIGN_ON)
+                    if (api.userData != null && !api.userData.canListAcls)
+                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'} hideCloseButton={true}>
+                            <div> <LockIcon size={16} /> ACL</div>
+                        </Popover>
+                return undefined;
+            }]),
+            new TopicTab(() => topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
+                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null,
+                t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
+            ]),
+        ];
+
 
         return (
             <>

@@ -15,6 +15,8 @@ import (
 )
 
 // UserServiceGatewayServer implements the gRPC server API for the UserService service.
+//
+// Deprecated: do not use.
 type UserServiceGatewayServer struct {
 	v1alpha1.UnimplementedUserServiceServer
 	createUser connect_gateway.UnaryHandler[v1alpha1.CreateUserRequest, v1alpha1.CreateUserResponse]
@@ -24,6 +26,8 @@ type UserServiceGatewayServer struct {
 }
 
 // NewUserServiceGatewayServer constructs a Connect-Gateway gRPC server for the UserService service.
+//
+// Deprecated: do not use.
 func NewUserServiceGatewayServer(svc UserServiceHandler, opts ...connect_gateway.HandlerOption) *UserServiceGatewayServer {
 	return &UserServiceGatewayServer{
 		createUser: connect_gateway.NewUnaryHandler(UserServiceCreateUserProcedure, svc.CreateUser, opts...),
@@ -51,6 +55,8 @@ func (s *UserServiceGatewayServer) DeleteUser(ctx context.Context, req *v1alpha1
 
 // RegisterUserServiceHandlerGatewayServer registers the Connect handlers for the UserService "svc"
 // to "mux".
+//
+// Deprecated: do not use.
 func RegisterUserServiceHandlerGatewayServer(mux *runtime.ServeMux, svc UserServiceHandler, opts ...connect_gateway.HandlerOption) {
 	if err := v1alpha1.RegisterUserServiceHandlerServer(context.TODO(), mux, NewUserServiceGatewayServer(svc, opts...)); err != nil {
 		panic(fmt.Errorf("connect-gateway: %w", err))

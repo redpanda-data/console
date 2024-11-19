@@ -18,13 +18,13 @@ import { action, autorun, IReactionDisposer, makeObservable, observable, transac
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
 import { toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
-import { WarningOutlined } from '@ant-design/icons';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
-import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, FormLabel, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Popover, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
+import { Accordion, Box, Button, createStandaloneToast, DataTable, Flex, FormLabel, HStack, List, ListItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Radio, redpandaTheme, redpandaToastOptions, Text, Tooltip, UnorderedList } from '@redpanda-data/ui';
 import { SingleSelect } from '../../misc/Select';
+import { MdOutlineWarningAmber } from 'react-icons/md';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -294,22 +294,6 @@ export class EditOffsetsModal extends Component<{
                 }))}/>
             </div>
         );
-    }
-
-    differWarning() {
-        const content = <div>
-            <p>The offsets that actually get applied may be different from what is shown in this column.</p>
-            <h6>Example</h6>
-            <p>
-                If you chose to change all group offsets to 'End Offset', the offsets for each topic (high/low watermarks) are fetched.
-                But when your change request reaches the backend, those offsets might have changed already because new messages were written to the topic.
-                The backend will correct for this difference and apply the correct offset.
-            </p>
-        </div>;
-
-        return <Popover trigger="click" content={content} size="auto" hideCloseButton>
-            <WarningOutlined/>
-        </Popover>;
     }
 
     @action
@@ -605,7 +589,7 @@ class ColAfter extends Component<{
                                     There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>). As a fallback, the last offset in that partition will be used.
                                 </div>
                             }
-                            icon={<WarningOutlined/>}
+                            icon={<MdOutlineWarningAmber size={14} />}
                             iconSize="18px"
                             iconColor="orangered"
                             maxWidth="350px"

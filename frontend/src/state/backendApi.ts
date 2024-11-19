@@ -120,7 +120,8 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
-import { License, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, GetClusterHealthResponse, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -337,7 +338,14 @@ const apiStore = {
     connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
     licenses: [] as License[],
-    licensesLoaded: false,
+    licenseViolation: false,
+    licensesLoaded: undefined as 'loaded' | 'failed' | undefined,
+
+    enterpriseFeaturesUsed: [] as ListEnterpriseFeaturesResponse_Feature[],
+
+    clusterHealth: undefined as GetClusterHealthResponse | undefined,
+    debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
+    hasDebugProcess: false as boolean,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -364,6 +372,7 @@ const apiStore = {
                 canListTransforms: true,
                 canCreateTransforms: true,
                 canDeleteTransforms: true,
+                canViewDebugBundle: true,
                 seat: null as any,
                 user: {
                     providerID: r.authenticationMethod,
@@ -638,6 +647,20 @@ const apiStore = {
                 if (partitionErrors > 0 || waterMarkErrors > 0)
                     console.warn(`refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`);
             }, addError);
+    },
+
+    get getTopicPartitionArray() {
+        const result: string[] = [];
+
+        this.topicPartitions.forEach((partitions, topicName) => {
+            if (partitions !== null) {
+                partitions.forEach(partition => {
+                    result.push(`${topicName}/${partition.id}`);
+                });
+            }
+        });
+
+        return result;
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
@@ -1554,22 +1577,114 @@ const apiStore = {
         const client = appConfig.licenseClient!;
         if (!client) {
             // this shouldn't happen but better to explicitly throw
-            throw new Error('Console client is not initialized');
+            throw new Error('License client is not initialized');
         }
 
-        await client.listLicenses({}).then(response => {
-            this.licenses = response.licenses
-            this.licensesLoaded = true
+        await Promise.all([
+            client.listEnterpriseFeatures({}).then(enterpriseFeaturesResponse => {
+                this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
+            }),
+            client.listLicenses({}).then(licensesResponse => {
+                this.licenses = licensesResponse.licenses;
+                this.licenseViolation = licensesResponse.violation;
+
+                this.licensesLoaded = 'loaded';
+            }).catch(err => {
+                this.licensesLoaded = 'failed';
+                const errorText = (err instanceof Error)
+                    ? err.message
+                    : String(err);
+
+                console.log('error refreshing licenses: ' + errorText);
+                return err;
+            })
+        ])
+    },
+
+    async refreshClusterHealth() {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        client.getClusterHealth({}).then(response => {
+            this.clusterHealth = response
+        })
+    },
+
+    async refreshDebugBundleStatuses() {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        client.getDebugBundleStatus({
+        }).then(response => {
+            this.debugBundleStatuses = response.brokerStatuses
+            this.hasDebugProcess = response.hasDebugProcess
             return response
-        }, err => {
-            const errorText = (err instanceof Error)
-                ? err.message
-                : String(err);
-
-            console.log('error refreshing licenses: ' + errorText);
+        }).catch((e) => {
+            this.debugBundleStatuses = []
+            return e
         });
-    }
+    },
 
+    get isDebugBundleReady() {
+        return api.debugBundleStatuses.length > 0 && !this.isDebugBundleInProgress
+    },
+
+    get canDownloadDebugBundle() {
+        return this.isDebugBundleReady && this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS).length > 0
+    },
+
+    get isDebugBundleInProgress() {
+        return this.debugBundleStatuses.some(status => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING);
+    },
+
+    get debugBundleStatus(): DebugBundleStatus | undefined {
+        return this.debugBundleStatuses.filter(status => status.value.case === 'bundleStatus').map(x => (x.value.value as DebugBundleStatus))[0]
+    },
+
+    async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        return await client.createDebugBundle(request).finally(() => {
+            this.refreshDebugBundleStatuses()
+        })
+    },
+
+    async cancelDebugBundleProcess({ jobId }: { jobId: string }) {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+
+        await client.cancelDebugBundleProcess({
+            jobId,
+        }).finally(() => {
+            this.refreshDebugBundleStatuses()
+        })
+    },
+
+    async deleteDebugBundleFile() {
+        const client = appConfig.debugBundleClient!;
+        if (!client) {
+            // this shouldn't happen but better to explicitly throw
+            throw new Error('Debug bundle client is not initialized');
+        }
+        await client.deleteDebugBundleFile({
+            deleteAll: true,
+        }).finally(() => {
+            this.refreshDebugBundleStatuses()
+        })
+    }
 };
 
 export type RolePrincipal = { name: string, principalType: 'User' };

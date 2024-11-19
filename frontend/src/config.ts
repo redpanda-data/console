@@ -8,7 +8,6 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { loader } from '@monaco-editor/react';
 import { autorun, configure, observable, when } from 'mobx';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
@@ -26,7 +25,10 @@ import { TransformService } from './protogen/redpanda/api/console/v1alpha1/trans
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 import { configureMonacoYaml } from 'monaco-yaml';
 import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
+import * as monaco from 'monaco-editor';
+import { loader, Monaco } from '@monaco-editor/react';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
+import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 
 declare const __webpack_public_path__: string;
 
@@ -75,6 +77,7 @@ interface Config {
     authenticationClient?: PromiseClient<typeof AuthenticationService>;
     licenseClient?: PromiseClient<typeof LicenseService>;
     consoleClient?: PromiseClient<typeof ConsoleService>;
+    debugBundleClient?: PromiseClient<typeof DebugBundleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
     transformsClient?: PromiseClient<typeof TransformService>;
@@ -112,6 +115,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
 
     const licenseGrpcClient = createPromiseClient(LicenseService, transport);
     const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
+    const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
     const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
@@ -126,6 +130,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         authenticationClient: authenticationGrpcClient,
         licenseClient: licenseGrpcClient,
         consoleClient: consoleGrpcClient,
+        debugBundleClient: debugBundleGrpcClient,
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
         transformsClient: transformClient,
@@ -133,6 +138,25 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     });
     return config;
 };
+
+export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    monaco.editor.defineTheme('kowl', {
+        base: 'vs',
+        inherit: false,
+        colors: {
+            'editor.background': '#fcfcfc',
+            'editorGutter.background': '#00000018',
+            'editor.lineHighlightBackground': '#aaaaaa20',
+            'editor.lineHighlightBorder': '#00000000',
+            'editorLineNumber.foreground': '#8c98a8',            
+            'editorOverviewRuler.background': '#606060',
+        },
+        rules: []
+    });
+
+    monaco.editor.setTheme('kowl');
+};
+
 
 setTimeout(() => {
 
@@ -280,4 +304,3 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         );
     }
 });
-

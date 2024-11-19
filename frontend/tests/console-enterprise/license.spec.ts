@@ -2,14 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Licenses', () => {
     test('should list an enterprise license', async ({page}) => {
-        test.slow()
         await page.goto('/overview', {
             waitUntil: 'domcontentloaded'
         });
         const licensingEl = page.locator('[data-testid="overview-license-name"]');
 
         // Assert that at least one element is visible and contains the text
-        await expect(licensingEl.filter({ hasText: 'Redpanda Enterprise' }).first()).toBeVisible();
+        await expect(licensingEl.filter({ hasText: 'Console Enterprise' }).first()).toBeVisible();
     });
 
     test('should be able to upload new license', async ({page}) => {

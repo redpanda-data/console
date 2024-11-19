@@ -29,6 +29,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 var _ dataplanev1alpha2connect.TopicServiceHandler = (*Service)(nil)
@@ -36,11 +37,12 @@ var _ dataplanev1alpha2connect.TopicServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg        *config.Config
-	logger     *zap.Logger
-	consoleSvc console.Servicer
-	mapper     kafkaClientMapper
-	defaulter  defaulter
+	cfg         *config.Config
+	logger      *zap.Logger
+	consoleSvc  console.Servicer
+	redpandaSvc *redpanda.Service
+	mapper      mapper
+	defaulter   defaulter
 }
 
 // ListTopics lists all Kafka topics with their most important metadata.
@@ -335,13 +337,15 @@ func (s *Service) SetTopicConfigurations(ctx context.Context, req *connect.Reque
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
 	consoleSvc console.Servicer,
+	redpandaSvc *redpanda.Service,
 ) *Service {
 	return &Service{
-		cfg:        cfg,
-		logger:     logger,
-		consoleSvc: consoleSvc,
-		mapper:     kafkaClientMapper{},
-		defaulter:  defaulter{},
+		cfg:         cfg,
+		logger:      logger,
+		consoleSvc:  consoleSvc,
+		redpandaSvc: redpandaSvc,
+		mapper:      mapper{},
+		defaulter:   defaulter{},
 	}
 }
 

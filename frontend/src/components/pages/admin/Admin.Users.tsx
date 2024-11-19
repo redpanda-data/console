@@ -16,10 +16,10 @@ import { api, } from '../../../state/backendApi';
 import { MotionDiv } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
 import { RoleComponent } from './Admin.Roles';
-import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Accordion, Box, DataTable, SearchField, Tooltip } from '@redpanda-data/ui';
+import { Accordion, Box, Text, DataTable, Flex, SearchField, Tooltip } from '@redpanda-data/ui';
+import { MdOutlinePermIdentity } from 'react-icons/md';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -56,12 +56,16 @@ export class AdminUsers extends Component<{}> {
                         cell: ({row}) => {
                             if (row.original.internalIdentifier == api.userData?.user.internalIdentifier) {
                                 return (
-                                    <span>
+                                    <Flex gap={2}>
                                         <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>
-                                            <UserOutlined style={{fontSize: '16px', padding: '2px', color: '#ff9e3a'}}/>
+                                            <Box>
+                                                <MdOutlinePermIdentity size={16} color="#ff9e3a" />
+                                            </Box>
                                         </Tooltip>{' '}
-                                        {row.original.internalIdentifier}
-                                    </span>
+                                        <Text>
+                                            {row.original.internalIdentifier}
+                                        </Text>
+                                    </Flex>
                                 );
                             }
                             return row.original.internalIdentifier;

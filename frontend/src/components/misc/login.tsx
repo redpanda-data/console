@@ -20,18 +20,18 @@ import {
     AlertDescription,
     AlertIcon,
     Box,
-  Button,
-  Flex,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
+    Button,
+    Flex,
+    Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
+    ModalOverlay,
     Spinner,
-  Stack,
-  Text
+    Stack,
+    Text
 } from '@redpanda-data/ui';
 import { config as appConfig } from '../../config';
 import {

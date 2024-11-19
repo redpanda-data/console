@@ -8,12 +8,14 @@ import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha1.UserService
+ * @deprecated
  */
 export const UserService = {
   typeName: "redpanda.api.dataplane.v1alpha1.UserService",
   methods: {
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.CreateUser
+     * @deprecated
      */
     createUser: {
       name: "CreateUser",
@@ -23,6 +25,7 @@ export const UserService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.UpdateUser
+     * @deprecated
      */
     updateUser: {
       name: "UpdateUser",
@@ -32,6 +35,7 @@ export const UserService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.ListUsers
+     * @deprecated
      */
     listUsers: {
       name: "ListUsers",
@@ -41,6 +45,7 @@ export const UserService = {
     },
     /**
      * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.DeleteUser
+     * @deprecated
      */
     deleteUser: {
       name: "DeleteUser",

@@ -17,16 +17,18 @@ import (
 // LicenseServiceGatewayServer implements the gRPC server API for the LicenseService service.
 type LicenseServiceGatewayServer struct {
 	v1alpha1.UnimplementedLicenseServiceServer
-	listLicenses connect_gateway.UnaryHandler[v1alpha1.ListLicensesRequest, v1alpha1.ListLicensesResponse]
-	setLicense   connect_gateway.UnaryHandler[v1alpha1.SetLicenseRequest, v1alpha1.SetLicenseResponse]
+	listLicenses           connect_gateway.UnaryHandler[v1alpha1.ListLicensesRequest, v1alpha1.ListLicensesResponse]
+	setLicense             connect_gateway.UnaryHandler[v1alpha1.SetLicenseRequest, v1alpha1.SetLicenseResponse]
+	listEnterpriseFeatures connect_gateway.UnaryHandler[v1alpha1.ListEnterpriseFeaturesRequest, v1alpha1.ListEnterpriseFeaturesResponse]
 }
 
 // NewLicenseServiceGatewayServer constructs a Connect-Gateway gRPC server for the LicenseService
 // service.
 func NewLicenseServiceGatewayServer(svc LicenseServiceHandler, opts ...connect_gateway.HandlerOption) *LicenseServiceGatewayServer {
 	return &LicenseServiceGatewayServer{
-		listLicenses: connect_gateway.NewUnaryHandler(LicenseServiceListLicensesProcedure, svc.ListLicenses, opts...),
-		setLicense:   connect_gateway.NewUnaryHandler(LicenseServiceSetLicenseProcedure, svc.SetLicense, opts...),
+		listLicenses:           connect_gateway.NewUnaryHandler(LicenseServiceListLicensesProcedure, svc.ListLicenses, opts...),
+		setLicense:             connect_gateway.NewUnaryHandler(LicenseServiceSetLicenseProcedure, svc.SetLicense, opts...),
+		listEnterpriseFeatures: connect_gateway.NewUnaryHandler(LicenseServiceListEnterpriseFeaturesProcedure, svc.ListEnterpriseFeatures, opts...),
 	}
 }
 
@@ -36,6 +38,10 @@ func (s *LicenseServiceGatewayServer) ListLicenses(ctx context.Context, req *v1a
 
 func (s *LicenseServiceGatewayServer) SetLicense(ctx context.Context, req *v1alpha1.SetLicenseRequest) (*v1alpha1.SetLicenseResponse, error) {
 	return s.setLicense(ctx, req)
+}
+
+func (s *LicenseServiceGatewayServer) ListEnterpriseFeatures(ctx context.Context, req *v1alpha1.ListEnterpriseFeaturesRequest) (*v1alpha1.ListEnterpriseFeaturesResponse, error) {
+	return s.listEnterpriseFeatures(ctx, req)
 }
 
 // RegisterLicenseServiceHandlerGatewayServer registers the Connect handlers for the LicenseService

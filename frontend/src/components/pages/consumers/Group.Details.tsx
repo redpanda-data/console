@@ -17,18 +17,19 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { CheckCircleTwoTone, FireTwoTone, HourglassTwoTone, QuestionCircleOutlined, WarningTwoTone } from '@ant-design/icons';
-import { Button, DefaultSkeleton, IconButton, numberToThousandsString, OptionGroup, QuickTable } from '../../../utils/tsxUtils';
+import { Button, DefaultSkeleton, IconButton, numberToThousandsString, OptionGroup } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
-import { DeleteOffsetsModal, EditOffsetsModal, GroupDeletingMode, GroupOffset } from './Modals';
+import { DeleteOffsetsModal, EditOffsetsModal, GroupOffset } from './Modals';
+import type { GroupDeletingMode } from './Modals';
 import { ShortNum } from '../../misc/ShortNum';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Accordion, DataTable, Empty, Flex, Popover, Section, Tabs, Tag, Text, Tooltip } from '@redpanda-data/ui';
+import { Accordion, DataTable, Empty, Flex, Grid, GridItem, Popover, Section, Tabs, Tag, Text, Tooltip } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 import { Statistic } from '../../misc/Statistic';
+import { MdCheckCircleOutline, MdHourglassBottom, MdHourglassEmpty, MdLocalFireDepartment, MdOutlineQuiz, MdOutlineWarningAmber } from 'react-icons/md';
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -491,39 +492,60 @@ const renderMergedID = (id?: string, clientId?: string) => {
     return null;
 };
 
-const stateIcons = new Map<string, JSX.Element>([
-    ['stable', <CheckCircleTwoTone key="stable" twoToneColor="#52c41a" />],
-    ['completingrebalance', <HourglassTwoTone key="completingrebalance" twoToneColor="#52c41a" />],
-    ['preparingrebalance', <HourglassTwoTone key="preparingrebalance" twoToneColor="orange" />],
-    ['empty', <WarningTwoTone key="empty" twoToneColor="orange" />],
-    ['dead', <FireTwoTone key="dead" twoToneColor="orangered" />],
-    ['unknown', <QuestionCircleOutlined key="unknown" />]
-]);
-const makeStateEntry = (iconName: string, displayName: string, description: string): [any, any] => [
-    <span key={`${iconName}-name`}>
-        {stateIcons.get(iconName)} <span style={{ fontSize: '85%', fontWeight: 600 }}>{displayName}</span>
-    </span>,
-    <div key={`${iconName}-description`} style={{ maxWidth: '350px' }}>
-        {description}
-    </div>
-];
+type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown'
 
-const consumerGroupStateTable = QuickTable([makeStateEntry('stable', 'Stable', 'Consumer group has members which have been assigned partitions'), makeStateEntry('completingrebalance', 'Completing Rebalance', 'Kafka is assigning partitions to group members'), makeStateEntry('preparingrebalance', 'Preparing Rebalance', 'A reassignment of partitions is required, members have been asked to stop consuming'), makeStateEntry('empty', 'Empty', 'Consumer group exists, but does not have any members'), makeStateEntry('dead', 'Dead', 'Consumer group does not have any members and its metadata has been removed'), makeStateEntry('unknown', 'Unknown', 'Group state is not known')], {
-    gapHeight: '.5em',
-    gapWidth: '.5em',
-    keyStyle: { verticalAlign: 'top' }
+const stateIcons = new Map<StateIcon, JSX.Element>([
+    ['stable', <MdCheckCircleOutline key="stable" size={16} color="#52c41a" />],
+    ['completingrebalance', <MdHourglassBottom key="completingrebalance" size={16} color="#52c41a" />],
+    ['preparingrebalance', <MdHourglassEmpty key="preparingrebalance" size={16} color="orange" />],
+    ['empty', <MdOutlineWarningAmber key="empty" size={16} color="orange" />],
+    ['dead', <MdLocalFireDepartment key="dead" size={16} color="orangered" />],
+    ['unknown', <MdOutlineQuiz key="unknown" size={16} />]
+]);
+
+const stateIconNames: Record<StateIcon, string> = ({
+    stable: 'Stable',
+    completingrebalance: 'Completing Rebalance',
+    preparingrebalance: 'Preparing Rebalance',
+    empty: 'Empty',
+    dead: 'Dead',
+    unknown: 'Unknown'
+})
+
+const stateIconDescriptions: Record<StateIcon, string> = ({
+    stable: 'Consumer group has members which have been assigned partitions',
+    completingrebalance: 'Kafka is assigning partitions to group members',
+    preparingrebalance: 'A reassignment of partitions is required, members have been asked to stop consuming',
+    empty: 'Consumer group exists, but does not have any members',
+    dead: 'Consumer group does not have any members and its metadata has been removed',
+    unknown: 'Group state is not known'
 });
+
+const consumerGroupStateTable = <Grid
+    templateColumns="auto 300px"
+    gap={4}
+>
+    {Array.from(stateIcons.entries()).map(([key, icon]) => (
+        <React.Fragment key={key}>
+            {/* Icon column */}
+            <GridItem display="flex" alignItems="center" gap={2}>{icon} <strong>{stateIconNames[key]}</strong></GridItem>
+
+            {/* Description column */}
+            <GridItem>{stateIconDescriptions[key]}</GridItem>
+        </React.Fragment>
+    ))}
+</Grid>
 
 export const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
-    const icon = stateIcons.get(state);
+    const icon = stateIcons.get(state as StateIcon);
 
     return (
         <Popover isInPortal trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
-            <span>
+            <Flex gap={2} alignItems="center">
                 {icon}
                 <span> {p.group.state}</span>
-            </span>
+            </Flex>
         </Popover>
     );
 };

@@ -1,7 +1,6 @@
-import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Grid, GridItem, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
+import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Icon, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay,
     PasswordInput, Popover, RadioGroup, SearchField, Text, Tooltip, useToast } from '@redpanda-data/ui';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
 import { FC } from 'react';
@@ -13,6 +12,7 @@ import { api } from '../../../state/backendApi';
 import { isServerless } from '../../../config';
 import { SingleSelect } from '../../misc/Select';
 import { Label } from '../../../utils/tsxUtils';
+import { MdInfoOutline } from 'react-icons/md';
 
 
 type ConfigurationEditorProps = {
@@ -260,7 +260,7 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                             if (canEdit) p.onEditEntry(p.entry);
                         }}
                     >
-                        <Icon as={PencilIcon}/>
+                        <Icon as={PencilIcon} />
                     </span>
                 </Tooltip>
                 {entry.documentation && (
@@ -268,35 +268,16 @@ const ConfigEntry = observer((p: { onEditEntry: (configEntry: ConfigEntryExtende
                         hideCloseButton
                         size="lg"
                         content={
-                            <Grid templateColumns="1fr" gap={4} w="fit-content">
-                                <GridItem>
-                                    <strong>{entry.name}</strong>
-                                    <br/>
-                                    {entry.documentation}
-                                </GridItem>
-                                <GridItem>
-                                    <Grid templateColumns="25% 1fr" gap={2}>
-                                        <GridItem>
-                                            <strong>Value</strong>
-                                        </GridItem>
-                                        <GridItem>
-                                            <span>{friendlyValue}</span>
-                                        </GridItem>
-                                        <GridItem>
-                                            <strong>Source</strong>
-                                        </GridItem>
-                                        <GridItem>
-                                            <div>
-                                                <code>{entry.source}</code>
-                                            </div>
-                                            <Text fontSize="sm">{getConfigSourceExplanation(entry.source)}</Text>
-                                        </GridItem>
-                                    </Grid>
-                                </GridItem>
-                            </Grid>
+                            <Flex flexDirection="column" gap={2}>
+                                <Text fontSize="lg" fontWeight="bold">{entry.name}</Text>
+                                <Text fontSize="sm">{entry.documentation}</Text>
+                                <Text fontSize="sm">{getConfigDescription(entry.source)}</Text>
+                            </Flex>
                         }
                     >
-                        <Icon as={InfoCircleOutlined}/>
+                        <Box>
+                            <Icon as={MdInfoOutline} />
+                        </Box>
                     </Popover>
                 )}
             </span>
@@ -380,22 +361,15 @@ export const ConfigEntryEditor = observer((p: {
     }
 });
 
-function getConfigSourceExplanation(source: string) {
+function getConfigDescription(source: string): string {
     switch (source) {
         case 'DEFAULT_CONFIG':
-            return 'This default value is used if the setting is not overwritten.';
-
-        case 'DYNAMIC_BROKER_CONFIG':
-        case 'DYNAMIC_BROKER_LOGGER_CONFIG':
-        case 'DYNAMIC_DEFAULT_BROKER_CONFIG':
-            return 'Set at broker level';
-
+            return 'Inherited from DEFAULT_CONFIG';
         case 'DYNAMIC_TOPIC_CONFIG':
-            return 'Set for this specific topic';
-
+            return 'This is a custom setting for this topic';
+        case 'DYNAMIC_BROKER_CONFIG':
         case 'STATIC_BROKER_CONFIG':
-            return 'Set on the broker by either a config file or environment variable';
-
+            return 'This is a custom setting set on the BROKER_CONFIG level.';
         default:
             return '';
     }
