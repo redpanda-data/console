@@ -84,9 +84,8 @@ export class AdminDebugBundle extends Component<{}> {
                 <Header />
                 <Box mt={4}>
                     {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && <Text fontWeight="bold">Latest debug bundle:</Text>}
-                    {api.isDebugBundleExpired && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
                     {api.isDebugBundleError && <Text>This debug bundle was cancelled by the user and is not available for download.</Text>}
-                    {api.canDownloadDebugBundle && <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton/>}
+                    {(api.canDownloadDebugBundle || api.isDebugBundleExpired) && <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton isExpired={api.isDebugBundleExpired} />}
 
                     {api.debugBundleStatuses.length===0 && <Text>No debug bundle available for download.</Text>}
                 </Box>
