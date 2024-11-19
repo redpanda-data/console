@@ -76,7 +76,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                                     void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
                                 }
                             });
-                        }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin">Done</Button>}
+                        }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin/debug-bundle">Done</Button>}
                     </Box>
                 </Box>}
             </Box>
