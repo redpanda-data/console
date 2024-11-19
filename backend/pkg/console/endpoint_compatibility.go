@@ -125,6 +125,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			HasRedpandaAPI:  true,
 			RedpandaFeature: redpanda.RedpandaFeatureWASMDataTransforms,
 		},
+		{
+			URL:             consolev1alpha1connect.DebugBundleServiceName,
+			Method:          "POST",
+			HasRedpandaAPI:  true,
+			RedpandaFeature: redpanda.RedpandaFeatureDebugBundle,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))

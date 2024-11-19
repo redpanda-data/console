@@ -74,7 +74,7 @@ export class AdminDebugBundle extends Component<{}> {
         if (api.isDebugBundleInProgress) {
             return <Box>
                 <Header />
-                <Button px={0} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>
+                <Button px={0} mt={4} as={ReactRouterLink} variant="link" to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}>Bundle generation in progress...</Button>
                 <Text>Started {api.debugBundleStatus?.createdAt?.toDate().toLocaleString()}</Text>
             </Box>;
         }
@@ -82,7 +82,7 @@ export class AdminDebugBundle extends Component<{}> {
         return (
             <Box>
                 <Header />
-                <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>
+                {api.canDownloadDebugBundle && <Text mt={4} fontWeight="bold">Latest debug bundle:</Text>}
                 <DebugBundleLink statuses={api.debugBundleStatuses} showDeleteButton />
                 {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
 
@@ -105,23 +105,10 @@ export class AdminDebugBundle extends Component<{}> {
                                 this.submitInProgress = false;
                             });
                         }}
-                        debugBundleExists={api.debugBundleStatuses.length > 0}
+                        debugBundleExists={api.hasDebugProcess}
                         error={this.createBundleError}
                     />
                 </Box>
-                {/*<ConfirmModal trigger="Generate new" heading="Generate new debug bundle" onConfirm={() => {*/}
-                {/*    appGlobal.history.push('/admin/debug-bundle/new');*/}
-                {/*    this.confirmModalIsOpen = false*/}
-                {/*}}>*/}
-                {/*    You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?*/}
-                {/*</ConfirmModal>*/}
-                {/*<Box mt={4}>*/}
-                {/*    {api.debugBundleStatuses.length ?*/}
-                {/*     */}
-                {/*        :*/}
-                {/*        <Button as={ReactRouterLink} to="/admin/debug-bundle/new">Generate new</Button>*/}
-                {/*    }*/}
-                {/*</Box>*/}
             </Box>
         );
     }

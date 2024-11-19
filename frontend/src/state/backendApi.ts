@@ -345,6 +345,7 @@ const apiStore = {
 
     clusterHealth: undefined as GetClusterHealthResponse | undefined,
     debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
+    hasDebugProcess: false as boolean,
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -1575,20 +1576,15 @@ const apiStore = {
         }
 
         await Promise.all([
-            client.listEnterpriseFeatures({}),
-            client.listLicenses({})
-        ])
-            .then(( [enterpriseFeaturesResponse, licensesResponse]) => {
-                // Handle the first response
+            client.listEnterpriseFeatures({}).then(enterpriseFeaturesResponse => {
                 this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
-
-                // Handle the second response
+            }),
+            client.listLicenses({}).then(licensesResponse => {
                 this.licenses = licensesResponse.licenses;
                 this.licenseViolation = licensesResponse.violation;
 
                 this.licensesLoaded = 'loaded';
-            })
-            .catch(err => {
+            }).catch(err => {
                 this.licensesLoaded = 'failed';
                 const errorText = (err instanceof Error)
                     ? err.message
@@ -1597,6 +1593,7 @@ const apiStore = {
                 console.log('error refreshing licenses: ' + errorText);
                 return err;
             })
+        ])
     },
 
     async refreshClusterHealth() {
@@ -1621,6 +1618,7 @@ const apiStore = {
         client.getDebugBundleStatus({
         }).then(response => {
             this.debugBundleStatuses = response.brokerStatuses
+            this.hasDebugProcess = response.hasDebugProcess
             return response
         }).catch((e) => {
             this.debugBundleStatuses = []

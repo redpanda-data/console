@@ -124,7 +124,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                         title="License uploaded successfully"
                         subTitle={<Flex flexDirection="column" gap={4}>
                             <Box>
-                                <Text fontWeight="normal">To use Console's enterprise features, you'll need to restart console.</Text>
+                                <Text fontWeight="normal">A restart will be needed to use Redpanda Console's enterprise features.</Text>
                                 <Text fontWeight="normal">Enterprise features in your Redpanda cluster will be available right away.</Text>
                             </Box>
                             <Box><Button onClick={() => {

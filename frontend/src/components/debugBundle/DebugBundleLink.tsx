@@ -2,26 +2,26 @@ import React from 'react';
 import { DebugBundleStatus, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { config } from '../../config';
 import { api } from '../../state/backendApi';
-import { Box, Button, Text, IconButton } from '@redpanda-data/ui';
+import { Box, Text, IconButton, Link } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
 
 const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = true }: { statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[], showDeleteButton?: boolean, showDatetime?: boolean }) => {
-    const statusWithFilename = statuses.find(status => status.value.case === 'bundleStatus' && status.value.value.filename)?.value.value as DebugBundleStatus
+    const statusWithFilename = statuses.find(status => status.value.case === 'bundleStatus' && status.value.value.filename)?.value.value as DebugBundleStatus | undefined
     const downloadFilename = 'debug-bundle.zip'
 
     if(statuses.length === 0) {
         return null
     }
 
-    if(!statusWithFilename.filename) {
+    if(!statusWithFilename?.filename) {
         return null
     }
 
     return (
         <Box>
             <Box>
-                <Button
-                    variant="link"
+                <Link
+                    role="button"
                     onClick={() => {
                         config.fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`).then(async response => {
                             const url = window.URL.createObjectURL(await response.blob());
@@ -49,7 +49,7 @@ const DebugBundleLink = ({ statuses, showDeleteButton = false, showDatetime = tr
                     px={0}
                 >
                     {downloadFilename}
-                </Button>
+                </Link>
                 {showDeleteButton && <IconButton
                     variant="ghost"
                     icon={<MdDeleteOutline/>}

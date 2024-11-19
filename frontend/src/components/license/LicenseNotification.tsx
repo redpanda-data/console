@@ -20,7 +20,8 @@ export const LicenseNotification = observer(() => {
         return null;
     }
 
-    if (location.pathname === '/admin/upload-license') {
+    // For these paths, we don't need to show a notification banner because the pages themselves handle license management
+    if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
         return null;
     }
 
@@ -52,7 +53,7 @@ export const LicenseNotification = observer(() => {
                     </Box>}
 
                     {showEnterpriseFeaturesWarning && <Text>
-                        You're using Enterprise {activeEnterpriseFeatures.length === 1 ? 'feature' : 'features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.
+                        You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.
                     </Text>}
 
                     <Flex gap={2} my={2}>

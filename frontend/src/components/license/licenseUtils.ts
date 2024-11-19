@@ -35,11 +35,21 @@ export const licenseSoonToExpire = (license: License, offsetInDays: Partial<Reco
     const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
     const offsetInMilliseconds = daysToExpire * millisecondsInADay;
 
-    const timeToExpiration = getTimeToExpiration(license);
+    const timeToExpiration = getMillisecondsToExpiration(license);
 
     // Check if the license expires within the offset period
     return timeToExpiration > 0 && timeToExpiration <= offsetInMilliseconds;
 };
+
+/**
+ * Calculates the expiration date of a license.
+ *
+ * @param {License} license - The license object containing the expiration timestamp.
+ * @returns {Date} The expiration date as a JavaScript Date object.
+ */
+export const getExpirationDate = (license: License): Date => {
+    return new Date(Number(license.expiresAt) * 1000)
+}
 
 /**
  * Calculates the time remaining until a license expires.
@@ -48,8 +58,8 @@ export const licenseSoonToExpire = (license: License, offsetInDays: Partial<Reco
  * @param {string} license.expiresAt - The Unix timestamp (in seconds) when the license expires.
  * @returns {number} - The time remaining until expiration in milliseconds. If the license has already expired, returns 0.
  */
-const getTimeToExpiration = (license: License): number => {
-    const expirationDate = new Date(Number(license.expiresAt) * 1000);
+export const getMillisecondsToExpiration = (license: License): number => {
+    const expirationDate = getExpirationDate(license);
     const currentTime = new Date();
 
     const timeRemaining = expirationDate.getTime() - currentTime.getTime();
@@ -58,7 +68,7 @@ const getTimeToExpiration = (license: License): number => {
 };
 
 export const getPrettyTimeToExpiration = (license: License) => {
-    const timeToExpiration = getTimeToExpiration(license);
+    const timeToExpiration = getMillisecondsToExpiration(license);
 
     if (timeToExpiration === 0) {
         return 'License has expired';

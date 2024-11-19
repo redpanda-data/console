@@ -26,11 +26,10 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
         }
     }, []);
     return (
-        <Box>
-            <Text mt={4} mb={2}>Generation progress</Text>
+        <Box my={4}>
             <List>
                 {statuses.map(((status, idx) => <ListItem key={idx}>
-                    <Flex gap={3} alignItems="center">
+                    <Flex gap={3} alignItems="center" mb={3}>
                         {status.value.case === 'bundleStatus' && <>
                             {StatusIcons[status.value.value.status]}
                             <Stack spacing={0.5}>

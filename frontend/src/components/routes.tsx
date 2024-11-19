@@ -57,6 +57,7 @@ import {isServerless} from '../config';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
+import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 
 //
 //	Route Types
@@ -337,6 +338,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
 
+    MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired')
 
 ].filterNull();
 

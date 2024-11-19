@@ -14,7 +14,7 @@ import { api, } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Box, Button, Flex, Spinner, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { PageComponent, PageInitHelper } from '../Page';
 import { appGlobal } from '../../../state/appGlobal';
 import DebugBundleOverview from './DebugBundleOverview';
@@ -54,29 +54,29 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box>
                 <Text>Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine it’s running on. This will bundle the collected data into a ZIP file.</Text>
 
-                {api.isDebugBundleInProgress && <Flex flexDirection="column" gap={4} mt={6}>
-                    <Flex alignItems="center" gap={2}><Spinner size="sm" /> <Text>Generating bundle...</Text></Flex>
-                    <Box>
-                        <Button variant="outline" onClick={() => {
-                            api.debugBundleStatuses.forEach(status => {
-                                if (status.value.case==='bundleStatus') {
-                                    void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
-                                }
-                            });
-                        }}>Stop</Button>
-                    </Box>
-                </Flex>}
+                {api.isDebugBundleInProgress && <Box mt={6}>
+                    <Text>Generating bundle...</Text>
+                </Box>}
 
                 {!api.isDebugBundleInProgress && <Box>
                     <Flex gap={2} my={2}>
-                        <Text fontWeight="bold">Debug bundle complete</Text>
+                        <Text fontWeight="bold">Debug bundle complete:</Text>
                         {api.canDownloadDebugBundle &&
                         <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />}
                     </Flex>
-                    <Button as={ReactRouterLink} to="/admin">Done</Button>
                 </Box>}
 
                 {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
+
+                <Box my={2}>
+                    {api.isDebugBundleInProgress ? <Button variant="outline" onClick={() => {
+                        api.debugBundleStatuses.forEach(status => {
+                            if (status.value.case==='bundleStatus') {
+                                void api.cancelDebugBundleProcess({jobId: status.value.value.jobId});
+                            }
+                        });
+                    }}>Stop</Button>:<Button variant="outline" as={ReactRouterLink} to="/admin">Done</Button>}
+                </Box>
             </Box>
         );
     }

@@ -109,13 +109,12 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 		return nil, err
 	}
 
-	if s.adminapiCl == nil {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
-	licenses := make([]*v1alpha1.License, 0)
 	consoleLicenseProto := s.mapper.consoleLicenseToProto(s.consoleLicense)
-	licenses = append(licenses, consoleLicenseProto)
+	licenses := []*v1alpha1.License{consoleLicenseProto}
+
+	if s.adminapiCl == nil {
+		return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: false}), nil
+	}
 
 	coreLicense, err := s.adminapiCl.GetLicenseInfo(ctx)
 	if err != nil {

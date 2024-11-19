@@ -232,8 +232,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(() => topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
             new TopicTab(() => topic, 'partitions', 'viewPartitions', <Flex gap={1}>
                 Partitions
-                {!!leaderLessPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has a leaderless ${leaderLessPartitionIds.length === 1 ? 'partition' : 'partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
-                {!!underReplicatedPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has under-replicated ${underReplicatedPartitionIds.length === 1 ? 'partition' : 'partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
+                {!!leaderLessPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}><Box><MdError size={18} color={colors.brandError} /></Box></Tooltip>}
+                {!!underReplicatedPartitionIds && <Tooltip placement="top" hasArrow label={`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}><Box><MdOutlineWarning size={18} color={colors.brandWarning} /></Box></Tooltip>}
             </Flex>, (t) => <TopicPartitions topic={t} />),
             new TopicTab(() => topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
             new TopicTab(() => topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
