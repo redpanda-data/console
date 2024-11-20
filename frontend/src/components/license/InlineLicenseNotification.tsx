@@ -3,13 +3,10 @@ import { observer } from 'mobx-react';
 import { FC, ReactElement } from 'react';
 import { License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { getExpirationDate, getMillisecondsToExpiration, getPrettyTimeToExpiration, licenseSoonToExpire } from './licenseUtils';
-
-type InlineLicenseNotificationProps = {
-    license: License;
-}
+import { api } from '../../state/backendApi';
 
 const licenseMessage = (license: License | null): ReactElement | null  => {
-    if(license === null) {
+    if (license === null) {
         return null
     }
 
@@ -42,14 +39,19 @@ const licenseMessage = (license: License | null): ReactElement | null  => {
         );
     }
 
+    if (license.type === License_Type.COMMUNITY && !api.isRedpanda) {
+        return <>This is an enterprise feature. Try it out with our Redpanda Enterprise Trial.</>
+    }
+
     return null;
 };
 
-export const InlineLicenseNotification: FC<InlineLicenseNotificationProps> = observer(({ license }) => {
+export const InlineLicenseNotification: FC = observer(() => {
+    const license = api.licenses[0];
     const message = licenseMessage(license);
 
-    if(!license) {
-        return null
+    if (!license) {
+        return null;
     }
 
     if (message === null) {

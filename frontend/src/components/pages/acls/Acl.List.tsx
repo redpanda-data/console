@@ -398,7 +398,7 @@ const RolesTab = observer(() => {
             Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.
         </Box>
 
-        <InlineLicenseNotification license={api.licenses[0]}/>
+        <InlineLicenseNotification />
 
         <SearchField
             width="300px"
