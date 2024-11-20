@@ -15,7 +15,7 @@ import { AppFeatures, getBasePath } from './utils/env';
 import memoizeOne from 'memoize-one';
 import { DEFAULT_API_BASE } from './components/constants';
 import { APP_ROUTES } from './components/routes';
-import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient, PromiseClient } from '@connectrpc/connect';
+import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, createPromiseClient, PromiseClient, ConnectError, Code } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
@@ -28,6 +28,8 @@ import * as monaco from 'monaco-editor';
 import { loader, Monaco } from '@monaco-editor/react';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
+import { appGlobal } from './state/appGlobal';
+import { JsonValue, Message } from '@bufbuild/protobuf';
 
 declare const __webpack_public_path__: string;
 
@@ -41,6 +43,42 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
         req.header.append('Authorization', 'Bearer ' + config.jwt);
     return await next(req);
 };
+
+/**
+ * Interceptor to handle license expiration errors in gRPC responses.
+ *
+ * This interceptor checks if the error is of type `ConnectError` with the
+ * code `FailedPrecondition` and inspects the `details` array for an entry
+ * with type `google.rpc.ErrorInfo` and a reason of `REASON_ENTERPRISE_LICENSE_EXPIRED`.
+ * If such an error is detected, it redirects the user to the `/trial-expired` page.
+ *
+ */
+const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+    try {
+        return await next(req);
+    } catch (error) {
+        if (error instanceof ConnectError) {
+            if (error.code === Code.FailedPrecondition) {
+                for (const detail of error.details) {
+                    // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+                    if(detail?.type && detail?.debug) {
+                        if (
+                            // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+                            detail.type === 'google.rpc.ErrorInfo' &&
+                            // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+                            detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+                        ) {
+                           appGlobal.history.replace('/trial-expired')
+                        }
+                    }
+                }
+            }
+        }
+        // Re-throw the error to ensure it's handled by other interceptors or the calling code
+        throw error;
+    }
+};
+
 
 export interface SetConfigArguments {
     fetch?: WindowOrWorkerGlobalScope['fetch'];
@@ -105,7 +143,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
     const transport = createConnectTransport({
         baseUrl: getGrpcBasePath(urlOverride?.grpc),
-        interceptors: [addBearerTokenInterceptor]
+        interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor]
     });
 
     const licenseGrpcClient = createPromiseClient(LicenseService, transport);
@@ -140,7 +178,7 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
             'editorGutter.background': '#00000018',
             'editor.lineHighlightBackground': '#aaaaaa20',
             'editor.lineHighlightBorder': '#00000000',
-            'editorLineNumber.foreground': '#8c98a8',            
+            'editorLineNumber.foreground': '#8c98a8',
             'editorOverviewRuler.background': '#606060',
         },
         rules: []

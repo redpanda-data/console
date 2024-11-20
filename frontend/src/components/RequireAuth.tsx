@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react';
 import { Component, ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { api } from '../state/backendApi';
+import { api, handleExpiredLicenseError } from '../state/backendApi';
 import { UserData } from '../state/restInterfaces';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
@@ -9,6 +9,7 @@ import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
+import { appGlobal } from '../state/appGlobal';
 
 @observer
 export default class RequireAuth extends Component<{children: ReactNode}> {
@@ -75,9 +76,12 @@ export default class RequireAuth extends Component<{children: ReactNode}> {
                         canListTransforms: true,
                         canCreateTransforms: true,
                         canDeleteTransforms: true,
+                        canViewDebugBundle: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
+                } else if (r.status === 403) {
+                    void handleExpiredLicenseError(r)
                 }
             });
 
