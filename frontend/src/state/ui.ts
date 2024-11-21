@@ -234,6 +234,10 @@ const defaultUiSettings = {
         quickSearch: ''
     },
 
+    rpncSecretList: {
+        quickSearch: ''
+    },
+
     pipelinesDetails: {
         logsQuickSearch: '',
         sorting: [] as SortingState,
