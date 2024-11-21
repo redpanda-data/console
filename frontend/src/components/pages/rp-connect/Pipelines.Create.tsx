@@ -17,13 +17,16 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Alert, AlertIcon, Box, Button, Text, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-import { pipelinesApi } from '../../../state/backendApi';
+import {pipelinesApi, rpcnSecretManagerApi} from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
 import { Link as ChLink } from '@redpanda-data/ui';
 import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { formatPipelineError } from './errors';
+import {Monaco} from '@monaco-editor/react';
+import {editor, languages, Position} from 'monaco-editor';
+import CompletionItem = languages.CompletionItem;
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -36,7 +39,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     @observable description = '';
     @observable editorContent = exampleContent;
     @observable isCreating = false;
-
+    @observable secrets: string[] = []
     constructor(p: any) {
         super(p);
         makeObservable(this, undefined, { autoBind: true });
@@ -48,6 +51,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         p.addBreadcrumb('Create Pipeline', '');
 
         this.refreshData(true);
+        // get secrets
+        rpcnSecretManagerApi.refreshSecrets(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
@@ -58,7 +63,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     render() {
         if (!pipelinesApi.pipelines) return DefaultSkeleton;
-
+        if (rpcnSecretManagerApi.secrets) {
+            // inject secrets to editor
+            this.secrets.updateWith(rpcnSecretManagerApi.secrets.map(value => value.id))
+        }
         const alreadyExists = pipelinesApi.pipelines.any(x => x.id == this.fileName);
         const isNameEmpty = this.fileName.trim().length == 0;
 
@@ -99,7 +107,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                 </Flex>
 
                 <Box mt="4">
-                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
+                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} secrets={this.secrets}/>
                 </Box>
 
                 <Flex alignItems="center" gap="4">
@@ -156,7 +164,60 @@ export default RpConnectPipelinesCreate;
 export const PipelineEditor = observer((p: {
     yaml: string,
     onChange: (newYaml: string) => void
+    secrets?: string[]
 }) => {
+    const secrets = p.secrets ?? [];
+    // add custom autocomplete for ${secrets.<SECRET_ID>}
+    const addCustomAutocomplete = (monaco: Monaco) => {
+        monaco.languages.registerCompletionItemProvider('yaml', {
+            // Display suggestions for lines beginning with ${ or . to assist with variable interpolation
+            triggerCharacters: ['${', '.'],
+            provideCompletionItems(model: editor.ITextModel, position: Position): languages.ProviderResult<languages.CompletionList> {
+                const wordInfo = model.getWordUntilPosition(position);
+                const previousInfo = model.getWordUntilPosition({lineNumber: position.lineNumber, column: wordInfo.startColumn - 1});
+                const range = {
+                    startLineNumber: position.lineNumber,
+                    endLineNumber: position.lineNumber,
+                    startColumn: wordInfo.startColumn,
+                    endColumn: wordInfo.endColumn,
+                };
+                const last_chars = model.getValueInRange({startLineNumber: position.lineNumber, startColumn: 0, endLineNumber: position.lineNumber, endColumn: position.column});
+                const words = last_chars.replace('\t', '').replace('\{', '').split(' ');
+                const active_typing = words[words.length - 1];
+                const empty = {suggestions: []}
+                // don't show suggestion if previous word is a secret
+                if (secrets.some(value => value === previousInfo.word)) {
+                    return empty
+                }
+                // don't show suggestion if there is multiples dots(.)
+                if (/\.{2,}$/.test(active_typing)) {
+                    return empty
+                }
+                // if previous word is secrets suggest secrets ids
+                if (previousInfo.word === 'secrets') {
+                    const suggestions: CompletionItem[] = secrets.map(value => ({
+                        label: value, // First option
+                        kind: monaco.languages.CompletionItemKind.Class,
+                        insertText: value, // Insert this text
+                        range: range,
+                    }))
+                    return {suggestions}
+                }
+                // no previous word, suggest secrets
+                const suggestions: CompletionItem[] = [
+                    {
+                        label: 'secrets', // First option
+                        kind: monaco.languages.CompletionItemKind.Variable,
+                        insertText: 'secrets', // Insert this text
+                        documentation: 'redpanda connect secrets',
+                        range: range,
+                    },
+                ]
+
+                return {suggestions}
+            }
+        })
+    }
 
     return <Tabs tabs={[
         {
@@ -173,6 +234,7 @@ export const PipelineEditor = observer((p: {
                                 p.onChange(e);
                         }}
                         language="yaml"
+                        onMount={(_, monaco) => addCustomAutocomplete(monaco)}
                     />
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && <Alert status="error" my={2}>
