@@ -35,6 +35,19 @@ import { HiX } from 'react-icons/hi';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
+const CreatePipelineButton = () => {
+    return (<Box style={{ display: 'flex', marginBottom: '.5em' }}>
+        <Link to={'/rp-connect/create'}><Button variant="outline" colorScheme="brand">Create Pipeline</Button></Link>
+    </Box>)
+}
+
+const EmptyPlaceholder = () => {
+    return <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+        <Image src={EmptyConnectors} />
+        <Box>You have no Redpanda Connect pipelines.</Box>
+        <CreatePipelineButton/>
+    </Flex>
+};
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     switch (p.status) {
@@ -121,17 +134,15 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     <ToastContainer />
                     {/* Pipeline List */}
 
-                    <div style={{ display: 'flex', marginBottom: '.5em' }}>
-                        <Link to={'/rp-connect/create'}><Button variant="solid" colorScheme="brand">Create pipeline</Button></Link>
-                    </div>
-
-                    <Box my={5}>
+                    <Flex my={5} flexDir={'row'} gap={2}>
                         <SearchField width="350px"
-                            searchText={uiSettings.pipelinesList.quickSearch}
-                            setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
-                            placeholderText="Enter search term / regex..."
+                                     searchText={uiSettings.pipelinesList.quickSearch}
+                                     setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
+                                     placeholderText="Enter search term / regex..."
                         />
-                    </Box>
+                        <CreatePipelineButton/>
+                    </Flex>
+
 
                     {(pipelinesApi.pipelines ?? []).length == 0
                         ? <EmptyPlaceholder />
@@ -226,13 +237,3 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 }
 
 export default RpConnectPipelinesList;
-
-const EmptyPlaceholder = () => {
-    return <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-        <Image src={EmptyConnectors} />
-        <Box>You have no Redpanda Connect pipelines.</Box>
-        <Link to="/rp-connect/create">
-            <Button variant="solid">Create pipeline</Button>
-        </Link>
-    </Flex>
-};
