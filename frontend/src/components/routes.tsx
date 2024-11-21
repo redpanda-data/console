@@ -57,6 +57,8 @@ import {isServerless} from '../config';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
+import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
+import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
 
 //
 //	Route Types
@@ -281,7 +283,8 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
+    // defaultView difines the default tab to show when the user navigates to the page
+    MakeRoute<{defaultView: string}>('/connect-clusters/:defaultView?', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')
@@ -315,9 +318,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
+    MakeRoute<{}>('/rp-connect/secret/create', RpConnectSecretCreate, 'Connector-Secrets'),
     MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
+    MakeRoute<{ secretId: string }>('/rp-connect/secret/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,
