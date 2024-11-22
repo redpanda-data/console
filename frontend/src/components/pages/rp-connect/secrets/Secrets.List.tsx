@@ -9,7 +9,6 @@ import Section from '../../../misc/Section';
 import PageContent from '../../../misc/PageContent';
 import {uiSettings} from '../../../../state/ui';
 import {Link} from 'react-router-dom';
-import {encodeURIComponentPercents} from '../../../../utils/utils';
 import {PencilIcon, TrashIcon} from '@heroicons/react/outline';
 import EmptyConnectors from '../../../../assets/redpanda/EmptyConnectors.svg';
 import {DeleteSecretRequest, Secret} from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
@@ -108,20 +107,12 @@ class RpConnectSecretsList extends PageComponent {
                             columns={[
                                 {
                                     header: 'Secret name',
-                                    cell: ({row: {original}}) => (
-                                        <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                                            <Text>{original.id}</Text>
-                                        </Link>
-                                    ),
+                                    cell: ({row: {original}}) => <Text>{original.id}</Text>,
                                     size: 200,
                                 },
                                 {
                                     header: 'Secret notation',
-                                    cell: ({row: {original}}) => (
-                                        <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                                            <Text wordBreak="break-word" whiteSpace="break-spaces">{`$(secrets.${original.id})`}</Text>
-                                        </Link>
-                                    ),
+                                    cell: ({row: {original}}) => <Text wordBreak="break-word" whiteSpace="break-spaces">{`$(secrets.${original.id})`}</Text>,
                                     size: 400
                                 },
                                 // let use this on next phase

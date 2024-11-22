@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
+import React, {FunctionComponent} from 'react';
 import { Switch } from 'react-router-dom';
 import { Section } from './misc/common';
 import { Route, Redirect } from 'react-router';
@@ -68,7 +68,7 @@ type IRouteEntry = PageDefinition<any>;
 export interface PageDefinition<TRouteParams = {}> {
     title: string;
     path: string;
-    pageType: PageComponentType<TRouteParams>;
+    pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
     routeJsx: JSX.Element;
     icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
     menuItemKey?: string; // set by 'CreateRouteMenuItems'
@@ -157,7 +157,7 @@ interface MenuItemState {
 
 function MakeRoute<TRouteParams>(
     path: string,
-    page: PageComponentType<TRouteParams>,
+    page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
     title: string,
     icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
     exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
@@ -283,8 +283,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    // defaultView difines the default tab to show when the user navigates to the page
-    MakeRoute<{defaultView: string}>('/connect-clusters/:defaultView?', KafkaConnectOverview, 'Connect', LinkIcon, true,
+    MakeRoute<{matchedPath: string}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')

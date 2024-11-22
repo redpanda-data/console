@@ -11,6 +11,8 @@ import {Scope, UpdateSecretRequest} from '../../../../protogen/redpanda/api/data
 
 const {ToastContainer, toast} = createStandaloneToast();
 
+const returnSecretTab = '/connect-clusters?defaultTab=redpanda-connect-secret'
+
 @observer
 class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
     @observable secret = '';
@@ -36,7 +38,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
 
     cancel() {
         this.secret = '';
-        appGlobal.history.push('/connect-clusters/redpanda-connect-secret');
+        appGlobal.history.push(returnSecretTab);
     }
 
     async updateSecret() {
@@ -61,7 +63,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
                     title: 'Secret updated'
                 });
                 await pipelinesApi.refreshPipelines(true);
-                appGlobal.history.push('/connect-clusters/redpanda-connect-secret');
+                appGlobal.history.push(returnSecretTab);
             })
             .catch(err => {
                 toast({

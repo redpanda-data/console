@@ -11,6 +11,9 @@ import {CreateSecretRequest, Scope} from '../../../../protogen/redpanda/api/data
 
 const {ToastContainer, toast} = createStandaloneToast();
 
+const returnSecretTab = '/connect-clusters?defaultTab=redpanda-connect-secret'
+
+
 @observer
 class RpConnectSecretCreate extends PageComponent {
 
@@ -39,7 +42,7 @@ class RpConnectSecretCreate extends PageComponent {
     cancel() {
         this.secret = '';
         this.id = '';
-        appGlobal.history.push('/connect-clusters/redpanda-connect-secret');
+        appGlobal.history.push(returnSecretTab);
     }
 
     async createSecret() {
@@ -61,15 +64,15 @@ class RpConnectSecretCreate extends PageComponent {
             .then(async () => {
                 toast({
                     status: 'success', duration: 4000, isClosable: false,
-                    title: 'Pipeline created'
+                    title: 'Secret created'
                 });
                 await pipelinesApi.refreshPipelines(true);
-                appGlobal.history.push('/connect-clusters/redpanda-connect-secret');
+                appGlobal.history.push(returnSecretTab);
             })
             .catch(err => {
                 toast({
                     status: 'error', duration: null, isClosable: true,
-                    title: 'Failed to create pipeline',
+                    title: 'Failed to create secret',
                     description: formatPipelineError(err),
                 })
             })
