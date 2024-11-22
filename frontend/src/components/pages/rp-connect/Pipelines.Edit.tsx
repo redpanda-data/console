@@ -16,7 +16,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Box, Button, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
-import { pipelinesApi } from '../../../state/backendApi';
+import {pipelinesApi, rpcnSecretManagerApi} from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
 import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
@@ -33,6 +33,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     @observable description = undefined as unknown as string;
     @observable editorContent = undefined as unknown as string;
     @observable isUpdating = false;
+    @observable secrets: string[] = []
 
     constructor(p: any) {
         super(p);
@@ -47,6 +48,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         p.addBreadcrumb('Edit Pipeline', `/rp-connect/${pipelineId}/edit`);
 
         this.refreshData(true);
+        // get secrets
+        rpcnSecretManagerApi.refreshSecrets(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
@@ -57,7 +60,10 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
     render() {
         if (!pipelinesApi.pipelines) return DefaultSkeleton;
-
+        if (rpcnSecretManagerApi.secrets) {
+            // inject secrets to editor
+            this.secrets.updateWith(rpcnSecretManagerApi.secrets.map(value => value.id))
+        }
         const pipelineId = this.props.pipelineId;
         const pipeline = pipelinesApi.pipelines.first(x => x.id == pipelineId);
         if (!pipeline) return DefaultSkeleton;
@@ -104,7 +110,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
                 </FormField>
 
                 <Box mt="4">
-                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
+                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} secrets={this.secrets} />
                 </Box>
 
                 <Flex alignItems="center" gap="4">
