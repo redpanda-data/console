@@ -67,7 +67,7 @@ import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 
 import { UserRoleTags } from './UserPermissionAssignments';
-import { InlineLicenseNotification } from '../../license/InlineLicenseNotification';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -398,7 +398,7 @@ const RolesTab = observer(() => {
             Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.
         </Box>
 
-        <InlineLicenseNotification />
+        <FeatureLicenseNotification featureName="rbac" />
 
         <SearchField
             width="300px"

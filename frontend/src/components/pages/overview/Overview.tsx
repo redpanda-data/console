@@ -30,6 +30,7 @@ import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
 
 @observer
 class Overview extends PageComponent {
@@ -82,7 +83,8 @@ class Overview extends PageComponent {
 
         const version = overview.redpanda.version ?? overview.kafka.version;
 
-        return <>
+        return <Box>
+            <OverviewLicenseNotification />
             <PageContent className="overviewGrid">
                 <Section py={5} my={4}>
                     <Flex>
@@ -184,7 +186,7 @@ class Overview extends PageComponent {
                     </GridItem>
                 </Grid>
             </PageContent>
-        </>
+        </Box>
     }
 }
 

@@ -1,5 +1,47 @@
-import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
+
+export const MS_IN_DAY = 24 * 60 * 60 * 1000;
+
+export const LICENSE_WEIGHT: Record<License_Type, number> = {
+    [License_Type.UNSPECIFIED]: -1,
+    [License_Type.COMMUNITY]: 1,
+    [License_Type.TRIAL]: 2,
+    [License_Type.ENTERPRISE]: 3
+};
+
+const isAuthEnterpriseFeature = (feature: ListEnterpriseFeaturesResponse_Feature) =>
+    feature.name === 'sso' || feature.name === 'rbac'
+
+
+export const isEnterpriseFeatureUsed = (featureName: string, features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
+    return features.some(feature =>
+        feature.enabled && feature.name === featureName
+    );
+}
+
+/**
+ * Checks if a list of enterprise features includes enabled features for authentication,
+ * specifically 'sso' (Single Sign-On) or 'rbac' (Role-Based Access Control).
+ *
+ * @param {ListEnterpriseFeaturesResponse_Feature[]} features - The list of enterprise features to check.
+ * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'rbac' is found, otherwise `false`.
+ */
+export const usesAuthEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
+    return features.some(feature =>
+        feature.enabled && isAuthEnterpriseFeature(feature)
+    );
+}
+
+export const usesEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
+    return features.some(feature => feature.enabled);
+}
+
+export const getPrettyEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): string => {
+    return features.filter(feature =>
+        feature.enabled && isAuthEnterpriseFeature(feature)
+    ).map(feature => feature.name.toUpperCase()).join(', ')
+}
 
 /**
  * Checks if a license is expired.
@@ -49,6 +91,25 @@ export const licenseSoonToExpire = (license: License, offsetInDays: Partial<Reco
  */
 export const getExpirationDate = (license: License): Date => {
     return new Date(Number(license.expiresAt) * 1000)
+}
+
+/**
+ * Formats the expiration date of a given license into a user-friendly string format.
+ *
+ * @param license - The license object containing the expiration date information.
+ * @returns A string representing the expiration date in the format MM/DD/YYYY.
+ *
+ * @remarks
+ * This function utilizes `Intl.DateTimeFormat` to ensure consistent date formatting
+ * regardless of the user's local environment. It formats the date using the 'en-US' locale
+ * with two-digit month, day, and four-digit year.
+ */
+export const getPrettyExpirationDate = (license: License): string => {
+    return new Intl.DateTimeFormat('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+    }).format(getExpirationDate(license));
 }
 
 /**

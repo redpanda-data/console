@@ -38,7 +38,7 @@ import { Button, createStandaloneToast, Flex, Modal, ModalBody, ModalContent, Mo
 import { Statistic } from '../../misc/Statistic';
 import { StepSeparator } from '@chakra-ui/react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
-import { InlineLicenseNotification } from '../../license/InlineLicenseNotification';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 
 
 
@@ -193,7 +193,7 @@ class ReassignPartitions extends PageComponent {
             <ToastContainer />
             <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
             <PageContent>
-                <InlineLicenseNotification />
+                <FeatureLicenseNotification featureName="reassignPartitions" />
 
                 {/* Statistics */}
                 <Section py={4}>
