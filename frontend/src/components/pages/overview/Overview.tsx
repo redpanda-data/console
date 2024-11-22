@@ -20,17 +20,18 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Box, Button, DataTable, Flex, Grid, GridItem, Heading, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, Button, DataTable, Flex, Grid, GridItem, Heading, Link, Skeleton, Text, Tooltip } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
-import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { isLicenseWithEnterpriseAccess, licensesToSimplifiedPreview } from '../../license/licenseUtils';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 import ClusterHealthOverview from './ClusterHealthOverview';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
+import { License_Type } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -334,6 +335,15 @@ function ClusterDetails() {
         ] : [
             ...(licensesToSimplifiedPreview(licenses).map(({name, expiresAt}) => [<Text key={0} data-testid="overview-license-name">{name}</Text>, expiresAt.length > 0 ? `(expiring ${expiresAt})`: ''] as [left: ReactNode, right: ReactNode]))
         ]} />
+
+        {!api.isRedpanda && !api.licenses.some(isLicenseWithEnterpriseAccess) && <>
+            <GridItem />
+            <GridItem colSpan={{base: 1, lg: 2}}>
+                <Link href="http://cloud.redpanda.com/try-enterprise" target="_blank">
+                    <Badge variant="info">Redpanda Enterprise trial available</Badge>
+                </Link>
+            </GridItem>
+        </>}
 
         {api.isRedpanda && api.isAdminApiConfigured && <>
             <GridItem/>

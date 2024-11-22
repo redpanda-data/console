@@ -13,7 +13,6 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
 const isAuthEnterpriseFeature = (feature: ListEnterpriseFeaturesResponse_Feature) =>
     feature.name === 'sso' || feature.name === 'rbac'
 
-
 export const isEnterpriseFeatureUsed = (featureName: string, features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
     return features.some(feature =>
         feature.enabled && feature.name === featureName
@@ -193,6 +192,17 @@ export const prettyExpirationDate = (license: License): string => {
  */
 export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY
 
+
+/**
+ * Determines whether the given license grants access to enterprise-level features.
+ *
+ * This function checks if the license type is either `TRIAL` or `ENTERPRISE`,
+ * as both license types provide access to enterprise features.
+ *
+ * @param license - The license object to evaluate.
+ * @returns `true` if the license type is `TRIAL` or `ENTERPRISE`, otherwise `false`.
+ */
+export const isLicenseWithEnterpriseAccess = (license: License): boolean => license.type === License_Type.TRIAL || license.type === License_Type.ENTERPRISE
 
 /**
  * Simplifies a list of licenses by grouping them based on their type and returning a simplified preview of each type.
