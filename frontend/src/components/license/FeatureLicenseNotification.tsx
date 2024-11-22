@@ -3,7 +3,7 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, isEnterpriseFeatureUsed, LICENSE_WEIGHT, MS_IN_DAY, usesEnterpriseFeatures } from './licenseUtils';
+import { getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, LICENSE_WEIGHT, MS_IN_DAY, usesEnterpriseFeatures } from './licenseUtils';
 import { api } from '../../state/backendApi';
 
 const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
@@ -47,12 +47,12 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
     } else {
         // Kafka
         if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
-            if (isEnterpriseFeatureUsed(featureName, enterpriseFeaturesUsed)) {
+            if (license.type === License_Type.TRIAL) {
                 return {
                     message:
                         <Box>
                             <Text>
-                                This is an enterprise feature, active until {getPrettyExpirationDate(license)}
+                                This is an enterprise feature. Your trial is active until {getPrettyExpirationDate(license)}
                             </Text>
                             <Flex gap={2} my={2}>
                                 <UploadLicenseButton />
