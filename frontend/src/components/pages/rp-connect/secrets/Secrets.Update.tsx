@@ -1,4 +1,4 @@
-import {Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input} from '@redpanda-data/ui';
+import {Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput} from '@redpanda-data/ui';
 import {PageComponent, PageInitHelper} from '../../Page';
 import {observer} from 'mobx-react';
 import {appGlobal} from '../../../../state/appGlobal';
@@ -91,7 +91,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
                             <Input
                                 placeholder="Enter a secret name..."
                                 data-testid="secretId"
-                                pattern="[a-zA-Z0-9_\-]+"
+                                pattern="^[A-Z][A-Z0-9_]*$"
                                 isRequired
                                 disabled={true}
                                 value={this.props.secretId}
@@ -101,8 +101,8 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
                     </FormField>
 
                     <FormField label="Secret value">
-                        <Flex alignItems="center" gap="2">
-                            <Input
+                        <Flex alignItems="center" gap="2" width={500}>
+                            <PasswordInput
                                 placeholder="Enter a new secret value..."
                                 data-testid="secretValue"
                                 isRequired
@@ -110,6 +110,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
                                 onChange={x => this.secret = x.target.value}
                                 width={500}
                                 type="password"
+                                isDisabled={this.isUpdating}
                             />
                         </Flex>
                     </FormField>
