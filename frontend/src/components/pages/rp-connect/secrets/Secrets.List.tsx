@@ -17,7 +17,7 @@ const {ToastContainer, toast} = createStandaloneToast();
 
 const CreateSecretButton = () => {
     return (<Box style={{display: 'flex', marginBottom: '.5em'}}>
-        <Link to={'/rp-connect/secret/create'}><Button variant="outline" colorScheme="brand">Create Secret</Button></Link>
+        <Link to={'/rp-connect/secret/create'}><Button>Create secret</Button></Link>
     </Box>)
 }
 
@@ -88,14 +88,16 @@ class RpConnectSecretsList extends PageComponent {
                 <Section>
                     <ToastContainer/>
 
-                    <Flex my={5} flexDir={'row'} gap={2}>
-                        <SearchField width="350px"
-                                     searchText={uiSettings.rpncSecretList.quickSearch}
-                                     setSearchText={x => uiSettings.rpncSecretList.quickSearch = x}
-                                     placeholderText="Enter search term / regex..."
-                        />
-                        <CreateSecretButton/>
-                    </Flex>
+                    {rpcnSecretManagerApi.secrets?.length != 0 && (
+                        <Flex my={5} flexDir={'row'} gap={2}>
+                            <CreateSecretButton/>
+                            <SearchField width="350px"
+                                         searchText={uiSettings.rpncSecretList.quickSearch}
+                                         setSearchText={x => uiSettings.rpncSecretList.quickSearch = x}
+                                         placeholderText="Enter search term / regex..."
+                            />
+                        </Flex>
+                    )}
 
                     {(rpcnSecretManagerApi.secrets ?? []).length == 0
                         ? <EmptyPlaceholder/>
@@ -112,7 +114,7 @@ class RpConnectSecretsList extends PageComponent {
                                 },
                                 {
                                     header: 'Secret notation',
-                                    cell: ({row: {original}}) => <Text wordBreak="break-word" whiteSpace="break-spaces">{`$(secrets.${original.id})`}</Text>,
+                                    cell: ({row: {original}}) => <Code><Text wordBreak="break-word" whiteSpace="break-spaces">{`$(secrets.${original.id})`}</Text></Code>,
                                     size: 400
                                 },
                                 // let use this on next phase
@@ -127,34 +129,40 @@ class RpConnectSecretsList extends PageComponent {
                                     header: '',
                                     id: 'actions',
                                     cell: ({row: {original: r}}) =>
-                                        <ButtonGroup>
-                                            <Button variant="icon"
-                                                    height="16px" color="gray.500"
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        e.preventDefault();
-                                                        appGlobal.history.push(`/rp-connect/secret/${r.id}/edit`);
-                                                    }}>
-                                                <PencilIcon/>
-                                            </Button>
-                                            <ConfirmItemDeleteModal
-                                                trigger={
-                                                    <Button variant="icon"
-                                                            height="16px"
-                                                            color="gray.500"
-                                                    >
-                                                        <TrashIcon/>
-                                                    </Button>} itemType={'Secret'}
-                                                onConfirm={
-                                                    async (dismiss) => {
-                                                        await this.deleteSecret(r.id)
-                                                        dismiss();
+                                        <Flex justifyContent={'flex-end'}>
+                                            <ButtonGroup>
+                                                <Button variant="icon"
+                                                        height="16px" color="gray.500"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            appGlobal.history.push(`/rp-connect/secret/${r.id}/edit`);
+                                                        }}>
+                                                    <PencilIcon/>
+                                                </Button>
+                                                <ConfirmItemDeleteModal
+                                                    trigger={
+                                                        <Button variant="icon"
+                                                                height="16px"
+                                                                color="gray.500"
+                                                        >
+                                                            <TrashIcon/>
+                                                        </Button>} itemType={'Secret'}
+                                                    onConfirm={
+                                                        async (dismiss) => {
+                                                            await this.deleteSecret(r.id)
+                                                            dismiss();
+                                                        }
                                                     }
-                                                }>
-                                                <Text>Deleting this secret may disrupt the functionality of pipelines that depend on it. Are you sure you want to delete the secret <Code>{r.id}</Code>?</Text>
-                                            </ConfirmItemDeleteModal>
+                                                    inputMatchText={r.id}>
+                                                    <Flex flexDirection={'column'}>
+                                                        <Text>Deleting this secret may disrupt the functionality of pipelines that depend on it. Are you sure?</Text>
+                                                        <Text>To confirm, type <Code>{r.id}</Code> in the confirmation box below.</Text>
+                                                    </Flex>
+                                                </ConfirmItemDeleteModal>
 
-                                        </ButtonGroup>
+                                            </ButtonGroup>
+                                        </Flex>
                                     ,
                                     size: 10
                                 },

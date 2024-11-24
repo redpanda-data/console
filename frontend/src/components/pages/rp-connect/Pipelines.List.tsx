@@ -37,7 +37,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 
 const CreatePipelineButton = () => {
     return (<Box style={{ display: 'flex', marginBottom: '.5em' }}>
-        <Link to={'/rp-connect/create'}><Button variant="outline" colorScheme="brand">Create Pipeline</Button></Link>
+        <Link to={'/rp-connect/create'}><Button>Create pipeline</Button></Link>
     </Box>)
 }
 
@@ -134,14 +134,17 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     <ToastContainer />
                     {/* Pipeline List */}
 
-                    <Flex my={5} flexDir={'row'} gap={2}>
-                        <SearchField width="350px"
-                                     searchText={uiSettings.pipelinesList.quickSearch}
-                                     setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
-                                     placeholderText="Enter search term / regex..."
-                        />
-                        <CreatePipelineButton/>
-                    </Flex>
+                    {pipelinesApi.pipelines.length != 0 && (
+                        <Flex my={5} flexDir={'row'} gap={2}>
+                            <CreatePipelineButton/>
+                            <SearchField width="350px"
+                                         searchText={uiSettings.pipelinesList.quickSearch}
+                                         setSearchText={x => uiSettings.pipelinesList.quickSearch = x}
+                                         placeholderText="Enter search term / regex..."
+                            />
+                        </Flex>
+                    )}
+
 
 
                     {(pipelinesApi.pipelines ?? []).length == 0
