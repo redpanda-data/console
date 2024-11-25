@@ -87,4 +87,32 @@ type AdminAPIClient interface {
 	// GetDebugBundleStatus gets the current debug bundle process status on the specified broker node.
 	// This should be called using Host client to issue a request against a specific broker node.
 	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
+
+	// MountTopics mounts topics according to the provided configuration.
+	MountTopics(ctx context.Context, config rpadmin.MountConfiguration) (rpadmin.MigrationInfo, error)
+
+	// UnmountTopics unmounts the provided list of topics.
+	UnmountTopics(ctx context.Context, config rpadmin.UnmountConfiguration) (rpadmin.MigrationInfo, error)
+
+	// ListMountableTopics retrieves a list of topics that can be mounted from cloud storage
+	ListMountableTopics(ctx context.Context) (rpadmin.ListMountableTopicsResponse, error)
+
+	// ListMigrations returns a list of all migrations in the cluster.
+	ListMigrations(ctx context.Context) ([]rpadmin.MigrationState, error)
+
+	// GetMigration gets a migration by its ID.
+	GetMigration(ctx context.Context, id int) (rpadmin.MigrationState, error)
+
+	// DeleteMigration deletes a migration by its ID.
+	DeleteMigration(ctx context.Context, id int) error
+
+	// ExecuteMigration executes a specific action on a migration identified by its ID.
+	// We set all migrations to auto_advance = true so there's generally no reason to call this.
+	ExecuteMigration(ctx context.Context, id int, action rpadmin.MigrationAction) error
+
+	// GetHealthOverview gets the cluster health overview.
+	GetHealthOverview(ctx context.Context) (rpadmin.ClusterHealthOverview, error)
+
+	// BrokerIDToURL resolves the URL of the broker with the given ID.
+	BrokerIDToURL(ctx context.Context, brokerID int) (string, error)
 }
