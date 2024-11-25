@@ -18,22 +18,24 @@ import (
 // service.
 type DebugBundleServiceGatewayServer struct {
 	v1alpha1.UnimplementedDebugBundleServiceServer
-	getClusterHealth         connect_gateway.UnaryHandler[v1alpha1.GetClusterHealthRequest, v1alpha1.GetClusterHealthResponse]
-	createDebugBundle        connect_gateway.UnaryHandler[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse]
-	getDebugBundleStatus     connect_gateway.UnaryHandler[v1alpha1.GetDebugBundleStatusRequest, v1alpha1.GetDebugBundleStatusResponse]
-	cancelDebugBundleProcess connect_gateway.UnaryHandler[v1alpha1.CancelDebugBundleProcessRequest, v1alpha1.CancelDebugBundleProcessResponse]
-	deleteDebugBundleFile    connect_gateway.UnaryHandler[v1alpha1.DeleteDebugBundleFileRequest, v1alpha1.DeleteDebugBundleFileResponse]
+	getClusterHealth           connect_gateway.UnaryHandler[v1alpha1.GetClusterHealthRequest, v1alpha1.GetClusterHealthResponse]
+	createDebugBundle          connect_gateway.UnaryHandler[v1alpha1.CreateDebugBundleRequest, v1alpha1.CreateDebugBundleResponse]
+	getDebugBundleStatus       connect_gateway.UnaryHandler[v1alpha1.GetDebugBundleStatusRequest, v1alpha1.GetDebugBundleStatusResponse]
+	cancelDebugBundleProcess   connect_gateway.UnaryHandler[v1alpha1.CancelDebugBundleProcessRequest, v1alpha1.CancelDebugBundleProcessResponse]
+	deleteDebugBundleFile      connect_gateway.UnaryHandler[v1alpha1.DeleteDebugBundleFileRequest, v1alpha1.DeleteDebugBundleFileResponse]
+	getDebugBundleAdminAPIURLs connect_gateway.UnaryHandler[v1alpha1.GetDebugBundleAdminAPIURLsRequest, v1alpha1.GetDebugBundleAdminAPIURLsResponse]
 }
 
 // NewDebugBundleServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // DebugBundleService service.
 func NewDebugBundleServiceGatewayServer(svc DebugBundleServiceHandler, opts ...connect_gateway.HandlerOption) *DebugBundleServiceGatewayServer {
 	return &DebugBundleServiceGatewayServer{
-		getClusterHealth:         connect_gateway.NewUnaryHandler(DebugBundleServiceGetClusterHealthProcedure, svc.GetClusterHealth, opts...),
-		createDebugBundle:        connect_gateway.NewUnaryHandler(DebugBundleServiceCreateDebugBundleProcedure, svc.CreateDebugBundle, opts...),
-		getDebugBundleStatus:     connect_gateway.NewUnaryHandler(DebugBundleServiceGetDebugBundleStatusProcedure, svc.GetDebugBundleStatus, opts...),
-		cancelDebugBundleProcess: connect_gateway.NewUnaryHandler(DebugBundleServiceCancelDebugBundleProcessProcedure, svc.CancelDebugBundleProcess, opts...),
-		deleteDebugBundleFile:    connect_gateway.NewUnaryHandler(DebugBundleServiceDeleteDebugBundleFileProcedure, svc.DeleteDebugBundleFile, opts...),
+		getClusterHealth:           connect_gateway.NewUnaryHandler(DebugBundleServiceGetClusterHealthProcedure, svc.GetClusterHealth, opts...),
+		createDebugBundle:          connect_gateway.NewUnaryHandler(DebugBundleServiceCreateDebugBundleProcedure, svc.CreateDebugBundle, opts...),
+		getDebugBundleStatus:       connect_gateway.NewUnaryHandler(DebugBundleServiceGetDebugBundleStatusProcedure, svc.GetDebugBundleStatus, opts...),
+		cancelDebugBundleProcess:   connect_gateway.NewUnaryHandler(DebugBundleServiceCancelDebugBundleProcessProcedure, svc.CancelDebugBundleProcess, opts...),
+		deleteDebugBundleFile:      connect_gateway.NewUnaryHandler(DebugBundleServiceDeleteDebugBundleFileProcedure, svc.DeleteDebugBundleFile, opts...),
+		getDebugBundleAdminAPIURLs: connect_gateway.NewUnaryHandler(DebugBundleServiceGetDebugBundleAdminAPIURLsProcedure, svc.GetDebugBundleAdminAPIURLs, opts...),
 	}
 }
 
@@ -55,6 +57,10 @@ func (s *DebugBundleServiceGatewayServer) CancelDebugBundleProcess(ctx context.C
 
 func (s *DebugBundleServiceGatewayServer) DeleteDebugBundleFile(ctx context.Context, req *v1alpha1.DeleteDebugBundleFileRequest) (*v1alpha1.DeleteDebugBundleFileResponse, error) {
 	return s.deleteDebugBundleFile(ctx, req)
+}
+
+func (s *DebugBundleServiceGatewayServer) GetDebugBundleAdminAPIURLs(ctx context.Context, req *v1alpha1.GetDebugBundleAdminAPIURLsRequest) (*v1alpha1.GetDebugBundleAdminAPIURLsResponse, error) {
+	return s.getDebugBundleAdminAPIURLs(ctx, req)
 }
 
 // RegisterDebugBundleServiceHandlerGatewayServer registers the Connect handlers for the

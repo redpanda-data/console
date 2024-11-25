@@ -311,6 +311,31 @@ message TopicPartitions {
   repeated int32 partition_ids = 2;
 }
 
+message GetDebugBundleAdminAPIURLsRequest {}
+
+// The response to GetDebugBundleAdminAPIURLs.
+message GetDebugBundleAdminAPIURLsResponse {
+  message DebugBundleBrokerURL {
+    // The broker ID.
+    int32 broker_id = 1;
+
+    // The broker URL used to get the status.
+    string broker_url = 2;
+
+    // Whether the broker URL was determined speculatively.
+    bool speculative = 3;
+  }
+
+  // true if Console thinks it is running in Kubernetes
+  bool is_kubernetes = 1;
+
+  // configured Admin API URLS
+  repeated string configured_admin_api_urls = 2;
+
+  // resolved admin api urls
+  repeated DebugBundleBrokerURL resolved_broker_urls = 3;
+}
+
 // Additional API:
 // GET /api/debug_bundle/files/{file}
 // GET /api/debug_bundle/brokers/{broker_id}/files/{file}
@@ -322,4 +347,5 @@ service DebugBundleService {
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {}
   rpc CancelDebugBundleProcess(CancelDebugBundleProcessRequest) returns (CancelDebugBundleProcessResponse) {}
   rpc DeleteDebugBundleFile(DeleteDebugBundleFileRequest) returns (DeleteDebugBundleFileResponse) {}
+  rpc GetDebugBundleAdminAPIURLs(GetDebugBundleAdminAPIURLsRequest) returns (GetDebugBundleAdminAPIURLsResponse) {}
 }

@@ -1220,3 +1220,146 @@ export class TopicPartitions extends Message<TopicPartitions> {
   }
 }
 
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsRequest
+ */
+export class GetDebugBundleAdminAPIURLsRequest extends Message<GetDebugBundleAdminAPIURLsRequest> {
+  constructor(data?: PartialMessage<GetDebugBundleAdminAPIURLsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleAdminAPIURLsRequest {
+    return new GetDebugBundleAdminAPIURLsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsRequest {
+    return new GetDebugBundleAdminAPIURLsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsRequest {
+    return new GetDebugBundleAdminAPIURLsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDebugBundleAdminAPIURLsRequest | PlainMessage<GetDebugBundleAdminAPIURLsRequest> | undefined, b: GetDebugBundleAdminAPIURLsRequest | PlainMessage<GetDebugBundleAdminAPIURLsRequest> | undefined): boolean {
+    return proto3.util.equals(GetDebugBundleAdminAPIURLsRequest, a, b);
+  }
+}
+
+/**
+ * The response to GetDebugBundleAdminAPIURLs.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsResponse
+ */
+export class GetDebugBundleAdminAPIURLsResponse extends Message<GetDebugBundleAdminAPIURLsResponse> {
+  /**
+   * true if Console thinks it is running in Kubernetes
+   *
+   * @generated from field: bool is_kubernetes = 1;
+   */
+  isKubernetes = false;
+
+  /**
+   * configured Admin API URLS
+   *
+   * @generated from field: repeated string configured_admin_api_urls = 2;
+   */
+  configuredAdminApiUrls: string[] = [];
+
+  /**
+   * resolved admin api urls
+   *
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsResponse.DebugBundleBrokerURL resolved_broker_urls = 3;
+   */
+  resolvedBrokerUrls: GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL[] = [];
+
+  constructor(data?: PartialMessage<GetDebugBundleAdminAPIURLsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "is_kubernetes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "configured_admin_api_urls", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "resolved_broker_urls", kind: "message", T: GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleAdminAPIURLsResponse {
+    return new GetDebugBundleAdminAPIURLsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsResponse {
+    return new GetDebugBundleAdminAPIURLsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsResponse {
+    return new GetDebugBundleAdminAPIURLsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDebugBundleAdminAPIURLsResponse | PlainMessage<GetDebugBundleAdminAPIURLsResponse> | undefined, b: GetDebugBundleAdminAPIURLsResponse | PlainMessage<GetDebugBundleAdminAPIURLsResponse> | undefined): boolean {
+    return proto3.util.equals(GetDebugBundleAdminAPIURLsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsResponse.DebugBundleBrokerURL
+ */
+export class GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL extends Message<GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL> {
+  /**
+   * The broker ID.
+   *
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId = 0;
+
+  /**
+   * The broker URL used to get the status.
+   *
+   * @generated from field: string broker_url = 2;
+   */
+  brokerUrl = "";
+
+  /**
+   * Whether the broker URL was determined speculatively.
+   *
+   * @generated from field: bool speculative = 3;
+   */
+  speculative = false;
+
+  constructor(data?: PartialMessage<GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleAdminAPIURLsResponse.DebugBundleBrokerURL";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "broker_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "broker_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "speculative", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL {
+    return new GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL {
+    return new GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL {
+    return new GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL | PlainMessage<GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL> | undefined, b: GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL | PlainMessage<GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL> | undefined): boolean {
+    return proto3.util.equals(GetDebugBundleAdminAPIURLsResponse_DebugBundleBrokerURL, a, b);
+  }
+}
+

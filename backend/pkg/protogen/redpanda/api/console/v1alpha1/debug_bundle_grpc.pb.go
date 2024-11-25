@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	DebugBundleService_GetClusterHealth_FullMethodName         = "/redpanda.api.console.v1alpha1.DebugBundleService/GetClusterHealth"
-	DebugBundleService_CreateDebugBundle_FullMethodName        = "/redpanda.api.console.v1alpha1.DebugBundleService/CreateDebugBundle"
-	DebugBundleService_GetDebugBundleStatus_FullMethodName     = "/redpanda.api.console.v1alpha1.DebugBundleService/GetDebugBundleStatus"
-	DebugBundleService_CancelDebugBundleProcess_FullMethodName = "/redpanda.api.console.v1alpha1.DebugBundleService/CancelDebugBundleProcess"
-	DebugBundleService_DeleteDebugBundleFile_FullMethodName    = "/redpanda.api.console.v1alpha1.DebugBundleService/DeleteDebugBundleFile"
+	DebugBundleService_GetClusterHealth_FullMethodName           = "/redpanda.api.console.v1alpha1.DebugBundleService/GetClusterHealth"
+	DebugBundleService_CreateDebugBundle_FullMethodName          = "/redpanda.api.console.v1alpha1.DebugBundleService/CreateDebugBundle"
+	DebugBundleService_GetDebugBundleStatus_FullMethodName       = "/redpanda.api.console.v1alpha1.DebugBundleService/GetDebugBundleStatus"
+	DebugBundleService_CancelDebugBundleProcess_FullMethodName   = "/redpanda.api.console.v1alpha1.DebugBundleService/CancelDebugBundleProcess"
+	DebugBundleService_DeleteDebugBundleFile_FullMethodName      = "/redpanda.api.console.v1alpha1.DebugBundleService/DeleteDebugBundleFile"
+	DebugBundleService_GetDebugBundleAdminAPIURLs_FullMethodName = "/redpanda.api.console.v1alpha1.DebugBundleService/GetDebugBundleAdminAPIURLs"
 )
 
 // DebugBundleServiceClient is the client API for DebugBundleService service.
@@ -36,6 +37,7 @@ type DebugBundleServiceClient interface {
 	GetDebugBundleStatus(ctx context.Context, in *GetDebugBundleStatusRequest, opts ...grpc.CallOption) (*GetDebugBundleStatusResponse, error)
 	CancelDebugBundleProcess(ctx context.Context, in *CancelDebugBundleProcessRequest, opts ...grpc.CallOption) (*CancelDebugBundleProcessResponse, error)
 	DeleteDebugBundleFile(ctx context.Context, in *DeleteDebugBundleFileRequest, opts ...grpc.CallOption) (*DeleteDebugBundleFileResponse, error)
+	GetDebugBundleAdminAPIURLs(ctx context.Context, in *GetDebugBundleAdminAPIURLsRequest, opts ...grpc.CallOption) (*GetDebugBundleAdminAPIURLsResponse, error)
 }
 
 type debugBundleServiceClient struct {
@@ -91,6 +93,15 @@ func (c *debugBundleServiceClient) DeleteDebugBundleFile(ctx context.Context, in
 	return out, nil
 }
 
+func (c *debugBundleServiceClient) GetDebugBundleAdminAPIURLs(ctx context.Context, in *GetDebugBundleAdminAPIURLsRequest, opts ...grpc.CallOption) (*GetDebugBundleAdminAPIURLsResponse, error) {
+	out := new(GetDebugBundleAdminAPIURLsResponse)
+	err := c.cc.Invoke(ctx, DebugBundleService_GetDebugBundleAdminAPIURLs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DebugBundleServiceServer is the server API for DebugBundleService service.
 // All implementations must embed UnimplementedDebugBundleServiceServer
 // for forward compatibility
@@ -100,6 +111,7 @@ type DebugBundleServiceServer interface {
 	GetDebugBundleStatus(context.Context, *GetDebugBundleStatusRequest) (*GetDebugBundleStatusResponse, error)
 	CancelDebugBundleProcess(context.Context, *CancelDebugBundleProcessRequest) (*CancelDebugBundleProcessResponse, error)
 	DeleteDebugBundleFile(context.Context, *DeleteDebugBundleFileRequest) (*DeleteDebugBundleFileResponse, error)
+	GetDebugBundleAdminAPIURLs(context.Context, *GetDebugBundleAdminAPIURLsRequest) (*GetDebugBundleAdminAPIURLsResponse, error)
 	mustEmbedUnimplementedDebugBundleServiceServer()
 }
 
@@ -121,6 +133,9 @@ func (UnimplementedDebugBundleServiceServer) CancelDebugBundleProcess(context.Co
 }
 func (UnimplementedDebugBundleServiceServer) DeleteDebugBundleFile(context.Context, *DeleteDebugBundleFileRequest) (*DeleteDebugBundleFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDebugBundleFile not implemented")
+}
+func (UnimplementedDebugBundleServiceServer) GetDebugBundleAdminAPIURLs(context.Context, *GetDebugBundleAdminAPIURLsRequest) (*GetDebugBundleAdminAPIURLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDebugBundleAdminAPIURLs not implemented")
 }
 func (UnimplementedDebugBundleServiceServer) mustEmbedUnimplementedDebugBundleServiceServer() {}
 
@@ -225,6 +240,24 @@ func _DebugBundleService_DeleteDebugBundleFile_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DebugBundleService_GetDebugBundleAdminAPIURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDebugBundleAdminAPIURLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DebugBundleServiceServer).GetDebugBundleAdminAPIURLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DebugBundleService_GetDebugBundleAdminAPIURLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DebugBundleServiceServer).GetDebugBundleAdminAPIURLs(ctx, req.(*GetDebugBundleAdminAPIURLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DebugBundleService_ServiceDesc is the grpc.ServiceDesc for DebugBundleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -251,6 +284,10 @@ var DebugBundleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteDebugBundleFile",
 			Handler:    _DebugBundleService_DeleteDebugBundleFile_Handler,
+		},
+		{
+			MethodName: "GetDebugBundleAdminAPIURLs",
+			Handler:    _DebugBundleService_GetDebugBundleAdminAPIURLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
