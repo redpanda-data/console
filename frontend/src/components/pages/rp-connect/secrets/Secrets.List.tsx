@@ -4,7 +4,7 @@ import {observer} from 'mobx-react';
 import {appGlobal} from '../../../../state/appGlobal';
 import {rpcnSecretManagerApi} from '../../../../state/backendApi';
 import {Features} from '../../../../state/supportedFeatures';
-import {Box, Button, ButtonGroup, Code, ConfirmItemDeleteModal, createStandaloneToast, DataTable, Flex, Image, SearchField, Text} from '@redpanda-data/ui';
+import {Box, Button, ButtonGroup, Code, ConfirmItemDeleteModal, CopyButton, createStandaloneToast, DataTable, Flex, Image, SearchField, Text, Tooltip} from '@redpanda-data/ui';
 import Section from '../../../misc/Section';
 import PageContent from '../../../misc/PageContent';
 import {uiSettings} from '../../../../state/ui';
@@ -89,7 +89,7 @@ class RpConnectSecretsList extends PageComponent {
                     <ToastContainer/>
 
                     {rpcnSecretManagerApi.secrets?.length != 0 && (
-                        <Flex my={5} flexDir={'row'} gap={2}>
+                        <Flex my={5} flexDir={'column'} gap={2}>
                             <CreateSecretButton/>
                             <SearchField width="350px"
                                          searchText={uiSettings.rpncSecretList.quickSearch}
@@ -114,7 +114,18 @@ class RpConnectSecretsList extends PageComponent {
                                 },
                                 {
                                     header: 'Secret notation',
-                                    cell: ({row: {original}}) => <Code><Text wordBreak="break-word" whiteSpace="break-spaces">{`$(secrets.${original.id})`}</Text></Code>,
+                                    cell: ({row: {original}}) => (
+                                        <Box>
+                                            <Code><Text wordBreak="break-word" whiteSpace="break-spaces">{`$\{secrets.${original.id}}`}</Text></Code>
+                                            <Tooltip label="Copy" hasArrow>
+                                                <CopyButton
+                                                    content={`$\{secrets.${original.id}}`}
+                                                    variant="ghost"
+                                                    colorScheme="gray"
+                                                    size="sm"
+                                                />
+                                            </Tooltip>
+                                        </Box>),
                                     size: 400
                                 },
                                 // let use this on next phase
