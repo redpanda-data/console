@@ -25,7 +25,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import React, { FC, ReactNode } from 'react';
 import { Statistic } from '../../misc/Statistic';
 import { Row } from '@tanstack/react-table';
-import { isLicenseWithEnterpriseAccess, licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { getEnterpriseCTALink, isLicenseWithEnterpriseAccess, licensesToSimplifiedPreview } from '../../license/licenseUtils';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
@@ -339,7 +339,7 @@ function ClusterDetails() {
         {!api.isRedpanda && !api.licenses.some(isLicenseWithEnterpriseAccess) && <>
             <GridItem />
             <GridItem colSpan={{base: 1, lg: 2}}>
-                <Link href="http://cloud.redpanda.com/try-enterprise" target="_blank">
+                <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
                     <Badge variant="info">Redpanda Enterprise trial available</Badge>
                 </Link>
             </GridItem>

@@ -3,8 +3,9 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, usesAuthEnterpriseFeatures } from './licenseUtils';
+import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, usesAuthEnterpriseFeatures } from './licenseUtils';
 import { api } from '../../state/backendApi';
+import { config as appConfig } from '../../config';
 
 const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
 
@@ -20,7 +21,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
     if (api.isRedpanda) {
         if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
             return {
-                message: <Box>Your Redpanda Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. <Link href="https://redpanda.com/upgrade" target="_blank">Contact us</Link> to get a full Enterprise license.</Box>,
+                message: <Box>Your Redpanda Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. <Link href={getEnterpriseCTALink('upgrade')} target="_blank">Contact us</Link> to get a full Enterprise license.</Box>,
                 status: 'info',
             }
         } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
@@ -28,7 +29,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)} is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)}, or get a <Link href="https://redpanda.com/upgrade" target="_blank">full Redpanda Enterprise license</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)} is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)}, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>
@@ -40,7 +41,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href="https://redpanda.com/upgrade" target="_blank">contact us</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>
@@ -57,7 +58,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)} is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)}, or get a <Link href="https://redpanda.com/upgrade" target="_blank">full Redpanda Enterprise license</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)} is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)}, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>
@@ -70,7 +71,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                     message:
                         <Box>
                             <Text>
-                                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href="https://redpanda.com/upgrade" target="_blank">contact us</Link>.
+                                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
                             </Text>
                             <Flex gap={2} my={2}>
                                 <UploadLicenseButton/>

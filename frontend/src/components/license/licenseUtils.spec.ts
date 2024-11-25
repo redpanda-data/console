@@ -5,7 +5,7 @@ import {
     prettyLicenseType,
     prettyExpirationDate,
     getPrettyTimeToExpiration,
-    licensesToSimplifiedPreview
+    licensesToSimplifiedPreview, resolveEnterpriseCTALink
 } from './licenseUtils';
 import { License, License_Type, License_Source } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
@@ -153,6 +153,38 @@ describe('licenseUtils', () => {
                 { name: 'Console Community', expiresAt: '' },
                 { name: 'Core Enterprise', expiresAt: '7/15/2122' }, // Based on the expiration timestamp
             ]);
+        });
+    });
+
+    describe('resolveEnterpriseCTALink', () => {
+        it('should return the correct URL for tryEnterprise with query parameters', () => {
+            const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', 'redpanda');
+            expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345-uuid&platform=redpanda');
+        });
+
+        it('should return the correct URL for upgrade with query parameters', () => {
+            const result = resolveEnterpriseCTALink('upgrade', '67890-uuid', 'kafka');
+            expect(result).toBe('https://redpanda.com/upgrade?cluster_uuid=67890-uuid&platform=kafka');
+        });
+
+        it('should encode special characters in query parameters', () => {
+            const result = resolveEnterpriseCTALink('tryEnterprise', '12345&uuid', 'redpanda');
+            expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345%26uuid&platform=redpanda');
+        });
+
+        it('should throw an error for an invalid EnterpriseLinkType', () => {
+            // @ts-expect-error Testing invalid input
+            expect(() => resolveEnterpriseCTALink('invalidType', '12345-uuid', 'redpanda')).toThrow();
+        });
+
+        it('should handle redpanda platform correctly', () => {
+            const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', 'redpanda');
+            expect(result).toContain('platform=redpanda');
+        });
+
+        it('should handle kafka platform correctly', () => {
+            const result = resolveEnterpriseCTALink('upgrade', '12345-uuid', 'kafka');
+            expect(result).toContain('platform=kafka');
         });
     });
 });

@@ -1,5 +1,7 @@
 import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
+import { config as appConfig } from '../../config';
+import { api } from '../../state/backendApi';
 
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -289,4 +291,28 @@ export const licensesToSimplifiedPreview = (licenses: License[]): Array<{
             expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
         };
     });
+}
+
+type EnterpriseLinkType = 'tryEnterprise' | 'upgrade'
+export const resolveEnterpriseCTALink = (
+    type: EnterpriseLinkType,
+    cluster_uuid: string | undefined,
+    platform: 'kafka' | 'redpanda'
+) => {
+    const urls: Record<EnterpriseLinkType, string> = {
+        'tryEnterprise': 'https://redpanda.com/try-enterprise',
+        'upgrade': 'https://redpanda.com/upgrade'
+    };
+
+    const baseUrl = urls[type];
+    const url = new URL(baseUrl);
+
+    url.searchParams.append('cluster_uuid', cluster_uuid ?? '');
+    url.searchParams.append('platform', platform);
+
+    return url.toString();
+};
+
+export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
+    return resolveEnterpriseCTALink(type, appConfig.clusterId, api.isRedpanda ? 'redpanda' : 'kafka');
 }
