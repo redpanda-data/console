@@ -5,7 +5,7 @@ module.exports = {
 
     exposes: {
         './EmbeddedApp': './src/EmbeddedApp.tsx',
-        './injectApp': './src/injectApp',
+        './injectApp': './src/injectApp.tsx',
         './config': './src/config.ts',
     },
 
