@@ -825,6 +825,14 @@ components:
             $ref: '#/components/schemas/Pipeline'
           type: array
       type: object
+    ListSecretScopesResponse:
+      description: ListSecretScopesResponse is the response of ListSecretScopes.
+      properties:
+        scopes:
+          items:
+            $ref: '#/components/schemas/Scope'
+          type: array
+      type: object
     ListSecretsFilter:
       description: ListSecretsFilter are the filter options for listing secrets.
       properties:
@@ -3487,6 +3495,38 @@ paths:
       summary: Stops a Redpanda Connect pipeline
       tags:
         - PipelineService
+  /v1alpha2/secret-scopes:
+    get:
+      description: List supported secret scopes.
+      operationId: SecretService_ListSecretScopes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSecretScopesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Secret Scopes
+      tags:
+        - SecretService
   /v1alpha2/secrets:
     get:
       description: 'List secrets. Optional: filter based on secret name and labels.'
