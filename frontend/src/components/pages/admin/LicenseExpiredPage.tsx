@@ -1,4 +1,4 @@
-import { Avatars, Box, Flex, Image, Text, VStack } from '@redpanda-data/ui';
+import { Avatars, Box, Flex, Image, Link, Text, VStack } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { PageComponent } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -44,27 +44,12 @@ export default class LicenseExpiredPage extends PageComponent {
 
                         {/* Main Heading */}
                         <Text fontSize="2xl" fontWeight="bold">
-                            Your Enterprise trial has expired.
+                            Your Redpanda Enterprise license has expired.
                         </Text>
 
                         {/* Subtext */}
                         <Text fontSize="lg">
-                            You are using the below Enterprise {activeEnterpriseFeatures.length === 1 ? 'feature' : 'features'} and your trial license has
-                            expired:
-                        </Text>
-
-                        {/* Features */}
-                        <Text fontSize="lg" fontWeight="bold" color="gray.600">
-                            {activeEnterpriseFeatures.map(x => x.name).join(', ')}
-                        </Text>
-
-                        {/* Additional Information */}
-                        <Text fontSize="md" color="gray.500">
-                            To continue using them, you will need an Enterprise license.
-                            Alternatively, you can{' '}
-                            {/*<Link href="/configuration" color="blue.500" textDecoration="underline">*/}
-                            {/*    disable the paid features in your configuration file.*/}
-                            {/*</Link>*/}
+                            You were using Console RBAC/SSO and your trial license has expired. To continue using them, you will need an <Link href="https://redpanda.com/upgrade" target="_blank">Enterprise license</Link>. Alternatively, you can disable the paid features in your configuration file.
                         </Text>
                     </VStack>
                 </Box>

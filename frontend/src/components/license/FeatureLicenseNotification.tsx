@@ -35,7 +35,7 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
             return {
                 message: <Box>
                     <Text>
-                        Your Redpanda Enterprise trial is expiring in{getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
+                        Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
                     </Text>
                     <Flex gap={2} my={2}>
                         <UploadLicenseButton/>
