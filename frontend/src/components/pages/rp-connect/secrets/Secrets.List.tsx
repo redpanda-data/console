@@ -71,7 +71,7 @@ class RpConnectSecretsList extends PageComponent {
 
         const filteredSecrets = (rpcnSecretManagerApi.secrets ?? [])
             .filter(u => {
-                const filter = uiSettings.rpncSecretList.quickSearch;
+                const filter = uiSettings.rpcnSecretList.quickSearch;
                 if (!filter) return true;
                 try {
                     const quickSearchRegExp = new RegExp(filter, 'i');
@@ -92,8 +92,8 @@ class RpConnectSecretsList extends PageComponent {
                         <Flex my={5} flexDir={'column'} gap={2}>
                             <CreateSecretButton/>
                             <SearchField width="350px"
-                                         searchText={uiSettings.rpncSecretList.quickSearch}
-                                         setSearchText={x => uiSettings.rpncSecretList.quickSearch = x}
+                                         searchText={uiSettings.rpcnSecretList.quickSearch}
+                                         setSearchText={x => uiSettings.rpcnSecretList.quickSearch = x}
                                          placeholderText="Enter search term / regex..."
                             />
                         </Flex>

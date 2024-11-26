@@ -234,7 +234,7 @@ const defaultUiSettings = {
         quickSearch: ''
     },
 
-    rpncSecretList: {
+    rpcnSecretList: {
         quickSearch: ''
     },
 
