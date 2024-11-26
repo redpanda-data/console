@@ -27,8 +27,8 @@ export const isEnterpriseFeatureUsed = (featureName: string, features: ListEnter
  *
  * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
  */
-export const consoleHasEnterpriseFeatures = (): boolean => {
-    return Object.values(AppFeatures).some(Boolean)
+export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean => {
+    return AppFeatures[feature] ?? false
 }
 
 export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
