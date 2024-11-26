@@ -56,7 +56,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)} is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable {getPrettyEnterpriseFeatures(enterpriseFeaturesUsed)}, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable SSS and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>
