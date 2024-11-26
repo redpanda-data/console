@@ -1,6 +1,5 @@
 import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
-import { config as appConfig } from '../../config';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 
@@ -134,7 +133,7 @@ export const getPrettyTimeToExpiration = (license: License) => {
         return 'License has expired';
     }
 
-    return prettyMilliseconds(Math.abs(timeToExpiration), {unitCount: 2, verbose: true, secondsDecimalDigits: 0})
+    return prettyMilliseconds(Math.abs(timeToExpiration), {unitCount: 1, verbose: true, secondsDecimalDigits: 0})
 }
 
 /**
