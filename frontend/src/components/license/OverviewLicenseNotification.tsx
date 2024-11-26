@@ -3,12 +3,10 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, usesAuthEnterpriseFeatures } from './licenseUtils';
+import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, consoleHasEnterpriseFeatures } from './licenseUtils';
 import { api } from '../../state/backendApi';
-import { config as appConfig } from '../../config';
 
 const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
-
 
 const getLicenseAlertContent = (license: License | undefined, enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]): { message: ReactElement, status: 'warning' | 'info' } | null  => {
     if (license === undefined || license.type !== License_Type.TRIAL) {
@@ -21,11 +19,11 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
     if (api.isRedpanda) {
         if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
             return {
-                message: <Box>Your Redpanda Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. <Link href={getEnterpriseCTALink('upgrade')} target="_blank">Contact us</Link> to get a full Enterprise license.</Box>,
+                message: <Box>Your Redpanda Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. <Link href={getEnterpriseCTALink('upgrade')} target="_blank">Request a full license</Link>.</Box>,
                 status: 'info',
             }
         } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
-            if (usesAuthEnterpriseFeatures(enterpriseFeaturesUsed)) {
+            if (consoleHasEnterpriseFeatures()) {
                 return {
                     message: <Box>
                         <Text>
@@ -54,7 +52,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
     } else {
         // Kafka
         if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
-            if (usesAuthEnterpriseFeatures(enterpriseFeaturesUsed)) {
+            if (consoleHasEnterpriseFeatures()) {
                 return {
                     message: <Box>
                         <Text>

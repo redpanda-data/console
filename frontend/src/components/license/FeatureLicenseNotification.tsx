@@ -3,11 +3,11 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, LICENSE_WEIGHT, MS_IN_DAY, usesEnterpriseFeatures } from './licenseUtils';
+import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, LICENSE_WEIGHT, MS_IN_DAY, coreHasEnterpriseFeatures } from './licenseUtils';
 import { api } from '../../state/backendApi';
 
 const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
-const UpgradeButton = () => <Button variant="outline" size="sm" as={Link} href={getEnterpriseCTALink('tryEnterprise')} style={{
+const UpgradeButton = () => <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('upgrade')} style={{
     textDecoration: 'none'
 }}>Upgrade</Button>
 
@@ -20,7 +20,7 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
 
     // Redpanda
     if (api.isRedpanda) {
-        if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY && usesEnterpriseFeatures(enterpriseFeaturesUsed)) {
+        if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
             return {
                 message: <Box>
                     <Text>This is an enterprise feature, active until {getPrettyExpirationDate(license)}.</Text>
@@ -31,7 +31,7 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
                 </Box>,
                 status: 'info',
             }
-        } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && usesEnterpriseFeatures(enterpriseFeaturesUsed)) {
+        } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
             return {
                 message: <Box>
                     <Text>

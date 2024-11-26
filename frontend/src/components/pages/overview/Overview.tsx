@@ -31,7 +31,6 @@ import colors from '../../../colors';
 import { FaCrown } from 'react-icons/fa';
 import ClusterHealthOverview from './ClusterHealthOverview';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
-import { License_Type } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 @observer
 class Overview extends PageComponent {
@@ -340,7 +339,7 @@ function ClusterDetails() {
             <GridItem />
             <GridItem colSpan={{base: 1, lg: 2}}>
                 <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
-                    <Badge variant="info">Redpanda Enterprise trial available</Badge>
+                    <Badge variant="info"><Text textDecoration="underline">Redpanda Enterprise trial available</Text></Badge>
                 </Link>
             </GridItem>
         </>}

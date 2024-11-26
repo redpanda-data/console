@@ -2,6 +2,7 @@ import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_F
 import { prettyMilliseconds } from '../../utils/utils';
 import { config as appConfig } from '../../config';
 import { api } from '../../state/backendApi';
+import { AppFeatures } from '../../utils/env';
 
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -23,18 +24,15 @@ export const isEnterpriseFeatureUsed = (featureName: string, features: ListEnter
 
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
- * specifically 'sso' (Single Sign-On) or 'rbac' (Role-Based Access Control).
+ * specifically 'sso' (Single Sign-On) or 'rbac' (Reassign Partitions).
  *
- * @param {ListEnterpriseFeaturesResponse_Feature[]} features - The list of enterprise features to check.
- * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'rbac' is found, otherwise `false`.
+ * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
  */
-export const usesAuthEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
-    return features.some(feature =>
-        feature.enabled && isAuthEnterpriseFeature(feature)
-    );
+export const consoleHasEnterpriseFeatures = (): boolean => {
+    return Object.values(AppFeatures).some(Boolean)
 }
 
-export const usesEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
+export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
     return features.some(feature => feature.enabled);
 }
 
@@ -307,12 +305,12 @@ export const resolveEnterpriseCTALink = (
     const baseUrl = urls[type];
     const url = new URL(baseUrl);
 
-    url.searchParams.append('cluster_uuid', cluster_uuid ?? '');
+    url.searchParams.append('cluster_id', cluster_uuid ?? '');
     url.searchParams.append('platform', platform);
 
     return url.toString();
 };
 
 export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
-    return resolveEnterpriseCTALink(type, appConfig.clusterId, api.isRedpanda ? 'redpanda' : 'kafka');
+    return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka.clusterId, api.isRedpanda ? 'redpanda' : 'kafka');
 }
