@@ -24,9 +24,6 @@ import { Link as ChLink } from '@redpanda-data/ui';
 import Tabs from '../../misc/tabs/Tabs';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { formatPipelineError } from './errors';
-import {Monaco} from '@monaco-editor/react';
-import {editor, languages, Position} from 'monaco-editor';
-import CompletionItem = languages.CompletionItem;
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -166,59 +163,6 @@ export const PipelineEditor = observer((p: {
     onChange: (newYaml: string) => void
     secrets?: string[]
 }) => {
-    const secrets = p.secrets ?? [];
-    // add custom autocomplete for ${secrets.<SECRET_ID>}
-    const addCustomAutocomplete = (monaco: Monaco) => {
-        monaco.languages.registerCompletionItemProvider('yaml', {
-            // Display suggestions for lines beginning with ${ or . to assist with variable interpolation
-            triggerCharacters: ['${', '.'],
-            provideCompletionItems(model: editor.ITextModel, position: Position): languages.ProviderResult<languages.CompletionList> {
-                const wordInfo = model.getWordUntilPosition(position);
-                const previousInfo = model.getWordUntilPosition({lineNumber: position.lineNumber, column: wordInfo.startColumn - 1});
-                const range = {
-                    startLineNumber: position.lineNumber,
-                    endLineNumber: position.lineNumber,
-                    startColumn: wordInfo.startColumn,
-                    endColumn: wordInfo.endColumn,
-                };
-                const last_chars = model.getValueInRange({startLineNumber: position.lineNumber, startColumn: 0, endLineNumber: position.lineNumber, endColumn: position.column});
-                const words = last_chars.replace('\t', '').replace('\{', '').split(' ');
-                const active_typing = words[words.length - 1];
-                const empty = {suggestions: []}
-                // don't show suggestion if previous word is a secret
-                if (secrets.some(value => value === previousInfo.word)) {
-                    return empty
-                }
-                // don't show suggestion if there is multiples dots(.)
-                if (/\.{2,}$/.test(active_typing)) {
-                    return empty
-                }
-                // if previous word is secrets suggest secrets ids
-                if (previousInfo.word === 'secrets') {
-                    const suggestions: CompletionItem[] = secrets.map(value => ({
-                        label: value, // First option
-                        kind: monaco.languages.CompletionItemKind.Class,
-                        insertText: value, // Insert this text
-                        range: range,
-                    }))
-                    return {suggestions}
-                }
-                // no previous word, suggest secrets
-                const suggestions: CompletionItem[] = [
-                    {
-                        label: 'secrets', // First option
-                        kind: monaco.languages.CompletionItemKind.Variable,
-                        insertText: 'secrets', // Insert this text
-                        documentation: 'redpanda connect secrets',
-                        range: range,
-                    },
-                ]
-
-                return {suggestions}
-            }
-        })
-    }
-
     return <Tabs tabs={[
         {
             key: 'config', title: 'Configuration',
@@ -234,7 +178,6 @@ export const PipelineEditor = observer((p: {
                                 p.onChange(e);
                         }}
                         language="yaml"
-                        onMount={(_, monaco) => addCustomAutocomplete(monaco)}
                     />
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && <Alert status="error" my={2}>
