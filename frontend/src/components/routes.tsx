@@ -317,11 +317,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
-    MakeRoute<{}>('/rp-connect/secret/create', RpConnectSecretCreate, 'Connector-Secrets'),
+    MakeRoute<{}>('/rp-connect/secrets/create', RpConnectSecretCreate, 'Connector-Secrets'),
     MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
-    MakeRoute<{ secretId: string }>('/rp-connect/secret/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
+    MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,

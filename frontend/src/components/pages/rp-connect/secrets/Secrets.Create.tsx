@@ -29,15 +29,15 @@ class RpConnectSecretCreate extends PageComponent {
 
     initPage(p: PageInitHelper) {
         p.title = 'Create Secret';
-        p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secret/create');
+        p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secrets/create');
         p.addBreadcrumb('Create Secret', '');
 
         this.refreshData(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
-    refreshData(_force: boolean) {
-        rpcnSecretManagerApi.refreshSecrets(_force);
+    refreshData(force: boolean) {
+        rpcnSecretManagerApi.refreshSecrets(force);
     }
 
     cancel() {
@@ -77,9 +77,9 @@ class RpConnectSecretCreate extends PageComponent {
     render() {
         if (!rpcnSecretManagerApi.secrets) return DefaultSkeleton;
 
-        const alreadyExists = (rpcnSecretManagerApi.secrets || []).any(x => x.id == this.id);
-        const isIdEmpty = this.id.trim().length == 0;
-        const isSecretEmpty = this.secret.trim().length == 0;
+        const alreadyExists = (rpcnSecretManagerApi.secrets || []).any(x => x.id === this.id);
+        const isIdEmpty = this.id.trim().length === 0;
+        const isSecretEmpty = this.secret.trim().length === 0;
 
         return (
             <PageContent>

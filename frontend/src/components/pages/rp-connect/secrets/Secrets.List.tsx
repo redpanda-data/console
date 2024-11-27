@@ -147,7 +147,7 @@ class RpConnectSecretsList extends PageComponent {
                                                         onClick={e => {
                                                             e.stopPropagation();
                                                             e.preventDefault();
-                                                            appGlobal.history.push(`/rp-connect/secret/${r.id}/edit`);
+                                                            appGlobal.history.push(`/rp-connect/secrets/${r.id}/edit`);
                                                         }}>
                                                     <PencilIcon/>
                                                 </Button>

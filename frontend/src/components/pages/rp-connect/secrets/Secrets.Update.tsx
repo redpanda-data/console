@@ -25,7 +25,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
 
     initPage(p: PageInitHelper) {
         p.title = 'Update Secret';
-        p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secret/update');
+        p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secrets/update');
         p.addBreadcrumb('Update Secret', '');
 
         this.refreshData(true);

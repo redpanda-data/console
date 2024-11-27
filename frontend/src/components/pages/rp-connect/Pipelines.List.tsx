@@ -135,7 +135,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     {/* Pipeline List */}
 
                     {pipelinesApi.pipelines.length != 0 && (
-                        <Flex my={5} flexDir={'row'} gap={2}>
+                        <Flex my={5} flexDir={'column'} gap={2}>
                             <CreatePipelineButton/>
                             <SearchField width="350px"
                                          searchText={uiSettings.pipelinesList.quickSearch}
