@@ -8,6 +8,7 @@ import {action, makeObservable, observable} from 'mobx';
 import {DefaultSkeleton} from '../../../../utils/tsxUtils';
 import {formatPipelineError} from '../errors';
 import {CreateSecretRequest, Scope} from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import {base64ToUInt8Array, encodeBase64} from '../../../../utils/utils';
 
 const {ToastContainer, toast} = createStandaloneToast();
 
@@ -48,17 +49,9 @@ class RpConnectSecretCreate extends PageComponent {
     async createSecret() {
         this.isCreating = true;
 
-        //create function given string return base64 encoded Uint8Array
-        function base64Encode(str: string): Uint8Array {
-            const encodedString = btoa(str);
-            const charList = encodedString.split('').map(char => char.charCodeAt(0));
-            return new Uint8Array(charList);
-        }
-
-
         rpcnSecretManagerApi.create(new CreateSecretRequest({
             id: this.id,
-            secretData: base64Encode(this.secret),
+            secretData: base64ToUInt8Array(encodeBase64(this.secret)),
             scopes: [Scope.REDPANDA_CONNECT]
         }))
             .then(async () => {
