@@ -56,6 +56,8 @@ tasks:
       - for: { var: BUF_INPUTS }
         cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - "{{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common"
+      # include the gatekeeper protos
+      - "{{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/gatekeeper"
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
