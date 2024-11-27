@@ -5,6 +5,12 @@ import { AppFeatures } from '../../utils/env';
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
+enum Platform {
+    PLATFORM_UNSPECIFIED = 0,
+    PLATFORM_REDPANDA = 1,
+    PLATFORM_NON_REDPANDA = 2,
+}
+
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
 export const LICENSE_WEIGHT: Record<License_Type, number> = {
@@ -296,7 +302,7 @@ type EnterpriseLinkType = 'tryEnterprise' | 'upgrade'
 export const resolveEnterpriseCTALink = (
     type: EnterpriseLinkType,
     cluster_uuid: string | undefined,
-    platform: 'kafka' | 'redpanda'
+    isRedpanda: boolean,
 ) => {
     const urls: Record<EnterpriseLinkType, string> = {
         'tryEnterprise': 'https://redpanda.com/try-enterprise',
@@ -307,13 +313,13 @@ export const resolveEnterpriseCTALink = (
     const url = new URL(baseUrl);
 
     url.searchParams.append('cluster_id', cluster_uuid ?? '');
-    url.searchParams.append('platform', platform);
+    url.searchParams.append('platform', `${isRedpanda ? Platform.PLATFORM_REDPANDA : Platform.PLATFORM_NON_REDPANDA}`);
 
     return url.toString();
 };
 
 export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
-    return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka.clusterId, api.isRedpanda ? 'redpanda' : 'kafka');
+    return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka.clusterId, api.isRedpanda);
 }
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/'
