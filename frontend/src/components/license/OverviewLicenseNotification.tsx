@@ -3,7 +3,7 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, consoleHasEnterpriseFeature } from './licenseUtils';
+import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, consoleHasEnterpriseFeature, DISABLE_SSO_DOCS_LINK } from './licenseUtils';
 import { api } from '../../state/backendApi';
 
 const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
@@ -27,7 +27,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable SSO and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">disable</Link> SSO and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>
@@ -56,7 +56,7 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                 return {
                     message: <Box>
                         <Text>
-                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, disable SSS and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
+                            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this,  <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">disable</Link> SSO and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
                             <UploadLicenseButton/>

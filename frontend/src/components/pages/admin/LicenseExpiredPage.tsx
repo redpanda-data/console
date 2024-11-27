@@ -3,6 +3,7 @@ import { observer } from 'mobx-react';
 import { PageComponent } from '../Page';
 import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
+import { DISABLE_SSO_DOCS_LINK } from '../../license/licenseUtils';
 
 @observer
 export default class LicenseExpiredPage extends PageComponent {
@@ -49,7 +50,7 @@ export default class LicenseExpiredPage extends PageComponent {
 
                         {/* Subtext */}
                         <Text fontSize="lg">
-                            You were using Console RBAC/SSO and your trial license has expired. To continue using them, you will need an <Link href="https://redpanda.com/upgrade" target="_blank">Enterprise license</Link>. Alternatively, you can disable the paid features in your configuration file.
+                            You were using Console RBAC/SSO and your trial license has expired. To continue using them, you will need an <Link href="https://redpanda.com/upgrade" target="_blank">Enterprise license</Link>. Alternatively, you can  <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">disable</Link> the paid features in your configuration file.
                         </Text>
                     </VStack>
                 </Box>
