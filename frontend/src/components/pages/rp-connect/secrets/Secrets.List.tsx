@@ -8,7 +8,7 @@ import {Box, Button, ButtonGroup, Code, ConfirmItemDeleteModal, CopyButton, crea
 import Section from '../../../misc/Section';
 import PageContent from '../../../misc/PageContent';
 import {uiSettings} from '../../../../state/ui';
-import {Link} from 'react-router-dom';
+import {Link as ReactRouterLink} from 'react-router-dom';
 import {PencilIcon, TrashIcon} from '@heroicons/react/outline';
 import EmptyConnectors from '../../../../assets/redpanda/EmptyConnectors.svg';
 import {DeleteSecretRequest, Secret} from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
@@ -16,9 +16,9 @@ import {DeleteSecretRequest, Secret} from '../../../../protogen/redpanda/api/dat
 const {ToastContainer, toast} = createStandaloneToast();
 
 const CreateSecretButton = () => {
-    return (<Box style={{display: 'flex', marginBottom: '.5em'}}>
-        <Link to={'/rp-connect/secret/create'}><Button>Create secret</Button></Link>
-    </Box>)
+    return (<Flex marginBottom={'.5em'}>
+        <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'}>Create secret</Button>
+    </Flex>)
 }
 
 const EmptyPlaceholder = () => {
