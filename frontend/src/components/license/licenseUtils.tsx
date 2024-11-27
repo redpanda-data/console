@@ -2,6 +2,8 @@ import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_F
 import { prettyMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
+import { Button, Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
 
 export const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -315,3 +317,7 @@ export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
 }
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/'
+export const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
+export const UpgradeButton = () => <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('upgrade')} style={{
+    textDecoration: 'none'
+}}>Upgrade</Button>

@@ -1,12 +1,9 @@
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyEnterpriseFeatures, getPrettyTimeToExpiration, MS_IN_DAY, consoleHasEnterpriseFeature, DISABLE_SSO_DOCS_LINK } from './licenseUtils';
+import { consoleHasEnterpriseFeature, DISABLE_SSO_DOCS_LINK, getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyTimeToExpiration, MS_IN_DAY, UpgradeButton, UploadLicenseButton } from './licenseUtils';
 import { api } from '../../state/backendApi';
-
-const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
 
 const getLicenseAlertContent = (license: License | undefined, enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]): { message: ReactElement, status: 'warning' | 'info' } | null  => {
     if (license === undefined || license.type !== License_Type.TRIAL) {
@@ -30,7 +27,8 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                             Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this, <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">disable</Link> SSO and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
-                            <UploadLicenseButton/>
+                            <UploadLicenseButton />
+                            <UpgradeButton />
                         </Flex>
                     </Box>,
                     status: 'warning'
@@ -42,7 +40,8 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                             Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
-                            <UploadLicenseButton/>
+                            <UploadLicenseButton />
+                            <UpgradeButton />
                         </Flex>
                     </Box>,
                     status: 'warning'
@@ -59,7 +58,8 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                             Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is enabled. As a result, Console will be inaccessible after license expiry. To prevent this,  <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">disable</Link> SSO and RBAC, or get a <Link href={getEnterpriseCTALink('upgrade')} target="_blank">full Redpanda Enterprise license</Link>.
                         </Text>
                         <Flex gap={2} my={2}>
-                            <UploadLicenseButton/>
+                            <UploadLicenseButton />
+                            <UpgradeButton />
                         </Flex>
                     </Box>,
                     status: 'warning'
@@ -72,7 +72,8 @@ const getLicenseAlertContent = (license: License | undefined, enterpriseFeatures
                                 Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your enterprise features will become unavailable. To get a full Redpanda Enterprise license, <Link href={getEnterpriseCTALink('upgrade')} target="_blank">contact us</Link>.
                             </Text>
                             <Flex gap={2} my={2}>
-                                <UploadLicenseButton/>
+                                <UploadLicenseButton />
+                                <UpgradeButton />
                             </Flex>
                         </Box>,
                     status: 'warning'

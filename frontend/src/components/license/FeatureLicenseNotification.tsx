@@ -1,15 +1,9 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { FC, ReactElement, useEffect } from 'react';
 import { License, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, LICENSE_WEIGHT, MS_IN_DAY, coreHasEnterpriseFeatures } from './licenseUtils';
+import { getEnterpriseCTALink, getMillisecondsToExpiration, getPrettyExpirationDate, getPrettyTimeToExpiration, LICENSE_WEIGHT, MS_IN_DAY, coreHasEnterpriseFeatures, UploadLicenseButton, UpgradeButton } from './licenseUtils';
 import { api } from '../../state/backendApi';
-
-const UploadLicenseButton = () => api.isAdminApiConfigured ? <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button> : null
-const UpgradeButton = () => <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('upgrade')} style={{
-    textDecoration: 'none'
-}}>Upgrade</Button>
 
 const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartitions', license: License | undefined, enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]): { message: ReactElement, status: 'warning' | 'info' } | null  => {
     if (license === undefined || license.type !== License_Type.TRIAL) {
@@ -39,6 +33,7 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
                     </Text>
                     <Flex gap={2} my={2}>
                         <UploadLicenseButton/>
+                        <UpgradeButton />
                     </Flex>
                 </Box>,
                 status: 'warning'
@@ -79,6 +74,7 @@ const getLicenseAlertContentForFeature = (featureName: 'rbac' | 'reassignPartiti
                     </Text>
                     <Flex gap={2} my={2}>
                         <UploadLicenseButton />
+                        <UpgradeButton />
                     </Flex>
                 </Box>,
                 status: 'warning'
