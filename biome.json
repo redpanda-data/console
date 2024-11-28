@@ -27,7 +27,8 @@
           "noAssignInExpressions": "off"
         },
         "a11y": {
-          "useKeyWithClickEvents": "off"
+          "useKeyWithClickEvents": "off",
+          "useSemanticElements": "off"
         },
         "style": {
             "useNodejsImportProtocol": "off",
