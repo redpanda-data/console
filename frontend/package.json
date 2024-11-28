@@ -19,6 +19,7 @@
         "test": "jest",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "lint": "biome check src/* --write --unsafe",
+        "linter": "biome ci src/*",
         "lint:check": "biome ci src/*",
         "format:check": "biome format src/*",
         "format": "biome format src/* --write",
