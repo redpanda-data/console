@@ -61,8 +61,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
     }
-    const alreadyExists = pipelinesApi.pipelines.any((x) => x.id == this.fileName);
-    const isNameEmpty = this.fileName.trim().length == 0;
+    const alreadyExists = pipelinesApi.pipelines.any((x) => x.id === this.fileName);
+    const isNameEmpty = this.fileName.trim().length === 0;
 
     return (
       <PageContent>

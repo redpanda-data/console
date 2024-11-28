@@ -42,7 +42,7 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-  if (config.jwt) req.header.append('Authorization', 'Bearer ' + config.jwt);
+  if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
   return await next(req);
 };
 

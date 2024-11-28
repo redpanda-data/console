@@ -61,10 +61,10 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
     }
     const pipelineId = this.props.pipelineId;
-    const pipeline = pipelinesApi.pipelines.first((x) => x.id == pipelineId);
+    const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
     if (!pipeline) return DefaultSkeleton;
 
-    if (this.displayName == undefined) {
+    if (this.displayName === undefined) {
       this.displayName = pipeline.displayName;
       this.description = pipeline.description;
       this.editorContent = pipeline.configYaml;

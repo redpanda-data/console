@@ -141,7 +141,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
       },
     ] as Tab[];
 
-    if (isServerless()) tabs.removeAll((x) => x.key == ConnectView.KafkaConnect);
+    if (isServerless()) tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
 
     return (
       <PageContent>
@@ -149,8 +149,8 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
           There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka
           Connect.
         </Text>
-        {tabs.length == 1 ? (
-          typeof tabs[0].content == 'function' ? (
+        {tabs.length === 1 ? (
+          typeof tabs[0].content === 'function' ? (
             tabs[0].content()
           ) : (
             tabs[0].content
@@ -234,7 +234,7 @@ interface ConnectorType extends ClusterConnectorInfo {
 }
 
 const TabConnectors = observer(() => {
-  const clusters = api.connectConnectors!.clusters;
+  const clusters = api.connectConnectors?.clusters;
   const allConnectors: ConnectorType[] =
     clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
 
@@ -333,7 +333,7 @@ interface TaskType extends ClusterConnectorTaskInfo {
 @observer
 class TabTasks extends Component {
   render() {
-    const clusters = api.connectConnectors!.clusters;
+    const clusters = api.connectConnectors?.clusters;
     const allConnectors: ConnectorType[] =
       clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
     const allTasks: TaskType[] = allConnectors.flatMap((con) =>
@@ -401,7 +401,7 @@ const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (!api.connectConnectors) return DefaultSkeleton;
-  if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
+  if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
 
   return (
     <Stack spacing={3}>

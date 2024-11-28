@@ -121,6 +121,7 @@ import {
   type CreateDebugBundleResponse,
   type DebugBundleStatus,
   DebugBundleStatus_Status,
+  type GetClusterHealthResponse,
   type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
 } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import type {
@@ -165,12 +166,12 @@ const { toast } = createStandaloneToast({
 export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
   const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, requestInit);
 
-  if (res.status == 401) {
+  if (res.status === 401) {
     // Unauthorized
     await handle401(res);
     return null;
   }
-  if (res.status == 403) {
+  if (res.status === 403) {
     // Forbidden
     return null;
   }
@@ -191,7 +192,7 @@ async function handle401(res: Response) {
   try {
     const text = await res.text();
     const obj = JSON.parse(text);
-    console.log('unauthorized message: ' + text);
+    console.log(`unauthorized message: ${text}`);
 
     const err = obj as ApiError;
     uiState.loginError = String(err.message);
@@ -220,11 +221,11 @@ async function handle401(res: Response) {
 function processVersionInfo(headers: Headers) {
   try {
     for (const [k, v] of headers) {
-      if (k.toLowerCase() != 'app-build-timestamp') continue;
+      if (k.toLowerCase() !== 'app-build-timestamp') continue;
 
       const serverBuildTimestamp = Number(v);
-      if (v != null && v != '' && Number.isFinite(serverBuildTimestamp)) {
-        if (uiState.serverBuildTimestamp != serverBuildTimestamp) uiState.serverBuildTimestamp = serverBuildTimestamp;
+      if (v != null && v !== '' && Number.isFinite(serverBuildTimestamp)) {
+        if (uiState.serverBuildTimestamp !== serverBuildTimestamp) uiState.serverBuildTimestamp = serverBuildTimestamp;
       }
 
       return;
@@ -386,10 +387,10 @@ const apiStore = {
     await appConfig.fetch('./api/users/me').then(async (r) => {
       if (r.ok) {
         api.userData = (await r.json()) as UserData;
-      } else if (r.status == 401) {
+      } else if (r.status === 401) {
         // unauthorized / not logged in
         api.userData = null;
-      } else if (r.status == 404) {
+      } else if (r.status === 404) {
         // not found: frontend is configured as business-version, but backend is non-business-version
         // -> create a local fake user for debugging
         uiState.isUsingDebugUserLogin = true;
@@ -495,7 +496,7 @@ const apiStore = {
 
   refreshTopicPermissions(topicName: string, force?: boolean) {
     if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
-    if (this.userData?.user?.providerID == -1) return; // debug user
+    if (this.userData?.user?.providerID === -1) return; // debug user
     cachedApiRequest<TopicPermissions | null>(
       `${appConfig.restBasePath}/permissions/topics/${encodeURIComponent(topicName)}`,
       force,
@@ -510,7 +511,7 @@ const apiStore = {
 
   async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
     const partitions =
-      partitionId != undefined
+      partitionId !== undefined
         ? [{ partitionId, offset }]
         : this.topicPartitions?.get(topicName)?.map((partition) => ({ partitionId: partition.id, offset }));
 
@@ -556,7 +557,7 @@ const apiStore = {
       topics = topics.sort().map((t) => encodeURIComponent(t));
 
     const url =
-      topics == 'all'
+      topics === 'all'
         ? `${appConfig.restBasePath}/operations/topic-details`
         : `${appConfig.restBasePath}/operations/topic-details?topicNames=${topics.joinStr(',')}`;
 
@@ -605,7 +606,7 @@ const apiStore = {
           // Set partition
           this.topicPartitions.set(t.topicName, t.partitions);
 
-          if (partitionErrors.length == 0 && waterMarkErrors.length == 0) {
+          if (partitionErrors.length === 0 && waterMarkErrors.length === 0) {
           } else {
             errors.push({
               topicName: t.topicName,
@@ -627,8 +628,8 @@ const apiStore = {
       force,
     ).then((response) => {
       if (response?.partitions) {
-        const partitionErrors: Array<{ id: number; partitionError: string }> = [],
-          waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
+        const partitionErrors: Array<{ id: number; partitionError: string }> = [];
+        const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
 
         // Add some local/cached properties to make working with the data easier
         for (const p of response.partitions) {
@@ -640,12 +641,12 @@ const apiStore = {
           if (partitionErrors.length || waterMarksErrors.length) continue;
 
           // replicaSize
-          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error == '') && e.size >= 0);
+          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
           const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
           p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
         }
 
-        if (partitionErrors.length == 0 && waterMarksErrors.length == 0) {
+        if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
           // Set partitions
           this.topicPartitionErrors.delete(topicName);
           this.topicWatermarksErrors.delete(topicName);
@@ -663,8 +664,8 @@ const apiStore = {
         return;
       }
 
-      let partitionErrors = 0,
-        waterMarkErrors = 0;
+      let partitionErrors = 0;
+      let waterMarkErrors = 0;
 
       // Add some local/cached properties to make working with the data easier
       for (const p of response.partitions) {
@@ -679,7 +680,7 @@ const apiStore = {
         }
 
         // replicaSize
-        const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error == '') && e.size >= 0);
+        const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
         const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
         p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
       }
@@ -699,9 +700,9 @@ const apiStore = {
 
     this.topicPartitions.forEach((partitions, topicName) => {
       if (partitions !== null) {
-        partitions.forEach((partition) => {
+        for (const partition of partitions) {
           result.push(`${topicName}/${partition.id}`);
-        });
+        }
       }
     });
 
@@ -766,7 +767,7 @@ const apiStore = {
   get isRedpanda() {
     const overview = this.clusterOverview;
     if (!overview) return false;
-    if (overview.kafka.distribution == 'REDPANDA') return true;
+    if (overview.kafka.distribution === 'REDPANDA') return true;
 
     return false;
   },
@@ -924,22 +925,26 @@ const apiStore = {
 
       // resolve role of each binding
       for (const binding of info.roleBindings) {
-        binding.resolvedRole = info.roles.first((r) => r.name == binding.roleName)!;
-        if (binding.resolvedRole == null) console.error('could not resolve roleBinding to role: ' + toJson(binding));
+        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+        binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
+        if (binding.resolvedRole == null) console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
       }
 
       // resolve bindings, and roles of each user
       for (const user of info.users) {
-        user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId == id)!);
+        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+        user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
         if (user.bindings.any((b) => b == null))
-          console.error('one or more rolebindings could not be resolved for user: ' + toJson(user));
+          console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
 
         user.grantedRoles = [];
         for (const roleName in user.audits)
           user.grantedRoles.push({
-            role: info.roles.first((r) => r.name == roleName)!,
+            // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+            role: info.roles.first((r) => r.name === roleName)!,
             grantedBy: user.audits[roleName].map(
-              (bindingId) => info.roleBindings.first((b) => b.ephemeralId == bindingId)!,
+              // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+              (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!,
             ),
           });
       }
@@ -955,7 +960,7 @@ const apiStore = {
     ) as Promise<SchemaRegistryModeResponse>;
     return rq
       .then((r) => {
-        if (r.isConfigured == false) {
+        if (r.isConfigured === false) {
           this.schemaOverviewIsConfigured = false;
           this.schemaMode = null;
         } else {
@@ -976,7 +981,7 @@ const apiStore = {
     ) as Promise<SchemaRegistryConfigResponse>;
     return rq
       .then((r) => {
-        if (r.isConfigured == false) {
+        if (r.isConfigured === false) {
           this.schemaOverviewIsConfigured = false;
           this.schemaCompatibility = null;
         } else {
@@ -1109,17 +1114,16 @@ const apiStore = {
         },
       );
       return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
-    } else {
-      const response = await appConfig.fetch(
-        `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
-        {
-          method: 'PUT',
-          headers: [['Content-Type', 'application/json']],
-          body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
-        },
-      );
-      return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
     }
+    const response = await appConfig.fetch(
+      `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
+      {
+        method: 'PUT',
+        headers: [['Content-Type', 'application/json']],
+        body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+      },
+    );
+    return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
 
   async validateSchema(
@@ -1568,6 +1572,7 @@ const apiStore = {
 
   // New version of "publishRecords"
   async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.consoleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1677,6 +1682,7 @@ const apiStore = {
   },
 
   async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1688,6 +1694,7 @@ const apiStore = {
   },
 
   async listLicenses(): Promise<void> {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1710,13 +1717,14 @@ const apiStore = {
           this.licensesLoaded = 'failed';
           const errorText = err instanceof Error ? err.message : String(err);
 
-          console.log('error refreshing licenses: ' + errorText);
+          console.log(`error refreshing licenses: ${errorText}`);
           return err;
         }),
     ]);
   },
 
   async refreshClusterHealth() {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1729,6 +1737,7 @@ const apiStore = {
   },
 
   async refreshDebugBundleStatuses() {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1796,6 +1805,7 @@ const apiStore = {
   },
 
   async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1808,6 +1818,7 @@ const apiStore = {
   },
 
   async cancelDebugBundleProcess({ jobId }: { jobId: string }) {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1824,6 +1835,7 @@ const apiStore = {
   },
 
   async deleteDebugBundleFile() {
+    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1858,7 +1870,7 @@ export const rolesApi = observable({
         const newRoles = res.roles.map((x) => x.name);
         roles.push(...newRoles);
 
-        if (!res.nextPageToken || res.nextPageToken.length == 0) break;
+        if (!res.nextPageToken || res.nextPageToken.length === 0) break;
 
         nextPageToken = res.nextPageToken;
       }
@@ -1891,14 +1903,14 @@ export const rolesApi = observable({
       const members = res.members
         .map((x) => {
           const principalParts = x.principal.split(':');
-          if (principalParts.length != 2) {
+          if (principalParts.length !== 2) {
             console.error('failed to split principal of role', { roleName, principal: x.principal });
             return null;
           }
           const principalType = principalParts[0];
           const name = principalParts[1];
 
-          if (principalType != 'User') {
+          if (principalType !== 'User') {
             console.error('unexpected principal type in refreshRoleMembers', { roleName, principal: x.principal });
           }
 
@@ -1934,8 +1946,8 @@ export const rolesApi = observable({
 
     return await client.updateRoleMembership({
       roleName: roleName,
-      add: addUsers.map((u) => ({ principal: 'User:' + u })),
-      remove: removeUsers.map((u) => ({ principal: 'User:' + u })),
+      add: addUsers.map((u) => ({ principal: `User:${u}` })),
+      remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
       create,
     });
   },
@@ -1966,7 +1978,7 @@ export const pipelinesApi = observable({
 
       pipelines.push(...response.pipelines);
 
-      if (!response.nextPageToken || response.nextPageToken.length == 0) break;
+      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
       nextPageToken = response.nextPageToken;
     }
 
@@ -2033,7 +2045,7 @@ export const rpcnSecretManagerApi = observable({
 
       secrets.push(...response);
 
-      if (!res || res.nextPageToken.length == 0) break;
+      if (!res || res.nextPageToken.length === 0) break;
       nextPageToken = res.nextPageToken;
     }
 
@@ -2076,7 +2088,7 @@ export const transformsApi = observable({
 
       transforms.push(...r.transforms);
 
-      if (!r.nextPageToken || r.nextPageToken.length == 0) break;
+      if (!r.nextPageToken || r.nextPageToken.length === 0) break;
       nextPageToken = r.nextPageToken;
     }
 
@@ -2178,7 +2190,7 @@ export function createMessageSearch() {
       // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
       // from 30s to 30 minutes before ending the request gracefully.
       let timeoutMs = 30 * 1000;
-      if (searchRequest.startOffset == PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
+      if (searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode != null) {
         const minuteMs = 60 * 1000;
         timeoutMs = 30 * minuteMs;
       }
@@ -2190,11 +2202,11 @@ export function createMessageSearch() {
           try {
             switch (res.controlMessage.case) {
               case 'phase':
-                console.log('phase: ' + res.controlMessage.value.phase);
+                console.log(`phase: ${res.controlMessage.value.phase}`);
                 this.searchPhase = res.controlMessage.value.phase;
                 break;
               case 'progress':
-                console.log('progress: ' + res.controlMessage.value.messagesConsumed);
+                console.log(`progress: ${res.controlMessage.value.messagesConsumed}`);
                 this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                 this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
                 break;
@@ -2207,7 +2219,7 @@ export function createMessageSearch() {
                 break;
               case 'error':
                 // error doesn't necessarily mean the whole request is done
-                console.info('ws backend error: ' + res.controlMessage.value.message);
+                console.info(`ws backend error: ${res.controlMessage.value.message}`);
                 toast({
                   title: 'Backend Error',
                   description: res.controlMessage.value.message,
@@ -2215,7 +2227,7 @@ export function createMessageSearch() {
                 });
 
                 break;
-              case 'data':
+              case 'data': {
                 // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
                 // this is my hacky way of attempting to get things working by converting the Connect types
                 // to the rest interface types that are hooked up to other things
@@ -2246,18 +2258,18 @@ export function createMessageSearch() {
                 m.timestamp = Number(res.controlMessage.value.timestamp);
                 m.isTransactional = res.controlMessage.value.isTransactional;
                 m.headers = [];
-                res.controlMessage.value.headers.forEach((h) => {
+                for (const header of res.controlMessage.value.headers) {
                   m.headers.push({
-                    key: h.key,
+                    key: header.key,
                     value: {
-                      payload: JSON.stringify(new TextDecoder().decode(h.value)),
+                      payload: JSON.stringify(new TextDecoder().decode(header.value)),
                       encoding: 'text',
                       schemaId: 0,
-                      size: h.value.length,
-                      isPayloadNull: h.value == null,
+                      size: header.value.length,
+                      isPayloadNull: header.value == null,
                     },
                   });
-                });
+                }
 
                 // key
                 const key = res.controlMessage.value.key;
@@ -2317,7 +2329,7 @@ export function createMessageSearch() {
                     });
                 }
 
-                m.key.isPayloadNull = key?.encoding == PayloadEncoding.NULL;
+                m.key.isPayloadNull = key?.encoding === PayloadEncoding.NULL;
                 m.key.payload = keyPayload;
                 m.key.normalizedPayload = key?.normalizedPayload;
 
@@ -2395,7 +2407,7 @@ export function createMessageSearch() {
 
                 m.value.schemaId = val?.schemaId ?? 0;
                 m.value.troubleshootReport = val?.troubleshootReport;
-                m.value.isPayloadNull = val?.encoding == PayloadEncoding.NULL;
+                m.value.isPayloadNull = val?.encoding === PayloadEncoding.NULL;
                 m.valueJson = valuePayload;
                 m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
@@ -2408,6 +2420,7 @@ export function createMessageSearch() {
 
                 this.messages.push(m);
                 break;
+              }
             }
           } catch (e) {
             console.error('error in listMessages loop', { error: e });
@@ -2477,7 +2490,7 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
       g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
     }
   }
-  g.isInUse = g.state.toLowerCase() != 'empty';
+  g.isInUse = g.state.toLowerCase() !== 'empty';
 }
 
 export const brokerMap = computed(
@@ -2499,14 +2512,14 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
   if (!Array.isArray(configEntries)) return;
 
   for (const e of configEntries) {
-    if (e.synonyms == undefined) continue;
+    if (e.synonyms === undefined) continue;
 
     // remove redundant entry
-    if (e.synonyms.length > 0) if (e.synonyms[0].source == e.source) e.synonyms.splice(0, 1);
+    if (e.synonyms.length > 0) if (e.synonyms[0].source === e.source) e.synonyms.splice(0, 1);
 
-    if (e.synonyms.length == 0) {
+    if (e.synonyms.length === 0) {
       // delete empty arrays, otherwise Tables will show this entry as 'expandable' even though it has no children
-      delete e.synonyms;
+      e.synonyms = undefined;
       continue;
     }
 

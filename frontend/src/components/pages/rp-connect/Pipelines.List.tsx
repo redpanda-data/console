@@ -179,7 +179,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
           <ToastContainer />
           {/* Pipeline List */}
 
-          {pipelinesApi.pipelines.length != 0 && (
+          {pipelinesApi.pipelines.length !== 0 && (
             <Flex my={5} flexDir={'column'} gap={2}>
               <CreatePipelineButton />
               <SearchField

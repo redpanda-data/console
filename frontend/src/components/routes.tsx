@@ -21,7 +21,7 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import React, { type FunctionComponent } from 'react';
+import React, { Fragment, type FunctionComponent } from 'react';
 import { MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
@@ -94,12 +94,12 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       if (!entry.icon) return null; // items without icon do not appear in the sidebar
 
       let isEnabled = true;
-      let disabledText: JSX.Element = <></>;
+      let disabledText: JSX.Element = <Fragment key={entry.title} />;
       if (entry.visibilityCheck) {
         const visibility = entry.visibilityCheck();
         if (!visibility.visible) return null;
 
-        isEnabled = visibility.disabledReasons.length == 0;
+        isEnabled = visibility.disabledReasons.length === 0;
         if (!isEnabled) disabledText = disabledReasonText[visibility.disabledReasons[0]];
       }
       const isDisabled = !isEnabled;
@@ -112,7 +112,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         disabledText: disabledText as unknown as string,
       };
     })
-    .filter((x) => x != null && x != undefined) as NavLinkProps[];
+    .filter((x) => x != null && x !== undefined) as NavLinkProps[];
 }
 
 // Convert routes to <Route/> JSX declarations
@@ -204,7 +204,7 @@ function MakeRoute<TRouteParams>(
         const matchedPath = rp.match.url;
         const { ...params } = rp.match.params;
 
-        if (uiState.currentRoute && uiState.currentRoute.path != route.path) {
+        if (uiState.currentRoute && uiState.currentRoute.path !== route.path) {
           //console.log('switching route: ' + routeStr(ui.currentRoute) + " -> " + routeStr(route));
         }
 
@@ -255,7 +255,7 @@ function routeVisibility(
 
     if (requiredAppFeatures) {
       for (const f of requiredAppFeatures)
-        if (AppFeatures[f] == false) {
+        if (AppFeatures[f] === false) {
           disabledReasons.push(DisabledReasons.enterpriseFeature);
           break;
         }
@@ -341,12 +341,11 @@ export const APP_ROUTES: IRouteEntry[] = [
       // Pipeline service is not active? Hide entry
       console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.');
       return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
-    } else {
-      // We are in cloud (dedicated or BYOC), or self-hosted
-      // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
-      console.debug('Pipeline Service state does not matter. Showing sidebar link.');
-      return { visible: true, disabledReasons: [] };
     }
+    // We are in cloud (dedicated or BYOC), or self-hosted
+    // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
+    console.debug('Pipeline Service state does not matter. Showing sidebar link.');
+    return { visible: true, disabledReasons: [] };
   }),
   MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
   MakeRoute<{ clusterName: string }>(
