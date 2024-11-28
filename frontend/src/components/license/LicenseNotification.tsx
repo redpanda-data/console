@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { api } from '../../state/backendApi';
-import { getPrettyTimeToExpiration, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
+import { getPrettyTimeToExpiration, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
@@ -13,12 +13,12 @@ export const LicenseNotification = observer(() => {
     // Community Licenses can't expire at all.
     const enterpriseLicenses = api.licenses.filter(license => license.type === License_Type.ENTERPRISE)
 
-    // const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
+    const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
     const soonToExpireLicenses = enterpriseLicenses
             .filter(license => licenseSoonToExpire(license))
         ?? [];
 
-    // const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
+    const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
 
     if (api.licensesLoaded === undefined) {
         return null;
@@ -29,14 +29,20 @@ export const LicenseNotification = observer(() => {
         return null;
     }
 
-    if (soonToExpireLicenses.length === 0 && !api.licenseViolation) {
+    if (!showSomeLicenseExpirationInfo && !api.licenseViolation) {
         return null;
     }
 
     const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter(x => x.enabled)
 
-    const visibleExpiredLicenses = soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map(x => x.expiresAt)).size === 1 ?
+    const visibleSoonToExpireLicenses = soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map(x => x.expiresAt)).size === 1 ?
          soonToExpireLicenses.filter(x => x.source === License_Source.REDPANDA_CORE) : soonToExpireLicenses
+
+    const visibleExpiredLicenses = visibleExpiredEnterpriseLicenses.length > 1 && new Set(visibleExpiredEnterpriseLicenses.map(x => x.expiresAt)).size === 1 ?
+        visibleExpiredEnterpriseLicenses.filter(x => x.source === License_Source.REDPANDA_CORE) : visibleExpiredEnterpriseLicenses
+
+
+
 
     return (
         <Box>
@@ -47,17 +53,17 @@ export const LicenseNotification = observer(() => {
             >
                 <AlertIcon/>
                 <AlertDescription>
-                    {visibleExpiredLicenses.length > 0 && <Box>
-                        {visibleExpiredLicenses.map((license, idx) =>
+                    {visibleSoonToExpireLicenses.length > 0 && <Box>
+                        {visibleSoonToExpireLicenses.map((license, idx) =>
                             <Text key={idx}>Your {prettyLicenseType(license, true)} license is expiring in {getPrettyTimeToExpiration(license)}.</Text>
                         )}
                     </Box>}
 
-                    {/*{visibleExpiredEnterpriseLicenses.length > 0 && <Box>*/}
-                    {/*    {visibleExpiredEnterpriseLicenses.map((license, idx) =>*/}
-                    {/*        <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>*/}
-                    {/*    )}*/}
-                    {/*</Box>}*/}
+                    {visibleExpiredLicenses.length > 0 && <Box>
+                        {visibleExpiredLicenses.map((license, idx) =>
+                            <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
+                        )}
+                    </Box>}
 
                     {api.licenseViolation && <Text>
                         You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.

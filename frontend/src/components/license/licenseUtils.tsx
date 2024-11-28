@@ -43,12 +43,6 @@ export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesRespon
     return features.some(feature => feature.enabled);
 }
 
-export const getPrettyEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): string => {
-    return features.filter(feature =>
-        feature.enabled && isAuthEnterpriseFeature(feature)
-    ).map(feature => feature.name.toUpperCase()).join(', ')
-}
-
 /**
  * Checks if a license is expired.
  * A license is considered expired if its type is not `COMMUNITY` and the expiration date is before the current date.
