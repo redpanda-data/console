@@ -17,7 +17,7 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { Alert, AlertIcon, Box, Button, Text, createStandaloneToast, Flex, FormField, Input } from '@redpanda-data/ui';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-import { pipelinesApi } from '../../../state/backendApi';
+import {pipelinesApi, rpcnSecretManagerApi} from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Link } from 'react-router-dom';
 import { Link as ChLink } from '@redpanda-data/ui';
@@ -36,7 +36,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     @observable description = '';
     @observable editorContent = exampleContent;
     @observable isCreating = false;
-
+    @observable secrets: string[] = []
     constructor(p: any) {
         super(p);
         makeObservable(this, undefined, { autoBind: true });
@@ -48,6 +48,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         p.addBreadcrumb('Create Pipeline', '');
 
         this.refreshData(true);
+        // get secrets
+        rpcnSecretManagerApi.refreshSecrets(true);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
@@ -58,7 +60,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     render() {
         if (!pipelinesApi.pipelines) return DefaultSkeleton;
-
+        if (rpcnSecretManagerApi.secrets) {
+            // inject secrets to editor
+            this.secrets.updateWith(rpcnSecretManagerApi.secrets.map(value => value.id))
+        }
         const alreadyExists = pipelinesApi.pipelines.any(x => x.id == this.fileName);
         const isNameEmpty = this.fileName.trim().length == 0;
 
@@ -99,7 +104,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
                 </Flex>
 
                 <Box mt="4">
-                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} />
+                    <PipelineEditor yaml={this.editorContent} onChange={x => this.editorContent = x} secrets={this.secrets}/>
                 </Box>
 
                 <Flex alignItems="center" gap="4">
@@ -156,8 +161,8 @@ export default RpConnectPipelinesCreate;
 export const PipelineEditor = observer((p: {
     yaml: string,
     onChange: (newYaml: string) => void
+    secrets?: string[]
 }) => {
-
     return <Tabs tabs={[
         {
             key: 'config', title: 'Configuration',

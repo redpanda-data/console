@@ -10,14 +10,14 @@
  */
 
 import { observer, useLocalObservable } from 'mobx-react';
-import { Component } from 'react';
+import {Component, FunctionComponent} from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
-import { PageComponent, PageInitHelper } from '../Page';
+import {PageComponent, PageInitHelper} from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
@@ -27,9 +27,50 @@ import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 import { Features } from '../../../state/supportedFeatures';
 import {isServerless} from '../../../config';
+import RpConnectSecretsList from '../rp-connect/secrets/Secrets.List';
+import { useLocation } from 'react-router-dom';
+
+enum ConnectView {
+    KafkaConnect = 'kafka-connect',
+    RedpandaConnect = 'redpanda-connect',
+    RedpandaConnectSecret = 'redpanda-connect-secret',
+}
+
+/**
+ * The Redpanda Connect Secret Manager introduces a new tab in Redpanda Connect.
+ * this logic determines which tab should be opened based on the `defaultTab`
+ * query parameter in the URL.
+ */
+const getDefaultView = (defaultView: string): { initialTab: ConnectView, redpandaConnectTab: ConnectView } => {
+
+    const showPipelines = Features.pipelinesApi
+    const showKafkaTab = {initialTab: ConnectView.KafkaConnect, redpandaConnectTab: ConnectView.RedpandaConnect}
+    const showRedpandaConnectTab = {initialTab: ConnectView.RedpandaConnect, redpandaConnectTab: ConnectView.RedpandaConnect}
+    if (!showPipelines) {
+        return showKafkaTab;
+    }
+
+    switch (defaultView) {
+        case 'kafka-connect':
+            return showKafkaTab;
+        case 'redpanda-connect':
+            return showRedpandaConnectTab;
+        case 'redpanda-connect-secret':
+            return {initialTab: ConnectView.RedpandaConnect, redpandaConnectTab: ConnectView.RedpandaConnectSecret};
+        default:
+            return showRedpandaConnectTab;
+    }
+}
+
+const WrapUseSearchParamsHook: FunctionComponent<{matchedPath: string}> = (props) => {
+    const {search}= useLocation();
+    const searchParams = new URLSearchParams(search);
+    const defaultTab = searchParams.get('defaultTab') || '';
+    return <KafkaConnectOverview defaultView={defaultTab} {...props}/>
+}
 
 @observer
-class KafkaConnectOverview extends PageComponent {
+class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     initPage(p: PageInitHelper): void {
         p.title = 'Overview';
         p.addBreadcrumb('Connect', '/connect-clusters');
@@ -50,22 +91,20 @@ class KafkaConnectOverview extends PageComponent {
     }
 
     render() {
-        const showPipelines = Features.pipelinesApi
-
         const tabs = [
             {
-                key: 'redpandaConnect',
+                key: ConnectView.RedpandaConnect,
                 title: <Box minWidth="180px">Redpanda Connect <Badge ml={2}>Recommended</Badge></Box>,
                 content:
                     <Box>
                         <Text mb={4}>
                             Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors. <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">Learn more.</Link>
                         </Text>
-                        <TabRedpandaConnect />
+                        <TabRedpandaConnect defaultView={getDefaultView(this.props.defaultView).redpandaConnectTab}/>
                     </Box>,
             },
             {
-                key: 'kafkaConnect',
+                key: ConnectView.KafkaConnect,
                 title: <Box minWidth="180px">Kafka Connect</Box>,
                 content:
                 <Box>
@@ -77,7 +116,7 @@ class KafkaConnectOverview extends PageComponent {
         ] as Tab[];
 
         if (isServerless())
-            tabs.removeAll(x => x.key == 'kafkaConnect');
+            tabs.removeAll(x => x.key == ConnectView.KafkaConnect);
 
         return (
             <PageContent>
@@ -89,14 +128,14 @@ class KafkaConnectOverview extends PageComponent {
                             ? tabs[0].content()
                             : tabs[0].content
                     )
-                    : <Tabs tabs={tabs} defaultSelectedTabKey={showPipelines ? 'redpandaConnect' : 'kafkaConnect'} />
+                    : <Tabs tabs={tabs} defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} />
                 }
             </PageContent>
         );
     }
 }
 
-export default KafkaConnectOverview;
+export default WrapUseSearchParamsHook;
 
 @observer
 class TabClusters extends Component {
@@ -326,11 +365,25 @@ const TabKafkaConnect = observer((_p: {}) => {
 })
 
 
-const TabRedpandaConnect = observer((_p: {}) => {
+const TabRedpandaConnect = observer((_p: {defaultView: ConnectView}) => {
     if (!Features.pipelinesApi) // If the backend doesn't support pipelines, show the intro page
-        return <RedpandaConnectIntro />
+        return <RedpandaConnectIntro/>
 
-    return <RpConnectPipelinesList matchedPath="/rp-connect" />
+    const tabs = [
+        {
+            key: 'pipelines',
+            title: <Box minWidth="180px">Pipelines</Box>,
+            content: <RpConnectPipelinesList matchedPath="/rp-connect"/>,
+        },
+        {
+            key: 'secrets',
+            title: <Box minWidth="180px">Secrets</Box>,
+            content:
+                <RpConnectSecretsList matchedPath="/rp-connect/secrets"/>
+        },
+    ] as Tab[];
+
+    return <Tabs tabs={tabs} defaultSelectedTabKey={_p.defaultView === ConnectView.RedpandaConnectSecret ? 'secrets' : 'pipelines'}/>
 })
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';

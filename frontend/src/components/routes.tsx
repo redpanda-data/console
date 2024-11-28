@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
+import React, {FunctionComponent} from 'react';
 import { Switch } from 'react-router-dom';
 import { Section } from './misc/common';
 import { Route, Redirect } from 'react-router';
@@ -57,6 +57,8 @@ import {isServerless} from '../config';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
+import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
+import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
 
 //
 //	Route Types
@@ -66,7 +68,7 @@ type IRouteEntry = PageDefinition<any>;
 export interface PageDefinition<TRouteParams = {}> {
     title: string;
     path: string;
-    pageType: PageComponentType<TRouteParams>;
+    pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
     routeJsx: JSX.Element;
     icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
     menuItemKey?: string; // set by 'CreateRouteMenuItems'
@@ -155,7 +157,7 @@ interface MenuItemState {
 
 function MakeRoute<TRouteParams>(
     path: string,
-    page: PageComponentType<TRouteParams>,
+    page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
     title: string,
     icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
     exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
@@ -281,7 +283,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
+    MakeRoute<{matchedPath: string}>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true,
         () => {
             if (isServerless()) {
                 console.log('Connect clusters inside serverless checks.')
@@ -315,9 +317,11 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
     // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
+    MakeRoute<{}>('/rp-connect/secrets/create', RpConnectSecretCreate, 'Connector-Secrets'),
     MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
     MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
+    MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,

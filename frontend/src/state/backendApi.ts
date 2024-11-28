@@ -120,6 +120,7 @@ import { PartitionOffsetOrigin } from './ui';
 import { Features } from './supportedFeatures';
 import { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { CreateSecretRequest, DeleteSecretRequest, ListSecretsRequest, Secret, UpdateSecretRequest } from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
 import { License, ListEnterpriseFeaturesResponse_Feature, SetLicenseRequest, SetLicenseResponse } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { CreateDebugBundleRequest, CreateDebugBundleResponse, DebugBundleStatus, DebugBundleStatus_Status, GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 
@@ -1859,6 +1860,57 @@ export const pipelinesApi = observable({
         if (!client) throw new Error('pipelines client is not initialized');
 
         await client.stopPipeline({ request: { id } });
+    },
+});
+
+export const rpcnSecretManagerApi = observable({
+    secrets: undefined as undefined | Secret[],
+
+    async refreshSecrets(_force: boolean): Promise<void> {
+
+        const client = appConfig.rpcnSecretsClient;
+        if (!client) throw new Error('redpanda connect secret client is not initialized');
+
+        const secrets = [];
+
+        let nextPageToken = '';
+        while (true) {
+
+            const res = await client.listSecrets(new ListSecretsRequest({
+                pageToken: nextPageToken,
+                pageSize: 100
+            }));
+
+            const response = res.secrets;
+            if (!response) break;
+
+            secrets.push(...response);
+
+            if (!res || res.nextPageToken.length == 0)
+                break;
+            nextPageToken = res.nextPageToken;
+        }
+
+        this.secrets = secrets;
+    },
+
+    async delete(secret: DeleteSecretRequest) {
+        const client = appConfig.rpcnSecretsClient;
+        if (!client) throw new Error('redpanda connect secret client is not initialized');
+
+        await client.deleteSecret(secret);
+    },
+    async create(secret: CreateSecretRequest) {
+        const client = appConfig.rpcnSecretsClient;
+        if (!client) throw new Error('redpanda connect secret client is not initialized');
+
+        await client.createSecret(secret);
+    },
+    async update(id: string, updateSecretRequest: UpdateSecretRequest) {
+        const client = appConfig.rpcnSecretsClient;
+        if (!client) throw new Error('redpanda connect secret client is not initialized');
+
+        await client.updateSecret(updateSecretRequest);
     },
 });
 

@@ -19,7 +19,7 @@ import { Interceptor as ConnectRpcInterceptor, StreamRequest, UnaryRequest, crea
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
-// import { RedpandaConnectService } from './protogen/redpanda/api/console/v1alpha1/rp_connect_connect';
+import { SecretService as RPCNSecretService } from './protogen/redpanda/api/dataplane/v1alpha2/secret_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { configureMonacoYaml } from 'monaco-yaml';
@@ -76,6 +76,7 @@ interface Config {
     debugBundleClient?: PromiseClient<typeof DebugBundleService>;
     securityClient?: PromiseClient<typeof SecurityService>;
     pipelinesClient?: PromiseClient<typeof PipelineService>;
+    rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
     transformsClient?: PromiseClient<typeof TransformService>;
     fetch: WindowOrWorkerGlobalScope['fetch'];
     assetsPath: string;
@@ -113,6 +114,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
     const securityGrpcClient = createPromiseClient(SecurityService, transport);
     const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
+    const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
     const transformClient = createPromiseClient(TransformService, transport);
     Object.assign(config, {
         jwt,
@@ -126,6 +128,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
         securityClient: securityGrpcClient,
         pipelinesClient: pipelinesGrpcClient,
         transformsClient: transformClient,
+        rpcnSecretsClient: secretGrpcClient,
         ...args,
     });
     return config;
@@ -140,7 +143,7 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
             'editorGutter.background': '#00000018',
             'editor.lineHighlightBackground': '#aaaaaa20',
             'editor.lineHighlightBorder': '#00000000',
-            'editorLineNumber.foreground': '#8c98a8',            
+            'editorLineNumber.foreground': '#8c98a8',
             'editorOverviewRuler.background': '#606060',
         },
         rules: []
