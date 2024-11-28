@@ -33,57 +33,57 @@ import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-d
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 
 export interface EmbeddedProps extends SetConfigArguments {
-    /**
-     * This is the base url that is used:
-     * - when making api requests
-     * - to setup the 'basename' in react-router
-     *
-     * In the simplest case this would be the exact url where the host is running,
-     * for example "http://localhost:3001/"
-     *
-     * When running in cloud-ui the base most likely need to include a few more
-     * things like cluster id, etc...
-     * So the base would probably be "https://cloud.redpanda.com/NAMESPACE/CLUSTER/"
-     */
-    basePath?: string;
-    /**
-     * We want to get explicit confirmation from the Cloud UI (our parent) so that
-     * we don't prematurely render console if the higher-order-component Console.tsx might rerender.
-     * In the future we might decide to use memo() as well
-     */
-    isConsoleReadyToMount?: boolean;
+  /**
+   * This is the base url that is used:
+   * - when making api requests
+   * - to setup the 'basename' in react-router
+   *
+   * In the simplest case this would be the exact url where the host is running,
+   * for example "http://localhost:3001/"
+   *
+   * When running in cloud-ui the base most likely need to include a few more
+   * things like cluster id, etc...
+   * So the base would probably be "https://cloud.redpanda.com/NAMESPACE/CLUSTER/"
+   */
+  basePath?: string;
+  /**
+   * We want to get explicit confirmation from the Cloud UI (our parent) so that
+   * we don't prematurely render console if the higher-order-component Console.tsx might rerender.
+   * In the future we might decide to use memo() as well
+   */
+  isConsoleReadyToMount?: boolean;
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
-    useEffect(() => {
-        const shellNavigationHandler = (event: Event) => {
-            const pathname = (event as CustomEvent<string>).detail;
-            appGlobal.history.push(pathname);
-        };
+  useEffect(() => {
+    const shellNavigationHandler = (event: Event) => {
+      const pathname = (event as CustomEvent<string>).detail;
+      appGlobal.history.push(pathname);
+    };
 
-        window.addEventListener('[shell] navigated', shellNavigationHandler);
+    window.addEventListener('[shell] navigated', shellNavigationHandler);
 
-        return () => {
-            window.removeEventListener('[shell] navigated', shellNavigationHandler);
-        };
-    }, []);
+    return () => {
+      window.removeEventListener('[shell] navigated', shellNavigationHandler);
+    };
+  }, []);
 
-    setup(p);
+  setup(p);
 
-    if (!p.isConsoleReadyToMount) {
-        return null;
-    }
+  if (!p.isConsoleReadyToMount) {
+    return null;
+  }
 
-    return (
-        <BrowserRouter basename={basePath}>
-            <HistorySetter />
-            <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-                <ErrorBoundary>
-                    <AppContent />
-                </ErrorBoundary>
-            </ChakraProvider>
-        </BrowserRouter>
-    );
+  return (
+    <BrowserRouter basename={basePath}>
+      <HistorySetter />
+      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </ChakraProvider>
+    </BrowserRouter>
+  );
 }
 
 export default observer(EmbeddedApp);

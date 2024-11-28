@@ -20,77 +20,92 @@ import { PartitionSelection } from './ReassignPartitions';
 import { Checkbox, DataTable } from '@redpanda-data/ui';
 import { Row } from '@tanstack/react-table';
 
-
 @observer
-export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], partitionSelection: PartitionSelection }> {
-    brokers: Broker[];
+export class StepSelectBrokers extends Component<{
+  selectedBrokerIds: number[];
+  partitionSelection: PartitionSelection;
+}> {
+  brokers: Broker[];
 
-    constructor(props: any) {
-        super(props);
-        this.brokers = api.clusterInfo!.brokers;
+  constructor(props: any) {
+    super(props);
+    this.brokers = api.clusterInfo!.brokers;
+  }
+
+  render() {
+    if (!this.brokers || this.brokers.length == 0) {
+      console.error('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
+      return <div>Error: no brokers available</div>;
     }
 
-    render() {
-        if (!this.brokers || this.brokers.length == 0) {
-            console.error('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
-            return <div>Error: no brokers available</div>;
-        }
+    const selectedBrokers = this.props.selectedBrokerIds;
 
-        const selectedBrokers = this.props.selectedBrokerIds;
+    return (
+      <>
+        <div style={{ margin: '2em 1em' }}>
+          <h2>Target Brokers</h2>
+          <p>
+            Choose the target brokers to move the selected partitions to. Kowl will consider them as desired targets and
+            distribute partitions across the available racks of the selected target brokers.
+          </p>
+        </div>
 
-        return <>
-            <div style={{ margin: '2em 1em' }}>
-                <h2>Target Brokers</h2>
-                <p>Choose the target brokers to move the selected partitions to. Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
-            </div>
+        <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
 
-            <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
-
-            <DataTable<Broker>
-                data={this.brokers}
-                pagination={true}
-                columns={[
-                    {
-                        id: 'check',
-                        header: observer(() => {
-                            const selectedSet = new Set<number>(selectedBrokers)
-                            const allIdsSet = new Set<number>(this.brokers.map(({brokerId}) => brokerId))
-                            const allIsSelected = eqSet<number>(selectedSet, allIdsSet)
-                            return <Checkbox
-                                isIndeterminate={!allIsSelected && selectedSet.size > 0}
-                                isChecked={allIsSelected}
-                                onChange={() => {
-                                    if(!allIsSelected) {
-                                        transaction(() => {
-                                            selectedBrokers.splice(0);
-                                            for (const broker of this.brokers) {
-                                                selectedBrokers.push(broker.brokerId);
-                                            }
-                                        });
-                                    } else {
-                                        selectedBrokers.splice(0);
-                                    }
-                                }}
-                            />;
-                        }),
-                        cell: observer(({row: {original: broker}}: { row: Row<Broker> }) => {
-                            const checked = selectedBrokers.includes(broker.brokerId)
-                            return (
-                                <Checkbox
-                                    isChecked={checked}
-                                    onChange={() => selectedBrokers.includes(broker.brokerId)
-                                        ? selectedBrokers.remove(broker.brokerId)
-                                        : selectedBrokers.push(broker.brokerId)}
-                                />
-                            );
-                        }),
-                    },
-                    { header: 'ID', accessorKey: 'brokerId' },
-                    { header: 'Broker Address', size: Infinity, accessorKey: 'address' },
-                    { header: 'Rack', accessorKey: 'rack' },
-                    { header: 'Used Space', accessorKey: 'logDirSize', cell: ({row: {original}}) => prettyBytesOrNA(original.logDirSize) },
-                ]}
-            />
-        </>;
-    }
+        <DataTable<Broker>
+          data={this.brokers}
+          pagination={true}
+          columns={[
+            {
+              id: 'check',
+              header: observer(() => {
+                const selectedSet = new Set<number>(selectedBrokers);
+                const allIdsSet = new Set<number>(this.brokers.map(({ brokerId }) => brokerId));
+                const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
+                return (
+                  <Checkbox
+                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
+                    isChecked={allIsSelected}
+                    onChange={() => {
+                      if (!allIsSelected) {
+                        transaction(() => {
+                          selectedBrokers.splice(0);
+                          for (const broker of this.brokers) {
+                            selectedBrokers.push(broker.brokerId);
+                          }
+                        });
+                      } else {
+                        selectedBrokers.splice(0);
+                      }
+                    }}
+                  />
+                );
+              }),
+              cell: observer(({ row: { original: broker } }: { row: Row<Broker> }) => {
+                const checked = selectedBrokers.includes(broker.brokerId);
+                return (
+                  <Checkbox
+                    isChecked={checked}
+                    onChange={() =>
+                      selectedBrokers.includes(broker.brokerId)
+                        ? selectedBrokers.remove(broker.brokerId)
+                        : selectedBrokers.push(broker.brokerId)
+                    }
+                  />
+                );
+              }),
+            },
+            { header: 'ID', accessorKey: 'brokerId' },
+            { header: 'Broker Address', size: Infinity, accessorKey: 'address' },
+            { header: 'Rack', accessorKey: 'rack' },
+            {
+              header: 'Used Space',
+              accessorKey: 'logDirSize',
+              cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
+            },
+          ]}
+        />
+      </>
+    );
+  }
 }

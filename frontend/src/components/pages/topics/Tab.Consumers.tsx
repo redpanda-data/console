@@ -27,36 +27,36 @@ import { editQuery } from '../../../utils/queryHelper';
 type TopicConsumersProps = { topic: Topic };
 
 export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
-    let consumers = api.topicConsumers.get(topic.topicName);
-    const isLoading = consumers === null;
-    if(isLoading) {
-        return DefaultSkeleton;
-    }
-    if (!consumers) {
-        consumers = [];
-    }
+  let consumers = api.topicConsumers.get(topic.topicName);
+  const isLoading = consumers === null;
+  if (isLoading) {
+    return DefaultSkeleton;
+  }
+  if (!consumers) {
+    consumers = [];
+  }
 
-    const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize, consumers.length);
+  const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize, consumers.length);
 
-    return (
-        <DataTable<TopicConsumer>
-            data={consumers}
-            pagination={paginationParams}
-            onPaginationChange={onPaginationChange(paginationParams, ({pageSize, pageIndex}) => {
-                uiState.topicSettings.consumerPageSize = pageSize;
-                editQuery(query => {
-                    query['page'] = String(pageIndex);
-                    query['pageSize'] = String(pageSize);
-                });
-            })}
-            sorting
-            columns={[
-                {size: 1, header: 'Group', accessorKey: 'groupId'},
-                {header: 'Lag', accessorKey: 'summedLag'},
-            ]}
-            onRow={row => {
-                appGlobal.history.push(`/groups/${encodeURIComponent(row.original.groupId)}`)
-            }}
-        />
-    );
+  return (
+    <DataTable<TopicConsumer>
+      data={consumers}
+      pagination={paginationParams}
+      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+        uiState.topicSettings.consumerPageSize = pageSize;
+        editQuery((query) => {
+          query['page'] = String(pageIndex);
+          query['pageSize'] = String(pageSize);
+        });
+      })}
+      sorting
+      columns={[
+        { size: 1, header: 'Group', accessorKey: 'groupId' },
+        { header: 'Lag', accessorKey: 'summedLag' },
+      ]}
+      onRow={(row) => {
+        appGlobal.history.push(`/groups/${encodeURIComponent(row.original.groupId)}`);
+      }}
+    />
+  );
 });

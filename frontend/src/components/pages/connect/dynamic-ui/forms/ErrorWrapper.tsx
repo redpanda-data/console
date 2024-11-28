@@ -8,30 +8,28 @@ const isRequiredError = (name: string) => `Required configuration "${name}" must
 const isEmpty = (property: Property) => property.value == '' || property.value == null;
 
 export const ErrorWrapper = observer(function (props: PropsWithoutRef<{ property: Property; input: JSX.Element }>) {
-    const { property, input } = props;
-    const isRequired = property.entry.definition.required;
-    const showErrors = property.errors.length > 0;
+  const { property, input } = props;
+  const isRequired = property.entry.definition.required;
+  const showErrors = property.errors.length > 0;
 
-    const errors = showErrors ? property.errors : property.lastErrors;
+  const errors = showErrors ? property.errors : property.lastErrors;
 
-    const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
+  const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
 
-    const cycleError = showErrors ? () => property.currentErrorIndex++ : undefined;
+  const cycleError = showErrors ? () => property.currentErrorIndex++ : undefined;
 
-    return (
-        <div>
-            <FormField
-                isInvalid={!!errorToShow || (isEmpty(property) && isRequired)}
-                isRequired={isRequired}
-                label={property.entry.definition.display_name}
-                errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
-                description={
-                    <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
-                }
-                onClick={cycleError}
-            >
-                {input}
-            </FormField>
-        </div>
-    );
+  return (
+    <div>
+      <FormField
+        isInvalid={!!errorToShow || (isEmpty(property) && isRequired)}
+        isRequired={isRequired}
+        label={property.entry.definition.display_name}
+        errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
+        description={<ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>}
+        onClick={cycleError}
+      >
+        {input}
+      </FormField>
+    </div>
+  );
 });

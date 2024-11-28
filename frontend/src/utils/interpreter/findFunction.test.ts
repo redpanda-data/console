@@ -33,38 +33,36 @@ import { exit } from 'process';
 console.log('running "findFunction" tests...');
 
 declare global {
-    function find(propName: string, ignoreCase?: boolean): any;
-    function find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
-    function find(pattern: object, ignoreCase?: boolean): any;
-    function findAll(propName: string, ignoreCase?: boolean): any[];
-    function findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
-    function findAll(pattern: object, ignoreCase?: boolean): any[];
+  function find(propName: string, ignoreCase?: boolean): any;
+  function find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
+  function find(pattern: object, ignoreCase?: boolean): any;
+  function findAll(propName: string, ignoreCase?: boolean): any[];
+  function findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
+  function findAll(pattern: object, ignoreCase?: boolean): any[];
 
-    interface Object {
-        find(propName: string, ignoreCase?: boolean): any;
-        find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
-        find(pattern: object, ignoreCase?: boolean): any;
-        findAll(propName: string, ignoreCase?: boolean): any[];
-        findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
-        findAll(pattern: object, ignoreCase?: boolean): any[];
-    }
+  interface Object {
+    find(propName: string, ignoreCase?: boolean): any;
+    find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
+    find(pattern: object, ignoreCase?: boolean): any;
+    findAll(propName: string, ignoreCase?: boolean): any[];
+    findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
+    findAll(pattern: object, ignoreCase?: boolean): any[];
+  }
 }
 
-
-
 global.value = {
-    name: "n1",
-    score: "s1",
-    nested: {
-        name: "n2",
-        score: 1,
-    },
-    ar: [
-        { name: "n3", score: 2, team: 1 },
-        { name: "n4", score: "4 stars", team: 1 },
-        { name: "n5", score: "3 stars", team: 2 },
-        { name: "n6", score: { stars: 10, points: 123 }, team: 'red' },
-    ]
+  name: 'n1',
+  score: 's1',
+  nested: {
+    name: 'n2',
+    score: 1,
+  },
+  ar: [
+    { name: 'n3', score: 2, team: 1 },
+    { name: 'n4', score: '4 stars', team: 1 },
+    { name: 'n5', score: '3 stars', team: 2 },
+    { name: 'n6', score: { stars: 10, points: 123 }, team: 'red' },
+  ],
 };
 
 //
@@ -100,12 +98,10 @@ expect(() => find({ name: 'n2' }).score === 1);
 expect(() => find({ score: '4 stars' }).name === 'n4');
 expect(() => find({ team: 'red' }).score.stars === 10);
 expectEq({
-    name: 'findAll pattern equality',
-    actual: findAll({ team: 1 }),
-    expected: [global.value.ar[0], global.value.ar[1]],
+  name: 'findAll pattern equality',
+  actual: findAll({ team: 1 }),
+  expected: [global.value.ar[0], global.value.ar[1]],
 });
-
-
 
 console.log('');
 console.log('---');

@@ -13,10 +13,10 @@ import { createRoot } from 'react-dom/client';
 import EmbeddedApp, { EmbeddedProps } from './EmbeddedApp';
 
 const injector = async (parentElementId: string, props: EmbeddedProps) => {
-    const container = document.getElementById(parentElementId);
-    const root = createRoot(container!);
-    root.render(<EmbeddedApp {...props} />);
-    return root;
+  const container = document.getElementById(parentElementId);
+  const root = createRoot(container!);
+  root.render(<EmbeddedApp {...props} />);
+  return root;
 };
 
 export default injector;

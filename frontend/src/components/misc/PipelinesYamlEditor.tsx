@@ -18,62 +18,62 @@ import benthosSchema from '../../assets/rp-connect-schema.json';
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco }
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco };
 
 export type PipelinesYamlEditorProps = EditorProps & {
-    'data-testid'?: string;
+  'data-testid'?: string;
 };
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
-    minimap: {
-        enabled: false,
-    },
-    roundedSelection: false,
-    padding: {
-        top: 0,
-    },
-    showFoldingControls: 'always',
-    glyphMargin: false,
-    scrollBeyondLastLine: false,
-    cursorBlinking: 'phase',
-    lineNumbersMinChars: 4,
-    lineDecorationsWidth: 0,
-    overviewRulerBorder: false,
-    scrollbar: {
-        alwaysConsumeMouseWheel: false,
-    },
-    fontSize: 12,
-    occurrencesHighlight: 'off',
-    foldingHighlight: false,
-    selectionHighlight: false,
-    renderLineHighlight: 'all',
-    quickSuggestions: {
-        other: true,
-        comments: true,
-        strings: true
-    }
+  minimap: {
+    enabled: false,
+  },
+  roundedSelection: false,
+  padding: {
+    top: 0,
+  },
+  showFoldingControls: 'always',
+  glyphMargin: false,
+  scrollBeyondLastLine: false,
+  cursorBlinking: 'phase',
+  lineNumbersMinChars: 4,
+  lineDecorationsWidth: 0,
+  overviewRulerBorder: false,
+  scrollbar: {
+    alwaysConsumeMouseWheel: false,
+  },
+  fontSize: 12,
+  occurrencesHighlight: 'off',
+  foldingHighlight: false,
+  selectionHighlight: false,
+  renderLineHighlight: 'all',
+  quickSuggestions: {
+    other: true,
+    comments: true,
+    strings: true,
+  },
 } as const;
 
 export const monacoYamlOptions = {
-    enableSchemaRequest: false,
-    format: true,
-    completion: true,
-    validate: true,
-    schemas: [
-        {
-            // If YAML file is opened matching this glob
-            fileMatch: ['**/*.yaml'],
-            // The following schema will be applied
-            schema: {
-                type: 'object',
-                definitions: benthosSchema.definitions,
-                properties: benthosSchema.properties,
-            },
+  enableSchemaRequest: false,
+  format: true,
+  completion: true,
+  validate: true,
+  schemas: [
+    {
+      // If YAML file is opened matching this glob
+      fileMatch: ['**/*.yaml'],
+      // The following schema will be applied
+      schema: {
+        type: 'object',
+        definitions: benthosSchema.definitions,
+        properties: benthosSchema.properties,
+      },
 
-            // And the URI will be linked to as the source.
-            uri: 'http://example.com/schema-name.json', // '../../benthos-schema.json',
-        }
-    ]
+      // And the URI will be linked to as the source.
+      uri: 'http://example.com/schema-name.json', // '../../benthos-schema.json',
+    },
+  ],
 } as MonacoYamlOptions;
 
 // const linter = {
@@ -123,36 +123,35 @@ export const monacoYamlOptions = {
 // };
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
-    const { options: givenOptions, ...rest } = props;
-    const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const { options: givenOptions, ...rest } = props;
+  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
 
-    return <Editor
+  return (
+    <Editor
+      loading={<LoadingPlaceholder />}
+      wrapperProps={{
+        className: 'kowlEditor',
+        style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
+      }}
+      defaultValue={''}
+      defaultLanguage="yaml"
+      options={options}
+      {...rest}
 
-        loading={<LoadingPlaceholder />}
-        wrapperProps={{ className: 'kowlEditor', style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' } }}
-        defaultValue={''}
-        defaultLanguage="yaml"
+      // onChange={(v, ev) => {
+      //     if (v) {
+      //         linter.text = v;
+      //         linter.refreshLint();
+      //     }
+      //     rest.onChange?.(v, ev);
+      // }}
 
-        options={options}
-        {...rest}
-
-        // onChange={(v, ev) => {
-        //     if (v) {
-        //         linter.text = v;
-        //         linter.refreshLint();
-        //     }
-        //     rest.onChange?.(v, ev);
-        // }}
-
-        // onMount={(editor, monaco) => {
-        //     linter.editor = editor;
-        //     linter.monaco = monaco;
-        // }}
+      // onMount={(editor, monaco) => {
+      //     linter.editor = editor;
+      //     linter.monaco = monaco;
+      // }}
     />
+  );
 }
 
-
-
-const LoadingPlaceholder = () => <div className="editorLoading">
-    Loading Editor...
-</div>
+const LoadingPlaceholder = () => <div className="editorLoading">Loading Editor...</div>;

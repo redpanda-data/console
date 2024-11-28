@@ -14,20 +14,20 @@ import { isClipboardAvailable } from '../../utils/featureDetection';
 import { Popover } from '@redpanda-data/ui';
 
 const popoverContent = (
-    <>
-        <p>Due to browser restrictions, the clipboard is not accessible on unsecure connections.</p>
-        <p>Please make sure to run Redpanda Console with SSL enabled to use this feature.</p>
-    </>
+  <>
+    <p>Due to browser restrictions, the clipboard is not accessible on unsecure connections.</p>
+    <p>Please make sure to run Redpanda Console with SSL enabled to use this feature.</p>
+  </>
 );
 
 export const NoClipboardPopover: FunctionComponent<{
-    children: ReactElement;
-    placement?: 'left' | 'top';
+  children: ReactElement;
+  placement?: 'left' | 'top';
 }> = ({ children, placement = 'top' }) =>
-    isClipboardAvailable ? (
-        <>{children}</>
-    ) : (
-        <Popover title="Clipboard unavailable" content={popoverContent} placement={placement} trigger="hover">
-            {children}
-        </Popover>
-    );
+  isClipboardAvailable ? (
+    <>{children}</>
+  ) : (
+    <Popover title="Clipboard unavailable" content={popoverContent} placement={placement} trigger="hover">
+      {children}
+    </Popover>
+  );

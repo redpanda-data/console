@@ -10,22 +10,22 @@
  */
 
 export function wrapFilterFragment(filterFragment: string) {
-    if (!filterFragment.includes('return ')) filterFragment = `return ${filterFragment}`;
-    return filterFragment;
+  if (!filterFragment.includes('return ')) filterFragment = `return ${filterFragment}`;
+  return filterFragment;
 }
 
 export function sanitizeString(input: string) {
-    return input
-        .split('')
-        .map((char: string) => {
-            const code = char.charCodeAt(0);
-            if (code > 0 && code < 128) {
-                return char;
-            } else if (code >= 128 && code <= 255) {
-                //Hex escape encoding
-                return `/x${code.toString(16)}`.replace('/', '\\');
-            }
-            return '';
-        })
-        .join('');
+  return input
+    .split('')
+    .map((char: string) => {
+      const code = char.charCodeAt(0);
+      if (code > 0 && code < 128) {
+        return char;
+      } else if (code >= 128 && code <= 255) {
+        //Hex escape encoding
+        return `/x${code.toString(16)}`.replace('/', '\\');
+      }
+      return '';
+    })
+    .join('');
 }

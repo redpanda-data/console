@@ -21,39 +21,40 @@ import { observer } from 'mobx-react';
 
 @observer
 class RoleCreatePage extends PageComponent {
+  initPage(p: PageInitHelper): void {
+    p.title = 'Create role';
+    p.addBreadcrumb('Access control', '/security');
+    p.addBreadcrumb('Roles', '/security/roles');
+    p.addBreadcrumb('Create role', '/security/roles/create');
 
-    initPage(p: PageInitHelper): void {
-        p.title = 'Create role';
-        p.addBreadcrumb('Access control', '/security');
-        p.addBreadcrumb('Roles', '/security/roles');
-        p.addBreadcrumb('Create role', '/security/roles/create');
+    this.refreshData(true);
+    appGlobal.onRefresh = () => this.refreshData(true);
+  }
 
-        this.refreshData(true);
-        appGlobal.onRefresh = () => this.refreshData(true);
-    }
+  async refreshData(force: boolean) {
+    if (api.userData != null && !api.userData.canListAcls) return;
 
-    async refreshData(force: boolean) {
-        if (api.userData != null && !api.userData.canListAcls) return;
+    await Promise.allSettled([
+      api.refreshAcls(AclRequestDefault, force),
+      api.refreshServiceAccounts(true),
+      rolesApi.refreshRoles(),
+    ]);
+  }
 
-        await Promise.allSettled([
-            api.refreshAcls(AclRequestDefault, force),
-            api.refreshServiceAccounts(true),
-            rolesApi.refreshRoles()
-        ]);
-    }
+  render() {
+    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
-    render() {
-        if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-        if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
-
-        return (
-            <PageContent>
-                <Text my={4}>A role is a named collection of ACLs which may have users (security principals) assigned to it. You can assign any number of roles to a given user.</Text>
-                <RoleForm />
-            </PageContent>
-        );
-    }
+    return (
+      <PageContent>
+        <Text my={4}>
+          A role is a named collection of ACLs which may have users (security principals) assigned to it. You can assign
+          any number of roles to a given user.
+        </Text>
+        <RoleForm />
+      </PageContent>
+    );
+  }
 }
 
 export default RoleCreatePage;
-
