@@ -5,6 +5,7 @@ import { Scope, UpdateSecretRequest } from '../../../../protogen/redpanda/api/da
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { DefaultSkeleton } from '../../../../utils/tsxUtils';
+import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import PageContent from '../../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../../Page';
 import { formatPipelineError } from '../errors';
@@ -44,19 +45,12 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   async updateSecret() {
     this.isUpdating = true;
 
-    //create function given string return base64 encoded Uint8Array
-    function base64Encode(str: string): Uint8Array {
-      const encodedString = btoa(str);
-      const charList = encodedString.split('').map((char) => char.charCodeAt(0));
-      return new Uint8Array(charList);
-    }
-
     rpcnSecretManagerApi
       .update(
         this.props.secretId,
         new UpdateSecretRequest({
           id: this.props.secretId,
-          secretData: base64Encode(this.secret),
+          secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
         }),
       )
