@@ -1605,10 +1605,10 @@ const apiStore = {
         await Promise.all([
             client.listEnterpriseFeatures({}).then(enterpriseFeaturesResponse => {
                 this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
+                this.licenseViolation = enterpriseFeaturesResponse.violation;
             }),
             client.listLicenses({}).then(licensesResponse => {
                 this.licenses = licensesResponse.licenses;
-                this.licenseViolation = licensesResponse.violation;
 
                 this.licensesLoaded = 'loaded';
             }).catch(err => {
