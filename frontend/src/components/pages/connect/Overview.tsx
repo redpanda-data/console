@@ -51,15 +51,11 @@ enum ConnectView {
  * query parameter in the URL.
  */
 const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpandaConnectTab: ConnectView } => {
-  const showPipelines = Features.pipelinesApi;
   const showKafkaTab = { initialTab: ConnectView.KafkaConnect, redpandaConnectTab: ConnectView.RedpandaConnect };
   const showRedpandaConnectTab = {
     initialTab: ConnectView.RedpandaConnect,
     redpandaConnectTab: ConnectView.RedpandaConnect,
   };
-  if (!showPipelines) {
-    return showKafkaTab;
-  }
 
   switch (defaultView) {
     case 'kafka-connect':
