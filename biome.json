@@ -23,7 +23,8 @@
         "recommended": true,
         "suspicious": {
           "noExplicitAny": "off",
-          "noArrayIndexKey": "off"
+          "noArrayIndexKey": "off",
+          "noAssignInExpressions": "off"
         },
         "a11y": {
           "useKeyWithClickEvents": "off"
