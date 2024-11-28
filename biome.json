@@ -30,7 +30,8 @@
           "useKeyWithClickEvents": "off"
         },
         "style": {
-            "useNodejsImportProtocol": "off"
+            "useNodejsImportProtocol": "off",
+            "noParameterAssign": "off"
         },
         "complexity": {
             "noBannedTypes": "off"
